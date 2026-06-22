@@ -1,0 +1,40 @@
+appName: "MyApp"
+appVersion: "0.1.0"
+appRelease: "BETA"
+appLicense: "MIT"
+
+appAuthors {
+    ["Alfa", "alfa@example.me"]
+    ["Foo", "foo@baz.me"]
+}
+
+compilerOptions {
+    xsVersion: "26"
+
+    addFiles {
+        entry: "source/Main.xs"
+
+        [
+            "source/Foo.xs",
+            "source/Bar.xs"
+        ]
+    }
+
+    output {
+        [
+            osName: "Linux"
+            osArch: "x64"
+        ]
+    }
+}
+
+externalModules {
+    addModule {
+        moduleName: "xs.Foo"
+        moduleVersion: "latest"
+    }
+}
+
+// Comment
+/// Doc Comment
+// Multiline comment .xsproj'da yoktur.

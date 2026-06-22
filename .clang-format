@@ -1,0 +1,245 @@
+# yaml-language-server: $schema=https://json.schemastore.org/clang-format
+---
+
+# clang-format uses the Cpp language mode for C, C++, Objective-C, and Objective-C++.
+Language: Cpp
+BasedOnStyle: LLVM
+DisableFormat: false
+
+ColumnLimit: 120
+IndentWidth: 2
+ContinuationIndentWidth: 4
+BracedInitializerIndentWidth: -1
+TabWidth: 2
+UseTab: Never
+PPIndentWidth: -1
+
+IndentCaseLabels: false
+IndentCaseBlocks: false
+IndentGotoLabels: true
+IndentExternBlock: AfterExternBlock
+IndentWrappedFunctionNames: false
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterControlStatement: Never
+  AfterEnum: true
+  AfterExternBlock: false
+  AfterFunction: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeElse: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: true
+
+InsertBraces: false
+RemoveBracesLLVM: false
+RemoveSemicolon: false
+RemoveParentheses: Leave
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortCaseExpressionOnASingleLine: true
+AllowShortEnumsOnASingleLine: false
+
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackArguments: true
+BinPackParameters: BinPack
+BinPackLongBracedList: true
+
+BreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
+BreakFunctionDefinitionParameters: false
+
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyReturnTypeOnItsOwnLine: 60
+PenaltyBreakOpenParenthesis: 0
+PenaltyExcessCharacter: 1000000
+PenaltyIndentedWhitespace: 0
+
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakBinaryOperations: Never
+SpaceBeforeAssignmentOperators: true
+SpaceAfterLogicalNot: false
+
+DerivePointerAlignment: false
+PointerAlignment: Right
+QualifierAlignment: Leave
+SpaceAroundPointerQualifiers: Default
+
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeMemberAccess: 150
+PenaltyBreakFirstLessLess: 120
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: false
+  AfterFunctionDefinitionName: false
+  AfterFunctionDeclarationName: false
+  AfterIfMacros: false
+  BeforeNonEmptyParentheses: false
+
+SpacesInParens: Custom
+SpacesInParensOptions:
+  ExceptDoubleParentheses: false
+  InCStyleCasts: false
+  InConditionalStatements: false
+  InEmptyParentheses: false
+  Other: false
+SpacesInSquareBrackets: false
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBraces: Never
+SpaceAfterCStyleCast: false
+SpaceBeforeCaseColon: false
+BitFieldColonSpacing: Both
+
+AlignConsecutiveAssignments:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: false
+  PadOperators: true
+
+AlignConsecutiveDeclarations:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: false
+  PadOperators: false
+
+AlignConsecutiveMacros:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: false
+  PadOperators: false
+
+AlignConsecutiveBitFields:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: false
+  PadOperators: false
+
+AlignConsecutiveShortCaseStatements:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCaseArrows: false
+  AlignCaseColons: false
+
+AlignArrayOfStructures: None
+AlignEscapedNewlines: Right
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+  AlignPPAndNotPP: true
+SpacesBeforeTrailingComments: 1
+
+BreakAfterAttributes: Leave
+AlwaysBreakBeforeMultilineStrings: false
+BreakStringLiterals: true
+BreakAdjacentStringLiterals: true
+PenaltyBreakString: 1000
+AttributeMacros: []
+
+IncludeBlocks: Preserve
+SortIncludes:
+  Enabled: true
+  IgnoreCase: false
+  IgnoreExtension: false
+IncludeCategories:
+  - Regex: '^"[^"]+"$'
+    Priority: 1
+    SortPriority: 1
+    CaseSensitive: true
+  - Regex: '^<(assert|complex|ctype|errno|fenv|float|inttypes|iso646|limits|locale|math|setjmp|signal|stdalign|stdarg|stdatomic|stdbit|stdbool|stdckdint|stddef|stdint|stdio|stdlib|stdnoreturn|string|tgmath|threads|time|uchar|wchar|wctype)\.h>$'
+    Priority: 2
+    SortPriority: 2
+    CaseSensitive: true
+  - Regex: '^<[^>]+>$'
+    Priority: 3
+    SortPriority: 3
+    CaseSensitive: true
+  - Regex: '.*'
+    Priority: 4
+    SortPriority: 4
+    CaseSensitive: true
+IncludeIsMainRegex: '(_test)?$'
+IncludeIsMainSourceRegex: ''
+MainIncludeChar: Quote
+
+SeparateDefinitionBlocks: Leave
+
+ReflowComments: Always
+PenaltyBreakComment: 300
+CommentPragmas: '^ IWYU pragma:'
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: -1
+MaxEmptyLinesToKeep: 1
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: false
+KeepFormFeed: false
+RemoveEmptyLinesInUnwrappedLines: false
+
+LineEnding: LF
+InsertNewlineAtEOF: true
+
+IndentPPDirectives: None
+SkipMacroDefinitionBody: false
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+OneLineFormatOffRegex: ''
+ForEachMacros: []
+IfMacros: []
+StatementAttributeLikeMacros: []
+StatementMacros: []
+WhitespaceSensitiveMacros: []
+
+IntegerLiteralSeparator:
+  Binary: 0
+  BinaryMinDigits: 0
+  BinaryMinDigitsInsert: 0
+  BinaryMaxDigitsRemove: 0
+  Decimal: 0
+  DecimalMinDigits: 0
+  DecimalMinDigitsInsert: 0
+  DecimalMaxDigitsRemove: 0
+  Hex: 0
+  HexMinDigits: 0
+  HexMinDigitsInsert: 0
+  HexMaxDigitsRemove: 0
+NumericLiteralCase:
+  ExponentLetter: Leave
+  HexDigit: Leave
+  Prefix: Leave
+  Suffix: Leave
+EnumTrailingComma: Leave
+InsertTrailingCommas: None
+
+ExperimentalAutoDetectBinPacking: false
+BreakBeforeInlineASMColon: OnlyMultiline
+
+...

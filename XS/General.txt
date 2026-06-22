@@ -1,0 +1,4 @@
+C23 ile yazılacak.
+./.clang-format dosyasına uy.
+dil adı X#, okunuşu X Sharp.
+Proje dosyası .xsproj'dur.

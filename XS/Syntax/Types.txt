@@ -1,0 +1,26 @@
+str -> UTF-16
+bool
+byte
+char
+
+int16 -> i16
+int32 -> i32
+int -> i64
+int128 -> i128
+
+Uint16 -> u16
+Uint32 -> u32
+Uint -> u64
+Uint128 -> u128
+
+float16 -> f16
+float32 -> f32
+float -> f64
+double -> f128
+
+Olmayanlar:
+int64
+Uint64
+float64
+...
+çünkü bunlar var.

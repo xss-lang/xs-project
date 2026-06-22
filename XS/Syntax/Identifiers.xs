@@ -1,0 +1,420 @@
+// Identifier and numeric-literal rules:
+
+//{
+This file defines:
+
+- Identifier character rules
+- Reserved-word restrictions
+- Unicode restrictions
+- Decimal integer literals
+- Decimal floating-point literals
+- Scientific notation
+- Digit separators
+- Unicode and hexadecimal character escapes
+}//
+
+
+// ============================================================
+// Identifiers
+// ============================================================
+
+// Identifiers are case-sensitive.
+
+
+// Valid first characters:
+//
+// - A-Z
+// - a-z
+// - _
+
+
+// Valid continuation characters:
+//
+// - A-Z
+// - a-z
+// - 0-9
+// - _
+
+
+// Formal shape:
+//
+// [A-Za-z_][A-Za-z0-9_]*
+
+
+// Valid identifiers:
+
+user
+userName
+UserName
+_value
+value2
+A1
+_privateValue
+
+
+// Identifier casing is significant:
+
+value
+Value
+VALUE
+
+// These are three different identifiers.
+
+
+// ============================================================
+// Invalid identifier characters
+// ============================================================
+
+// Hyphen is not allowed inside identifiers.
+
+
+// Invalid:
+
+user-name
+app-version
+my-value
+
+
+// Unicode characters are not allowed inside identifiers.
+
+
+// Invalid:
+
+sayı
+kullanıcı
+değer
+Δvalue
+名前
+
+
+// An identifier cannot begin with a digit.
+
+
+// Invalid:
+
+1value
+42name
+9_user
+
+
+// Digits may appear after the first character.
+
+
+// Valid:
+
+value1
+user42
+_x2
+
+
+// ============================================================
+// Reserved words
+// ============================================================
+
+// Words defined by the language cannot be used as identifiers.
+
+
+// Invalid examples:
+
+fn: int = 1;
+class: str = "A";
+module: bool = true;
+imports: int = 2;
+if: int = 3;
+else: int = 4;
+return: int = 5;
+match: int = 6;
+new: int = 7;
+nil: int = 8;
+
+
+// This rule applies to every language keyword and reserved word.
+
+
+// ============================================================
+// Unicode usage
+// ============================================================
+
+// Unicode characters are not written directly inside identifiers.
+//
+// Unicode characters may be represented inside string and character
+// contents through escape sequences.
+
+
+// Four hexadecimal digits:
+
+"\uFFFF"
+
+
+// Eight hexadecimal digits:
+
+"\U000FFFFF"
+
+
+// Hexadecimal character escape:
+
+"\xFF"
+
+
+// These are character escapes.
+//
+// They are not hexadecimal numeric literals.
+
+
+// ============================================================
+// Decimal integer literals
+// ============================================================
+
+// Integer literals use decimal notation.
+
+
+// Valid:
+
+0
+1
+42
+1000
+1000000
+
+
+// Hexadecimal, binary and octal numeric prefixes are not supported.
+
+
+// Invalid:
+
+0xFF
+0XFF
+0b1010
+0B1010
+0o77
+0O77
+
+
+// Such values may be represented as strings when needed:
+
+hexValue: str = "FF";
+binaryValue: str = "1010";
+octalValue: str = "77";
+
+
+// ============================================================
+// Decimal floating-point literals
+// ============================================================
+
+// Floating-point literals use decimal notation.
+
+
+// Valid:
+
+0.0
+3.14
+0.000001
+42.5
+
+
+// ============================================================
+// Digit separators
+// ============================================================
+
+// Apostrophe is used as the digit separator.
+//
+// Its behavior follows the C++ digit-separator model.
+
+
+// Valid:
+
+1'000
+1'000'000
+3.141'592
+0.000'001
+12'345.678'901
+
+
+// The separator does not change the numeric value.
+
+
+// Equivalent:
+
+1000000
+1'000'000
+
+
+// Apostrophe must separate digits.
+
+
+// Invalid:
+
+'100
+100'
+1''000
+1'
+'1
+
+
+// Underscore is not a numeric digit separator.
+
+
+// Invalid:
+
+1_000
+3.141_592
+
+
+// ============================================================
+// Scientific notation
+// ============================================================
+
+// Scientific notation is supported.
+
+
+// Valid:
+
+1e6
+1E6
+3.14e2
+3.14E2
+
+
+// The exponent sign is optional.
+
+
+// Valid:
+
+1e6
+1e+6
+1e-6
+
+1E6
+1E+6
+1E-6
+
+
+// Digit separators may also appear in scientific notation.
+
+
+// Valid:
+
+1'000e3
+3.141'592e-2
+1.234'567E+8
+1e1'000
+1'000E+2'000
+
+
+// Invalid separator placement:
+
+1e'10
+1e10'
+1e''10
+1'e10
+1e+'10
+1e-'10
+
+
+// ============================================================
+// Lexer interpretation
+// ============================================================
+
+// The lexer must distinguish:
+//
+// - identifiers
+// - reserved words
+// - decimal integer literals
+// - decimal floating-point literals
+// - scientific-notation literals
+// - string and character escape sequences
+
+
+// Identifier recognition:
+//
+// 1. Read A-Z, a-z or _ as the first character.
+// 2. Continue through A-Z, a-z, 0-9 or _.
+// 3. Compare the completed identifier against the reserved-word set.
+// 4. Emit a keyword token when reserved.
+// 5. Otherwise emit an identifier token.
+
+
+// Numeric-literal recognition:
+//
+// 1. Read decimal digits.
+// 2. Permit apostrophes only between valid digits.
+// 3. Permit one decimal point for a floating-point literal.
+// 4. Permit e or E for scientific notation.
+// 5. Permit one optional + or - immediately after e or E.
+// 6. Require exponent digits after e or E.
+// 7. Reject invalid apostrophe placement.
+// 8. Remove apostrophe separators before numeric conversion.
+
+
+// ============================================================
+// Valid examples
+// ============================================================
+
+fn ValidIdentifiers() {
+    value: int = 42;
+    value2: int = 1'000;
+    _privateValue: int = 3;
+
+    floatingValue: float = 3.141'592;
+    smallValue: float = 0.000'001;
+    scientificValue: float = 1.234'567e-8;
+}
+
+
+// ============================================================
+// Invalid examples
+// ============================================================
+
+fn InvalidIdentifiers() {
+    user-name: int = 1;
+    sayı: int = 2;
+    1value: int = 3;
+    class: int = 4;
+}
+
+
+fn InvalidNumericLiterals() {
+    first: int = 1_000;
+    second: int = '100;
+    third: int = 100';
+    fourth: int = 1''000;
+    fifth: int = 0xFF;
+    sixth: float = 1e'10;
+}
+
+
+// ============================================================
+// Summary
+// ============================================================
+
+//{
+// Identifier:
+//
+//     [A-Za-z_][A-Za-z0-9_]*
+//
+// Identifier properties:
+//
+//     ASCII only
+//     Case-sensitive
+//     No hyphen
+//     No Unicode characters
+//     Reserved words forbidden
+//
+// Numeric literals:
+//
+//     Decimal only
+//     Integer and floating-point forms
+//     Scientific notation supported
+//     e and E supported
+//     Optional exponent sign
+//
+// Digit separator:
+//
+//     '
+//
+// Escape forms:
+//
+//     \uFFFF
+//     \U000FFFFF
+//     \xFF
+//}//

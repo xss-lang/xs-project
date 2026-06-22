@@ -1,0 +1,258 @@
+Compiler Flow
+=============
+
+.xs source code
+    ↓
+Lexing + Parsing
+    ↓
+AST
+    ↓
+Macro expansion
+    ↓
+HIR
+    ↓
+Type checking
+    ↓
+MIR
+    ↓
+Borrow checker
+    ↓
+MIR optimizations
+    ↓
+Monomorphization
+    ↓
+Codegen unit splitting
+    ↓
+LLVM IR
+    ↓
+LLVM optimizations
+    ↓
+Object code
+    ↓
+Linker
+    ↓
+Executable file / library
+
+
+1. Lexing + Parsing
+-------------------
+
+The compiler reads .xs source files and performs lexing and parsing.
+
+Output:
+
+- AST
+
+
+2. AST
+------
+
+The AST represents the parsed source code before high-level language
+constructs are normalized.
+
+
+3. Macro Expansion
+------------------
+
+Macro expansion runs directly on the AST.
+
+Macros are expanded before HIR generation.
+
+Output:
+
+- Expanded AST
+
+
+4. HIR
+------
+
+HIR simplifies and normalizes high-level language constructs and
+syntactic sugar.
+
+HIR resolves:
+
+- imports
+- namespaces
+- names
+- method calls
+- operator calls
+- high-level control structures
+- syntactic sugar
+
+HIR also builds the dependency graph.
+
+The dependency graph tracks:
+
+- module dependencies
+- import dependencies
+- type dependencies
+- function-call dependencies
+- trait/interface dependencies
+- generic-use dependencies
+
+
+5. Type Checking
+----------------
+
+Type checking runs on HIR.
+
+It checks:
+
+- type compatibility
+- generic constraints
+- Send rules
+- Sync rules
+- mutability
+- visibility
+- invalid use after move
+- invalid dereference
+- invalid async/await usage
+- statically provable synchronization violations
+
+
+6. MIR
+------
+
+MIR makes program behavior explicit.
+
+MIR resolves:
+
+- ownership flow
+- move operations
+- borrow regions
+- drop points
+- destructor calls
+- control flow
+- match branches
+- async state machines
+- exception unwinding paths
+
+HIR performs structural simplification.
+
+MIR resolves ownership and execution behavior.
+
+
+7. Borrow Checker
+-----------------
+
+The borrow checker runs only on MIR.
+
+It validates:
+
+- ownership
+- moves
+- immutable borrows
+- mutable borrows
+- borrow lifetimes
+- use after move
+- conflicting borrows
+- drop safety
+
+
+8. MIR Optimizations
+--------------------
+
+MIR optimizations run after the borrow checker.
+
+The borrow checker validates the unoptimized MIR semantics first.
+
+After borrow checking succeeds, MIR may be optimized before
+monomorphization.
+
+
+9. Monomorphization
+-------------------
+
+Monomorphization runs on borrow-checked and optimized MIR.
+
+Each used generic type and generic function is specialized into concrete
+MIR instances.
+
+
+10. Codegen Units
+-----------------
+
+After monomorphization, the program is divided into codegen units.
+
+Each codegen unit is compiled independently.
+
+Codegen units are used for:
+
+- parallel code generation
+- incremental compilation
+- independent caching
+
+
+11. Incremental Compilation
+---------------------------
+
+Each codegen unit is cached separately.
+
+Cache validity is determined using a content hash of the relevant
+codegen unit.
+
+The hash contains only that codegen unit's own content.
+
+Dependency invalidation is handled separately through the dependency
+graph.
+
+When any tracked dependency changes, every codegen unit that uses it is
+invalidated and recompiled.
+
+This applies to:
+
+- public items
+- private items
+- function signatures
+- function bodies
+- types
+- traits/interfaces
+- generic usages
+- modules
+- imports
+
+There is no separate rule based on whether an item is public or private.
+
+If a tracked item changes, all dependent codegen units are recompiled.
+
+
+12. LLVM IR Generation
+----------------------
+
+LLVM IR is generated from monomorphized MIR.
+
+Each codegen unit produces its own LLVM IR.
+
+
+13. LLVM Optimizations
+----------------------
+
+LLVM optimization passes run after LLVM IR generation.
+
+Optimization therefore occurs at two levels:
+
+- MIR-level optimizations
+- LLVM-level optimizations
+
+
+14. Object Code
+---------------
+
+Optimized LLVM IR is lowered into object code.
+
+Each codegen unit may produce a separate object file.
+
+
+15. Linker
+----------
+
+The linker combines:
+
+- generated object files
+- runtime components
+- required libraries
+
+Output:
+
+- executable file
+- library
