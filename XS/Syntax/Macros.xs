@@ -707,6 +707,56 @@ macroRules! invalidSecond {
 
 
 // ============================================================
+// Rust-derived fallback rules
+// ============================================================
+
+// Macro behavior not otherwise defined by this file follows Rust's
+// declarative macro rules.
+//
+// Explicit X# rules in this file always take precedence.
+// In particular, X# keeps these differences:
+//
+// - Calls may appear before textual declaration in the same scope.
+// - Every matching rule expands in declaration order.
+// - Macros are not hygienic.
+// - Only comma is a repetition separator.
+// - Optional `?` repetition is not supported.
+
+
+// Matching proceeds one token at a time without arbitrary lookahead.
+// A locally ambiguous matcher is a compile-time error.
+
+
+// Delimited token trees preserve balanced (), [] and {} nesting.
+
+
+// A captured fragment is forwarded as an opaque syntax fragment.
+// A later macro may match it through the same fragment category or tt;
+// it may not inspect the fragment's internal tokens unless tt was used.
+
+
+// A metavariable used in an expansion must appear at the same repetition
+// nesting depth and nesting order as in its matcher.
+
+
+// Every expansion repetition must contain at least one metavariable.
+// When one repetition uses multiple metavariables, their matched lengths
+// must be equal at that repetition depth.
+
+
+// Fragment follow restrictions use the Rust declarative-macro rules,
+// limited to tokens and fragments that exist in X#:
+//
+// - expr and stmt may be followed by =>, comma or semicolon.
+// - pat may be followed by =>, comma, =, if or in.
+// - path and ty may be followed by =>, comma, =, |, semicolon,
+//   colon, >, >>, [, {, as or a block fragment.
+// - vis may be followed by comma, an identifier, a token that begins
+//   a type, or an ident, ty or path fragment.
+// - Other fragment kinds have no additional follow restriction.
+
+
+// ============================================================
 // Invalid unmatched call
 // ============================================================
 

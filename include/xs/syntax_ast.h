@@ -1,0 +1,176 @@
+#ifndef XS_SYNTAX_AST_H
+#define XS_SYNTAX_AST_H
+
+#include "xs/source.h"
+#include "xs/token.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
+typedef struct
+{
+  uint64_t file_id;
+  size_t start_offset;
+  size_t end_offset;
+  size_t start_line;
+  size_t start_column;
+  size_t end_line;
+  size_t end_column;
+} XsSourceSpan;
+
+typedef enum
+{
+  XS_SYNTAX_FILE,
+
+  XS_SYNTAX_DECL_MODULE,
+  XS_SYNTAX_DECL_IMPORT,
+  XS_SYNTAX_DECL_NAMESPACE,
+  XS_SYNTAX_DECL_FUNCTION,
+  XS_SYNTAX_DECL_CLASS,
+  XS_SYNTAX_DECL_INTERFACE,
+  XS_SYNTAX_DECL_ENUM,
+  XS_SYNTAX_DECL_DATA,
+  XS_SYNTAX_DECL_VARIABLE,
+  XS_SYNTAX_DECL_MACRO,
+  XS_SYNTAX_CLASS_FIELD,
+  XS_SYNTAX_CLASS_CONSTRUCTOR,
+  XS_SYNTAX_CLASS_DESTRUCTOR,
+  XS_SYNTAX_ENUM_VARIANT,
+  XS_SYNTAX_DATA_FIELD,
+  XS_SYNTAX_PARAMETER,
+  XS_SYNTAX_GENERIC_PARAMETER,
+  XS_SYNTAX_IMPORT_NAME,
+
+  XS_SYNTAX_IDENTIFIER,
+  XS_SYNTAX_PATH,
+  XS_SYNTAX_VISIBILITY,
+
+  XS_SYNTAX_TYPE_NAMED,
+  XS_SYNTAX_TYPE_GENERIC,
+  XS_SYNTAX_TYPE_ARRAY,
+  XS_SYNTAX_TYPE_FIXED_ARRAY,
+  XS_SYNTAX_TYPE_POINTER,
+  XS_SYNTAX_TYPE_REFERENCE,
+  XS_SYNTAX_TYPE_MUTABLE_REFERENCE,
+  XS_SYNTAX_TYPE_TUPLE,
+  XS_SYNTAX_TYPE_FUNCTION,
+  XS_SYNTAX_TYPE_UNIT,
+  XS_SYNTAX_LIFETIME,
+
+  XS_SYNTAX_STMT_BLOCK,
+  XS_SYNTAX_STMT_EXPRESSION,
+  XS_SYNTAX_STMT_VARIABLE,
+  XS_SYNTAX_STMT_RETURN,
+  XS_SYNTAX_STMT_IF,
+  XS_SYNTAX_STMT_ELSE_IF,
+  XS_SYNTAX_STMT_FOR,
+  XS_SYNTAX_STMT_FOR_EACH,
+  XS_SYNTAX_STMT_WHILE,
+  XS_SYNTAX_STMT_MATCH,
+  XS_SYNTAX_MATCH_ARM,
+  XS_SYNTAX_STMT_BREAK,
+  XS_SYNTAX_STMT_CONTINUE,
+  XS_SYNTAX_STMT_TRY,
+  XS_SYNTAX_CATCH,
+  XS_SYNTAX_STMT_THROW,
+  XS_SYNTAX_STMT_MACRO_CALL,
+
+  XS_SYNTAX_EXPR_IDENTIFIER,
+  XS_SYNTAX_EXPR_LITERAL,
+  XS_SYNTAX_EXPR_BINARY,
+  XS_SYNTAX_EXPR_UNARY,
+  XS_SYNTAX_EXPR_ASSIGNMENT,
+  XS_SYNTAX_EXPR_CALL,
+  XS_SYNTAX_EXPR_METHOD_CALL,
+  XS_SYNTAX_EXPR_MEMBER_ACCESS,
+  XS_SYNTAX_EXPR_INDEX,
+  XS_SYNTAX_EXPR_NEW,
+  XS_SYNTAX_EXPR_AWAIT,
+  XS_SYNTAX_EXPR_MOVE,
+  XS_SYNTAX_EXPR_BORROW,
+  XS_SYNTAX_EXPR_MUTABLE_BORROW,
+  XS_SYNTAX_EXPR_DEREFERENCE,
+  XS_SYNTAX_EXPR_ARRAY_LITERAL,
+  XS_SYNTAX_EXPR_OBJECT_LITERAL,
+  XS_SYNTAX_OBJECT_FIELD,
+  XS_SYNTAX_EXPR_TUPLE,
+  XS_SYNTAX_EXPR_MACRO_CALL,
+
+  XS_SYNTAX_PATTERN_IDENTIFIER,
+  XS_SYNTAX_PATTERN_LITERAL,
+  XS_SYNTAX_PATTERN_ENUM_VARIANT,
+  XS_SYNTAX_PATTERN_TUPLE,
+  XS_SYNTAX_PATTERN_WILDCARD,
+  XS_SYNTAX_PATTERN_ELSE,
+
+  XS_SYNTAX_MACRO_RULE,
+  XS_SYNTAX_MACRO_MATCHER,
+  XS_SYNTAX_MACRO_MATCHER_TOKEN,
+  XS_SYNTAX_MACRO_MATCHER_FRAGMENT,
+  XS_SYNTAX_MACRO_MATCHER_REPETITION,
+  XS_SYNTAX_MACRO_EXPANSION,
+  XS_SYNTAX_MACRO_EXPANSION_TOKEN,
+  XS_SYNTAX_MACRO_EXPANSION_VARIABLE,
+  XS_SYNTAX_MACRO_EXPANSION_REPETITION,
+  XS_SYNTAX_MACRO_ARGUMENT,
+  XS_SYNTAX_TOKEN,
+} XsSyntaxKind;
+
+typedef enum
+{
+  XS_SYNTAX_VISIBILITY_DEFAULT,
+  XS_SYNTAX_VISIBILITY_PUBLIC,
+  XS_SYNTAX_VISIBILITY_PRIVATE,
+  XS_SYNTAX_VISIBILITY_PROTECTED,
+  XS_SYNTAX_VISIBILITY_INTERNAL,
+} XsSyntaxVisibility;
+
+enum
+{
+  XS_SYNTAX_FLAG_ASYNC = 1U << 0,
+  XS_SYNTAX_FLAG_STATIC = 1U << 1,
+  XS_SYNTAX_FLAG_INCOMPLETE = 1U << 2,
+  XS_SYNTAX_FLAG_DATA_ENUM = 1U << 3,
+  XS_SYNTAX_FLAG_IMMUTABLE = 1U << 4,
+  XS_SYNTAX_FLAG_CONSTANT = 1U << 5,
+  XS_SYNTAX_FLAG_STATIC_CONSTANT = 1U << 6,
+  XS_SYNTAX_FLAG_WILDCARD = 1U << 7,
+  XS_SYNTAX_FLAG_REPETITION_ONE_OR_MORE = 1U << 8,
+  XS_SYNTAX_FLAG_REPETITION_COMMA = 1U << 9,
+};
+
+typedef struct XsSyntaxNode XsSyntaxNode;
+
+struct XsSyntaxNode
+{
+  XsSyntaxKind kind;
+  XsSourceSpan span;
+  XsText text;
+  XsTokenKind token_kind;
+  XsSyntaxVisibility visibility;
+  uint32_t flags;
+  XsSyntaxNode **children;
+  size_t child_count;
+  size_t child_capacity;
+};
+
+typedef struct XsSyntaxArenaBlock XsSyntaxArenaBlock;
+
+typedef struct
+{
+  const XsSource *source;
+  uint64_t file_id;
+  XsSyntaxArenaBlock *arena;
+  XsSyntaxNode *root;
+  bool allocation_failed;
+} XsSyntaxTree;
+
+void xs_syntax_tree_init(XsSyntaxTree *tree, const XsSource *source, uint64_t file_id);
+void xs_syntax_tree_free(XsSyntaxTree *tree);
+XsSourceSpan xs_source_span(const XsSyntaxTree *tree, XsSpan span);
+XsSyntaxNode *xs_syntax_node_new(XsSyntaxTree *tree, XsSyntaxKind kind, XsSpan span);
+bool xs_syntax_node_add(XsSyntaxTree *tree, XsSyntaxNode *parent, XsSyntaxNode *child);
+const XsSyntaxNode *xs_syntax_find_first(const XsSyntaxNode *node, XsSyntaxKind kind);
+const char *xs_syntax_kind_name(XsSyntaxKind kind);
+
+#endif

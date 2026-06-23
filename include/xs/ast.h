@@ -3,7 +3,6 @@
 
 #include "xs/source.h"
 
-#include <stdbool.h>
 #include <stddef.h>
 
 typedef enum

@@ -1,7 +1,5 @@
 #include "xs/parser.h"
 
-#include <stdbool.h>
-
 static void advance(XsParser *parser)
 {
   parser->previous = parser->current;

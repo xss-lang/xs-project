@@ -1,0 +1,8 @@
+lexer 16 0.000213363
+parser 16 0.000182319
+project 13 0.00019815
+example_project 11 0.000401231
+backend 10 0.00564792
+modules 9 0.000918768
+syntax_ast 12 0.000262397
+---

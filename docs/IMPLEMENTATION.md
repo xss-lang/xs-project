@@ -1,26 +1,94 @@
-# X# derleyici uygulaması
+# X# derleyicisinin mevcut durumu
 
-Uygulama, `XS/CompilerFlow.txt` dosyasındaki sırayı takip eder:
+Derleyici C23 ile yazılır; Clang, CMake, Ninja, LLVM ve LLD kullanır. GNU C derleyicisi ve Makefile üreteçleri
+CMake yapılandırması tarafından reddedilir.
 
-1. Sözcüksel analiz ve ayrıştırma sonucunda AST üretimi
-2. AST üzerinde makro genişletme
-3. HIR oluşturma ve bağımlılık çözümleme
-4. HIR üzerinde tip denetimi
-5. MIR oluşturma
-6. Optimize edilmemiş MIR üzerinde ödünç alma denetimi
-7. MIR optimizasyonu
-8. Monomorfizasyon
-9. Kod üretim birimlerine ayırma ve önbellekleme
-10. LLVM IR üretimi ve optimizasyonu
-11. Nesne kodu üretimi ve bağlama
+Belgelenmiş derleme sırası korunur:
 
-Mevcut aşamada derleyicinin C23 ve Clang proje iskeleti, kaynak aralıkları, tanılar, belgelenmiş tokenlar,
-yorum ve metinlerin sözcüksel analizi, AST depolama yapısı ve üst düzey bildirim sınırlarının ayrıştırılması
-uygulanmıştır. ASCII tanımlayıcılar; ayrılmış sözcükler; onluk, bilimsel gösterimli ve ayraçlı sayı sabitleri
-doğrulanmaktadır. `.xsproj` dosyaları kendi belgelenmiş sözdizimleriyle ayrıştırılıp şema açısından denetlenmektedir.
-`macroRules!` bildirimleri AST'de temsil edilmekte ve temel kural biçimleri ayrıştırılmaktadır.
+```text
+.xs kaynakları
+    → sözcüksel analiz ve ayrıştırma
+    → yapısal AST
+    → makro genişletme
+    → HIR ve bağımlılık grafiği
+    → tip denetimi
+    → MIR
+    → borrow checker
+    → MIR optimizasyonu
+    → monomorfizasyon
+    → codegen unit ayırma
+    → LLVM IR ve LLVM optimizasyonu
+    → nesne kodu
+    → bağlama
+```
 
-Bu aşamayı yapılandırmak, derlemek ve test etmek için:
+## Tamamlanan altyapı
+
+### Proje sistemi
+
+- `.xsproj` dosyaları özgün X# proje sözdizimiyle ayrıştırılır.
+- Zorunlu alanlar, tekrar eden alanlar, bilinmeyen alanlar ve `appRelease` değerleri doğrulanır.
+- `entry: nil` olduğunda belgelenmiş ilk ek kaynak seçimi uygulanır.
+- Proje içindeki göreli yollar `.xsproj` dosyasının bulunduğu dizinden çözülür.
+- `xs check -proj <proje.xsproj>` çalışır.
+
+### Lexer ve yapısal AST
+
+- Belgelenmiş anahtar sözcükler, operatörler, yorumlar ve çok satırlı metinler tokenlaştırılır.
+- ASCII tanımlayıcı kuralları uygulanır.
+- Onluk tam sayılar, kayan noktalı sayılar, bilimsel gösterim ve `'` basamak ayırıcıları doğrulanır.
+- Parser arena tabanlı yapısal AST üretir.
+- AST düğümleri dosya kimliği, offset, satır ve sütun içeren tam kaynak konumu taşır.
+- Bildirim, tip, statement, expression, pattern ve makro düğüm aileleri temsil edilir.
+- Fonksiyon parametreleri, dönüş tipi, `throws` tipleri ve fonksiyon gövdeleri yapısal düğümlerdir; ham gövde aralığı
+  olarak saklanmaz.
+- `if`, `for`, for-each, `while`, `match`, `try`, `catch`, `finally`, `return`, `throw`, `break` ve `continue`
+  yapısal olarak ayrıştırılır.
+
+### Modül keşfi ve import grafiği
+
+- Proje kökü, etkin `.xsproj` dosyasının bulunduğu dizindir.
+- Proje kökü altındaki `.xs` dosyaları özyinelemeli olarak taranır.
+- Modüller dosya adına göre değil, bildirilmiş tam modül yoluna göre kaydedilir.
+- Aynı modül adının birden fazla dosyada bildirilmesi hata üretir.
+- `imports` ve `froms ... imports ...` bağımlılıkları bildirilmiş modül adına göre çözülür.
+- Bulunamayan import hedefleri hata üretir.
+- Import edilen fakat `addFiles` içinde bulunmayan kaynaklar bağımlılık grafiğine alınır ve denetlenir.
+
+Bu katman HIR dizini altında bulunur; genel ad çözümleme HIR’ı henüz tamamlanmamıştır.
+
+### LLVM backend altyapısı
+
+- Frontend’den ayrı `xs_backend_llvm` kütüphanesi vardır.
+- LLVM context, target machine, target triple ve data layout yönetilir.
+- Her codegen unit için ayrı LLVM module oluşturulur.
+- Belgelenmiş sayısal primitive tipler LLVM tiplerine eşlenir.
+- Gövdesiz fonksiyon bildirimi ve fonksiyon imzası indirgeme desteği vardır.
+- `default<O0>`–`default<O3>` LLVM optimizasyon pipeline’ları yapılandırılabilir.
+- LLVM module doğrulaması ve nesne dosyası üretimi çalışır.
+- Linker, shell kullanılmadan ve argüman politikası üst katmana bırakılarak çağrılabilir.
+
+Ayrıntılar: [LLVM_BACKEND.md](LLVM_BACKEND.md)
+
+## Henüz tamamlanmayan aşamalar
+
+- Makro matcher eşleme motoru, kapsam toplama ve AST makro genişletmesi
+- HIR ad, namespace, görünürlük, metot ve operatör çözümleme
+- Modül/import dışındaki tip, fonksiyon çağrısı, generic ve trait/interface bağımlılık kenarları
+- Tip denetimi ve generic constraint doğrulaması
+- Send, Sync, mutability ve async/await doğrulamaları
+- MIR üretimi, exception yolları ve async state machine üretimi
+- Borrow checker ve drop noktalarının doğrulanması
+- MIR optimizasyonları
+- Monomorfizasyon, codegen unit ayırma ve artımlı derleme önbelleği
+- MIR fonksiyon gövdelerinin LLVM IR’a indirilmesi
+- Runtime/ABI yerleşimi tamamlanmamış `bool` ve `str` tiplerinin LLVM eşlemesi
+- Üretilmiş nesne dosyalarının proje hedeflerine göre bağlanması
+- `xs build` ve `xs run` komutlarının uçtan uca tamamlanması
+
+Tamamlanmamış semantik aşamalar için parser veya LLVM backend içinde geçici dil kuralı üretilmez.
+
+## Derleme ve test
 
 ```text
 cmake --preset clang-debug
@@ -28,23 +96,8 @@ cmake --build --preset clang-debug
 ctest --preset clang-debug
 ```
 
-Hazır ayar Clang ve Ninja kullanır. CMake projesi GNU C derleyicisini ve Makefile üreteçlerini reddeder.
-
-Bir örnek projeyi denetlemek için:
+Örnek projeyi denetlemek için:
 
 ```text
 ./build/clang-debug/xs check -proj XS/example/MyApp.xsproj
 ```
-
-`build` ve `run` komut biçimleri tanınmaktadır; ancak arka uç aşamaları tamamlanmadan çıktı üretilmez.
-
-## Bilerek sonraya bırakılan işler
-
-- Parametreleri, tipleri, genel tip kısıtlarını, bildirim üyelerini, ifadeleri ve deyimleri yapısal AST düğümlerine
-  ayrıştırmak. Fonksiyon ve bildirim gövdeleri şimdilik kaynak aralığı olarak saklanmaktadır.
-- Makro eşleyicilerini yapısal AST parçalarına dönüştürmek; kapsam toplama, çoklu eşleşme, tekrarlar, genişletme ve
-  doğrudan/dolaylı özyineleme döngüsü denetimini AST ile HIR arasındaki makro aşamasında uygulamak.
-- Proje grafiğinde modül adlarının benzersizliğini ve import çözümlemesini HIR bağımlılık grafiğiyle birlikte
-  uygulamak. Belgelerde import edilecek modül dosyalarının dosya sisteminde nasıl aranacağı tanımlanmadığından bu
-  arama kuralını tahmin etmemek.
-- Anlamsal doğrulamayı parser içinde tahmin etmek yerine HIR, tip denetimi ve MIR aşamalarında uygulamak.

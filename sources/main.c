@@ -1,12 +1,22 @@
-#include "xs/ast.h"
 #include "xs/diagnostic.h"
-#include "xs/parser.h"
+#include "xs/hir/module_registry.h"
+#include "xs/macro.h"
 #include "xs/project.h"
+#include "xs/syntax_ast.h"
+#include "xs/syntax_parser.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static char *copy_text(const char *text)
+{
+  size_t length = strlen(text);
+  char *copy = malloc(length + 1);
+  if (copy != NULL)
+    memcpy(copy, text, length + 1);
+  return copy;
+}
 
 static char *read_file(const char *path, size_t *length)
 {
@@ -65,7 +75,21 @@ static char *project_path(const char *manifest_path, const char *source_path)
   return result;
 }
 
-static bool check_source(const char *path)
+static char *project_root(const char *manifest_path)
+{
+  const char *slash = strrchr(manifest_path, '/');
+  if (slash == NULL)
+    return copy_text(".");
+  size_t length = slash == manifest_path ? 1 : (size_t)(slash - manifest_path);
+  char *root = malloc(length + 1);
+  if (root != NULL) {
+    memcpy(root, manifest_path, length);
+    root[length] = '\0';
+  }
+  return root;
+}
+
+static bool check_source(const char *path, uint64_t file_id)
 {
   size_t length = 0;
   char *text = read_file(path, &length);
@@ -76,43 +100,78 @@ static bool check_source(const char *path)
 
   XsSource source = {.path = path, .text = text, .length = length};
   XsDiagnostics diagnostics;
-  XsAst ast;
-  XsParser parser;
+  XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
-  xs_ast_init(&ast);
-  xs_parser_init(&parser, &source, &diagnostics);
-  bool success = xs_parser_parse(&parser, &ast);
+  bool success = xs_syntax_parse(&source, file_id, &diagnostics, &tree);
+  if (success)
+    success = xs_macro_validate(&tree, &diagnostics);
   xs_diagnostics_print(&diagnostics, &source, stderr);
-  xs_ast_free(&ast);
+  xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
   free(text);
   return success;
 }
 
-static bool check_value_source(const char *manifest_path, const XsProjectValue *value)
-{
-  if (value == NULL || value->is_nil || value->text == NULL)
-    return true;
-  char *path = project_path(manifest_path, value->text);
-  if (path == NULL) {
-    fprintf(stderr, "xs: kaynak yolu oluşturulurken bellek tükendi\n");
-    return false;
-  }
-  bool success = check_source(path);
-  free(path);
-  return success;
-}
-
 static bool check_project_sources(const char *manifest_path, const XsProject *project)
 {
-  if (project->xs_version.is_nil)
+  if (project->xs_version.is_nil || xs_project_selected_entry(project) == NULL)
     return true;
 
-  bool success = true;
+  size_t direct_count = project->additional_file_count;
   if (!project->entry.is_nil && project->entry.text != NULL)
-    success = check_value_source(manifest_path, &project->entry);
-  for (size_t i = 0; i < project->additional_file_count; ++i)
-    success = check_value_source(manifest_path, &project->additional_files[i]) && success;
+    ++direct_count;
+  const char **direct = calloc(direct_count, sizeof(*direct));
+  char *root = project_root(manifest_path);
+  if (direct == NULL || root == NULL) {
+    free(direct);
+    free(root);
+    fprintf(stderr, "xs: proje grafiği hazırlanırken bellek tükendi\n");
+    return false;
+  }
+  size_t direct_index = 0;
+  if (!project->entry.is_nil && project->entry.text != NULL)
+    direct[direct_index++] = project->entry.text;
+  for (size_t i = 0; i < project->additional_file_count; ++i) {
+    if (!project->additional_files[i].is_nil && project->additional_files[i].text != NULL)
+      direct[direct_index++] = project->additional_files[i].text;
+  }
+  direct_count = direct_index;
+
+  XsModuleRegistry registry;
+  XsModuleGraph graph;
+  XsModuleIssues issues;
+  xs_module_registry_init(&registry);
+  xs_module_graph_init(&graph);
+  xs_module_issues_init(&issues);
+  bool success = xs_module_registry_discover(root, &registry, &issues);
+  if (success)
+    success = xs_module_graph_resolve(root, direct, direct_count, &registry, &graph, &issues);
+  xs_module_issues_print(&issues);
+
+  uint64_t file_id = 1;
+  for (size_t i = 0; i < direct_count; ++i) {
+    char *path = direct[i][0] == '/' ? copy_text(direct[i]) : project_path(manifest_path, direct[i]);
+    if (path == NULL) {
+      success = false;
+      continue;
+    }
+    success = check_source(path, file_id++) && success;
+    free(path);
+  }
+  for (size_t i = 0; i < graph.count; ++i) {
+    bool already_checked = false;
+    for (size_t j = 0; j < i; ++j)
+      already_checked =
+          already_checked || strcmp(graph.dependencies[i].imported_path, graph.dependencies[j].imported_path) == 0;
+    if (!already_checked)
+      success = check_source(graph.dependencies[i].imported_path, file_id++) && success;
+  }
+
+  xs_module_issues_free(&issues);
+  xs_module_graph_free(&graph);
+  xs_module_registry_free(&registry);
+  free(direct);
+  free(root);
   return success;
 }
 

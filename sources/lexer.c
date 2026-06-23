@@ -1,7 +1,6 @@
 #include "xs/lexer.h"
 
 #include <ctype.h>
-#include <stdbool.h>
 
 static bool at_end(const XsLexer *lexer)
 {

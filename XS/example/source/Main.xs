@@ -1,5 +1,3 @@
-imports Stdio;
-
-fn Main() throws IOException {
-    std.cout << "Hello from X#\n";
+fn Main() {
+    message: str = "Hello from X#\n";
 }

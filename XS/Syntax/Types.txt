@@ -1,7 +1,7 @@
 str -> UTF-16
 bool
 byte
-char
+char -> 16 bit
 
 int16 -> i16
 int32 -> i32
