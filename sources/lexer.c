@@ -176,13 +176,13 @@ static bool is_hex(char character)
   return isxdigit((unsigned char)character) != 0;
 }
 
-static void validate_escape(XsLexer *lexer, size_t slash)
+static bool validate_escape(XsLexer *lexer, size_t slash)
 {
   char escape = peek(lexer, 0);
   if (escape == '\'' || escape == '"' || escape == '\\' || escape == '0' || escape == 'a' || escape == 'b' ||
       escape == 'f' || escape == 'n' || escape == 'r' || escape == 't' || escape == 'v') {
     ++lexer->cursor;
-    return;
+    return true;
   }
   size_t digits = escape == 'u' ? 4 : escape == 'U' ? 8 : escape == 'x' ? 2 : 0;
   if (digits != 0) {
@@ -190,15 +190,16 @@ static void validate_escape(XsLexer *lexer, size_t slash)
     for (size_t i = 0; i < digits; ++i) {
       if (!is_hex(peek(lexer, 0))) {
         error(lexer, slash, lexer->cursor, "invalid hexadecimal escape sequence");
-        return;
+        return false;
       }
       ++lexer->cursor;
     }
-    return;
+    return true;
   }
   if (!at_end(lexer))
     ++lexer->cursor;
   error(lexer, slash, lexer->cursor, "unknown escape sequence");
+  return false;
 }
 
 static XsToken lex_string(XsLexer *lexer)
@@ -219,13 +220,59 @@ static XsToken lex_string(XsLexer *lexer)
       break;
     if (peek(lexer, 0) == '\\') {
       size_t slash = lexer->cursor++;
-      validate_escape(lexer, slash);
+      (void)validate_escape(lexer, slash);
     } else {
       ++lexer->cursor;
     }
   }
   error(lexer, start, lexer->cursor, "unterminated string literal");
   return token(XS_TOKEN_ERROR, start, lexer->cursor);
+}
+
+static XsToken lex_character(XsLexer *lexer)
+{
+  size_t start = lexer->cursor++;
+  if (is_identifier_start(peek(lexer, 0))) {
+    size_t value_start = lexer->cursor;
+    ++lexer->cursor;
+    while (is_identifier_continue(peek(lexer, 0)))
+      ++lexer->cursor;
+    if (peek(lexer, 0) != '\'')
+      return token(XS_TOKEN_LIFETIME, start, lexer->cursor);
+    if (lexer->cursor - value_start == 1) {
+      ++lexer->cursor;
+      return token(XS_TOKEN_CHARACTER, start, lexer->cursor);
+    }
+    ++lexer->cursor;
+    error(lexer, start, lexer->cursor, "character literal must contain one character");
+    return token(XS_TOKEN_ERROR, start, lexer->cursor);
+  }
+  if (at_end(lexer) || peek(lexer, 0) == '\n' || peek(lexer, 0) == '\'') {
+    error(lexer, start, lexer->cursor, "empty character literal");
+    return token(XS_TOKEN_ERROR, start, lexer->cursor);
+  }
+  if (peek(lexer, 0) == '\\') {
+    size_t slash = lexer->cursor++;
+    if (!validate_escape(lexer, slash)) {
+      while (!at_end(lexer) && peek(lexer, 0) != '\n' && peek(lexer, 0) != '\'')
+        ++lexer->cursor;
+      if (peek(lexer, 0) == '\'')
+        ++lexer->cursor;
+      return token(XS_TOKEN_ERROR, start, lexer->cursor);
+    }
+  } else {
+    ++lexer->cursor;
+  }
+  if (peek(lexer, 0) != '\'') {
+    while (!at_end(lexer) && peek(lexer, 0) != '\n' && peek(lexer, 0) != '\'')
+      ++lexer->cursor;
+    if (peek(lexer, 0) == '\'')
+      ++lexer->cursor;
+    error(lexer, start, lexer->cursor, "character literal must contain one character");
+    return token(XS_TOKEN_ERROR, start, lexer->cursor);
+  }
+  ++lexer->cursor;
+  return token(XS_TOKEN_CHARACTER, start, lexer->cursor);
 }
 
 static XsToken one_or_two(XsLexer *lexer, size_t start, char second, XsTokenKind one, XsTokenKind two)
@@ -260,6 +307,8 @@ XsToken xs_lexer_next(XsLexer *lexer)
     return lex_number(lexer);
   if (character == '"')
     return lex_string(lexer);
+  if (character == '\'')
+    return lex_character(lexer);
   ++lexer->cursor;
   switch (character) {
   case '(':

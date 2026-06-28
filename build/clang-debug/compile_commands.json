@@ -262,5 +262,11 @@
   "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_ast_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/syntax_ast_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_macro_tests.c",
+  "file": "/home/hasan/Projeler/XS/tests/syntax_macro_tests.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o"
 }
 ]

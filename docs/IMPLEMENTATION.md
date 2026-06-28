@@ -67,11 +67,33 @@ Belgelenmiş derleme sırası korunur:
 - Belgelenmiş anahtar sözcükler, operatörler, yorumlar ve çok satırlı metinler tokenlaştırılır.
 - ASCII tanımlayıcı kuralları uygulanır.
 - Onluk tam sayılar, kayan noktalı sayılar, bilimsel gösterim ve `'` basamak ayırıcıları doğrulanır.
+- String ve character literal kaynak yazımları AST literal düğümlerine taşınır; `char` değerinin 16-bit karakter
+  olarak çözümlenmesi HIR tip aşamasına bırakılır.
 - Parser arena tabanlı yapısal AST üretir.
 - AST düğümleri dosya kimliği, offset, satır ve sütun içeren tam kaynak konumu taşır.
 - Bildirim, tip, statement, expression, pattern ve makro düğüm aileleri temsil edilir.
+- Named, generic, array, fixed array, pointer, reference, tuple, unit ve `fn(...) => T` function type düğümleri
+  yapısal AST'de ayrıştırılır.
+- Reference type içindeki lifetime yazımları Rust temel biçimleriyle (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`)
+  `XS_SYNTAX_LIFETIME` düğümüyle AST'ye taşınır; lifetime elision ve doğrulama borrow checker aşamasına bırakılır.
 - Fonksiyon parametreleri, dönüş tipi, `throws` tipleri ve fonksiyon gövdeleri yapısal düğümlerdir; ham gövde aralığı
   olarak saklanmaz.
+- `data` declaration gövdeleri field-only olarak ayrıştırılır; method, constructor, destructor, inheritance ve interface
+  üyeleri AST üretmeden diagnostic verir.
+- Class constructor adı class adıyla eşleşmek zorundadır ve class başına en fazla bir constructor parser diagnostic'iyle
+  doğrulanır.
+- Interface declaration gövdeleri yalnızca gövdesiz function declaration imzaları kabul eder.
+- Interface dışındaki gövdesiz function declaration sözdizimi `incomplete fn ...;` gerektirir; `incomplete fn` gövde
+  içerirse parser diagnostic üretir.
+- Regular enum variant'ları payload type içeremez; `enum data` en az bir typed variant gerektirir ve tuple payload
+  parser diagnostic'iyle reddedilir.
+- `fn(...) { ... }`, `fn(...) => T { ... }` ve `move fn(...) { ... }` function expression/closure biçimleri AST'de
+  `XS_SYNTAX_EXPR_FUNCTION` düğümüyle temsil edilir; `move` capture ayrı AST bayrağıdır.
+- `new()` object creation ifadesi AST'de `XS_SYNTAX_EXPR_NEW` olarak tutulur; constructed type kaynakta yazılmadığı
+  durumlarda HIR tarafından bağlamdan çözülür.
+- Data syntax içindeki `set.field{value}` AST'de `XS_SYNTAX_EXPR_FIELD_SET`, `value get.field` ise member access
+  düğümü olarak tutulur.
+- Stdio syntax içindeki `[target]` I/O hedefleri `XS_SYNTAX_EXPR_IO_TARGET` düğümüyle temsil edilir.
 - `if`, `for`, for-each, `while`, `match`, `try`, `catch`, `finally`, `return`, `throw`, `break` ve `continue`
   yapısal olarak ayrıştırılır.
 

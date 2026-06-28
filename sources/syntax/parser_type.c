@@ -1,13 +1,45 @@
 #include "parser_internal.h"
 
+static XsSyntaxNode *parse_lifetime(SyntaxParser *parser)
+{
+  XsToken lifetime_token = parser->current;
+  expect(parser, XS_TOKEN_LIFETIME, "expected lifetime");
+  XsSyntaxNode *lifetime = node(parser, XS_SYNTAX_LIFETIME, lifetime_token.span);
+  XsSpan name_span = {.start = lifetime_token.span.start + 1, .end = lifetime_token.span.end};
+  xs_syntax_node_add(parser->tree, lifetime, node(parser, XS_SYNTAX_IDENTIFIER, name_span));
+  return lifetime;
+}
+
+static XsSyntaxNode *parse_function_type(SyntaxParser *parser, size_t start)
+{
+  expect(parser, XS_TOKEN_KW_FN, "expected 'fn' in function type");
+  XsSyntaxNode *function = node(parser, XS_SYNTAX_TYPE_FUNCTION, (XsSpan){start, parser->previous.span.end});
+  expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' before function type parameters");
+  if (parser->current.kind != XS_TOKEN_RIGHT_PAREN) {
+    do {
+      xs_syntax_node_add(parser->tree, function, parse_type(parser));
+    } while (accept(parser, XS_TOKEN_COMMA));
+  }
+  expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after function type parameters");
+  expect(parser, XS_TOKEN_FAT_ARROW, "expected '=>' before function type return type");
+  xs_syntax_node_add(parser->tree, function, parse_type(parser));
+  finish_node(parser, function, parser->previous.span.end);
+  return function;
+}
+
 XsSyntaxNode *parse_type(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
+  if (parser->current.kind == XS_TOKEN_KW_FN)
+    return parse_function_type(parser, start);
   if (accept(parser, XS_TOKEN_AMPERSAND)) {
+    XsSyntaxNode *lifetime = parser->current.kind == XS_TOKEN_LIFETIME ? parse_lifetime(parser) : NULL;
     bool mutable = accept(parser, XS_TOKEN_KW_MUT);
     XsSyntaxNode *reference = node(parser, mutable ? XS_SYNTAX_TYPE_MUTABLE_REFERENCE : XS_SYNTAX_TYPE_REFERENCE,
                                    (XsSpan){start, parser->previous.span.end});
     xs_syntax_node_add(parser->tree, reference, parse_type(parser));
+    if (lifetime != NULL)
+      xs_syntax_node_add(parser->tree, reference, lifetime);
     finish_node(parser, reference, parser->previous.span.end);
     return reference;
   }

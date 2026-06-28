@@ -48,9 +48,11 @@ static void test_function(void)
 static void test_comments_and_strings(void)
 {
   static const XsTokenKind expected[] = {XS_TOKEN_DOC_COMMENT, XS_TOKEN_MODULE_COMMENT, XS_TOKEN_STRING,
-                                         XS_TOKEN_STRING, XS_TOKEN_EOF};
-  expect_tokens("// ordinary\n//{ outer //{ nested }// }///\n/// docs\n//! module\n\"A\\n\" \"\"\"multi\nline\"\"\"",
-                expected, sizeof(expected) / sizeof(expected[0]));
+                                         XS_TOKEN_STRING,      XS_TOKEN_CHARACTER,      XS_TOKEN_CHARACTER,
+                                         XS_TOKEN_EOF};
+  expect_tokens(
+      "// ordinary\n//{ outer //{ nested }// }///\n/// docs\n//! module\n\"A\\n\" \"\"\"multi\nline\"\"\" 'A' '\\n'",
+      expected, sizeof(expected) / sizeof(expected[0]));
 }
 
 static void test_documented_operators(void)
@@ -87,6 +89,16 @@ static void test_identifiers_and_numbers(void)
                 sizeof(expected) / sizeof(expected[0]));
 }
 
+static void test_lifetimes(void)
+{
+  static const XsTokenKind expected[] = {
+      XS_TOKEN_AMPERSAND, XS_TOKEN_LIFETIME,  XS_TOKEN_IDENTIFIER, XS_TOKEN_AMPERSAND,
+      XS_TOKEN_LIFETIME,  XS_TOKEN_KW_MUT,    XS_TOKEN_IDENTIFIER, XS_TOKEN_LIFETIME,
+      XS_TOKEN_LIFETIME,  XS_TOKEN_CHARACTER, XS_TOKEN_EOF,
+  };
+  expect_tokens("&'a User &'b mut User 'static '_ 'A'", expected, sizeof(expected) / sizeof(expected[0]));
+}
+
 static void test_macro_tokens(void)
 {
   static const XsTokenKind expected[] = {
@@ -114,6 +126,21 @@ static void test_invalid_numbers(void)
   }
 }
 
+static void test_invalid_characters(void)
+{
+  const char *texts[] = {"''", "'ab'", "'\n", "'\\q'"};
+  for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i) {
+    XsSource source = {.path = "<test>", .text = texts[i], .length = strlen(texts[i])};
+    XsDiagnostics diagnostics;
+    XsLexer lexer;
+    xs_diagnostics_init(&diagnostics);
+    xs_lexer_init(&lexer, &source, &diagnostics);
+    CHECK(xs_lexer_next(&lexer).kind == XS_TOKEN_ERROR);
+    CHECK(xs_diagnostics_has_error(&diagnostics));
+    xs_diagnostics_free(&diagnostics);
+  }
+}
+
 int main(void)
 {
   test_function();
@@ -121,7 +148,9 @@ int main(void)
   test_documented_operators();
   test_keywords();
   test_identifiers_and_numbers();
+  test_lifetimes();
   test_macro_tokens();
   test_invalid_numbers();
+  test_invalid_characters();
   return failures == 0 ? 0 : 1;
 }

@@ -1018,6 +1018,45 @@ build xs_syntax_ast_tests: C_EXECUTABLE_LINKER__xs_syntax_ast_tests_Debug CMakeF
   TARGET_PDB = xs_syntax_ast_tests.dbg
   TARGET_SUPPORT_DIR = CMakeFiles/xs_syntax_ast_tests.dir
 
+# =============================================================================
+# Object build statements for EXECUTABLE target xs_syntax_macro_tests
+
+
+#############################################
+# Order-only phony target for xs_syntax_macro_tests
+
+build cmake_object_order_depends_target_xs_syntax_macro_tests: phony || cmake_object_order_depends_target_xs_compiler
+
+build CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o: C_COMPILER__xs_syntax_macro_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/syntax_macro_tests.c || cmake_object_order_depends_target_xs_syntax_macro_tests
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o.d
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/include
+  OBJECT_DIR = CMakeFiles/xs_syntax_macro_tests.dir
+  OBJECT_FILE_DIR = CMakeFiles/xs_syntax_macro_tests.dir/tests
+  TARGET_SUPPORT_DIR = CMakeFiles/xs_syntax_macro_tests.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target xs_syntax_macro_tests
+
+
+#############################################
+# Link the executable xs_syntax_macro_tests
+
+build xs_syntax_macro_tests: C_EXECUTABLE_LINKER__xs_syntax_macro_tests_Debug CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o | libxs_compiler.a || libxs_compiler.a
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xs_syntax_macro_tests.dir/link.d
+  FLAGS = -g
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_syntax_macro_tests.dir/link.d
+  LINK_LIBRARIES = libxs_compiler.a
+  OBJECT_DIR = CMakeFiles/xs_syntax_macro_tests.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = xs_syntax_macro_tests
+  TARGET_PDB = xs_syntax_macro_tests.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles/xs_syntax_macro_tests.dir
+
 
 #############################################
 # Utility command for test
@@ -1293,7 +1332,7 @@ build xs_compiler: phony libxs_compiler.a
 #############################################
 # Folder: /home/hasan/Projeler/XS/build/clang-debug
 
-build all: phony libxs_compiler.a xs libxs_backend_llvm.a xs_lexer_tests xs_parser_tests xs_project_tests xs_backend_tests xs_module_tests xs_hir_tests xs_hir_type_tests xs_xlil_tests xs_mir_tests xs_syntax_ast_tests
+build all: phony libxs_compiler.a xs libxs_backend_llvm.a xs_lexer_tests xs_parser_tests xs_project_tests xs_backend_tests xs_module_tests xs_hir_tests xs_hir_type_tests xs_xlil_tests xs_mir_tests xs_syntax_ast_tests xs_syntax_macro_tests
 
 # =============================================================================
 # Built-in targets

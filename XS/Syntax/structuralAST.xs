@@ -543,6 +543,7 @@ data UnitTypeNode {
 // Example:
 //
 // Arc<Mutex<str>>
+// fn(int, str) => bool
 
 // GenericTypeNode
 // ├── baseType: Arc
@@ -561,6 +562,14 @@ data LifetimeNode {
     name: IdentifierNode
     span: SourceSpan
 }
+
+
+// Example:
+//
+// &'a User
+// &'a mut User
+// &'static str
+// &'_ User
 
 
 // ============================================================
@@ -775,6 +784,7 @@ enum data Expression {
     MemberAccess: MemberAccessExpression,
     Index: IndexExpression,
     New: NewExpression,
+    Function: FunctionExpression,
     Await: AwaitExpression,
     Move: MoveExpression,
     Borrow: BorrowExpression,
@@ -782,6 +792,8 @@ enum data Expression {
     Dereference: DereferenceExpression,
     ArrayLiteral: ArrayLiteralExpression,
     ObjectLiteral: ObjectLiteralExpression,
+    FieldSet: FieldSetExpression,
+    IoTarget: IoTargetExpression,
     Tuple: TupleExpression,
     MacroCall: MacroCallExpression,
 }
@@ -826,6 +838,7 @@ data LiteralExpression {
 // 3.141'592
 // 1e-6
 // "Alfa"
+// 'A'
 // true
 // nil
 
@@ -977,6 +990,41 @@ data NewExpression {
 }
 
 
+// `constructedType` may be nil when the source spelling is `new()`.
+// In that form HIR resolves the constructed type from the assignment,
+// argument or return context.
+
+
+// ============================================================
+// Function expressions
+// ============================================================
+
+data FunctionExpression {
+    parameters: ParameterNode[]
+    returnType: TypeNode
+    body: BlockStatement
+    captureKind: FunctionCaptureKind
+    span: SourceSpan
+}
+
+
+enum FunctionCaptureKind {
+    Default,
+    Move,
+}
+
+
+// Examples:
+//
+// fn(value: int) => int {
+//     return value + 1;
+// }
+//
+// move fn() {
+//     Thread.yield();
+// }
+
+
 // ============================================================
 // Await expressions
 // ============================================================
@@ -1048,6 +1096,37 @@ data ObjectLiteralField {
     value: Expression
     span: SourceSpan
 }
+
+
+// ============================================================
+// Data field set expressions
+// ============================================================
+
+data FieldSetExpression {
+    fieldName: IdentifierNode
+    value: Expression
+    span: SourceSpan
+}
+
+
+// Example:
+//
+// set.name{"Alfa"}
+
+
+// ============================================================
+// I/O target expressions
+// ============================================================
+
+data IoTargetExpression {
+    target: Expression
+    span: SourceSpan
+}
+
+
+// Example:
+//
+// std.fout << [stdout] << "Hello\n"
 
 
 // ============================================================

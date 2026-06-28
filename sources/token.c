@@ -75,6 +75,8 @@ const char *xs_token_kind_name(XsTokenKind kind)
       "integer",
       "float",
       "string",
+      "character",
+      "lifetime",
       "document comment",
       "module comment",
       "(",

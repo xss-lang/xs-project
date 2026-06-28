@@ -906,7 +906,8 @@
 						42,
 						43,
 						44,
-						45
+						45,
+						46
 					]
 				}
 			],
@@ -1074,7 +1075,8 @@
 						42,
 						43,
 						44,
-						45
+						45,
+						46
 					]
 				}
 			],
@@ -1393,6 +1395,13 @@
 					"id" : "xs_syntax_ast_tests::@6890427a1f51a3e7e1df",
 					"jsonFile" : "target-xs_syntax_ast_tests-Debug-4b913a8367a9325de950.json",
 					"name" : "xs_syntax_ast_tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "xs_syntax_macro_tests::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-xs_syntax_macro_tests-Debug-e2e50146fe5cd582b38f.json",
+					"name" : "xs_syntax_macro_tests",
 					"projectIndex" : 0
 				},
 				{

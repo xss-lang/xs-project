@@ -44,6 +44,7 @@
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_xlil_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_mir_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_ast_tests.dir
+/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_macro_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/test.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/edit_cache.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/rebuild_cache.dir
