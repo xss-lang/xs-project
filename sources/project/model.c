@@ -25,6 +25,7 @@ void xs_project_free(XsProject *project)
   }
   free(project->authors);
   free_value(&project->xs_version);
+  free_value(&project->xs_backend);
   free_value(&project->entry);
   for (size_t i = 0; i < project->additional_file_count; ++i)
     free_value(&project->additional_files[i]);

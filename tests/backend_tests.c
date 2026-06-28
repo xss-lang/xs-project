@@ -43,6 +43,12 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_codegen_unit_module(first) != xs_llvm_codegen_unit_module(second));
 
   LLVMTypeRef type = NULL;
+  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_BOOL, &type, &error) == XS_BACKEND_OK);
+  CHECK(LLVMGetIntTypeWidth(type) == 1);
+  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_BYTE, &type, &error) == XS_BACKEND_OK);
+  CHECK(LLVMGetIntTypeWidth(type) == 8);
+  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_SBYTE, &type, &error) == XS_BACKEND_OK);
+  CHECK(LLVMGetIntTypeWidth(type) == 8);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_INT, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetIntTypeWidth(type) == 64);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_INT128, &type, &error) == XS_BACKEND_OK);

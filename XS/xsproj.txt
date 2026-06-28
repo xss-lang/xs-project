@@ -1,0 +1,1 @@
+.xsproj'u parser etmek için kararlı bir C23 API'sı sunulacaktır. (#include <xs/proj.h>)

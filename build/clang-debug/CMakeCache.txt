@@ -517,7 +517,7 @@ FFI_LIBRARIES-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: FFI_STATIC_LIBRARIES
 FFI_STATIC_LIBRARIES-ADVANCED:INTERNAL=1
 //Details about finding CURL
-FIND_PACKAGE_MESSAGE_DETAILS_CURL:INTERNAL=[/usr/lib/libcurl.so][/usr/include][ ][v8.20.0()]
+FIND_PACKAGE_MESSAGE_DETAILS_CURL:INTERNAL=[/usr/lib/libcurl.so][/usr/include][ ][v8.21.0()]
 //Details about finding FFI
 FIND_PACKAGE_MESSAGE_DETAILS_FFI:INTERNAL=[/usr/lib/libffi.so][1][v()]
 //Details about finding LibEdit

@@ -39,6 +39,7 @@ typedef struct
   XsProjectAuthor *authors;
   size_t author_count;
   XsProjectValue xs_version;
+  XsProjectValue xs_backend;
   XsProjectValue entry;
   XsProjectValue *additional_files;
   size_t additional_file_count;

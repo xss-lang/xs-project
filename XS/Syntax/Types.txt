@@ -1,6 +1,9 @@
 str -> UTF-16
+str uzunluğu dil seviyesinde sabit bir maksimuma sahip değildir.
+str uzunluğu UTF-16 temsilinin, runtime ayırıcısının ve hedef ortamın izin verdiği ölçüde sınırsız kabul edilir.
 bool
-byte
+byte -> u8
+sbyte -> i8
 char -> 16 bit
 
 int16 -> i16

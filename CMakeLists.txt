@@ -8,6 +8,21 @@ find_program(XS_LLVM_OBJDUMP_EXECUTABLE NAMES llvm-objdump REQUIRED)
 find_program(XS_LLVM_STRIP_EXECUTABLE NAMES llvm-strip REQUIRED)
 find_program(XS_LLD_EXECUTABLE NAMES ld.lld REQUIRED)
 
+function(xs_require_tool_basename variable expected)
+  get_filename_component(tool_name "${${variable}}" NAME)
+  if(NOT tool_name STREQUAL "${expected}")
+    message(FATAL_ERROR "The X# compiler refuses GNU-compatible fallback tool '${tool_name}'; expected '${expected}'.")
+  endif()
+endfunction()
+
+xs_require_tool_basename(XS_LLVM_AR_EXECUTABLE llvm-ar)
+xs_require_tool_basename(XS_LLVM_RANLIB_EXECUTABLE llvm-ranlib)
+xs_require_tool_basename(XS_LLVM_NM_EXECUTABLE llvm-nm)
+xs_require_tool_basename(XS_LLVM_OBJCOPY_EXECUTABLE llvm-objcopy)
+xs_require_tool_basename(XS_LLVM_OBJDUMP_EXECUTABLE llvm-objdump)
+xs_require_tool_basename(XS_LLVM_STRIP_EXECUTABLE llvm-strip)
+xs_require_tool_basename(XS_LLD_EXECUTABLE ld.lld)
+
 set(CMAKE_AR "${XS_LLVM_AR_EXECUTABLE}" CACHE FILEPATH "LLVM archiver" FORCE)
 set(CMAKE_RANLIB "${XS_LLVM_RANLIB_EXECUTABLE}" CACHE FILEPATH "LLVM archive indexer" FORCE)
 set(CMAKE_NM "${XS_LLVM_NM_EXECUTABLE}" CACHE FILEPATH "LLVM symbol tool" FORCE)
@@ -24,6 +39,11 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   message(FATAL_ERROR "The X# compiler does not support the GNU C compiler; use the Clang preset.")
 endif()
 
+get_filename_component(XS_C_COMPILER_NAME "${CMAKE_C_COMPILER}" NAME)
+if(XS_C_COMPILER_NAME MATCHES "^(gcc|g\\+\\+|cc)$")
+  message(FATAL_ERROR "The X# compiler refuses GNU-style compiler driver '${XS_C_COMPILER_NAME}'; use clang.")
+endif()
+
 if(NOT CMAKE_GENERATOR MATCHES "^Ninja")
   message(FATAL_ERROR "The X# compiler requires Ninja; GNU Make and other generators are unsupported.")
 endif()
@@ -36,6 +56,11 @@ set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+if(CMAKE_C_FLAGS MATCHES "(^| )-std=gnu" OR CMAKE_C_FLAGS_DEBUG MATCHES "(^| )-std=gnu" OR
+   CMAKE_C_FLAGS_RELEASE MATCHES "(^| )-std=gnu")
+  message(FATAL_ERROR "GNU C dialect flags are unsupported; use strict C23.")
+endif()
+
 find_package(LLVM REQUIRED CONFIG)
 find_library(XS_LLVM_LIBRARY NAMES LLVM-${LLVM_VERSION_MAJOR} LLVM HINTS ${LLVM_LIBRARY_DIRS} REQUIRED)
 
@@ -44,11 +69,22 @@ add_link_options(-fuse-ld=lld)
 add_library(xs_compiler
   sources/ast.c
   sources/diagnostic.c
+  sources/driver/cli.c
   sources/lexer.c
   sources/macro/validation.c
+  sources/mir/hir_lowering.c
+  sources/mir/model.c
+  sources/mir/xlil_lowering.c
+  sources/hir/dump.c
   sources/hir/module_graph.c
   sources/hir/module_model.c
   sources/hir/module_registry.c
+  sources/hir/import_resolver.c
+  sources/hir/name_resolution.c
+  sources/hir/symbol_table.c
+  sources/hir/syntax_helpers.c
+  sources/hir/type_info.c
+  sources/hir/type_resolution.c
   sources/parser.c
   sources/project.c
   sources/project/lexer.c
@@ -61,11 +97,12 @@ add_library(xs_compiler
   sources/syntax/parser_statement.c
   sources/syntax/parser_type.c
   sources/token.c
+  sources/xlil/model.c
 )
 
 target_include_directories(xs_compiler PUBLIC include)
 target_compile_options(xs_compiler PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-target_compile_options(xs_compiler PUBLIC -include $(CMAKE_SOURCE_DIR)/include/xs/compiler_check.h)
+target_compile_options(xs_compiler PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
 
 add_executable(xs sources/main.c)
 target_link_libraries(xs PRIVATE xs_compiler)
@@ -77,7 +114,7 @@ add_library(xs_backend_llvm
 target_include_directories(xs_backend_llvm PUBLIC include PRIVATE ${LLVM_INCLUDE_DIRS})
 target_link_libraries(xs_backend_llvm PRIVATE ${XS_LLVM_LIBRARY})
 target_compile_options(xs_backend_llvm PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-target_compile_options(xs_backend_llvm PUBLIC -include ${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h)
+target_compile_options(xs_backend_llvm PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
 
 include(CTest)
 if(BUILD_TESTING)
@@ -99,6 +136,15 @@ if(BUILD_TESTING)
   add_test(NAME example_project COMMAND xs check -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
   set_tests_properties(example_project PROPERTIES TIMEOUT 5)
 
+  add_test(NAME build_output_hir COMMAND xs build --output hir -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
+  set_tests_properties(build_output_hir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+  add_test(NAME build_output_mir COMMAND xs build --output mir -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
+  set_tests_properties(build_output_mir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+  add_test(NAME build_output_xlil COMMAND xs build --output xlil -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
+  set_tests_properties(build_output_xlil PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
   add_executable(xs_backend_tests tests/backend_tests.c)
   target_link_libraries(xs_backend_tests PRIVATE xs_backend_llvm)
   add_test(NAME backend COMMAND xs_backend_tests ${CMAKE_CURRENT_BINARY_DIR}/xs_backend_test.o ${XS_LLD_EXECUTABLE})
@@ -109,6 +155,26 @@ if(BUILD_TESTING)
   add_test(NAME modules COMMAND xs_module_tests ${CMAKE_SOURCE_DIR}/tests/fixtures/module_project
                                       ${CMAKE_SOURCE_DIR}/tests/fixtures/duplicate_modules)
   set_tests_properties(modules PROPERTIES TIMEOUT 5)
+
+  add_executable(xs_hir_tests tests/hir_tests.c)
+  target_link_libraries(xs_hir_tests PRIVATE xs_compiler)
+  add_test(NAME hir COMMAND xs_hir_tests)
+  set_tests_properties(hir PROPERTIES TIMEOUT 5)
+
+  add_executable(xs_hir_type_tests tests/hir_type_tests.c)
+  target_link_libraries(xs_hir_type_tests PRIVATE xs_compiler)
+  add_test(NAME hir_types COMMAND xs_hir_type_tests)
+  set_tests_properties(hir_types PROPERTIES TIMEOUT 5)
+
+  add_executable(xs_xlil_tests tests/xlil_tests.c)
+  target_link_libraries(xs_xlil_tests PRIVATE xs_compiler)
+  add_test(NAME xlil COMMAND xs_xlil_tests)
+  set_tests_properties(xlil PROPERTIES TIMEOUT 5)
+
+  add_executable(xs_mir_tests tests/mir_tests.c)
+  target_link_libraries(xs_mir_tests PRIVATE xs_compiler)
+  add_test(NAME mir COMMAND xs_mir_tests)
+  set_tests_properties(mir PROPERTIES TIMEOUT 5)
 
   add_executable(xs_syntax_ast_tests tests/syntax_ast_tests.c)
   target_link_libraries(xs_syntax_ast_tests PRIVATE xs_compiler)

@@ -1,0 +1,10 @@
+#ifndef XS_HIR_DUMP_H
+#define XS_HIR_DUMP_H
+
+#include "xs/hir/symbol_table.h"
+
+#include <stdio.h>
+
+bool xs_hir_write_symbols(const XsHirSymbolTable *symbols, FILE *stream);
+
+#endif

@@ -7,8 +7,8 @@
 	CompilerVersion=""
 	OSName="Linux"
 	Hostname="LenovoZ580"
-	OSRelease="7.0.12-zen1-1-zen"
-	OSVersion="#1 ZEN SMP PREEMPT_DYNAMIC Wed, 10 Jun 2026 08:57:50 +0000"
+	OSRelease="7.0.13-zen1-1-zen"
+	OSVersion="#1 ZEN SMP PREEMPT_DYNAMIC Tue, 23 Jun 2026 11:14:06 +0000"
 	OSPlatform="x86_64"
 	Is64Bits="1"
 	VendorString="GenuineIntel"
@@ -22,14 +22,14 @@
 	TotalVirtualMemory="3896"
 	TotalPhysicalMemory="7794"
 	LogicalProcessorsPerPhysical="2"
-	ProcessorClockFrequency="2893.334961"
+	ProcessorClockFrequency="2893.648926"
 	>
 	<Testing>
-		<StartDateTime>Jun 23 19:19 +03</StartDateTime>
-		<StartTestTime>1782231599</StartTestTime>
+		<StartDateTime>Jun 28 09:25 +03</StartDateTime>
+		<StartTestTime>1782627919</StartTestTime>
 		<TestList/>
-		<EndDateTime>Jun 23 19:19 +03</EndDateTime>
-		<EndTestTime>1782231599</EndTestTime>
+		<EndDateTime>Jun 28 09:25 +03</EndDateTime>
+		<EndTestTime>1782627919</EndTestTime>
 		<ElapsedMinutes>0</ElapsedMinutes>
 	</Testing>
 </Site>

@@ -31,6 +31,7 @@ static void test_complete_project(void)
                      "appAuthors {\n[\"Alfa\", \"alfa@example.me\"]\n[\"Foo\", nil]\n}\n"
                      "compilerOptions {\n"
                      "xsVersion: \"26\"\n"
+                     "xsBackend: \"LLVM\"\n"
                      "addFiles {\nentry: \"source/Main.xs\"\n[\"source/Foo.xs\", \"source/Bar.xs\",]\n}\n"
                      "output {\n[osName: \"Linux\"; osArch: \"x64\"]\n}\n"
                      "}\n"
@@ -44,6 +45,7 @@ static void test_complete_project(void)
   CHECK(project.additional_file_count == 2);
   CHECK(project.target_count == 1);
   CHECK(project.external_module_count == 1);
+  CHECK(project.xs_backend.text != NULL && strcmp(project.xs_backend.text, "LLVM") == 0);
   CHECK(xs_project_selected_entry(&project) == &project.entry);
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
@@ -94,11 +96,41 @@ static void test_optimization_is_unknown(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_backend_option_validation(void)
+{
+  const char *valid = "appName: nil\nappVersion: nil\nappRelease: nil\nappLicense: nil\n"
+                      "appAuthors { [nil, nil] }\n"
+                      "compilerOptions {\n"
+                      "xsVersion: \"26\"; xsBackend: \"XS\"\n"
+                      "addFiles { entry: nil }\n"
+                      "output { [osName: nil; osArch: nil] }\n"
+                      "}\n";
+  XsProject project;
+  XsDiagnostics diagnostics;
+  CHECK(parse_project(valid, &project, &diagnostics));
+  CHECK(project.xs_backend.text != NULL && strcmp(project.xs_backend.text, "XS") == 0);
+  xs_project_free(&project);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *invalid = "appName: nil\nappVersion: nil\nappRelease: nil\nappLicense: nil\n"
+                        "appAuthors { [nil, nil] }\n"
+                        "compilerOptions {\n"
+                        "xsVersion: \"26\"; xsBackend: \"GCC\"\n"
+                        "addFiles { entry: nil }\n"
+                        "output { [osName: nil; osArch: nil] }\n"
+                        "}\n";
+  CHECK(!parse_project(invalid, &project, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_project_free(&project);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_complete_project();
   test_nil_entry_selects_first_file();
   test_invalid_manifest();
   test_optimization_is_unknown();
+  test_backend_option_validation();
   return failures == 0 ? 0 : 1;
 }

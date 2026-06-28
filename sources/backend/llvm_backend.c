@@ -214,7 +214,11 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
   case XS_PRIMITIVE_UNIT:
     *type = LLVMVoidTypeInContext(backend->context);
     break;
+  case XS_PRIMITIVE_BOOL:
+    *type = LLVMInt1TypeInContext(backend->context);
+    break;
   case XS_PRIMITIVE_BYTE:
+  case XS_PRIMITIVE_SBYTE:
     *type = LLVMInt8TypeInContext(backend->context);
     break;
   case XS_PRIMITIVE_INT16:
@@ -246,9 +250,6 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
   case XS_PRIMITIVE_DOUBLE:
     *type = LLVMFP128TypeInContext(backend->context);
     break;
-  case XS_PRIMITIVE_BOOL:
-    return set_error(error, XS_BACKEND_DEFERRED,
-                     "bool lowering is deferred until nil representation is defined by typed MIR");
   case XS_PRIMITIVE_STR:
     return set_error(error, XS_BACKEND_DEFERRED,
                      "str lowering is deferred until the UTF-16 runtime value layout is documented");

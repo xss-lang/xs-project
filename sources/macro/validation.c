@@ -147,8 +147,10 @@ static bool macro_reaches(const NodeList *macros, size_t from, size_t target, bo
 
 static void validate_recursion(const NodeList *macros, XsDiagnostics *diagnostics)
 {
+  if (macros->count == 0)
+    return;
   bool *visiting = calloc(macros->count, sizeof(*visiting));
-  if (visiting == NULL && macros->count != 0) {
+  if (visiting == NULL) {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while validating macro call graph");
     return;
@@ -167,6 +169,140 @@ static bool is_macro_scope(XsSyntaxKind kind)
 {
   return kind == XS_SYNTAX_FILE || kind == XS_SYNTAX_STMT_BLOCK || kind == XS_SYNTAX_DECL_CLASS ||
          kind == XS_SYNTAX_DECL_INTERFACE;
+}
+
+static XsText macro_call_name(const XsSyntaxNode *call)
+{
+  if (call == NULL)
+    return (XsText){0};
+  if (call->kind == XS_SYNTAX_STMT_MACRO_CALL) {
+    for (size_t i = 0; i < call->child_count; ++i) {
+      XsText name = macro_call_name(call->children[i]);
+      if (name.data != NULL)
+        return name;
+    }
+    return (XsText){0};
+  }
+  if (call->kind != XS_SYNTAX_EXPR_MACRO_CALL)
+    return (XsText){0};
+  for (size_t i = 0; i < call->child_count; ++i) {
+    if (call->children[i]->kind == XS_SYNTAX_IDENTIFIER)
+      return call->children[i]->text;
+  }
+  return (XsText){0};
+}
+
+static const XsSyntaxNode *resolve_macro(const NodeList *visible, XsText name)
+{
+  for (size_t i = visible->count; i > 0; --i) {
+    if (text_equal(macro_name(visible->items[i - 1]), name))
+      return visible->items[i - 1];
+  }
+  return NULL;
+}
+
+typedef enum
+{
+  MATCH_NO,
+  MATCH_YES,
+  MATCH_DEFERRED,
+} MatchStatus;
+
+static bool token_text_matches(const XsSyntaxNode *matcher, const XsSyntaxNode *argument)
+{
+  if (matcher->token_kind != argument->token_kind)
+    return false;
+  if (matcher->text.length == 0 || argument->text.length == 0)
+    return true;
+  return text_equal(matcher->text, argument->text);
+}
+
+static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntaxNode *call)
+{
+  if (rule == NULL || rule->kind != XS_SYNTAX_MACRO_RULE || rule->child_count == 0)
+    return MATCH_NO;
+  const XsSyntaxNode *matcher = rule->children[0];
+  size_t argument_index = 1;
+  for (size_t i = 0; i < matcher->child_count; ++i) {
+    const XsSyntaxNode *element = matcher->children[i];
+    if (element->kind == XS_SYNTAX_MACRO_MATCHER_REPETITION)
+      return MATCH_DEFERRED;
+    if (argument_index >= call->child_count)
+      return MATCH_NO;
+    const XsSyntaxNode *argument = call->children[argument_index++];
+    if (element->kind == XS_SYNTAX_MACRO_MATCHER_TOKEN) {
+      if (!token_text_matches(element, argument))
+        return MATCH_NO;
+      continue;
+    }
+    if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
+      if (element->child_count >= 2 && text_equal(element->children[1]->text, (XsText){.data = "tt", .length = 2}))
+        continue;
+      /*
+       * TODO: expr, ty, path, pat, stmt, block, item, literal, meta,
+       * lifetime and vis fragments must be matched by reparsing the
+       * captured token range as the documented structural AST fragment.
+       */
+      return MATCH_DEFERRED;
+    }
+    return MATCH_NO;
+  }
+  return argument_index == call->child_count ? MATCH_YES : MATCH_NO;
+}
+
+static MatchStatus macro_matches_call(const XsSyntaxNode *macro, const XsSyntaxNode *call)
+{
+  MatchStatus result = MATCH_NO;
+  for (size_t i = 0; i < macro->child_count; ++i) {
+    MatchStatus status = match_rule_arguments(macro->children[i], call);
+    if (status == MATCH_YES)
+      return MATCH_YES;
+    if (status == MATCH_DEFERRED)
+      result = MATCH_DEFERRED;
+  }
+  return result;
+}
+
+static void validate_scope_calls(const XsSyntaxNode *scope, const NodeList *inherited, XsDiagnostics *diagnostics);
+
+static void validate_node_calls(const XsSyntaxNode *node, const NodeList *visible, XsDiagnostics *diagnostics)
+{
+  if (node == NULL)
+    return;
+  if (is_macro_scope(node->kind)) {
+    validate_scope_calls(node, visible, diagnostics);
+    return;
+  }
+  if (node->kind == XS_SYNTAX_EXPR_MACRO_CALL) {
+    XsText name = macro_call_name(node);
+    const XsSyntaxNode *macro = resolve_macro(visible, name);
+    XsSpan span = {.start = node->span.start_offset, .end = node->span.end_offset};
+    if (macro == NULL) {
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not resolve in this scope");
+      return;
+    }
+    if (macro_matches_call(macro, node) == MATCH_NO)
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not match any rule");
+    return;
+  }
+  for (size_t i = 0; i < node->child_count; ++i)
+    validate_node_calls(node->children[i], visible, diagnostics);
+}
+
+static void validate_scope_calls(const XsSyntaxNode *scope, const NodeList *inherited, XsDiagnostics *diagnostics)
+{
+  NodeList visible = {0};
+  for (size_t i = 0; i < inherited->count; ++i)
+    node_list_add(&visible, inherited->items[i]);
+  for (size_t i = 0; i < scope->child_count; ++i) {
+    if (scope->children[i]->kind == XS_SYNTAX_DECL_MACRO)
+      node_list_add(&visible, scope->children[i]);
+  }
+  for (size_t i = 0; i < scope->child_count; ++i) {
+    if (scope->children[i]->kind != XS_SYNTAX_DECL_MACRO)
+      validate_node_calls(scope->children[i], &visible, diagnostics);
+  }
+  free(visible.items);
 }
 
 static void validate_scope_recursion(const XsSyntaxNode *scope, XsDiagnostics *diagnostics)
@@ -199,6 +335,8 @@ bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
   for (size_t i = 0; i < macros.count; ++i)
     validate_macro_rules(macros.items[i], diagnostics);
   validate_scope_recursion(tree->root, diagnostics);
+  NodeList empty = {0};
+  validate_scope_calls(tree->root, &empty, diagnostics);
   free(macros.items);
   return !xs_diagnostics_has_error(diagnostics);
 }
