@@ -35,6 +35,8 @@ Belgelenmiş derleme sırası korunur:
 - LLVM IR üretimi ayrı backend katmanıdır; HIR/MIR/XLIL LLVM C API kavramlarını taşımaz.
 - Backend tüketicileri typed, borrow-checked ve monomorfize MIR hazır olduktan sonra MIR’i XLIL’e, oradan kendi hedef
   IR’larına indirir.
+- Planlanan HIR baseline JIT public API yüzeyi `#include <xs/hir/jit.h>`, MIR performance JIT public API yüzeyi
+  `#include <xs/mir/jit.h>` olarak ayrılır; bu JIT API’leri HIR/MIR’i LLVM C API’ye bağımlı hale getirmez.
 - LLVM şu an birincil backend odağıdır; fakat mimari Cranelift, C backend, interpreter veya başka hedefler eklenebilecek şekilde
   korunur.
 - Hedefe özel assembly gerekirse ayrı backend/runtime katmanında tutulur. NASM `.asm`/`.inc` kullanımı serbesttir ama x86-64’e
@@ -53,6 +55,8 @@ Belgelenmiş derleme sırası korunur:
 
 - `.xsproj` dosyaları özgün X# proje sözdizimiyle ayrıştırılır.
 - `.xsproj` lexer, parser ve proje modeli uygulaması `sources/xsproj/` altında tutulur.
+- `.xsproj` lexer/parser kodu `.xs` lexer/parser koduyla ortak değildir; yalnız `//` ve `///` satır yorumları desteklenir,
+  multiline comment desteklenmez.
 - `.xsproj` parser iç derleyici detayı değildir; üçüncü taraf araçların `.xsproj` dosyalarını JSON benzeri şekilde
   okuyabilmesi için public C23 API yüzeyi `#include <xs/project.h>` altında sağlanır.
 - Zorunlu alanlar, tekrar eden alanlar, bilinmeyen alanlar ve `appRelease` değerleri doğrulanır.
@@ -146,6 +150,8 @@ yapmaz.
 - `byte` unsigned 8 bit, `sbyte` signed 8 bit olarak HIR düzeyinde ayrı primitive tiplerdir.
 - `char` 16 bit karakter tipidir.
 - `str` UTF-16’dır ve uzunluğu UTF-16 temsilinin izin verdiği ölçüde sınırsız kabul edilir.
+- X# nominal typing kullanır; HIR type identity user-defined tiplerde ad/sembol kimliğine dayanır ve aynı structural shape
+  otomatik uyumluluk sağlamaz.
 - HIR primitive metadata, runtime layout'u belgelenmiş primitive tipler için XLIL tip eşlemesini taşır.
 - `str` runtime/ABI layout'u tamamlanmadığı için henüz XLIL tipine eşlenmez.
 - Fonksiyon, data, enum, class/interface üyesi ve generic constraint içindeki tip adları doğrulanır.
@@ -184,12 +190,21 @@ tamamlanmamıştır; desteklenmeyen fragment matcher’lar için semantik uyduru
 - MIR fonksiyon tanımları basic block listesi taşır.
 - MIR fonksiyon tanımları local table taşır; local kind, tip, mutability ve isim bilgisi saklanır.
 - MIR place modeli root local ve `field`/`deref`/`index` projection zinciriyle başlatılmıştır.
-- MIR SSA value table ve `const.i64` instruction çekirdeği vardır.
-- Her basic block şimdilik `return`, `goto` veya `unreachable` terminator’ü alabilir.
+- MIR SSA value table ve `const.i64`, `add.i64`, `load`, `store` instruction çekirdeği vardır.
+- Her basic block şimdilik `return`, `goto`, `branch` veya `unreachable` terminator’ü alabilir.
 - MIR text writer declaration ve gövdeli function çıktısını deterministik yazar.
+- `xs/mir/borrow_checker.h` altında ilk MIR doğrulama/borrow-check iskeleti vardır.
+- Borrow checker iskeleti terminator zorunluluğunu, return type uyumunu ve immutable local köküne yapılan `store`
+  işlemlerini doğrular.
+- Borrow checker ayrıca instruction result/value id, `load`/`store` place id, `goto`/`branch` hedefi, `branch` condition tipi
+  ve `add.i64` operand tip/id tutarlılığını doğrular.
+- `xs/mir/optimizer.h` altında ilk MIR optimizasyon API’si vardır.
+- CFG cleanup pass’i entry block’tan erişilemeyen block’ları kaldırır ve kalan block id / `goto` / `branch` hedeflerini
+  yeniden yazar.
+- Constant folding pass’i iki `const.i64` operandlı `add.i64` instruction’ını `const.i64` sonucuna indirger.
 
-Bu aşama henüz statement/expression lowering, genel instruction set, exception edge, async state machine veya borrow checker
-girdisi üretmez.
+Bu aşama henüz statement/expression lowering, genel instruction set, exception edge, async state machine, region/loan/move
+analizi, drop noktası doğrulaması veya kapsamlı MIR optimizasyon pass setini üretmez.
 
 ### LLVM backend altyapısı
 
@@ -215,11 +230,18 @@ Ayrıntılar: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - XLIL CLR kadar high-level değildir, assembly kadar low-level değildir; assembly’ye benzeyen ama aynı olmayan hedef bağımsız
   orta-düşük seviye registry dilidir.
 - XLIL bytecode veya sanal makine formatı değildir.
-- Kararlı C23 API hedefi `#include <xs/lil.h>` olarak belgelenmiştir.
+- Kararlı C23 API hedefi `#include <xs/lil.h>` olarak belgelenmiştir; bu başlık AOT üretim ve XLIL registry üretimi için
+  gerekli public yüzeyi kapsar.
 - Harici frontend ve araçlar ileride XLIL üreterek XS LLVM backend’inden, daha sonra XS Backend’inden native executable
   alabilmelidir.
+- Üçüncü parti diller `xs/lil.h` ile XLIL üretebilir; HIR baseline JIT ve MIR performance JIT için ayrı public başlıklar
+  `xs/hir/jit.h` ve `xs/mir/jit.h` olarak planlanır.
 - Planlanan doğrudan XLIL derleme girişi `xs build --xlil -file <girdi.xlil>` biçimindedir; komut henüz uygulanmamıştır.
-- `xs/lil.h` altında hedef bağımsız XLIL modül, primitive tip ve gövdesiz fonksiyon bildirimi API iskeleti vardır.
+- `xs/lil.h` altında hedef bağımsız XLIL modül, primitive tip, fonksiyon bildirimi, fonksiyon gövdesi, basic block,
+  `const.i64` ve `return` API çekirdeği vardır.
+- XLIL text writer modül başlığı, fonksiyon bildirimi ve ilk gövdeli function/block kayıtlarını yazar.
+- MIR → XLIL lowering ilk gövde köprüsü `const.i64` instruction ve `return` terminator içeren düz blokları XLIL function
+  body kayıtlarına indirir.
 - XLIL text writer yalnızca modül başlığı ve fonksiyon bildirimi yazar.
 
 XLIL instruction set, function body modeli, runtime/ABI yerleşimi ve MIR → XLIL function body lowering kararları

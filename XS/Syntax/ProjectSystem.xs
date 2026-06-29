@@ -25,6 +25,16 @@ The project system defines:
 //
 // The file name is unrestricted.
 //
+// .xsproj files use their own lexer and parser.
+// They are not parsed by the .xs source lexer/parser.
+//
+// Supported comments:
+//
+// //  line comment
+// /// documentation-style line comment
+//
+// Multiline comments are not supported in .xsproj files.
+//
 // Examples:
 //
 // MyApp.xsproj

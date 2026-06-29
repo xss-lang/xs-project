@@ -50,6 +50,7 @@ typedef enum
 typedef enum
 {
   XS_MIR_INSTRUCTION_CONST_I64,
+  XS_MIR_INSTRUCTION_ADD_I64,
   XS_MIR_INSTRUCTION_LOAD,
   XS_MIR_INSTRUCTION_STORE,
 } XsMirInstructionKind;
@@ -59,6 +60,7 @@ typedef enum
   XS_MIR_TERMINATOR_NONE,
   XS_MIR_TERMINATOR_RETURN,
   XS_MIR_TERMINATOR_GOTO,
+  XS_MIR_TERMINATOR_BRANCH,
   XS_MIR_TERMINATOR_UNREACHABLE,
 } XsMirTerminatorKind;
 
@@ -99,8 +101,12 @@ XsMirTerminatorKind xs_mir_block_terminator_kind(const XsMirBlock *block);
 XsMirStatus xs_mir_block_set_return(XsMirBlock *block, XsMirError *error);
 XsMirStatus xs_mir_block_set_return_value(XsMirBlock *block, XsMirValueId value, XsMirError *error);
 XsMirStatus xs_mir_block_set_goto(XsMirBlock *block, const XsMirBlock *target, XsMirError *error);
+XsMirStatus xs_mir_block_set_branch(XsMirBlock *block, XsMirValueId condition, const XsMirBlock *then_target,
+                                    const XsMirBlock *else_target, XsMirError *error);
 XsMirStatus xs_mir_block_set_unreachable(XsMirBlock *block, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_i64(XsMirBlock *block, int64_t value, XsMirValueId *result, XsMirError *error);
+XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
 XsMirStatus xs_mir_block_add_load(XsMirBlock *block, const XsMirPlace *place, XsMirType result_type,
                                   XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_store(XsMirBlock *block, const XsMirPlace *place, XsMirValueId value, XsMirError *error);

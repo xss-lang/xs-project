@@ -28,7 +28,7 @@ char *xs_mir_copy_text(const char *text)
   return copy;
 }
 
-static void block_free(XsMirBlock *block)
+void xs_mir_block_free(XsMirBlock *block)
 {
   free(block->instructions);
   free(block->label);
@@ -44,7 +44,7 @@ static void place_free(XsMirPlace *place)
 static void function_free(XsMirFunction *function)
 {
   for (size_t i = 0; i < function->block_count; ++i) {
-    block_free(function->blocks[i]);
+    xs_mir_block_free(function->blocks[i]);
     free(function->blocks[i]);
   }
   for (size_t i = 0; i < function->local_count; ++i)

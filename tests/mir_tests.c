@@ -1,7 +1,9 @@
 #include "xs/hir/symbol_table.h"
 #include "xs/lil.h"
 #include "xs/mir.h"
+#include "xs/mir/borrow_checker.h"
 #include "xs/mir/hir_lowering.h"
+#include "xs/mir/optimizer.h"
 #include "xs/mir/xlil_lowering.h"
 #include "xs/syntax_parser.h"
 
@@ -120,6 +122,225 @@ static void test_function_definition_blocks_and_terminators(void)
         NULL);
   CHECK(strstr(buffer, "bb1 done:\n  return 1\n") != NULL);
   fclose(stream);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
+  xs_mir_module_destroy(module);
+}
+
+static void test_borrow_checker_rejects_immutable_store(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.BadStore", (XsMirType){.kind = XS_LIL_TYPE_VOID}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirLocalId local = 0;
+  CHECK(xs_mir_function_add_local(function, XS_MIR_LOCAL_VARIABLE, "frozen", (XsMirType){.kind = XS_LIL_TYPE_I64},
+                                  false, &local, &error) == XS_MIR_OK);
+  XsMirPlace *place = NULL;
+  CHECK(xs_mir_function_add_local_place(function, local, &place, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId value = 0;
+  CHECK(xs_mir_block_add_const_i64(entry, 7, &value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_store(entry, place, value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return(entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_UNSUPPORTED);
+  xs_mir_module_destroy(module);
+}
+
+static void test_borrow_checker_rejects_missing_terminator(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.MissingTerminator", (XsMirType){.kind = XS_LIL_TYPE_VOID},
+                                              NULL, 0, &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_INVALID_ARGUMENT);
+  xs_mir_module_destroy(module);
+}
+
+static void test_borrow_checker_rejects_unknown_value_operand(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.BadOperand", (XsMirType){.kind = XS_LIL_TYPE_I64}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId known = 0;
+  XsMirValueId sum = 0;
+  CHECK(xs_mir_block_add_const_i64(entry, 1, &known, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_i64(entry, known, 99, &sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_INVALID_ARGUMENT);
+  xs_mir_module_destroy(module);
+}
+
+static void test_borrow_checker_rejects_wrong_i64_operand_type(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.BadType", (XsMirType){.kind = XS_LIL_TYPE_I64}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirLocalId local = 0;
+  CHECK(xs_mir_function_add_local(function, XS_MIR_LOCAL_VARIABLE, "flag", (XsMirType){.kind = XS_LIL_TYPE_BOOL}, true,
+                                  &local, &error) == XS_MIR_OK);
+  XsMirPlace *place = NULL;
+  CHECK(xs_mir_function_add_local_place(function, local, &place, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId flag = 0;
+  XsMirValueId one = 0;
+  XsMirValueId sum = 0;
+  CHECK(xs_mir_block_add_load(entry, place, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, &flag, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i64(entry, 1, &one, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_i64(entry, flag, one, &sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_INVALID_ARGUMENT);
+  xs_mir_module_destroy(module);
+}
+
+static void test_branch_terminator_checks_condition_and_reachability(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.Branch", (XsMirType){.kind = XS_LIL_TYPE_VOID}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirLocalId condition_local = 0;
+  CHECK(xs_mir_function_add_local(function, XS_MIR_LOCAL_VARIABLE, "condition", (XsMirType){.kind = XS_LIL_TYPE_BOOL},
+                                  true, &condition_local, &error) == XS_MIR_OK);
+  XsMirPlace *condition_place = NULL;
+  CHECK(xs_mir_function_add_local_place(function, condition_local, &condition_place, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  XsMirBlock *then_block = NULL;
+  XsMirBlock *else_block = NULL;
+  XsMirBlock *dead = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "then", &then_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "else", &else_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "dead", &dead, &error) == XS_MIR_OK);
+  XsMirValueId condition = 0;
+  CHECK(xs_mir_block_add_load(entry, condition_place, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, &condition, &error) ==
+        XS_MIR_OK);
+  CHECK(xs_mir_block_set_branch(entry, condition, then_block, else_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return(then_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return(else_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_unreachable(dead, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
+
+  FILE *stream = tmpfile();
+  if (stream == NULL) {
+    ++failures;
+    xs_mir_module_destroy(module);
+    return;
+  }
+  CHECK(xs_mir_module_write_text(module, stream, &error) == XS_MIR_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "branch v0, bb1, bb2\n") != NULL);
+  fclose(stream);
+
+  CHECK(xs_mir_optimize_module_cfg(module, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_block_count(function) == 3);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
+  xs_mir_module_destroy(module);
+}
+
+static void test_borrow_checker_rejects_non_bool_branch_condition(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.BadBranch", (XsMirType){.kind = XS_LIL_TYPE_VOID}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  XsMirBlock *then_block = NULL;
+  XsMirBlock *else_block = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "then", &then_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "else", &else_block, &error) == XS_MIR_OK);
+  XsMirValueId condition = 0;
+  CHECK(xs_mir_block_add_const_i64(entry, 1, &condition, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_branch(entry, condition, then_block, else_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return(then_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return(else_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_INVALID_ARGUMENT);
+  xs_mir_module_destroy(module);
+}
+
+static void test_cfg_optimizer_removes_unreachable_blocks(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.Cfg", (XsMirType){.kind = XS_LIL_TYPE_VOID}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  XsMirBlock *done = NULL;
+  XsMirBlock *dead = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "done", &done, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "dead", &dead, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_goto(entry, done, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return(done, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_unreachable(dead, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_block_count(function) == 3);
+  CHECK(xs_mir_optimize_module_cfg(module, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_block_count(function) == 2);
+  const XsMirBlock *second = xs_mir_function_block_at(function, 1);
+  CHECK(second != NULL && strcmp(xs_mir_block_label(second), "done") == 0);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
+  xs_mir_module_destroy(module);
+}
+
+static void test_constant_optimizer_folds_i64_add(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.Fold", (XsMirType){.kind = XS_LIL_TYPE_I64}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId left = 0;
+  XsMirValueId right = 0;
+  XsMirValueId sum = 0;
+  CHECK(xs_mir_block_add_const_i64(entry, 2, &left, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i64(entry, 3, &right, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_i64(entry, left, right, &sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_ADD_I64);
+  CHECK(xs_mir_block_set_return_value(entry, sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_optimize_module_constants(module, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_CONST_I64);
+
+  FILE *stream = tmpfile();
+  if (stream == NULL) {
+    ++failures;
+    xs_mir_module_destroy(module);
+    return;
+  }
+  CHECK(xs_mir_module_write_text(module, stream, &error) == XS_MIR_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "v2 = const.i64 5\n") != NULL);
+  fclose(stream);
   xs_mir_module_destroy(module);
 }
 
@@ -169,11 +390,58 @@ static void test_xlil_declaration_lowering(void)
   xs_mir_module_destroy(mir);
 }
 
+static void test_xlil_body_lowering_for_const_return(void)
+{
+  XsMirError error = {0};
+  XsMirModule *mir = NULL;
+  CHECK(xs_mir_module_create("project", &mir, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(mir, "App.Answer", (XsMirType){.kind = XS_LIL_TYPE_I64}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId value = 0;
+  CHECK(xs_mir_block_add_const_i64(entry, 42, &value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
+
+  XsLilError lil_error = {0};
+  XsLilModule *xlil = NULL;
+  CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
+  FILE *stream = tmpfile();
+  if (stream == NULL) {
+    ++failures;
+    xs_lil_module_destroy(xlil);
+    xs_mir_module_destroy(mir);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(xlil, stream, &lil_error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[256] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "define i64 App.Answer() {\n") != NULL);
+  CHECK(strstr(buffer, "bb0 entry:\n  r0 = const.i64 42\n  return r0\n}\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(xlil);
+  xs_mir_module_destroy(mir);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
   test_function_definition_blocks_and_terminators();
+  test_borrow_checker_rejects_immutable_store();
+  test_borrow_checker_rejects_missing_terminator();
+  test_borrow_checker_rejects_unknown_value_operand();
+  test_borrow_checker_rejects_wrong_i64_operand_type();
+  test_branch_terminator_checks_condition_and_reachability();
+  test_borrow_checker_rejects_non_bool_branch_condition();
+  test_cfg_optimizer_removes_unreachable_blocks();
+  test_constant_optimizer_folds_i64_add();
   test_hir_function_declaration_lowering();
   test_xlil_declaration_lowering();
+  test_xlil_body_lowering_for_const_return();
   return failures == 0 ? 0 : 1;
 }

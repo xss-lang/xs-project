@@ -103,8 +103,13 @@ static bool append_module(ProjectParser *parser, XsProjectModule module)
 
 static void skip_unknown(ProjectParser *parser)
 {
+  if (parser->current.kind == PROJECT_RIGHT_BRACE || parser->current.kind == PROJECT_RIGHT_BRACKET) {
+    project_advance(parser);
+    return;
+  }
   size_t braces = 0;
   size_t brackets = 0;
+  size_t start = parser->current.span.start;
   while (parser->current.kind != PROJECT_EOF) {
     if (parser->current.kind == PROJECT_NEWLINE || parser->current.kind == PROJECT_SEMICOLON) {
       if (braces == 0 && brackets == 0)
@@ -127,6 +132,8 @@ static void skip_unknown(ProjectParser *parser)
     if (braces == 0 && brackets == 0 && parser->current.kind == PROJECT_RIGHT_BRACE)
       break;
   }
+  if (parser->current.kind != PROJECT_EOF && parser->current.span.start == start)
+    project_advance(parser);
   finish_field(parser);
 }
 

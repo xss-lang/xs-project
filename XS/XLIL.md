@@ -35,7 +35,9 @@ kayıtları text olarak saklanır. Bu dosya çalıştırılabilir bytecode deği
 
 ## Harici API
 
-XLIL için kararlı bir C23 API'si sağlanacaktır. (#include <xs/lil.h>)
+XLIL için kararlı bir C23 API'si sağlanacaktır. (`#include <xs/lil.h>`)
+
+Bu başlık AOT üretim ve XLIL registry üretimi için gereken public API yüzeyidir.
 
 Bu API sayesinde;
 

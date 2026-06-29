@@ -33,6 +33,11 @@ static XsMirStatus write_terminator(const XsMirBlock *block, FILE *stream, XsMir
     if (fprintf(stream, "  goto bb%u\n", block->terminator.target) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR goto terminator");
     return XS_MIR_OK;
+  case XS_MIR_TERMINATOR_BRANCH:
+    if (fprintf(stream, "  branch v%u, bb%u, bb%u\n", block->terminator.value, block->terminator.target,
+                block->terminator.else_target) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR branch terminator");
+    return XS_MIR_OK;
   case XS_MIR_TERMINATOR_UNREACHABLE:
     if (fputs("  unreachable\n", stream) == EOF)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR unreachable terminator");
@@ -65,12 +70,17 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
     if (fprintf(stream, "  v%u = const.i64 %lld\n", instruction->result, (long long)instruction->immediate_i64) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR const.i64 instruction");
     return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_ADD_I64:
+    if (fprintf(stream, "  v%u = add.i64 v%u, v%u\n", instruction->result, instruction->operand_left,
+                instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR add.i64 instruction");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_LOAD:
     if (fprintf(stream, "  v%u = load place%u\n", instruction->result, instruction->place) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR load instruction");
     return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_STORE:
-    if (fprintf(stream, "  store place%u, v%u\n", instruction->place, instruction->operand) < 0)
+    if (fprintf(stream, "  store place%u, v%u\n", instruction->place, instruction->operand_left) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR store instruction");
     return XS_MIR_OK;
   }

@@ -5,5 +5,6 @@
 #include "xs/mir.h"
 
 XsMirStatus xs_lil_module_add_mir_function_declarations(XsLilModule *module, const XsMirModule *mir, XsMirError *error);
+XsMirStatus xs_lil_module_add_mir_function_bodies(XsLilModule *module, const XsMirModule *mir, XsMirError *error);
 
 #endif

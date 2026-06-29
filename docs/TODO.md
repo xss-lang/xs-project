@@ -2,6 +2,8 @@
 
 Bu dosya artık “sorulacak büyük kararlar” listesi değildir. Buradaki kararlar X# v0 için uygulanacak sözleşmedir.
 Eksik kalan işler karar eksikliği yüzünden değil, yalnızca implementation tamamlanmadığı için eksiktir.
+Yeni kararlar kullanıcıdan ek belge beklemeden burada sabitlenir; mevcut belgelenmiş X# kuralları her zaman önceliklidir.
+Eksik alanlarda Rust, TypeScript, C#, C23 ve hedef assembly geleneklerinden X# ile uyumlu ölçüde ilham alınabilir.
 
 ## Dil semantiği kararları
 
@@ -11,6 +13,8 @@ Eksik kalan işler karar eksikliği yüzünden değil, yalnızca implementation 
   sabit depth limiti diagnostic üretir.
 - Lifetime kuralları Rust modelinden alınır: lexical region inference, outlives bound, higher-ranked lifetime bound ve elision
   kuralları Rust 2021 ile uyumlu olacak şekilde uygulanır. X# syntax farklı olduğunda aynı semantik AST alanlarına indirilir.
+- X# nominal typing kullanır. User-defined tip kimliği ad/sembol üzerinden belirlenir; alanları ve yapısı aynı olan iki ayrı
+  tip uyumlu kabul edilmez.
 - Trait/interface uyumluluğu nominaldir. Bir tip yalnız açıkça ilgili interface’i implement ettiğinde uyumludur. Structural
   uyumluluk yalnız ayrı bir `structural` özelliği belgelenirse eklenecektir.
 - Generic constraint doğrulaması nominal interface üyeliğine dayanır. Tüm constraint’ler conjunctive kabul edilir; herhangi
@@ -96,7 +100,19 @@ Eksik kalan işler karar eksikliği yüzünden değil, yalnızca implementation 
 - XLIL runtime ABI’ye özgü object layout’u tarif etmez; yalnız hedef bağımsız tip, sembol ve control-flow taşır.
 - MIR → XLIL lowering borrow-check ve monomorfizasyon sonrası yapılır.
 - XLIL → LLVM IR lowering target triple/data layout bilerek LLVM module/function/body üretir.
-- XLIL public C23 API `#include <xs/lil.h>` altında modül, type, function, block, value ve instruction builder yüzeyleri sağlar.
+- XLIL public C23 API `#include <xs/lil.h>` altında AOT üretim, XLIL registry üretimi, modül, type, function, block,
+  value ve instruction builder yüzeyleri sağlar.
+- Üçüncü parti diller `xs/lil.h` üzerinden XLIL üreterek LLVM backend’i ve ileride XS Backend’i hedefleyebilir.
+
+## JIT ve public ara katman API kararları
+
+- HIR baseline JIT public C23 API hedefi `#include <xs/hir/jit.h>` başlığıdır.
+- HIR baseline JIT hızlı geliştirme, denetim ve debug çalıştırması içindir; optimize native performans hedefi değildir.
+- MIR performance JIT public C23 API hedefi `#include <xs/mir/jit.h>` başlığıdır.
+- MIR performance JIT typed, borrow-check geçmiş ve optimizasyonlardan geçirilmiş MIR üzerinde çalışır.
+- JIT API’leri HIR/MIR’i LLVM API’ye bağlamaz; gerekirse XLIL veya backend abstraction üzerinden hedefe iner.
+- Bu API yüzeyleri üçüncü parti dil ve araçlar tarafından kullanılabilir olacak şekilde C23 public ABI olarak tasarlanır.
+- JIT başlıkları ve davranışları implementation gelmeden sahte/stub semantik ile genişletilmeyecektir.
 
 ## Backend ve link kararları
 

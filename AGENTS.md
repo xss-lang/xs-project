@@ -35,6 +35,8 @@
 - `.xsproj` files are XS project manifests.
 - Do not replace `.xsproj` syntax with JSON, YAML, TOML or XML.
 - `.xsproj` parser/lexer/model code lives under `sources/xsproj/`.
+- `.xsproj` lexer/parser code is separate from `.xs` lexer/parser code. `.xsproj` supports `//` and `///` line comments
+  only; multiline comments are not supported.
 - `.xsproj` parsing is a public C23 API surface, similar in role to a JSON parser for external tools:
   `#include <xs/project.h>`.
 - Before modifying X# syntax handling or XS source examples, read the relevant files under `./XS/Syntax/`.
@@ -52,11 +54,20 @@
 - Syntax and XLIL must stay tied to documented forms. Do not invent undocumented syntax or undocumented XLIL formats.
 - For areas other than Syntax and XLIL, small missing implementation details may be filled in consistently with
   `docs/TODO.md` and `docs/IMPLEMENTATION.md`.
+- When a larger rule is still undocumented, decide it without waiting for more user documentation, document the decision in
+  `docs/TODO.md`, and keep documented X# rules higher priority. Rust, TypeScript, C#, C23 and target assembly conventions may
+  be used as design inspiration where they fit X#.
 - `byte` maps to `u8`; `sbyte` maps to `i8`.
 - `char` is a 16-bit UTF-16 code unit.
 - `str` is UTF-16 and its length is limited by the platform/runtime representation, not by an arbitrary compiler limit.
 - HIR resolves language types. `bool` becomes `i1` at the HIR/low-level type boundary.
+- X# uses nominal typing. User-defined type identity is name/symbol based; identical field structure does not make two types
+  compatible.
 - HIR and MIR must not depend on LLVM APIs. They may depend on the target-independent XLIL type/data vocabulary.
+- Planned public APIs are `#include <xs/hir/jit.h>` for the HIR baseline JIT, `#include <xs/mir/jit.h>` for the MIR
+  performance JIT and `#include <xs/lil.h>` for AOT and XLIL generation.
+- Third-party languages may use the public HIR/MIR JIT and XLIL/AOT APIs, but do not add fake JIT semantics before those
+  layers are implemented.
 
 ## Compiler pipeline
 

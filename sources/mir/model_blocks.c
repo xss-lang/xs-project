@@ -96,6 +96,24 @@ XsMirStatus xs_mir_block_set_goto(XsMirBlock *block, const XsMirBlock *target, X
   return set_terminator(block, (XsMirTerminator){.kind = XS_MIR_TERMINATOR_GOTO, .target = target->id}, error);
 }
 
+XsMirStatus xs_mir_block_set_branch(XsMirBlock *block, XsMirValueId condition, const XsMirBlock *then_target,
+                                    const XsMirBlock *else_target, XsMirError *error)
+{
+  if (then_target == NULL || else_target == NULL) {
+    xs_mir_clear_error(error);
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR branch targets are required");
+  }
+  return set_terminator(block,
+                        (XsMirTerminator){
+                            .kind = XS_MIR_TERMINATOR_BRANCH,
+                            .has_value = true,
+                            .value = condition,
+                            .target = then_target->id,
+                            .else_target = else_target->id,
+                        },
+                        error);
+}
+
 XsMirStatus xs_mir_block_set_unreachable(XsMirBlock *block, XsMirError *error)
 {
   return set_terminator(block, (XsMirTerminator){.kind = XS_MIR_TERMINATOR_UNREACHABLE}, error);
@@ -145,6 +163,33 @@ XsMirStatus xs_mir_block_add_const_i64(XsMirBlock *block, int64_t value, XsMirVa
   return XS_MIR_OK;
 }
 
+XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  xs_mir_clear_error(error);
+  if (result != NULL)
+    *result = 0;
+  if (block == NULL || block->owner == NULL)
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR block is required");
+  XsMirValueId value_id = 0;
+  XsMirStatus status = xs_mir_function_add_value(block->owner, (XsMirType){.kind = XS_LIL_TYPE_I64}, &value_id, error);
+  if (status != XS_MIR_OK)
+    return status;
+  status = append_instruction(block,
+                              (XsMirInstruction){
+                                  .kind = XS_MIR_INSTRUCTION_ADD_I64,
+                                  .result = value_id,
+                                  .operand_left = left,
+                                  .operand_right = right,
+                              },
+                              error);
+  if (status != XS_MIR_OK)
+    return status;
+  if (result != NULL)
+    *result = value_id;
+  return XS_MIR_OK;
+}
+
 XsMirStatus xs_mir_block_add_load(XsMirBlock *block, const XsMirPlace *place, XsMirType result_type,
                                   XsMirValueId *result, XsMirError *error)
 {
@@ -178,7 +223,7 @@ XsMirStatus xs_mir_block_add_store(XsMirBlock *block, const XsMirPlace *place, X
   return append_instruction(block,
                             (XsMirInstruction){
                                 .kind = XS_MIR_INSTRUCTION_STORE,
-                                .operand = value,
+                                .operand_left = value,
                                 .place = place->id,
                             },
                             error);

@@ -72,11 +72,14 @@ add_library(xs_compiler
   sources/driver/cli.c
   sources/lexer.c
   sources/macro/validation.c
+  sources/mir/borrow_checker.c
   sources/mir/hir_lowering.c
   sources/mir/model_blocks.c
   sources/mir/model.c
   sources/mir/model_writer.c
+  sources/mir/optimizer.c
   sources/mir/xlil_lowering.c
+  sources/xlil/writer.c
   sources/hir/dump.c
   sources/hir/module_graph.c
   sources/hir/module_model.c

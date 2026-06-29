@@ -9,6 +9,7 @@ typedef struct
   bool has_value;
   XsMirValueId value;
   XsMirBlockId target;
+  XsMirBlockId else_target;
 } XsMirTerminator;
 
 typedef struct
@@ -26,7 +27,8 @@ typedef struct
 {
   XsMirInstructionKind kind;
   XsMirValueId result;
-  XsMirValueId operand;
+  XsMirValueId operand_left;
+  XsMirValueId operand_right;
   XsMirPlaceId place;
   int64_t immediate_i64;
 } XsMirInstruction;
@@ -91,6 +93,7 @@ struct XsMirModule
 void xs_mir_clear_error(XsMirError *error);
 XsMirStatus xs_mir_set_error(XsMirError *error, XsMirStatus status, const char *message);
 char *xs_mir_copy_text(const char *text);
+void xs_mir_block_free(XsMirBlock *block);
 XsMirStatus xs_mir_function_add_value(XsMirFunction *function, XsMirType type, XsMirValueId *value, XsMirError *error);
 
 #endif

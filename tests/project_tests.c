@@ -125,6 +125,38 @@ static void test_backend_option_validation(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_project_comments_are_line_only(void)
+{
+  const char *valid = "/// project doc comment\n"
+                      "appName: nil // line comment\n"
+                      "appVersion: nil\n"
+                      "appRelease: nil\n"
+                      "appLicense: nil\n"
+                      "appAuthors { [nil, nil] }\n"
+                      "compilerOptions {\n"
+                      "xsVersion: nil\n"
+                      "addFiles { entry: nil }\n"
+                      "output { [osName: nil; osArch: nil] }\n"
+                      "}\n";
+  XsProject project;
+  XsDiagnostics diagnostics;
+  CHECK(parse_project(valid, &project, &diagnostics));
+  xs_project_free(&project);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *xs_style_multiline = "//{ not supported in xsproj\n";
+  CHECK(!parse_project(xs_style_multiline, &project, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_project_free(&project);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *c_style_multiline = "/* not supported */\nappName: nil\n";
+  CHECK(!parse_project(c_style_multiline, &project, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_project_free(&project);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_complete_project();
@@ -132,5 +164,6 @@ int main(void)
   test_invalid_manifest();
   test_optimization_is_unknown();
   test_backend_option_validation();
+  test_project_comments_are_line_only();
   return failures == 0 ? 0 : 1;
 }

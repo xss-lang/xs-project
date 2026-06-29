@@ -31,6 +31,12 @@
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/sources/mir/borrow_checker.c.o -c /home/hasan/Projeler/XS/sources/mir/borrow_checker.c",
+  "file": "/home/hasan/Projeler/XS/sources/mir/borrow_checker.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/sources/mir/borrow_checker.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
   "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/sources/mir/hir_lowering.c.o -c /home/hasan/Projeler/XS/sources/mir/hir_lowering.c",
   "file": "/home/hasan/Projeler/XS/sources/mir/hir_lowering.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/sources/mir/hir_lowering.c.o"
@@ -55,9 +61,21 @@
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/sources/mir/optimizer.c.o -c /home/hasan/Projeler/XS/sources/mir/optimizer.c",
+  "file": "/home/hasan/Projeler/XS/sources/mir/optimizer.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/sources/mir/optimizer.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
   "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/sources/mir/xlil_lowering.c.o -c /home/hasan/Projeler/XS/sources/mir/xlil_lowering.c",
   "file": "/home/hasan/Projeler/XS/sources/mir/xlil_lowering.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/sources/mir/xlil_lowering.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/sources/xlil/writer.c.o -c /home/hasan/Projeler/XS/sources/xlil/writer.c",
+  "file": "/home/hasan/Projeler/XS/sources/xlil/writer.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/sources/xlil/writer.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
