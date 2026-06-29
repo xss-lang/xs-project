@@ -73,7 +73,9 @@ add_library(xs_compiler
   sources/lexer.c
   sources/macro/validation.c
   sources/mir/hir_lowering.c
+  sources/mir/model_blocks.c
   sources/mir/model.c
+  sources/mir/model_writer.c
   sources/mir/xlil_lowering.c
   sources/hir/dump.c
   sources/hir/module_graph.c
@@ -86,9 +88,6 @@ add_library(xs_compiler
   sources/hir/type_info.c
   sources/hir/type_resolution.c
   sources/parser.c
-  sources/project.c
-  sources/project/lexer.c
-  sources/project/model.c
   sources/syntax_ast.c
   sources/syntax_parser.c
   sources/syntax/parser_macro.c
@@ -98,6 +97,9 @@ add_library(xs_compiler
   sources/syntax/parser_type.c
   sources/token.c
   sources/xlil/model.c
+  sources/xsproj/lexer.c
+  sources/xsproj/model.c
+  sources/xsproj/parser.c
 )
 
 target_include_directories(xs_compiler PUBLIC include)
@@ -180,6 +182,11 @@ if(BUILD_TESTING)
   target_link_libraries(xs_syntax_ast_tests PRIVATE xs_compiler)
   add_test(NAME syntax_ast COMMAND xs_syntax_ast_tests)
   set_tests_properties(syntax_ast PROPERTIES TIMEOUT 5)
+
+  add_executable(xs_syntax_decl_tests tests/syntax_decl_tests.c)
+  target_link_libraries(xs_syntax_decl_tests PRIVATE xs_compiler)
+  add_test(NAME syntax_decl COMMAND xs_syntax_decl_tests)
+  set_tests_properties(syntax_decl PROPERTIES TIMEOUT 5)
 
   add_executable(xs_syntax_macro_tests tests/syntax_macro_tests.c)
   target_link_libraries(xs_syntax_macro_tests PRIVATE xs_compiler)

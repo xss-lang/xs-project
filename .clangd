@@ -1,0 +1,80 @@
+---
+If:
+  PathMatch: '.*\.h$'
+
+CompileFlags:
+  Compiler: /usr/bin/clang
+  CompilationDatabase: build/clang-debug
+  Remove:
+    - '-std=*'
+    - '-Werror'
+    - '-D_GNU_SOURCE'
+  Add:
+    - '-x'
+    - 'c-header'
+    - '-std=c23'
+    - '-I/home/hasan/Projeler/XS/include'
+    - '-include'
+    - '/home/hasan/Projeler/XS/include/xs/compiler_check.h'
+
+Index:
+  Background: Build
+  StandardLibrary: true
+
+Diagnostics:
+  ClangTidy:
+    FastCheckFilter: Strict
+  MissingIncludes: Strict
+  UnusedIncludes: Strict
+
+Completion:
+  AllScopes: true
+  ArgumentLists: FullPlaceholders
+
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+
+Hover:
+  ShowAKA: true
+
+---
+If:
+  PathMatch: '.*\.c$'
+
+CompileFlags:
+  Compiler: /usr/bin/clang
+  CompilationDatabase: build/clang-debug
+  Remove:
+    - '-std=*'
+    - '-Werror'
+    - '-D_GNU_SOURCE'
+  Add:
+    - '-std=c23'
+    - '-I/home/hasan/Projeler/XS/include'
+    - '-include'
+    - '/home/hasan/Projeler/XS/include/xs/compiler_check.h'
+
+Index:
+  Background: Build
+  StandardLibrary: true
+
+Diagnostics:
+  ClangTidy:
+    FastCheckFilter: Strict
+  MissingIncludes: Strict
+  UnusedIncludes: Strict
+
+Completion:
+  AllScopes: true
+  ArgumentLists: FullPlaceholders
+
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+
+Hover:
+  ShowAKA: true
+...

@@ -47,6 +47,82 @@ static void test_module_and_text_writer(void)
   xs_mir_module_destroy(module);
 }
 
+static void test_function_definition_blocks_and_terminators(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = NULL;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(module, "App.Main", (XsMirType){.kind = XS_LIL_TYPE_I64}, NULL, 0,
+                                              &function, &error) == XS_MIR_OK);
+  CHECK(function != NULL);
+  CHECK(xs_mir_function_is_definition(function));
+  XsMirLocalId argument = 0;
+  XsMirLocalId state = 0;
+  CHECK(xs_mir_function_add_local(function, XS_MIR_LOCAL_PARAMETER, "argc", (XsMirType){.kind = XS_LIL_TYPE_I32}, false,
+                                  &argument, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_add_local(function, XS_MIR_LOCAL_VARIABLE, "state", (XsMirType){.kind = XS_LIL_TYPE_I64}, true,
+                                  &state, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_local_count(function) == 2);
+  CHECK(xs_mir_function_local_kind(function, argument) == XS_MIR_LOCAL_PARAMETER);
+  CHECK(strcmp(xs_mir_function_local_name(function, state), "state") == 0);
+  CHECK(xs_mir_function_local_type(function, state).kind == XS_LIL_TYPE_I64);
+  CHECK(xs_mir_function_local_is_mutable(function, state));
+  XsMirPlace *place = NULL;
+  CHECK(xs_mir_function_add_local_place(function, state, &place, &error) == XS_MIR_OK);
+  CHECK(xs_mir_place_id(place) == 0);
+  CHECK(xs_mir_place_root_local(place) == state);
+  CHECK(xs_mir_place_add_field_projection(place, 0, &error) == XS_MIR_OK);
+  CHECK(xs_mir_place_add_deref_projection(place, &error) == XS_MIR_OK);
+  CHECK(xs_mir_place_add_index_projection(place, 17, &error) == XS_MIR_OK);
+  CHECK(xs_mir_place_projection_count(place) == 3);
+  CHECK(xs_mir_place_projection_kind(place, 0) == XS_MIR_PLACE_PROJECTION_FIELD);
+  CHECK(xs_mir_place_projection_kind(place, 1) == XS_MIR_PLACE_PROJECTION_DEREF);
+  CHECK(xs_mir_place_projection_kind(place, 2) == XS_MIR_PLACE_PROJECTION_INDEX);
+  XsMirBlock *entry = NULL;
+  XsMirBlock *done = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "done", &done, &error) == XS_MIR_OK);
+  XsMirValueId constant = 0;
+  CHECK(xs_mir_block_add_const_i64(entry, 42, &constant, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_value_type(function, constant).kind == XS_LIL_TYPE_I64);
+  CHECK(xs_mir_block_add_store(entry, place, constant, &error) == XS_MIR_OK);
+  XsMirValueId loaded = 0;
+  CHECK(xs_mir_block_add_load(entry, place, (XsMirType){.kind = XS_LIL_TYPE_I64}, &loaded, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_value_type(function, loaded).kind == XS_LIL_TYPE_I64);
+  CHECK(xs_mir_block_instruction_count(entry) == 3);
+  CHECK(xs_mir_block_instruction_kind(entry, 0) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 1) == XS_MIR_INSTRUCTION_STORE);
+  CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_LOAD);
+  CHECK(xs_mir_function_block_count(function) == 2);
+  CHECK(xs_mir_block_id(entry) == 0);
+  CHECK(strcmp(xs_mir_block_label(done), "done") == 0);
+  CHECK(xs_mir_block_set_goto(entry, done, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(done, loaded, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_terminator_kind(entry) == XS_MIR_TERMINATOR_GOTO);
+  CHECK(xs_mir_block_terminator_kind(done) == XS_MIR_TERMINATOR_RETURN);
+
+  FILE *stream = tmpfile();
+  if (stream == NULL) {
+    ++failures;
+    xs_mir_module_destroy(module);
+    return;
+  }
+  CHECK(xs_mir_module_write_text(module, stream, &error) == XS_MIR_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "define fn App.Main() -> i64 {\n") != NULL);
+  CHECK(strstr(buffer, "local 0 param argc: i32\n") != NULL);
+  CHECK(strstr(buffer, "local 1 var mut state: i64\n") != NULL);
+  CHECK(strstr(buffer, "bb0 entry:\n  v0 = const.i64 42\n  store place0, v0\n  v1 = load place0\n  goto bb1\n") !=
+        NULL);
+  CHECK(strstr(buffer, "bb1 done:\n  return 1\n") != NULL);
+  fclose(stream);
+  xs_mir_module_destroy(module);
+}
+
 static void test_hir_function_declaration_lowering(void)
 {
   const char *text = "module App;\n"
@@ -96,6 +172,7 @@ static void test_xlil_declaration_lowering(void)
 int main(void)
 {
   test_module_and_text_writer();
+  test_function_definition_blocks_and_terminators();
   test_hir_function_declaration_lowering();
   test_xlil_declaration_lowering();
   return failures == 0 ? 0 : 1;

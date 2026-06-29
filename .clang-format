@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=https://json.schemastore.org/clang-format
 ---
-
 # clang-format uses the Cpp language mode for C, C++, Objective-C, and Objective-C++.
 Language: Cpp
 BasedOnStyle: LLVM
@@ -176,23 +175,23 @@ IncludeCategories:
     Priority: 2
     SortPriority: 2
     CaseSensitive: true
-  - Regex: '^<[^>]+>$'
+  - Regex: "^<[^>]+>$"
     Priority: 3
     SortPriority: 3
     CaseSensitive: true
-  - Regex: '.*'
+  - Regex: ".*"
     Priority: 4
     SortPriority: 4
     CaseSensitive: true
-IncludeIsMainRegex: '(_test)?$'
-IncludeIsMainSourceRegex: ''
+IncludeIsMainRegex: "(_test)?$"
+IncludeIsMainSourceRegex: ""
 MainIncludeChar: Quote
 
 SeparateDefinitionBlocks: Leave
 
 ReflowComments: Always
 PenaltyBreakComment: 300
-CommentPragmas: '^ IWYU pragma:'
+CommentPragmas: "^ IWYU pragma:"
 SpacesInLineCommentPrefix:
   Minimum: 1
   Maximum: -1
@@ -209,13 +208,22 @@ InsertNewlineAtEOF: true
 
 IndentPPDirectives: None
 SkipMacroDefinitionBody: false
-MacroBlockBegin: ''
-MacroBlockEnd: ''
-OneLineFormatOffRegex: ''
+MacroBlockBegin: ""
+MacroBlockEnd: ""
+OneLineFormatOffRegex: ""
+
+# Project C macros.
+#
+# Function-like test macros that form a complete statement belong in
+# StatementMacros. Parser shorthand macros such as accept, expect, node,
+# parse_type and project parser aliases are object-like function aliases;
+# they intentionally stay out of StatementMacros/IfMacros so calls used as
+# expressions keep ordinary C formatting.
 ForEachMacros: []
 IfMacros: []
 StatementAttributeLikeMacros: []
-StatementMacros: []
+StatementMacros:
+  - CHECK
 WhitespaceSensitiveMacros: []
 
 IntegerLiteralSeparator:
@@ -241,5 +249,4 @@ InsertTrailingCommas: None
 
 ExperimentalAutoDetectBinPacking: false
 BreakBeforeInlineASMColon: OnlyMultiline
-
 ...

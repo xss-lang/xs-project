@@ -138,10 +138,13 @@ static bool symbol_is_type(const XsHirSymbol *symbol)
                             symbol->kind == XS_HIR_SYMBOL_ENUM || symbol->kind == XS_HIR_SYMBOL_DATA);
 }
 
-static bool symbol_visible_from(const XsHirSymbol *symbol, const char *namespace_name)
+static bool symbol_visible_from(const XsHirSymbol *symbol, const char *namespace_name, uint64_t current_file_id)
 {
-  return symbol != NULL &&
-         (strcmp(symbol->namespace_name, namespace_name) == 0 || symbol->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
+  if (symbol == NULL)
+    return false;
+  if (symbol->visibility == XS_SYNTAX_VISIBILITY_PUBLIC)
+    return true;
+  return strcmp(symbol->namespace_name, namespace_name) == 0 && symbol->span.file_id == current_file_id;
 }
 
 static const XsHirSymbol *resolve_user_type(const char *path, const char *namespace_name,
@@ -176,9 +179,9 @@ static bool report_invisible_type(XsDiagnostics *diagnostics, const XsSyntaxNode
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
 }
 
-static bool resolve_type_node(const XsSyntaxNode *type, const char *namespace_name, const GenericScope *generics,
-                              const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
-                              XsDiagnostics *diagnostics);
+static bool resolve_type_node(const XsSyntaxNode *type, const char *namespace_name, uint64_t current_file_id,
+                              const GenericScope *generics, const XsHirSymbolTable *symbols,
+                              const XsHirImportScope *imports, XsDiagnostics *diagnostics);
 
 static bool report_generic_arity(XsDiagnostics *diagnostics, const XsSyntaxNode *type, const char *path,
                                  size_t expected, size_t actual)
@@ -209,7 +212,8 @@ static size_t generic_parameter_count(const XsSyntaxNode *declaration)
 
 static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_name, const GenericScope *generics,
                                const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
-                               XsDiagnostics *diagnostics, bool check_arity, const XsHirSymbol **resolved)
+                               XsDiagnostics *diagnostics, uint64_t current_file_id, bool check_arity,
+                               const XsHirSymbol **resolved)
 {
   if (resolved != NULL)
     *resolved = NULL;
@@ -227,7 +231,7 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
   bool success = true;
   if (!symbol_is_type(symbol))
     success = report_unresolved_type(diagnostics, type, name);
-  else if (!symbol_visible_from(symbol, namespace_name))
+  else if (!symbol_visible_from(symbol, namespace_name, current_file_id))
     success = report_invisible_type(diagnostics, type, name, namespace_name);
   else {
     if (check_arity) {
@@ -242,7 +246,7 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
   return success;
 }
 
-static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *namespace_name,
+static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *namespace_name, uint64_t current_file_id,
                                       const GenericScope *generics, const XsHirSymbolTable *symbols,
                                       const XsHirImportScope *imports, XsDiagnostics *diagnostics)
 {
@@ -250,7 +254,8 @@ static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *name
     return true;
   const XsSyntaxNode *base = type->children[0];
   const XsHirSymbol *symbol = NULL;
-  bool success = resolve_named_type(base, namespace_name, generics, symbols, imports, diagnostics, false, &symbol);
+  bool success = resolve_named_type(base, namespace_name, generics, symbols, imports, diagnostics, current_file_id,
+                                    false, &symbol);
   if (symbol != NULL) {
     char *name = path_to_string(first_child_kind(base, XS_SYNTAX_PATH));
     if (name == NULL)
@@ -262,23 +267,26 @@ static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *name
     free(name);
   }
   for (size_t i = 1; i < type->child_count; ++i)
-    success = resolve_type_node(type->children[i], namespace_name, generics, symbols, imports, diagnostics) && success;
+    success = resolve_type_node(type->children[i], namespace_name, current_file_id, generics, symbols, imports,
+                                diagnostics) &&
+              success;
   return success;
 }
 
-static bool resolve_constraint_type(const XsSyntaxNode *type, const char *namespace_name, const GenericScope *generics,
-                                    const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
-                                    XsDiagnostics *diagnostics)
+static bool resolve_constraint_type(const XsSyntaxNode *type, const char *namespace_name, uint64_t current_file_id,
+                                    const GenericScope *generics, const XsHirSymbolTable *symbols,
+                                    const XsHirImportScope *imports, XsDiagnostics *diagnostics)
 {
   if (type->kind != XS_SYNTAX_TYPE_NAMED) {
-    return resolve_type_node(type, namespace_name, generics, symbols, imports, diagnostics);
+    return resolve_type_node(type, namespace_name, current_file_id, generics, symbols, imports, diagnostics);
   }
   const XsSyntaxNode *path = first_child_kind(type, XS_SYNTAX_PATH);
   char *name = path_to_string(path);
   if (name == NULL)
     return false;
   const XsHirSymbol *symbol = NULL;
-  bool success = resolve_named_type(type, namespace_name, generics, symbols, imports, diagnostics, true, &symbol);
+  bool success =
+      resolve_named_type(type, namespace_name, generics, symbols, imports, diagnostics, current_file_id, true, &symbol);
   if (symbol != NULL && symbol->kind != XS_HIR_SYMBOL_INTERFACE)
     success = report_constraint_kind(diagnostics, type, name) && success;
   free(name);
@@ -286,36 +294,42 @@ static bool resolve_constraint_type(const XsSyntaxNode *type, const char *namesp
 }
 
 static bool resolve_generic_parameter_constraints(const XsSyntaxNode *parameter, const char *namespace_name,
-                                                  const GenericScope *generics, const XsHirSymbolTable *symbols,
-                                                  const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+                                                  uint64_t current_file_id, const GenericScope *generics,
+                                                  const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
+                                                  XsDiagnostics *diagnostics)
 {
   bool success = true;
   for (size_t i = 0; i < parameter->child_count; ++i) {
     const XsSyntaxNode *child = parameter->children[i];
     if (child->kind == XS_SYNTAX_IDENTIFIER)
       continue;
-    success = resolve_constraint_type(child, namespace_name, generics, symbols, imports, diagnostics) && success;
+    success =
+        resolve_constraint_type(child, namespace_name, current_file_id, generics, symbols, imports, diagnostics) &&
+        success;
   }
   return success;
 }
 
-static bool resolve_type_node(const XsSyntaxNode *type, const char *namespace_name, const GenericScope *generics,
-                              const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
-                              XsDiagnostics *diagnostics)
+static bool resolve_type_node(const XsSyntaxNode *type, const char *namespace_name, uint64_t current_file_id,
+                              const GenericScope *generics, const XsHirSymbolTable *symbols,
+                              const XsHirImportScope *imports, XsDiagnostics *diagnostics)
 {
   if (type == NULL)
     return true;
   bool success = true;
   if (type->kind == XS_SYNTAX_TYPE_NAMED) {
     const XsHirSymbol *symbol = NULL;
-    return resolve_named_type(type, namespace_name, generics, symbols, imports, diagnostics, true, &symbol);
+    return resolve_named_type(type, namespace_name, generics, symbols, imports, diagnostics, current_file_id, true,
+                              &symbol);
   }
   if (type->kind == XS_SYNTAX_TYPE_GENERIC)
-    return resolve_generic_type_node(type, namespace_name, generics, symbols, imports, diagnostics);
+    return resolve_generic_type_node(type, namespace_name, current_file_id, generics, symbols, imports, diagnostics);
   for (size_t i = 0; i < type->child_count; ++i) {
     if (type->children[i]->kind == XS_SYNTAX_EXPR_LITERAL)
       continue;
-    success = resolve_type_node(type->children[i], namespace_name, generics, symbols, imports, diagnostics) && success;
+    success = resolve_type_node(type->children[i], namespace_name, current_file_id, generics, symbols, imports,
+                                diagnostics) &&
+              success;
   }
   return success;
 }
@@ -326,7 +340,7 @@ static bool declaration_opens_generic_scope(XsSyntaxKind kind)
          kind == XS_SYNTAX_DECL_ENUM || kind == XS_SYNTAX_DECL_DATA;
 }
 
-static bool resolve_declaration_types(const XsSyntaxNode *node, const char *namespace_name,
+static bool resolve_declaration_types(const XsSyntaxNode *node, const char *namespace_name, uint64_t current_file_id,
                                       const GenericScope *generics, const XsHirSymbolTable *symbols,
                                       const XsHirImportScope *imports, XsDiagnostics *diagnostics)
 {
@@ -334,16 +348,18 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
   const GenericScope *active = declaration_opens_generic_scope(node->kind) ? &local_scope : generics;
   bool success = true;
   if (node->kind == XS_SYNTAX_GENERIC_PARAMETER)
-    return resolve_generic_parameter_constraints(node, namespace_name, active, symbols, imports, diagnostics);
+    return resolve_generic_parameter_constraints(node, namespace_name, current_file_id, active, symbols, imports,
+                                                 diagnostics);
   if (node->kind == XS_SYNTAX_TYPE_NAMED || node->kind == XS_SYNTAX_TYPE_GENERIC ||
       node->kind == XS_SYNTAX_TYPE_ARRAY || node->kind == XS_SYNTAX_TYPE_FIXED_ARRAY ||
       node->kind == XS_SYNTAX_TYPE_POINTER || node->kind == XS_SYNTAX_TYPE_REFERENCE ||
       node->kind == XS_SYNTAX_TYPE_MUTABLE_REFERENCE || node->kind == XS_SYNTAX_TYPE_TUPLE ||
       node->kind == XS_SYNTAX_TYPE_FUNCTION)
-    return resolve_type_node(node, namespace_name, active, symbols, imports, diagnostics);
+    return resolve_type_node(node, namespace_name, current_file_id, active, symbols, imports, diagnostics);
   for (size_t i = 0; i < node->child_count; ++i)
-    success =
-        resolve_declaration_types(node->children[i], namespace_name, active, symbols, imports, diagnostics) && success;
+    success = resolve_declaration_types(node->children[i], namespace_name, current_file_id, active, symbols, imports,
+                                        diagnostics) &&
+              success;
   return success;
 }
 
@@ -357,7 +373,8 @@ bool xs_hir_resolve_types(const XsSyntaxTree *tree, const XsHirSymbolTable *symb
     const XsHirSymbol *symbol = &symbols->symbols[i];
     if (symbol->span.file_id != tree->file_id)
       continue;
-    success = resolve_declaration_types(symbol->syntax, symbol->namespace_name, NULL, symbols, imports, diagnostics) &&
+    success = resolve_declaration_types(symbol->syntax, symbol->namespace_name, tree->file_id, NULL, symbols, imports,
+                                        diagnostics) &&
               success;
   }
   return success && !xs_diagnostics_has_error(diagnostics);

@@ -52,6 +52,9 @@ Belgelenmiş derleme sırası korunur:
 ### Proje sistemi
 
 - `.xsproj` dosyaları özgün X# proje sözdizimiyle ayrıştırılır.
+- `.xsproj` lexer, parser ve proje modeli uygulaması `sources/xsproj/` altında tutulur.
+- `.xsproj` parser iç derleyici detayı değildir; üçüncü taraf araçların `.xsproj` dosyalarını JSON benzeri şekilde
+  okuyabilmesi için public C23 API yüzeyi `#include <xs/project.h>` altında sağlanır.
 - Zorunlu alanlar, tekrar eden alanlar, bilinmeyen alanlar ve `appRelease` değerleri doğrulanır.
 - `entry: nil` olduğunda belgelenmiş ilk ek kaynak seçimi uygulanır.
 - Proje içindeki göreli yollar `.xsproj` dosyasının bulunduğu dizinden çözülür.
@@ -83,6 +86,8 @@ Belgelenmiş derleme sırası korunur:
 - Class constructor adı class adıyla eşleşmek zorundadır ve class başına en fazla bir constructor parser diagnostic'iyle
   doğrulanır.
 - Interface declaration gövdeleri yalnızca gövdesiz function declaration imzaları kabul eder.
+- Class `extends` bildirimi en fazla bir kez ve tek base class ile kullanılabilir; class `implements` bildirimi çoklu
+  interface listesi kabul eder. Interface gövdesinde `extends` veya `implements` diagnostic üretir.
 - Interface dışındaki gövdesiz function declaration sözdizimi `incomplete fn ...;` gerektirir; `incomplete fn` gövde
   içerirse parser diagnostic üretir.
 - Regular enum variant'ları payload type içeremez; `enum data` en az bir typed variant gerektirir ve tuple payload
@@ -127,8 +132,7 @@ Bu katman HIR dizini altında bulunur.
 - Public olmayan semboller dış modül importuyla açılmaz.
 - Fonksiyon gövdelerindeki doğrudan çağrı hedefleri, aynı namespace sembolleri ve import kapsamı üzerinden çözümlenir.
 - Başka namespace/modül üzerinden tam nitelikli çağrı hedefleri yalnızca public sembollere çözümlenebilir.
-- Aynı namespace içindeki private/internal semboller doğrudan qualified adla çözümlenebilir; dosya düzeyi module
-  sınırı henüz ayrı metadata olarak HIR'a taşınmadığı için daha sıkı dosya/modül görünürlük ayrımı TODO'dur.
+- Public olmayan semboller yalnızca aynı namespace ve aynı kaynak dosya içinden doğrudan qualified adla çözümlenebilir.
 - İlk segmenti yerel parametre/değişken olan çağrı hedefleri tip denetimine ertelenir.
 
 Bu aşama henüz metot/operator çözümleme, overload seçimi, generic constraint çözümleme veya tip tabanlı çağrı çözümleme
@@ -148,10 +152,13 @@ yapmaz.
 - Generic parametre adları kendi declaration scope’unda tanınır.
 - Kullanıcı tanımlı `class`, `interface`, `enum` ve `data` tipleri HIR sembol tablosu ve import kapsamı üzerinden çözülür.
 - Başka namespace/modül üzerinden tam nitelikli tip kullanımları yalnızca public tip sembollerine çözümlenebilir.
+- Public olmayan tip sembolleri yalnızca aynı namespace ve aynı kaynak dosya içinden çözümlenebilir.
 - Generic tip kullanımlarında tip argümanı sayısı declaration’daki generic parametre sayısıyla eşleşmelidir.
 - Generic type erasure olmadığı ve default generic parametre desteklenmediği için generic tiplerin argümansız kullanımı hata
   üretir.
 - Generic constraint tipleri interface sembollerine çözümlenmelidir.
+- Generic parametreler birden fazla constraint taşıyabilir; constraint listesindeki `, Identifier :` yeni generic parametre
+  başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.
 
 Bu aşama henüz expression type inference, overload seçimi, constraint üyelik/uyumluluk denetimi, trait/interface
 uyumluluğu veya ABI/layout kararı üretmez.
@@ -165,9 +172,24 @@ uyumluluğu veya ABI/layout kararı üretmez.
 - İç scope’ta tanımlanan makro dış scope’tan çağrılamaz.
 - Çağrıların görülebilir bir makro tanımına çözümlendiği denetlenir.
 - Tam token matcher kuralları ve boş matcher kuralları eşleştirilebilir.
+- Tek token'la kesin doğrulanabilen `tt`, `ident`, `literal`, `lifetime` ve `vis` fragment matcher'ları çağrı token'larına
+  göre eşleştirilir.
 
-Tam fragment yakalama ve AST genişletme hâlâ tamamlanmamıştır; desteklenmeyen fragment matcher’lar için semantik
-uydurulmaz.
+`expr`, `ty`, `path`, `pat`, `stmt`, `block`, `item` ve `meta` fragment yakalama ile AST genişletme hâlâ
+tamamlanmamıştır; desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
+
+### MIR modeli
+
+- `xs/mir.h` altında modül, fonksiyon bildirimi, fonksiyon tanımı, basic block ve terminator için C23 API vardır.
+- MIR fonksiyon tanımları basic block listesi taşır.
+- MIR fonksiyon tanımları local table taşır; local kind, tip, mutability ve isim bilgisi saklanır.
+- MIR place modeli root local ve `field`/`deref`/`index` projection zinciriyle başlatılmıştır.
+- MIR SSA value table ve `const.i64` instruction çekirdeği vardır.
+- Her basic block şimdilik `return`, `goto` veya `unreachable` terminator’ü alabilir.
+- MIR text writer declaration ve gövdeli function çıktısını deterministik yazar.
+
+Bu aşama henüz statement/expression lowering, genel instruction set, exception edge, async state machine veya borrow checker
+girdisi üretmez.
 
 ### LLVM backend altyapısı
 
@@ -189,21 +211,32 @@ Ayrıntılar: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   belgelenmemiştir.
 - XLIL, HIR/MIR'in bağlı olduğu hedef bağımsız tip/veri sözlüğüdür.
 - XLIL, LLVM IR’dan önce ve backend’lerin ortak giriş noktası olacak şekilde tasarlanır.
-- XLIL assembly değildir, bytecode değildir ve hedef mimariden bağımsız kalmalıdır.
+- `.xlil` her zaman text registry formatıdır; binary XLIL formatı eklenmeyecektir.
+- XLIL CLR kadar high-level değildir, assembly kadar low-level değildir; assembly’ye benzeyen ama aynı olmayan hedef bağımsız
+  orta-düşük seviye registry dilidir.
+- XLIL bytecode veya sanal makine formatı değildir.
 - Kararlı C23 API hedefi `#include <xs/lil.h>` olarak belgelenmiştir.
+- Harici frontend ve araçlar ileride XLIL üreterek XS LLVM backend’inden, daha sonra XS Backend’inden native executable
+  alabilmelidir.
+- Planlanan doğrudan XLIL derleme girişi `xs build --xlil -file <girdi.xlil>` biçimindedir; komut henüz uygulanmamıştır.
 - `xs/lil.h` altında hedef bağımsız XLIL modül, primitive tip ve gövdesiz fonksiyon bildirimi API iskeleti vardır.
 - XLIL text writer yalnızca modül başlığı ve fonksiyon bildirimi yazar.
 
-XLIL instruction set, function body modeli, runtime/ABI yerleşimi ve MIR → XLIL function body lowering hâlâ TODO’dur.
+XLIL instruction set, function body modeli, runtime/ABI yerleşimi ve MIR → XLIL function body lowering kararları
+[TODO.md](TODO.md) altında X# v0 sözleşmesi olarak sabitlenmiştir; implementation aşamalı tamamlanacaktır.
 
 ## Henüz tamamlanmayan aşamalar
+
+X# v0 için büyük dil, runtime, ABI, MIR, XLIL, backend ve tooling kararları [TODO.md](TODO.md) altında sabitlenmiştir.
+Kalan işler karar beklemez; bu sözleşmeye göre aşamalı implementation gerektirir. Küçük uygulama kararları belgelenmiş
+sözdizimi ve mevcut mimariyle uyumlu kaldığı sürece uygulama sırasında alınır.
 
 - Makro fragment matcher eşleme motoru ve AST makro genişletmesi
 - HIR metot ve operatör çözümleme
 - Modül/import dışındaki tip, fonksiyon çağrısı, generic ve trait/interface bağımlılık kenarları
 - Expression tip denetimi ve generic constraint doğrulaması
 - Send, Sync, mutability ve async/await doğrulamaları
-- MIR üretimi, exception yolları ve async state machine üretimi
+- MIR statement/expression lowering, exception yolları ve async state machine üretimi
 - Borrow checker ve drop noktalarının doğrulanması
 - MIR optimizasyonları
 - Monomorfizasyon, codegen unit ayırma ve artımlı derleme önbelleği

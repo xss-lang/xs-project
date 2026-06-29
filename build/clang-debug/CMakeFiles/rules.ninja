@@ -283,6 +283,27 @@ rule C_EXECUTABLE_LINKER__xs_syntax_ast_tests_Debug
 #############################################
 # Rule for compiling C files.
 
+rule C_COMPILER__xs_syntax_decl_tests_unscanned_Debug
+  depfile = $DEP_FILE
+  deps = gcc
+  command = ${LAUNCHER}${CODE_CHECK}/usr/bin/clang $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building C object $out
+
+
+#############################################
+# Rule for linking C executable.
+
+rule C_EXECUTABLE_LINKER__xs_syntax_decl_tests_Debug
+  depfile = $DEP_FILE
+  deps = gcc
+  command = $PRE_LINK && /usr/bin/clang $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking C executable $TARGET_FILE
+  restat = $RESTAT
+
+
+#############################################
+# Rule for compiling C files.
+
 rule C_COMPILER__xs_syntax_macro_tests_unscanned_Debug
   depfile = $DEP_FILE
   deps = gcc

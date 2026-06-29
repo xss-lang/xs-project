@@ -92,10 +92,45 @@ static void test_macro_scope_resolution(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_single_token_fragment_matching(void)
+{
+  const char *valid = "macroRules! name { ($value:ident): {}; }"
+                      "macroRules! lit { ($value:literal): {}; }"
+                      "macroRules! life { ($value:lifetime): {}; }"
+                      "macroRules! visibility { ($value:vis): {}; }"
+                      "fn Main() { name!(value); lit!(42); life!('a); visibility!(public); }";
+  XsSource source = {.path = "SingleTokenFragments.xs", .text = valid, .length = strlen(valid)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 17, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *invalid_literal = "macroRules! lit { ($value:literal): {}; } fn Main() { lit!(name); }";
+  source = (XsSource){.path = "LiteralFragmentInvalid.xs", .text = invalid_literal, .length = strlen(invalid_literal)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 18, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *invalid_lifetime = "macroRules! life { ($value:lifetime): {}; } fn Main() { life!(name); }";
+  source =
+      (XsSource){.path = "LifetimeFragmentInvalid.xs", .text = invalid_lifetime, .length = strlen(invalid_lifetime)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 19, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_macro_repetition_and_unique_variables();
   test_macro_semantic_validation();
   test_macro_scope_resolution();
+  test_single_token_fragment_matching();
   return failures == 0 ? 0 : 1;
 }

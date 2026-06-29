@@ -285,6 +285,32 @@ static void test_private_same_namespace_name_visibility(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_private_same_namespace_different_file_name_visibility(void)
+{
+  const char *library = "module Math;\n"
+                        "private fn Hidden() {}\n";
+  const char *main = "module Math;\n"
+                     "fn Main() { Math.Hidden(); }\n";
+  XsSyntaxTree library_tree;
+  XsSyntaxTree main_tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(add_file_symbols(library, 74, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file_symbols(main, 75, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&main_tree);
+  xs_syntax_tree_free(&library_tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_module_namespace_symbols();
@@ -297,5 +323,6 @@ int main(void)
   test_name_use_errors();
   test_private_qualified_name_visibility();
   test_private_same_namespace_name_visibility();
+  test_private_same_namespace_different_file_name_visibility();
   return failures == 0 ? 0 : 1;
 }

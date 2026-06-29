@@ -217,6 +217,36 @@ static bool token_text_matches(const XsSyntaxNode *matcher, const XsSyntaxNode *
   return text_equal(matcher->text, argument->text);
 }
 
+static bool token_is_literal(XsTokenKind kind)
+{
+  return kind == XS_TOKEN_INTEGER || kind == XS_TOKEN_FLOAT || kind == XS_TOKEN_STRING || kind == XS_TOKEN_CHARACTER ||
+         kind == XS_TOKEN_KW_TRUE || kind == XS_TOKEN_KW_FALSE || kind == XS_TOKEN_KW_NIL;
+}
+
+static bool token_is_visibility(XsTokenKind kind)
+{
+  return kind == XS_TOKEN_KW_PUBLIC || kind == XS_TOKEN_KW_PRIVATE || kind == XS_TOKEN_KW_PROTECTED ||
+         kind == XS_TOKEN_KW_INTERNAL;
+}
+
+static MatchStatus match_single_token_fragment(const XsSyntaxNode *fragment, const XsSyntaxNode *argument)
+{
+  if (fragment->child_count < 2)
+    return MATCH_NO;
+  XsText kind = fragment->children[1]->text;
+  if (text_equal(kind, (XsText){.data = "tt", .length = 2}))
+    return MATCH_YES;
+  if (text_equal(kind, (XsText){.data = "ident", .length = 5}))
+    return argument->token_kind == XS_TOKEN_IDENTIFIER ? MATCH_YES : MATCH_NO;
+  if (text_equal(kind, (XsText){.data = "literal", .length = 7}))
+    return token_is_literal(argument->token_kind) ? MATCH_YES : MATCH_NO;
+  if (text_equal(kind, (XsText){.data = "lifetime", .length = 8}))
+    return argument->token_kind == XS_TOKEN_LIFETIME ? MATCH_YES : MATCH_NO;
+  if (text_equal(kind, (XsText){.data = "vis", .length = 3}))
+    return token_is_visibility(argument->token_kind) ? MATCH_YES : MATCH_NO;
+  return MATCH_DEFERRED;
+}
+
 static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntaxNode *call)
 {
   if (rule == NULL || rule->kind != XS_SYNTAX_MACRO_RULE || rule->child_count == 0)
@@ -236,12 +266,15 @@ static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntax
       continue;
     }
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
-      if (element->child_count >= 2 && text_equal(element->children[1]->text, (XsText){.data = "tt", .length = 2}))
+      MatchStatus status = match_single_token_fragment(element, argument);
+      if (status == MATCH_YES)
         continue;
+      if (status == MATCH_NO)
+        return MATCH_NO;
       /*
-       * TODO: expr, ty, path, pat, stmt, block, item, literal, meta,
-       * lifetime and vis fragments must be matched by reparsing the
-       * captured token range as the documented structural AST fragment.
+       * TODO: expr, ty, path, pat, stmt, block, item and meta
+       * fragments must be matched by reparsing the captured token range
+       * as the documented structural AST fragment.
        */
       return MATCH_DEFERRED;
     }

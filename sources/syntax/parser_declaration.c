@@ -7,6 +7,16 @@ static bool syntax_text_equal(XsText left, XsText right)
   return left.length == right.length && memcmp(left.data, right.data, left.length) == 0;
 }
 
+static bool generic_constraint_comma_starts_parameter(SyntaxParser *parser)
+{
+  if (parser->current.kind != XS_TOKEN_COMMA || parser->next.kind != XS_TOKEN_IDENTIFIER)
+    return false;
+  SyntaxParser lookahead = *parser;
+  advance(&lookahead);
+  advance(&lookahead);
+  return lookahead.current.kind == XS_TOKEN_COLON;
+}
+
 static void parse_generics(SyntaxParser *parser, XsSyntaxNode *parent)
 {
   if (!accept(parser, XS_TOKEN_LESS))
@@ -18,7 +28,7 @@ static void parse_generics(SyntaxParser *parser, XsSyntaxNode *parent)
     if (accept(parser, XS_TOKEN_COLON)) {
       do {
         xs_syntax_node_add(parser->tree, parameter, parse_type(parser));
-        if (parser->current.kind != XS_TOKEN_COMMA || parser->next.kind == XS_TOKEN_IDENTIFIER)
+        if (parser->current.kind != XS_TOKEN_COMMA || generic_constraint_comma_starts_parameter(parser))
           break;
         advance(parser);
       } while (true);
@@ -213,9 +223,36 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
   parse_generics(parser, declaration);
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before declaration members");
   bool constructor_seen = false;
+  bool extends_seen = false;
   while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
     size_t before = parser->current.span.start;
-    if (accept(parser, XS_TOKEN_KW_EXTENDS) || accept(parser, XS_TOKEN_KW_IMPLEMENTS)) {
+    if (accept(parser, XS_TOKEN_KW_EXTENDS)) {
+      if (interface) {
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                           "interfaces may only contain function declarations");
+        skip_forbidden_data_member(parser);
+        continue;
+      }
+      if (extends_seen)
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                           "a class may contain at most one extends declaration");
+      extends_seen = true;
+      xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
+      if (accept(parser, XS_TOKEN_COMMA)) {
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                           "extends accepts exactly one base class");
+        do {
+          (void)parse_type(parser);
+        } while (accept(parser, XS_TOKEN_COMMA));
+      }
+      expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after extends or implements");
+    } else if (accept(parser, XS_TOKEN_KW_IMPLEMENTS)) {
+      if (interface) {
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                           "interfaces may only contain function declarations");
+        skip_forbidden_data_member(parser);
+        continue;
+      }
       do {
         xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
       } while (accept(parser, XS_TOKEN_COMMA));

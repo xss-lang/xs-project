@@ -1,6 +1,6 @@
 #include "xs/project.h"
 
-#include "project/parser_internal.h"
+#include "parser_internal.h"
 
 #include <stdlib.h>
 #include <string.h>

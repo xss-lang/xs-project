@@ -192,12 +192,43 @@ static void test_private_same_namespace_type_visibility(void)
   CHECK(check_single_source(text));
 }
 
+static void test_private_same_namespace_different_file_type_visibility(void)
+{
+  const char *library = "module Model;\n"
+                        "private data Secret { value: int; }\n";
+  const char *main = "module Model;\n"
+                     "fn Main(value: Model.Secret) {}\n";
+  XsSyntaxTree library_tree;
+  XsSyntaxTree main_tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(add_file(library, 87, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file(main, 88, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&main_tree);
+  xs_syntax_tree_free(&library_tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_generic_constraints(void)
 {
   const char *valid = "module App;\n"
                       "interface Printable { fn Print(); }\n"
                       "fn PrintValue<T: Printable>(value: T) {}\n";
   CHECK(check_single_source(valid));
+  const char *multiple = "module App;\n"
+                         "interface Runnable { fn Run(); }\n"
+                         "interface Printable { fn Print(); }\n"
+                         "fn Execute<T: Runnable, Printable, U: Runnable>(value: T, worker: U) {}\n";
+  CHECK(check_single_source(multiple));
   const char *invalid = "module App;\n"
                         "data NotInterface { value: int; }\n"
                         "fn PrintValue<T: NotInterface>(value: T) {}\n";
@@ -246,6 +277,7 @@ int main(void)
   test_public_namespace_exports_default_type();
   test_private_qualified_type_visibility();
   test_private_same_namespace_type_visibility();
+  test_private_same_namespace_different_file_type_visibility();
   test_generic_constraints();
   test_imported_generic_constraint();
   test_unknown_type_errors();
