@@ -1,7 +1,6 @@
-#include "xs/macro.h"
+#include "internal.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 typedef struct
 {
@@ -39,11 +38,6 @@ static bool list_add(MacroList *list, const XsSyntaxNode *node)
   return true;
 }
 
-static bool text_equal(XsText left, XsText right)
-{
-  return left.length == right.length && memcmp(left.data, right.data, left.length) == 0;
-}
-
 static XsText macro_name(const XsSyntaxNode *macro)
 {
   for (size_t i = 0; i < macro->child_count; ++i) {
@@ -72,67 +66,6 @@ static XsText call_name(const XsSyntaxNode *call)
   return (XsText){0};
 }
 
-static bool token_text_matches(const XsSyntaxNode *matcher, const XsSyntaxNode *argument)
-{
-  if (matcher->token_kind != argument->token_kind)
-    return false;
-  if (matcher->text.length == 0 || argument->text.length == 0)
-    return true;
-  return text_equal(matcher->text, argument->text);
-}
-
-static bool token_is_literal(XsTokenKind kind)
-{
-  return kind == XS_TOKEN_INTEGER || kind == XS_TOKEN_FLOAT || kind == XS_TOKEN_STRING || kind == XS_TOKEN_CHARACTER ||
-         kind == XS_TOKEN_KW_TRUE || kind == XS_TOKEN_KW_FALSE || kind == XS_TOKEN_KW_NIL;
-}
-
-static bool token_is_visibility(XsTokenKind kind)
-{
-  return kind == XS_TOKEN_KW_PUBLIC || kind == XS_TOKEN_KW_PRIVATE || kind == XS_TOKEN_KW_PROTECTED ||
-         kind == XS_TOKEN_KW_INTERNAL;
-}
-
-static bool single_token_fragment_supported(XsText kind)
-{
-  return text_equal(kind, (XsText){.data = "tt", .length = 2}) ||
-         text_equal(kind, (XsText){.data = "ident", .length = 5}) ||
-         text_equal(kind, (XsText){.data = "literal", .length = 7}) ||
-         text_equal(kind, (XsText){.data = "lifetime", .length = 8}) ||
-         text_equal(kind, (XsText){.data = "vis", .length = 3});
-}
-
-static bool fragment_kind_is(const XsSyntaxNode *fragment, const char *kind)
-{
-  size_t length = strlen(kind);
-  return fragment->child_count >= 2 && fragment->children[1]->text.length == length &&
-         memcmp(fragment->children[1]->text.data, kind, length) == 0;
-}
-
-static bool fragment_supported(XsText kind)
-{
-  return single_token_fragment_supported(kind) || text_equal(kind, (XsText){.data = "stmt", .length = 4}) ||
-         text_equal(kind, (XsText){.data = "block", .length = 5});
-}
-
-static bool fragment_matches(const XsSyntaxNode *fragment, const XsSyntaxNode *argument)
-{
-  if (fragment->child_count < 2)
-    return false;
-  XsText kind = fragment->children[1]->text;
-  if (text_equal(kind, (XsText){.data = "tt", .length = 2}))
-    return true;
-  if (text_equal(kind, (XsText){.data = "ident", .length = 5}))
-    return argument->token_kind == XS_TOKEN_IDENTIFIER;
-  if (text_equal(kind, (XsText){.data = "literal", .length = 7}))
-    return token_is_literal(argument->token_kind);
-  if (text_equal(kind, (XsText){.data = "lifetime", .length = 8}))
-    return argument->token_kind == XS_TOKEN_LIFETIME;
-  if (text_equal(kind, (XsText){.data = "vis", .length = 3}))
-    return token_is_visibility(argument->token_kind);
-  return false;
-}
-
 static bool rule_supported(const XsSyntaxNode *rule)
 {
   if (rule->child_count < 2)
@@ -143,7 +76,7 @@ static bool rule_supported(const XsSyntaxNode *rule)
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_REPETITION)
       return false;
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
-      if (element->child_count < 2 || !fragment_supported(element->children[1]->text))
+      if (element->child_count < 2 || !xs_macro_fragment_supported(element->children[1]->text))
         return false;
     }
   }
@@ -158,7 +91,7 @@ static bool rule_supported(const XsSyntaxNode *rule)
 static const XsSyntaxNode *find_capture(const CaptureSet *captures, XsText name)
 {
   for (size_t i = 0; i < captures->count; ++i) {
-    if (text_equal(captures->items[i].name, name))
+    if (xs_macro_text_equal(captures->items[i].name, name))
       return captures->items[i].argument;
   }
   return NULL;
@@ -197,17 +130,17 @@ static bool rule_matches(const XsSyntaxNode *rule, const XsSyntaxNode *call, Cap
     const XsSyntaxNode *element = matcher->children[i];
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_TOKEN) {
       const XsSyntaxNode *value = call->children[argument++];
-      if (!token_text_matches(element, value))
+      if (!xs_macro_token_text_matches(element, value))
         return false;
     }
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
-      if (fragment_kind_is(element, "stmt") || fragment_kind_is(element, "block")) {
+      if (xs_macro_fragment_kind_is(element, "stmt") || xs_macro_fragment_kind_is(element, "block")) {
         if (i + 1 != matcher->child_count)
           return false;
         return add_capture_sequence(captures, element, call, argument, call->child_count - argument);
       }
       const XsSyntaxNode *value = call->children[argument++];
-      if (!fragment_matches(element, value) || !add_capture(captures, element, value))
+      if (!xs_macro_fragment_matches(element, value) || !add_capture(captures, element, value))
         return false;
     }
   }
@@ -228,7 +161,7 @@ static bool plan_expansion(const XsSyntaxNode *rule, const CaptureSet *captures,
       if (argument == NULL)
         return false;
       for (size_t capture = 0; capture < captures->count; ++capture) {
-        if (text_equal(captures->items[capture].name, element->children[0]->text)) {
+        if (xs_macro_text_equal(captures->items[capture].name, element->children[0]->text)) {
           report->output_tokens_planned += captures->items[capture].argument_count;
           break;
         }
@@ -242,7 +175,7 @@ static bool plan_expansion(const XsSyntaxNode *rule, const CaptureSet *captures,
 static const XsSyntaxNode *resolve_macro(const MacroList *visible, XsText name)
 {
   for (size_t i = visible->count; i > 0; --i) {
-    if (text_equal(macro_name(visible->items[i - 1]), name))
+    if (xs_macro_text_equal(macro_name(visible->items[i - 1]), name))
       return visible->items[i - 1];
   }
   return NULL;
@@ -387,7 +320,7 @@ static bool emit_rule_tokens(const XsSyntaxNode *rule, const CaptureSet *capture
     } else if (element->kind == XS_SYNTAX_MACRO_EXPANSION_VARIABLE && element->child_count != 0) {
       const Capture *capture = NULL;
       for (size_t index = 0; index < captures->count; ++index) {
-        if (text_equal(captures->items[index].name, element->children[0]->text)) {
+        if (xs_macro_text_equal(captures->items[index].name, element->children[0]->text)) {
           capture = &captures->items[index];
           break;
         }

@@ -1,4 +1,4 @@
-#include "xs/macro.h"
+#include "internal.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -34,11 +34,6 @@ static void collect_kind(const XsSyntaxNode *node, XsSyntaxKind kind, NodeList *
     collect_kind(node->children[i], kind, nodes);
 }
 
-static bool text_equal(XsText left, XsText right)
-{
-  return left.length == right.length && memcmp(left.data, right.data, left.length) == 0;
-}
-
 static XsText macro_name(const XsSyntaxNode *macro)
 {
   for (size_t i = 0; i < macro->child_count; ++i) {
@@ -53,7 +48,7 @@ static bool matcher_variable_depth(const XsSyntaxNode *node, XsText name, size_t
   if (node == NULL)
     return false;
   if (node->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT && node->child_count != 0 &&
-      text_equal(node->children[0]->text, name)) {
+      xs_macro_text_equal(node->children[0]->text, name)) {
     *result = depth;
     return true;
   }
@@ -117,7 +112,7 @@ static bool expansion_calls_name(const XsSyntaxNode *node, XsText name)
     const XsSyntaxNode *first = node->children[i];
     const XsSyntaxNode *second = node->children[i + 1];
     if (first->kind == XS_SYNTAX_MACRO_EXPANSION_TOKEN && first->token_kind == XS_TOKEN_IDENTIFIER &&
-        text_equal(first->text, name) && second->kind == XS_SYNTAX_MACRO_EXPANSION_TOKEN &&
+        xs_macro_text_equal(first->text, name) && second->kind == XS_SYNTAX_MACRO_EXPANSION_TOKEN &&
         second->token_kind == XS_TOKEN_BANG)
       return true;
   }
@@ -195,7 +190,7 @@ static XsText macro_call_name(const XsSyntaxNode *call)
 static const XsSyntaxNode *resolve_macro(const NodeList *visible, XsText name)
 {
   for (size_t i = visible->count; i > 0; --i) {
-    if (text_equal(macro_name(visible->items[i - 1]), name))
+    if (xs_macro_text_equal(macro_name(visible->items[i - 1]), name))
       return visible->items[i - 1];
   }
   return NULL;
@@ -207,45 +202,6 @@ typedef enum
   MATCH_YES,
   MATCH_DEFERRED,
 } MatchStatus;
-
-static bool token_text_matches(const XsSyntaxNode *matcher, const XsSyntaxNode *argument)
-{
-  if (matcher->token_kind != argument->token_kind)
-    return false;
-  if (matcher->text.length == 0 || argument->text.length == 0)
-    return true;
-  return text_equal(matcher->text, argument->text);
-}
-
-static bool token_is_literal(XsTokenKind kind)
-{
-  return kind == XS_TOKEN_INTEGER || kind == XS_TOKEN_FLOAT || kind == XS_TOKEN_STRING || kind == XS_TOKEN_CHARACTER ||
-         kind == XS_TOKEN_KW_TRUE || kind == XS_TOKEN_KW_FALSE || kind == XS_TOKEN_KW_NIL;
-}
-
-static bool token_is_visibility(XsTokenKind kind)
-{
-  return kind == XS_TOKEN_KW_PUBLIC || kind == XS_TOKEN_KW_PRIVATE || kind == XS_TOKEN_KW_PROTECTED ||
-         kind == XS_TOKEN_KW_INTERNAL;
-}
-
-static MatchStatus match_single_token_fragment(const XsSyntaxNode *fragment, const XsSyntaxNode *argument)
-{
-  if (fragment->child_count < 2)
-    return MATCH_NO;
-  XsText kind = fragment->children[1]->text;
-  if (text_equal(kind, (XsText){.data = "tt", .length = 2}))
-    return MATCH_YES;
-  if (text_equal(kind, (XsText){.data = "ident", .length = 5}))
-    return argument->token_kind == XS_TOKEN_IDENTIFIER ? MATCH_YES : MATCH_NO;
-  if (text_equal(kind, (XsText){.data = "literal", .length = 7}))
-    return token_is_literal(argument->token_kind) ? MATCH_YES : MATCH_NO;
-  if (text_equal(kind, (XsText){.data = "lifetime", .length = 8}))
-    return argument->token_kind == XS_TOKEN_LIFETIME ? MATCH_YES : MATCH_NO;
-  if (text_equal(kind, (XsText){.data = "vis", .length = 3}))
-    return token_is_visibility(argument->token_kind) ? MATCH_YES : MATCH_NO;
-  return MATCH_DEFERRED;
-}
 
 static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntaxNode *call)
 {
@@ -259,24 +215,23 @@ static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntax
       return MATCH_DEFERRED;
     if (argument_index >= call->child_count)
       return MATCH_NO;
-    const XsSyntaxNode *argument = call->children[argument_index++];
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_TOKEN) {
-      if (!token_text_matches(element, argument))
+      const XsSyntaxNode *argument = call->children[argument_index++];
+      if (!xs_macro_token_text_matches(element, argument))
         return MATCH_NO;
       continue;
     }
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
-      MatchStatus status = match_single_token_fragment(element, argument);
-      if (status == MATCH_YES)
-        continue;
-      if (status == MATCH_NO)
+      if (element->child_count < 2)
         return MATCH_NO;
-      /*
-       * TODO: expr, ty, path, pat, stmt, block, item and meta
-       * fragments must be matched by reparsing the captured token range
-       * as the documented structural AST fragment.
-       */
-      return MATCH_DEFERRED;
+      if (xs_macro_fragment_kind_is(element, "stmt") || xs_macro_fragment_kind_is(element, "block"))
+        return i + 1 == matcher->child_count && argument_index < call->child_count ? MATCH_YES : MATCH_NO;
+      if (!xs_macro_fragment_supported(element->children[1]->text))
+        return MATCH_DEFERRED;
+      const XsSyntaxNode *argument = call->children[argument_index++];
+      if (!xs_macro_fragment_matches(element, argument))
+        return MATCH_NO;
+      continue;
     }
     return MATCH_NO;
   }

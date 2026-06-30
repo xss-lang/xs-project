@@ -196,6 +196,8 @@ uyumluluğu veya ABI/layout kararı üretmez.
 - Makro matcher değişkenleri, tekrar derinlikleri ve genişletme değişkenleri doğrulanır.
 - Aynı scope içindeki doğrudan ve dolaylı makro recursion hatadır.
 - Makro tanımları genişletme öncesinde ilgili scope için toplanır.
+- Macro fragment/token matcher yardımcıları `xs/sources/macro/fragment.c` içinde ayrılmıştır; validation, expansion
+  traversal ve future fragment reparse desteği `xs/sources/macro/expansion.c` dosyasını büyütmeden genişletilmelidir.
 - Aynı scope içinde metinsel tanımdan önce makro çağrısı kabul edilir.
 - İç scope’ta tanımlanan makro dış scope’tan çağrılamaz.
 - Çağrıların görülebilir bir makro tanımına çözümlendiği denetlenir.
@@ -206,9 +208,9 @@ uyumluluğu veya ABI/layout kararı üretmez.
   çözer, tek-token fragment veya tam-token matcher ile yapısal yeniden ayrıştırma gerektirmeden genişletilebilir çağrıları
   sayar, basit expansion token/substitution planı üretir ve `expr`, `ty`, `path`, `pat`, `block`, `item`, `meta`
   fragmentları için genişletmeyi bilinçli olarak erteler.
-- `stmt` fragment v0 desteği, matcher içinde tek kalan fragment olduğu durumda çağrı parantezi içindeki token dizisini tek
-  statement fragment olarak yakalar. Expansion içinde `$name` kullanımı bu token dizisini statement reparse aşamasına
-  taşır.
+- `stmt` ve `block` fragment v0 desteği, validation ve expansion sırasında matcher içinde tek kalan fragment olduğu durumda
+  çağrı parantezi içindeki token dizisini tek statement/block fragment olarak yakalar. Expansion içinde `$name` kullanımı bu
+  token dizisini statement reparse aşamasına taşır.
 - `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bu çıktı henüz
   structural AST'ye geri yazılmaz; sonraki aşamadaki fragment reparse ve AST replacement için ara genişletme akışıdır.
 - `xs_macro_reparse_expansion_as_statement` desteklenen expansion token listesini synthetic bir fonksiyon gövdesi içinde
@@ -227,9 +229,8 @@ uyumluluğu veya ABI/layout kararı üretmez.
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
   kullanımı ile HIR tip çözümleme traversal'larına verir.
 
-`expr`, `ty`, `path`, `pat`, `block`, `item` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır.
-`stmt` fragment desteği şimdilik tek statement token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik
-uydurulmaz.
+`expr`, `ty`, `path`, `pat`, `item` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `stmt` ve
+`block` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
 
 ### MIR modeli
 

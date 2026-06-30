@@ -250,6 +250,56 @@ static void test_statement_fragment_expansion(void)
   xs_macro_expansion_set_free(&expansions);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
+
+  const char *invalid = "macroRules! pass { ($body:stmt): { $body }; }"
+                        "fn Main() { pass!(); }";
+  source = (XsSource){.path = "MacroStatementFragmentInvalid.xs", .text = invalid, .length = strlen(invalid)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 26, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_block_fragment_expansion(void)
+{
+  const char *text = "macroRules! pass { ($body:block): { $body }; }"
+                     "fn Main() { pass!({ value: Missing = nil; }); }";
+  XsSource source = {.path = "MacroBlockFragment.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroExpansionReport report;
+  XsMacroExpansionSet expansions;
+  XsMacroStatementExpansionSet statements;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 25, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_seen == 1);
+  CHECK(report.calls_expandable == 1);
+  CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
+  CHECK(expansions.count == 1);
+  CHECK(expansions.count < 1 || expansions.items[0].token_count == 8);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_BLOCK);
+  CHECK(statements.count < 1 ||
+        xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_STMT_VARIABLE) != NULL);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_macro_expansion_set_free(&expansions);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *invalid = "macroRules! pass { ($body:block): { $body }; }"
+                        "fn Main() { pass!(); }";
+  source = (XsSource){.path = "MacroBlockFragmentInvalid.xs", .text = invalid, .length = strlen(invalid)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 27, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
 }
 
 int main(void)
@@ -260,5 +310,6 @@ int main(void)
   test_single_token_fragment_matching();
   test_macro_expansion_preparation_report();
   test_statement_fragment_expansion();
+  test_block_fragment_expansion();
   return failures == 0 ? 0 : 1;
 }

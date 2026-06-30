@@ -73,7 +73,7 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
   ve C API’yi bozmamalıdır.
 - `xsfmt` ve `xstidy` bu kuralın istisnasıdır: onlar baştan Rust nightly + Serde future tool projeleridir.
 - Bu projede `.bash`, `.zsh` veya benzeri shell script dilleri proje artifact'i olarak kullanılmaz.
-- Script/otomasyon gerekiyorsa Go veya Rust tercih edilir; geçici terminal komutları kalıcı proje dosyasına dönüştürülmez.
+- Script/otomasyon gerekiyorsa Java 21 source-file shebang veya D + rdmd tercih edilir; geçici terminal komutları kalıcı proje dosyasına dönüştürülmez.
 
 ## Build sistemi ve toolchain
 

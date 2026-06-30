@@ -1,0 +1,77 @@
+#!/usr/bin/java --source 21
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+class XsGit {
+  static int run(String... command) throws IOException, InterruptedException {
+    System.err.println("+ " + String.join(" ", command));
+
+    return new ProcessBuilder(command)
+      .inheritIO()
+      .start()
+      .waitFor();
+  }
+
+  static String capture(String... command) throws IOException, InterruptedException {
+    Process process = new ProcessBuilder(command)
+      .redirectError(ProcessBuilder.Redirect.INHERIT)
+      .start();
+
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    process.getInputStream().transferTo(output);
+
+    int code = process.waitFor();
+
+    if (code != 0) {
+      throw new RuntimeException(String.join(" ", command) + " failed with code " + code);
+    }
+
+    return output.toString(StandardCharsets.UTF_8);
+  }
+
+  static void requireGitRepo() throws IOException, InterruptedException {
+    String result = capture("git", "rev-parse", "--is-inside-work-tree").trim();
+
+    if (!result.equals("true")) {
+      System.err.println("error: not inside a git work tree");
+      System.exit(1);
+    }
+  }
+
+  static String commitMessage(String[] args) {
+    if (args.length == 0) {
+      return "Update";
+    }
+
+    return String.join(" ", args);
+  }
+
+  public static void main(String[] args) throws Exception {
+    requireGitRepo();
+
+    String message = commitMessage(args);
+
+    int addCode = run("git", "add", "--all");
+
+    if (addCode != 0) {
+      System.err.println("error: git add --all failed");
+      System.exit(addCode);
+    }
+
+    String status = capture("git", "status", "--porcelain=v1");
+
+    if (status.isBlank()) {
+      System.err.println("nothing to commit");
+      return;
+    }
+
+    int commitCode = run("git", "commit", "--message", message);
+
+    if (commitCode != 0) {
+      System.err.println("error: git commit failed");
+      System.exit(commitCode);
+    }
+  }
+}
