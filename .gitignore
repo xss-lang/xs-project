@@ -1,5 +1,5 @@
-/build/
-/.vscode/
+build/
+.vscode/
 target/
 Cargo.lock
 node_modules/

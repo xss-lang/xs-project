@@ -61,6 +61,7 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - `XS/`
   - X# dil belgeleri, syntax örnekleri ve örnek proje dosyalarıdır.
   - `XS/later/` artık aktif staging alanı değildir; yeni future proje dosyaları kendi proje köklerine eklenmelidir.
+  - Benim yazdığım `~/.local/bin/xspn` aracını kullanabilirsin.
 
 ## Dil ve implementation dili
 

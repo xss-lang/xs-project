@@ -1,6 +1,6 @@
 root = true
 
-[{*.java,scripts/java/xs*,scripts/java/**/*/}]
+[*.java]
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
@@ -96,24 +96,3 @@ ij_java_blank_lines_around_method_in_interface = 1
 ij_java_keep_blank_lines_in_code = 1
 ij_java_keep_blank_lines_in_declarations = 1
 ij_java_keep_blank_lines_before_right_brace = 1
-
-[*.d]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
-indent_style = space
-indent_size = 2
-continuation_indent_size = 4
-tab_width = 2
-max_line_length = 120
-
-[*.toml]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
-indent_style = space
-indent_size = 2
-tab_width = 2
-max_line_length = 120
