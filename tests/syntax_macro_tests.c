@@ -16,6 +16,11 @@ static int failures;
     }                                                                                                                  \
   } while (0)
 
+static bool text_is(XsText text, const char *value)
+{
+  return text.length == strlen(value) && memcmp(text.data, value, text.length) == 0;
+}
+
 static void test_macro_repetition_and_unique_variables(void)
 {
   const char *valid = "macroRules! many { ($( $value:expr ),*): { $( $value )* }; }";
@@ -126,11 +131,69 @@ static void test_single_token_fragment_matching(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_macro_expansion_preparation_report(void)
+{
+  const char *text = "macroRules! exact { (hello): { world }; }"
+                     "macroRules! id { ($value:ident): { $value }; }"
+                     "fn Main() { exact!(hello); id!(name); }";
+  XsSource source = {.path = "MacroExpansionReady.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroExpansionReport report;
+  XsMacroExpansionSet expansions;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 20, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_seen == 2);
+  CHECK(report.calls_resolved == 2);
+  CHECK(report.calls_expandable == 2);
+  CHECK(report.calls_deferred == 0);
+  CHECK(report.output_tokens_planned == 2);
+  CHECK(report.substitutions_planned == 1);
+  CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
+  CHECK(expansions.count == 2);
+  CHECK(expansions.count < 1 || expansions.items[0].token_count == 1);
+  CHECK(expansions.count < 1 || text_is(expansions.items[0].tokens[0].text, "world"));
+  CHECK(expansions.count < 2 || expansions.items[1].token_count == 1);
+  CHECK(expansions.count < 2 || text_is(expansions.items[1].tokens[0].text, "name"));
+  CHECK(expansions.count < 2 || expansions.items[1].tokens[0].from_substitution);
+  if (expansions.count >= 2) {
+    XsMacroReparseResult reparse;
+    CHECK(xs_macro_reparse_expansion_as_statement(&expansions.items[1], 22, &diagnostics, &reparse));
+    CHECK(xs_syntax_find_first(reparse.tree.root, XS_SYNTAX_STMT_EXPRESSION) != NULL);
+    CHECK(xs_syntax_find_first(reparse.tree.root, XS_SYNTAX_EXPR_IDENTIFIER) != NULL);
+    xs_macro_reparse_result_free(&reparse);
+  }
+  xs_macro_expansion_set_free(&expansions);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *deferred = "macroRules! identity { ($value:expr): { $value }; } fn Main() { identity!(42); }";
+  source = (XsSource){.path = "MacroExpansionDeferred.xs", .text = deferred, .length = strlen(deferred)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 21, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_seen == 1);
+  CHECK(report.calls_resolved == 1);
+  CHECK(report.calls_expandable == 0);
+  CHECK(report.calls_deferred == 1);
+  CHECK(report.output_tokens_planned == 0);
+  CHECK(report.substitutions_planned == 0);
+  CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
+  CHECK(expansions.count == 0);
+  xs_macro_expansion_set_free(&expansions);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_macro_repetition_and_unique_variables();
   test_macro_semantic_validation();
   test_macro_scope_resolution();
   test_single_token_fragment_matching();
+  test_macro_expansion_preparation_report();
   return failures == 0 ? 0 : 1;
 }

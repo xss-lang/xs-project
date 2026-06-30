@@ -193,6 +193,16 @@ uyumluluğu veya ABI/layout kararı üretmez.
 - Tam token matcher kuralları ve boş matcher kuralları eşleştirilebilir.
 - Tek token'la kesin doğrulanabilen `tt`, `ident`, `literal`, `lifetime` ve `vis` fragment matcher'ları çağrı token'larına
   göre eşleştirilir.
+- Makro genişletme hazırlık API'si `xs_macro_prepare_expansion` olarak eklenmiştir. Bu aşama çağrıları scope içinde
+  çözer, tek-token fragment veya tam-token matcher ile yapısal yeniden ayrıştırma gerektirmeden genişletilebilir çağrıları
+  sayar, basit expansion token/substitution planı üretir ve `expr`, `ty`, `path`, `pat`, `stmt`, `block`, `item`, `meta`
+  fragmentları için genişletmeyi bilinçli olarak erteler.
+- `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bu çıktı henüz
+  structural AST'ye geri yazılmaz; sonraki aşamadaki fragment reparse ve AST replacement için ara genişletme akışıdır.
+- `xs_macro_reparse_expansion_as_statement` desteklenen expansion token listesini synthetic bir fonksiyon gövdesi içinde
+  statement olarak yeniden structural AST parser'dan geçirir. Bu köprü gerçek macro call replacement değildir; fragment-level
+  reparse ve AST replacement için doğrulanabilir ara adımdır.
+- `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını çalıştırır; gerçek AST rewrite sonraki aşamadır.
 
 `expr`, `ty`, `path`, `pat`, `stmt`, `block`, `item` ve `meta` fragment yakalama ile AST genişletme hâlâ
 tamamlanmamıştır; desteklenmeyen fragment matcher’lar için semantik uydurulmaz.

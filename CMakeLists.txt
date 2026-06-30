@@ -94,6 +94,8 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/codegen/units.c
     xs/sources/driver/cli.c
     xs/sources/lexer.c
+    xs/sources/macro/expansion.c
+    xs/sources/macro/reparse.c
     xs/sources/macro/validation.c
     xs/sources/mir/borrow_checker.c
     xs/sources/mir/hir_lowering.c

@@ -49,6 +49,18 @@
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/expansion.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/expansion.c",
+  "file": "/home/hasan/Projeler/XS/xs/sources/macro/expansion.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/expansion.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/reparse.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/reparse.c",
+  "file": "/home/hasan/Projeler/XS/xs/sources/macro/reparse.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/reparse.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
   "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/validation.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/macro/validation.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o"

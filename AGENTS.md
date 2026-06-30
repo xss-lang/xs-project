@@ -115,16 +115,18 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - `compilerOptions.xsBackend` değerleri `"LLVM"` ve `"XS"` olabilir.
 - Desteklenmeyen backend davranışı sessizce tahmin edilmemeli; diagnostic üretilmelidir.
 - X# syntax handling veya `XS/example` dosyaları değiştirilmeden önce ilgili `XS/Syntax/` dosyaları okunmalıdır.
-- Syntax ve XLIL için belgelenmemiş biçim uydurma.
+- Belgelenmiş X# syntax, `.xsproj` ve XLIL biçimleri her zaman önceliklidir.
+- Belgelenmemiş syntax, `.xsproj`, XLIL, semantik veya ABI biçimleri gerekiyorsa artık bekleme: Rust, TypeScript, C#,
+  C23 ve hedef assembly convention’larından ilham alarak X# ile tutarlı biçimde tasarla.
+- Uydurulan yeni biçim/karar ilgili dokümana eklenmelidir; belgelenmiş kurallarla çelişemez.
 
 ## Dil kararları
 
 - `docs/TODO.md` artık soru listesi değil; X# v0 karar ve implementation takip dokümanıdır.
 - Dil semantiği, runtime, ABI, MIR, backend ve tooling kararlarında `docs/TODO.md` ve `docs/IMPLEMENTATION.md` takip edilir.
-- Syntax ve XLIL belgelenmiş biçimlere bağlı kalır.
-- Syntax ve XLIL dışındaki küçük eksikler tutarlı şekilde tamamlanabilir.
-- Büyük bir kural eksikse bekleme; kararı ver, `docs/TODO.md` veya ilgili dokümana yaz, belgelenmiş kuralları öncelikli
-  tut.
+- Belgelenmiş biçimler ve kararlar kaynak otoritedir; çelişki olduğunda mevcut doküman kazanır.
+- Belgelenmemiş küçük veya büyük eksiklerde bekleme; kararı ver, `docs/TODO.md`, `docs/IMPLEMENTATION.md`, `XS/Syntax/`
+  veya ilgili XLIL dokümanına yaz ve implementation’ı buna göre ilerlet.
 - Tasarım ilhamı için Rust, TypeScript, C#, C23 ve hedef assembly convention’ları kullanılabilir.
 - `byte` -> `u8`.
 - `sbyte` -> `i8`.

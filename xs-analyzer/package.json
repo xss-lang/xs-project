@@ -57,12 +57,12 @@
     "format": "prettier --check ."
   },
   "devDependencies": {
-    "@eslint/json": "^0.13.0",
-    "@types/node": "^24.0.0",
+    "@eslint/json": "^2.0.0",
+    "@types/node": "^26.0.1",
     "@types/vscode": "^1.100.0",
-    "eslint": "^9.0.0",
+    "eslint": "^10.6.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.9.0",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.0.0"
   }
 }

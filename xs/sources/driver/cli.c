@@ -219,6 +219,10 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   unit->tree_initialized = true;
   if (success)
     success = xs_macro_validate(&unit->tree, &unit->diagnostics);
+  if (success) {
+    XsMacroExpansionReport macro_report;
+    success = xs_macro_prepare_expansion(&unit->tree, &unit->diagnostics, &macro_report);
+  }
   if (success)
     success = xs_hir_collect_symbols(&unit->tree, symbols, &unit->diagnostics);
   unit->hir_ready = success;
