@@ -72,8 +72,11 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - Derleyici içine Rust yalnız somut teknik gerekçe varsa eklenebilir; bu durumda `xs/sources/rust/` altında izole kalmalı
   ve C API’yi bozmamalıdır.
 - `xsfmt` ve `xstidy` bu kuralın istisnasıdır: onlar baştan Rust nightly + Serde future tool projeleridir.
-- Bu projede `.bash`, `.zsh` veya benzeri shell script dilleri proje artifact'i olarak kullanılmaz.
-- Script/otomasyon gerekiyorsa Java 21 source-file shebang veya D + rdmd tercih edilir; geçici terminal komutları kalıcı proje dosyasına dönüştürülmez.
+- Bu projede `.sh`, `.bash`, `.zsh`, `.fish` veya benzeri shell script dilleri kalıcı proje artifact’i olarak kullanılmaz; shell script kullanımı yasaktır.
+- Script/otomasyon için Java 21 source-file shebang ya da D + `rdmd` kullanılır.
+- D tarafında varsayılan compiler `ldc2` kabul edilir; `gdc` kullanımı yasaktır.
+- Script klasörü `scripts/` kabul edilir. D ile yazılan `scripts/d/` içine yazılır. Java ile yazılan `scripts/java/` içine yazılır
+
 
 ## Build sistemi ve toolchain
 
