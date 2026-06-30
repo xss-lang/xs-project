@@ -1,0 +1,12 @@
+[package]
+name = "xsfmt"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "xsfmt"
+path = "sources/main.rs"
+
+[dependencies]
+serde = { version = "1", features = "all" }

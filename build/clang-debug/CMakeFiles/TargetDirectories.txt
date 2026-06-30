@@ -1,3 +1,4 @@
+/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xsproj.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/intrinsics_gen.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/vt_gen.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/omp_gen.dir
@@ -34,9 +35,9 @@
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/ContinuousCoverage.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/ContinuousMemCheck.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/ContinuousSubmit.dir
+/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_project_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_lexer_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_parser_tests.dir
-/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_project_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_backend_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_module_tests.dir
 /home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_hir_tests.dir

@@ -25,6 +25,19 @@ Belgelenmiş derleme sırası korunur:
 
 ## Tamamlanan altyapı
 
+### Monorepo düzeni
+
+- Depo LLVM-project benzeri monorepo seçimine geçirilmiştir.
+- Monorepo kökü `xs-project`, üst seviye CMake project adı `xs_project` olarak düzenlenmiştir.
+- Üst seviye CMake `XS_ENABLE_PROJECTS` değişkenini tanır; varsayılan kararlı proje `xs` olur.
+- LLVM tarafındaki `LLVM_ENABLE_RUNTIMES` ayrımına paralel olarak `XS_ENABLE_RUNTIMES` eklenmiştir; bugün build edilebilir
+  runtime yoktur.
+- `XS_ENABLE_PROJECTS=all` tüm kararlı projeleri seçer.
+- `xs` ve `xsproj` kararlı build edilebilir projelerdir.
+- `xsfmt` ve `xstidy` Rust nightly + Serde future project olarak, `xs-analyzer` TypeScript VS Code extension future project
+  olarak, `xs-backend` future native backend project olarak, `xsrt` future runtime olarak kayıtlıdır; henüz build’e
+  alınmazlar.
+
 ### XLIL bağlı orta katman kuralı
 
 - HIR ve MIR LLVM’e bağlı değildir ve bağlı olmayacaktır.
@@ -54,7 +67,7 @@ Belgelenmiş derleme sırası korunur:
 ### Proje sistemi
 
 - `.xsproj` dosyaları özgün X# proje sözdizimiyle ayrıştırılır.
-- `.xsproj` lexer, parser ve proje modeli uygulaması `sources/xsproj/` altında tutulur.
+- `.xsproj` lexer, parser ve proje modeli uygulaması `xsproj/sources/` altında tutulur.
 - `.xsproj` lexer/parser kodu `.xs` lexer/parser koduyla ortak değildir; yalnız `//` ve `///` satır yorumları desteklenir,
   multiline comment desteklenmez.
 - `.xsproj` parser iç derleyici detayı değildir; üçüncü taraf araçların `.xsproj` dosyalarını JSON benzeri şekilde
@@ -242,7 +255,11 @@ Ayrıntılar: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - XLIL text writer modül başlığı, fonksiyon bildirimi ve ilk gövdeli function/block kayıtlarını yazar.
 - MIR → XLIL lowering ilk gövde köprüsü `const.i64` instruction ve `return` terminator içeren düz blokları XLIL function
   body kayıtlarına indirir.
-- XLIL text writer yalnızca modül başlığı ve fonksiyon bildirimi yazar.
+- `xs/mono/plan.h` altında ilk monomorfizasyon plan API’si vardır; şimdilik yalnız zaten concrete MIR fonksiyonlarını stable
+  `_XS_FN_..._G0` sembol adına bağlar, reachable generic instantiation üretimi sonraki adımdır.
+- `xs/codegen/units.h` altında hedef bağımsız codegen unit planlama API’si vardır; MIR fonksiyonları varsayılan v0
+  politikasına göre module path bazlı codegen unit’lere ayrılır. Mono plandan üretildiğinde unit adı kaynak module path’inden,
+  function adı stable monomorfize sembolden alınır.
 
 XLIL instruction set, function body modeli, runtime/ABI yerleşimi ve MIR → XLIL function body lowering kararları
 [TODO.md](TODO.md) altında X# v0 sözleşmesi olarak sabitlenmiştir; implementation aşamalı tamamlanacaktır.

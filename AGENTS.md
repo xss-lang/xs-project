@@ -1,79 +1,152 @@
-# XS project rules
+# xs-project agent rules
 
-## Project shape
+Bu dosya `/home/hasan/Projeler/XS` monorepo kökü için geçerlidir. Depo, LLVM-project tarzı tek checkout modelinde
+ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde yaşar.
 
-- This repository implements the X# compiler.
-- C23 is the primary implementation language.
-- New compiler components should be written in C under `sources/` by default.
-- Optional Rust code is allowed only when there is a concrete technical reason; keep it isolated under `sources/rust/` and do
-  not break the C API.
-- C and header files must stay at or below 500 lines.
-- Keep subsystems modular. Split growing files before they become hard to review.
+## Monorepo yapısı
 
-## Build system and toolchain
+- Kök depo mantığı `xs-project`tir.
+- Üst seviye CMake project adı `xs_project`tir.
+- Build edilebilir CMake projeleri:
+  - `xs`: X# derleyicisi.
+  - `xsproj`: public C23 `.xsproj` manifest parser/lexer/model API’si.
+- Future projeler:
+  - `xsfmt`: Rust nightly + Serde tabanlı formatter.
+  - `xstidy`: Rust nightly + Serde tabanlı linter.
+  - `xs-analyzer`: TypeScript VS Code extension.
+  - `xs-backend`: future native XS Backend project.
+- Future runtime:
+  - `xsrt`: henüz kaynak dizini yok; `XS_ENABLE_RUNTIMES` registry’sinde future runtime olarak kalır.
+- Eski kök `sources/` ve `include/` düzenine yeni dosya ekleme. Yeni kod ilgili proje dizinine eklenmelidir.
 
-- Use CMake, not Meson.
-- Use Clang/LLVM tooling and LLD.
-- The project is intentionally anti-GNU:
-  - do not add GCC-only behavior;
-  - do not require GNU Make;
-  - do not use GNU C dialects such as `gnu23`;
-  - do not add `_GNU_SOURCE`;
-  - do not rely on GNU binutils.
-- NASM `.asm`/`.inc` files may be used only when they are optional and portable across supported targets. Do not assume x86
-  only; ARM64 and x86-64 compatibility matter.
+## Proje dizinleri
 
-## Formatting and static analysis
+- `xs/`
+  - X# derleyici projesidir.
+  - C kaynakları `xs/sources/` altındadır.
+  - Public/internal C header dosyaları `xs/include/` altındadır.
+  - Yeni derleyici bileşenleri varsayılan olarak C23 ile burada yazılır.
+- `xsproj/`
+  - `.xsproj` manifest parser/lexer/model projesidir.
+  - C kaynakları `xsproj/sources/` altındadır.
+  - Public API header’ı `xsproj/include/xs/project.h` içindedir.
+  - `#include <xs/project.h>` üçüncü parti araçlar için public C23 API yüzeyidir.
+- `xsfmt/`
+  - Future formatter projesidir.
+  - Rust nightly kullanır.
+  - Serde kullanılabilir ve beklenen bağımlılıktır.
+  - Rust kaynakları `xsfmt/sources/` altındadır.
+- `xstidy/`
+  - Future linter projesidir.
+  - Rust nightly kullanır.
+  - Serde kullanılabilir ve beklenen bağımlılıktır.
+  - Rust kaynakları `xstidy/sources/` altındadır.
+- `xs-analyzer/`
+  - Future TypeScript VS Code extension projesidir.
+  - TypeScript kaynakları `xs-analyzer/sources/` altındadır.
+- `xs-backend/`
+  - Future native XS Backend projesidir.
+  - Şimdilik yalnız iskelet dizindir; implementation’a girme.
+  - C23 ağırlıklı olacaktır.
+  - Rust yalnız somut teknik gerekçeyle isteğe bağlı ve izole kullanılabilir.
+  - NASM `.asm`/`.inc` dosyaları bulunabilir; x86-only varsayım yapılmamalıdır.
+  - Planlanan C kaynakları `xs-backend/sources/`, header dosyaları `xs-backend/include/`, optional assembly kaynakları
+    `xs-backend/asm/` altında durur.
+- `XS/`
+  - X# dil belgeleri, syntax örnekleri ve örnek proje dosyalarıdır.
+  - `XS/later/` artık aktif staging alanı değildir; yeni future proje dosyaları kendi proje köklerine eklenmelidir.
 
-- Keep `.clang-format`, `.clangd` and `.clang-tidy` aligned with the project’s C23/Clang setup.
-- Project C macros that affect formatting should be registered in `.clang-format`.
-- Do not use `#include <stdbool.h>`; use C23 `bool`.
-- Do not format `CMakeLists.txt` mechanically. Patch it carefully and preserve user edits.
+## Dil ve implementation dili
 
-## X# syntax and manifests
+- C23 ana geliştirme dilidir.
+- Derleyici ve public C API bileşenleri C23 ile yazılır.
+- C içinde `#include <stdbool.h>` kullanma; C23 `bool` kullan.
+- C ve header dosyaları 500 satırı aşmamalıdır.
+- Modülerlik çok önemlidir; büyüyen dosyaları erken böl.
+- Derleyici içine Rust yalnız somut teknik gerekçe varsa eklenebilir; bu durumda `xs/sources/rust/` altında izole kalmalı
+  ve C API’yi bozmamalıdır.
+- `xsfmt` ve `xstidy` bu kuralın istisnasıdır: onlar baştan Rust nightly + Serde future tool projeleridir.
 
-- `.xsproj` files are XS project manifests.
-- Do not replace `.xsproj` syntax with JSON, YAML, TOML or XML.
-- `.xsproj` parser/lexer/model code lives under `sources/xsproj/`.
-- `.xsproj` lexer/parser code is separate from `.xs` lexer/parser code. `.xsproj` supports `//` and `///` line comments
-  only; multiline comments are not supported.
-- `.xsproj` parsing is a public C23 API surface, similar in role to a JSON parser for external tools:
-  `#include <xs/project.h>`.
-- Before modifying X# syntax handling or XS source examples, read the relevant files under `./XS/Syntax/`.
-- Do not invent syntax that is not documented under `./XS/Syntax/`.
-- `compilerOptions.addFiles.entry` is the program entry source file.
-- Other files inside `addFiles` are additional source files.
-- Valid `appRelease` values are `ALPHA`, `BETA` and `STABLE`.
-- `compilerOptions.xsBackend` accepts `"LLVM"` and `"XS"`. Unsupported backend behavior should be diagnosed, not silently
-  guessed.
+## Build sistemi ve toolchain
 
-## Language and compiler decisions
+- CMake kullan; Meson kullanma.
+- Clang/LLVM tooling ve LLD kullan.
+- GNU’dan uzak dur:
+  - GCC-only davranış ekleme.
+  - GNU Make gerektirme.
+  - `gnu23` gibi GNU C dialect kullanma.
+  - `_GNU_SOURCE` ekleme.
+  - GNU binutils’e bağımlı olma.
+- NASM `.asm`/`.inc` dosyaları ancak isteğe bağlı ve taşınabilir olduklarında kullanılabilir.
+- x86-only varsayım yapma; x86-64 ve ARM64 uyumluluğu önemlidir.
+- `CMakeLists.txt` dosyasını mekanik formatlama. Kullanıcının değişikliklerini koruyarak küçük patch uygula.
 
-- `docs/TODO.md` is not a question backlog anymore; it is the X# v0 decision and implementation tracking document.
-- For language semantics, runtime, ABI, MIR, backend and tooling decisions, follow `docs/TODO.md`.
-- Syntax and XLIL must stay tied to documented forms. Do not invent undocumented syntax or undocumented XLIL formats.
-- For areas other than Syntax and XLIL, small missing implementation details may be filled in consistently with
-  `docs/TODO.md` and `docs/IMPLEMENTATION.md`.
-- When a larger rule is still undocumented, decide it without waiting for more user documentation, document the decision in
-  `docs/TODO.md`, and keep documented X# rules higher priority. Rust, TypeScript, C#, C23 and target assembly conventions may
-  be used as design inspiration where they fit X#.
-- `byte` maps to `u8`; `sbyte` maps to `i8`.
-- `char` is a 16-bit UTF-16 code unit.
-- `str` is UTF-16 and its length is limited by the platform/runtime representation, not by an arbitrary compiler limit.
-- HIR resolves language types. `bool` becomes `i1` at the HIR/low-level type boundary.
-- X# uses nominal typing. User-defined type identity is name/symbol based; identical field structure does not make two types
-  compatible.
-- HIR and MIR must not depend on LLVM APIs. They may depend on the target-independent XLIL type/data vocabulary.
-- Planned public APIs are `#include <xs/hir/jit.h>` for the HIR baseline JIT, `#include <xs/mir/jit.h>` for the MIR
-  performance JIT and `#include <xs/lil.h>` for AOT and XLIL generation.
-- Third-party languages may use the public HIR/MIR JIT and XLIL/AOT APIs, but do not add fake JIT semantics before those
-  layers are implemented.
+## Monorepo CMake sözleşmesi
 
-## Compiler pipeline
+- `XS_ENABLE_PROJECTS` build edilecek projeleri seçer.
+- `XS_ENABLE_PROJECTS=xs` derleyiciyi build eder.
+- `XS_ENABLE_PROJECTS=xsproj` yalnız `.xsproj` public parser kütüphanesini ve ilgili testi build eder.
+- `XS_ENABLE_PROJECTS=all` tüm stable projeleri seçer.
+- `xsfmt`, `xstidy`, `xs-analyzer` ve `xs-backend` şu an future project olarak kayıtlıdır; seçilirlerse CMake bilinçli
+  hata vermelidir.
+- `XS_ENABLE_RUNTIMES` future runtime seçimleri içindir.
+- `XS_ENABLE_RUNTIMES=xsrt` şu an bilinçli hata vermelidir.
+- `xsproj` tek başına build edilirken LLVM package zorunlu olmamalıdır.
 
-Follow the documented pipeline in order:
+## Formatting ve statik analiz
 
-1. lexing and parsing
+- `.clang-format`, `.clangd` ve `.clang-tidy` C23/Clang düzeniyle uyumlu kalmalıdır.
+- C macro formatını etkileyen proje macro’ları `.clang-format` içine eklenmelidir.
+- `.clangd` include path’leri yeni monorepo düzenine göre `xs/include` ve `xsproj/include` kullanmalıdır.
+- `.clang-tidy` C/C23 kontrolleri `xs/`, `xsproj/` ve `tests/` alanlarına odaklanmalıdır.
+- Rust tool configleri kökte tutulmaz; `xsfmt/` ve `xstidy/` altında tutulur.
+- TypeScript/VS Code extension configleri `xs-analyzer/` altında tutulur.
+
+## X# syntax ve `.xsproj`
+
+- `.xsproj` dosyaları XS proje manifestleridir.
+- `.xsproj` syntax’ını JSON, YAML, TOML veya XML ile değiştirme.
+- `.xsproj` lexer/parser kodu `.xs` lexer/parser kodundan ayrıdır.
+- `.xsproj` yalnız `//` ve `///` satır yorumlarını destekler.
+- `.xsproj` multiline comment desteklemez.
+- `compilerOptions.addFiles.entry` program entry source file’dır.
+- `addFiles` içindeki diğer dosyalar ek source file’dır.
+- Geçerli `appRelease` değerleri `ALPHA`, `BETA`, `STABLE`.
+- `compilerOptions.xsBackend` değerleri `"LLVM"` ve `"XS"` olabilir.
+- Desteklenmeyen backend davranışı sessizce tahmin edilmemeli; diagnostic üretilmelidir.
+- X# syntax handling veya `XS/example` dosyaları değiştirilmeden önce ilgili `XS/Syntax/` dosyaları okunmalıdır.
+- Syntax ve XLIL için belgelenmemiş biçim uydurma.
+
+## Dil kararları
+
+- `docs/TODO.md` artık soru listesi değil; X# v0 karar ve implementation takip dokümanıdır.
+- Dil semantiği, runtime, ABI, MIR, backend ve tooling kararlarında `docs/TODO.md` ve `docs/IMPLEMENTATION.md` takip edilir.
+- Syntax ve XLIL belgelenmiş biçimlere bağlı kalır.
+- Syntax ve XLIL dışındaki küçük eksikler tutarlı şekilde tamamlanabilir.
+- Büyük bir kural eksikse bekleme; kararı ver, `docs/TODO.md` veya ilgili dokümana yaz, belgelenmiş kuralları öncelikli
+  tut.
+- Tasarım ilhamı için Rust, TypeScript, C#, C23 ve hedef assembly convention’ları kullanılabilir.
+- `byte` -> `u8`.
+- `sbyte` -> `i8`.
+- `char` 16-bit UTF-16 code unit’tir.
+- `str` UTF-16’dır; uzunluğu keyfi compiler limitine değil runtime/platform representation sınırına bağlıdır.
+- X# nominal typing kullanır.
+- Kullanıcı tanımlı tip kimliği ad/symbol bazlıdır; aynı field yapısı tipleri uyumlu yapmaz.
+- HIR dil tiplerini çözer.
+- `bool`, HIR/low-level tip sınırında `i1` olur.
+- HIR ve MIR LLVM API’lerine bağlı olmamalıdır.
+- HIR ve MIR hedef bağımsız XLIL tip/veri sözlüğüne bağlı olabilir.
+- Planlanan public API’ler:
+  - `#include <xs/hir/jit.h>`: HIR baseline JIT.
+  - `#include <xs/mir/jit.h>`: MIR performance JIT.
+  - `#include <xs/lil.h>`: AOT ve XLIL generation API.
+- JIT katmanları uygulanmadan sahte JIT semantiği ekleme.
+
+## Derleyici pipeline sırası
+
+Belgelenmiş akışı sırayla takip et:
+
+1. lexing ve parsing
 2. structural AST
 3. macro expansion
 4. HIR
@@ -84,35 +157,55 @@ Follow the documented pipeline in order:
 9. monomorphization
 10. codegen units
 11. XLIL
-12. LLVM IR or future XS Backend lowering
+12. LLVM IR veya future XS Backend lowering
 13. optimization
 14. object code
 15. linking
 
-Do not skip ahead by inventing semantics. If a step is not implemented yet, keep the project buildable and add the next
-testable piece.
+Pipeline’ı atlayarak sahte semantic üretme. Eksik aşamada projeyi build edilebilir tut ve bir sonraki test edilebilir parçayı
+ekle.
 
-## CLI contracts
+## CLI sözleşmesi
 
-- The documented project commands are:
+- Desteklenen komut biçimleri:
   - `xs check -proj MyApp.xsproj`
   - `xs build -proj MyApp.xsproj`
   - `xs run -proj MyApp.xsproj`
-- Intermediate output options are:
+- Intermediate output seçenekleri:
   - `xs build --output hir -proj MyApp.xsproj`
   - `xs build --output mir -proj MyApp.xsproj`
   - `xs build --output xlil -proj MyApp.xsproj`
-- Future direct XLIL build entry:
+- Future direct XLIL build:
   - `xs build --xlil -file foo.xlil`
-- `.xhir` is HIR code, `.xmir` is MIR code and `.xlil` is XLIL code.
+- `.xhir` HIR kodudur.
+- `.xmir` MIR kodudur.
+- `.xlil` XLIL kodudur.
+- `.xlil` hiçbir zaman binary format olmayacaktır.
 
-## Verification
+## Test ve doğrulama
 
-- Keep every milestone buildable and testable.
-- Prefer small patches over one giant compiler patch.
-- Run focused tests for the touched subsystem.
-- When practical, run:
+- Her aşamayı build edilebilir ve test edilebilir bırak.
+- Küçük patch tercih et; tek devasa compiler patch’i yapma.
+- Touched subsystem için odaklı test çalıştır.
+- Kullanıcının makinesinde parser/project testleri geçmişte OOM üretmiştir; test ve build komutlarında mümkünse 2GB limit
+  kullan:
+  - `ulimit -v 2097152`
+- Pratik olduğunda çalıştır:
   - `cmake --build --preset clang-debug`
   - `ctest --preset clang-debug --output-on-failure`
   - `git diff --check`
-- Parser tests can consume memory if they regress; use a memory limit when appropriate.
+- `xsproj` only değişikliklerinde ayrıca şu davranışı koru:
+  - `XS_ENABLE_PROJECTS=xsproj` LLVM backend gerektirmeden configure/build olmalıdır.
+
+## Git ve çalışma alanı
+
+- Kullanıcının değişikliklerini koru.
+- Kirli worktree olağandır; ilgisiz değişiklikleri geri alma.
+- `git reset --hard`, `git checkout --` gibi destructive komutları açık izin olmadan kullanma.
+- Generated artifact’leri repoya sokma:
+  - `build/`
+  - `target/`
+  - `node_modules/`
+  - `dist/`
+  - `out/`
+  - `Cargo.lock` future Rust tool iskeletleri için şimdilik ignore edilir.

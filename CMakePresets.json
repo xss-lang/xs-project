@@ -14,7 +14,9 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "clang",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "XS_ENABLE_PROJECTS": "xs",
+        "XS_ENABLE_RUNTIMES": ""
       }
     }
   ],

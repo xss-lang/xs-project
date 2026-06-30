@@ -129,7 +129,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=xs_compiler
+CMAKE_PROJECT_NAME:STATIC=xs_project
 
 //Value Computed by CMake
 CMAKE_PROJECT_SPDX_LICENSE:STATIC=
@@ -290,6 +290,14 @@ PKG_CONFIG_EXECUTABLE:FILEPATH=/usr/bin/pkg-config
 //Name of the computer/site where compile is being run
 SITE:STRING=LenovoZ580
 
+//Semicolon-separated XS monorepo projects to enable. Use 'all'
+// for all stable projects.
+XS_ENABLE_PROJECTS:STRING=xs
+
+//Semicolon-separated XS monorepo runtimes to enable. Use 'all'
+// for all stable runtimes.
+XS_ENABLE_RUNTIMES:STRING=
+
 //Path to a program.
 XS_LLD_EXECUTABLE:FILEPATH=/usr/bin/ld.lld
 
@@ -343,6 +351,24 @@ xs_compiler_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 xs_compiler_SOURCE_DIR:STATIC=/home/hasan/Projeler/XS
+
+//Value Computed by CMake
+xs_monorepo_BINARY_DIR:STATIC=/home/hasan/Projeler/XS/build/clang-debug
+
+//Value Computed by CMake
+xs_monorepo_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+xs_monorepo_SOURCE_DIR:STATIC=/home/hasan/Projeler/XS
+
+//Value Computed by CMake
+xs_project_BINARY_DIR:STATIC=/home/hasan/Projeler/XS/build/clang-debug
+
+//Value Computed by CMake
+xs_project_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+xs_project_SOURCE_DIR:STATIC=/home/hasan/Projeler/XS
 
 //The directory containing a CMake configuration file for zstd.
 zstd_DIR:PATH=/usr/lib/cmake/zstd
@@ -701,6 +727,10 @@ PKG_CONFIG_ARGN-ADVANCED:INTERNAL=1
 PKG_CONFIG_EXECUTABLE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: SITE
 SITE-ADVANCED:INTERNAL=1
+//Normalized XS monorepo projects
+XS_ENABLED_PROJECTS:INTERNAL=xs
+//Normalized XS monorepo runtimes
+XS_ENABLED_RUNTIMES:INTERNAL=
 //ADVANCED property for variable: ZLIB_INCLUDE_DIR
 ZLIB_INCLUDE_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: ZLIB_LIBRARY_DEBUG

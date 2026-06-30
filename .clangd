@@ -13,9 +13,10 @@ CompileFlags:
     - '-x'
     - 'c-header'
     - '-std=c23'
-    - '-I/home/hasan/Projeler/XS/include'
+    - '-I/home/hasan/Projeler/XS/xs/include'
+    - '-I/home/hasan/Projeler/XS/xsproj/include'
     - '-include'
-    - '/home/hasan/Projeler/XS/include/xs/compiler_check.h'
+    - '/home/hasan/Projeler/XS/xs/include/xs/compiler_check.h'
 
 Index:
   Background: Build
@@ -52,9 +53,10 @@ CompileFlags:
     - '-D_GNU_SOURCE'
   Add:
     - '-std=c23'
-    - '-I/home/hasan/Projeler/XS/include'
+    - '-I/home/hasan/Projeler/XS/xs/include'
+    - '-I/home/hasan/Projeler/XS/xsproj/include'
     - '-include'
-    - '/home/hasan/Projeler/XS/include/xs/compiler_check.h'
+    - '/home/hasan/Projeler/XS/xs/include/xs/compiler_check.h'
 
 Index:
   Background: Build

@@ -1,0 +1,12 @@
+[package]
+name = "xstidy"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "xstidy"
+path = "sources/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }

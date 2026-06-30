@@ -1,19 +1,18 @@
-lexer 94 0.000277701
-parser 94 3.89566e-05
-project 89 0
-example_project 89 0.000122238
-backend 88 0.00217567
-modules 87 0.000147322
-syntax_ast 90 8.40848e-05
-hir 73 4.13899e-05
+lexer 95 2.97701e-05
+parser 95 0.000108313
+project 90 4.14097e-05
+example_project 90 0.000138727
+backend 89 0.00128855
+modules 88 0.000150281
+syntax_ast 91 3.11522e-05
+hir 74 0.000144072
 semantic 1 0.00730135
-hir_types 56 6.59231e-05
-xlil 53 0.000108248
-build_output_hir 46 4.8434e-05
-build_output_mir 46 5.27861e-05
-build_output_xlil 46 8.7739e-05
-mir 45 7.66202e-05
-syntax_macro 23 0.000266669
-syntax_decl 17 0.000553197
+hir_types 57 0.00036763
+xlil 54 0.000122583
+build_output_hir 47 0.000263337
+build_output_mir 47 0.000176168
+build_output_xlil 47 0.000117594
+mir 46 0.000247633
+syntax_macro 24 0.000137864
+syntax_decl 18 0.000149173
 ---
-project

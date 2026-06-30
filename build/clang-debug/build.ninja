@@ -11,7 +11,7 @@
 # =============================================================================
 
 # =============================================================================
-# Project: xs_compiler
+# Project: xs_project
 # Configurations: Debug
 # =============================================================================
 
@@ -40,6 +40,69 @@ include CMakeFiles/rules.ninja
 # Logical path to working directory; prefix for absolute paths.
 
 cmake_ninja_workdir = /home/hasan/Projeler/XS/build/clang-debug/
+# =============================================================================
+# Object build statements for STATIC_LIBRARY target xsproj
+
+
+#############################################
+# Order-only phony target for xsproj
+
+build cmake_object_order_depends_target_xsproj: phony || .
+
+build CMakeFiles/xsproj.dir/xs/sources/diagnostic.c.o: C_COMPILER__xsproj_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/diagnostic.c || cmake_object_order_depends_target_xsproj
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xsproj.dir/xs/sources/diagnostic.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include
+  OBJECT_DIR = CMakeFiles/xsproj.dir
+  OBJECT_FILE_DIR = CMakeFiles/xsproj.dir/xs/sources
+  TARGET_SUPPORT_DIR = CMakeFiles/xsproj.dir
+
+build CMakeFiles/xsproj.dir/xsproj/sources/lexer.c.o: C_COMPILER__xsproj_unscanned_Debug /home/hasan/Projeler/XS/xsproj/sources/lexer.c || cmake_object_order_depends_target_xsproj
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xsproj.dir/xsproj/sources/lexer.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include
+  OBJECT_DIR = CMakeFiles/xsproj.dir
+  OBJECT_FILE_DIR = CMakeFiles/xsproj.dir/xsproj/sources
+  TARGET_SUPPORT_DIR = CMakeFiles/xsproj.dir
+
+build CMakeFiles/xsproj.dir/xsproj/sources/model.c.o: C_COMPILER__xsproj_unscanned_Debug /home/hasan/Projeler/XS/xsproj/sources/model.c || cmake_object_order_depends_target_xsproj
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xsproj.dir/xsproj/sources/model.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include
+  OBJECT_DIR = CMakeFiles/xsproj.dir
+  OBJECT_FILE_DIR = CMakeFiles/xsproj.dir/xsproj/sources
+  TARGET_SUPPORT_DIR = CMakeFiles/xsproj.dir
+
+build CMakeFiles/xsproj.dir/xsproj/sources/parser.c.o: C_COMPILER__xsproj_unscanned_Debug /home/hasan/Projeler/XS/xsproj/sources/parser.c || cmake_object_order_depends_target_xsproj
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xsproj.dir/xsproj/sources/parser.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include
+  OBJECT_DIR = CMakeFiles/xsproj.dir
+  OBJECT_FILE_DIR = CMakeFiles/xsproj.dir/xsproj/sources
+  TARGET_SUPPORT_DIR = CMakeFiles/xsproj.dir
+
+
+# =============================================================================
+# Link build statements for STATIC_LIBRARY target xsproj
+
+
+#############################################
+# Link the static library libxsproj.a
+
+build libxsproj.a: C_STATIC_LIBRARY_LINKER__xsproj_Debug CMakeFiles/xsproj.dir/xs/sources/diagnostic.c.o CMakeFiles/xsproj.dir/xsproj/sources/lexer.c.o CMakeFiles/xsproj.dir/xsproj/sources/model.c.o CMakeFiles/xsproj.dir/xsproj/sources/parser.c.o
+  CONFIG = Debug
+  LANGUAGE_COMPILE_FLAGS = -g
+  OBJECT_DIR = CMakeFiles/xsproj.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = libxsproj.a
+  TARGET_PDB = xsproj.a.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles/xsproj.dir
+
 
 #############################################
 # Utility command for intrinsics_gen
@@ -77,330 +140,312 @@ build target_parser_gen: phony
 #############################################
 # Order-only phony target for xs_compiler
 
-build cmake_object_order_depends_target_xs_compiler: phony || .
+build cmake_object_order_depends_target_xs_compiler: phony || cmake_object_order_depends_target_xsproj
 
-build CMakeFiles/xs_compiler.dir/sources/ast.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/ast.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/ast.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/ast.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/ast.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/ast.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/diagnostic.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/diagnostic.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/codegen/units.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/codegen/units.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/diagnostic.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/codegen/units.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/codegen
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/driver/cli.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/driver/cli.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/driver/cli.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/driver/cli.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/driver/cli.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/driver/cli.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/driver
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/driver
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/lexer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/lexer.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/lexer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/lexer.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/lexer.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/lexer.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/macro/validation.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/macro/validation.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/macro/validation.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/macro/validation.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/macro
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/macro
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/mir/borrow_checker.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/mir/borrow_checker.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mir/borrow_checker.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mir/borrow_checker.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/mir/borrow_checker.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mir/borrow_checker.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/mir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/mir/hir_lowering.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/mir/hir_lowering.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mir/hir_lowering.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mir/hir_lowering.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/mir/hir_lowering.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mir/hir_lowering.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/mir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/mir/model_blocks.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/mir/model_blocks.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mir/model_blocks.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mir/model_blocks.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/mir/model_blocks.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mir/model_blocks.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/mir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/mir/model.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/mir/model.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mir/model.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mir/model.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/mir/model.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mir/model.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/mir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/mir/model_writer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/mir/model_writer.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mir/model_writer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mir/model_writer.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/mir/model_writer.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mir/model_writer.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/mir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/mir/optimizer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/mir/optimizer.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mir/optimizer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mir/optimizer.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/mir/optimizer.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mir/optimizer.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/mir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/mir/xlil_lowering.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/mir/xlil_lowering.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mir/xlil_lowering.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mir/xlil_lowering.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/mir/xlil_lowering.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mir/xlil_lowering.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/mir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/xlil/writer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/xlil/writer.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/mono/plan.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/mono/plan.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/xlil/writer.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/mono/plan.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/xlil
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/mono
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/dump.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/dump.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/xlil/writer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/xlil/writer.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/dump.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/xlil/writer.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/xlil
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/module_graph.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/module_graph.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/dump.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/dump.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/module_graph.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/dump.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/module_model.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/module_model.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/module_graph.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/module_graph.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/module_model.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/module_graph.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/module_registry.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/module_registry.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/module_model.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/module_model.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/module_registry.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/module_model.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/import_resolver.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/import_resolver.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/module_registry.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/module_registry.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/import_resolver.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/module_registry.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/name_resolution.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/name_resolution.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/import_resolver.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/import_resolver.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/name_resolution.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/import_resolver.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/symbol_table.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/symbol_table.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/name_resolution.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/name_resolution.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/symbol_table.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/name_resolution.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/syntax_helpers.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/syntax_helpers.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/symbol_table.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/symbol_table.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/syntax_helpers.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/symbol_table.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/type_info.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/type_info.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/syntax_helpers.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/syntax_helpers.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/type_info.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/syntax_helpers.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/hir/type_resolution.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/hir/type_resolution.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/type_info.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/type_info.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/hir/type_resolution.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/type_info.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/hir
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/parser.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/parser.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/hir/type_resolution.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/hir/type_resolution.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/parser.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/hir/type_resolution.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/hir
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/syntax_ast.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/syntax_ast.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/parser.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/parser.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/syntax_ast.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/parser.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/syntax_parser.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/syntax_parser.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/syntax_ast.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/syntax_ast.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/syntax_parser.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/syntax_ast.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/syntax/parser_macro.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/syntax/parser_macro.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/syntax_parser.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/syntax_parser.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/syntax/parser_macro.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/syntax_parser.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/syntax
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/syntax/parser_declaration.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/syntax/parser_declaration.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_macro.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/syntax/parser_macro.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/syntax/parser_declaration.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_macro.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/syntax
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/syntax
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/syntax/parser_expression.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/syntax/parser_expression.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_declaration.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/syntax/parser_declaration.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/syntax/parser_expression.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_declaration.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/syntax
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/syntax
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/syntax/parser_statement.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/syntax/parser_statement.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_expression.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/syntax/parser_expression.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/syntax/parser_statement.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_expression.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/syntax
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/syntax
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/syntax/parser_type.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/syntax/parser_type.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_statement.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/syntax/parser_statement.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/syntax/parser_type.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_statement.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/syntax
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/syntax
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/token.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/token.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_type.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/syntax/parser_type.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/token.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_type.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/syntax
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/xlil/model.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/xlil/model.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/token.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/token.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/xlil/model.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/token.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/xlil
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
-build CMakeFiles/xs_compiler.dir/sources/xsproj/lexer.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/xsproj/lexer.c || cmake_object_order_depends_target_xs_compiler
+build CMakeFiles/xs_compiler.dir/xs/sources/xlil/model.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/xlil/model.c || cmake_object_order_depends_target_xs_compiler
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/xsproj/lexer.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_compiler.dir/xs/sources/xlil/model.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/xsproj
-  TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
-
-build CMakeFiles/xs_compiler.dir/sources/xsproj/model.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/xsproj/model.c || cmake_object_order_depends_target_xs_compiler
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/xsproj/model.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
-  OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/xsproj
-  TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
-
-build CMakeFiles/xs_compiler.dir/sources/xsproj/parser.c.o: C_COMPILER__xs_compiler_unscanned_Debug /home/hasan/Projeler/XS/sources/xsproj/parser.c || cmake_object_order_depends_target_xs_compiler
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_compiler.dir/sources/xsproj/parser.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
-  OBJECT_DIR = CMakeFiles/xs_compiler.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/sources/xsproj
+  OBJECT_FILE_DIR = CMakeFiles/xs_compiler.dir/xs/sources/xlil
   TARGET_SUPPORT_DIR = CMakeFiles/xs_compiler.dir
 
 
@@ -411,7 +456,7 @@ build CMakeFiles/xs_compiler.dir/sources/xsproj/parser.c.o: C_COMPILER__xs_compi
 #############################################
 # Link the static library libxs_compiler.a
 
-build libxs_compiler.a: C_STATIC_LIBRARY_LINKER__xs_compiler_Debug CMakeFiles/xs_compiler.dir/sources/ast.c.o CMakeFiles/xs_compiler.dir/sources/diagnostic.c.o CMakeFiles/xs_compiler.dir/sources/driver/cli.c.o CMakeFiles/xs_compiler.dir/sources/lexer.c.o CMakeFiles/xs_compiler.dir/sources/macro/validation.c.o CMakeFiles/xs_compiler.dir/sources/mir/borrow_checker.c.o CMakeFiles/xs_compiler.dir/sources/mir/hir_lowering.c.o CMakeFiles/xs_compiler.dir/sources/mir/model_blocks.c.o CMakeFiles/xs_compiler.dir/sources/mir/model.c.o CMakeFiles/xs_compiler.dir/sources/mir/model_writer.c.o CMakeFiles/xs_compiler.dir/sources/mir/optimizer.c.o CMakeFiles/xs_compiler.dir/sources/mir/xlil_lowering.c.o CMakeFiles/xs_compiler.dir/sources/xlil/writer.c.o CMakeFiles/xs_compiler.dir/sources/hir/dump.c.o CMakeFiles/xs_compiler.dir/sources/hir/module_graph.c.o CMakeFiles/xs_compiler.dir/sources/hir/module_model.c.o CMakeFiles/xs_compiler.dir/sources/hir/module_registry.c.o CMakeFiles/xs_compiler.dir/sources/hir/import_resolver.c.o CMakeFiles/xs_compiler.dir/sources/hir/name_resolution.c.o CMakeFiles/xs_compiler.dir/sources/hir/symbol_table.c.o CMakeFiles/xs_compiler.dir/sources/hir/syntax_helpers.c.o CMakeFiles/xs_compiler.dir/sources/hir/type_info.c.o CMakeFiles/xs_compiler.dir/sources/hir/type_resolution.c.o CMakeFiles/xs_compiler.dir/sources/parser.c.o CMakeFiles/xs_compiler.dir/sources/syntax_ast.c.o CMakeFiles/xs_compiler.dir/sources/syntax_parser.c.o CMakeFiles/xs_compiler.dir/sources/syntax/parser_macro.c.o CMakeFiles/xs_compiler.dir/sources/syntax/parser_declaration.c.o CMakeFiles/xs_compiler.dir/sources/syntax/parser_expression.c.o CMakeFiles/xs_compiler.dir/sources/syntax/parser_statement.c.o CMakeFiles/xs_compiler.dir/sources/syntax/parser_type.c.o CMakeFiles/xs_compiler.dir/sources/token.c.o CMakeFiles/xs_compiler.dir/sources/xlil/model.c.o CMakeFiles/xs_compiler.dir/sources/xsproj/lexer.c.o CMakeFiles/xs_compiler.dir/sources/xsproj/model.c.o CMakeFiles/xs_compiler.dir/sources/xsproj/parser.c.o
+build libxs_compiler.a: C_STATIC_LIBRARY_LINKER__xs_compiler_Debug CMakeFiles/xs_compiler.dir/xs/sources/ast.c.o CMakeFiles/xs_compiler.dir/xs/sources/codegen/units.c.o CMakeFiles/xs_compiler.dir/xs/sources/driver/cli.c.o CMakeFiles/xs_compiler.dir/xs/sources/lexer.c.o CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o CMakeFiles/xs_compiler.dir/xs/sources/mir/borrow_checker.c.o CMakeFiles/xs_compiler.dir/xs/sources/mir/hir_lowering.c.o CMakeFiles/xs_compiler.dir/xs/sources/mir/model_blocks.c.o CMakeFiles/xs_compiler.dir/xs/sources/mir/model.c.o CMakeFiles/xs_compiler.dir/xs/sources/mir/model_writer.c.o CMakeFiles/xs_compiler.dir/xs/sources/mir/optimizer.c.o CMakeFiles/xs_compiler.dir/xs/sources/mir/xlil_lowering.c.o CMakeFiles/xs_compiler.dir/xs/sources/mono/plan.c.o CMakeFiles/xs_compiler.dir/xs/sources/xlil/writer.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/dump.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_graph.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_model.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_registry.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/import_resolver.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/name_resolution.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/symbol_table.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/syntax_helpers.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/type_info.c.o CMakeFiles/xs_compiler.dir/xs/sources/hir/type_resolution.c.o CMakeFiles/xs_compiler.dir/xs/sources/parser.c.o CMakeFiles/xs_compiler.dir/xs/sources/syntax_ast.c.o CMakeFiles/xs_compiler.dir/xs/sources/syntax_parser.c.o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_macro.c.o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_declaration.c.o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_expression.c.o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_statement.c.o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_type.c.o CMakeFiles/xs_compiler.dir/xs/sources/token.c.o CMakeFiles/xs_compiler.dir/xs/sources/xlil/model.c.o || libxsproj.a
   CONFIG = Debug
   LANGUAGE_COMPILE_FLAGS = -g
   OBJECT_DIR = CMakeFiles/xs_compiler.dir
@@ -428,15 +473,15 @@ build libxs_compiler.a: C_STATIC_LIBRARY_LINKER__xs_compiler_Debug CMakeFiles/xs
 #############################################
 # Order-only phony target for xs
 
-build cmake_object_order_depends_target_xs: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
-build CMakeFiles/xs.dir/sources/main.c.o: C_COMPILER__xs_unscanned_Debug /home/hasan/Projeler/XS/sources/main.c || cmake_object_order_depends_target_xs
+build CMakeFiles/xs.dir/xs/sources/main.c.o: C_COMPILER__xs_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/main.c || cmake_object_order_depends_target_xs
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs.dir/sources/main.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs.dir/xs/sources/main.c.o.d
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs.dir/sources
+  OBJECT_FILE_DIR = CMakeFiles/xs.dir/xs/sources
   TARGET_SUPPORT_DIR = CMakeFiles/xs.dir
 
 
@@ -447,12 +492,12 @@ build CMakeFiles/xs.dir/sources/main.c.o: C_COMPILER__xs_unscanned_Debug /home/h
 #############################################
 # Link the executable xs
 
-build xs: C_EXECUTABLE_LINKER__xs_Debug CMakeFiles/xs.dir/sources/main.c.o | libxs_compiler.a || libxs_compiler.a
+build xs: C_EXECUTABLE_LINKER__xs_Debug CMakeFiles/xs.dir/xs/sources/main.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -469,22 +514,22 @@ build xs: C_EXECUTABLE_LINKER__xs_Debug CMakeFiles/xs.dir/sources/main.c.o | lib
 
 build cmake_object_order_depends_target_xs_backend_llvm: phony || .
 
-build CMakeFiles/xs_backend_llvm.dir/sources/backend/linker.c.o: C_COMPILER__xs_backend_llvm_unscanned_Debug /home/hasan/Projeler/XS/sources/backend/linker.c || cmake_object_order_depends_target_xs_backend_llvm
+build CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/linker.c.o: C_COMPILER__xs_backend_llvm_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/backend/linker.c || cmake_object_order_depends_target_xs_backend_llvm
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_backend_llvm.dir/sources/backend/linker.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/linker.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include
   OBJECT_DIR = CMakeFiles/xs_backend_llvm.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_backend_llvm.dir/sources/backend
+  OBJECT_FILE_DIR = CMakeFiles/xs_backend_llvm.dir/xs/sources/backend
   TARGET_SUPPORT_DIR = CMakeFiles/xs_backend_llvm.dir
 
-build CMakeFiles/xs_backend_llvm.dir/sources/backend/llvm_backend.c.o: C_COMPILER__xs_backend_llvm_unscanned_Debug /home/hasan/Projeler/XS/sources/backend/llvm_backend.c || cmake_object_order_depends_target_xs_backend_llvm
+build CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/llvm_backend.c.o: C_COMPILER__xs_backend_llvm_unscanned_Debug /home/hasan/Projeler/XS/xs/sources/backend/llvm_backend.c || cmake_object_order_depends_target_xs_backend_llvm
   CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_backend_llvm.dir/sources/backend/llvm_backend.c.o.d
-  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  DEP_FILE = CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/llvm_backend.c.o.d
+  FLAGS = -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include
   OBJECT_DIR = CMakeFiles/xs_backend_llvm.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_backend_llvm.dir/sources/backend
+  OBJECT_FILE_DIR = CMakeFiles/xs_backend_llvm.dir/xs/sources/backend
   TARGET_SUPPORT_DIR = CMakeFiles/xs_backend_llvm.dir
 
 
@@ -495,7 +540,7 @@ build CMakeFiles/xs_backend_llvm.dir/sources/backend/llvm_backend.c.o: C_COMPILE
 #############################################
 # Link the static library libxs_backend_llvm.a
 
-build libxs_backend_llvm.a: C_STATIC_LIBRARY_LINKER__xs_backend_llvm_Debug CMakeFiles/xs_backend_llvm.dir/sources/backend/linker.c.o CMakeFiles/xs_backend_llvm.dir/sources/backend/llvm_backend.c.o
+build libxs_backend_llvm.a: C_STATIC_LIBRARY_LINKER__xs_backend_llvm_Debug CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/linker.c.o CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/llvm_backend.c.o
   CONFIG = Debug
   LANGUAGE_COMPILE_FLAGS = -g
   OBJECT_DIR = CMakeFiles/xs_backend_llvm.dir
@@ -674,19 +719,58 @@ build ContinuousMemCheck: phony CMakeFiles/ContinuousMemCheck
 build ContinuousSubmit: phony CMakeFiles/ContinuousSubmit
 
 # =============================================================================
+# Object build statements for EXECUTABLE target xs_project_tests
+
+
+#############################################
+# Order-only phony target for xs_project_tests
+
+build cmake_object_order_depends_target_xs_project_tests: phony || cmake_object_order_depends_target_xsproj
+
+build CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o: C_COMPILER__xs_project_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/project_tests.c || cmake_object_order_depends_target_xs_project_tests
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o.d
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include
+  OBJECT_DIR = CMakeFiles/xs_project_tests.dir
+  OBJECT_FILE_DIR = CMakeFiles/xs_project_tests.dir/tests
+  TARGET_SUPPORT_DIR = CMakeFiles/xs_project_tests.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target xs_project_tests
+
+
+#############################################
+# Link the executable xs_project_tests
+
+build xs_project_tests: C_EXECUTABLE_LINKER__xs_project_tests_Debug CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o | libxsproj.a || libxsproj.a
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/xs_project_tests.dir/link.d
+  FLAGS = -g
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_project_tests.dir/link.d
+  LINK_LIBRARIES = libxsproj.a
+  OBJECT_DIR = CMakeFiles/xs_project_tests.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = xs_project_tests
+  TARGET_PDB = xs_project_tests.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles/xs_project_tests.dir
+
+# =============================================================================
 # Object build statements for EXECUTABLE target xs_lexer_tests
 
 
 #############################################
 # Order-only phony target for xs_lexer_tests
 
-build cmake_object_order_depends_target_xs_lexer_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_lexer_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o: C_COMPILER__xs_lexer_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/lexer_tests.c || cmake_object_order_depends_target_xs_lexer_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_lexer_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_lexer_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_lexer_tests.dir
@@ -699,12 +783,12 @@ build CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o: C_COMPILER__xs_lexer_
 #############################################
 # Link the executable xs_lexer_tests
 
-build xs_lexer_tests: C_EXECUTABLE_LINKER__xs_lexer_tests_Debug CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_lexer_tests: C_EXECUTABLE_LINKER__xs_lexer_tests_Debug CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_lexer_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_lexer_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_lexer_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -719,13 +803,13 @@ build xs_lexer_tests: C_EXECUTABLE_LINKER__xs_lexer_tests_Debug CMakeFiles/xs_le
 #############################################
 # Order-only phony target for xs_parser_tests
 
-build cmake_object_order_depends_target_xs_parser_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_parser_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o: C_COMPILER__xs_parser_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/parser_tests.c || cmake_object_order_depends_target_xs_parser_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_parser_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_parser_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_parser_tests.dir
@@ -738,57 +822,18 @@ build CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o: C_COMPILER__xs_pars
 #############################################
 # Link the executable xs_parser_tests
 
-build xs_parser_tests: C_EXECUTABLE_LINKER__xs_parser_tests_Debug CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_parser_tests: C_EXECUTABLE_LINKER__xs_parser_tests_Debug CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_parser_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_parser_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_parser_tests.dir
   POST_BUILD = :
   PRE_LINK = :
   TARGET_FILE = xs_parser_tests
   TARGET_PDB = xs_parser_tests.dbg
   TARGET_SUPPORT_DIR = CMakeFiles/xs_parser_tests.dir
-
-# =============================================================================
-# Object build statements for EXECUTABLE target xs_project_tests
-
-
-#############################################
-# Order-only phony target for xs_project_tests
-
-build cmake_object_order_depends_target_xs_project_tests: phony || cmake_object_order_depends_target_xs_compiler
-
-build CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o: C_COMPILER__xs_project_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/project_tests.c || cmake_object_order_depends_target_xs_project_tests
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
-  OBJECT_DIR = CMakeFiles/xs_project_tests.dir
-  OBJECT_FILE_DIR = CMakeFiles/xs_project_tests.dir/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/xs_project_tests.dir
-
-
-# =============================================================================
-# Link build statements for EXECUTABLE target xs_project_tests
-
-
-#############################################
-# Link the executable xs_project_tests
-
-build xs_project_tests: C_EXECUTABLE_LINKER__xs_project_tests_Debug CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o | libxs_compiler.a || libxs_compiler.a
-  CONFIG = Debug
-  DEP_FILE = CMakeFiles/xs_project_tests.dir/link.d
-  FLAGS = -g
-  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_project_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
-  OBJECT_DIR = CMakeFiles/xs_project_tests.dir
-  POST_BUILD = :
-  PRE_LINK = :
-  TARGET_FILE = xs_project_tests
-  TARGET_PDB = xs_project_tests.dbg
-  TARGET_SUPPORT_DIR = CMakeFiles/xs_project_tests.dir
 
 # =============================================================================
 # Object build statements for EXECUTABLE target xs_backend_tests
@@ -802,8 +847,8 @@ build cmake_object_order_depends_target_xs_backend_tests: phony || cmake_object_
 build CMakeFiles/xs_backend_tests.dir/tests/backend_tests.c.o: C_COMPILER__xs_backend_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/backend_tests.c || cmake_object_order_depends_target_xs_backend_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_backend_tests.dir/tests/backend_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include
   OBJECT_DIR = CMakeFiles/xs_backend_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_backend_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_backend_tests.dir
@@ -836,13 +881,13 @@ build xs_backend_tests: C_EXECUTABLE_LINKER__xs_backend_tests_Debug CMakeFiles/x
 #############################################
 # Order-only phony target for xs_module_tests
 
-build cmake_object_order_depends_target_xs_module_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_module_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o: C_COMPILER__xs_module_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/module_tests.c || cmake_object_order_depends_target_xs_module_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_module_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_module_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_module_tests.dir
@@ -855,12 +900,12 @@ build CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o: C_COMPILER__xs_modu
 #############################################
 # Link the executable xs_module_tests
 
-build xs_module_tests: C_EXECUTABLE_LINKER__xs_module_tests_Debug CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_module_tests: C_EXECUTABLE_LINKER__xs_module_tests_Debug CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_module_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_module_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_module_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -875,13 +920,13 @@ build xs_module_tests: C_EXECUTABLE_LINKER__xs_module_tests_Debug CMakeFiles/xs_
 #############################################
 # Order-only phony target for xs_hir_tests
 
-build cmake_object_order_depends_target_xs_hir_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_hir_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o: C_COMPILER__xs_hir_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/hir_tests.c || cmake_object_order_depends_target_xs_hir_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_hir_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_hir_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_hir_tests.dir
@@ -894,12 +939,12 @@ build CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o: C_COMPILER__xs_hir_tests_
 #############################################
 # Link the executable xs_hir_tests
 
-build xs_hir_tests: C_EXECUTABLE_LINKER__xs_hir_tests_Debug CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_hir_tests: C_EXECUTABLE_LINKER__xs_hir_tests_Debug CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_hir_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_hir_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_hir_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -914,13 +959,13 @@ build xs_hir_tests: C_EXECUTABLE_LINKER__xs_hir_tests_Debug CMakeFiles/xs_hir_te
 #############################################
 # Order-only phony target for xs_hir_type_tests
 
-build cmake_object_order_depends_target_xs_hir_type_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_hir_type_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o: C_COMPILER__xs_hir_type_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/hir_type_tests.c || cmake_object_order_depends_target_xs_hir_type_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_hir_type_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_hir_type_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_hir_type_tests.dir
@@ -933,12 +978,12 @@ build CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o: C_COMPILER__xs_
 #############################################
 # Link the executable xs_hir_type_tests
 
-build xs_hir_type_tests: C_EXECUTABLE_LINKER__xs_hir_type_tests_Debug CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_hir_type_tests: C_EXECUTABLE_LINKER__xs_hir_type_tests_Debug CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_hir_type_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_hir_type_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_hir_type_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -953,13 +998,13 @@ build xs_hir_type_tests: C_EXECUTABLE_LINKER__xs_hir_type_tests_Debug CMakeFiles
 #############################################
 # Order-only phony target for xs_xlil_tests
 
-build cmake_object_order_depends_target_xs_xlil_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_xlil_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o: C_COMPILER__xs_xlil_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/xlil_tests.c || cmake_object_order_depends_target_xs_xlil_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_xlil_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_xlil_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_xlil_tests.dir
@@ -972,12 +1017,12 @@ build CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o: C_COMPILER__xs_xlil_tes
 #############################################
 # Link the executable xs_xlil_tests
 
-build xs_xlil_tests: C_EXECUTABLE_LINKER__xs_xlil_tests_Debug CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_xlil_tests: C_EXECUTABLE_LINKER__xs_xlil_tests_Debug CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_xlil_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_xlil_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_xlil_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -992,13 +1037,13 @@ build xs_xlil_tests: C_EXECUTABLE_LINKER__xs_xlil_tests_Debug CMakeFiles/xs_xlil
 #############################################
 # Order-only phony target for xs_mir_tests
 
-build cmake_object_order_depends_target_xs_mir_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_mir_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o: C_COMPILER__xs_mir_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/mir_tests.c || cmake_object_order_depends_target_xs_mir_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_mir_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_mir_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_mir_tests.dir
@@ -1011,12 +1056,12 @@ build CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o: C_COMPILER__xs_mir_tests_
 #############################################
 # Link the executable xs_mir_tests
 
-build xs_mir_tests: C_EXECUTABLE_LINKER__xs_mir_tests_Debug CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_mir_tests: C_EXECUTABLE_LINKER__xs_mir_tests_Debug CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_mir_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_mir_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_mir_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1031,13 +1076,13 @@ build xs_mir_tests: C_EXECUTABLE_LINKER__xs_mir_tests_Debug CMakeFiles/xs_mir_te
 #############################################
 # Order-only phony target for xs_syntax_ast_tests
 
-build cmake_object_order_depends_target_xs_syntax_ast_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_syntax_ast_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o: C_COMPILER__xs_syntax_ast_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/syntax_ast_tests.c || cmake_object_order_depends_target_xs_syntax_ast_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_syntax_ast_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_syntax_ast_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_syntax_ast_tests.dir
@@ -1050,12 +1095,12 @@ build CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o: C_COMPILER_
 #############################################
 # Link the executable xs_syntax_ast_tests
 
-build xs_syntax_ast_tests: C_EXECUTABLE_LINKER__xs_syntax_ast_tests_Debug CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_syntax_ast_tests: C_EXECUTABLE_LINKER__xs_syntax_ast_tests_Debug CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_syntax_ast_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_syntax_ast_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_syntax_ast_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1070,13 +1115,13 @@ build xs_syntax_ast_tests: C_EXECUTABLE_LINKER__xs_syntax_ast_tests_Debug CMakeF
 #############################################
 # Order-only phony target for xs_syntax_decl_tests
 
-build cmake_object_order_depends_target_xs_syntax_decl_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_syntax_decl_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o: C_COMPILER__xs_syntax_decl_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/syntax_decl_tests.c || cmake_object_order_depends_target_xs_syntax_decl_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_syntax_decl_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_syntax_decl_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_syntax_decl_tests.dir
@@ -1089,12 +1134,12 @@ build CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o: C_COMPILE
 #############################################
 # Link the executable xs_syntax_decl_tests
 
-build xs_syntax_decl_tests: C_EXECUTABLE_LINKER__xs_syntax_decl_tests_Debug CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_syntax_decl_tests: C_EXECUTABLE_LINKER__xs_syntax_decl_tests_Debug CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_syntax_decl_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_syntax_decl_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_syntax_decl_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1109,13 +1154,13 @@ build xs_syntax_decl_tests: C_EXECUTABLE_LINKER__xs_syntax_decl_tests_Debug CMak
 #############################################
 # Order-only phony target for xs_syntax_macro_tests
 
-build cmake_object_order_depends_target_xs_syntax_macro_tests: phony || cmake_object_order_depends_target_xs_compiler
+build cmake_object_order_depends_target_xs_syntax_macro_tests: phony || cmake_object_order_depends_target_xs_compiler cmake_object_order_depends_target_xsproj
 
 build CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o: C_COMPILER__xs_syntax_macro_tests_unscanned_Debug /home/hasan/Projeler/XS/tests/syntax_macro_tests.c || cmake_object_order_depends_target_xs_syntax_macro_tests
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o.d
-  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h
-  INCLUDES = -I/home/hasan/Projeler/XS/include
+  FLAGS = -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h
+  INCLUDES = -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include
   OBJECT_DIR = CMakeFiles/xs_syntax_macro_tests.dir
   OBJECT_FILE_DIR = CMakeFiles/xs_syntax_macro_tests.dir/tests
   TARGET_SUPPORT_DIR = CMakeFiles/xs_syntax_macro_tests.dir
@@ -1128,12 +1173,12 @@ build CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o: C_COMPI
 #############################################
 # Link the executable xs_syntax_macro_tests
 
-build xs_syntax_macro_tests: C_EXECUTABLE_LINKER__xs_syntax_macro_tests_Debug CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o | libxs_compiler.a || libxs_compiler.a
+build xs_syntax_macro_tests: C_EXECUTABLE_LINKER__xs_syntax_macro_tests_Debug CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o | libxs_compiler.a libxsproj.a || libxs_compiler.a libxsproj.a
   CONFIG = Debug
   DEP_FILE = CMakeFiles/xs_syntax_macro_tests.dir/link.d
   FLAGS = -g
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/xs_syntax_macro_tests.dir/link.d
-  LINK_LIBRARIES = libxs_compiler.a
+  LINK_LIBRARIES = libxs_compiler.a  libxsproj.a
   OBJECT_DIR = CMakeFiles/xs_syntax_macro_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1408,6 +1453,8 @@ build xs_backend_llvm: phony libxs_backend_llvm.a
 
 build xs_compiler: phony libxs_compiler.a
 
+build xsproj: phony libxsproj.a
+
 # =============================================================================
 # Folder targets.
 
@@ -1416,7 +1463,7 @@ build xs_compiler: phony libxs_compiler.a
 #############################################
 # Folder: /home/hasan/Projeler/XS/build/clang-debug
 
-build all: phony libxs_compiler.a xs libxs_backend_llvm.a xs_lexer_tests xs_parser_tests xs_project_tests xs_backend_tests xs_module_tests xs_hir_tests xs_hir_type_tests xs_xlil_tests xs_mir_tests xs_syntax_ast_tests xs_syntax_decl_tests xs_syntax_macro_tests
+build all: phony libxsproj.a libxs_compiler.a xs libxs_backend_llvm.a xs_project_tests xs_lexer_tests xs_parser_tests xs_backend_tests xs_module_tests xs_hir_tests xs_hir_type_tests xs_xlil_tests xs_mir_tests xs_syntax_ast_tests xs_syntax_decl_tests xs_syntax_macro_tests
 
 # =============================================================================
 # Built-in targets
@@ -1425,14 +1472,14 @@ build all: phony libxs_compiler.a xs libxs_backend_llvm.a xs_lexer_tests xs_pars
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja /home/hasan/Projeler/XS/build/clang-debug/cmake_install.cmake /home/hasan/Projeler/XS/build/clang-debug/CTestTestfile.cmake: RERUN_CMAKE | /home/hasan/Projeler/XS/CMakeLists.txt /usr/lib/cmake/llvm/FindFFI.cmake /usr/lib/cmake/llvm/FindLibEdit.cmake /usr/lib/cmake/llvm/LLVM-Config.cmake /usr/lib/cmake/llvm/LLVMConfig.cmake /usr/lib/cmake/llvm/LLVMConfigVersion.cmake /usr/lib/cmake/llvm/LLVMExports-release.cmake /usr/lib/cmake/llvm/LLVMExports.cmake /usr/lib/cmake/zstd/zstdConfig.cmake /usr/lib/cmake/zstd/zstdConfigVersion.cmake /usr/lib/cmake/zstd/zstdTargets-none.cmake /usr/lib/cmake/zstd/zstdTargets.cmake /usr/share/cmake/Modules/CMakeCInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakePushCheckState.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/CTest.cmake /usr/share/cmake/Modules/CTestTargets.cmake /usr/share/cmake/Modules/CTestUseLaunchers.cmake /usr/share/cmake/Modules/CheckCSourceCompiles.cmake /usr/share/cmake/Modules/CheckIncludeFile.cmake /usr/share/cmake/Modules/CheckLibraryExists.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/Clang-C.cmake /usr/share/cmake/Modules/Compiler/Clang.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/DartConfiguration.tcl.in /usr/share/cmake/Modules/FindCURL.cmake /usr/share/cmake/Modules/FindLibXml2.cmake /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake/Modules/FindPackageMessage.cmake /usr/share/cmake/Modules/FindPkgConfig.cmake /usr/share/cmake/Modules/FindThreads.cmake /usr/share/cmake/Modules/FindZLIB.cmake /usr/share/cmake/Modules/Internal/CMakeCLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake/Modules/Linker/GNU-C.cmake /usr/share/cmake/Modules/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Clang-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake /usr/share/cmake/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake/Templates/CTestScript.cmake.in CMakeCache.txt CMakeFiles/4.3.4/CMakeCCompiler.cmake CMakeFiles/4.3.4/CMakeSystem.cmake
+build build.ninja /home/hasan/Projeler/XS/build/clang-debug/cmake_install.cmake /home/hasan/Projeler/XS/build/clang-debug/CTestTestfile.cmake: RERUN_CMAKE | /home/hasan/Projeler/XS/CMakeLists.txt /home/hasan/Projeler/XS/cmake/XSMonorepo.cmake /usr/lib/cmake/llvm/FindFFI.cmake /usr/lib/cmake/llvm/FindLibEdit.cmake /usr/lib/cmake/llvm/LLVM-Config.cmake /usr/lib/cmake/llvm/LLVMConfig.cmake /usr/lib/cmake/llvm/LLVMConfigVersion.cmake /usr/lib/cmake/llvm/LLVMExports-release.cmake /usr/lib/cmake/llvm/LLVMExports.cmake /usr/lib/cmake/zstd/zstdConfig.cmake /usr/lib/cmake/zstd/zstdConfigVersion.cmake /usr/lib/cmake/zstd/zstdTargets-none.cmake /usr/lib/cmake/zstd/zstdTargets.cmake /usr/share/cmake/Modules/CMakeCInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakePushCheckState.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/CTest.cmake /usr/share/cmake/Modules/CTestTargets.cmake /usr/share/cmake/Modules/CTestUseLaunchers.cmake /usr/share/cmake/Modules/CheckCSourceCompiles.cmake /usr/share/cmake/Modules/CheckIncludeFile.cmake /usr/share/cmake/Modules/CheckLibraryExists.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/Clang-C.cmake /usr/share/cmake/Modules/Compiler/Clang.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/DartConfiguration.tcl.in /usr/share/cmake/Modules/FindCURL.cmake /usr/share/cmake/Modules/FindLibXml2.cmake /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake/Modules/FindPackageMessage.cmake /usr/share/cmake/Modules/FindPkgConfig.cmake /usr/share/cmake/Modules/FindThreads.cmake /usr/share/cmake/Modules/FindZLIB.cmake /usr/share/cmake/Modules/Internal/CMakeCLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake/Modules/Linker/GNU-C.cmake /usr/share/cmake/Modules/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Clang-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake /usr/share/cmake/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake/Templates/CTestScript.cmake.in CMakeCache.txt CMakeFiles/4.3.4/CMakeCCompiler.cmake CMakeFiles/4.3.4/CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build /home/hasan/Projeler/XS/CMakeLists.txt /usr/lib/cmake/llvm/FindFFI.cmake /usr/lib/cmake/llvm/FindLibEdit.cmake /usr/lib/cmake/llvm/LLVM-Config.cmake /usr/lib/cmake/llvm/LLVMConfig.cmake /usr/lib/cmake/llvm/LLVMConfigVersion.cmake /usr/lib/cmake/llvm/LLVMExports-release.cmake /usr/lib/cmake/llvm/LLVMExports.cmake /usr/lib/cmake/zstd/zstdConfig.cmake /usr/lib/cmake/zstd/zstdConfigVersion.cmake /usr/lib/cmake/zstd/zstdTargets-none.cmake /usr/lib/cmake/zstd/zstdTargets.cmake /usr/share/cmake/Modules/CMakeCInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakePushCheckState.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/CTest.cmake /usr/share/cmake/Modules/CTestTargets.cmake /usr/share/cmake/Modules/CTestUseLaunchers.cmake /usr/share/cmake/Modules/CheckCSourceCompiles.cmake /usr/share/cmake/Modules/CheckIncludeFile.cmake /usr/share/cmake/Modules/CheckLibraryExists.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/Clang-C.cmake /usr/share/cmake/Modules/Compiler/Clang.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/DartConfiguration.tcl.in /usr/share/cmake/Modules/FindCURL.cmake /usr/share/cmake/Modules/FindLibXml2.cmake /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake/Modules/FindPackageMessage.cmake /usr/share/cmake/Modules/FindPkgConfig.cmake /usr/share/cmake/Modules/FindThreads.cmake /usr/share/cmake/Modules/FindZLIB.cmake /usr/share/cmake/Modules/Internal/CMakeCLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake/Modules/Linker/GNU-C.cmake /usr/share/cmake/Modules/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Clang-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake /usr/share/cmake/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake/Templates/CTestScript.cmake.in CMakeCache.txt CMakeFiles/4.3.4/CMakeCCompiler.cmake CMakeFiles/4.3.4/CMakeSystem.cmake: phony
+build /home/hasan/Projeler/XS/CMakeLists.txt /home/hasan/Projeler/XS/cmake/XSMonorepo.cmake /usr/lib/cmake/llvm/FindFFI.cmake /usr/lib/cmake/llvm/FindLibEdit.cmake /usr/lib/cmake/llvm/LLVM-Config.cmake /usr/lib/cmake/llvm/LLVMConfig.cmake /usr/lib/cmake/llvm/LLVMConfigVersion.cmake /usr/lib/cmake/llvm/LLVMExports-release.cmake /usr/lib/cmake/llvm/LLVMExports.cmake /usr/lib/cmake/zstd/zstdConfig.cmake /usr/lib/cmake/zstd/zstdConfigVersion.cmake /usr/lib/cmake/zstd/zstdTargets-none.cmake /usr/lib/cmake/zstd/zstdTargets.cmake /usr/share/cmake/Modules/CMakeCInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakePushCheckState.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/CTest.cmake /usr/share/cmake/Modules/CTestTargets.cmake /usr/share/cmake/Modules/CTestUseLaunchers.cmake /usr/share/cmake/Modules/CheckCSourceCompiles.cmake /usr/share/cmake/Modules/CheckIncludeFile.cmake /usr/share/cmake/Modules/CheckLibraryExists.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/Clang-C.cmake /usr/share/cmake/Modules/Compiler/Clang.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/DartConfiguration.tcl.in /usr/share/cmake/Modules/FindCURL.cmake /usr/share/cmake/Modules/FindLibXml2.cmake /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake/Modules/FindPackageMessage.cmake /usr/share/cmake/Modules/FindPkgConfig.cmake /usr/share/cmake/Modules/FindThreads.cmake /usr/share/cmake/Modules/FindZLIB.cmake /usr/share/cmake/Modules/Internal/CMakeCLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake/Modules/Linker/GNU-C.cmake /usr/share/cmake/Modules/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Clang-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake /usr/share/cmake/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake/Templates/CTestScript.cmake.in CMakeCache.txt CMakeFiles/4.3.4/CMakeCCompiler.cmake CMakeFiles/4.3.4/CMakeSystem.cmake: phony
 
 
 #############################################

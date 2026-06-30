@@ -41,7 +41,7 @@ HeaderFileExtensions:
 ImplementationFileExtensions:
   - c
 
-HeaderFilterRegex: "^/home/hasan/Projeler/XS/(include|sources|tests)/"
+HeaderFilterRegex: "^/home/hasan/Projeler/XS/(xs|xsproj|tests)/"
 ExcludeHeaderFilterRegex: "(^|.*/)(build|cmake-build.*|vendor|third_party|external|subprojects)/.*"
 
 SystemHeaders: false

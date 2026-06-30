@@ -1,0 +1,32 @@
+// X# için VS Code settings.json ayarıdır.
+// Inlay Hits yoktur
+
+{
+  "[xs]": {
+    "editor.defaultFormatter": "xs-lang.xs-analyzer"
+  },
+
+  // xs-analyzer: temel LSP davranışı.
+  "rust-analyzer.checkOnSave": true, // yazılmazsa varsayılan true
+
+  // CodeLens / hover.
+  "xs-analyzer.lens.enable": true, // yazılmazsa varsayılan false
+  "xs-analyzer.lens.run.enable": true, // yazılmazsa varsayılan false
+  "xs-analyzer.lens.debug.enable": true, // yazılmazsa varsayılan false
+  "xs-analyzer.hover.actions.enable": true, // yazılmazsa varsayılan false
+
+  // Büyük projelerde gereksiz klasörleri izleme/dizinleme.
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/.git/**": true
+  },
+  "search.exclude": {
+    "**/target": true
+  },
+  "files.exclude": {
+    "**/target": true
+  },
+
+  // XS Analyzer Debug CodeLens kullanacaksan faydalı.
+  "debug.allowBreakpointsEverywhere": true // yazılmazsa varsayılan false
+}
