@@ -312,9 +312,12 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
     for (size_t i = 0; i < unit_count; ++i) {
       if (units[i].hir_ready) {
         success = xs_hir_resolve_imports(&units[i].tree, &symbols, &units[i].imports, &units[i].diagnostics) && success;
-        success =
-            xs_hir_validate_name_uses(&units[i].tree, &symbols, &units[i].imports, &units[i].diagnostics) && success;
-        success = xs_hir_resolve_types(&units[i].tree, &symbols, &units[i].imports, &units[i].diagnostics) && success;
+        success = xs_hir_validate_name_uses_expanded(&units[i].tree, &units[i].macro_statements, &symbols,
+                                                     &units[i].imports, &units[i].diagnostics) &&
+                  success;
+        success = xs_hir_resolve_types_expanded(&units[i].tree, &units[i].macro_statements, &symbols,
+                                                &units[i].imports, &units[i].diagnostics) &&
+                  success;
       }
     }
   }

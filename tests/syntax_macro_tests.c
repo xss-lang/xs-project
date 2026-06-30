@@ -164,6 +164,10 @@ static void test_macro_expansion_preparation_report(void)
   CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
   CHECK(statements.count < 2 || statements.items[1].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
   CHECK(statements.count < 2 || xs_syntax_find_first(statements.items[1].statement, XS_SYNTAX_EXPR_IDENTIFIER) != NULL);
+  const XsSyntaxNode *macro_statement = xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MACRO_CALL);
+  const XsSyntaxNode *found = xs_macro_statement_expansion_find(&statements, macro_statement);
+  CHECK(found != NULL && found->kind == XS_SYNTAX_STMT_EXPRESSION);
+  CHECK(xs_macro_statement_expansion_find(&statements, tree.root) == NULL);
   xs_macro_statement_expansion_set_free(&statements);
   if (expansions.count >= 2) {
     XsMacroReparseResult reparse;
@@ -215,6 +219,39 @@ static void test_macro_expansion_preparation_report(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_statement_fragment_expansion(void)
+{
+  const char *text = "macroRules! pass { ($body:stmt): { $body }; }"
+                     "fn Main() { pass!(value: Missing = nil;); }";
+  XsSource source = {.path = "MacroStatementFragment.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroExpansionReport report;
+  XsMacroExpansionSet expansions;
+  XsMacroStatementExpansionSet statements;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 24, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_seen == 1);
+  CHECK(report.calls_resolved == 1);
+  CHECK(report.calls_expandable == 1);
+  CHECK(report.calls_deferred == 0);
+  CHECK(report.substitutions_planned == 1);
+  CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
+  CHECK(expansions.count == 1);
+  CHECK(expansions.count < 1 || expansions.items[0].token_count == 6);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_VARIABLE);
+  CHECK(statements.count < 1 ||
+        xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_TYPE_NAMED) != NULL);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_macro_expansion_set_free(&expansions);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_macro_repetition_and_unique_variables();
@@ -222,5 +259,6 @@ int main(void)
   test_macro_scope_resolution();
   test_single_token_fragment_matching();
   test_macro_expansion_preparation_report();
+  test_statement_fragment_expansion();
   return failures == 0 ? 0 : 1;
 }

@@ -74,11 +74,20 @@ static size_t expansion_text_length(const XsMacroExpansion *expansion)
   return length;
 }
 
+static bool expansion_needs_semicolon(const XsMacroExpansion *expansion)
+{
+  if (expansion->token_count == 0)
+    return false;
+  XsTokenKind last = expansion->tokens[expansion->token_count - 1].kind;
+  return last != XS_TOKEN_SEMICOLON && last != XS_TOKEN_RIGHT_BRACE;
+}
+
 static char *render_statement_source(const XsMacroExpansion *expansion, size_t *length)
 {
   static const char prefix[] = "fn __xs_macro_expansion_probe() { ";
-  static const char suffix[] = "; }\n";
-  size_t capacity = sizeof(prefix) - 1 + expansion_text_length(expansion) + sizeof(suffix);
+  static const char suffix[] = " }\n";
+  bool needs_semicolon = expansion_needs_semicolon(expansion);
+  size_t capacity = sizeof(prefix) - 1 + expansion_text_length(expansion) + (needs_semicolon ? 1 : 0) + sizeof(suffix);
   char *text = malloc(capacity);
   if (text == NULL)
     return NULL;
@@ -90,6 +99,8 @@ static char *render_statement_source(const XsMacroExpansion *expansion, size_t *
       append_text(text, &cursor, " ", 1);
     append_text(text, &cursor, expansion->tokens[i].text.data, expansion->tokens[i].text.length);
   }
+  if (needs_semicolon)
+    append_text(text, &cursor, ";", 1);
   append_text(text, &cursor, suffix, sizeof(suffix) - 1);
   text[cursor] = '\0';
   *length = cursor;
@@ -156,6 +167,22 @@ void xs_macro_statement_expansion_set_free(XsMacroStatementExpansionSet *set)
     xs_macro_reparse_result_free(&set->items[i].reparse);
   free(set->items);
   *set = (XsMacroStatementExpansionSet){0};
+}
+
+const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpansionSet *set,
+                                                      const XsSyntaxNode *statement)
+{
+  if (set == NULL || statement == NULL || statement->kind != XS_SYNTAX_STMT_MACRO_CALL)
+    return NULL;
+  const XsSyntaxNode *call = xs_syntax_find_first(statement, XS_SYNTAX_EXPR_MACRO_CALL);
+  if (call == NULL)
+    return NULL;
+  for (size_t i = 0; i < set->count; ++i) {
+    XsSpan span = set->items[i].call_span;
+    if (span.start == call->span.start_offset && span.end == call->span.end_offset)
+      return set->items[i].statement;
+  }
+  return NULL;
 }
 
 bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsMacroStatementExpansionSet *set)

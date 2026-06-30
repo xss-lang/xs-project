@@ -9,4 +9,4 @@ name = "xstidy"
 path = "sources/main.rs"
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = "all" }

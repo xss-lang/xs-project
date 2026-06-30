@@ -73,5 +73,7 @@ void xs_macro_reparse_result_free(XsMacroReparseResult *result);
 void xs_macro_statement_expansion_set_free(XsMacroStatementExpansionSet *set);
 bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnostics,
                                 XsMacroStatementExpansionSet *set);
+const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpansionSet *set,
+                                                      const XsSyntaxNode *statement);
 
 #endif

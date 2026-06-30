@@ -2,6 +2,7 @@
 #include "xs/hir/symbol_table.h"
 #include "xs/hir/type_info.h"
 #include "xs/hir/type_resolution.h"
+#include "xs/macro.h"
 #include "xs/syntax_parser.h"
 
 #include <stdio.h>
@@ -267,6 +268,38 @@ static void test_unknown_type_errors(void)
   CHECK(!check_single_source("module App;\nfn Main(value: Missing) {}\n"));
 }
 
+static void test_expanded_macro_type_errors(void)
+{
+  const char *main = "module App;\n"
+                     "macroRules! bad { (): { value: Missing = nil }; }\n"
+                     "fn Main() { bad!(); }\n";
+  XsSource source = {.path = "MacroTypes.xs", .text = main, .length = strlen(main)};
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsMacroExpansionReport report;
+  XsMacroStatementExpansionSet statements;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 93, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_hir_primitive_info();
@@ -281,5 +314,6 @@ int main(void)
   test_generic_constraints();
   test_imported_generic_constraint();
   test_unknown_type_errors();
+  test_expanded_macro_type_errors();
   return failures == 0 ? 0 : 1;
 }

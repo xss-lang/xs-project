@@ -342,8 +342,16 @@ static bool declaration_opens_generic_scope(XsSyntaxKind kind)
 
 static bool resolve_declaration_types(const XsSyntaxNode *node, const char *namespace_name, uint64_t current_file_id,
                                       const GenericScope *generics, const XsHirSymbolTable *symbols,
-                                      const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+                                      const XsHirImportScope *imports, XsDiagnostics *diagnostics,
+                                      const XsMacroStatementExpansionSet *macro_statements)
 {
+  if (node == NULL)
+    return true;
+  const XsSyntaxNode *replacement = xs_macro_statement_expansion_find(macro_statements, node);
+  if (replacement != NULL)
+    return resolve_declaration_types(replacement, namespace_name, current_file_id, generics, symbols, imports,
+                                     diagnostics, macro_statements);
+
   GenericScope local_scope = {.parent = generics, .declaration = node};
   const GenericScope *active = declaration_opens_generic_scope(node->kind) ? &local_scope : generics;
   bool success = true;
@@ -358,13 +366,20 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
     return resolve_type_node(node, namespace_name, current_file_id, active, symbols, imports, diagnostics);
   for (size_t i = 0; i < node->child_count; ++i)
     success = resolve_declaration_types(node->children[i], namespace_name, current_file_id, active, symbols, imports,
-                                        diagnostics) &&
+                                        diagnostics, macro_statements) &&
               success;
   return success;
 }
 
 bool xs_hir_resolve_types(const XsSyntaxTree *tree, const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
                           XsDiagnostics *diagnostics)
+{
+  return xs_hir_resolve_types_expanded(tree, NULL, symbols, imports, diagnostics);
+}
+
+bool xs_hir_resolve_types_expanded(const XsSyntaxTree *tree, const XsMacroStatementExpansionSet *macro_statements,
+                                   const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
+                                   XsDiagnostics *diagnostics)
 {
   if (tree == NULL || tree->root == NULL || symbols == NULL || imports == NULL || diagnostics == NULL)
     return false;
@@ -374,7 +389,7 @@ bool xs_hir_resolve_types(const XsSyntaxTree *tree, const XsHirSymbolTable *symb
     if (symbol->span.file_id != tree->file_id)
       continue;
     success = resolve_declaration_types(symbol->syntax, symbol->namespace_name, tree->file_id, NULL, symbols, imports,
-                                        diagnostics) &&
+                                        diagnostics, macro_statements) &&
               success;
   }
   return success && !xs_diagnostics_has_error(diagnostics);

@@ -72,6 +72,8 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - Derleyici içine Rust yalnız somut teknik gerekçe varsa eklenebilir; bu durumda `xs/sources/rust/` altında izole kalmalı
   ve C API’yi bozmamalıdır.
 - `xsfmt` ve `xstidy` bu kuralın istisnasıdır: onlar baştan Rust nightly + Serde future tool projeleridir.
+- Bu projede `.bash`, `.zsh` veya benzeri shell script dilleri proje artifact'i olarak kullanılmaz.
+- Script/otomasyon gerekiyorsa Go veya Rust tercih edilir; geçici terminal komutları kalıcı proje dosyasına dönüştürülmez.
 
 ## Build sistemi ve toolchain
 

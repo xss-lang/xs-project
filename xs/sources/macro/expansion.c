@@ -14,6 +14,9 @@ typedef struct
 {
   XsText name;
   const XsSyntaxNode *argument;
+  const XsSyntaxNode *call;
+  size_t argument_index;
+  size_t argument_count;
 } Capture;
 
 typedef struct
@@ -99,6 +102,19 @@ static bool single_token_fragment_supported(XsText kind)
          text_equal(kind, (XsText){.data = "vis", .length = 3});
 }
 
+static bool fragment_kind_is(const XsSyntaxNode *fragment, const char *kind)
+{
+  size_t length = strlen(kind);
+  return fragment->child_count >= 2 && fragment->children[1]->text.length == length &&
+         memcmp(fragment->children[1]->text.data, kind, length) == 0;
+}
+
+static bool fragment_supported(XsText kind)
+{
+  return single_token_fragment_supported(kind) || text_equal(kind, (XsText){.data = "stmt", .length = 4}) ||
+         text_equal(kind, (XsText){.data = "block", .length = 5});
+}
+
 static bool fragment_matches(const XsSyntaxNode *fragment, const XsSyntaxNode *argument)
 {
   if (fragment->child_count < 2)
@@ -127,7 +143,7 @@ static bool rule_supported(const XsSyntaxNode *rule)
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_REPETITION)
       return false;
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
-      if (element->child_count < 2 || !single_token_fragment_supported(element->children[1]->text))
+      if (element->child_count < 2 || !fragment_supported(element->children[1]->text))
         return false;
     }
   }
@@ -152,7 +168,22 @@ static bool add_capture(CaptureSet *captures, const XsSyntaxNode *fragment, cons
 {
   if (fragment->child_count == 0 || captures->count == sizeof(captures->items) / sizeof(captures->items[0]))
     return false;
-  captures->items[captures->count++] = (Capture){.name = fragment->children[0]->text, .argument = argument};
+  captures->items[captures->count++] =
+      (Capture){.name = fragment->children[0]->text, .argument = argument, .argument_count = 1};
+  return true;
+}
+
+static bool add_capture_sequence(CaptureSet *captures, const XsSyntaxNode *fragment, const XsSyntaxNode *call,
+                                 size_t argument_index, size_t argument_count)
+{
+  if (fragment->child_count == 0 || argument_count == 0 ||
+      captures->count == sizeof(captures->items) / sizeof(captures->items[0]))
+    return false;
+  captures->items[captures->count++] = (Capture){.name = fragment->children[0]->text,
+                                                 .argument = call->children[argument_index],
+                                                 .call = call,
+                                                 .argument_index = argument_index,
+                                                 .argument_count = argument_count};
   return true;
 }
 
@@ -164,10 +195,18 @@ static bool rule_matches(const XsSyntaxNode *rule, const XsSyntaxNode *call, Cap
     if (argument >= call->child_count)
       return false;
     const XsSyntaxNode *element = matcher->children[i];
-    const XsSyntaxNode *value = call->children[argument++];
-    if (element->kind == XS_SYNTAX_MACRO_MATCHER_TOKEN && !token_text_matches(element, value))
-      return false;
+    if (element->kind == XS_SYNTAX_MACRO_MATCHER_TOKEN) {
+      const XsSyntaxNode *value = call->children[argument++];
+      if (!token_text_matches(element, value))
+        return false;
+    }
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
+      if (fragment_kind_is(element, "stmt") || fragment_kind_is(element, "block")) {
+        if (i + 1 != matcher->child_count)
+          return false;
+        return add_capture_sequence(captures, element, call, argument, call->child_count - argument);
+      }
+      const XsSyntaxNode *value = call->children[argument++];
       if (!fragment_matches(element, value) || !add_capture(captures, element, value))
         return false;
     }
@@ -188,7 +227,12 @@ static bool plan_expansion(const XsSyntaxNode *rule, const CaptureSet *captures,
       const XsSyntaxNode *argument = find_capture(captures, element->children[0]->text);
       if (argument == NULL)
         return false;
-      ++report->output_tokens_planned;
+      for (size_t capture = 0; capture < captures->count; ++capture) {
+        if (text_equal(captures->items[capture].name, element->children[0]->text)) {
+          report->output_tokens_planned += captures->items[capture].argument_count;
+          break;
+        }
+      }
       ++report->substitutions_planned;
     }
   }
@@ -341,16 +385,26 @@ static bool emit_rule_tokens(const XsSyntaxNode *rule, const CaptureSet *capture
       if (!expansion_add_token(expansion, token, set))
         return false;
     } else if (element->kind == XS_SYNTAX_MACRO_EXPANSION_VARIABLE && element->child_count != 0) {
-      const XsSyntaxNode *argument = find_capture(captures, element->children[0]->text);
-      if (argument == NULL)
+      const Capture *capture = NULL;
+      for (size_t index = 0; index < captures->count; ++index) {
+        if (text_equal(captures->items[index].name, element->children[0]->text)) {
+          capture = &captures->items[index];
+          break;
+        }
+      }
+      if (capture == NULL)
         return false;
-      XsSpan span = {.start = argument->span.start_offset, .end = argument->span.end_offset};
-      XsMacroExpansionToken token = {.kind = argument->token_kind,
-                                     .text = argument->text,
-                                     .source_span = span,
-                                     .from_substitution = true};
-      if (!expansion_add_token(expansion, token, set))
-        return false;
+      for (size_t offset = 0; offset < capture->argument_count; ++offset) {
+        const XsSyntaxNode *argument =
+            capture->call == NULL ? capture->argument : capture->call->children[capture->argument_index + offset];
+        XsSpan span = {.start = argument->span.start_offset, .end = argument->span.end_offset};
+        XsMacroExpansionToken token = {.kind = argument->token_kind,
+                                       .text = argument->text,
+                                       .source_span = span,
+                                       .from_substitution = true};
+        if (!expansion_add_token(expansion, token, set))
+          return false;
+      }
     }
   }
   return true;

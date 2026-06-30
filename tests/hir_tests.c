@@ -239,6 +239,71 @@ static void test_name_use_errors(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_expanded_macro_name_use_errors(void)
+{
+  const char *main = "module App;\n"
+                     "macroRules! bad { (): { Missing.Call() }; }\n"
+                     "fn Main() { bad!(); }\n";
+  XsSource source = {.path = "MacroNameUse.xs", .text = main, .length = strlen(main)};
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsMacroExpansionReport report;
+  XsMacroStatementExpansionSet statements;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 62, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_statement_fragment_macro_name_use_errors(void)
+{
+  const char *main = "module App;\n"
+                     "macroRules! pass { ($body:stmt): { $body }; }\n"
+                     "fn Main() { pass!(Missing.Call();); }\n";
+  XsSource source = {.path = "MacroStatementNameUse.xs", .text = main, .length = strlen(main)};
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsMacroExpansionReport report;
+  XsMacroStatementExpansionSet statements;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 63, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_expandable == 1);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_private_qualified_name_visibility(void)
 {
   const char *library = "module Math;\n"
@@ -322,6 +387,8 @@ int main(void)
   test_import_errors();
   test_name_use_resolution();
   test_name_use_errors();
+  test_expanded_macro_name_use_errors();
+  test_statement_fragment_macro_name_use_errors();
   test_private_qualified_name_visibility();
   test_private_same_namespace_name_visibility();
   test_private_same_namespace_different_file_name_visibility();

@@ -129,11 +129,16 @@ static bool validate_call_target(const XsSyntaxNode *target, const XsSyntaxNode 
 
 static bool validate_name_uses_in_node(const XsSyntaxNode *node, const XsSyntaxNode *function,
                                        const char *namespace_name, uint64_t current_file_id,
+                                       const XsMacroStatementExpansionSet *macro_statements,
                                        const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
                                        XsDiagnostics *diagnostics)
 {
   if (node == NULL)
     return true;
+  const XsSyntaxNode *replacement = xs_macro_statement_expansion_find(macro_statements, node);
+  if (replacement != NULL)
+    return validate_name_uses_in_node(replacement, function, namespace_name, current_file_id, macro_statements,
+                                      project_symbols, imports, diagnostics);
   bool success = true;
   if (node->kind == XS_SYNTAX_EXPR_CALL && node->child_count != 0)
     success = validate_call_target(node->children[0], function, namespace_name, current_file_id, project_symbols,
@@ -142,14 +147,15 @@ static bool validate_name_uses_in_node(const XsSyntaxNode *node, const XsSyntaxN
     success =
         validate_call_target(node, function, namespace_name, current_file_id, project_symbols, imports, diagnostics);
   for (size_t i = 0; i < node->child_count; ++i)
-    success = validate_name_uses_in_node(node->children[i], function, namespace_name, current_file_id, project_symbols,
-                                         imports, diagnostics) &&
+    success = validate_name_uses_in_node(node->children[i], function, namespace_name, current_file_id, macro_statements,
+                                         project_symbols, imports, diagnostics) &&
               success;
   return success;
 }
 
-bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols,
-                               const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+bool xs_hir_validate_name_uses_expanded(const XsSyntaxTree *tree, const XsMacroStatementExpansionSet *macro_statements,
+                                        const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
+                                        XsDiagnostics *diagnostics)
 {
   if (tree == NULL || tree->root == NULL || project_symbols == NULL || imports == NULL || diagnostics == NULL)
     return false;
@@ -159,8 +165,14 @@ bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable 
     if (symbol->kind != XS_HIR_SYMBOL_FUNCTION || symbol->span.file_id != tree->file_id)
       continue;
     success = validate_name_uses_in_node(symbol->syntax, symbol->syntax, symbol->namespace_name, tree->file_id,
-                                         project_symbols, imports, diagnostics) &&
+                                         macro_statements, project_symbols, imports, diagnostics) &&
               success;
   }
   return success && !xs_diagnostics_has_error(diagnostics);
+}
+
+bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols,
+                               const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+{
+  return xs_hir_validate_name_uses_expanded(tree, NULL, project_symbols, imports, diagnostics);
 }

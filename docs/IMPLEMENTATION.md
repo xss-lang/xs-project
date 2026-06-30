@@ -154,6 +154,9 @@ Bu katman HIR dizini altında bulunur.
 - Başka namespace/modül üzerinden tam nitelikli çağrı hedefleri yalnızca public sembollere çözümlenebilir.
 - Public olmayan semboller yalnızca aynı namespace ve aynı kaynak dosya içinden doğrudan qualified adla çözümlenebilir.
 - İlk segmenti yerel parametre/değişken olan çağrı hedefleri tip denetimine ertelenir.
+- `xs_hir_validate_name_uses_expanded`, statement macro replacement set verildiğinde `XS_SYNTAX_STMT_MACRO_CALL` düğümü
+  yerine synthetic replacement statement düğümünü dolaşır. Böylece macro expansion sonrası oluşan function/method call
+  hedefleri HIR symbol/import scope içinde doğrulanır.
 
 Bu aşama henüz metot/operator çözümleme, overload seçimi, generic constraint çözümleme veya tip tabanlı çağrı çözümleme
 yapmaz.
@@ -181,6 +184,9 @@ yapmaz.
 - Generic constraint tipleri interface sembollerine çözümlenmelidir.
 - Generic parametreler birden fazla constraint taşıyabilir; constraint listesindeki `, Identifier :` yeni generic parametre
   başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.
+- `xs_hir_resolve_types_expanded`, statement macro replacement set verildiğinde `XS_SYNTAX_STMT_MACRO_CALL` düğümü yerine
+  synthetic replacement statement düğümünü dolaşır. Böylece macro expansion sonrası oluşan type kullanımları da HIR
+  symbol/import scope içinde doğrulanır.
 
 Bu aşama henüz expression type inference, overload seçimi, constraint üyelik/uyumluluk denetimi, trait/interface
 uyumluluğu veya ABI/layout kararı üretmez.
@@ -198,8 +204,11 @@ uyumluluğu veya ABI/layout kararı üretmez.
   göre eşleştirilir.
 - Makro genişletme hazırlık API'si `xs_macro_prepare_expansion` olarak eklenmiştir. Bu aşama çağrıları scope içinde
   çözer, tek-token fragment veya tam-token matcher ile yapısal yeniden ayrıştırma gerektirmeden genişletilebilir çağrıları
-  sayar, basit expansion token/substitution planı üretir ve `expr`, `ty`, `path`, `pat`, `stmt`, `block`, `item`, `meta`
+  sayar, basit expansion token/substitution planı üretir ve `expr`, `ty`, `path`, `pat`, `block`, `item`, `meta`
   fragmentları için genişletmeyi bilinçli olarak erteler.
+- `stmt` fragment v0 desteği, matcher içinde tek kalan fragment olduğu durumda çağrı parantezi içindeki token dizisini tek
+  statement fragment olarak yakalar. Expansion içinde `$name` kullanımı bu token dizisini statement reparse aşamasına
+  taşır.
 - `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bu çıktı henüz
   structural AST'ye geri yazılmaz; sonraki aşamadaki fragment reparse ve AST replacement için ara genişletme akışıdır.
 - `xs_macro_reparse_expansion_as_statement` desteklenen expansion token listesini synthetic bir fonksiyon gövdesi içinde
@@ -212,12 +221,15 @@ uyumluluğu veya ABI/layout kararı üretmez.
   tuttuğu için replacement düğümleri set serbest bırakılana kadar geçerlidir. Bu API yalnız statement context'teki macro
   call'ları statement replacement olarak üretir; başka expression içinde bulunan nested macro call'lar token expansion
   düzeyinde kalır.
+- `xs_macro_statement_expansion_find`, bir `XS_SYNTAX_STMT_MACRO_CALL` düğümü için synthetic replacement statement düğümünü
+  macro katmanından döndürür. HIR tüketicileri replacement lookup için kendi span eşleme kodunu tutmaz.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
-  toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar; gerçek HIR
-  traversal'ının replacement düğümlerini tüketmesi sonraki adımdır.
+  toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
+  kullanımı ile HIR tip çözümleme traversal'larına verir.
 
-`expr`, `ty`, `path`, `pat`, `stmt`, `block`, `item` ve `meta` fragment yakalama ile AST genişletme hâlâ
-tamamlanmamıştır; desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
+`expr`, `ty`, `path`, `pat`, `block`, `item` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır.
+`stmt` fragment desteği şimdilik tek statement token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik
+uydurulmaz.
 
 ### MIR modeli
 

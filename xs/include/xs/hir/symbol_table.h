@@ -2,6 +2,7 @@
 #define XS_HIR_SYMBOL_TABLE_H
 
 #include "xs/diagnostic.h"
+#include "xs/macro.h"
 #include "xs/syntax_ast.h"
 
 #include <stddef.h>
@@ -63,5 +64,8 @@ bool xs_hir_resolve_imports(const XsSyntaxTree *tree, const XsHirSymbolTable *pr
                             XsDiagnostics *diagnostics);
 bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols,
                                const XsHirImportScope *imports, XsDiagnostics *diagnostics);
+bool xs_hir_validate_name_uses_expanded(const XsSyntaxTree *tree, const XsMacroStatementExpansionSet *macro_statements,
+                                        const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
+                                        XsDiagnostics *diagnostics);
 
 #endif
