@@ -4,12 +4,23 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-class XsGit {
-  static int run(String... command) throws IOException, InterruptedException {
-    System.err.println("+ " + String.join(" ", command));
+class XsGit
+{
+  static final int USAGE_ERROR = 2;
+
+static int run(String... command) throws IOException, InterruptedException {
+     System.err.println("+ " + String.join(" ", command));
 
     return new ProcessBuilder(command)
       .inheritIO()
+      .start()
+      .waitFor();
+  }
+
+  static int runQuiet(String... command) throws IOException, InterruptedException {
+    return new ProcessBuilder(command)
+      .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+      .redirectError(ProcessBuilder.Redirect.INHERIT)
       .start()
       .waitFor();
   }
@@ -20,7 +31,10 @@ class XsGit {
       .start();
 
     ByteArrayOutputStream output = new ByteArrayOutputStream();
-    process.getInputStream().transferTo(output);
+
+    try (var input = process.getInputStream()) {
+      input.transferTo(output);
+    }
 
     int code = process.waitFor();
 
@@ -31,21 +45,38 @@ class XsGit {
     return output.toString(StandardCharsets.UTF_8);
   }
 
+  static void exit(int code, String message) {
+    System.err.println(message);
+    System.exit(code);
+  }
+
+  static String usageError() {
+    System.err.println("usage:");
+    System.err.println("  xsgit \"commit message\"");
+    System.err.println("  xsgit update \"commit message\"");
+    System.exit(USAGE_ERROR);
+
+    throw new IllegalStateException("unreachable");
+  }
+
   static void requireGitRepo() throws IOException, InterruptedException {
     String result = capture("git", "rev-parse", "--is-inside-work-tree").trim();
 
     if (!result.equals("true")) {
-      System.err.println("error: not inside a git work tree");
-      System.exit(1);
+      exit(1, "error: not inside a git work tree");
     }
   }
 
   static String commitMessage(String[] args) {
-    if (args.length == 0) {
-      return "Update";
+    if (args.length == 1 && !args[0].equals("update")) {
+      return args[0];
     }
 
-    return String.join(" ", args);
+    if (args.length == 2 && args[0].equals("update")) {
+      return args[1];
+    }
+
+    return usageError();
   }
 
   public static void main(String[] args) throws Exception {
@@ -56,22 +87,24 @@ class XsGit {
     int addCode = run("git", "add", "--all");
 
     if (addCode != 0) {
-      System.err.println("error: git add --all failed");
-      System.exit(addCode);
+      exit(addCode, "error: git add --all failed");
     }
 
-    String status = capture("git", "status", "--porcelain=v1");
+    int diffCode = runQuiet("git", "diff", "--cached", "--quiet");
 
-    if (status.isBlank()) {
+    if (diffCode == 0) {
       System.err.println("nothing to commit");
       return;
+    }
+
+    if (diffCode != 1) {
+      exit(diffCode, "error: git diff --cached --quiet failed");
     }
 
     int commitCode = run("git", "commit", "--message", message);
 
     if (commitCode != 0) {
-      System.err.println("error: git commit failed");
-      System.exit(commitCode);
+      exit(commitCode, "error: git commit failed");
     }
   }
 }

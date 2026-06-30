@@ -1,6 +1,6 @@
 root = true
 
-[{*.java,scripts/java/xs*,scripts/java/**/xs*}]
+[{*.java,scripts/java/xs*,scripts/java/**/*/}]
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
