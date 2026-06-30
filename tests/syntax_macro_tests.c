@@ -141,6 +141,7 @@ static void test_macro_expansion_preparation_report(void)
   XsSyntaxTree tree;
   XsMacroExpansionReport report;
   XsMacroExpansionSet expansions;
+  XsMacroStatementExpansionSet statements;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 20, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
@@ -158,11 +159,18 @@ static void test_macro_expansion_preparation_report(void)
   CHECK(expansions.count < 2 || expansions.items[1].token_count == 1);
   CHECK(expansions.count < 2 || text_is(expansions.items[1].tokens[0].text, "name"));
   CHECK(expansions.count < 2 || expansions.items[1].tokens[0].from_substitution);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 2);
+  CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
+  CHECK(statements.count < 2 || statements.items[1].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
+  CHECK(statements.count < 2 || xs_syntax_find_first(statements.items[1].statement, XS_SYNTAX_EXPR_IDENTIFIER) != NULL);
+  xs_macro_statement_expansion_set_free(&statements);
   if (expansions.count >= 2) {
     XsMacroReparseResult reparse;
     CHECK(xs_macro_reparse_expansion_as_statement(&expansions.items[1], 22, &diagnostics, &reparse));
-    CHECK(xs_syntax_find_first(reparse.tree.root, XS_SYNTAX_STMT_EXPRESSION) != NULL);
-    CHECK(xs_syntax_find_first(reparse.tree.root, XS_SYNTAX_EXPR_IDENTIFIER) != NULL);
+    const XsSyntaxNode *replacement = xs_macro_reparse_result_statement(&reparse);
+    CHECK(replacement != NULL && replacement->kind == XS_SYNTAX_STMT_EXPRESSION);
+    CHECK(xs_syntax_find_first(replacement, XS_SYNTAX_EXPR_IDENTIFIER) != NULL);
     xs_macro_reparse_result_free(&reparse);
   }
   xs_macro_expansion_set_free(&expansions);
@@ -183,6 +191,9 @@ static void test_macro_expansion_preparation_report(void)
   CHECK(report.substitutions_planned == 0);
   CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
   CHECK(expansions.count == 0);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 0);
+  xs_macro_statement_expansion_set_free(&statements);
   xs_macro_expansion_set_free(&expansions);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);

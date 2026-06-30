@@ -45,6 +45,11 @@ Future project dizinleri kendi köklerinde tutulur ama henüz CMake build’e al
 `XS_ENABLE_PROJECTS` ile build’e alınabilir hale getirilecektir. `xsrt` runtime tarafında aynı registry mantığıyla
 `XS_ENABLE_RUNTIMES` üzerinden etkinleşecektir.
 
+## Tool konfigürasyon standardı
+
+`xsfmt`, `xstidy` ve ileride eklenecek developer tool projeleri kullanıcı konfigürasyonu için TOML kullanır. Bu karar tool
+config dosyaları içindir; `.xsproj` proje manifest syntax'ı ayrı XSPROJ formatı olarak kalır.
+
 ## CMake sözleşmesi
 
 - `XS_ENABLE_PROJECTS=xs`: mevcut derleyiciyi build eder.

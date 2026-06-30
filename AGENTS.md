@@ -101,6 +101,8 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - `.clang-tidy` C/C23 kontrolleri `xs/`, `xsproj/` ve `tests/` alanlarına odaklanmalıdır.
 - Rust tool configleri kökte tutulmaz; `xsfmt/` ve `xstidy/` altında tutulur.
 - TypeScript/VS Code extension configleri `xs-analyzer/` altında tutulur.
+- `xsfmt`, `xstidy` ve ileride eklenecek developer tool projeleri için standart kullanıcı konfigürasyon formatı TOML'dır.
+- TOML kararı tool configleri içindir; `.xsproj` manifest syntax'ı TOML'a dönüştürülmez.
 
 ## X# syntax ve `.xsproj`
 

@@ -11,5 +11,9 @@ Buildable and planned projects live in sibling directories:
 - `xs-analyzer/`: future TypeScript VS Code extension project.
 - `xs-backend/`: future native XS Backend project.
 
+Developer tool user configuration, including `xsfmt`, `xstidy` and future tool
+projects, is standardized on TOML. `.xsproj` remains the separate XSPROJ
+manifest syntax.
+
 The root CMake project is named `xs_project` and is responsible for project
 selection, toolchain policy and shared monorepo orchestration.

@@ -12,9 +12,7 @@ extend-exclude = [
     "dist/",
     "build/",
     "coverage/",
-    ".nixos-vm/",
     ".direnv/",
-    ".devenv/",
     ".cache/",
     "*.png",
     "*.jpg",
@@ -65,13 +63,8 @@ extend-ignore-identifiers-re = [
     "^[a-zA-Z_]*idx[a-zA-Z_]*$",
     "^[a-zA-Z_]*buf[a-zA-Z_]*$",
     "^[a-zA-Z_]*str[a-zA-Z_]*$",
-    "\\bXCB_[A-Z0-9_]+\\b",
-    "\\bGLX_[A-Z0-9_]+\\b",
-    "\\bEGL_[A-Z0-9_]+\\b",
-    "\\bWL_[A-Z0-9_]+\\b",
-    "\\bXDG_[A-Z0-9_]+\\b",
-    "\\b_NET_[A-Z0-9_]+\\b",
-    "\\bWM_[A-Z0-9_]+\\b",
+    "\\bLLVM[A-Z0-9_]*\\b",
+    "\\bXS_[A-Z0-9_]+\\b",
     "\\bTLS_[A-Z0-9_]+\\b",
     "\\bSSL_[A-Z0-9_]+\\b",
     "\\bSHA[0-9_]*\\b",
@@ -79,21 +72,7 @@ extend-ignore-identifiers-re = [
 
 extend-ignore-words-re = [
     "^[A-Za-z]{1,3}$",
-    "(?i)^x11$",
-    "(?i)^xcb$",
-    "(?i)^xlib$",
-    "(?i)^xwayland$",
-    "(?i)^wayland$",
-    "(?i)^wlroots$",
-    "(?i)^glx$",
-    "(?i)^egl$",
     "(?i)^vulkan$",
-    "(?i)^mesa$",
-    "(?i)^qtile$",
-    "(?i)^picom$",
-    "(?i)^leftwm$",
-    "(?i)^hyprland$",
-    "(?i)^niri$",
     "(?i)^ron$",
     "(?i)^kdl$",
     "(?i)^serde$",
@@ -104,21 +83,45 @@ extend-ignore-words-re = [
 ]
 
 [default.extend-words]
-Qtile = "Qtile"
-picom = "picom"
-LeftWM = "LeftWM"
-Hyprland = "Hyprland"
-Wayland = "Wayland"
-XWayland = "XWayland"
-Xlib = "Xlib"
-XCB = "XCB"
-GLX = "GLX"
-EGL = "EGL"
-wlroots = "wlroots"
-Niri = "Niri"
-MangoWM = "MangoWM"
+CMake = "CMake"
+CMakeLists = "CMakeLists"
+CTest = "CTest"
+Clang = "Clang"
+clangd = "clangd"
+LLVM = "LLVM"
+LLD = "LLD"
+NASM = "NASM"
+XLIL = "XLIL"
+HIR = "HIR"
+MIR = "MIR"
+JIT = "JIT"
+AOT = "AOT"
+ABI = "ABI"
+API = "API"
+AST = "AST"
+CLI = "CLI"
+UTF = "UTF"
+XSPROJ = "XSPROJ"
+xsproj = "xsproj"
+xsfmt = "xsfmt"
+xstidy = "xstidy"
+Codegen = "Codegen"
+codegen = "codegen"
+monomorphization = "monomorphization"
+monomorphize = "monomorphize"
+Monomorfizasyon = "Monomorfizasyon"
+borrow = "borrow"
+namespace = "namespace"
+namespaces = "namespaces"
+lowering = "lowering"
+runtime = "runtime"
+vtable = "vtable"
+itable = "itable"
+endianness = "endianness"
+toolchain = "toolchain"
 Serde = "Serde"
 serde = "serde"
+TypeScript = "TypeScript"
 Clippy = "Clippy"
 rustfmt = "rustfmt"
 RustSec = "RustSec"
@@ -128,13 +131,5 @@ TOML = "TOML"
 config = "config"
 configs = "configs"
 deconfig = "deconfig"
-compositor = "compositor"
-compositors = "compositors"
-keybind = "keybind"
-keybinds = "keybinds"
-keybinding = "keybinding"
-keybindings = "keybindings"
-autostart = "autostart"
-fullscreen = "fullscreen"
 workspace = "workspace"
 workspaces = "workspaces"

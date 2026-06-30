@@ -127,6 +127,8 @@ Eksik alanlarda Rust, TypeScript, C#, C23 ve hedef assembly geleneklerinden X# i
 ## Tooling ve proje akışı kararları
 
 - `.xhir`, `.xmir`, `.xlil` text dump formatları deterministik, newline-normalized ve source-order stable olur.
+- `xsfmt`, `xstidy` ve ileride eklenecek developer tool projelerinin kullanıcı konfigürasyon formatı TOML'dır.
+- TOML yalnız tool configuration standardıdır; `.xsproj` proje manifest formatının yerine geçmez.
 - `xs check` parse, macro expansion, HIR, type-check ve borrow-independent semantic checks çalıştırır; object üretmez.
 - `xs build` tüm check aşamalarını, MIR, borrow checker, monomorfizasyon, XLIL, backend ve link akışını çalıştırır.
 - `xs run` önce `xs build` yapar, sonra executable’ı argument forwarding ile başlatır.

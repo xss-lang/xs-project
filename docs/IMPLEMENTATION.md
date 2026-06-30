@@ -202,6 +202,11 @@ uyumluluğu veya ABI/layout kararı üretmez.
 - `xs_macro_reparse_expansion_as_statement` desteklenen expansion token listesini synthetic bir fonksiyon gövdesi içinde
   statement olarak yeniden structural AST parser'dan geçirir. Bu köprü gerçek macro call replacement değildir; fragment-level
   reparse ve AST replacement için doğrulanabilir ara adımdır.
+- `xs_macro_reparse_result_statement` reparsed synthetic gövdeden replacement statement düğümünü çıkarır. Parent-child AST
+  replacement hâlâ sonraki adımdır.
+- `xs_macro_expand_statements`, desteklenen token expansion'ları statement olarak yeniden ayrıştırır ve çağrı span'ı ile
+  replacement statement düğümünü `XsMacroStatementExpansionSet` içinde eşler. Set, synthetic reparse ağaçlarının ownership'ini
+  tuttuğu için replacement düğümleri set serbest bırakılana kadar geçerlidir.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını çalıştırır; gerçek AST rewrite sonraki aşamadır.
 
 `expr`, `ty`, `path`, `pat`, `stmt`, `block`, `item` ve `meta` fragment yakalama ile AST genişletme hâlâ
