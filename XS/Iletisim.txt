@@ -1,0 +1,2 @@
+C ile Rust FFI üzerinden haberleşecektir. C23 tarafı stabil bir API açar. Kalanı sende.
+Third party diller bununla MIR'ın kullandığı optimize JIT'i kullanabilirler.

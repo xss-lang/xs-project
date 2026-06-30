@@ -177,6 +177,22 @@ static void test_macro_expansion_preparation_report(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
+  const char *nested = "macroRules! id { ($value:ident): { $value }; }"
+                       "fn Main() { print(id!(name)); id!(name); }";
+  source = (XsSource){.path = "MacroNestedExpression.xs", .text = nested, .length = strlen(nested)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 23, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
+  CHECK(expansions.count == 2);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_macro_expansion_set_free(&expansions);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
   const char *deferred = "macroRules! identity { ($value:expr): { $value }; } fn Main() { identity!(42); }";
   source = (XsSource){.path = "MacroExpansionDeferred.xs", .text = deferred, .length = strlen(deferred)};
   xs_diagnostics_init(&diagnostics);

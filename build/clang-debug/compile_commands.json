@@ -1,331 +1,331 @@
 [
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xs/sources/diagnostic.c.o -c /home/hasan/Projeler/XS/xs/sources/diagnostic.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xs/sources/diagnostic.c.o -c /home/hasan/Projeler/XS/xs/sources/diagnostic.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/diagnostic.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xsproj.dir/xs/sources/diagnostic.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xsproj/sources/lexer.c.o -c /home/hasan/Projeler/XS/xsproj/sources/lexer.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xsproj/sources/lexer.c.o -c /home/hasan/Projeler/XS/xsproj/sources/lexer.c",
   "file": "/home/hasan/Projeler/XS/xsproj/sources/lexer.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xsproj.dir/xsproj/sources/lexer.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xsproj/sources/model.c.o -c /home/hasan/Projeler/XS/xsproj/sources/model.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xsproj/sources/model.c.o -c /home/hasan/Projeler/XS/xsproj/sources/model.c",
   "file": "/home/hasan/Projeler/XS/xsproj/sources/model.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xsproj.dir/xsproj/sources/model.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xsproj/sources/parser.c.o -c /home/hasan/Projeler/XS/xsproj/sources/parser.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xsproj.dir/xsproj/sources/parser.c.o -c /home/hasan/Projeler/XS/xsproj/sources/parser.c",
   "file": "/home/hasan/Projeler/XS/xsproj/sources/parser.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xsproj.dir/xsproj/sources/parser.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/ast.c.o -c /home/hasan/Projeler/XS/xs/sources/ast.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/ast.c.o -c /home/hasan/Projeler/XS/xs/sources/ast.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/ast.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/ast.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/codegen/units.c.o -c /home/hasan/Projeler/XS/xs/sources/codegen/units.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/codegen/units.c.o -c /home/hasan/Projeler/XS/xs/sources/codegen/units.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/codegen/units.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/codegen/units.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/driver/cli.c.o -c /home/hasan/Projeler/XS/xs/sources/driver/cli.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/driver/cli.c.o -c /home/hasan/Projeler/XS/xs/sources/driver/cli.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/driver/cli.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/driver/cli.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/lexer.c.o -c /home/hasan/Projeler/XS/xs/sources/lexer.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/lexer.c.o -c /home/hasan/Projeler/XS/xs/sources/lexer.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/lexer.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/lexer.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/expansion.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/expansion.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/expansion.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/expansion.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/macro/expansion.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/expansion.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/reparse.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/reparse.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/reparse.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/reparse.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/macro/reparse.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/reparse.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/validation.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/validation.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/macro/validation.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/validation.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/borrow_checker.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/borrow_checker.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/borrow_checker.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/borrow_checker.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mir/borrow_checker.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mir/borrow_checker.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/hir_lowering.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/hir_lowering.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/hir_lowering.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/hir_lowering.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mir/hir_lowering.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mir/hir_lowering.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/model_blocks.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/model_blocks.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/model_blocks.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/model_blocks.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mir/model_blocks.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mir/model_blocks.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/model.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/model.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/model.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/model.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mir/model.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mir/model.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/model_writer.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/model_writer.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/model_writer.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/model_writer.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mir/model_writer.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mir/model_writer.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/optimizer.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/optimizer.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/optimizer.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/optimizer.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mir/optimizer.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mir/optimizer.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/xlil_lowering.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/xlil_lowering.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mir/xlil_lowering.c.o -c /home/hasan/Projeler/XS/xs/sources/mir/xlil_lowering.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mir/xlil_lowering.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mir/xlil_lowering.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mono/plan.c.o -c /home/hasan/Projeler/XS/xs/sources/mono/plan.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/mono/plan.c.o -c /home/hasan/Projeler/XS/xs/sources/mono/plan.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/mono/plan.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/mono/plan.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/xlil/writer.c.o -c /home/hasan/Projeler/XS/xs/sources/xlil/writer.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/xlil/writer.c.o -c /home/hasan/Projeler/XS/xs/sources/xlil/writer.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/xlil/writer.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/xlil/writer.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/dump.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/dump.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/dump.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/dump.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/dump.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/dump.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_graph.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/module_graph.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_graph.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/module_graph.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/module_graph.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/module_graph.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_model.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/module_model.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_model.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/module_model.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/module_model.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/module_model.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_registry.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/module_registry.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/module_registry.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/module_registry.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/module_registry.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/module_registry.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/import_resolver.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/import_resolver.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/import_resolver.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/import_resolver.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/import_resolver.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/import_resolver.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/name_resolution.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/name_resolution.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/name_resolution.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/name_resolution.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/name_resolution.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/name_resolution.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/symbol_table.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/symbol_table.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/symbol_table.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/symbol_table.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/symbol_table.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/symbol_table.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/syntax_helpers.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/syntax_helpers.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/syntax_helpers.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/syntax_helpers.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/syntax_helpers.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/syntax_helpers.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/type_info.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/type_info.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/type_info.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/type_info.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/type_info.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/type_info.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/type_resolution.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/type_resolution.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/hir/type_resolution.c.o -c /home/hasan/Projeler/XS/xs/sources/hir/type_resolution.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/hir/type_resolution.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/hir/type_resolution.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/parser.c.o -c /home/hasan/Projeler/XS/xs/sources/parser.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/parser.c.o -c /home/hasan/Projeler/XS/xs/sources/parser.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/parser.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/parser.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax_ast.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax_ast.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax_ast.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax_ast.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/syntax_ast.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/syntax_ast.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax_parser.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax_parser.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax_parser.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax_parser.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/syntax_parser.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/syntax_parser.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_macro.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_macro.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_macro.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_macro.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/syntax/parser_macro.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_macro.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_declaration.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_declaration.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_declaration.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_declaration.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/syntax/parser_declaration.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_declaration.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_expression.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_expression.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_expression.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_expression.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/syntax/parser_expression.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_expression.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_statement.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_statement.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_statement.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_statement.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/syntax/parser_statement.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_statement.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_type.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_type.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_type.c.o -c /home/hasan/Projeler/XS/xs/sources/syntax/parser_type.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/syntax/parser_type.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/syntax/parser_type.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/token.c.o -c /home/hasan/Projeler/XS/xs/sources/token.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/token.c.o -c /home/hasan/Projeler/XS/xs/sources/token.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/token.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/token.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/xlil/model.c.o -c /home/hasan/Projeler/XS/xs/sources/xlil/model.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/xlil/model.c.o -c /home/hasan/Projeler/XS/xs/sources/xlil/model.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/xlil/model.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/xlil/model.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs.dir/xs/sources/main.c.o -c /home/hasan/Projeler/XS/xs/sources/main.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs.dir/xs/sources/main.c.o -c /home/hasan/Projeler/XS/xs/sources/main.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/main.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs.dir/xs/sources/main.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/linker.c.o -c /home/hasan/Projeler/XS/xs/sources/backend/linker.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/linker.c.o -c /home/hasan/Projeler/XS/xs/sources/backend/linker.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/backend/linker.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/linker.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/llvm_backend.c.o -c /home/hasan/Projeler/XS/xs/sources/backend/llvm_backend.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/llvm_backend.c.o -c /home/hasan/Projeler/XS/xs/sources/backend/llvm_backend.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/backend/llvm_backend.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_backend_llvm.dir/xs/sources/backend/llvm_backend.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xsproj/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o -c /home/hasan/Projeler/XS/tests/project_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o -c /home/hasan/Projeler/XS/tests/project_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/project_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_project_tests.dir/tests/project_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o -c /home/hasan/Projeler/XS/tests/lexer_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o -c /home/hasan/Projeler/XS/tests/lexer_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/lexer_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_lexer_tests.dir/tests/lexer_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o -c /home/hasan/Projeler/XS/tests/parser_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o -c /home/hasan/Projeler/XS/tests/parser_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/parser_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_parser_tests.dir/tests/parser_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_backend_tests.dir/tests/backend_tests.c.o -c /home/hasan/Projeler/XS/tests/backend_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_backend_tests.dir/tests/backend_tests.c.o -c /home/hasan/Projeler/XS/tests/backend_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/backend_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_backend_tests.dir/tests/backend_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o -c /home/hasan/Projeler/XS/tests/module_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o -c /home/hasan/Projeler/XS/tests/module_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/module_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_module_tests.dir/tests/module_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o -c /home/hasan/Projeler/XS/tests/hir_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o -c /home/hasan/Projeler/XS/tests/hir_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/hir_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_hir_tests.dir/tests/hir_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o -c /home/hasan/Projeler/XS/tests/hir_type_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o -c /home/hasan/Projeler/XS/tests/hir_type_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/hir_type_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o -c /home/hasan/Projeler/XS/tests/xlil_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o -c /home/hasan/Projeler/XS/tests/xlil_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/xlil_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_xlil_tests.dir/tests/xlil_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o -c /home/hasan/Projeler/XS/tests/mir_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o -c /home/hasan/Projeler/XS/tests/mir_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/mir_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_mir_tests.dir/tests/mir_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_ast_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_ast_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/syntax_ast_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_ast_tests.dir/tests/syntax_ast_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_decl_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_decl_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/syntax_decl_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_decl_tests.dir/tests/syntax_decl_tests.c.o"
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
-  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/xs/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_macro_tests.c",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_macro_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/syntax_macro_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o"
 }

@@ -1,4 +1,5 @@
 #include "xs/lil.h"
+#include "xs/lil/aot.h"
 
 #include <stdio.h>
 #include <string.h>

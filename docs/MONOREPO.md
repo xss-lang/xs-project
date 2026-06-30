@@ -21,7 +21,9 @@ Varsayılan değer `xs` projesidir. `all` değeri tüm kararlı projeleri seçer
 - `xs`: X# derleyicisi, public C23 API başlıkları, CLI ve mevcut test hedefleri.
 - `xsproj`: public C23 `.xsproj` manifest parser/lexer/model API’si.
 
-`xs` projesinin C kaynakları `xs/sources/` altında, `xsproj` projesinin C kaynakları `xsproj/sources/` altında yaşar.
+Projeler arası ortak public C başlıkları kök `include/` altında yaşar. `xs` projesinin C kaynakları `xs/sources/`
+altında, `xs`-özel başlıkları `xs/include/` altında; `xsproj` projesinin C kaynakları `xsproj/sources/` altında,
+`xsproj`-özel başlıkları `xsproj/include/` altında yaşar.
 
 ## Runtime seçimi
 
@@ -37,7 +39,7 @@ cmake --preset clang-debug -DXS_ENABLE_RUNTIMES=
 
 - `xsfmt`: future Rust nightly + Serde formatter project.
 - `xstidy`: future Rust nightly + Serde linter project.
-- `xs-analyzer`: future TypeScript VS Code extension project.
+- `xs-analyzer`: future Rust language server + TypeScript VS Code extension project.
 - `xs-backend`: future native XS Backend project.
 - `xsrt`
 

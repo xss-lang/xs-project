@@ -3,6 +3,7 @@
 #include "xs/mir.h"
 #include "xs/mir/borrow_checker.h"
 #include "xs/mir/hir_lowering.h"
+#include "xs/mir/jit.h"
 #include "xs/mir/optimizer.h"
 #include "xs/mir/xlil_lowering.h"
 #include "xs/syntax_parser.h"

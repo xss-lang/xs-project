@@ -1,7 +1,7 @@
 {
   "name": "xs-analyzer",
   "displayName": "XS Analyzer",
-  "description": "Future VS Code extension for X# language support.",
+  "description": "Future VS Code extension for the X# Rust language server.",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
   "activationEvents": [
     "onLanguage:xs"
   ],
-  "main": "./dist/extension.js",
+  "main": "./dist/extension/extension.js",
   "contributes": {
     "languages": [
       {

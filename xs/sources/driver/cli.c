@@ -153,9 +153,11 @@ typedef struct
   XsSource source;
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
+  XsMacroStatementExpansionSet macro_statements;
   XsHirImportScope imports;
   bool diagnostics_initialized;
   bool tree_initialized;
+  bool macro_statements_initialized;
   bool imports_initialized;
   bool hir_ready;
 } CompilationUnit;
@@ -164,6 +166,8 @@ static void compilation_unit_free(CompilationUnit *unit)
 {
   if (unit->imports_initialized)
     xs_hir_import_scope_free(&unit->imports);
+  if (unit->macro_statements_initialized)
+    xs_macro_statement_expansion_set_free(&unit->macro_statements);
   if (unit->tree_initialized)
     xs_syntax_tree_free(&unit->tree);
   if (unit->diagnostics_initialized)
@@ -222,6 +226,10 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   if (success) {
     XsMacroExpansionReport macro_report;
     success = xs_macro_prepare_expansion(&unit->tree, &unit->diagnostics, &macro_report);
+  }
+  if (success) {
+    success = xs_macro_expand_statements(&unit->tree, &unit->diagnostics, &unit->macro_statements);
+    unit->macro_statements_initialized = success;
   }
   if (success)
     success = xs_hir_collect_symbols(&unit->tree, symbols, &unit->diagnostics);

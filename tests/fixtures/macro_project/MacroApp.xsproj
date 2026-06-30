@@ -1,0 +1,24 @@
+appName: "MacroApp"
+appVersion: "0.1.0"
+appRelease: "ALPHA"
+appLicense: nil
+
+appAuthors {
+    [nil, nil]
+}
+
+compilerOptions {
+    xsVersion: "26"
+    xsBackend: "LLVM"
+
+    addFiles {
+        entry: "source/Main.xs"
+    }
+
+    output {
+        [
+            osName: "Linux"
+            osArch: "x64"
+        ]
+    }
+}

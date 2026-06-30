@@ -80,9 +80,9 @@ if(XS_BUILD_PROJECT_XS OR XS_BUILD_PROJECT_XSPROJ)
     xsproj/sources/model.c
     xsproj/sources/parser.c
   )
-  target_include_directories(xsproj PUBLIC xsproj/include xs/include)
+  target_include_directories(xsproj PUBLIC include xsproj/include)
   target_compile_options(xsproj PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-  target_compile_options(xsproj PUBLIC -include "${CMAKE_SOURCE_DIR}/xs/include/xs/compiler_check.h")
+  target_compile_options(xsproj PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
 endif()
 
 if(XS_BUILD_PROJECT_XS)
@@ -128,10 +128,10 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/xlil/model.c
   )
 
-  target_include_directories(xs_compiler PUBLIC xs/include xsproj/include)
+  target_include_directories(xs_compiler PUBLIC include xs/include xsproj/include)
   target_link_libraries(xs_compiler PUBLIC xsproj)
   target_compile_options(xs_compiler PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-  target_compile_options(xs_compiler PUBLIC -include "${CMAKE_SOURCE_DIR}/xs/include/xs/compiler_check.h")
+  target_compile_options(xs_compiler PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
 
   add_executable(xs xs/sources/main.c)
   target_link_libraries(xs PRIVATE xs_compiler)
@@ -140,10 +140,10 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/backend/linker.c
     xs/sources/backend/llvm_backend.c
   )
-  target_include_directories(xs_backend_llvm PUBLIC xs/include PRIVATE ${LLVM_INCLUDE_DIRS})
+  target_include_directories(xs_backend_llvm PUBLIC include xs/include PRIVATE ${LLVM_INCLUDE_DIRS})
   target_link_libraries(xs_backend_llvm PRIVATE ${XS_LLVM_LIBRARY})
   target_compile_options(xs_backend_llvm PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-  target_compile_options(xs_backend_llvm PUBLIC -include "${CMAKE_SOURCE_DIR}/xs/include/xs/compiler_check.h")
+  target_compile_options(xs_backend_llvm PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
 endif()
 
 include(CTest)
@@ -168,6 +168,8 @@ if(BUILD_TESTING)
 
     add_test(NAME example_project COMMAND xs check -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
     set_tests_properties(example_project PROPERTIES TIMEOUT 5)
+    add_test(NAME macro_project COMMAND xs check -proj ${CMAKE_SOURCE_DIR}/tests/fixtures/macro_project/MacroApp.xsproj)
+    set_tests_properties(macro_project PROPERTIES TIMEOUT 5)
 
     add_test(NAME build_output_hir COMMAND xs build --output hir -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
     set_tests_properties(build_output_hir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)

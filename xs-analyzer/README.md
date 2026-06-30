@@ -1,6 +1,12 @@
 # xs-analyzer
 
-Future TypeScript VS Code extension project for X# language tooling.
+Future X# analyzer project.
 
-This project is separate from the C23 compiler and from the Rust formatter/linter
-tools. TypeScript sources live under `xs-analyzer/sources/`.
+`xs-analyzer` contains both the Rust language server and the official Visual
+Studio Code extension:
+
+- Rust language server sources live under `xs-analyzer/sources/`.
+- TypeScript VS Code extension sources live under `xs-analyzer/sources/extension/`.
+
+Visual Studio Code is the only officially supported IDE integration target.
+JetBrains plugins are not planned as official project outputs.

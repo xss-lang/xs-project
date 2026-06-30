@@ -13,19 +13,22 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - Future projeler:
   - `xsfmt`: Rust nightly + Serde tabanlı formatter.
   - `xstidy`: Rust nightly + Serde tabanlı linter.
-  - `xs-analyzer`: TypeScript VS Code extension.
+  - `xs-analyzer`: Rust language server + TypeScript VS Code extension.
   - `xs-backend`: future native XS Backend project.
 - Future runtime:
   - `xsrt`: henüz kaynak dizini yok; `XS_ENABLE_RUNTIMES` registry’sinde future runtime olarak kalır.
-- Eski kök `sources/` ve `include/` düzenine yeni dosya ekleme. Yeni kod ilgili proje dizinine eklenmelidir.
+- Eski kök `sources/` düzenine yeni dosya ekleme. Kök `include/` yalnız ortak public C API başlıkları içindir.
 
 ## Proje dizinleri
 
 - `xs/`
   - X# derleyici projesidir.
   - C kaynakları `xs/sources/` altındadır.
-  - Public/internal C header dosyaları `xs/include/` altındadır.
+  - `xs` projesine özel public/internal C header dosyaları `xs/include/` altındadır.
   - Yeni derleyici bileşenleri varsayılan olarak C23 ile burada yazılır.
+- `include/`
+  - Projeler arası ortak public C header dosyaları içindir.
+  - `xs/` ve `xsproj/` tarafından ortak kullanılan `xs/diagnostic.h`, `xs/source.h` ve `xs/compiler_check.h` burada durur.
 - `xsproj/`
   - `.xsproj` manifest parser/lexer/model projesidir.
   - C kaynakları `xsproj/sources/` altındadır.
@@ -42,8 +45,11 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
   - Serde kullanılabilir ve beklenen bağımlılıktır.
   - Rust kaynakları `xstidy/sources/` altındadır.
 - `xs-analyzer/`
-  - Future TypeScript VS Code extension projesidir.
-  - TypeScript kaynakları `xs-analyzer/sources/` altındadır.
+  - Future Rust language server ve TypeScript VS Code extension projesidir.
+  - Rust language server kaynakları `xs-analyzer/sources/` altındadır.
+  - TypeScript VS Code extension kaynakları `xs-analyzer/sources/extension/` altındadır.
+  - Resmi olarak desteklenen tek IDE entegrasyonu Visual Studio Code'dur.
+  - JetBrains için resmi eklenti planlanmaz.
 - `xs-backend/`
   - Future native XS Backend projesidir.
   - Şimdilik yalnız iskelet dizindir; implementation’a girme.
@@ -97,7 +103,7 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 
 - `.clang-format`, `.clangd` ve `.clang-tidy` C23/Clang düzeniyle uyumlu kalmalıdır.
 - C macro formatını etkileyen proje macro’ları `.clang-format` içine eklenmelidir.
-- `.clangd` include path’leri yeni monorepo düzenine göre `xs/include` ve `xsproj/include` kullanmalıdır.
+- `.clangd` include path’leri yeni monorepo düzenine göre `include`, `xs/include` ve `xsproj/include` kullanmalıdır.
 - `.clang-tidy` C/C23 kontrolleri `xs/`, `xsproj/` ve `tests/` alanlarına odaklanmalıdır.
 - Rust tool configleri kökte tutulmaz; `xsfmt/` ve `xstidy/` altında tutulur.
 - TypeScript/VS Code extension configleri `xs-analyzer/` altında tutulur.
@@ -143,7 +149,8 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - Planlanan public API’ler:
   - `#include <xs/hir/jit.h>`: HIR baseline JIT.
   - `#include <xs/mir/jit.h>`: MIR performance JIT.
-  - `#include <xs/lil.h>`: AOT ve XLIL generation API.
+  - `#include <xs/lil.h>`: XLIL registry/generation API.
+  - `#include <xs/lil/aot.h>`: XLIL AOT API.
 - JIT katmanları uygulanmadan sahte JIT semantiği ekleme.
 
 ## Derleyici pipeline sırası

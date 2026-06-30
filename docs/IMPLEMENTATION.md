@@ -34,9 +34,11 @@ Belgelenmiş derleme sırası korunur:
   runtime yoktur.
 - `XS_ENABLE_PROJECTS=all` tüm kararlı projeleri seçer.
 - `xs` ve `xsproj` kararlı build edilebilir projelerdir.
-- `xsfmt` ve `xstidy` Rust nightly + Serde future project olarak, `xs-analyzer` TypeScript VS Code extension future project
-  olarak, `xs-backend` future native backend project olarak, `xsrt` future runtime olarak kayıtlıdır; henüz build’e
-  alınmazlar.
+- Kök `include/` dizini projeler arası ortak public C başlıkları için ayrılmıştır; `xs/include/` yalnız `xs`, `xsproj/include/`
+  yalnız `xsproj` başlıkları içindir.
+- `xsfmt` ve `xstidy` Rust nightly + Serde future project olarak, `xs-analyzer` Rust language server ve TypeScript VS Code
+  extension future project olarak, `xs-backend` future native backend project olarak, `xsrt` future runtime olarak kayıtlıdır;
+  henüz build’e alınmazlar.
 
 ### XLIL bağlı orta katman kuralı
 
@@ -49,7 +51,8 @@ Belgelenmiş derleme sırası korunur:
 - Backend tüketicileri typed, borrow-checked ve monomorfize MIR hazır olduktan sonra MIR’i XLIL’e, oradan kendi hedef
   IR’larına indirir.
 - Planlanan HIR baseline JIT public API yüzeyi `#include <xs/hir/jit.h>`, MIR performance JIT public API yüzeyi
-  `#include <xs/mir/jit.h>` olarak ayrılır; bu JIT API’leri HIR/MIR’i LLVM C API’ye bağımlı hale getirmez.
+  `#include <xs/mir/jit.h>` ve XLIL AOT public API yüzeyi `#include <xs/lil/aot.h>` olarak ayrılır; bu API’ler HIR/MIR’i
+  LLVM C API’ye bağımlı hale getirmez.
 - LLVM şu an birincil backend odağıdır; fakat mimari Cranelift, C backend, interpreter veya başka hedefler eklenebilecek şekilde
   korunur.
 - Hedefe özel assembly gerekirse ayrı backend/runtime katmanında tutulur. NASM `.asm`/`.inc` kullanımı serbesttir ama x86-64’e
@@ -206,8 +209,12 @@ uyumluluğu veya ABI/layout kararı üretmez.
   replacement hâlâ sonraki adımdır.
 - `xs_macro_expand_statements`, desteklenen token expansion'ları statement olarak yeniden ayrıştırır ve çağrı span'ı ile
   replacement statement düğümünü `XsMacroStatementExpansionSet` içinde eşler. Set, synthetic reparse ağaçlarının ownership'ini
-  tuttuğu için replacement düğümleri set serbest bırakılana kadar geçerlidir.
-- `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını çalıştırır; gerçek AST rewrite sonraki aşamadır.
+  tuttuğu için replacement düğümleri set serbest bırakılana kadar geçerlidir. Bu API yalnız statement context'teki macro
+  call'ları statement replacement olarak üretir; başka expression içinde bulunan nested macro call'lar token expansion
+  düzeyinde kalır.
+- `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
+  toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar; gerçek HIR
+  traversal'ının replacement düğümlerini tüketmesi sonraki adımdır.
 
 `expr`, `ty`, `path`, `pat`, `stmt`, `block`, `item` ve `meta` fragment yakalama ile AST genişletme hâlâ
 tamamlanmamıştır; desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
@@ -258,12 +265,13 @@ Ayrıntılar: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - XLIL CLR kadar high-level değildir, assembly kadar low-level değildir; assembly’ye benzeyen ama aynı olmayan hedef bağımsız
   orta-düşük seviye registry dilidir.
 - XLIL bytecode veya sanal makine formatı değildir.
-- Kararlı C23 API hedefi `#include <xs/lil.h>` olarak belgelenmiştir; bu başlık AOT üretim ve XLIL registry üretimi için
-  gerekli public yüzeyi kapsar.
+- Kararlı XLIL registry/generation C23 API hedefi `#include <xs/lil.h>` olarak belgelenmiştir.
+- XLIL AOT C23 API hedefi `#include <xs/lil/aot.h>` olarak ayrılmıştır; concrete object/link davranışı gelene kadar yalnız
+  planlanan public yüzeyi işaretler.
 - Harici frontend ve araçlar ileride XLIL üreterek XS LLVM backend’inden, daha sonra XS Backend’inden native executable
   alabilmelidir.
-- Üçüncü parti diller `xs/lil.h` ile XLIL üretebilir; HIR baseline JIT ve MIR performance JIT için ayrı public başlıklar
-  `xs/hir/jit.h` ve `xs/mir/jit.h` olarak planlanır.
+- Üçüncü parti diller `xs/lil.h` ile XLIL üretebilir; XLIL AOT için `xs/lil/aot.h`, HIR baseline JIT ve MIR performance JIT
+  için ayrı public başlıklar `xs/hir/jit.h` ve `xs/mir/jit.h` olarak planlanır.
 - Planlanan doğrudan XLIL derleme girişi `xs build --xlil -file <girdi.xlil>` biçimindedir; komut henüz uygulanmamıştır.
 - `xs/lil.h` altında hedef bağımsız XLIL modül, primitive tip, fonksiyon bildirimi, fonksiyon gövdesi, basic block,
   `const.i64` ve `return` API çekirdeği vardır.

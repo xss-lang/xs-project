@@ -1,4 +1,5 @@
 #include "xs/diagnostic.h"
+#include "xs/hir/jit.h"
 #include "xs/hir/symbol_table.h"
 #include "xs/syntax_parser.h"
 

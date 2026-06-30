@@ -110,7 +110,8 @@ Eksik alanlarda Rust, TypeScript, C#, C23 ve hedef assembly geleneklerinden X# i
 - HIR baseline JIT hızlı geliştirme, denetim ve debug çalıştırması içindir; optimize native performans hedefi değildir.
 - MIR performance JIT public C23 API hedefi `#include <xs/mir/jit.h>` başlığıdır.
 - MIR performance JIT typed, borrow-check geçmiş ve optimizasyonlardan geçirilmiş MIR üzerinde çalışır.
-- JIT API’leri HIR/MIR’i LLVM API’ye bağlamaz; gerekirse XLIL veya backend abstraction üzerinden hedefe iner.
+- XLIL AOT public C23 API hedefi `#include <xs/lil/aot.h>` başlığıdır.
+- JIT/AOT API’leri HIR/MIR’i LLVM API’ye bağlamaz; gerekirse XLIL veya backend abstraction üzerinden hedefe iner.
 - Bu API yüzeyleri üçüncü parti dil ve araçlar tarafından kullanılabilir olacak şekilde C23 public ABI olarak tasarlanır.
 - JIT başlıkları ve davranışları implementation gelmeden sahte/stub semantik ile genişletilmeyecektir.
 
