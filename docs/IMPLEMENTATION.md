@@ -243,8 +243,8 @@ uyumluluğu veya ABI/layout kararı üretmez.
   original declaration düğümlerini korur, `XS_SYNTAX_DECL_MACRO_CALL` düğümlerini aynı call span’ine ait synthetic declaration
   expansion kayıtlarıyla declaration order içinde materyalize eder ve parent-child AST rewrite tamamlanana kadar test edilebilir
   expanded AST köprüsü sağlar.
-- HIR sembol toplama, aynı declaration macro call için birden fazla eşleşen rule’dan gelen tüm declaration expansion
-  kayıtlarını declaration order ile toplar.
+- HIR sembol toplama, top-level expanded declaration view üzerinden çalışır. Böylece aynı declaration macro call için birden
+  fazla eşleşen rule’dan gelen tüm declaration expansion kayıtları declaration order ile normal declaration akışına girer.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
   kullanımı ile HIR tip çözümleme traversal'larına verir. HIR ad ve tip çözümleme, aynı statement macro call’a ait tüm
