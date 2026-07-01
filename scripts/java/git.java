@@ -7,6 +7,8 @@ class XsGit
   static final int USAGE_ERROR = 2;
   static final String[] GENERATED_PATHS = {
       "build/",
+      ".agents/",
+      ".codex",
       "target/",
       "node_modules/",
       "dist/",
