@@ -42,7 +42,7 @@ static bool append_symbol(XsHirSymbolTable *table, XsHirSymbol symbol)
   if (table->count == table->capacity) {
     size_t capacity = table->capacity == 0 ? 16 : table->capacity * 2;
     XsHirSymbol *symbols = realloc(table->symbols, capacity * sizeof(*symbols));
-    if (symbols == NULL) {
+    if (symbols == nullptr) {
       table->allocation_failed = true;
       return false;
     }
@@ -59,7 +59,7 @@ static const XsHirSymbol *find_in_namespace(const XsHirSymbolTable *table, const
     if (strcmp(table->symbols[i].namespace_name, namespace_name) == 0 && strcmp(table->symbols[i].name, name) == 0)
       return &table->symbols[i];
   }
-  return NULL;
+  return nullptr;
 }
 
 static bool report_duplicate(XsDiagnostics *diagnostics, const XsSyntaxNode *node, const XsHirSymbol *previous)
@@ -94,25 +94,25 @@ static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_
   if (!symbol_kind_for_node(node->kind, &kind))
     return true;
   const XsSyntaxNode *name_node = declaration_name_node(node);
-  if (name_node == NULL)
+  if (name_node == nullptr)
     return true;
   char *name = xs_hir_copy_text(name_node->text);
   char *namespace_copy = xs_hir_copy_cstr(namespace_name);
-  if (name == NULL || namespace_copy == NULL) {
+  if (name == nullptr || namespace_copy == nullptr) {
     free(name);
     free(namespace_copy);
     table->allocation_failed = true;
     return false;
   }
   const XsHirSymbol *previous = find_in_namespace(table, namespace_name, name);
-  if (previous != NULL) {
+  if (previous != nullptr) {
     report_duplicate(diagnostics, name_node, previous);
     free(name);
     free(namespace_copy);
     return true;
   }
   char *qualified = xs_hir_join_qualified(namespace_name, name);
-  if (qualified == NULL) {
+  if (qualified == nullptr) {
     free(name);
     free(namespace_copy);
     table->allocation_failed = true;
@@ -136,6 +136,19 @@ static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_
   return true;
 }
 
+static bool collect_macro_declarations(const XsMacroDeclarationExpansion *expansion, const char *namespace_name,
+                                       bool public_namespace, XsHirSymbolTable *table, XsDiagnostics *diagnostics)
+{
+  if (expansion == nullptr || expansion->reparse.tree.root == nullptr)
+    return true;
+  for (size_t i = 0; i < expansion->reparse.tree.root->child_count; ++i) {
+    const XsSyntaxNode *child = expansion->reparse.tree.root->children[i];
+    if (!collect_declaration(child, namespace_name, public_namespace, table, diagnostics))
+      return false;
+  }
+  return true;
+}
+
 void xs_hir_symbol_table_init(XsHirSymbolTable *table)
 {
   *table = (XsHirSymbolTable){0};
@@ -154,22 +167,29 @@ void xs_hir_symbol_table_free(XsHirSymbolTable *table)
 
 const XsHirSymbol *xs_hir_symbol_table_find(const XsHirSymbolTable *table, const char *qualified_name)
 {
-  if (table == NULL || qualified_name == NULL)
-    return NULL;
+  if (table == nullptr || qualified_name == nullptr)
+    return nullptr;
   for (size_t i = 0; i < table->count; ++i) {
     if (strcmp(table->symbols[i].qualified_name, qualified_name) == 0)
       return &table->symbols[i];
   }
-  return NULL;
+  return nullptr;
 }
 
 bool xs_hir_collect_symbols(const XsSyntaxTree *tree, XsHirSymbolTable *table, XsDiagnostics *diagnostics)
 {
-  if (tree == NULL || tree->root == NULL || table == NULL || diagnostics == NULL)
+  return xs_hir_collect_symbols_expanded(tree, nullptr, table, diagnostics);
+}
+
+bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree,
+                                     const XsMacroDeclarationExpansionSet *macro_declarations,
+                                     XsHirSymbolTable *table, XsDiagnostics *diagnostics)
+{
+  if (tree == nullptr || tree->root == nullptr || table == nullptr || diagnostics == nullptr)
     return false;
   char *module_name = xs_hir_copy_cstr("");
   char *current_namespace = xs_hir_copy_cstr("");
-  if (module_name == NULL || current_namespace == NULL) {
+  if (module_name == nullptr || current_namespace == nullptr) {
     free(module_name);
     free(current_namespace);
     table->allocation_failed = true;
@@ -180,7 +200,7 @@ bool xs_hir_collect_symbols(const XsSyntaxTree *tree, XsHirSymbolTable *table, X
     const XsSyntaxNode *child = tree->root->children[i];
     if (child->kind == XS_SYNTAX_DECL_MODULE) {
       char *path = xs_hir_path_to_string(xs_hir_first_child_kind(child, XS_SYNTAX_PATH));
-      if (path == NULL) {
+      if (path == nullptr) {
         table->allocation_failed = true;
         break;
       }
@@ -188,7 +208,7 @@ bool xs_hir_collect_symbols(const XsSyntaxTree *tree, XsHirSymbolTable *table, X
       free(current_namespace);
       module_name = path;
       current_namespace = xs_hir_copy_cstr(module_name);
-      if (current_namespace == NULL) {
+      if (current_namespace == nullptr) {
         table->allocation_failed = true;
         break;
       }
@@ -196,17 +216,24 @@ bool xs_hir_collect_symbols(const XsSyntaxTree *tree, XsHirSymbolTable *table, X
     }
     if (child->kind == XS_SYNTAX_DECL_NAMESPACE) {
       char *path = xs_hir_path_to_string(xs_hir_first_child_kind(child, XS_SYNTAX_PATH));
-      if (path == NULL) {
+      if (path == nullptr) {
         table->allocation_failed = true;
         break;
       }
       free(current_namespace);
       current_namespace = xs_hir_join_qualified(module_name, path);
       free(path);
-      if (current_namespace == NULL) {
+      if (current_namespace == nullptr) {
         table->allocation_failed = true;
         break;
       }
+      continue;
+    }
+    if (child->kind == XS_SYNTAX_DECL_MACRO_CALL) {
+      const XsMacroDeclarationExpansion *expansion =
+          xs_macro_declaration_expansion_find(macro_declarations, child);
+      if (!collect_macro_declarations(expansion, current_namespace, public_namespace, table, diagnostics))
+        break;
       continue;
     }
     if (!collect_declaration(child, current_namespace, public_namespace, table, diagnostics))

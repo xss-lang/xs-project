@@ -148,6 +148,9 @@ Bu katman HIR dizini altında bulunur.
   kabul edilir.
 - `public namespace`, explicit `private`, `internal` veya `protected` visibility modifier'larını ezmez.
 - Üst seviye `fn`, `class`, `interface`, `enum`, `data` ve `macroRules!` bildirimleri sembol tablosuna alınır.
+- `xs_hir_collect_symbols_expanded`, declaration macro expansion set verildiğinde `XS_SYNTAX_DECL_MACRO_CALL` düğümünün
+  synthetic declaration reparse tree’sindeki üretilmiş declaration’ları macro call’ın bulunduğu etkin HIR namespace içinde
+  sembol tablosuna alır. Duplicate symbol kontrolleri normal declaration’larla aynı namespace kuralını kullanır.
 - Semboller kısa ad, namespace adı, tam nitelikli ad, görünürlük, kaynak konumu ve kaynak AST düğümünü taşır.
 - Aynı namespace içinde aynı kısa ada sahip üst seviye bildirimler hata üretir.
 - Aynı kısa ad farklı namespace altında kullanılabilir.
@@ -238,8 +241,9 @@ uyumluluğu veya ABI/layout kararı üretmez.
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
   kullanımı ile HIR tip çözümleme traversal'larına verir.
 
-Declaration/item context macro call AST girişi ve declaration reparse set üretimi vardır, ancak HIR sembol toplama
-entegrasyonu henüz declaration expansion set'e bağlanmamıştır.
+Declaration/item context macro call AST girişi, declaration reparse set üretimi ve HIR sembol toplama entegrasyonu vardır.
+Üretilmiş declaration’ların parent-child AST replacement olarak ana ağaca yazılması ve class member expansion’ın HIR member
+sembollerine bağlanması sonraki adımdır.
 
 `pat`, `item` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty` ve
 `path` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik
