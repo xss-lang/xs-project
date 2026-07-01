@@ -163,7 +163,7 @@ class Git
           generated paths from GENERATED_PATHS
           tracked files ignored by .gitignore / standard Git ignore rules
 
-        update also restores tracked generated build/output dirt after staging:
+        update first restores tracked generated build/output dirt before staging:
           build/, target/, node_modules/, dist/, out/, Cargo.lock
 
         generated paths:
@@ -318,6 +318,8 @@ class Git
 
   static void update(String message) throws IOException, InterruptedException
   {
+    restoreCleanableGeneratedWorktreeChanges();
+
     int addCode = run("git", "add", "--all");
 
     if (addCode != 0) {
@@ -325,7 +327,6 @@ class Git
     }
 
     removeExcludedPathsFromIndex();
-    restoreCleanableGeneratedWorktreeChanges();
 
     int diffCode = runQuiet("git", "diff", "--cached", "--quiet");
 
