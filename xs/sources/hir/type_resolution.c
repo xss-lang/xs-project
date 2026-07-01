@@ -382,6 +382,17 @@ static bool declaration_has_child_macro_call(const XsSyntaxNode *node)
   return false;
 }
 
+static bool node_has_statement_macro_child(const XsSyntaxNode *node)
+{
+  if (node == nullptr)
+    return false;
+  for (size_t i = 0; i < node->child_count; ++i) {
+    if (node->children[i]->kind == XS_SYNTAX_STMT_MACRO_CALL)
+      return true;
+  }
+  return false;
+}
+
 static bool declaration_uses_expanded_member_view(const XsSyntaxNode *node,
                                                   const XsMacroDeclarationExpansionSet *macro_declarations)
 {
@@ -399,20 +410,6 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
 {
   if (node == nullptr)
     return true;
-  bool matched_macro = false;
-  bool macro_success = true;
-  for (size_t i = 0; macro_statements != nullptr && i < macro_statements->count; ++i) {
-    if (!xs_macro_statement_expansion_matches(&macro_statements->items[i], node))
-      continue;
-    matched_macro = true;
-    macro_success = resolve_declaration_types(macro_statements->items[i].statement, namespace_name, current_file_id,
-                                              generics, symbols, imports, diagnostics, macro_declarations,
-                                              macro_statements) &&
-                    macro_success;
-  }
-  if (matched_macro)
-    return macro_success;
-
   GenericScope local_scope = {.parent = generics, .declaration = node};
   bool opens_generic_scope = declaration_opens_generic_scope(node->kind);
   const GenericScope *active = opens_generic_scope ? &local_scope : generics;
@@ -437,6 +434,17 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
                                           symbols, imports, diagnostics, macro_declarations, macro_statements) &&
                 success;
     xs_macro_expanded_declaration_set_free(&expanded);
+    return success;
+  }
+  if (macro_statements != nullptr && node_has_statement_macro_child(node)) {
+    XsMacroExpandedStatementSet expanded = {0};
+    if (!xs_macro_expand_child_statements(node, macro_statements, diagnostics, &expanded))
+      return false;
+    for (size_t i = 0; i < expanded.count; ++i)
+      success = resolve_declaration_types(expanded.items[i].statement, namespace_name, current_file_id, active,
+                                          symbols, imports, diagnostics, macro_declarations, macro_statements) &&
+                success;
+    xs_macro_expanded_statement_set_free(&expanded);
     return success;
   }
   for (size_t i = 0; i < node->child_count; ++i)

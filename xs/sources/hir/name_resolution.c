@@ -205,6 +205,17 @@ static bool validate_call_target(const XsSyntaxNode *target, const XsSyntaxNode 
   return true;
 }
 
+static bool has_statement_macro_child(const XsSyntaxNode *node)
+{
+  if (node == nullptr)
+    return false;
+  for (size_t i = 0; i < node->child_count; ++i) {
+    if (node->children[i]->kind == XS_SYNTAX_STMT_MACRO_CALL)
+      return true;
+  }
+  return false;
+}
+
 static bool validate_name_uses_in_node(const XsSyntaxNode *node, const XsSyntaxNode *function,
                                        const char *namespace_name, uint64_t current_file_id,
                                        const XsMacroStatementExpansionSet *macro_statements,
@@ -238,6 +249,17 @@ static bool validate_name_uses_in_node(const XsSyntaxNode *node, const XsSyntaxN
     success = validate_call_target(node, function, namespace_name, current_file_id, project_symbols, imports,
                                    diagnostics) &&
               success;
+  }
+  if (macro_statements != nullptr && has_statement_macro_child(node)) {
+    XsMacroExpandedStatementSet expanded = {0};
+    if (!xs_macro_expand_child_statements(node, macro_statements, diagnostics, &expanded))
+      return false;
+    for (size_t i = 0; i < expanded.count; ++i)
+      success = validate_name_uses_in_node(expanded.items[i].statement, function, namespace_name, current_file_id,
+                                           macro_statements, project_symbols, imports, members, diagnostics) &&
+                success;
+    xs_macro_expanded_statement_set_free(&expanded);
+    return success;
   }
   for (size_t i = 0; i < node->child_count; ++i)
     success = validate_name_uses_in_node(node->children[i], function, namespace_name, current_file_id, macro_statements,

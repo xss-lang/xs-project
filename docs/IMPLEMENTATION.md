@@ -169,9 +169,9 @@ Bu katman HIR dizini altında bulunur.
 - Explicit named type taşıyan local değişken/parametre üzerindeki `value.Method()` çağrıları HIR member symbol table üzerinden
   varlık açısından doğrulanır. Receiver tipi şu aşamada yalnız doğrudan identifier receiver ve named type annotation ile
   çözümlenir.
-- `xs_hir_validate_name_uses_expanded`, statement macro replacement set verildiğinde `XS_SYNTAX_STMT_MACRO_CALL` düğümü
-  yerine synthetic replacement statement düğümünü dolaşır. Böylece macro expansion sonrası oluşan function/method call
-  hedefleri HIR symbol/import scope içinde doğrulanır.
+- `xs_hir_validate_name_uses_expanded`, statement macro replacement set verildiğinde doğrudan statement child listelerini
+  `xs_macro_expand_child_statements` expanded view’i üzerinden dolaşır. Böylece macro expansion sonrası oluşan function/method
+  call hedefleri HIR symbol/import scope içinde doğrulanır.
 
 Bu aşama henüz metot/operator çözümleme, overload seçimi, generic constraint çözümleme veya tip tabanlı çağrı çözümleme
 yapmaz. Member symbol table bu aşamalar için ilk HIR veri modelidir; method varlık doğrulaması dispatch, override veya
@@ -201,9 +201,9 @@ overload seçimi kararı vermez.
 - Generic constraint tipleri interface sembollerine çözümlenmelidir.
 - Generic parametreler birden fazla constraint taşıyabilir; constraint listesindeki `, Identifier :` yeni generic parametre
   başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.
-- `xs_hir_resolve_types_expanded`, statement macro replacement set verildiğinde `XS_SYNTAX_STMT_MACRO_CALL` düğümü yerine
-  synthetic replacement statement düğümünü dolaşır. Böylece macro expansion sonrası oluşan type kullanımları da HIR
-  symbol/import scope içinde doğrulanır.
+- `xs_hir_resolve_types_expanded`, statement macro replacement set verildiğinde doğrudan statement child listelerini
+  `xs_macro_expand_child_statements` expanded view’i üzerinden dolaşır. Böylece macro expansion sonrası oluşan type
+  kullanımları da HIR symbol/import scope içinde doğrulanır.
 
 Bu aşama henüz expression type inference, overload seçimi, constraint üyelik/uyumluluk denetimi, trait/interface
 uyumluluğu veya ABI/layout kararı üretmez.
@@ -263,8 +263,9 @@ uyumluluğu veya ABI/layout kararı üretmez.
   fazla eşleşen rule’dan gelen tüm declaration expansion kayıtları declaration order ile normal declaration akışına girer.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
-  kullanımı ile HIR tip çözümleme traversal'larına verir. HIR ad ve tip çözümleme, aynı statement macro call’a ait tüm
-  replacement statement kayıtlarını declaration order ile dolaşır.
+  kullanımı ile HIR tip çözümleme traversal'larına verir. HIR ad ve tip çözümleme, statement child listelerini expanded
+  statement view üzerinden dolaştığı için aynı statement macro call’a ait tüm replacement statement kayıtları declaration
+  order ile normal statement akışına girer.
 
 Declaration/item context macro call AST girişi, declaration reparse set üretimi, top-level/child declaration expanded view,
 statement expanded view, HIR sembol toplama entegrasyonu ve class/interface function/field-benzeri member expansion’ın HIR tip
