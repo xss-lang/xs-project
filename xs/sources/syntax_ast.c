@@ -110,6 +110,33 @@ bool xs_syntax_node_add(XsSyntaxTree *tree, XsSyntaxNode *parent, XsSyntaxNode *
   return true;
 }
 
+XsSyntaxNode *xs_syntax_node_clone_shallow(XsSyntaxTree *tree, const XsSyntaxNode *node)
+{
+  if (tree == nullptr || node == nullptr)
+    return nullptr;
+  XsSyntaxNode *clone = arena_allocate(tree, sizeof(*clone));
+  if (clone == nullptr)
+    return nullptr;
+  *clone = *node;
+  clone->children = nullptr;
+  clone->child_count = 0;
+  clone->child_capacity = 0;
+  return clone;
+}
+
+XsSyntaxNode *xs_syntax_clone_subtree(XsSyntaxTree *tree, const XsSyntaxNode *node)
+{
+  XsSyntaxNode *clone = xs_syntax_node_clone_shallow(tree, node);
+  if (clone == nullptr)
+    return nullptr;
+  for (size_t i = 0; i < node->child_count; ++i) {
+    XsSyntaxNode *child = xs_syntax_clone_subtree(tree, node->children[i]);
+    if (!xs_syntax_node_add(tree, clone, child))
+      return nullptr;
+  }
+  return clone;
+}
+
 const XsSyntaxNode *xs_syntax_find_first(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
   if (node == nullptr)

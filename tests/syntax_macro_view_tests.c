@@ -26,6 +26,29 @@ static const XsSyntaxNode *first_identifier(const XsSyntaxNode *node)
   return xs_syntax_find_first(node, XS_SYNTAX_IDENTIFIER);
 }
 
+static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
+{
+  if (node == nullptr)
+    return 0;
+  size_t count = node->kind == kind ? 1 : 0;
+  for (size_t i = 0; i < node->child_count; ++i)
+    count += count_kind(node->children[i], kind);
+  return count;
+}
+
+static bool has_identifier(const XsSyntaxNode *node, const char *value)
+{
+  if (node == nullptr)
+    return false;
+  if (node->kind == XS_SYNTAX_IDENTIFIER && text_is(node->text, value))
+    return true;
+  for (size_t i = 0; i < node->child_count; ++i) {
+    if (has_identifier(node->children[i], value))
+      return true;
+  }
+  return false;
+}
+
 static void test_top_level_declaration_view_expands_macro_calls(void)
 {
   const char *text = "module App;\n"
@@ -173,11 +196,42 @@ static void test_child_statement_view_expands_macro_calls(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_materialized_expanded_tree_replaces_macro_calls(void)
+{
+  const char *text = "module App;\n"
+                     "macroRules! make { (): { incomplete fn Generated(); }; }\n"
+                     "macroRules! emit { (): { Generated(); }; }\n"
+                     "make!();\n"
+                     "fn Main() { emit!(); }\n";
+  XsSource source = {.path = "MaterializedMacroTree.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsSyntaxTree expanded_tree;
+  XsMacroDeclarationExpansionSet declarations;
+  XsMacroStatementExpansionSet statements;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 95, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(xs_macro_materialize_expanded_tree(&tree, &declarations, &statements, &diagnostics, &expanded_tree));
+  CHECK(count_kind(expanded_tree.root, XS_SYNTAX_DECL_MACRO_CALL) == 0);
+  CHECK(count_kind(expanded_tree.root, XS_SYNTAX_STMT_MACRO_CALL) == 0);
+  CHECK(count_kind(expanded_tree.root, XS_SYNTAX_DECL_FUNCTION) == 2);
+  CHECK(has_identifier(expanded_tree.root, "Generated"));
+  xs_syntax_tree_free(&expanded_tree);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_top_level_declaration_view_expands_macro_calls();
   test_child_declaration_view_expands_member_macro_calls();
   test_child_declaration_view_expands_field_like_macro_calls();
   test_child_statement_view_expands_macro_calls();
+  test_materialized_expanded_tree_replaces_macro_calls();
   return failures == 0 ? 0 : 1;
 }

@@ -175,6 +175,8 @@ void xs_syntax_tree_free(XsSyntaxTree *tree);
 XsSourceSpan xs_source_span(const XsSyntaxTree *tree, XsSpan span);
 XsSyntaxNode *xs_syntax_node_new(XsSyntaxTree *tree, XsSyntaxKind kind, XsSpan span);
 bool xs_syntax_node_add(XsSyntaxTree *tree, XsSyntaxNode *parent, XsSyntaxNode *child);
+XsSyntaxNode *xs_syntax_node_clone_shallow(XsSyntaxTree *tree, const XsSyntaxNode *node);
+XsSyntaxNode *xs_syntax_clone_subtree(XsSyntaxTree *tree, const XsSyntaxNode *node);
 const XsSyntaxNode *xs_syntax_find_first(const XsSyntaxNode *node, XsSyntaxKind kind);
 const char *xs_syntax_kind_name(XsSyntaxKind kind);
 

@@ -141,6 +141,11 @@ bool xs_macro_expand_child_statements(const XsSyntaxNode *parent,
                                       const XsMacroStatementExpansionSet *statements,
                                       XsDiagnostics *diagnostics,
                                       XsMacroExpandedStatementSet *expanded);
+bool xs_macro_materialize_expanded_tree(const XsSyntaxTree *tree,
+                                        const XsMacroDeclarationExpansionSet *declarations,
+                                        const XsMacroStatementExpansionSet *statements,
+                                        XsDiagnostics *diagnostics,
+                                        XsSyntaxTree *expanded);
 void xs_macro_expanded_declaration_set_free(XsMacroExpandedDeclarationSet *set);
 void xs_macro_expanded_statement_set_free(XsMacroExpandedStatementSet *set);
 

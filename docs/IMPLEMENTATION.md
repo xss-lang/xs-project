@@ -259,6 +259,10 @@ uyumluluğu veya ABI/layout kararı üretmez.
   expanded view üretir. View original statement düğümlerini korur, `XS_SYNTAX_STMT_MACRO_CALL` düğümlerini aynı call span'ine
   ait synthetic replacement statement kayıtlarıyla statement order içinde materyalize eder. Bu API fiziksel parent-child AST
   rewrite yapmaz; HIR/MIR geçişlerinin statement macro replacement'ı ortak biçimde tüketmesi için ara köprüdür.
+- `xs_macro_materialize_expanded_tree`, declaration ve statement expansion set'lerini kullanarak ayrı bir syntax tree içinde
+  macro-call declaration/statement düğümlerini replacement düğümleriyle klonlar. Bu ağaç orijinal AST'yi değiştirmez; reparse
+  kaynak metinleri expansion set'leri tarafından sahiplenildiği için materyalize ağacın replacement text/span referansları
+  expansion set lifetime'ına bağlıdır.
 - HIR sembol toplama, top-level expanded declaration view üzerinden çalışır. Böylece aynı declaration macro call için birden
   fazla eşleşen rule’dan gelen tüm declaration expansion kayıtları declaration order ile normal declaration akışına girer.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
@@ -268,9 +272,10 @@ uyumluluğu veya ABI/layout kararı üretmez.
   order ile normal statement akışına girer.
 
 Declaration/item context macro call AST girişi, declaration reparse set üretimi, top-level/child declaration expanded view,
-statement expanded view, HIR sembol toplama entegrasyonu ve class/interface function/field-benzeri member expansion’ın HIR tip
-traversal’a bağlanması vardır. Üretilmiş declaration/statement düğümlerinin parent-child AST replacement olarak ana ağaca
-yazılması ve field-benzeri declaration’ın `XS_SYNTAX_CLASS_FIELD` olarak yeniden sınıflandırılması sonraki adımdır.
+statement expanded view, ayrı expanded tree materyalizasyonu, HIR sembol toplama entegrasyonu ve class/interface
+function/field-benzeri member expansion’ın HIR tip traversal’a bağlanması vardır. Üretilmiş declaration/statement
+düğümlerinin ana AST üzerinde in-place parent-child replacement olarak yazılması ve field-benzeri declaration’ın
+`XS_SYNTAX_CLASS_FIELD` olarak yeniden sınıflandırılması sonraki adımdır.
 
 `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty`, `path`, `item` ve
 `pat` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik uydurulmaz.

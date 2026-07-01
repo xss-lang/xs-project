@@ -106,6 +106,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/macro/expansion.c
     xs/sources/macro/fragment.c
     xs/sources/macro/reparse.c
+    xs/sources/macro/rewrite.c
     xs/sources/macro/validation.c
     xs/sources/mir/borrow_checker.c
     xs/sources/mir/hir_lowering.c
