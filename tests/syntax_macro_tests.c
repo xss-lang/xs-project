@@ -387,6 +387,53 @@ static void test_path_fragment_expansion(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_declaration_macro_expansion(void)
+{
+  const char *text = "macroRules! make { (): { incomplete fn Generated(); }; } make!();";
+  XsSource source = {.path = "MacroDeclarationExpansion.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroExpansionReport report;
+  XsMacroExpansionSet expansions;
+  XsMacroStatementExpansionSet statements;
+  XsMacroDeclarationExpansionSet declarations;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 32, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_seen == 1);
+  CHECK(report.calls_expandable == 1);
+  CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
+  CHECK(expansions.count == 1);
+  CHECK(expansions.count < 1 || expansions.items[0].token_count == 6);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 0);
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(declarations.count == 1);
+  CHECK(declarations.count < 1 || declarations.items[0].declaration_count == 1);
+  CHECK(declarations.count < 1 ||
+        xs_syntax_find_first(declarations.items[0].reparse.tree.root, XS_SYNTAX_DECL_FUNCTION) != nullptr);
+  const XsSyntaxNode *macro_declaration = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MACRO_CALL);
+  const XsMacroDeclarationExpansion *found = xs_macro_declaration_expansion_find(&declarations, macro_declaration);
+  CHECK(found != nullptr && found->declaration_count == 1);
+  CHECK(xs_macro_declaration_expansion_find(&declarations, tree.root) == nullptr);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_macro_expansion_set_free(&expansions);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *invalid = "macroRules! make { (): {}; } make!();";
+  source = (XsSource){.path = "MacroDeclarationExpansionInvalid.xs", .text = invalid, .length = strlen(invalid)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 33, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(!xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_macro_repetition_and_unique_variables();
@@ -398,5 +445,6 @@ int main(void)
   test_block_fragment_expansion();
   test_type_fragment_expansion();
   test_path_fragment_expansion();
+  test_declaration_macro_expansion();
   return failures == 0 ? 0 : 1;
 }

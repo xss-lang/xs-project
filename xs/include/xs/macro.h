@@ -56,11 +56,26 @@ typedef struct
 
 typedef struct
 {
+  XsSpan call_span;
+  XsMacroReparseResult reparse;
+  size_t declaration_count;
+} XsMacroDeclarationExpansion;
+
+typedef struct
+{
   XsMacroStatementExpansion *items;
   size_t count;
   size_t capacity;
   bool allocation_failed;
 } XsMacroStatementExpansionSet;
+
+typedef struct
+{
+  XsMacroDeclarationExpansion *items;
+  size_t count;
+  size_t capacity;
+  bool allocation_failed;
+} XsMacroDeclarationExpansionSet;
 
 bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics);
 bool xs_macro_prepare_expansion(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsMacroExpansionReport *report);
@@ -68,12 +83,19 @@ void xs_macro_expansion_set_free(XsMacroExpansionSet *set);
 bool xs_macro_expand_tokens(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsMacroExpansionSet *set);
 bool xs_macro_reparse_expansion_as_statement(const XsMacroExpansion *expansion, uint64_t file_id,
                                              XsDiagnostics *diagnostics, XsMacroReparseResult *result);
+bool xs_macro_reparse_expansion_as_declarations(const XsMacroExpansion *expansion, uint64_t file_id,
+                                                XsDiagnostics *diagnostics, XsMacroReparseResult *result);
 const XsSyntaxNode *xs_macro_reparse_result_statement(const XsMacroReparseResult *result);
 void xs_macro_reparse_result_free(XsMacroReparseResult *result);
 void xs_macro_statement_expansion_set_free(XsMacroStatementExpansionSet *set);
+void xs_macro_declaration_expansion_set_free(XsMacroDeclarationExpansionSet *set);
 bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnostics,
                                 XsMacroStatementExpansionSet *set);
+bool xs_macro_expand_declarations(const XsSyntaxTree *tree, XsDiagnostics *diagnostics,
+                                  XsMacroDeclarationExpansionSet *set);
 const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpansionSet *set,
                                                       const XsSyntaxNode *statement);
+const XsMacroDeclarationExpansion *xs_macro_declaration_expansion_find(const XsMacroDeclarationExpansionSet *set,
+                                                                       const XsSyntaxNode *declaration);
 
 #endif

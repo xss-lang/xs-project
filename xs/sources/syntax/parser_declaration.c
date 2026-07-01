@@ -149,7 +149,7 @@ static XsSyntaxNode *parse_enum(SyntaxParser *parser, Modifiers modifiers, size_
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, colon_span,
                            "regular enum variants cannot contain payload types");
       XsSyntaxNode *payload = parse_type(parser);
-      if (data_enum && payload != NULL && payload->kind == XS_SYNTAX_TYPE_TUPLE)
+      if (data_enum && payload != nullptr && payload->kind == XS_SYNTAX_TYPE_TUPLE)
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
                            (XsSpan){payload->span.start_offset, payload->span.end_offset},
                            "data enum tuple payloads are not supported");
@@ -301,9 +301,9 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
             node(parser, XS_SYNTAX_CLASS_CONSTRUCTOR, (XsSpan){before, parser->current.span.end});
         XsSyntaxNode *constructor_name = identifier(parser);
         XsSpan constructor_span =
-            constructor_name == NULL ? parser->previous.span
+            constructor_name == nullptr ? parser->previous.span
                                      : (XsSpan){constructor_name->span.start_offset, constructor_name->span.end_offset};
-        if (class_name != NULL && constructor_name != NULL &&
+        if (class_name != nullptr && constructor_name != nullptr &&
             !syntax_text_equal(class_name->text, constructor_name->text))
           xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, constructor_span,
                              "constructor name must match the class name");

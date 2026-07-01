@@ -4,6 +4,20 @@ import java.nio.charset.StandardCharsets;
 
 class XsGit {
   static final int USAGE_ERROR = 2;
+  static final String[] GENERATED_PATHS = {
+      "build/",
+      "target/",
+      "node_modules/",
+      "dist/",
+      "out/",
+      "Cargo.lock",
+      ":(glob)**/build/**",
+      ":(glob)**/target/**",
+      ":(glob)**/node_modules/**",
+      ":(glob)**/dist/**",
+      ":(glob)**/out/**",
+      ":(glob)**/Cargo.lock"
+  };
 
   enum Command {
     UPDATE,
@@ -64,9 +78,12 @@ class XsGit {
           git help
 
         commands:
-          update   Run git add --all, then commit with the given message.
+          update   Run safe git add, then commit with the given message.
           uncom    Show uncommitted changes.
           help     Show this help.
+
+        update excludes:
+          build/, target/, node_modules/, dist/, out/, Cargo.lock
 
         examples:
           git update "Fix parser"
@@ -107,6 +124,22 @@ class XsGit {
 
     if (addCode != 0) {
       exit(addCode, "error: git add --all failed");
+    }
+
+    String[] resetCommand = new String[4 + GENERATED_PATHS.length];
+    resetCommand[0] = "git";
+    resetCommand[1] = "reset";
+    resetCommand[2] = "--quiet";
+    resetCommand[3] = "--";
+
+    for (int i = 0; i < GENERATED_PATHS.length; ++i) {
+      resetCommand[i + 4] = GENERATED_PATHS[i];
+    }
+
+    int resetCode = run(resetCommand);
+
+    if (resetCode != 0) {
+      exit(resetCode, "error: generated artifact paths could not be removed from the index");
     }
 
     int diffCode = runQuiet("git", "diff", "--cached", "--quiet");

@@ -18,7 +18,7 @@ static int failures;
 
 static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return 0;
   size_t count = node->kind == kind ? 1 : 0;
   for (size_t index = 0; index < node->child_count; ++index)
@@ -34,27 +34,27 @@ static void test_function_tree(void)
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 42, &diagnostics, &tree));
-  CHECK(tree.root != NULL && tree.root->kind == XS_SYNTAX_FILE);
-  if (tree.root == NULL) {
+  CHECK(tree.root != nullptr && tree.root->kind == XS_SYNTAX_FILE);
+  if (tree.root == nullptr) {
     xs_syntax_tree_free(&tree);
     xs_diagnostics_free(&diagnostics);
     return;
   }
   CHECK(tree.root->child_count == 1);
   const XsSyntaxNode *function = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_FUNCTION);
-  CHECK(function != NULL);
-  if (function == NULL) {
+  CHECK(function != nullptr);
+  if (function == nullptr) {
     xs_syntax_tree_free(&tree);
     xs_diagnostics_free(&diagnostics);
     return;
   }
   CHECK(function->span.file_id == 42);
   CHECK(function->span.start_line == 1);
-  CHECK(xs_syntax_find_first(function, XS_SYNTAX_PARAMETER) != NULL);
-  CHECK(xs_syntax_find_first(function, XS_SYNTAX_TYPE_NAMED) != NULL);
-  CHECK(xs_syntax_find_first(function, XS_SYNTAX_STMT_VARIABLE) != NULL);
-  CHECK(xs_syntax_find_first(function, XS_SYNTAX_EXPR_BINARY) != NULL);
-  CHECK(xs_syntax_find_first(function, XS_SYNTAX_STMT_RETURN) != NULL);
+  CHECK(xs_syntax_find_first(function, XS_SYNTAX_PARAMETER) != nullptr);
+  CHECK(xs_syntax_find_first(function, XS_SYNTAX_TYPE_NAMED) != nullptr);
+  CHECK(xs_syntax_find_first(function, XS_SYNTAX_STMT_VARIABLE) != nullptr);
+  CHECK(xs_syntax_find_first(function, XS_SYNTAX_EXPR_BINARY) != nullptr);
+  CHECK(xs_syntax_find_first(function, XS_SYNTAX_STMT_RETURN) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -69,12 +69,12 @@ static void test_module_import_and_macro(void)
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 7, &diagnostics, &tree));
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MODULE) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_IMPORT) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MACRO) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_MACRO_MATCHER_FRAGMENT) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_MACRO_EXPANSION_VARIABLE) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MACRO_CALL) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MODULE) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_IMPORT) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MACRO) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_MACRO_MATCHER_FRAGMENT) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_MACRO_EXPANSION_VARIABLE) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MACRO_CALL) != nullptr);
   CHECK(xs_macro_validate(&tree, &diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -112,11 +112,11 @@ static void test_control_flow_structure(void)
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 9, &diagnostics, &tree));
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_FOR) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_WHILE) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MATCH) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_TRY) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_CATCH) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_FOR) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_WHILE) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MATCH) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_TRY) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_CATCH) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -133,12 +133,12 @@ static void test_function_expression_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 17, &diagnostics, &tree));
   const XsSyntaxNode *function_expression = xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_FUNCTION);
-  CHECK(function_expression != NULL);
-  CHECK(function_expression == NULL || (function_expression->flags & XS_SYNTAX_FLAG_MOVE_CAPTURE) != 0);
+  CHECK(function_expression != nullptr);
+  CHECK(function_expression == nullptr || (function_expression->flags & XS_SYNTAX_FLAG_MOVE_CAPTURE) != 0);
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_FUNCTION) == 2);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_PARAMETER) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_NAMED) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_RETURN) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_PARAMETER) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_NAMED) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_RETURN) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -155,7 +155,7 @@ static void test_new_expression_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 18, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_NEW) == 2);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_VARIABLE) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_VARIABLE) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -185,7 +185,7 @@ static void test_data_field_set_and_get_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 21, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_FIELD_SET) == 1);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -202,7 +202,7 @@ static void test_function_type_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 22, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_FUNCTION) == 2);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_UNIT) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_UNIT) != nullptr);
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_FUNCTION) == 2);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -239,7 +239,7 @@ static void test_character_literal_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 24, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_LITERAL) >= 2);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_PATTERN_LITERAL) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_PATTERN_LITERAL) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -255,8 +255,8 @@ static void test_lifetime_type_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 25, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_LIFETIME) == 4);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_REFERENCE) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_MUTABLE_REFERENCE) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_REFERENCE) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_MUTABLE_REFERENCE) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }

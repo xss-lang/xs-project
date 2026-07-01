@@ -97,6 +97,9 @@ Belgelenmiş derleme sırası korunur:
 - Parser arena tabanlı yapısal AST üretir.
 - AST düğümleri dosya kimliği, offset, satır ve sütun içeren tam kaynak konumu taşır.
 - Bildirim, tip, statement, expression, pattern ve makro düğüm aileleri temsil edilir.
+- Top-level ve class member context’te `name!();` biçimli macro call’lar `XS_SYNTAX_DECL_MACRO_CALL` declaration düğümüyle
+  yapısal AST’ye alınır. Bu düğüm item/declaration üreten macro expansion için giriş noktasıdır; üretilen item’ların
+  scope’a gerçek AST replacement olarak eklenmesi sonraki makro genişletme adımıdır.
 - Named, generic, array, fixed array, pointer, reference, tuple, unit ve `fn(...) => T` function type düğümleri
   yapısal AST'de ayrıştırılır.
 - Reference type içindeki lifetime yazımları Rust temel biçimleriyle (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`)
@@ -227,9 +230,16 @@ uyumluluğu veya ABI/layout kararı üretmez.
   düzeyinde kalır.
 - `xs_macro_statement_expansion_find`, bir `XS_SYNTAX_STMT_MACRO_CALL` düğümü için synthetic replacement statement düğümünü
   macro katmanından döndürür. HIR tüketicileri replacement lookup için kendi span eşleme kodunu tutmaz.
+- `xs_macro_expand_declarations`, declaration context’teki `XS_SYNTAX_DECL_MACRO_CALL` düğümlerinin desteklenen token
+  expansion’larını synthetic source file olarak yeniden ayrıştırır ve `XsMacroDeclarationExpansionSet` içinde çağrı span’i,
+  reparse tree ownership’i ve üretilen declaration sayısını tutar. `xs_macro_declaration_expansion_find` declaration macro
+  call düğümü için ilgili synthetic declaration expansion kaydını döndürür.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
   kullanımı ile HIR tip çözümleme traversal'larına verir.
+
+Declaration/item context macro call AST girişi ve declaration reparse set üretimi vardır, ancak HIR sembol toplama
+entegrasyonu henüz declaration expansion set'e bağlanmamıştır.
 
 `pat`, `item` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty` ve
 `path` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik
