@@ -133,11 +133,83 @@ static void test_macro_generated_field_like_member_symbol(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_explicit_local_method_call_resolution(void)
+{
+  const char *text = "module App;\n"
+                     "class User { incomplete fn GetName(); }\n"
+                     "fn Main() { user: User = new(); user.GetName(); }\n";
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  CHECK(parse_symbols(text, &tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_missing_explicit_local_method_call_errors(void)
+{
+  const char *text = "module App;\n"
+                     "class User { incomplete fn GetName(); }\n"
+                     "fn Main() { user: User = new(); user.Missing(); }\n";
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  CHECK(parse_symbols(text, &tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_macro_generated_method_call_resolution(void)
+{
+  const char *text = "module App;\n"
+                     "class User {\n"
+                     "  macroRules! make { (): { incomplete fn Generated(); }; }\n"
+                     "  make!();\n"
+                     "}\n"
+                     "fn Main() { user: User = new(); user.Generated(); }\n";
+  XsSource source = {.path = "MacroMethodCall.xs", .text = text, .length = strlen(text)};
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsMacroDeclarationExpansionSet declarations;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 103, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_with_macros(&tree, &declarations, nullptr, &symbols, &imports, &diagnostics));
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_class_member_symbols();
   test_method_merge_uses_last_member_symbol();
   test_duplicate_field_member_errors();
   test_macro_generated_field_like_member_symbol();
+  test_explicit_local_method_call_resolution();
+  test_missing_explicit_local_method_call_errors();
+  test_macro_generated_method_call_resolution();
   return failures == 0 ? 0 : 1;
 }

@@ -166,12 +166,16 @@ Bu katman HIR dizini altında bulunur.
 - Başka namespace/modül üzerinden tam nitelikli çağrı hedefleri yalnızca public sembollere çözümlenebilir.
 - Public olmayan semboller yalnızca aynı namespace ve aynı kaynak dosya içinden doğrudan qualified adla çözümlenebilir.
 - İlk segmenti yerel parametre/değişken olan çağrı hedefleri tip denetimine ertelenir.
+- Explicit named type taşıyan local değişken/parametre üzerindeki `value.Method()` çağrıları HIR member symbol table üzerinden
+  varlık açısından doğrulanır. Receiver tipi şu aşamada yalnız doğrudan identifier receiver ve named type annotation ile
+  çözümlenir.
 - `xs_hir_validate_name_uses_expanded`, statement macro replacement set verildiğinde `XS_SYNTAX_STMT_MACRO_CALL` düğümü
   yerine synthetic replacement statement düğümünü dolaşır. Böylece macro expansion sonrası oluşan function/method call
   hedefleri HIR symbol/import scope içinde doğrulanır.
 
 Bu aşama henüz metot/operator çözümleme, overload seçimi, generic constraint çözümleme veya tip tabanlı çağrı çözümleme
-yapmaz. Member symbol table bu aşamalar için ilk HIR veri modelidir; dispatch veya override kararı vermez.
+yapmaz. Member symbol table bu aşamalar için ilk HIR veri modelidir; method varlık doğrulaması dispatch, override veya
+overload seçimi kararı vermez.
 
 ### HIR tip çözümleme başlangıcı
 

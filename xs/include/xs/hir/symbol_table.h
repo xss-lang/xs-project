@@ -107,5 +107,10 @@ bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable 
 bool xs_hir_validate_name_uses_expanded(const XsSyntaxTree *tree, const XsMacroStatementExpansionSet *macro_statements,
                                         const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
                                         XsDiagnostics *diagnostics);
+bool xs_hir_validate_name_uses_with_macros(const XsSyntaxTree *tree,
+                                           const XsMacroDeclarationExpansionSet *macro_declarations,
+                                           const XsMacroStatementExpansionSet *macro_statements,
+                                           const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
+                                           XsDiagnostics *diagnostics);
 
 #endif
