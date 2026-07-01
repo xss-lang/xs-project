@@ -17,6 +17,15 @@ typedef enum
   XS_HIR_SYMBOL_MACRO,
 } XsHirSymbolKind;
 
+typedef enum
+{
+  XS_HIR_MEMBER_FIELD,
+  XS_HIR_MEMBER_METHOD,
+  XS_HIR_MEMBER_CONSTRUCTOR,
+  XS_HIR_MEMBER_DESTRUCTOR,
+  XS_HIR_MEMBER_NESTED_TYPE,
+} XsHirMemberKind;
+
 typedef struct
 {
   XsHirSymbolKind kind;
@@ -51,6 +60,25 @@ typedef struct
   bool allocation_failed;
 } XsHirImportScope;
 
+typedef struct
+{
+  XsHirMemberKind kind;
+  char *name;
+  char *owner_qualified_name;
+  char *qualified_name;
+  XsSyntaxVisibility visibility;
+  XsSourceSpan span;
+  const XsSyntaxNode *syntax;
+} XsHirMemberSymbol;
+
+typedef struct
+{
+  XsHirMemberSymbol *members;
+  size_t count;
+  size_t capacity;
+  bool allocation_failed;
+} XsHirMemberSymbolTable;
+
 void xs_hir_symbol_table_init(XsHirSymbolTable *table);
 void xs_hir_symbol_table_free(XsHirSymbolTable *table);
 const XsHirSymbol *xs_hir_symbol_table_find(const XsHirSymbolTable *table, const char *qualified_name);
@@ -59,6 +87,15 @@ bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree,
                                      const XsMacroDeclarationExpansionSet *macro_declarations,
                                      XsHirSymbolTable *table, XsDiagnostics *diagnostics);
 const char *xs_hir_symbol_kind_name(XsHirSymbolKind kind);
+const char *xs_hir_member_kind_name(XsHirMemberKind kind);
+
+void xs_hir_member_symbol_table_init(XsHirMemberSymbolTable *table);
+void xs_hir_member_symbol_table_free(XsHirMemberSymbolTable *table);
+const XsHirMemberSymbol *xs_hir_member_symbol_table_find(const XsHirMemberSymbolTable *table,
+                                                         const char *owner_qualified_name, const char *name);
+bool xs_hir_collect_member_symbols(const XsHirSymbol *owner,
+                                   const XsMacroDeclarationExpansionSet *macro_declarations,
+                                   XsHirMemberSymbolTable *table, XsDiagnostics *diagnostics);
 
 void xs_hir_import_scope_init(XsHirImportScope *scope);
 void xs_hir_import_scope_free(XsHirImportScope *scope);

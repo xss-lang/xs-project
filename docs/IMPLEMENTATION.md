@@ -151,6 +151,10 @@ Bu katman HIR dizini altında bulunur.
 - `xs_hir_collect_symbols_expanded`, declaration macro expansion set verildiğinde `XS_SYNTAX_DECL_MACRO_CALL` düğümünün
   synthetic declaration reparse tree’sindeki üretilmiş declaration’ları macro call’ın bulunduğu etkin HIR namespace içinde
   sembol tablosuna alır. Duplicate symbol kontrolleri normal declaration’larla aynı namespace kuralını kullanır.
+- `xs_hir_collect_member_symbols`, class/interface owner sembolü için ayrı HIR member symbol table üretir. V0 kapsamı field,
+  field-benzeri macro çıktısı, method, constructor, destructor ve nested type üyeleridir.
+- Method aynı adla tekrar edilirse X# method merge kuralına göre son declaration lookup sonucunda kazanır; field/nested member
+  ad çakışmaları diagnostic üretir.
 - Semboller kısa ad, namespace adı, tam nitelikli ad, görünürlük, kaynak konumu ve kaynak AST düğümünü taşır.
 - Aynı namespace içinde aynı kısa ada sahip üst seviye bildirimler hata üretir.
 - Aynı kısa ad farklı namespace altında kullanılabilir.
@@ -167,7 +171,7 @@ Bu katman HIR dizini altında bulunur.
   hedefleri HIR symbol/import scope içinde doğrulanır.
 
 Bu aşama henüz metot/operator çözümleme, overload seçimi, generic constraint çözümleme veya tip tabanlı çağrı çözümleme
-yapmaz.
+yapmaz. Member symbol table bu aşamalar için ilk HIR veri modelidir; dispatch veya override kararı vermez.
 
 ### HIR tip çözümleme başlangıcı
 

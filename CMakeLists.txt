@@ -206,6 +206,11 @@ if(BUILD_TESTING)
     add_test(NAME hir COMMAND xs_hir_tests)
     set_tests_properties(hir PROPERTIES TIMEOUT 5)
 
+    add_executable(xs_hir_member_tests tests/hir_member_tests.c)
+    target_link_libraries(xs_hir_member_tests PRIVATE xs_compiler)
+    add_test(NAME hir_members COMMAND xs_hir_member_tests)
+    set_tests_properties(hir_members PROPERTIES TIMEOUT 5)
+
     add_executable(xs_hir_macro_tests tests/hir_macro_tests.c)
     target_link_libraries(xs_hir_macro_tests PRIVATE xs_compiler)
     add_test(NAME hir_macro COMMAND xs_hir_macro_tests)
