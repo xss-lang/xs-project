@@ -1,5 +1,6 @@
 build/
 .agents/
+.codex/
 target/
 Cargo.lock
 node_modules/
