@@ -1,5 +1,6 @@
 #include "xs/diagnostic.h"
 #include "xs/hir/symbol_table.h"
+#include "xs/hir/type_resolution.h"
 #include "xs/macro.h"
 #include "xs/syntax_parser.h"
 
@@ -71,9 +72,73 @@ static void test_declaration_macro_duplicate_symbols(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_generated_function_name_use(void)
+{
+  const char *text = "module App;\n"
+                     "fn Main() { Generated(); }\n"
+                     "macroRules! make { (): { incomplete fn Generated(); }; }\n"
+                     "make!();\n";
+  XsSource source = {.path = "MacroGeneratedNameUse.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroStatementExpansionSet statements;
+  XsMacroDeclarationExpansionSet declarations;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 83, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_generated_declaration_type_errors(void)
+{
+  const char *text = "module App;\n"
+                     "macroRules! make { (): { incomplete fn Broken(value: Missing); }; }\n"
+                     "make!();\n";
+  XsSource source = {.path = "MacroGeneratedTypeError.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroStatementExpansionSet statements;
+  XsMacroDeclarationExpansionSet declarations;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 84, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_declaration_macro_symbols();
   test_declaration_macro_duplicate_symbols();
+  test_generated_function_name_use();
+  test_generated_declaration_type_errors();
   return failures == 0 ? 0 : 1;
 }
