@@ -51,19 +51,19 @@ static bool check_single_source(const char *text)
 static void test_hir_primitive_info(void)
 {
   const XsHirPrimitiveInfo *string = xs_hir_primitive_find("str", 3);
-  CHECK(string != NULL && string->bit_width == 0 && string->code_unit_bit_width == 16 && string->is_text &&
+  CHECK(string != nullptr && string->bit_width == 0 && string->code_unit_bit_width == 16 && string->is_text &&
         !string->has_xlil_type);
   const XsHirPrimitiveInfo *boolean = xs_hir_primitive_find("bool", 4);
-  CHECK(boolean != NULL && boolean->bit_width == 1 && boolean->has_xlil_type &&
+  CHECK(boolean != nullptr && boolean->bit_width == 1 && boolean->has_xlil_type &&
         boolean->xlil_type.kind == XS_LIL_TYPE_BOOL);
   const XsHirPrimitiveInfo *byte = xs_hir_primitive_find("byte", 4);
-  CHECK(byte != NULL && byte->bit_width == 8 && !byte->is_signed && byte->has_xlil_type &&
+  CHECK(byte != nullptr && byte->bit_width == 8 && !byte->is_signed && byte->has_xlil_type &&
         byte->xlil_type.kind == XS_LIL_TYPE_U8);
   const XsHirPrimitiveInfo *sbyte = xs_hir_primitive_find("sbyte", 5);
-  CHECK(sbyte != NULL && sbyte->bit_width == 8 && sbyte->is_signed && sbyte->has_xlil_type &&
+  CHECK(sbyte != nullptr && sbyte->bit_width == 8 && sbyte->is_signed && sbyte->has_xlil_type &&
         sbyte->xlil_type.kind == XS_LIL_TYPE_I8);
   const XsHirPrimitiveInfo *character = xs_hir_primitive_find("char", 4);
-  CHECK(character != NULL && character->bit_width == 16 && character->has_xlil_type &&
+  CHECK(character != nullptr && character->bit_width == 16 && character->has_xlil_type &&
         character->xlil_type.kind == XS_LIL_TYPE_U16);
 }
 
@@ -103,6 +103,13 @@ static void test_generic_type_arity(void)
                          "class Box<T> { value: T; }\n"
                          "fn Main(box: Box<int, str>) {}\n";
   CHECK(!check_single_source(too_many));
+}
+
+static void test_duplicate_generic_parameter_names(void)
+{
+  CHECK(!check_single_source("module App;\nclass Box<T, T> { value: T; }\n"));
+  CHECK(!check_single_source("module App;\ninterface Reader<T, T> { fn Read(value: T); }\n"));
+  CHECK(!check_single_source("module App;\nfn Keep<T, T>(value: T) => T { return value; }\n"));
 }
 
 static void test_imported_user_type(void)
@@ -148,7 +155,7 @@ static void test_public_namespace_exports_default_type(void)
   xs_hir_import_scope_init(&imports);
   CHECK(add_file(library, 85, &library_tree, &symbols, &diagnostics));
   const XsHirSymbol *user = xs_hir_symbol_table_find(&symbols, "Model.Records.User");
-  CHECK(user != NULL && user->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
+  CHECK(user != nullptr && user->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
   CHECK(add_file(main, 86, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
   CHECK(xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
@@ -339,6 +346,7 @@ int main(void)
   test_primitive_and_generic_types();
   test_local_user_type();
   test_generic_type_arity();
+  test_duplicate_generic_parameter_names();
   test_imported_user_type();
   test_public_namespace_exports_default_type();
   test_private_qualified_type_visibility();

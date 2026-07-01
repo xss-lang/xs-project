@@ -189,6 +189,7 @@ yapmaz.
 - Generic tip kullanımlarında tip argümanı sayısı declaration’daki generic parametre sayısıyla eşleşmelidir.
 - Generic type erasure olmadığı ve default generic parametre desteklenmediği için generic tiplerin argümansız kullanımı hata
   üretir.
+- Aynı declaration scope içinde aynı generic parametre adı tekrar tanımlanamaz.
 - Generic constraint tipleri interface sembollerine çözümlenmelidir.
 - Generic parametreler birden fazla constraint taşıyabilir; constraint listesindeki `, Identifier :` yeni generic parametre
   başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.

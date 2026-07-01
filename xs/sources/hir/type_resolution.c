@@ -198,6 +198,15 @@ static bool report_constraint_kind(XsDiagnostics *diagnostics, const XsSyntaxNod
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
 }
 
+static bool report_duplicate_generic_parameter(XsDiagnostics *diagnostics, const XsSyntaxNode *identifier)
+{
+  char message[512];
+  int length = identifier->text.length > 128 ? 128 : (int)identifier->text.length;
+  snprintf(message, sizeof(message), "generic parameter '%.*s' is already defined in this declaration", length,
+           identifier->text.data);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(identifier), message);
+}
+
 static size_t generic_parameter_count(const XsSyntaxNode *declaration)
 {
   size_t count = 0;
@@ -208,6 +217,28 @@ static size_t generic_parameter_count(const XsSyntaxNode *declaration)
       ++count;
   }
   return count;
+}
+
+static bool validate_generic_parameter_names(const XsSyntaxNode *declaration, XsDiagnostics *diagnostics)
+{
+  bool success = true;
+  for (size_t i = 0; i < declaration->child_count; ++i) {
+    const XsSyntaxNode *parameter = declaration->children[i];
+    if (parameter->kind != XS_SYNTAX_GENERIC_PARAMETER)
+      continue;
+    const XsSyntaxNode *identifier = first_child_kind(parameter, XS_SYNTAX_IDENTIFIER);
+    if (identifier == nullptr)
+      continue;
+    for (size_t j = 0; j < i; ++j) {
+      const XsSyntaxNode *previous = declaration->children[j];
+      if (previous->kind != XS_SYNTAX_GENERIC_PARAMETER)
+        continue;
+      const XsSyntaxNode *previous_identifier = first_child_kind(previous, XS_SYNTAX_IDENTIFIER);
+      if (previous_identifier != nullptr && text_equal(previous_identifier->text, identifier->text))
+        success = report_duplicate_generic_parameter(diagnostics, identifier) && success;
+    }
+  }
+  return success;
 }
 
 static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_name, const GenericScope *generics,
@@ -361,8 +392,11 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
     return macro_success;
 
   GenericScope local_scope = {.parent = generics, .declaration = node};
-  const GenericScope *active = declaration_opens_generic_scope(node->kind) ? &local_scope : generics;
+  bool opens_generic_scope = declaration_opens_generic_scope(node->kind);
+  const GenericScope *active = opens_generic_scope ? &local_scope : generics;
   bool success = true;
+  if (opens_generic_scope)
+    success = validate_generic_parameter_names(node, diagnostics);
   if (node->kind == XS_SYNTAX_GENERIC_PARAMETER)
     return resolve_generic_parameter_constraints(node, namespace_name, current_file_id, active, symbols, imports,
                                                  diagnostics);
