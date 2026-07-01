@@ -11,7 +11,6 @@ class XsGit
   static final int USAGE_ERROR = 2;
 
   static final String REMOTE = "origin";
-  static final String BRANCH = "main";
 
   static final String[] GENERATED_PATHS = {
       "build/",
@@ -148,7 +147,7 @@ class XsGit
           git help
 
         commands:
-          update   Run safe git add, commit with the given message, then force-with-lease push to origin/main.
+          update   Run safe git add, commit with the given message, then force-with-lease push to origin/current-branch.
           uncom    Show uncommitted changes.
           help     Show this help.
 
@@ -157,10 +156,10 @@ class XsGit
           tracked files ignored by .gitignore / standard Git ignore rules
 
         generated paths:
-          build/, target/, node_modules/, dist/, out/, Cargo.lock
+          build/, .agents/, .codex, target/, node_modules/, dist/, out/, Cargo.lock
 
         update push:
-          git push -u origin main --force-with-lease
+          git push -u origin <current-branch> --force-with-lease
 
         examples:
           git update "Fix parser"
@@ -196,6 +195,17 @@ class XsGit
     if (!result.equals("true")) {
       exit(1, "error: not inside a git work tree");
     }
+  }
+
+  static String currentBranch() throws IOException, InterruptedException
+  {
+    String branch = capture("git", "branch", "--show-current").trim();
+
+    if (branch.isBlank()) {
+      exit(1, "error: detached HEAD state; cannot determine current branch");
+    }
+
+    return branch;
   }
 
   static boolean isGeneratedDirectory(String path, String directory)
@@ -283,7 +293,9 @@ class XsGit
       exit(commitCode, "error: git commit failed");
     }
 
-    int pushCode = run("git", "push", "-u", REMOTE, BRANCH, "--force-with-lease");
+    String branch = currentBranch();
+
+    int pushCode = run("git", "push", "-u", REMOTE, branch, "--force-with-lease");
 
     if (pushCode != 0) {
       exit(pushCode, "error: git push --force-with-lease failed");
