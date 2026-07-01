@@ -61,22 +61,26 @@ ilerler: kök dizin orkestrasyon alanıdır; gerçek projeler sibling dizinlerde
 - `XS/`
   - X# dil belgeleri, syntax örnekleri ve örnek proje dosyalarıdır.
   - `XS/later/` artık aktif staging alanı değildir; yeni future proje dosyaları kendi proje köklerine eklenmelidir.
-  - Benim yazdığım `~/.local/bin/xspn` aracını kullanabilirsin.
 
 ## Dil ve implementation dili
 
 - C23 ana geliştirme dilidir.
 - Derleyici ve public C API bileşenleri C23 ile yazılır.
 - C içinde `#include <stdbool.h>` kullanma; C23 `bool` kullan.
+- Yeni veya dokunulan C kodunda null pointer sabiti için `NULL` yerine C23 `nullptr` kullan.
 - C ve header dosyaları 500 satırı aşmamalıdır.
 - Modülerlik çok önemlidir; büyüyen dosyaları erken böl.
 - Derleyici içine Rust yalnız somut teknik gerekçe varsa eklenebilir; bu durumda `xs/sources/rust/` altında izole kalmalı
   ve C API’yi bozmamalıdır.
 - `xsfmt` ve `xstidy` bu kuralın istisnasıdır: onlar baştan Rust nightly + Serde future tool projeleridir.
 - Bu projede `.sh`, `.bash`, `.zsh`, `.fish` veya benzeri shell script dilleri kalıcı proje artifact’i olarak kullanılmaz; shell script kullanımı yasaktır.
-- Script/otomasyon için Java 21 source-file shebang ya da D + `rdmd` kullanılır.
+- Script/otomasyon için shebang’sız Java 21 source-file ya da D + `rdmd` kullanılır.
+- Java source-file scriptleri `java scripts/java/<tool>.java ...` biçiminde çalıştırılır; `.java` dosyalarına shebang ekleme.
+- D scriptlerinde `rdmd` shebang kullanılabilir.
 - D tarafında varsayılan compiler `ldc2` kabul edilir; `gdc` kullanımı yasaktır.
 - Script klasörü `scripts/` kabul edilir. D ile yazılan `scripts/d/` içine yazılır. Java ile yazılan `scripts/java/` içine yazılır
+- Benim yazdığım `~/.local/bin/xspn` aracını kullanabilirsin.
+
 
 
 ## Build sistemi ve toolchain

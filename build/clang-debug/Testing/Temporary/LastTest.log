@@ -1,17 +1,17 @@
-Start testing: Jun 30 21:03 +03
+Start testing: Jul 01 10:23 +03
 ----------------------------------------------------------
 1/17 Testing: project
 1/17 Test: project
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_project_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"project" start time: Jun 30 21:03 +03
+"project" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"project" end time: Jun 30 21:03 +03
+"project" end time: Jul 01 10:23 +03
 "project" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -19,14 +19,14 @@ Test Passed.
 2/17 Test: lexer
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_lexer_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"lexer" start time: Jun 30 21:03 +03
+"lexer" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"lexer" end time: Jun 30 21:03 +03
+"lexer" end time: Jul 01 10:23 +03
 "lexer" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -34,14 +34,14 @@ Test Passed.
 3/17 Test: parser
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_parser_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"parser" start time: Jun 30 21:03 +03
+"parser" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"parser" end time: Jun 30 21:03 +03
+"parser" end time: Jul 01 10:23 +03
 "parser" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -49,14 +49,14 @@ Test Passed.
 4/17 Test: example_project
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs" "check" "-proj" "/home/hasan/Projeler/XS/XS/example/MyApp.xsproj"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"example_project" start time: Jun 30 21:03 +03
+"example_project" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"example_project" end time: Jun 30 21:03 +03
+"example_project" end time: Jul 01 10:23 +03
 "example_project" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -64,14 +64,14 @@ Test Passed.
 5/17 Test: macro_project
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs" "check" "-proj" "/home/hasan/Projeler/XS/tests/fixtures/macro_project/MacroApp.xsproj"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"macro_project" start time: Jun 30 21:03 +03
+"macro_project" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"macro_project" end time: Jun 30 21:03 +03
+"macro_project" end time: Jul 01 10:23 +03
 "macro_project" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -79,7 +79,7 @@ Test Passed.
 6/17 Test: build_output_hir
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs" "build" "--output" "hir" "-proj" "/home/hasan/Projeler/XS/XS/example/MyApp.xsproj"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"build_output_hir" start time: Jun 30 21:03 +03
+"build_output_hir" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 xs: 'MyApp.xhir' üretilmedi; structural AST tamamlanmadan resmi .xhir kodu üretimi yapılmaz
@@ -87,7 +87,7 @@ xs: 'MyApp.xhir' üretilmedi; structural AST tamamlanmadan resmi .xhir kodu üre
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"build_output_hir" end time: Jun 30 21:03 +03
+"build_output_hir" end time: Jul 01 10:23 +03
 "build_output_hir" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -95,15 +95,15 @@ Test Passed.
 7/17 Test: build_output_mir
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs" "build" "--output" "mir" "-proj" "/home/hasan/Projeler/XS/XS/example/MyApp.xsproj"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"build_output_mir" start time: Jun 30 21:03 +03
+"build_output_mir" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 xs: 'MyApp.xmir' üretilmedi; structural AST tamamlanmadan resmi .xmir kodu üretimi yapılmaz
 <end of output>
-Test time =   0.00 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"build_output_mir" end time: Jun 30 21:03 +03
+"build_output_mir" end time: Jul 01 10:23 +03
 "build_output_mir" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -111,15 +111,15 @@ Test Passed.
 8/17 Test: build_output_xlil
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs" "build" "--output" "xlil" "-proj" "/home/hasan/Projeler/XS/XS/example/MyApp.xsproj"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"build_output_xlil" start time: Jun 30 21:03 +03
+"build_output_xlil" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 xs: 'MyApp.xlil' üretilmedi; structural AST tamamlanmadan resmi .xlil kodu üretimi yapılmaz
 <end of output>
-Test time =   0.00 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"build_output_xlil" end time: Jun 30 21:03 +03
+"build_output_xlil" end time: Jul 01 10:23 +03
 "build_output_xlil" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -127,15 +127,15 @@ Test Passed.
 9/17 Test: backend
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_backend_tests" "/home/hasan/Projeler/XS/build/clang-debug/xs_backend_test.o" "/usr/bin/ld.lld"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"backend" start time: Jun 30 21:03 +03
+"backend" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 LLD 22.1.6 (compatible with GNU linkers)
 <end of output>
-Test time =   0.13 sec
+Test time =   0.16 sec
 ----------------------------------------------------------
 Test Passed.
-"backend" end time: Jun 30 21:03 +03
+"backend" end time: Jul 01 10:23 +03
 "backend" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -143,14 +143,14 @@ Test Passed.
 10/17 Test: modules
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_module_tests" "/home/hasan/Projeler/XS/tests/fixtures/module_project" "/home/hasan/Projeler/XS/tests/fixtures/duplicate_modules"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"modules" start time: Jun 30 21:03 +03
+"modules" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.01 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"modules" end time: Jun 30 21:03 +03
+"modules" end time: Jul 01 10:23 +03
 "modules" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -158,14 +158,14 @@ Test Passed.
 11/17 Test: hir
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_hir_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"hir" start time: Jun 30 21:03 +03
+"hir" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.01 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"hir" end time: Jun 30 21:03 +03
+"hir" end time: Jul 01 10:23 +03
 "hir" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -173,14 +173,14 @@ Test Passed.
 12/17 Test: hir_types
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_hir_type_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"hir_types" start time: Jun 30 21:03 +03
+"hir_types" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"hir_types" end time: Jun 30 21:03 +03
+"hir_types" end time: Jul 01 10:23 +03
 "hir_types" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -188,14 +188,14 @@ Test Passed.
 13/17 Test: xlil
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_xlil_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"xlil" start time: Jun 30 21:03 +03
+"xlil" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"xlil" end time: Jun 30 21:03 +03
+"xlil" end time: Jul 01 10:23 +03
 "xlil" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -203,14 +203,14 @@ Test Passed.
 14/17 Test: mir
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_mir_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"mir" start time: Jun 30 21:03 +03
+"mir" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.00 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"mir" end time: Jun 30 21:03 +03
+"mir" end time: Jul 01 10:23 +03
 "mir" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -218,14 +218,14 @@ Test Passed.
 15/17 Test: syntax_ast
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_syntax_ast_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"syntax_ast" start time: Jun 30 21:03 +03
+"syntax_ast" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"syntax_ast" end time: Jun 30 21:03 +03
+"syntax_ast" end time: Jul 01 10:23 +03
 "syntax_ast" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -233,14 +233,14 @@ Test Passed.
 16/17 Test: syntax_decl
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_syntax_decl_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"syntax_decl" start time: Jun 30 21:03 +03
+"syntax_decl" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"syntax_decl" end time: Jun 30 21:03 +03
+"syntax_decl" end time: Jul 01 10:23 +03
 "syntax_decl" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -248,15 +248,15 @@ Test Passed.
 17/17 Test: syntax_macro
 Command: "/home/hasan/Projeler/XS/build/clang-debug/xs_syntax_macro_tests"
 Directory: /home/hasan/Projeler/XS/build/clang-debug
-"syntax_macro" start time: Jun 30 21:03 +03
+"syntax_macro" start time: Jul 01 10:23 +03
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"syntax_macro" end time: Jun 30 21:03 +03
+"syntax_macro" end time: Jul 01 10:23 +03
 "syntax_macro" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Jun 30 21:03 +03
+End testing: Jul 01 10:23 +03

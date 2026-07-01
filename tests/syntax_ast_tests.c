@@ -80,6 +80,25 @@ static void test_module_import_and_macro(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_macro_call_declaration_structure(void)
+{
+  const char *text = "macroRules! createItem { (): {}; }\n"
+                     "createItem!();\n"
+                     "class Host { createItem!(); }\n";
+  XsSource source = {.path = "MacroDeclarationCall.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 8, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_MACRO_CALL) == 2);
+  const XsSyntaxNode *call = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MACRO_CALL);
+  CHECK(call != nullptr);
+  CHECK(call == nullptr || xs_syntax_find_first(call, XS_SYNTAX_EXPR_MACRO_CALL) != nullptr);
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_control_flow_structure(void)
 {
   const char *text = "fn Flow(value: int) {\n"
@@ -246,6 +265,7 @@ int main(void)
 {
   test_function_tree();
   test_module_import_and_macro();
+  test_macro_call_declaration_structure();
   test_control_flow_structure();
   test_function_expression_structure();
   test_new_expression_structure();

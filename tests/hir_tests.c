@@ -48,11 +48,11 @@ static void test_module_namespace_symbols(void)
   CHECK(parse_and_collect(text, &tree, &symbols, &diagnostics));
   CHECK(symbols.count == 3);
   const XsHirSymbol *main = xs_hir_symbol_table_find(&symbols, "App.Core.Main");
-  CHECK(main != NULL);
-  CHECK(main != NULL && main->kind == XS_HIR_SYMBOL_FUNCTION);
-  CHECK(main != NULL && main->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
-  CHECK(xs_hir_symbol_table_find(&symbols, "App.Core.Service") != NULL);
-  CHECK(xs_hir_symbol_table_find(&symbols, "App.Util.Result") != NULL);
+  CHECK(main != nullptr);
+  CHECK(main != nullptr && main->kind == XS_HIR_SYMBOL_FUNCTION);
+  CHECK(main != nullptr && main->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
+  CHECK(xs_hir_symbol_table_find(&symbols, "App.Core.Service") != nullptr);
+  CHECK(xs_hir_symbol_table_find(&symbols, "App.Util.Result") != nullptr);
   free_all(&tree, &symbols, &diagnostics);
 }
 
@@ -82,8 +82,8 @@ static void test_same_name_in_different_namespace(void)
   XsDiagnostics diagnostics;
   CHECK(parse_and_collect(text, &tree, &symbols, &diagnostics));
   CHECK(symbols.count == 2);
-  CHECK(xs_hir_symbol_table_find(&symbols, "App.First.Value") != NULL);
-  CHECK(xs_hir_symbol_table_find(&symbols, "App.Second.Value") != NULL);
+  CHECK(xs_hir_symbol_table_find(&symbols, "App.First.Value") != nullptr);
+  CHECK(xs_hir_symbol_table_find(&symbols, "App.Second.Value") != nullptr);
   free_all(&tree, &symbols, &diagnostics);
 }
 
@@ -116,11 +116,11 @@ static void test_import_resolution(void)
   CHECK(add_file_symbols(library, 31, &library_tree, &symbols, &diagnostics));
   CHECK(add_file_symbols(main, 32, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Add") != NULL);
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Hidden") == NULL);
+  CHECK(xs_hir_import_scope_find(&imports, "Math.Add") != nullptr);
+  CHECK(xs_hir_import_scope_find(&imports, "Math.Hidden") == nullptr);
   const XsHirImportBinding *sum = xs_hir_import_scope_find(&imports, "Sum");
-  CHECK(sum != NULL);
-  CHECK(sum != NULL && strcmp(sum->symbol->qualified_name, "Math.Add") == 0);
+  CHECK(sum != nullptr);
+  CHECK(sum != nullptr && strcmp(sum->symbol->qualified_name, "Math.Add") == 0);
   xs_hir_import_scope_free(&imports);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
@@ -149,12 +149,12 @@ static void test_public_namespace_exports_default_symbols(void)
   CHECK(add_file_symbols(library, 35, &library_tree, &symbols, &diagnostics));
   const XsHirSymbol *add = xs_hir_symbol_table_find(&symbols, "Math.Advanced.Add");
   const XsHirSymbol *hidden = xs_hir_symbol_table_find(&symbols, "Math.Advanced.Hidden");
-  CHECK(add != NULL && add->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
-  CHECK(hidden != NULL && hidden->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
+  CHECK(add != nullptr && add->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
+  CHECK(hidden != nullptr && hidden->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
   CHECK(add_file_symbols(main, 36, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Add") != NULL);
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Hidden") == NULL);
+  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Add") != nullptr);
+  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Hidden") == nullptr);
   CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
   xs_hir_import_scope_free(&imports);
   xs_hir_symbol_table_free(&symbols);
@@ -337,6 +337,39 @@ static void test_block_fragment_macro_name_use_errors(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_path_fragment_macro_name_use_errors(void)
+{
+  const char *main = "module App;\n"
+                     "macroRules! call { ($target:path): { $target(); }; }\n"
+                     "fn Main() { call!(Missing.Call); }\n";
+  XsSource source = {.path = "MacroPathNameUse.xs", .text = main, .length = strlen(main)};
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsMacroExpansionReport report;
+  XsMacroStatementExpansionSet statements;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 65, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_expandable == 1);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_private_qualified_name_visibility(void)
 {
   const char *library = "module Math;\n"
@@ -423,6 +456,7 @@ int main(void)
   test_expanded_macro_name_use_errors();
   test_statement_fragment_macro_name_use_errors();
   test_block_fragment_macro_name_use_errors();
+  test_path_fragment_macro_name_use_errors();
   test_private_qualified_name_visibility();
   test_private_same_namespace_name_visibility();
   test_private_same_namespace_different_file_name_visibility();

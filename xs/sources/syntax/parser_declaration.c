@@ -118,6 +118,15 @@ static XsSyntaxNode *parse_import(SyntaxParser *parser, bool selected, size_t st
   return import;
 }
 
+static XsSyntaxNode *parse_declaration_macro_call(SyntaxParser *parser, size_t start)
+{
+  XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_MACRO_CALL, (XsSpan){start, start});
+  xs_syntax_node_add(parser->tree, declaration, parse_expression(parser, 1));
+  expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after macro call declaration");
+  finish_node(parser, declaration, parser->previous.span.end);
+  return declaration;
+}
+
 static XsSyntaxNode *parse_enum(SyntaxParser *parser, Modifiers modifiers, size_t start)
 {
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_ENUM, (XsSpan){start, parser->previous.span.end});
@@ -279,6 +288,8 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
         xs_syntax_node_add(parser->tree, declaration, parse_data(parser, member, before));
       else if (accept(parser, XS_TOKEN_KW_MACRO_RULES))
         xs_syntax_node_add(parser->tree, declaration, parse_macro(parser, before));
+      else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_BANG)
+        xs_syntax_node_add(parser->tree, declaration, parse_declaration_macro_call(parser, before));
       else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON) {
         XsSyntaxNode *field = parse_variable(parser, true);
         field->kind = XS_SYNTAX_CLASS_FIELD;
@@ -365,6 +376,8 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
     return parse_data(parser, modifiers, start);
   if (accept(parser, XS_TOKEN_KW_MACRO_RULES))
     return parse_macro(parser, start);
+  if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_BANG)
+    return parse_declaration_macro_call(parser, start);
   if (parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
       parser->current.kind == XS_TOKEN_KW_ATOMIC ||
       (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON)) {

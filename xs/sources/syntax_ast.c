@@ -138,6 +138,7 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "data declaration",
       "variable declaration",
       "macro declaration",
+      "macro-call declaration",
       "class field",
       "constructor",
       "destructor",

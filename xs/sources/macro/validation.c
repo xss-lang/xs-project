@@ -15,7 +15,7 @@ static bool node_list_add(NodeList *list, const XsSyntaxNode *node)
   if (list->count == list->capacity) {
     size_t capacity = list->capacity == 0 ? 8 : list->capacity * 2;
     const XsSyntaxNode **items = realloc(list->items, capacity * sizeof(*items));
-    if (items == NULL)
+    if (items == nullptr)
       return false;
     list->items = items;
     list->capacity = capacity;
@@ -26,7 +26,7 @@ static bool node_list_add(NodeList *list, const XsSyntaxNode *node)
 
 static void collect_kind(const XsSyntaxNode *node, XsSyntaxKind kind, NodeList *nodes)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return;
   if (node->kind == kind)
     node_list_add(nodes, node);
@@ -45,7 +45,7 @@ static XsText macro_name(const XsSyntaxNode *macro)
 
 static bool matcher_variable_depth(const XsSyntaxNode *node, XsText name, size_t depth, size_t *result)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return false;
   if (node->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT && node->child_count != 0 &&
       xs_macro_text_equal(node->children[0]->text, name)) {
@@ -63,7 +63,7 @@ static bool matcher_variable_depth(const XsSyntaxNode *node, XsText name, size_t
 static void validate_expansion_variables(const XsSyntaxNode *node, const XsSyntaxNode *matcher,
                                          XsDiagnostics *diagnostics, size_t depth, bool *contains_variable)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return;
   if (node->kind == XS_SYNTAX_MACRO_EXPANSION_VARIABLE && node->child_count != 0) {
     *contains_variable = true;
@@ -106,7 +106,7 @@ static void validate_macro_rules(const XsSyntaxNode *macro, XsDiagnostics *diagn
 
 static bool expansion_calls_name(const XsSyntaxNode *node, XsText name)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return false;
   for (size_t i = 0; i + 1 < node->child_count; ++i) {
     const XsSyntaxNode *first = node->children[i];
@@ -145,7 +145,7 @@ static void validate_recursion(const NodeList *macros, XsDiagnostics *diagnostic
   if (macros->count == 0)
     return;
   bool *visiting = calloc(macros->count, sizeof(*visiting));
-  if (visiting == NULL) {
+  if (visiting == nullptr) {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while validating macro call graph");
     return;
@@ -168,12 +168,12 @@ static bool is_macro_scope(XsSyntaxKind kind)
 
 static XsText macro_call_name(const XsSyntaxNode *call)
 {
-  if (call == NULL)
+  if (call == nullptr)
     return (XsText){0};
   if (call->kind == XS_SYNTAX_STMT_MACRO_CALL) {
     for (size_t i = 0; i < call->child_count; ++i) {
       XsText name = macro_call_name(call->children[i]);
-      if (name.data != NULL)
+      if (name.data != nullptr)
         return name;
     }
     return (XsText){0};
@@ -193,7 +193,7 @@ static const XsSyntaxNode *resolve_macro(const NodeList *visible, XsText name)
     if (xs_macro_text_equal(macro_name(visible->items[i - 1]), name))
       return visible->items[i - 1];
   }
-  return NULL;
+  return nullptr;
 }
 
 typedef enum
@@ -205,7 +205,7 @@ typedef enum
 
 static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntaxNode *call)
 {
-  if (rule == NULL || rule->kind != XS_SYNTAX_MACRO_RULE || rule->child_count == 0)
+  if (rule == nullptr || rule->kind != XS_SYNTAX_MACRO_RULE || rule->child_count == 0)
     return MATCH_NO;
   const XsSyntaxNode *matcher = rule->children[0];
   size_t argument_index = 1;
@@ -224,7 +224,7 @@ static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntax
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
       if (element->child_count < 2)
         return MATCH_NO;
-      if (xs_macro_fragment_kind_is(element, "stmt") || xs_macro_fragment_kind_is(element, "block"))
+      if (xs_macro_fragment_is_sequence(element))
         return i + 1 == matcher->child_count && argument_index < call->child_count ? MATCH_YES : MATCH_NO;
       if (!xs_macro_fragment_supported(element->children[1]->text))
         return MATCH_DEFERRED;
@@ -255,7 +255,7 @@ static void validate_scope_calls(const XsSyntaxNode *scope, const NodeList *inhe
 
 static void validate_node_calls(const XsSyntaxNode *node, const NodeList *visible, XsDiagnostics *diagnostics)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return;
   if (is_macro_scope(node->kind)) {
     validate_scope_calls(node, visible, diagnostics);
@@ -265,7 +265,7 @@ static void validate_node_calls(const XsSyntaxNode *node, const NodeList *visibl
     XsText name = macro_call_name(node);
     const XsSyntaxNode *macro = resolve_macro(visible, name);
     XsSpan span = {.start = node->span.start_offset, .end = node->span.end_offset};
-    if (macro == NULL) {
+    if (macro == nullptr) {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not resolve in this scope");
       return;
     }
@@ -316,7 +316,7 @@ static void validate_scope_recursion(const XsSyntaxNode *scope, XsDiagnostics *d
 
 bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
 {
-  if (tree == NULL || tree->root == NULL || diagnostics == NULL)
+  if (tree == nullptr || tree->root == nullptr || diagnostics == nullptr)
     return false;
   NodeList macros = {0};
   collect_kind(tree->root, XS_SYNTAX_DECL_MACRO, &macros);

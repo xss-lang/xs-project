@@ -2,6 +2,8 @@
 
 Derleyici C23 ile yazılır; Clang, CMake, Ninja, LLVM araçları ve LLD kullanır. GNU C derleyicisi, GNU Make
 üreteçleri, GNU binutils, GNU C lehçeleri ve `_GNU_SOURCE` kullanımı yapılandırma veya derleme aşamasında reddedilir.
+Yeni ve dokunulan C kodunda `bool` doğrudan C23'ten alınır, `#include <stdbool.h>` kullanılmaz ve null pointer sabiti
+olarak `NULL` yerine `nullptr` tercih edilir.
 
 Belgelenmiş derleme sırası korunur:
 
@@ -206,11 +208,11 @@ uyumluluğu veya ABI/layout kararı üretmez.
   göre eşleştirilir.
 - Makro genişletme hazırlık API'si `xs_macro_prepare_expansion` olarak eklenmiştir. Bu aşama çağrıları scope içinde
   çözer, tek-token fragment veya tam-token matcher ile yapısal yeniden ayrıştırma gerektirmeden genişletilebilir çağrıları
-  sayar, basit expansion token/substitution planı üretir ve `expr`, `ty`, `path`, `pat`, `block`, `item`, `meta`
-  fragmentları için genişletmeyi bilinçli olarak erteler.
-- `stmt` ve `block` fragment v0 desteği, validation ve expansion sırasında matcher içinde tek kalan fragment olduğu durumda
-  çağrı parantezi içindeki token dizisini tek statement/block fragment olarak yakalar. Expansion içinde `$name` kullanımı bu
-  token dizisini statement reparse aşamasına taşır.
+  sayar, basit expansion token/substitution planı üretir ve `pat`, `item`, `meta` fragmentları için genişletmeyi bilinçli
+  olarak erteler.
+- `expr`, `stmt`, `block`, `ty` ve `path` fragment v0 desteği, validation ve expansion sırasında matcher içinde tek kalan
+  fragment olduğu durumda çağrı parantezi içindeki token dizisini tek expression/statement/block/type/path fragment olarak
+  yakalar. Expansion içinde `$name` kullanımı bu token dizisini statement reparse aşamasına taşır.
 - `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bu çıktı henüz
   structural AST'ye geri yazılmaz; sonraki aşamadaki fragment reparse ve AST replacement için ara genişletme akışıdır.
 - `xs_macro_reparse_expansion_as_statement` desteklenen expansion token listesini synthetic bir fonksiyon gövdesi içinde
@@ -229,8 +231,9 @@ uyumluluğu veya ABI/layout kararı üretmez.
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
   kullanımı ile HIR tip çözümleme traversal'larına verir.
 
-`expr`, `ty`, `path`, `pat`, `item` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `stmt` ve
-`block` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
+`pat`, `item` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty` ve
+`path` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik
+uydurulmaz.
 
 ### MIR modeli
 
