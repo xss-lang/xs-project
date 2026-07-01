@@ -182,6 +182,39 @@ static void test_item_fragment_empty_call_errors(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_multiple_matching_declaration_rules(void)
+{
+  const char *text = "module App;\n"
+                     "macroRules! make {\n"
+                     "  (): { incomplete fn First(); };\n"
+                     "  (): { incomplete fn Second(); };\n"
+                     "}\n"
+                     "make!();\n";
+  XsSource source = {.path = "MacroMultipleRules.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroExpansionReport report;
+  XsMacroDeclarationExpansionSet declarations;
+  XsHirSymbolTable symbols;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  CHECK(xs_syntax_parse(&source, 87, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
+  CHECK(report.calls_seen == 1);
+  CHECK(report.calls_expandable == 1);
+  CHECK(report.output_tokens_planned == 12);
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(declarations.count == 2);
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  CHECK(xs_hir_symbol_table_find(&symbols, "App.First") != nullptr);
+  CHECK(xs_hir_symbol_table_find(&symbols, "App.Second") != nullptr);
+  xs_hir_symbol_table_free(&symbols);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_declaration_macro_symbols();
@@ -190,5 +223,6 @@ int main(void)
   test_generated_declaration_type_errors();
   test_item_fragment_declaration_symbol();
   test_item_fragment_empty_call_errors();
+  test_multiple_matching_declaration_rules();
   return failures == 0 ? 0 : 1;
 }

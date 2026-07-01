@@ -214,14 +214,15 @@ uyumluluğu veya ABI/layout kararı üretmez.
   göre eşleştirilir.
 - Makro genişletme hazırlık API'si `xs_macro_prepare_expansion` olarak eklenmiştir. Bu aşama çağrıları scope içinde
   çözer, tek-token fragment veya tam-token matcher ile yapısal yeniden ayrıştırma gerektirmeden genişletilebilir çağrıları
-  sayar, basit expansion token/substitution planı üretir ve `pat`, `item`, `meta` fragmentları için genişletmeyi bilinçli
-  olarak erteler.
+  sayar, basit expansion token/substitution planı üretir ve `pat`, `meta` fragmentları için genişletmeyi bilinçli olarak
+  erteler.
 - `expr`, `stmt`, `block`, `ty`, `path` ve `item` fragment v0 desteği, validation ve expansion sırasında matcher içinde tek
   kalan fragment olduğu durumda çağrı parantezi içindeki token dizisini tek expression/statement/block/type/path/item
   fragment olarak yakalar. Expansion içinde `$name` kullanımı bu token dizisini statement veya declaration reparse aşamasına
   taşır.
-- `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bu çıktı henüz
-  structural AST'ye geri yazılmaz; sonraki aşamadaki fragment reparse ve AST replacement için ara genişletme akışıdır.
+- `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bir macro
+  çağrısında birden fazla desteklenen rule eşleşirse, her rule declaration order ile ayrı expansion kaydı üretir. Bu çıktı
+  henüz structural AST'ye geri yazılmaz; sonraki aşamadaki fragment reparse ve AST replacement için ara genişletme akışıdır.
 - `xs_macro_reparse_expansion_as_statement` desteklenen expansion token listesini synthetic bir fonksiyon gövdesi içinde
   statement olarak yeniden structural AST parser'dan geçirir. Bu köprü gerçek macro call replacement değildir; fragment-level
   reparse ve AST replacement için doğrulanabilir ara adımdır.
@@ -238,6 +239,8 @@ uyumluluğu veya ABI/layout kararı üretmez.
   expansion’larını synthetic source file olarak yeniden ayrıştırır ve `XsMacroDeclarationExpansionSet` içinde çağrı span’i,
   reparse tree ownership’i ve üretilen declaration sayısını tutar. `xs_macro_declaration_expansion_find` declaration macro
   call düğümü için ilgili synthetic declaration expansion kaydını döndürür.
+- HIR sembol toplama, aynı declaration macro call için birden fazla eşleşen rule’dan gelen tüm declaration expansion
+  kayıtlarını declaration order ile toplar.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
   kullanımı ile HIR tip çözümleme traversal'larına verir.

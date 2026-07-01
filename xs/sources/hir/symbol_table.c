@@ -149,6 +149,27 @@ static bool collect_macro_declarations(const XsMacroDeclarationExpansion *expans
   return true;
 }
 
+static bool collect_matching_macro_declarations(const XsMacroDeclarationExpansionSet *expansions,
+                                                const XsSyntaxNode *declaration, const char *namespace_name,
+                                                bool public_namespace, XsHirSymbolTable *table,
+                                                XsDiagnostics *diagnostics)
+{
+  if (expansions == nullptr || declaration == nullptr)
+    return true;
+  const XsSyntaxNode *call = xs_syntax_find_first(declaration, XS_SYNTAX_EXPR_MACRO_CALL);
+  if (call == nullptr)
+    return true;
+  XsSpan span = {.start = call->span.start_offset, .end = call->span.end_offset};
+  for (size_t i = 0; i < expansions->count; ++i) {
+    XsSpan item = expansions->items[i].call_span;
+    if (item.start != span.start || item.end != span.end)
+      continue;
+    if (!collect_macro_declarations(&expansions->items[i], namespace_name, public_namespace, table, diagnostics))
+      return false;
+  }
+  return true;
+}
+
 void xs_hir_symbol_table_init(XsHirSymbolTable *table)
 {
   *table = (XsHirSymbolTable){0};
@@ -230,9 +251,8 @@ bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree,
       continue;
     }
     if (child->kind == XS_SYNTAX_DECL_MACRO_CALL) {
-      const XsMacroDeclarationExpansion *expansion =
-          xs_macro_declaration_expansion_find(macro_declarations, child);
-      if (!collect_macro_declarations(expansion, current_namespace, public_namespace, table, diagnostics))
+      if (!collect_matching_macro_declarations(macro_declarations, child, current_namespace, public_namespace, table,
+                                               diagnostics))
         break;
       continue;
     }
