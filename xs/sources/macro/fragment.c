@@ -51,7 +51,8 @@ bool xs_macro_fragment_supported(XsText kind)
          xs_macro_text_equal(kind, (XsText){.data = "block", .length = 5}) ||
          xs_macro_text_equal(kind, (XsText){.data = "ty", .length = 2}) ||
          xs_macro_text_equal(kind, (XsText){.data = "path", .length = 4}) ||
-         xs_macro_text_equal(kind, (XsText){.data = "item", .length = 4});
+         xs_macro_text_equal(kind, (XsText){.data = "item", .length = 4}) ||
+         xs_macro_text_equal(kind, (XsText){.data = "pat", .length = 3});
 }
 
 bool xs_macro_fragment_is_sequence(const XsSyntaxNode *fragment)
@@ -59,7 +60,7 @@ bool xs_macro_fragment_is_sequence(const XsSyntaxNode *fragment)
   return xs_macro_fragment_kind_is(fragment, "expr") || xs_macro_fragment_kind_is(fragment, "stmt") ||
          xs_macro_fragment_kind_is(fragment, "block") ||
          xs_macro_fragment_kind_is(fragment, "ty") || xs_macro_fragment_kind_is(fragment, "path") ||
-         xs_macro_fragment_kind_is(fragment, "item");
+         xs_macro_fragment_kind_is(fragment, "item") || xs_macro_fragment_kind_is(fragment, "pat");
 }
 
 bool xs_macro_fragment_matches(const XsSyntaxNode *fragment, const XsSyntaxNode *argument)

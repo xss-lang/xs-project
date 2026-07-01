@@ -214,10 +214,9 @@ uyumluluğu veya ABI/layout kararı üretmez.
   göre eşleştirilir.
 - Makro genişletme hazırlık API'si `xs_macro_prepare_expansion` olarak eklenmiştir. Bu aşama çağrıları scope içinde
   çözer, tek-token fragment veya tam-token matcher ile yapısal yeniden ayrıştırma gerektirmeden genişletilebilir çağrıları
-  sayar, basit expansion token/substitution planı üretir ve `pat`, `meta` fragmentları için genişletmeyi bilinçli olarak
-  erteler.
-- `expr`, `stmt`, `block`, `ty`, `path` ve `item` fragment v0 desteği, validation ve expansion sırasında matcher içinde tek
-  kalan fragment olduğu durumda çağrı parantezi içindeki token dizisini tek expression/statement/block/type/path/item
+  sayar, basit expansion token/substitution planı üretir ve `meta` fragmentı için genişletmeyi bilinçli olarak erteler.
+- `expr`, `stmt`, `block`, `ty`, `path`, `item` ve `pat` fragment v0 desteği, validation ve expansion sırasında matcher içinde
+  tek kalan fragment olduğu durumda çağrı parantezi içindeki token dizisini tek expression/statement/block/type/path/item/pattern
   fragment olarak yakalar. Expansion içinde `$name` kullanımı bu token dizisini statement veya declaration reparse aşamasına
   taşır.
 - `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bir macro
@@ -251,8 +250,8 @@ Declaration/item context macro call AST girişi, declaration reparse set üretim
 Üretilmiş declaration’ların parent-child AST replacement olarak ana ağaca yazılması ve class member expansion’ın HIR member
 sembollerine bağlanması sonraki adımdır.
 
-`pat` ve `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty`, `path` ve
-`item` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
+`meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty`, `path`, `item` ve
+`pat` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
 
 ### MIR modeli
 

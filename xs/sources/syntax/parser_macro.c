@@ -15,7 +15,7 @@ static bool macro_fragment_kind_valid(SyntaxParser *parser, XsToken token)
 
 static bool macro_has_variable(const XsSyntaxNode *value, const XsSource *source, XsSpan text)
 {
-  if (value == NULL)
+  if (value == nullptr)
     return false;
   if (value->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT && value->child_count != 0 &&
       value->children[0]->text.length == text.end - text.start &&
@@ -72,6 +72,27 @@ static void parse_matcher_elements(SyntaxParser *parser, XsSyntaxNode *macro, Xs
   }
 }
 
+static void add_expansion_token(SyntaxParser *parser, XsSyntaxNode *parent, XsToken token)
+{
+  XsSyntaxNode *token_node = node(parser, XS_SYNTAX_MACRO_EXPANSION_TOKEN, token.span);
+  token_node->token_kind = token.kind;
+  xs_syntax_node_add(parser->tree, parent, token_node);
+}
+
+static XsTokenKind matching_closing_delimiter(XsTokenKind opening)
+{
+  switch (opening) {
+  case XS_TOKEN_LEFT_BRACE:
+    return XS_TOKEN_RIGHT_BRACE;
+  case XS_TOKEN_LEFT_PAREN:
+    return XS_TOKEN_RIGHT_PAREN;
+  case XS_TOKEN_LEFT_BRACKET:
+    return XS_TOKEN_RIGHT_BRACKET;
+  default:
+    return XS_TOKEN_EOF;
+  }
+}
+
 static void parse_expansion_elements(SyntaxParser *parser, XsSyntaxNode *parent, XsTokenKind closing)
 {
   while (parser->current.kind != closing && parser->current.kind != XS_TOKEN_EOF) {
@@ -98,10 +119,15 @@ static void parse_expansion_elements(SyntaxParser *parser, XsSyntaxNode *parent,
       continue;
     }
     XsToken token = parser->current;
+    XsTokenKind nested_closing = matching_closing_delimiter(token.kind);
     advance(parser);
-    XsSyntaxNode *token_node = node(parser, XS_SYNTAX_MACRO_EXPANSION_TOKEN, token.span);
-    token_node->token_kind = token.kind;
-    xs_syntax_node_add(parser->tree, parent, token_node);
+    add_expansion_token(parser, parent, token);
+    if (nested_closing != XS_TOKEN_EOF) {
+      parse_expansion_elements(parser, parent, nested_closing);
+      token = parser->current;
+      if (expect(parser, nested_closing, "expected closing delimiter in macro expansion"))
+        add_expansion_token(parser, parent, token);
+    }
   }
 }
 
