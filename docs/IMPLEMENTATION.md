@@ -239,6 +239,10 @@ uyumluluğu veya ABI/layout kararı üretmez.
   expansion’larını synthetic source file olarak yeniden ayrıştırır ve `XsMacroDeclarationExpansionSet` içinde çağrı span’i,
   reparse tree ownership’i ve üretilen declaration sayısını tutar. `xs_macro_declaration_expansion_find` declaration macro
   call düğümü için ilgili synthetic declaration expansion kaydını döndürür.
+- `xs_macro_expand_top_level_declarations`, top-level declaration listesi için structural expanded view üretir. Bu view
+  original declaration düğümlerini korur, `XS_SYNTAX_DECL_MACRO_CALL` düğümlerini aynı call span’ine ait synthetic declaration
+  expansion kayıtlarıyla declaration order içinde materyalize eder ve parent-child AST rewrite tamamlanana kadar test edilebilir
+  expanded AST köprüsü sağlar.
 - HIR sembol toplama, aynı declaration macro call için birden fazla eşleşen rule’dan gelen tüm declaration expansion
   kayıtlarını declaration order ile toplar.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
@@ -246,9 +250,9 @@ uyumluluğu veya ABI/layout kararı üretmez.
   kullanımı ile HIR tip çözümleme traversal'larına verir. HIR ad ve tip çözümleme, aynı statement macro call’a ait tüm
   replacement statement kayıtlarını declaration order ile dolaşır.
 
-Declaration/item context macro call AST girişi, declaration reparse set üretimi ve HIR sembol toplama entegrasyonu vardır.
-Üretilmiş declaration’ların parent-child AST replacement olarak ana ağaca yazılması ve class member expansion’ın HIR member
-sembollerine bağlanması sonraki adımdır.
+Declaration/item context macro call AST girişi, declaration reparse set üretimi, top-level expanded declaration view ve HIR
+sembol toplama entegrasyonu vardır. Üretilmiş declaration’ların parent-child AST replacement olarak ana ağaca yazılması ve
+class member expansion’ın HIR member sembollerine bağlanması sonraki adımdır.
 
 `meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty`, `path`, `item` ve
 `pat` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik uydurulmaz.

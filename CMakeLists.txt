@@ -94,6 +94,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/codegen/units.c
     xs/sources/driver/cli.c
     xs/sources/lexer.c
+    xs/sources/macro/expanded_view.c
     xs/sources/macro/expansion.c
     xs/sources/macro/fragment.c
     xs/sources/macro/reparse.c
@@ -231,5 +232,10 @@ if(BUILD_TESTING)
     target_link_libraries(xs_syntax_macro_tests PRIVATE xs_compiler)
     add_test(NAME syntax_macro COMMAND xs_syntax_macro_tests)
     set_tests_properties(syntax_macro PROPERTIES TIMEOUT 5)
+
+    add_executable(xs_syntax_macro_view_tests tests/syntax_macro_view_tests.c)
+    target_link_libraries(xs_syntax_macro_view_tests PRIVATE xs_compiler)
+    add_test(NAME syntax_macro_view COMMAND xs_syntax_macro_view_tests)
+    set_tests_properties(syntax_macro_view PROPERTIES TIMEOUT 5)
   endif()
 endif()

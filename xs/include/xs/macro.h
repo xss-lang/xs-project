@@ -77,6 +77,21 @@ typedef struct
   bool allocation_failed;
 } XsMacroDeclarationExpansionSet;
 
+typedef struct
+{
+  const XsSyntaxNode *declaration;
+  XsSpan call_span;
+  bool from_macro_expansion;
+} XsMacroExpandedDeclaration;
+
+typedef struct
+{
+  XsMacroExpandedDeclaration *items;
+  size_t count;
+  size_t capacity;
+  bool allocation_failed;
+} XsMacroExpandedDeclarationSet;
+
 bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics);
 bool xs_macro_prepare_expansion(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsMacroExpansionReport *report);
 void xs_macro_expansion_set_free(XsMacroExpansionSet *set);
@@ -99,5 +114,10 @@ bool xs_macro_statement_expansion_matches(const XsMacroStatementExpansion *expan
                                           const XsSyntaxNode *statement);
 const XsMacroDeclarationExpansion *xs_macro_declaration_expansion_find(const XsMacroDeclarationExpansionSet *set,
                                                                        const XsSyntaxNode *declaration);
+bool xs_macro_expand_top_level_declarations(const XsSyntaxTree *tree,
+                                            const XsMacroDeclarationExpansionSet *declarations,
+                                            XsDiagnostics *diagnostics,
+                                            XsMacroExpandedDeclarationSet *expanded);
+void xs_macro_expanded_declaration_set_free(XsMacroExpandedDeclarationSet *set);
 
 #endif
