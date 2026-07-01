@@ -270,15 +270,17 @@ class XsGit
     int diffCode = runQuiet("git", "diff", "--cached", "--quiet");
 
     if (diffCode == 0) {
-      System.err.println("nothing to commit");
-    } else if (diffCode == 1) {
-      int commitCode = run("git", "commit", "--message", message);
+      exit(1, "error: nothing to commit");
+    }
 
-      if (commitCode != 0) {
-        exit(commitCode, "error: git commit failed");
-      }
-    } else {
+    if (diffCode != 1) {
       exit(diffCode, "error: git diff --cached --quiet failed");
+    }
+
+    int commitCode = run("git", "commit", "--message", message);
+
+    if (commitCode != 0) {
+      exit(commitCode, "error: git commit failed");
     }
 
     int pushCode = run("git", "push", "-u", REMOTE, BRANCH, "--force-with-lease");
