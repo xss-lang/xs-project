@@ -322,8 +322,9 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
         success = xs_hir_validate_name_uses_expanded(&units[i].tree, &units[i].macro_statements, &symbols,
                                                      &units[i].imports, &units[i].diagnostics) &&
                   success;
-        success = xs_hir_resolve_types_expanded(&units[i].tree, &units[i].macro_statements, &symbols,
-                                                &units[i].imports, &units[i].diagnostics) &&
+        success = xs_hir_resolve_types_with_macros(&units[i].tree, &units[i].macro_declarations,
+                                                   &units[i].macro_statements, &symbols, &units[i].imports,
+                                                   &units[i].diagnostics) &&
                   success;
       }
     }

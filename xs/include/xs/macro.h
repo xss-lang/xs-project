@@ -118,6 +118,10 @@ bool xs_macro_expand_top_level_declarations(const XsSyntaxTree *tree,
                                             const XsMacroDeclarationExpansionSet *declarations,
                                             XsDiagnostics *diagnostics,
                                             XsMacroExpandedDeclarationSet *expanded);
+bool xs_macro_expand_child_declarations(const XsSyntaxNode *parent,
+                                        const XsMacroDeclarationExpansionSet *declarations,
+                                        XsDiagnostics *diagnostics,
+                                        XsMacroExpandedDeclarationSet *expanded);
 void xs_macro_expanded_declaration_set_free(XsMacroExpandedDeclarationSet *set);
 
 #endif

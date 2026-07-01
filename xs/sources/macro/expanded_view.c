@@ -73,9 +73,19 @@ bool xs_macro_expand_top_level_declarations(const XsSyntaxTree *tree,
 {
   if (tree == nullptr || tree->root == nullptr || diagnostics == nullptr || expanded == nullptr)
     return false;
+  return xs_macro_expand_child_declarations(tree->root, declarations, diagnostics, expanded);
+}
+
+bool xs_macro_expand_child_declarations(const XsSyntaxNode *parent,
+                                        const XsMacroDeclarationExpansionSet *declarations,
+                                        XsDiagnostics *diagnostics,
+                                        XsMacroExpandedDeclarationSet *expanded)
+{
+  if (parent == nullptr || diagnostics == nullptr || expanded == nullptr)
+    return false;
   *expanded = (XsMacroExpandedDeclarationSet){0};
-  for (size_t i = 0; i < tree->root->child_count; ++i) {
-    const XsSyntaxNode *child = tree->root->children[i];
+  for (size_t i = 0; i < parent->child_count; ++i) {
+    const XsSyntaxNode *child = parent->children[i];
     bool success = child->kind == XS_SYNTAX_DECL_MACRO_CALL ? add_expanded_macro_call(expanded, declarations, child)
                                                             : add_original_declaration(expanded, child);
     if (!success) {

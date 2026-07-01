@@ -10,4 +10,10 @@ bool xs_hir_resolve_types_expanded(const XsSyntaxTree *tree, const XsMacroStatem
                                    const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
                                    XsDiagnostics *diagnostics);
 
+bool xs_hir_resolve_types_with_macros(const XsSyntaxTree *tree,
+                                      const XsMacroDeclarationExpansionSet *macro_declarations,
+                                      const XsMacroStatementExpansionSet *macro_statements,
+                                      const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
+                                      XsDiagnostics *diagnostics);
+
 #endif

@@ -286,6 +286,40 @@ static void test_multiple_matching_statement_rules_type_errors(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_generated_class_member_type_errors(void)
+{
+  const char *text = "module App;\n"
+                     "class User {\n"
+                     "  macroRules! make { (): { incomplete fn Broken(value: Missing); }; }\n"
+                     "  make!();\n"
+                     "}\n";
+  XsSource source = {.path = "MacroGeneratedMemberTypeError.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroStatementExpansionSet statements;
+  XsMacroDeclarationExpansionSet declarations;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 90, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(declarations.count == 1);
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_resolve_types_with_macros(&tree, &declarations, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_declaration_macro_symbols();
@@ -297,5 +331,6 @@ int main(void)
   test_multiple_matching_declaration_rules();
   test_multiple_matching_statement_rules_name_errors();
   test_multiple_matching_statement_rules_type_errors();
+  test_generated_class_member_type_errors();
   return failures == 0 ? 0 : 1;
 }

@@ -62,8 +62,43 @@ static void test_top_level_declaration_view_expands_macro_calls(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_child_declaration_view_expands_member_macro_calls(void)
+{
+  const char *text = "module App;\n"
+                     "class User {\n"
+                     "  macroRules! make { (): { incomplete fn Generated(); }; }\n"
+                     "  make!();\n"
+                     "}\n";
+  XsSource source = {.path = "ExpandedMemberView.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroDeclarationExpansionSet declarations;
+  XsMacroExpandedDeclarationSet expanded;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 92, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(declarations.count == 1);
+  const XsSyntaxNode *class_node = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_CLASS);
+  CHECK(class_node != nullptr);
+  CHECK(xs_macro_expand_child_declarations(class_node, &declarations, &diagnostics, &expanded));
+  const XsSyntaxNode *generated = nullptr;
+  for (size_t i = 0; i < expanded.count; ++i) {
+    if (expanded.items[i].from_macro_expansion && expanded.items[i].declaration->kind == XS_SYNTAX_DECL_FUNCTION)
+      generated = expanded.items[i].declaration;
+  }
+  CHECK(generated != nullptr);
+  const XsSyntaxNode *name = first_identifier(generated);
+  CHECK(name != nullptr && text_is(name->text, "Generated"));
+  xs_macro_expanded_declaration_set_free(&expanded);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_top_level_declaration_view_expands_macro_calls();
+  test_child_declaration_view_expands_member_macro_calls();
   return failures == 0 ? 0 : 1;
 }

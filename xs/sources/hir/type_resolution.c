@@ -371,9 +371,30 @@ static bool declaration_opens_generic_scope(XsSyntaxKind kind)
          kind == XS_SYNTAX_DECL_ENUM || kind == XS_SYNTAX_DECL_DATA;
 }
 
+static bool declaration_has_child_macro_call(const XsSyntaxNode *node)
+{
+  if (node == nullptr)
+    return false;
+  for (size_t i = 0; i < node->child_count; ++i) {
+    if (node->children[i]->kind == XS_SYNTAX_DECL_MACRO_CALL)
+      return true;
+  }
+  return false;
+}
+
+static bool declaration_uses_expanded_member_view(const XsSyntaxNode *node,
+                                                  const XsMacroDeclarationExpansionSet *macro_declarations)
+{
+  if (macro_declarations == nullptr || node == nullptr)
+    return false;
+  return (node->kind == XS_SYNTAX_DECL_CLASS || node->kind == XS_SYNTAX_DECL_INTERFACE) &&
+         declaration_has_child_macro_call(node);
+}
+
 static bool resolve_declaration_types(const XsSyntaxNode *node, const char *namespace_name, uint64_t current_file_id,
                                       const GenericScope *generics, const XsHirSymbolTable *symbols,
                                       const XsHirImportScope *imports, XsDiagnostics *diagnostics,
+                                      const XsMacroDeclarationExpansionSet *macro_declarations,
                                       const XsMacroStatementExpansionSet *macro_statements)
 {
   if (node == nullptr)
@@ -385,7 +406,8 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
       continue;
     matched_macro = true;
     macro_success = resolve_declaration_types(macro_statements->items[i].statement, namespace_name, current_file_id,
-                                              generics, symbols, imports, diagnostics, macro_statements) &&
+                                              generics, symbols, imports, diagnostics, macro_declarations,
+                                              macro_statements) &&
                     macro_success;
   }
   if (matched_macro)
@@ -406,9 +428,20 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
       node->kind == XS_SYNTAX_TYPE_MUTABLE_REFERENCE || node->kind == XS_SYNTAX_TYPE_TUPLE ||
       node->kind == XS_SYNTAX_TYPE_FUNCTION)
     return resolve_type_node(node, namespace_name, current_file_id, active, symbols, imports, diagnostics);
+  if (declaration_uses_expanded_member_view(node, macro_declarations)) {
+    XsMacroExpandedDeclarationSet expanded = {0};
+    if (!xs_macro_expand_child_declarations(node, macro_declarations, diagnostics, &expanded))
+      return false;
+    for (size_t i = 0; i < expanded.count; ++i)
+      success = resolve_declaration_types(expanded.items[i].declaration, namespace_name, current_file_id, active,
+                                          symbols, imports, diagnostics, macro_declarations, macro_statements) &&
+                success;
+    xs_macro_expanded_declaration_set_free(&expanded);
+    return success;
+  }
   for (size_t i = 0; i < node->child_count; ++i)
     success = resolve_declaration_types(node->children[i], namespace_name, current_file_id, active, symbols, imports,
-                                        diagnostics, macro_statements) &&
+                                        diagnostics, macro_declarations, macro_statements) &&
               success;
   return success;
 }
@@ -423,6 +456,15 @@ bool xs_hir_resolve_types_expanded(const XsSyntaxTree *tree, const XsMacroStatem
                                    const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
                                    XsDiagnostics *diagnostics)
 {
+  return xs_hir_resolve_types_with_macros(tree, nullptr, macro_statements, symbols, imports, diagnostics);
+}
+
+bool xs_hir_resolve_types_with_macros(const XsSyntaxTree *tree,
+                                      const XsMacroDeclarationExpansionSet *macro_declarations,
+                                      const XsMacroStatementExpansionSet *macro_statements,
+                                      const XsHirSymbolTable *symbols, const XsHirImportScope *imports,
+                                      XsDiagnostics *diagnostics)
+{
   if (tree == nullptr || tree->root == nullptr || symbols == nullptr || imports == nullptr || diagnostics == nullptr)
     return false;
   bool success = true;
@@ -431,7 +473,7 @@ bool xs_hir_resolve_types_expanded(const XsSyntaxTree *tree, const XsMacroStatem
     if (symbol->span.file_id != tree->file_id)
       continue;
     success = resolve_declaration_types(symbol->syntax, symbol->namespace_name, tree->file_id, nullptr, symbols, imports,
-                                        diagnostics, macro_statements) &&
+                                        diagnostics, macro_declarations, macro_statements) &&
               success;
   }
   return success && !xs_diagnostics_has_error(diagnostics);
