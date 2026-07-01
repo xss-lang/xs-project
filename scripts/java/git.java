@@ -1,10 +1,18 @@
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 class XsGit
 {
   static final int USAGE_ERROR = 2;
+
+  static final String REMOTE = "origin";
+  static final String BRANCH = "main";
+
   static final String[] GENERATED_PATHS = {
       "build/",
       ".agents/",
@@ -52,6 +60,22 @@ class XsGit
         .waitFor();
   }
 
+  static int runWithInput(byte[] input, String... command) throws IOException, InterruptedException
+  {
+    System.err.println("+ " + String.join(" ", command));
+
+    Process process = new ProcessBuilder(command)
+        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+        .redirectError(ProcessBuilder.Redirect.INHERIT)
+        .start();
+
+    try (var output = process.getOutputStream()) {
+      output.write(input);
+    }
+
+    return process.waitFor();
+  }
+
   static String capture(String... command) throws IOException, InterruptedException
   {
     Process process = new ProcessBuilder(command)
@@ -73,6 +97,42 @@ class XsGit
     return output.toString(StandardCharsets.UTF_8);
   }
 
+  static List<String> captureNullSeparated(String... command) throws IOException, InterruptedException
+  {
+    String raw = capture(command);
+    List<String> result = new ArrayList<>();
+
+    int start = 0;
+
+    for (int i = 0; i < raw.length(); ++i) {
+      if (raw.charAt(i) == '\0') {
+        if (i > start) {
+          result.add(raw.substring(start, i));
+        }
+
+        start = i + 1;
+      }
+    }
+
+    if (start < raw.length()) {
+      result.add(raw.substring(start));
+    }
+
+    return result;
+  }
+
+  static byte[] toNullSeparatedBytes(Set<String> values)
+  {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+    for (String value : values) {
+      output.writeBytes(value.getBytes(StandardCharsets.UTF_8));
+      output.write(0);
+    }
+
+    return output.toByteArray();
+  }
+
   static void exit(int code, String message)
   {
     System.err.println(message);
@@ -88,12 +148,19 @@ class XsGit
           git help
 
         commands:
-          update   Run safe git add, then commit with the given message.
+          update   Run safe git add, commit with the given message, then force-with-lease push to origin/main.
           uncom    Show uncommitted changes.
           help     Show this help.
 
         update excludes:
+          generated paths from GENERATED_PATHS
+          tracked files ignored by .gitignore / standard Git ignore rules
+
+        generated paths:
           build/, target/, node_modules/, dist/, out/, Cargo.lock
+
+        update push:
+          git push -u origin main --force-with-lease
 
         examples:
           git update "Fix parser"
@@ -131,6 +198,65 @@ class XsGit
     }
   }
 
+  static boolean isGeneratedDirectory(String path, String directory)
+  {
+    return path.equals(directory)
+        || path.startsWith(directory + "/")
+        || path.contains("/" + directory + "/");
+  }
+
+  static boolean isCoveredByGeneratedPaths(String path)
+  {
+    return isGeneratedDirectory(path, "build")
+        || isGeneratedDirectory(path, "target")
+        || isGeneratedDirectory(path, "node_modules")
+        || isGeneratedDirectory(path, "dist")
+        || isGeneratedDirectory(path, "out")
+        || path.equals(".agents")
+        || path.startsWith(".agents/")
+        || path.equals(".codex")
+        || path.startsWith(".codex/")
+        || path.equals("Cargo.lock")
+        || path.endsWith("/Cargo.lock");
+  }
+
+  static List<String> ignoredTrackedFiles() throws IOException, InterruptedException
+  {
+    return captureNullSeparated(
+        "git",
+        "ls-files",
+        "-ci",
+        "-z",
+        "--exclude-standard");
+  }
+
+  static void removeExcludedPathsFromIndex() throws IOException, InterruptedException
+  {
+    LinkedHashSet<String> pathspecs = new LinkedHashSet<>();
+
+    for (String path : GENERATED_PATHS) {
+      pathspecs.add(path);
+    }
+
+    for (String path : ignoredTrackedFiles()) {
+      if (!isCoveredByGeneratedPaths(path)) {
+        pathspecs.add(path);
+      }
+    }
+
+    int resetCode = runWithInput(
+        toNullSeparatedBytes(pathspecs),
+        "git",
+        "reset",
+        "--quiet",
+        "--pathspec-from-file=-",
+        "--pathspec-file-nul");
+
+    if (resetCode != 0) {
+      exit(resetCode, "error: excluded paths could not be removed from the index");
+    }
+  }
+
   static void update(String message) throws IOException, InterruptedException
   {
     int addCode = run("git", "add", "--all");
@@ -139,37 +265,26 @@ class XsGit
       exit(addCode, "error: git add --all failed");
     }
 
-    String[] resetCommand = new String[4 + GENERATED_PATHS.length];
-    resetCommand[0] = "git";
-    resetCommand[1] = "reset";
-    resetCommand[2] = "--quiet";
-    resetCommand[3] = "--";
-
-    for (int i = 0; i < GENERATED_PATHS.length; ++i) {
-      resetCommand[i + 4] = GENERATED_PATHS[i];
-    }
-
-    int resetCode = run(resetCommand);
-
-    if (resetCode != 0) {
-      exit(resetCode, "error: generated artifact paths could not be removed from the index");
-    }
+    removeExcludedPathsFromIndex();
 
     int diffCode = runQuiet("git", "diff", "--cached", "--quiet");
 
     if (diffCode == 0) {
       System.err.println("nothing to commit");
-      return;
-    }
+    } else if (diffCode == 1) {
+      int commitCode = run("git", "commit", "--message", message);
 
-    if (diffCode != 1) {
+      if (commitCode != 0) {
+        exit(commitCode, "error: git commit failed");
+      }
+    } else {
       exit(diffCode, "error: git diff --cached --quiet failed");
     }
 
-    int commitCode = run("git", "commit", "--message", message);
+    int pushCode = run("git", "push", "-u", REMOTE, BRANCH, "--force-with-lease");
 
-    if (commitCode != 0) {
-      exit(commitCode, "error: git commit failed");
+    if (pushCode != 0) {
+      exit(pushCode, "error: git push --force-with-lease failed");
     }
   }
 
