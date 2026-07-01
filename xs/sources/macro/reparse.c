@@ -282,6 +282,16 @@ const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpa
   return nullptr;
 }
 
+bool xs_macro_statement_expansion_matches(const XsMacroStatementExpansion *expansion, const XsSyntaxNode *statement)
+{
+  if (expansion == nullptr || statement == nullptr || statement->kind != XS_SYNTAX_STMT_MACRO_CALL)
+    return false;
+  const XsSyntaxNode *call = xs_syntax_find_first(statement, XS_SYNTAX_EXPR_MACRO_CALL);
+  if (call == nullptr)
+    return false;
+  return expansion->call_span.start == call->span.start_offset && expansion->call_span.end == call->span.end_offset;
+}
+
 const XsMacroDeclarationExpansion *xs_macro_declaration_expansion_find(const XsMacroDeclarationExpansionSet *set,
                                                                        const XsSyntaxNode *declaration)
 {

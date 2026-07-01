@@ -95,6 +95,8 @@ bool xs_macro_expand_declarations(const XsSyntaxTree *tree, XsDiagnostics *diagn
                                   XsMacroDeclarationExpansionSet *set);
 const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpansionSet *set,
                                                       const XsSyntaxNode *statement);
+bool xs_macro_statement_expansion_matches(const XsMacroStatementExpansion *expansion,
+                                          const XsSyntaxNode *statement);
 const XsMacroDeclarationExpansion *xs_macro_declaration_expansion_find(const XsMacroDeclarationExpansionSet *set,
                                                                        const XsSyntaxNode *declaration);
 

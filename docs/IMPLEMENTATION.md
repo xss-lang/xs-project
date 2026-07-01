@@ -230,9 +230,10 @@ uyumluluğu veya ABI/layout kararı üretmez.
   replacement hâlâ sonraki adımdır.
 - `xs_macro_expand_statements`, desteklenen token expansion'ları statement olarak yeniden ayrıştırır ve çağrı span'ı ile
   replacement statement düğümünü `XsMacroStatementExpansionSet` içinde eşler. Set, synthetic reparse ağaçlarının ownership'ini
-  tuttuğu için replacement düğümleri set serbest bırakılana kadar geçerlidir. Bu API yalnız statement context'teki macro
-  call'ları statement replacement olarak üretir; başka expression içinde bulunan nested macro call'lar token expansion
-  düzeyinde kalır.
+  tuttuğu için replacement düğümleri set serbest bırakılana kadar geçerlidir. Aynı statement macro call için birden fazla
+  rule eşleşirse set aynı call span’iyle declaration order içinde birden fazla replacement statement kaydı taşır. Bu API
+  yalnız statement context'teki macro call'ları statement replacement olarak üretir; başka expression içinde bulunan nested
+  macro call'lar token expansion düzeyinde kalır.
 - `xs_macro_statement_expansion_find`, bir `XS_SYNTAX_STMT_MACRO_CALL` düğümü için synthetic replacement statement düğümünü
   macro katmanından döndürür. HIR tüketicileri replacement lookup için kendi span eşleme kodunu tutmaz.
 - `xs_macro_expand_declarations`, declaration context’teki `XS_SYNTAX_DECL_MACRO_CALL` düğümlerinin desteklenen token
@@ -243,7 +244,8 @@ uyumluluğu veya ABI/layout kararı üretmez.
   kayıtlarını declaration order ile toplar.
 - `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
   toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
-  kullanımı ile HIR tip çözümleme traversal'larına verir.
+  kullanımı ile HIR tip çözümleme traversal'larına verir. HIR ad ve tip çözümleme, aynı statement macro call’a ait tüm
+  replacement statement kayıtlarını declaration order ile dolaşır.
 
 Declaration/item context macro call AST girişi, declaration reparse set üretimi ve HIR sembol toplama entegrasyonu vardır.
 Üretilmiş declaration’ların parent-child AST replacement olarak ana ağaca yazılması ve class member expansion’ın HIR member

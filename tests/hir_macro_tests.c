@@ -215,6 +215,77 @@ static void test_multiple_matching_declaration_rules(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_multiple_matching_statement_rules_name_errors(void)
+{
+  const char *text = "module App;\n"
+                     "incomplete fn Known();\n"
+                     "macroRules! both {\n"
+                     "  (): { Known(); };\n"
+                     "  (): { Missing(); };\n"
+                     "}\n"
+                     "fn Main() { both!(); }\n";
+  XsSource source = {.path = "MacroMultipleStatementNames.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroStatementExpansionSet statements;
+  XsMacroDeclarationExpansionSet declarations;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 88, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 2);
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_multiple_matching_statement_rules_type_errors(void)
+{
+  const char *text = "module App;\n"
+                     "macroRules! both {\n"
+                     "  (): { value: int = nil; };\n"
+                     "  (): { broken: Missing = nil; };\n"
+                     "}\n"
+                     "fn Main() { both!(); }\n";
+  XsSource source = {.path = "MacroMultipleStatementTypes.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroStatementExpansionSet statements;
+  XsMacroDeclarationExpansionSet declarations;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_syntax_parse(&source, 89, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 2);
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_declaration_macro_symbols();
@@ -224,5 +295,7 @@ int main(void)
   test_item_fragment_declaration_symbol();
   test_item_fragment_empty_call_errors();
   test_multiple_matching_declaration_rules();
+  test_multiple_matching_statement_rules_name_errors();
+  test_multiple_matching_statement_rules_type_errors();
   return failures == 0 ? 0 : 1;
 }

@@ -14,7 +14,7 @@ static bool text_matches_cstr(XsText text, const char *name)
 
 static bool local_name_declared(const XsSyntaxNode *node, const char *name)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return false;
   if ((node->kind == XS_SYNTAX_PARAMETER || node->kind == XS_SYNTAX_DECL_VARIABLE) && node->child_count != 0 &&
       node->children[0]->kind == XS_SYNTAX_IDENTIFIER && text_matches_cstr(node->children[0]->text, name))
@@ -29,9 +29,9 @@ static bool local_name_declared(const XsSyntaxNode *node, const char *name)
 static char *join_member_path(char *base, XsText member)
 {
   char *name = xs_hir_copy_text(member);
-  if (name == NULL) {
+  if (name == nullptr) {
     free(base);
-    return NULL;
+    return nullptr;
   }
   char *result = xs_hir_join_qualified(base, name);
   free(base);
@@ -41,29 +41,29 @@ static char *join_member_path(char *base, XsText member)
 
 static char *expression_path(const XsSyntaxNode *node)
 {
-  if (node == NULL)
-    return NULL;
+  if (node == nullptr)
+    return nullptr;
   if (node->kind == XS_SYNTAX_EXPR_IDENTIFIER) {
     const XsSyntaxNode *identifier = xs_hir_first_child_kind(node, XS_SYNTAX_IDENTIFIER);
-    return identifier == NULL ? NULL : xs_hir_copy_text(identifier->text);
+    return identifier == nullptr ? nullptr : xs_hir_copy_text(identifier->text);
   }
   if (node->kind == XS_SYNTAX_EXPR_MEMBER_ACCESS || node->kind == XS_SYNTAX_EXPR_METHOD_CALL) {
     if (node->child_count < 2 || node->children[1]->kind != XS_SYNTAX_IDENTIFIER)
-      return NULL;
+      return nullptr;
     char *base = expression_path(node->children[0]);
-    if (base == NULL)
-      return NULL;
+    if (base == nullptr)
+      return nullptr;
     return join_member_path(base, node->children[1]->text);
   }
-  return NULL;
+  return nullptr;
 }
 
 static bool first_segment_is_local(const XsSyntaxNode *function, const char *path)
 {
   const char *dot = strchr(path, '.');
-  size_t length = dot == NULL ? strlen(path) : (size_t)(dot - path);
+  size_t length = dot == nullptr ? strlen(path) : (size_t)(dot - path);
   char *first = malloc(length + 1);
-  if (first == NULL)
+  if (first == nullptr)
     return false;
   memcpy(first, path, length);
   first[length] = '\0';
@@ -74,7 +74,7 @@ static bool first_segment_is_local(const XsSyntaxNode *function, const char *pat
 
 static bool symbol_visible_from(const XsHirSymbol *symbol, const char *current_namespace, uint64_t current_file_id)
 {
-  if (symbol == NULL)
+  if (symbol == nullptr)
     return false;
   if (symbol->visibility == XS_SYNTAX_VISIBILITY_PUBLIC)
     return true;
@@ -85,13 +85,13 @@ static const XsHirSymbol *resolve_name_use(const char *path, const char *current
                                            const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports)
 {
   const XsHirImportBinding *binding = xs_hir_import_scope_find(imports, path);
-  if (binding != NULL)
+  if (binding != nullptr)
     return binding->symbol;
-  if (strchr(path, '.') != NULL)
+  if (strchr(path, '.') != nullptr)
     return xs_hir_symbol_table_find(project_symbols, path);
   char *qualified = xs_hir_join_qualified(current_namespace, path);
-  if (qualified == NULL)
-    return NULL;
+  if (qualified == nullptr)
+    return nullptr;
   const XsHirSymbol *symbol = xs_hir_symbol_table_find(project_symbols, qualified);
   free(qualified);
   return symbol;
@@ -102,14 +102,14 @@ static bool validate_call_target(const XsSyntaxNode *target, const XsSyntaxNode 
                                  const XsHirImportScope *imports, XsDiagnostics *diagnostics)
 {
   char *path = expression_path(target);
-  if (path == NULL)
+  if (path == nullptr)
     return true;
   if (first_segment_is_local(function, path)) {
     free(path);
     return true;
   }
   const XsHirSymbol *symbol = resolve_name_use(path, namespace_name, project_symbols, imports);
-  if (symbol == NULL) {
+  if (symbol == nullptr) {
     char message[512];
     snprintf(message, sizeof(message), "name '%s' does not resolve in HIR symbol or import scope", path);
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(target), message);
@@ -133,12 +133,21 @@ static bool validate_name_uses_in_node(const XsSyntaxNode *node, const XsSyntaxN
                                        const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
                                        XsDiagnostics *diagnostics)
 {
-  if (node == NULL)
+  if (node == nullptr)
     return true;
-  const XsSyntaxNode *replacement = xs_macro_statement_expansion_find(macro_statements, node);
-  if (replacement != NULL)
-    return validate_name_uses_in_node(replacement, function, namespace_name, current_file_id, macro_statements,
-                                      project_symbols, imports, diagnostics);
+  bool matched_macro = false;
+  bool macro_success = true;
+  for (size_t i = 0; macro_statements != nullptr && i < macro_statements->count; ++i) {
+    if (!xs_macro_statement_expansion_matches(&macro_statements->items[i], node))
+      continue;
+    matched_macro = true;
+    macro_success = validate_name_uses_in_node(macro_statements->items[i].statement, function, namespace_name,
+                                               current_file_id, macro_statements, project_symbols, imports,
+                                               diagnostics) &&
+                    macro_success;
+  }
+  if (matched_macro)
+    return macro_success;
   bool success = true;
   if (node->kind == XS_SYNTAX_EXPR_CALL && node->child_count != 0)
     success = validate_call_target(node->children[0], function, namespace_name, current_file_id, project_symbols,
@@ -157,7 +166,7 @@ bool xs_hir_validate_name_uses_expanded(const XsSyntaxTree *tree, const XsMacroS
                                         const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
                                         XsDiagnostics *diagnostics)
 {
-  if (tree == NULL || tree->root == NULL || project_symbols == NULL || imports == NULL || diagnostics == NULL)
+  if (tree == nullptr || tree->root == nullptr || project_symbols == nullptr || imports == nullptr || diagnostics == nullptr)
     return false;
   bool success = true;
   for (size_t i = 0; i < project_symbols->count; ++i) {
@@ -174,5 +183,5 @@ bool xs_hir_validate_name_uses_expanded(const XsSyntaxTree *tree, const XsMacroS
 bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols,
                                const XsHirImportScope *imports, XsDiagnostics *diagnostics)
 {
-  return xs_hir_validate_name_uses_expanded(tree, NULL, project_symbols, imports, diagnostics);
+  return xs_hir_validate_name_uses_expanded(tree, nullptr, project_symbols, imports, diagnostics);
 }
