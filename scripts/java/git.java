@@ -6,7 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-class XsGit
+class Git
 {
   static final int USAGE_ERROR = 2;
 
