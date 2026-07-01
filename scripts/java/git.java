@@ -29,6 +29,14 @@ class Git
       ":(glob)**/Cargo.lock"
   };
 
+  static final String[] CLEAN_WORKTREE_DIRECTORIES = {
+      "build",
+      "target",
+      "node_modules",
+      "dist",
+      "out"
+  };
+
   enum Command
   {
     UPDATE,
@@ -155,6 +163,9 @@ class Git
           generated paths from GENERATED_PATHS
           tracked files ignored by .gitignore / standard Git ignore rules
 
+        update also restores tracked generated build/output dirt after staging:
+          build/, target/, node_modules/, dist/, out/, Cargo.lock
+
         generated paths:
           build/, .agents/, .codex, target/, node_modules/, dist/, out/, Cargo.lock
 
@@ -230,6 +241,17 @@ class Git
         || path.endsWith("/Cargo.lock");
   }
 
+  static boolean isCleanableGeneratedPath(String path)
+  {
+    for (String directory : CLEAN_WORKTREE_DIRECTORIES) {
+      if (isGeneratedDirectory(path, directory)) {
+        return true;
+      }
+    }
+
+    return path.equals("Cargo.lock") || path.endsWith("/Cargo.lock");
+  }
+
   static List<String> ignoredTrackedFiles() throws IOException, InterruptedException
   {
     return captureNullSeparated(
@@ -267,6 +289,33 @@ class Git
     }
   }
 
+  static void restoreCleanableGeneratedWorktreeChanges() throws IOException, InterruptedException
+  {
+    LinkedHashSet<String> paths = new LinkedHashSet<>();
+
+    for (String path : captureNullSeparated("git", "ls-files", "-m", "-d", "-z")) {
+      if (isCleanableGeneratedPath(path)) {
+        paths.add(path);
+      }
+    }
+
+    if (paths.isEmpty()) {
+      return;
+    }
+
+    int restoreCode = runWithInput(
+        toNullSeparatedBytes(paths),
+        "git",
+        "restore",
+        "--quiet",
+        "--pathspec-from-file=-",
+        "--pathspec-file-nul");
+
+    if (restoreCode != 0) {
+      exit(restoreCode, "error: generated worktree dirt could not be restored");
+    }
+  }
+
   static void update(String message) throws IOException, InterruptedException
   {
     int addCode = run("git", "add", "--all");
@@ -276,6 +325,7 @@ class Git
     }
 
     removeExcludedPathsFromIndex();
+    restoreCleanableGeneratedWorktreeChanges();
 
     int diffCode = runQuiet("git", "diff", "--cached", "--quiet");
 
