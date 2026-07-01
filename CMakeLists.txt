@@ -45,6 +45,14 @@ set(CMAKE_C_COMPILER_RANLIB "${XS_LLVM_RANLIB_EXECUTABLE}" CACHE FILEPATH "Clang
 
 project(xs_project VERSION 0.1.0 LANGUAGES C)
 
+file(RELATIVE_PATH XS_SOURCE_FROM_BINARY "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+cmake_path(NORMAL_PATH XS_SOURCE_FROM_BINARY)
+if(XS_SOURCE_FROM_BINARY STREQUAL "")
+  set(XS_SOURCE_FROM_BINARY ".")
+endif()
+set(XS_COMPILER_CHECK_HEADER "${XS_SOURCE_FROM_BINARY}/include/xs/compiler_check.h")
+set(XS_BACKEND_TEST_OBJECT "xs_backend_test.o")
+
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   message(FATAL_ERROR "The X# compiler does not support the GNU C compiler; use the Clang preset.")
 endif()
@@ -82,7 +90,7 @@ if(XS_BUILD_PROJECT_XS OR XS_BUILD_PROJECT_XSPROJ)
   )
   target_include_directories(xsproj PUBLIC include xsproj/include)
   target_compile_options(xsproj PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-  target_compile_options(xsproj PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
+  target_compile_options(xsproj PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
 endif()
 
 if(XS_BUILD_PROJECT_XS)
@@ -133,7 +141,7 @@ if(XS_BUILD_PROJECT_XS)
   target_include_directories(xs_compiler PUBLIC include xs/include xsproj/include)
   target_link_libraries(xs_compiler PUBLIC xsproj)
   target_compile_options(xs_compiler PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-  target_compile_options(xs_compiler PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
+  target_compile_options(xs_compiler PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
 
   add_executable(xs xs/sources/main.c)
   target_link_libraries(xs PRIVATE xs_compiler)
@@ -145,7 +153,7 @@ if(XS_BUILD_PROJECT_XS)
   target_include_directories(xs_backend_llvm PUBLIC include xs/include PRIVATE ${LLVM_INCLUDE_DIRS})
   target_link_libraries(xs_backend_llvm PRIVATE ${XS_LLVM_LIBRARY})
   target_compile_options(xs_backend_llvm PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-  target_compile_options(xs_backend_llvm PUBLIC -include "${CMAKE_SOURCE_DIR}/include/xs/compiler_check.h")
+  target_compile_options(xs_backend_llvm PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
 endif()
 
 include(CTest)
@@ -168,29 +176,29 @@ if(BUILD_TESTING)
     add_test(NAME parser COMMAND xs_parser_tests)
     set_tests_properties(parser PROPERTIES TIMEOUT 5)
 
-    add_test(NAME example_project COMMAND xs check -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
+    add_test(NAME example_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
     set_tests_properties(example_project PROPERTIES TIMEOUT 5)
-    add_test(NAME macro_project COMMAND xs check -proj ${CMAKE_SOURCE_DIR}/tests/fixtures/macro_project/MacroApp.xsproj)
+    add_test(NAME macro_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/macro_project/MacroApp.xsproj)
     set_tests_properties(macro_project PROPERTIES TIMEOUT 5)
 
-    add_test(NAME build_output_hir COMMAND xs build --output hir -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
+    add_test(NAME build_output_hir COMMAND xs build --output hir -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
     set_tests_properties(build_output_hir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
-    add_test(NAME build_output_mir COMMAND xs build --output mir -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
+    add_test(NAME build_output_mir COMMAND xs build --output mir -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
     set_tests_properties(build_output_mir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
-    add_test(NAME build_output_xlil COMMAND xs build --output xlil -proj ${CMAKE_SOURCE_DIR}/XS/example/MyApp.xsproj)
+    add_test(NAME build_output_xlil COMMAND xs build --output xlil -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
     set_tests_properties(build_output_xlil PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
     add_executable(xs_backend_tests tests/backend_tests.c)
     target_link_libraries(xs_backend_tests PRIVATE xs_backend_llvm)
-    add_test(NAME backend COMMAND xs_backend_tests ${CMAKE_CURRENT_BINARY_DIR}/xs_backend_test.o ${XS_LLD_EXECUTABLE})
+    add_test(NAME backend COMMAND xs_backend_tests ${XS_BACKEND_TEST_OBJECT} ${XS_LLD_EXECUTABLE})
     set_tests_properties(backend PROPERTIES TIMEOUT 10)
 
     add_executable(xs_module_tests tests/module_tests.c)
     target_link_libraries(xs_module_tests PRIVATE xs_compiler)
-    add_test(NAME modules COMMAND xs_module_tests ${CMAKE_SOURCE_DIR}/tests/fixtures/module_project
-                                        ${CMAKE_SOURCE_DIR}/tests/fixtures/duplicate_modules)
+    add_test(NAME modules COMMAND xs_module_tests ${XS_SOURCE_FROM_BINARY}/tests/fixtures/module_project
+                                        ${XS_SOURCE_FROM_BINARY}/tests/fixtures/duplicate_modules)
     set_tests_properties(modules PROPERTIES TIMEOUT 5)
 
     add_executable(xs_hir_tests tests/hir_tests.c)
