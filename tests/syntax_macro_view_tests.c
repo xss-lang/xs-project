@@ -130,10 +130,54 @@ static void test_child_declaration_view_expands_field_like_macro_calls(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_child_statement_view_expands_macro_calls(void)
+{
+  const char *text = "module App;\n"
+                     "macroRules! emit { (): { Known(); }; }\n"
+                     "fn Known() {}\n"
+                     "fn Main() {\n"
+                     "  Before();\n"
+                     "  emit!();\n"
+                     "  After();\n"
+                     "}\n";
+  XsSource source = {.path = "ExpandedStatementView.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroStatementExpansionSet statements;
+  XsMacroExpandedStatementSet expanded;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 94, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 1);
+  const XsSyntaxNode *function = nullptr;
+  for (size_t i = 0; tree.root != nullptr && i < tree.root->child_count; ++i) {
+    const XsSyntaxNode *child = tree.root->children[i];
+    const XsSyntaxNode *name = child->kind == XS_SYNTAX_DECL_FUNCTION ? first_identifier(child) : nullptr;
+    if (name != nullptr && text_is(name->text, "Main"))
+      function = child;
+  }
+  const XsSyntaxNode *block = xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK);
+  CHECK(block != nullptr);
+  CHECK(xs_macro_expand_child_statements(block, &statements, &diagnostics, &expanded));
+  CHECK(expanded.count == 3);
+  CHECK(expanded.count < 2 || expanded.items[1].from_macro_expansion);
+  CHECK(expanded.count < 1 || expanded.items[0].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
+  CHECK(expanded.count < 2 || expanded.items[1].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
+  CHECK(expanded.count < 3 || expanded.items[2].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
+  const XsSyntaxNode *replacement = expanded.count < 2 ? nullptr : first_identifier(expanded.items[1].statement);
+  CHECK(replacement != nullptr && text_is(replacement->text, "Known"));
+  xs_macro_expanded_statement_set_free(&expanded);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_top_level_declaration_view_expands_macro_calls();
   test_child_declaration_view_expands_member_macro_calls();
   test_child_declaration_view_expands_field_like_macro_calls();
+  test_child_statement_view_expands_macro_calls();
   return failures == 0 ? 0 : 1;
 }

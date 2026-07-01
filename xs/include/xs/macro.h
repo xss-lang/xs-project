@@ -86,11 +86,26 @@ typedef struct
 
 typedef struct
 {
+  const XsSyntaxNode *statement;
+  XsSpan call_span;
+  bool from_macro_expansion;
+} XsMacroExpandedStatement;
+
+typedef struct
+{
   XsMacroExpandedDeclaration *items;
   size_t count;
   size_t capacity;
   bool allocation_failed;
 } XsMacroExpandedDeclarationSet;
+
+typedef struct
+{
+  XsMacroExpandedStatement *items;
+  size_t count;
+  size_t capacity;
+  bool allocation_failed;
+} XsMacroExpandedStatementSet;
 
 bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics);
 bool xs_macro_prepare_expansion(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsMacroExpansionReport *report);
@@ -122,6 +137,11 @@ bool xs_macro_expand_child_declarations(const XsSyntaxNode *parent,
                                         const XsMacroDeclarationExpansionSet *declarations,
                                         XsDiagnostics *diagnostics,
                                         XsMacroExpandedDeclarationSet *expanded);
+bool xs_macro_expand_child_statements(const XsSyntaxNode *parent,
+                                      const XsMacroStatementExpansionSet *statements,
+                                      XsDiagnostics *diagnostics,
+                                      XsMacroExpandedStatementSet *expanded);
 void xs_macro_expanded_declaration_set_free(XsMacroExpandedDeclarationSet *set);
+void xs_macro_expanded_statement_set_free(XsMacroExpandedStatementSet *set);
 
 #endif
