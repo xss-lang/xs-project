@@ -49,6 +49,12 @@
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/expanded_view.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/expanded_view.c",
+  "file": "/home/hasan/Projeler/XS/xs/sources/macro/expanded_view.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/expanded_view.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
   "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_compiler.dir/xs/sources/macro/expansion.c.o -c /home/hasan/Projeler/XS/xs/sources/macro/expansion.c",
   "file": "/home/hasan/Projeler/XS/xs/sources/macro/expansion.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_compiler.dir/xs/sources/macro/expansion.c.o"
@@ -301,6 +307,12 @@
 },
 {
   "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_hir_macro_tests.dir/tests/hir_macro_tests.c.o -c /home/hasan/Projeler/XS/tests/hir_macro_tests.c",
+  "file": "/home/hasan/Projeler/XS/tests/hir_macro_tests.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_hir_macro_tests.dir/tests/hir_macro_tests.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
   "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o -c /home/hasan/Projeler/XS/tests/hir_type_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/hir_type_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_hir_type_tests.dir/tests/hir_type_tests.c.o"
@@ -334,5 +346,11 @@
   "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_macro_tests.c",
   "file": "/home/hasan/Projeler/XS/tests/syntax_macro_tests.c",
   "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_macro_tests.dir/tests/syntax_macro_tests.c.o"
+},
+{
+  "directory": "/home/hasan/Projeler/XS/build/clang-debug",
+  "command": "/usr/bin/clang -I/home/hasan/Projeler/XS/include -I/home/hasan/Projeler/XS/xs/include -I/home/hasan/Projeler/XS/xsproj/include -g -std=c23 -include /home/hasan/Projeler/XS/include/xs/compiler_check.h -o CMakeFiles/xs_syntax_macro_view_tests.dir/tests/syntax_macro_view_tests.c.o -c /home/hasan/Projeler/XS/tests/syntax_macro_view_tests.c",
+  "file": "/home/hasan/Projeler/XS/tests/syntax_macro_view_tests.c",
+  "output": "/home/hasan/Projeler/XS/build/clang-debug/CMakeFiles/xs_syntax_macro_view_tests.dir/tests/syntax_macro_view_tests.c.o"
 }
 ]
