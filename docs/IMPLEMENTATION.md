@@ -204,11 +204,14 @@ overload seçimi kararı vermez.
 - Generic constraint tipleri interface sembollerine çözümlenmelidir.
 - Generic parametreler birden fazla constraint taşıyabilir; constraint listesindeki `, Identifier :` yeni generic parametre
   başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.
+- `xs_hir_check_expression_types_with_macros`, explicit primitive type annotation taşıyan variable initializer'larda literal
+  uyumluluğunu denetler. Şimdilik integer, float, string, char ve bool literal türleri primitive hedef tiplerle eşleştirilir;
+  `nil`, `new`, identifier, call ve diğer expression biçimleri genel expression type inference tamamlanana kadar ertelenir.
 - `xs_hir_resolve_types_expanded`, statement macro replacement set verildiğinde doğrudan statement child listelerini
   `xs_macro_expand_child_statements` expanded view’i üzerinden dolaşır. Böylece macro expansion sonrası oluşan type
   kullanımları da HIR symbol/import scope içinde doğrulanır.
 
-Bu aşama henüz expression type inference, overload seçimi, constraint üyelik/uyumluluk denetimi, trait/interface
+Bu aşama henüz genel expression type inference, overload seçimi, constraint üyelik/uyumluluk denetimi, trait/interface
 uyumluluğu veya ABI/layout kararı üretmez.
 
 ### Makro doğrulama ve kapsam çözümleme

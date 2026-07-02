@@ -118,6 +118,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/mono/plan.c
     xs/sources/xlil/writer.c
     xs/sources/hir/dump.c
+    xs/sources/hir/expression_check.c
     xs/sources/hir/module_graph.c
     xs/sources/hir/module_model.c
     xs/sources/hir/module_registry.c

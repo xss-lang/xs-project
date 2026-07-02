@@ -1,6 +1,7 @@
 #include "xs/driver.h"
 
 #include "xs/diagnostic.h"
+#include "xs/hir/expression_check.h"
 #include "xs/hir/module_registry.h"
 #include "xs/hir/symbol_table.h"
 #include "xs/hir/type_resolution.h"
@@ -326,6 +327,9 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
         success = xs_hir_resolve_types_with_macros(&units[i].tree, &units[i].macro_declarations,
                                                    &units[i].macro_statements, &symbols, &units[i].imports,
                                                    &units[i].diagnostics) &&
+                  success;
+        success = xs_hir_check_expression_types_with_macros(&units[i].tree, &units[i].macro_declarations,
+                                                            &units[i].macro_statements, &units[i].diagnostics) &&
                   success;
       }
     }

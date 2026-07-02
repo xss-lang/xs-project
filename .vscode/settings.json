@@ -4,5 +4,6 @@
   "files.associations": {
     "CmakeLists.txt": "cmake",
     "CMakeCache.txt": "cmake"
-  }
+  },
+  "FSharp.suggestGitignore": false
 }
