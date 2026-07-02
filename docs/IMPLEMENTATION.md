@@ -207,6 +207,9 @@ overload seçimi kararı vermez.
 - `xs_hir_check_expression_types_with_macros`, explicit primitive type annotation taşıyan variable initializer'larda literal
   uyumluluğunu denetler. Şimdilik integer, float, string, char ve bool literal türleri primitive hedef tiplerle eşleştirilir;
   `nil`, `new`, identifier, call ve diğer expression biçimleri genel expression type inference tamamlanana kadar ertelenir.
+- Aynı HIR expression check aşaması local block/function scope içinde `val`, `const` ve `static` immutable declaration’lara
+  doğrudan identifier assignment yapılmasını diagnostic olarak bildirir. Field, index, dereference ve alias/borrow temelli
+  mutability kuralları sonraki borrow/type-check aşamalarına ertelenir.
 - `xs_hir_resolve_types_expanded`, statement macro replacement set verildiğinde doğrudan statement child listelerini
   `xs_macro_expand_child_statements` expanded view’i üzerinden dolaşır. Böylece macro expansion sonrası oluşan type
   kullanımları da HIR symbol/import scope içinde doğrulanır.
