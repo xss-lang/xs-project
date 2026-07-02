@@ -183,7 +183,7 @@ overload seçimi kararı vermez.
 ### HIR tip çözümleme başlangıcı
 
 - `xs check` akışı HIR import ve ad çözümlemeden sonra HIR tip çözümleme aşamasını çalıştırır.
-- `XS/Syntax/Types.txt` içindeki primitive tip adları tanınır.
+- `Spec/Types.txt` içindeki primitive tip adları tanınır.
 - `bool` HIR aşamasında 1 bit primitive olarak çözülür; LLVM backend bunu `i1` tipine indirir.
 - `byte` unsigned 8 bit, `sbyte` signed 8 bit olarak HIR düzeyinde ayrı primitive tiplerdir.
 - `char` 16 bit karakter tipidir.
