@@ -133,6 +133,68 @@ static void test_macro_generated_field_like_member_symbol(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_macro_generated_member_conflicts_with_field(void)
+{
+  const char *text = "module App;\n"
+                     "class User {\n"
+                     "  value: int;\n"
+                     "  macroRules! make { (): { value: str; }; }\n"
+                     "  make!();\n"
+                     "}\n";
+  XsSource source = {.path = "MacroFieldConflict.xs", .text = text, .length = strlen(text)};
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirMemberSymbolTable members;
+  XsMacroDeclarationExpansionSet declarations;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_member_symbol_table_init(&members);
+  CHECK(xs_syntax_parse(&source, 104, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  const XsHirSymbol *user = xs_hir_symbol_table_find(&symbols, "App.User");
+  CHECK(!xs_hir_collect_member_symbols(user, &declarations, &members, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_hir_member_symbol_table_free(&members);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_macro_generated_member_conflicts_with_method(void)
+{
+  const char *text = "module App;\n"
+                     "class User {\n"
+                     "  incomplete fn value();\n"
+                     "  macroRules! make { (): { value: int; }; }\n"
+                     "  make!();\n"
+                     "}\n";
+  XsSource source = {.path = "MacroMethodFieldConflict.xs", .text = text, .length = strlen(text)};
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirMemberSymbolTable members;
+  XsMacroDeclarationExpansionSet declarations;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_member_symbol_table_init(&members);
+  CHECK(xs_syntax_parse(&source, 105, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
+  const XsHirSymbol *user = xs_hir_symbol_table_find(&symbols, "App.User");
+  CHECK(!xs_hir_collect_member_symbols(user, &declarations, &members, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_hir_member_symbol_table_free(&members);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_explicit_local_method_call_resolution(void)
 {
   const char *text = "module App;\n"
@@ -208,6 +270,8 @@ int main(void)
   test_method_merge_uses_last_member_symbol();
   test_duplicate_field_member_errors();
   test_macro_generated_field_like_member_symbol();
+  test_macro_generated_member_conflicts_with_field();
+  test_macro_generated_member_conflicts_with_method();
   test_explicit_local_method_call_resolution();
   test_missing_explicit_local_method_call_errors();
   test_macro_generated_method_call_resolution();

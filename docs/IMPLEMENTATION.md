@@ -169,6 +169,9 @@ Bu katman HIR dizini altında bulunur.
 - Explicit named type taşıyan local değişken/parametre üzerindeki `value.Method()` çağrıları HIR member symbol table üzerinden
   varlık açısından doğrulanır. Receiver tipi şu aşamada yalnız doğrudan identifier receiver ve named type annotation ile
   çözümlenir.
+- HIR member symbol table, declaration macro expansion sonrası class/interface içinde üretilen field-benzeri variable ve
+  method declaration’larını normal member declaration order içine alır. Macro-generated member adları orijinal member adlarıyla
+  çakışırsa diagnostic üretir; yalnız method-method aynı ad merge/overload adayı olarak tutulur.
 - `xs_hir_validate_name_uses_expanded`, statement macro replacement set verildiğinde doğrudan statement child listelerini
   `xs_macro_expand_child_statements` expanded view’i üzerinden dolaşır. Böylece macro expansion sonrası oluşan function/method
   call hedefleri HIR symbol/import scope içinde doğrulanır.
