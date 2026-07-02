@@ -134,7 +134,7 @@ Belgelenmiş derleme sırası korunur:
 - Proje kökü altındaki `.xs` dosyaları özyinelemeli olarak taranır.
 - Modüller dosya adına göre değil, bildirilmiş tam modül yoluna göre kaydedilir.
 - Aynı modül adının birden fazla dosyada bildirilmesi hata üretir.
-- `imports` ve `froms ... imports ...` bağımlılıkları bildirilmiş modül adına göre çözülür.
+- `imports` ve `from ... imports ...` bağımlılıkları bildirilmiş modül adına göre çözülür.
 - Bulunamayan import hedefleri hata üretir.
 - Import edilen fakat `addFiles` içinde bulunmayan kaynaklar bağımlılık grafiğine alınır ve denetlenir.
 
@@ -160,7 +160,7 @@ Bu katman HIR dizini altında bulunur.
 - Aynı namespace içinde aynı kısa ada sahip üst seviye bildirimler hata üretir.
 - Aynı kısa ad farklı namespace altında kullanılabilir.
 - `imports Module;` bildirimi import edilen modülün public üst seviye sembollerini modül nitelikli yerel adlarla açar.
-- `froms Module imports Name;`, `froms Module imports Name as Alias;` ve `froms Module imports *;` bildirimi public
+- `from Module imports Name;`, `from Module imports Name as Alias;` ve `from Module imports *;` bildirimi public
   üst seviye sembolleri yerel import kapsamına açar.
 - Public olmayan semboller dış modül importuyla açılmaz.
 - Fonksiyon gövdelerindeki doğrudan çağrı hedefleri, aynı namespace sembolleri ve import kapsamı üzerinden çözümlenir.
@@ -202,7 +202,8 @@ overload seçimi kararı vermez.
 - Generic type erasure olmadığı ve default generic parametre desteklenmediği için generic tiplerin argümansız kullanımı hata
   üretir.
 - Aynı declaration scope içinde aynı generic parametre adı tekrar tanımlanamaz.
-- Generic constraint tipleri interface sembollerine çözümlenmelidir.
+- Generic constraint tipleri interface sembollerine çözümlenmelidir; generic interface constraint kullanımlarında arity ve
+  type argument çözümlemesi de HIR type resolution aşamasında yapılır.
 - Generic parametreler birden fazla constraint taşıyabilir; constraint listesindeki `, Identifier :` yeni generic parametre
   başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.
 - `xs_hir_check_expression_types_with_macros`, explicit primitive type annotation taşıyan variable initializer'larda literal

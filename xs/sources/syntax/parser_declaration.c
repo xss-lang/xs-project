@@ -365,7 +365,7 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
   }
   if (accept(parser, XS_TOKEN_KW_IMPORTS))
     return parse_import(parser, false, start);
-  if (accept(parser, XS_TOKEN_KW_FROMS))
+  if (accept(parser, XS_TOKEN_KW_FROM))
     return parse_import(parser, true, start);
   if (accept(parser, XS_TOKEN_KW_FN))
     return parse_function(parser, modifiers, start, false);

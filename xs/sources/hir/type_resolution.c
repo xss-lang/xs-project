@@ -1,13 +1,10 @@
 #include "xs/hir/type_resolution.h"
-
 #include "xs/hir/type_info.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct GenericScope GenericScope;
-
 struct GenericScope
 {
   const GenericScope *parent;
@@ -182,7 +179,6 @@ static bool report_invisible_type(XsDiagnostics *diagnostics, const XsSyntaxNode
 static bool resolve_type_node(const XsSyntaxNode *type, const char *namespace_name, uint64_t current_file_id,
                               const GenericScope *generics, const XsHirSymbolTable *symbols,
                               const XsHirImportScope *imports, XsDiagnostics *diagnostics);
-
 static bool report_generic_arity(XsDiagnostics *diagnostics, const XsSyntaxNode *type, const char *path,
                                  size_t expected, size_t actual)
 {
@@ -197,7 +193,6 @@ static bool report_constraint_kind(XsDiagnostics *diagnostics, const XsSyntaxNod
   snprintf(message, sizeof(message), "generic constraint '%s' must resolve to an interface", path);
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
 }
-
 static bool report_duplicate_generic_parameter(XsDiagnostics *diagnostics, const XsSyntaxNode *identifier)
 {
   char message[512];
@@ -308,9 +303,26 @@ static bool resolve_constraint_type(const XsSyntaxNode *type, const char *namesp
                                     const GenericScope *generics, const XsHirSymbolTable *symbols,
                                     const XsHirImportScope *imports, XsDiagnostics *diagnostics)
 {
-  if (type->kind != XS_SYNTAX_TYPE_NAMED) {
-    return resolve_type_node(type, namespace_name, current_file_id, generics, symbols, imports, diagnostics);
+  if (type->kind == XS_SYNTAX_TYPE_GENERIC) {
+    if (type->child_count == 0)
+      return true;
+    const XsSyntaxNode *base = type->children[0];
+    const XsHirSymbol *symbol = nullptr;
+    bool success = resolve_named_type(base, namespace_name, generics, symbols, imports, diagnostics, current_file_id,
+                                      false, &symbol);
+    if (symbol != nullptr) {
+      char *name = path_to_string(first_child_kind(base, XS_SYNTAX_PATH));
+      if (name == nullptr)
+        return false;
+      if (symbol->kind != XS_HIR_SYMBOL_INTERFACE)
+        success = report_constraint_kind(diagnostics, base, name) && success;
+      free(name);
+    }
+    return resolve_generic_type_node(type, namespace_name, current_file_id, generics, symbols, imports, diagnostics) &&
+           success;
   }
+  if (type->kind != XS_SYNTAX_TYPE_NAMED)
+    return resolve_type_node(type, namespace_name, current_file_id, generics, symbols, imports, diagnostics);
   const XsSyntaxNode *path = first_child_kind(type, XS_SYNTAX_PATH);
   char *name = path_to_string(path);
   if (name == nullptr)

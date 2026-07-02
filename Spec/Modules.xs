@@ -73,7 +73,7 @@ fn Main() {
 
 
 // wildcard import
-froms Math imports *;
+from Math imports *;
 
 fn Main() {
     result: int = Add(1, 2);
@@ -81,7 +81,7 @@ fn Main() {
 
 
 // selected import
-froms Math imports Add;
+from Math imports Add;
 
 fn Main() {
     result: int = Add(1, 2);
@@ -89,7 +89,7 @@ fn Main() {
 
 
 // selected multiple import
-froms Math imports Add, Subtract;
+from Math imports Add, Subtract;
 
 fn Main() {
     a: int = Add(1, 2);
@@ -98,7 +98,7 @@ fn Main() {
 
 
 // selected import alias
-froms Math imports Add as Sum;
+from Math imports Add as Sum;
 
 fn Main() {
     result: int = Sum(1, 2);
@@ -122,7 +122,7 @@ fn Main() {
 
 
 // direct enum access after wildcard import
-froms Math imports *;
+from Math imports *;
 
 fn Main() {
     color: Color = Color.Red;
@@ -130,7 +130,7 @@ fn Main() {
 
 
 // direct enum access after selected import
-froms Math imports Color;
+from Math imports Color;
 
 fn Main() {
     color: Color = Color.Red;
@@ -143,15 +143,15 @@ imports Math;
 
 imports Math, Math;
 
-froms Math imports Add;
-froms Math imports Add;
+from Math imports Add;
+from Math imports Add;
 
 // Duplicate imports are valid and treated as one import.
 
 
 // import name collision
-froms Math imports Add;
-froms Utils imports Add;
+from Math imports Add;
+from Utils imports Add;
 
 fn Main() {
     M.Add(1, 2);
@@ -236,6 +236,6 @@ fn InternalHelper() {
 }
 
 // from another file:
-froms Math imports InternalHelper;
+from Math imports InternalHelper;
 
 // Non-public members are not visible from other modules.

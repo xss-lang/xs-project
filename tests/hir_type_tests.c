@@ -117,7 +117,7 @@ static void test_imported_user_type(void)
   const char *library = "module Model;\n"
                         "public data User { name: str; }\n";
   const char *main = "module App;\n"
-                     "froms Model imports User;\n"
+                     "from Model imports User;\n"
                      "fn Main(value: User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -237,10 +237,18 @@ static void test_generic_constraints(void)
                          "interface Printable { fn Print(); }\n"
                          "fn Execute<T: Runnable, Printable, U: Runnable>(value: T, worker: U) {}\n";
   CHECK(check_single_source(multiple));
+  const char *generic = "module App;\n"
+                        "interface Parser<T> { fn Parse(value: T); }\n"
+                        "fn UseParser<T: Parser<int > >(value: T) {}\n";
+  CHECK(check_single_source(generic));
   const char *invalid = "module App;\n"
                         "data NotInterface { value: int; }\n"
                         "fn PrintValue<T: NotInterface>(value: T) {}\n";
   CHECK(!check_single_source(invalid));
+  const char *invalid_generic = "module App;\n"
+                                "class Box<T> { value: T; }\n"
+                                "fn UseBox<T: Box<int > >(value: T) {}\n";
+  CHECK(!check_single_source(invalid_generic));
 }
 
 static void test_imported_generic_constraint(void)
@@ -248,7 +256,7 @@ static void test_imported_generic_constraint(void)
   const char *library = "module Contract;\n"
                         "public interface Runnable { fn Run(); }\n";
   const char *main = "module App;\n"
-                     "froms Contract imports Runnable;\n"
+                     "from Contract imports Runnable;\n"
                      "fn Execute<T: Runnable>(value: T) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;

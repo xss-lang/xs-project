@@ -69,13 +69,13 @@ static void test_documented_operators(void)
 static void test_keywords(void)
 {
   static const XsTokenKind expected[] = {
-      XS_TOKEN_KW_MODULE,    XS_TOKEN_KW_NAMESPACE, XS_TOKEN_KW_IMPORTS, XS_TOKEN_KW_FROMS, XS_TOKEN_KW_CLASS,
+      XS_TOKEN_KW_MODULE,    XS_TOKEN_KW_NAMESPACE, XS_TOKEN_KW_IMPORTS, XS_TOKEN_KW_FROM, XS_TOKEN_KW_CLASS,
       XS_TOKEN_KW_INTERFACE, XS_TOKEN_KW_DATA,      XS_TOKEN_KW_ENUM,    XS_TOKEN_KW_ASYNC, XS_TOKEN_KW_AWAIT,
       XS_TOKEN_KW_MOVE,      XS_TOKEN_KW_MUT,       XS_TOKEN_KW_TRY,     XS_TOKEN_KW_CATCH, XS_TOKEN_KW_FINALLY,
       XS_TOKEN_KW_THROW,     XS_TOKEN_KW_THROWS,    XS_TOKEN_EOF,
   };
   expect_tokens(
-      "module namespace imports froms class interface data enum async await move mut try catch finally throw throws",
+      "module namespace imports from class interface data enum async await move mut try catch finally throw throws",
       expected, sizeof(expected) / sizeof(expected[0]));
 }
 

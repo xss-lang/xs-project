@@ -103,7 +103,7 @@ static void test_import_resolution(void)
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
                      "imports Math;\n"
-                     "froms Math imports Add as Sum;\n"
+                     "from Math imports Add as Sum;\n"
                      "fn Main() {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -136,7 +136,7 @@ static void test_public_namespace_exports_default_symbols(void)
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
                      "imports Math.Advanced;\n"
-                     "froms Math.Advanced imports Add;\n"
+                     "from Math.Advanced imports Add;\n"
                      "fn Main() { Math.Advanced.Add(); Add(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -168,7 +168,7 @@ static void test_import_errors(void)
   const char *library = "module Math;\n"
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
-                     "froms Math imports Hidden;\n";
+                     "from Math imports Hidden;\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -194,7 +194,7 @@ static void test_name_use_resolution(void)
                         "public fn Add(a: int, b: int) => int { return a + b; }\n";
   const char *main = "module App;\n"
                      "imports Math.Advanced;\n"
-                     "froms Math.Advanced imports Add as Sum;\n"
+                     "from Math.Advanced imports Add as Sum;\n"
                      "fn Main() {\n"
                      "  first: int = Math.Advanced.Add(1, 2);\n"
                      "  second: int = Sum(3, 4);\n"
