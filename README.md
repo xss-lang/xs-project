@@ -95,6 +95,11 @@ uydurulmaz. HIR ve MIR LLVM API’ye bağlı değildir; backend giriş noktası 
 
 Güncel ayrıntılı durum için [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) dosyasına bak.
 
+## Sürüm politikası
+
+Numaralı X# sürümleri LLVM IR üretimi çalışır hale geldikten sonra başlayacaktır. O zamana kadar kök
+[CHANGELOG.md](CHANGELOG.md) dosyası `Unreleased` geliştirme günlüğü olarak tutulur.
+
 ## CLI özeti
 
 Bugünkü desteklenen komutlar:

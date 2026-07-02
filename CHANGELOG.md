@@ -1,7 +1,9 @@
 # Changelog
 
-Bu dosya xs-project deposundaki kullanıcıya ve geliştiriciye görünür değişiklikleri özetler. Proje henüz kararlı release
-çıkarmadığı için sürüm başlığı olarak `Unreleased` kullanılır.
+Bu dosya xs-project deposundaki kullanıcıya ve geliştiriciye görünür değişiklikleri özetler.
+
+Numaralı sürümler LLVM IR üretimi çalışır hale geldikten sonra başlayacaktır. O aşamaya kadar tüm değişiklikler
+`Unreleased` altında tutulur; bu başlık release sözü değil, geliştirme günlüğüdür.
 
 ## Unreleased
 

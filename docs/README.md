@@ -13,8 +13,9 @@ Yeni başlayan biri için önerilen sıra:
 4. [CLI.md](CLI.md): kullanıcı komutları ve mevcut durum
 5. [IMPLEMENTATION.md](IMPLEMENTATION.md): aşama aşama implementation durumu
 6. [TODO.md](TODO.md): X# v0 kararları ve kalan implementation işi
-7. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend altyapısı
-8. [MONOREPO.md](MONOREPO.md): monorepo proje/runtime seçim modeli
+7. [RELEASES.md](RELEASES.md): LLVM IR eşiğine bağlı sürüm politikası
+8. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend altyapısı
+9. [MONOREPO.md](MONOREPO.md): monorepo proje/runtime seçim modeli
 
 ## Belge otoritesi
 
