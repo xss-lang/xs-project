@@ -239,7 +239,7 @@ static void test_generic_constraints(void)
   CHECK(check_single_source(multiple));
   const char *generic = "module App;\n"
                         "interface Parser<T> { fn Parse(value: T); }\n"
-                        "fn UseParser<T: Parser<int > >(value: T) {}\n";
+                        "fn UseParser<T: Parser<int>>(value: T) {}\n";
   CHECK(check_single_source(generic));
   const char *invalid = "module App;\n"
                         "data NotInterface { value: int; }\n"
@@ -247,7 +247,7 @@ static void test_generic_constraints(void)
   CHECK(!check_single_source(invalid));
   const char *invalid_generic = "module App;\n"
                                 "class Box<T> { value: T; }\n"
-                                "fn UseBox<T: Box<int > >(value: T) {}\n";
+                                "fn UseBox<T: Box<int>>(value: T) {}\n";
   CHECK(!check_single_source(invalid_generic));
 }
 

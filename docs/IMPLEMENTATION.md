@@ -102,6 +102,8 @@ Belgelenmiş derleme sırası korunur:
   scope’a gerçek AST replacement olarak eklenmesi sonraki makro genişletme adımıdır.
 - Named, generic, array, fixed array, pointer, reference, tuple, unit ve `fn(...) => T` function type düğümleri
   yapısal AST'de ayrıştırılır.
+- Lexer `>>` tokenını shift-right operatörü olarak korur; structural parser `>` bekleyen generic type/generic parameter
+  kapanışlarında `>>` tokenını iki ayrı `>` gibi tüketebilir.
 - Reference type içindeki lifetime yazımları Rust temel biçimleriyle (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`)
   `XS_SYNTAX_LIFETIME` düğümüyle AST'ye taşınır; lifetime elision ve doğrulama borrow checker aşamasına bırakılır.
 - Fonksiyon parametreleri, dönüş tipi, `throws` tipleri ve fonksiyon gövdeleri yapısal düğümlerdir; ham gövde aralığı

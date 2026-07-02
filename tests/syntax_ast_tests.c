@@ -261,6 +261,20 @@ static void test_lifetime_type_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_nested_generic_type_closers(void)
+{
+  const char *text = "interface Parser<T> { fn Parse(value: T); }\n"
+                     "fn UseParser<T: Parser<Box<int>> >(value: T, items: List<Box<int>>) {}\n";
+  XsSource source = {.path = "NestedGenerics.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 26, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_GENERIC) == 4);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_function_tree();
@@ -275,5 +289,6 @@ int main(void)
   test_io_target_expression_structure();
   test_character_literal_structure();
   test_lifetime_type_structure();
+  test_nested_generic_type_closers();
   return failures == 0 ? 0 : 1;
 }

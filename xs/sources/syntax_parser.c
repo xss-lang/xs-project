@@ -23,6 +23,13 @@ void advance(SyntaxParser *parser)
 
 bool accept(SyntaxParser *parser, XsTokenKind kind)
 {
+  if (kind == XS_TOKEN_GREATER && parser->current.kind == XS_TOKEN_SHIFT_RIGHT) {
+    parser->previous =
+        (XsToken){.kind = XS_TOKEN_GREATER, .span = {parser->current.span.start, parser->current.span.start + 1}};
+    parser->current =
+        (XsToken){.kind = XS_TOKEN_GREATER, .span = {parser->current.span.start + 1, parser->current.span.end}};
+    return true;
+  }
   if (parser->current.kind != kind)
     return false;
   advance(parser);
@@ -44,7 +51,7 @@ XsSyntaxNode *node(SyntaxParser *parser, XsSyntaxKind kind, XsSpan span)
 
 void finish_node(SyntaxParser *parser, XsSyntaxNode *value, size_t end)
 {
-  if (value == NULL)
+  if (value == nullptr)
     return;
   XsSpan span = {.start = value->span.start_offset, .end = end};
   value->span = xs_source_span(parser->tree, span);
@@ -54,7 +61,7 @@ void finish_node(SyntaxParser *parser, XsSyntaxNode *value, size_t end)
 XsSyntaxNode *identifier(SyntaxParser *parser)
 {
   if (!expect(parser, XS_TOKEN_IDENTIFIER, "expected identifier"))
-    return NULL;
+    return nullptr;
   return node(parser, XS_SYNTAX_IDENTIFIER, parser->previous.span);
 }
 
@@ -63,12 +70,12 @@ XsSyntaxNode *parse_path(SyntaxParser *parser)
   size_t start = parser->current.span.start;
   XsSyntaxNode *path = node(parser, XS_SYNTAX_PATH, (XsSpan){start, start});
   XsSyntaxNode *segment = identifier(parser);
-  if (segment == NULL)
+  if (segment == nullptr)
     return path;
   xs_syntax_node_add(parser->tree, path, segment);
   while (accept(parser, XS_TOKEN_DOT)) {
     segment = identifier(parser);
-    if (segment == NULL)
+    if (segment == nullptr)
       break;
     xs_syntax_node_add(parser->tree, path, segment);
   }
@@ -114,12 +121,12 @@ Modifiers parse_modifiers(SyntaxParser *parser)
 
 void attach_modifiers(SyntaxParser *parser, XsSyntaxNode *declaration, Modifiers modifiers)
 {
-  if (declaration == NULL)
+  if (declaration == nullptr)
     return;
   declaration->visibility = modifiers.visibility;
   declaration->flags |= modifiers.flags;
   XsSyntaxNode *visibility = node(parser, XS_SYNTAX_VISIBILITY, modifiers.span);
-  if (visibility != NULL)
+  if (visibility != nullptr)
     visibility->visibility = modifiers.visibility;
   xs_syntax_node_add(parser->tree, declaration, visibility);
 }
@@ -144,7 +151,7 @@ bool xs_syntax_parse(const XsSource *source, uint64_t file_id, XsDiagnostics *di
   while (parser.current.kind != XS_TOKEN_EOF) {
     size_t before = parser.current.span.start;
     XsSyntaxNode *declaration = parse_declaration(&parser, true);
-    if (declaration != NULL) {
+    if (declaration != nullptr) {
       if (declaration->kind == XS_SYNTAX_DECL_MODULE) {
         if (seen_declaration)
           xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
