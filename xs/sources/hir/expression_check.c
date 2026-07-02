@@ -220,8 +220,9 @@ static const XsHirPrimitiveInfo *function_return_primitive(const XsSyntaxNode *f
   if (function == nullptr || (function->kind != XS_SYNTAX_DECL_FUNCTION && function->kind != XS_SYNTAX_EXPR_FUNCTION))
     return nullptr;
   for (size_t i = 0; i < function->child_count; ++i) {
-    if (function->children[i]->kind == XS_SYNTAX_TYPE_NAMED)
-      return primitive_from_type(function->children[i]);
+    const XsSyntaxNode *child = function->children[i];
+    if (child->kind == XS_SYNTAX_TYPE_NAMED && (child->flags & XS_SYNTAX_FLAG_RETURN_TYPE) != 0)
+      return primitive_from_type(child);
   }
   return nullptr;
 }

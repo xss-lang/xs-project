@@ -39,8 +39,11 @@ static XsSyntaxNode *parse_function_expression(SyntaxParser *parser, size_t star
   if (move_capture)
     function->flags |= XS_SYNTAX_FLAG_MOVE_CAPTURE;
   parse_expression_parameters(parser, function);
-  if (accept(parser, XS_TOKEN_FAT_ARROW))
-    xs_syntax_node_add(parser->tree, function, parse_type(parser));
+  if (accept(parser, XS_TOKEN_FAT_ARROW)) {
+    XsSyntaxNode *return_type = parse_type(parser);
+    return_type->flags |= XS_SYNTAX_FLAG_RETURN_TYPE;
+    xs_syntax_node_add(parser->tree, function, return_type);
+  }
   xs_syntax_node_add(parser->tree, function, parse_block(parser));
   finish_node(parser, function, parser->previous.span.end);
   return function;
@@ -105,7 +108,7 @@ static XsSyntaxNode *parse_literal(SyntaxParser *parser)
   XsToken token = parser->current;
   advance(parser);
   XsSyntaxNode *literal = node(parser, XS_SYNTAX_EXPR_LITERAL, token.span);
-  if (literal != NULL)
+  if (literal != nullptr)
     literal->token_kind = token.kind;
   return literal;
 }
@@ -182,7 +185,7 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
         advance(parser);
         if (depth != 0) {
           XsSyntaxNode *argument = node(parser, XS_SYNTAX_TOKEN, token.span);
-          if (argument != NULL)
+          if (argument != nullptr)
             argument->token_kind = token.kind;
           xs_syntax_node_add(parser->tree, call, argument);
         }
@@ -290,7 +293,7 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
 {
   XsSyntaxNode *expression = parse_prefix(parser);
   for (;;) {
-    size_t start = expression == NULL ? parser->current.span.start : expression->span.start_offset;
+    size_t start = expression == nullptr ? parser->current.span.start : expression->span.start_offset;
     if (accept(parser, XS_TOKEN_LEFT_PAREN)) {
       XsSyntaxNode *call = node(parser, XS_SYNTAX_EXPR_CALL, (XsSpan){start, parser->previous.span.end});
       xs_syntax_node_add(parser->tree, call, expression);

@@ -105,7 +105,8 @@ Belgelenmiş derleme sırası korunur:
 - Reference type içindeki lifetime yazımları Rust temel biçimleriyle (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`)
   `XS_SYNTAX_LIFETIME` düğümüyle AST'ye taşınır; lifetime elision ve doğrulama borrow checker aşamasına bırakılır.
 - Fonksiyon parametreleri, dönüş tipi, `throws` tipleri ve fonksiyon gövdeleri yapısal düğümlerdir; ham gövde aralığı
-  olarak saklanmaz.
+  olarak saklanmaz. `=>` ile gelen dönüş tipi `XS_SYNTAX_FLAG_RETURN_TYPE` ile işaretlenir; `throws` tipleri dönüş
+  tipi gibi yorumlanmaz.
 - `data` declaration gövdeleri field-only olarak ayrıştırılır; method, constructor, destructor, inheritance ve interface
   üyeleri AST üretmeden diagnostic verir.
 - Class constructor adı class adıyla eşleşmek zorundadır ve class başına en fazla bir constructor parser diagnostic'iyle

@@ -65,8 +65,11 @@ static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, s
   xs_syntax_node_add(parser->tree, function, identifier(parser));
   parse_generics(parser, function);
   parse_parameters(parser, function);
-  if (accept(parser, XS_TOKEN_FAT_ARROW))
-    xs_syntax_node_add(parser->tree, function, parse_type(parser));
+  if (accept(parser, XS_TOKEN_FAT_ARROW)) {
+    XsSyntaxNode *return_type = parse_type(parser);
+    return_type->flags |= XS_SYNTAX_FLAG_RETURN_TYPE;
+    xs_syntax_node_add(parser->tree, function, return_type);
+  }
   if (accept(parser, XS_TOKEN_KW_THROWS)) {
     do {
       xs_syntax_node_add(parser->tree, function, parse_type(parser));
