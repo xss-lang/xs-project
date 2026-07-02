@@ -206,8 +206,9 @@ overload seçimi kararı vermez.
   başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.
 - `xs_hir_check_expression_types_with_macros`, explicit primitive type annotation taşıyan variable initializer'larda literal
   uyumluluğunu ve aynı local’a yapılan doğrudan assignment içindeki literal RHS uyumluluğunu denetler. Şimdilik integer,
-  float, string, char ve bool literal türleri primitive hedef tiplerle eşleştirilir; `nil`, `new`, identifier, call ve diğer
-  expression biçimleri genel expression type inference tamamlanana kadar ertelenir.
+  float, string, char ve bool literal türleri primitive hedef tiplerle eşleştirilir. Explicit primitive return type taşıyan
+  function içindeki `return <literal>;` statement'ları da aynı literal uyumluluğu ile denetlenir. `nil`, `new`, identifier,
+  call ve diğer expression biçimleri genel expression type inference tamamlanana kadar ertelenir.
 - Aynı HIR expression check aşaması local block/function scope içinde `val`, `const` ve `static` immutable declaration’lara
   doğrudan identifier assignment yapılmasını diagnostic olarak bildirir. Field, index, dereference ve alias/borrow temelli
   mutability kuralları sonraki borrow/type-check aşamalarına ertelenir.

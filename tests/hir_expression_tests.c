@@ -127,6 +127,16 @@ static void test_assignment_literal_expression_types(void)
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: str = \"ok\"; value = 'x'; }\n"));
 }
 
+static void test_return_literal_expression_types(void)
+{
+  CHECK(check_single_source_expressions("module App;\nfn Count() => int { return 1; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Flag() => bool { return true; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Name() => str { return \"xs\"; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Count() => int { return \"bad\"; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Flag() => bool { return 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Name() => str { return 'x'; }\n"));
+}
+
 static void test_macro_literal_initializer_expression_errors(void)
 {
   const char *main = "module App;\n"
@@ -151,13 +161,23 @@ static void test_macro_assignment_literal_expression_errors(void)
   CHECK(check_macro_expression_error(main, 98));
 }
 
+static void test_macro_return_literal_expression_errors(void)
+{
+  const char *main = "module App;\n"
+                     "macroRules! bad { (): { return \"bad\"; }; }\n"
+                     "fn Main() => int { bad!(); }\n";
+  CHECK(check_macro_expression_error(main, 99));
+}
+
 int main(void)
 {
   test_literal_initializer_expression_types();
   test_immutable_local_assignment_errors();
   test_assignment_literal_expression_types();
+  test_return_literal_expression_types();
   test_macro_literal_initializer_expression_errors();
   test_macro_immutable_assignment_errors();
   test_macro_assignment_literal_expression_errors();
+  test_macro_return_literal_expression_errors();
   return failures == 0 ? 0 : 1;
 }

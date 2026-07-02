@@ -14,6 +14,7 @@ typedef struct
 } LocalBinding;
 
 typedef struct LocalScope LocalScope;
+typedef struct CheckContext CheckContext;
 
 struct LocalScope
 {
@@ -22,6 +23,12 @@ struct LocalScope
   size_t count;
   size_t capacity;
   bool allocation_failed;
+};
+
+struct CheckContext
+{
+  LocalScope *scope;
+  const XsHirPrimitiveInfo *return_type;
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
@@ -129,6 +136,15 @@ static bool report_immutable_assignment(XsDiagnostics *diagnostics, const XsSynt
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target), message);
 }
 
+static bool report_return_literal_type_error(XsDiagnostics *diagnostics, const XsSyntaxNode *literal,
+                                             const XsHirPrimitiveInfo *primitive)
+{
+  char message[256];
+  snprintf(message, sizeof(message), "%s literal is not assignable to function return type '%s'",
+           literal_kind_name(literal->token_kind), primitive->name);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(literal), message);
+}
+
 static bool check_variable_initializer(const XsSyntaxNode *declaration, XsDiagnostics *diagnostics)
 {
   if (declaration->child_count < 3)
@@ -199,6 +215,17 @@ static bool has_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
   return false;
 }
 
+static const XsHirPrimitiveInfo *function_return_primitive(const XsSyntaxNode *function)
+{
+  if (function == nullptr || (function->kind != XS_SYNTAX_DECL_FUNCTION && function->kind != XS_SYNTAX_EXPR_FUNCTION))
+    return nullptr;
+  for (size_t i = 0; i < function->child_count; ++i) {
+    if (function->children[i]->kind == XS_SYNTAX_TYPE_NAMED)
+      return primitive_from_type(function->children[i]);
+  }
+  return nullptr;
+}
+
 static const XsSyntaxNode *assignment_identifier_target(const XsSyntaxNode *node)
 {
   if (node == nullptr || node->kind != XS_SYNTAX_EXPR_ASSIGNMENT || node->child_count < 1)
@@ -216,12 +243,23 @@ static const XsSyntaxNode *assignment_value(const XsSyntaxNode *node)
                                                                                             : nullptr;
 }
 
-static bool check_assignment(const XsSyntaxNode *node, const LocalScope *scope, XsDiagnostics *diagnostics)
+static bool check_return_statement(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
+{
+  if (node == nullptr || node->kind != XS_SYNTAX_STMT_RETURN || node->child_count == 0 ||
+      context->return_type == nullptr)
+    return true;
+  const XsSyntaxNode *value = node->children[0];
+  if (value->kind != XS_SYNTAX_EXPR_LITERAL || literal_matches_primitive(value->token_kind, context->return_type))
+    return true;
+  return report_return_literal_type_error(diagnostics, value, context->return_type);
+}
+
+static bool check_assignment(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
 {
   const XsSyntaxNode *identifier = assignment_identifier_target(node);
   if (identifier == nullptr)
     return true;
-  const LocalBinding *binding = local_scope_find(scope, identifier->text);
+  const LocalBinding *binding = local_scope_find(context->scope, identifier->text);
   if (binding == nullptr)
     return true;
   bool success = true;
@@ -237,16 +275,16 @@ static bool check_assignment(const XsSyntaxNode *node, const LocalScope *scope, 
 }
 
 static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,
-                       const XsMacroStatementExpansionSet *macro_statements, LocalScope *scope,
+                       const XsMacroStatementExpansionSet *macro_statements, CheckContext context,
                        XsDiagnostics *diagnostics);
 
 static bool check_children(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,
-                           const XsMacroStatementExpansionSet *macro_statements, LocalScope *scope,
+                           const XsMacroStatementExpansionSet *macro_statements, CheckContext context,
                            XsDiagnostics *diagnostics)
 {
   bool success = true;
   for (size_t i = 0; i < node->child_count; ++i) {
-    success = check_node(node->children[i], macro_declarations, macro_statements, scope, diagnostics) && success;
+    success = check_node(node->children[i], macro_declarations, macro_statements, context, diagnostics) && success;
   }
   return success;
 }
@@ -254,14 +292,14 @@ static bool check_children(const XsSyntaxNode *node, const XsMacroDeclarationExp
 static bool check_expanded_declaration_children(const XsSyntaxNode *node,
                                                 const XsMacroDeclarationExpansionSet *macro_declarations,
                                                 const XsMacroStatementExpansionSet *macro_statements,
-                                                LocalScope *scope, XsDiagnostics *diagnostics)
+                                                CheckContext context, XsDiagnostics *diagnostics)
 {
   XsMacroExpandedDeclarationSet expanded = {0};
   if (!xs_macro_expand_child_declarations(node, macro_declarations, diagnostics, &expanded))
     return false;
   bool success = true;
   for (size_t i = 0; i < expanded.count; ++i)
-    success = check_node(expanded.items[i].declaration, macro_declarations, macro_statements, scope, diagnostics) &&
+    success = check_node(expanded.items[i].declaration, macro_declarations, macro_statements, context, diagnostics) &&
               success;
   xs_macro_expanded_declaration_set_free(&expanded);
   return success;
@@ -270,38 +308,43 @@ static bool check_expanded_declaration_children(const XsSyntaxNode *node,
 static bool check_expanded_statement_children(const XsSyntaxNode *node,
                                               const XsMacroDeclarationExpansionSet *macro_declarations,
                                               const XsMacroStatementExpansionSet *macro_statements,
-                                              LocalScope *scope, XsDiagnostics *diagnostics)
+                                              CheckContext context, XsDiagnostics *diagnostics)
 {
   XsMacroExpandedStatementSet expanded = {0};
   if (!xs_macro_expand_child_statements(node, macro_statements, diagnostics, &expanded))
     return false;
   bool success = true;
   for (size_t i = 0; i < expanded.count; ++i)
-    success = check_node(expanded.items[i].statement, macro_declarations, macro_statements, scope, diagnostics) &&
+    success = check_node(expanded.items[i].statement, macro_declarations, macro_statements, context, diagnostics) &&
               success;
   xs_macro_expanded_statement_set_free(&expanded);
   return success;
 }
 
 static bool check_scoped_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,
-                              const XsMacroStatementExpansionSet *macro_statements, LocalScope *parent,
+                              const XsMacroStatementExpansionSet *macro_statements, CheckContext parent,
                               XsDiagnostics *diagnostics)
 {
-  LocalScope scope = {.parent = parent};
+  LocalScope scope = {.parent = parent.scope};
+  const XsHirPrimitiveInfo *return_type = function_return_primitive(node);
+  CheckContext context = {
+      .scope = &scope,
+      .return_type = return_type == nullptr ? parent.return_type : return_type,
+  };
   bool success = true;
   if (macro_declarations != nullptr && has_child_kind(node, XS_SYNTAX_DECL_MACRO_CALL))
-    success = check_expanded_declaration_children(node, macro_declarations, macro_statements, &scope, diagnostics);
+    success = check_expanded_declaration_children(node, macro_declarations, macro_statements, context, diagnostics);
   else if (macro_statements != nullptr && has_child_kind(node, XS_SYNTAX_STMT_MACRO_CALL))
-    success = check_expanded_statement_children(node, macro_declarations, macro_statements, &scope, diagnostics);
+    success = check_expanded_statement_children(node, macro_declarations, macro_statements, context, diagnostics);
   else
-    success = check_children(node, macro_declarations, macro_statements, &scope, diagnostics);
+    success = check_children(node, macro_declarations, macro_statements, context, diagnostics);
   bool allocation_failed = scope.allocation_failed;
   local_scope_free(&scope);
   return success && !allocation_failed;
 }
 
 static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,
-                       const XsMacroStatementExpansionSet *macro_statements, LocalScope *scope,
+                       const XsMacroStatementExpansionSet *macro_statements, CheckContext context,
                        XsDiagnostics *diagnostics)
 {
   if (node == nullptr)
@@ -309,20 +352,22 @@ static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansi
   bool success = true;
   if (node->kind == XS_SYNTAX_DECL_FUNCTION || node->kind == XS_SYNTAX_EXPR_FUNCTION ||
       node->kind == XS_SYNTAX_STMT_BLOCK)
-    return check_scoped_node(node, macro_declarations, macro_statements, scope, diagnostics);
+    return check_scoped_node(node, macro_declarations, macro_statements, context, diagnostics);
   if (node->kind == XS_SYNTAX_DECL_VARIABLE) {
     success = check_variable_initializer(node, diagnostics) && success;
-    success = local_scope_add(scope, node) && success;
+    success = local_scope_add(context.scope, node) && success;
   }
   if (node->kind == XS_SYNTAX_EXPR_ASSIGNMENT)
-    success = check_assignment(node, scope, diagnostics) && success;
+    success = check_assignment(node, &context, diagnostics) && success;
+  if (node->kind == XS_SYNTAX_STMT_RETURN)
+    success = check_return_statement(node, &context, diagnostics) && success;
   if (macro_declarations != nullptr && has_child_kind(node, XS_SYNTAX_DECL_MACRO_CALL))
-    return check_expanded_declaration_children(node, macro_declarations, macro_statements, scope, diagnostics) &&
+    return check_expanded_declaration_children(node, macro_declarations, macro_statements, context, diagnostics) &&
            success;
   if (macro_statements != nullptr && has_child_kind(node, XS_SYNTAX_STMT_MACRO_CALL))
-    return check_expanded_statement_children(node, macro_declarations, macro_statements, scope, diagnostics) &&
+    return check_expanded_statement_children(node, macro_declarations, macro_statements, context, diagnostics) &&
            success;
-  return check_children(node, macro_declarations, macro_statements, scope, diagnostics) && success;
+  return check_children(node, macro_declarations, macro_statements, context, diagnostics) && success;
 }
 
 bool xs_hir_check_expression_types_with_macros(const XsSyntaxTree *tree,
@@ -332,7 +377,7 @@ bool xs_hir_check_expression_types_with_macros(const XsSyntaxTree *tree,
 {
   if (tree == nullptr || tree->root == nullptr || diagnostics == nullptr)
     return false;
-  return check_node(tree->root, macro_declarations, macro_statements, nullptr, diagnostics) &&
+  return check_node(tree->root, macro_declarations, macro_statements, (CheckContext){0}, diagnostics) &&
          !xs_diagnostics_has_error(diagnostics);
 }
 
