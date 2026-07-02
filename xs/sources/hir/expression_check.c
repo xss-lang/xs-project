@@ -109,6 +109,17 @@ static bool report_literal_type_error(XsDiagnostics *diagnostics, const XsSyntax
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(literal), message);
 }
 
+static bool report_assignment_literal_type_error(XsDiagnostics *diagnostics, const XsSyntaxNode *literal,
+                                                 const XsHirPrimitiveInfo *primitive,
+                                                 const LocalBinding *binding)
+{
+  int length = binding->name.length > 128 ? 128 : (int)binding->name.length;
+  char message[320];
+  snprintf(message, sizeof(message), "%s literal is not assignable to local '%.*s' of primitive type '%s'",
+           literal_kind_name(literal->token_kind), length, binding->name.data, primitive->name);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(literal), message);
+}
+
 static bool report_immutable_assignment(XsDiagnostics *diagnostics, const XsSyntaxNode *target,
                                         const LocalBinding *binding)
 {
@@ -199,15 +210,30 @@ static const XsSyntaxNode *assignment_identifier_target(const XsSyntaxNode *node
   return target->children[0];
 }
 
+static const XsSyntaxNode *assignment_value(const XsSyntaxNode *node)
+{
+  return node != nullptr && node->kind == XS_SYNTAX_EXPR_ASSIGNMENT && node->child_count >= 3 ? node->children[2]
+                                                                                            : nullptr;
+}
+
 static bool check_assignment(const XsSyntaxNode *node, const LocalScope *scope, XsDiagnostics *diagnostics)
 {
   const XsSyntaxNode *identifier = assignment_identifier_target(node);
   if (identifier == nullptr)
     return true;
   const LocalBinding *binding = local_scope_find(scope, identifier->text);
-  if (binding == nullptr || !binding->immutable)
+  if (binding == nullptr)
     return true;
-  return report_immutable_assignment(diagnostics, identifier, binding);
+  bool success = true;
+  const XsHirPrimitiveInfo *primitive =
+      binding->declaration->child_count >= 2 ? primitive_from_type(binding->declaration->children[1]) : nullptr;
+  const XsSyntaxNode *value = assignment_value(node);
+  if (primitive != nullptr && value != nullptr && value->kind == XS_SYNTAX_EXPR_LITERAL &&
+      !literal_matches_primitive(value->token_kind, primitive))
+    success = report_assignment_literal_type_error(diagnostics, value, primitive, binding) && success;
+  if (binding->immutable)
+    success = report_immutable_assignment(diagnostics, identifier, binding) && success;
+  return success;
 }
 
 static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,

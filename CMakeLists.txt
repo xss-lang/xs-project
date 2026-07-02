@@ -223,6 +223,11 @@ if(BUILD_TESTING)
     add_test(NAME hir_types COMMAND xs_hir_type_tests)
     set_tests_properties(hir_types PROPERTIES TIMEOUT 5)
 
+    add_executable(xs_hir_expression_tests tests/hir_expression_tests.c)
+    target_link_libraries(xs_hir_expression_tests PRIVATE xs_compiler)
+    add_test(NAME hir_expressions COMMAND xs_hir_expression_tests)
+    set_tests_properties(hir_expressions PROPERTIES TIMEOUT 5)
+
     add_executable(xs_xlil_tests tests/xlil_tests.c)
     target_link_libraries(xs_xlil_tests PRIVATE xs_compiler)
     add_test(NAME xlil COMMAND xs_xlil_tests)

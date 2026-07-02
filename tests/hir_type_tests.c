@@ -1,5 +1,4 @@
 #include "xs/diagnostic.h"
-#include "xs/hir/expression_check.h"
 #include "xs/hir/symbol_table.h"
 #include "xs/hir/type_info.h"
 #include "xs/hir/type_resolution.h"
@@ -42,29 +41,6 @@ static bool check_single_source(const char *text)
     success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
   if (success)
     success = xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics);
-  xs_hir_import_scope_free(&imports);
-  xs_hir_symbol_table_free(&symbols);
-  xs_syntax_tree_free(&tree);
-  xs_diagnostics_free(&diagnostics);
-  return success;
-}
-
-static bool check_single_source_expressions(const char *text)
-{
-  XsSyntaxTree tree;
-  XsHirSymbolTable symbols;
-  XsHirImportScope imports;
-  XsDiagnostics diagnostics;
-  xs_diagnostics_init(&diagnostics);
-  xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  bool success = add_file(text, 72, &tree, &symbols, &diagnostics);
-  if (success)
-    success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
-  if (success)
-    success = xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics);
-  if (success)
-    success = xs_hir_check_expression_types(&tree, &diagnostics);
   xs_hir_import_scope_free(&imports);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
@@ -299,35 +275,6 @@ static void test_unknown_type_errors(void)
   CHECK(!check_single_source("module App;\nfn Main(value: Missing) {}\n"));
 }
 
-static void test_literal_initializer_expression_types(void)
-{
-  const char *valid = "module App;\n"
-                      "fn Main() {\n"
-                      "  a: int = 1;\n"
-                      "  b: bool = true;\n"
-                      "  c: str = \"hello\";\n"
-                      "  d: char = 'x';\n"
-                      "  e: float = 1.0;\n"
-                      "}\n";
-  CHECK(check_single_source_expressions(valid));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: int = \"bad\"; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: bool = 1; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: char = 1; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: float = true; }\n"));
-}
-
-static void test_immutable_local_assignment_errors(void)
-{
-  const char *valid = "module App;\n"
-                      "fn Main() {\n"
-                      "  value: int = 1;\n"
-                      "  value = 2;\n"
-                      "}\n";
-  CHECK(check_single_source_expressions(valid));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { val value: int = 1; value = 2; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { const value: int = 1; value = 2; }\n"));
-}
-
 static void test_expanded_macro_type_errors(void)
 {
   const char *main = "module App;\n"
@@ -393,64 +340,6 @@ static void test_type_fragment_macro_type_errors(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_macro_literal_initializer_expression_errors(void)
-{
-  const char *main = "module App;\n"
-                     "macroRules! bad { (): { value: int = \"bad\"; }; }\n"
-                     "fn Main() { bad!(); }\n";
-  XsSource source = {.path = "MacroExpressionTypes.xs", .text = main, .length = strlen(main)};
-  XsSyntaxTree tree;
-  XsHirSymbolTable symbols;
-  XsHirImportScope imports;
-  XsMacroStatementExpansionSet statements;
-  XsDiagnostics diagnostics;
-  xs_diagnostics_init(&diagnostics);
-  xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(xs_syntax_parse(&source, 96, &diagnostics, &tree));
-  CHECK(xs_macro_validate(&tree, &diagnostics));
-  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
-  CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_check_expression_types_with_macros(&tree, nullptr, &statements, &diagnostics));
-  CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
-  xs_hir_symbol_table_free(&symbols);
-  xs_syntax_tree_free(&tree);
-  xs_diagnostics_free(&diagnostics);
-}
-
-static void test_macro_immutable_assignment_errors(void)
-{
-  const char *main = "module App;\n"
-                     "macroRules! bad { (): { value = 2; }; }\n"
-                     "fn Main() { val value: int = 1; bad!(); }\n";
-  XsSource source = {.path = "MacroAssignmentTypes.xs", .text = main, .length = strlen(main)};
-  XsSyntaxTree tree;
-  XsHirSymbolTable symbols;
-  XsHirImportScope imports;
-  XsMacroStatementExpansionSet statements;
-  XsDiagnostics diagnostics;
-  xs_diagnostics_init(&diagnostics);
-  xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(xs_syntax_parse(&source, 97, &diagnostics, &tree));
-  CHECK(xs_macro_validate(&tree, &diagnostics));
-  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
-  CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_check_expression_types_with_macros(&tree, nullptr, &statements, &diagnostics));
-  CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
-  xs_hir_symbol_table_free(&symbols);
-  xs_syntax_tree_free(&tree);
-  xs_diagnostics_free(&diagnostics);
-}
-
 int main(void)
 {
   test_hir_primitive_info();
@@ -466,11 +355,7 @@ int main(void)
   test_generic_constraints();
   test_imported_generic_constraint();
   test_unknown_type_errors();
-  test_literal_initializer_expression_types();
-  test_immutable_local_assignment_errors();
   test_expanded_macro_type_errors();
   test_type_fragment_macro_type_errors();
-  test_macro_literal_initializer_expression_errors();
-  test_macro_immutable_assignment_errors();
   return failures == 0 ? 0 : 1;
 }
