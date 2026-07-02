@@ -1,38 +1,39 @@
 # xs-project documentation
 
-Bu dizin X# derleyicisinin aktif mimari ve implementation belgelerini tutar. `Spec/` dizini syntax ve dil örnekleri için
-kaynak belge alanıdır; `docs/` ise derleyici mimarisi, build/test süreci, CLI sözleşmesi ve implementation durumunu açıklar.
+This directory contains the active architecture and implementation documentation for the X# compiler. The `Spec/` directory
+is the source documentation area for syntax and language examples; `docs/` explains compiler architecture, the build/test
+process, the CLI contract, and implementation status.
 
-## Okuma sırası
+## Reading order
 
-Yeni başlayan biri için önerilen sıra:
+Recommended order for newcomers:
 
-1. [../README.md](../README.md): depo ve hızlı başlangıç
-2. [BUILDING.md](BUILDING.md): build/test ve toolchain
-3. [ARCHITECTURE.md](ARCHITECTURE.md): compiler pipeline ve katman sınırları
-4. [CLI.md](CLI.md): kullanıcı komutları ve mevcut durum
-5. [IMPLEMENTATION.md](IMPLEMENTATION.md): aşama aşama implementation durumu
-6. [TODO.md](TODO.md): X# v0 kararları ve kalan implementation işi
-7. [RELEASES.md](RELEASES.md): LLVM IR eşiğine bağlı sürüm politikası
-8. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend altyapısı
-9. [MONOREPO.md](MONOREPO.md): monorepo proje/runtime seçim modeli
+1. [../README.md](../README.md): repository overview and quick start
+2. [BUILDING.md](BUILDING.md): build/test and toolchain
+3. [ARCHITECTURE.md](ARCHITECTURE.md): compiler pipeline and layer boundaries
+4. [CLI.md](CLI.md): user commands and current status
+5. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
+6. [TODO.md](TODO.md): X# v0 decisions and remaining implementation work
+7. [RELEASES.md](RELEASES.md): release policy tied to the LLVM IR milestone
+8. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
+9. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
 
-## Belge otoritesi
+## Documentation authority
 
-- Belgelenmiş X# syntax için `Spec/` önce gelir.
-- `.xsproj` biçimi için `Spec/ProjectSystem.xs` ve public C API başlıkları önce gelir.
-- XLIL kararları için `XS/XLIL.md`, `docs/TODO.md` ve `xs/include/xs/lil.h` birlikte değerlendirilir.
-- Implementation sırası için [IMPLEMENTATION.md](IMPLEMENTATION.md) otoritedir.
-- Büyük semantik/ABI kararları [TODO.md](TODO.md) içinde X# v0 sözleşmesi olarak tutulur.
+- For documented X# syntax, `Spec/` has priority.
+- For the `.xsproj` format, `Spec/ProjectSystem.xs` and the public C API headers have priority.
+- For XLIL decisions, read `XS/XLIL.md`, `docs/TODO.md`, and `xs/include/xs/lil.h` together.
+- For implementation order, [IMPLEMENTATION.md](IMPLEMENTATION.md) is authoritative.
+- Major semantic and ABI decisions are tracked as the X# v0 contract in [TODO.md](TODO.md).
 
-Çelişki görülürse sessizce yeni davranış ekleme; belgeyi ve implementation’ı aynı patch içinde uyumlu hale getir.
+If you find a conflict, do not silently add new behavior. Update the documentation and implementation in the same patch.
 
-## Güncelleme kuralı
+## Update rule
 
-Kod davranışı değiştiğinde en az bir belge güncellenmelidir:
+When code behavior changes, at least one document should change too:
 
-- CLI değiştiyse `CLI.md`.
-- Build/toolchain değiştiyse `BUILDING.md`.
-- Pipeline veya katman sınırı değiştiyse `ARCHITECTURE.md` ve `IMPLEMENTATION.md`.
-- Büyük dil/ABI kararı eklendiyse `TODO.md`.
-- Kullanıcıya görünür değişiklik olduysa kök `CHANGELOG.md`.
+- CLI changes go in `CLI.md`.
+- Build/toolchain changes go in `BUILDING.md`.
+- Pipeline or layer-boundary changes go in `ARCHITECTURE.md` and `IMPLEMENTATION.md`.
+- Major language/ABI decisions go in `TODO.md`.
+- User-visible changes are summarized in the root `CHANGELOG.md`.

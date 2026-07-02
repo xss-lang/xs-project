@@ -1,8 +1,9 @@
-# CLI sözleşmesi
+# CLI contract
 
-`xs` komutu bugün proje manifesti üzerinden çalışır. Manifest syntax’ı `.xsproj` formatıdır; JSON/TOML/YAML değildir.
+The `xs` command currently works through a project manifest. The manifest syntax is the `.xsproj` format; it is not JSON,
+TOML, or YAML.
 
-## Desteklenen biçimler
+## Supported forms
 
 ```text
 xs check -proj MyApp.xsproj
@@ -13,48 +14,48 @@ xs build --output mir -proj MyApp.xsproj
 xs build --output xlil -proj MyApp.xsproj
 ```
 
-Kullanım hatasında CLI şu biçimi gösterir:
+On usage errors, the CLI prints:
 
 ```text
-kullanım: xs <check|run> -proj <proje.xsproj>
-kullanım: xs build [--output hir|mir|xlil] -proj <proje.xsproj>
+usage: xs <check|run> -proj <project.xsproj>
+usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>
 ```
 
 ## `xs check`
 
-`xs check` object üretmez. Bugünkü akış:
+`xs check` does not produce objects. Current flow:
 
 1. `.xsproj` parse/model validation
 2. source discovery
 3. X# parse/structural AST
-4. macro validation ve expansion preparation
+4. macro validation and expansion preparation
 5. HIR symbol/import/name/type resolution
-6. erken expression checks
+6. early expression checks
 
 ## `xs build`
 
-`xs build` gelecekte check, MIR, borrow checker, monomorphization, XLIL, backend, object ve link akışını çalıştıracaktır.
-Bugün bazı output modları tamamlanmamış ara formatlar nedeniyle bilinçli failure üretebilir.
+`xs build` will eventually run the full check, MIR, borrow checker, monomorphization, XLIL, backend, object, and link flow.
+Today, some output modes may intentionally fail because the intermediate formats are not complete yet.
 
 ## `xs run`
 
-`xs run` gelecekte önce `xs build` yapıp üretilen executable’ı çalıştıracaktır. Native executable akışı tamamlanana kadar
-tam run semantiği hazır kabul edilmez.
+`xs run` will eventually run `xs build` first and then execute the generated executable. Full run semantics are not considered
+ready until native executable generation is complete.
 
-## Ara çıktılar
+## Intermediate outputs
 
 - `.xhir`: HIR text
 - `.xmir`: MIR text
 - `.xlil`: XLIL text registry
 
-`.xlil` hiçbir zaman binary format olmayacaktır.
+`.xlil` will never be a binary format.
 
 ## Future direct XLIL build
 
-Planlanan biçim:
+Planned form:
 
 ```text
 xs build --xlil -file foo.xlil
 ```
 
-Bu yol proje manifesti okumadan XLIL parse/verify/backend/link akışına gidecektir. Henüz uygulanmamıştır.
+This path will skip project manifests and run XLIL parse/verify/backend/link directly. It is not implemented yet.

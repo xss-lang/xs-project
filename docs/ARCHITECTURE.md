@@ -1,16 +1,16 @@
-# Derleyici mimarisi
+# Compiler architecture
 
-X# derleyicisi aşamalı ve test edilebilir bir pipeline olarak geliştirilir. Her aşama kendi veri modelini üretir; sonraki
-aşamalar tamamlanmamış semantiği backend içinde tahmin etmez.
+The X# compiler is developed as a staged, testable pipeline. Each stage produces its own data model; later stages must not
+guess missing semantics inside the backend.
 
 ## Pipeline
 
 ```text
-.xs kaynakları
+.xs sources
     → lexer
     → parser
     → structural AST
-    → macro validation ve expansion view
+    → macro validation and expansion view
     → HIR symbol/import/name/type resolution
     → expression/type checks
     → MIR
@@ -19,61 +19,63 @@ aşamalar tamamlanmamış semantiği backend içinde tahmin etmez.
     → monomorphization
     → codegen unit planning
     → XLIL
-    → LLVM IR veya future XS Backend lowering
+    → LLVM IR or future XS Backend lowering
     → object emission
     → link
 ```
 
-## Katman sınırları
+## Layer boundaries
 
 ### Frontend
 
-Frontend `.xs` source text, token, parser ve structural AST katmanıdır. Parser syntax üretir; tamamlanmamış semantik için
-LLVM veya MIR davranışı uydurmaz.
+The frontend owns `.xs` source text, tokens, parsing, and the structural AST. The parser produces syntax; it must not invent
+LLVM or MIR behavior for unfinished semantics.
 
-### Macro katmanı
+### Macro layer
 
-Macro sistemi şu an validation, token expansion, synthetic reparse ve expanded view üretir. In-place AST replacement henüz
-tamamlanmamıştır. HIR tüketicileri macro call replacement’larını expanded view API’leriyle okur.
+The macro system currently provides validation, token expansion, synthetic reparse, and expanded views. In-place AST
+replacement is not complete yet. HIR consumers read macro-call replacements through expanded-view APIs.
 
 ### HIR
 
-HIR şu işleri üstlenir:
+HIR is responsible for:
 
-- module/namespace/import çözümleme
-- symbol table üretimi
-- visibility kontrolü
-- user-defined type ve primitive type resolution
-- generic arity ve constraint çözümleme
-- erken expression/mutability diagnostic’leri
+- module/namespace/import resolution
+- symbol table generation
+- visibility checks
+- user-defined and primitive type resolution
+- generic arity and constraint resolution
+- early expression/mutability diagnostics
 
-HIR LLVM API’ye bağlı değildir. Tip bilgileri hedef bağımsız kalır ve gerekli olduğunda XLIL tip sözlüğüyle ilişki kurar.
+HIR does not depend on the LLVM API. Type information remains target-independent and may reference the XLIL type vocabulary
+when needed.
 
 ### MIR
 
-MIR control-flow, local/place/value ve terminator modelidir. Borrow checker ve MIR optimizer bu model üzerinde çalışır. MIR
-henüz tam statement/expression lowering veya exception/async state machine üretimi yapmaz.
+MIR is the control-flow, local/place/value, and terminator model. The borrow checker and MIR optimizer operate on this model.
+MIR does not yet provide complete statement/expression lowering or exception/async state-machine generation.
 
 ### XLIL
 
-XLIL backend’lerin ortak giriş dilidir. `.xlil` text registry formatıdır ve binary olmayacaktır. Üçüncü parti frontend’ler
-ileride `xs/lil.h` public C23 API’siyle XLIL üretebilir.
+XLIL is the shared input language for backends. `.xlil` is a text registry format and will not be binary. Third-party
+frontends will eventually be able to generate XLIL through the `xs/lil.h` public C23 API.
 
 ### Backend
 
-LLVM backend frontend’den ayrıdır. LLVM context, target machine, module, data layout, function declaration lowering,
-optimization pipeline, object emission ve linker invocation burada yaşar. HIR/MIR/XLIL başlıkları LLVM C API kavramı taşımaz.
+The LLVM backend is separate from the frontend. LLVM context, target machine, module, data layout, function declaration
+lowering, optimization pipeline, object emission, and linker invocation live here. HIR/MIR/XLIL headers do not expose LLVM C
+API concepts.
 
-## Tamamlanmamış büyük parçalar
+## Major unfinished pieces
 
-- Tam AST macro replacement
-- Genel expression type inference ve overload resolution
-- Nominal interface üyelik doğrulaması
-- Send/Sync, async/await ve checked exception type-check
+- Full AST macro replacement
+- General expression type inference and overload resolution
+- Nominal interface membership validation
+- Send/Sync, async/await, and checked-exception type checking
 - MIR statement/expression lowering
-- Tam borrow checker region/loan/drop modeli
-- Monomorfizasyon ve incremental cache
+- Full borrow-checker region/loan/drop model
+- Monomorphization and incremental cache
 - XLIL → LLVM function body lowering
-- `xs build` / `xs run` uçtan uca executable üretimi
+- End-to-end `xs build` / `xs run` executable generation
 
-Bu eksikler [IMPLEMENTATION.md](IMPLEMENTATION.md) ve [TODO.md](TODO.md) üzerinden takip edilir.
+These gaps are tracked in [IMPLEMENTATION.md](IMPLEMENTATION.md) and [TODO.md](TODO.md).

@@ -1,26 +1,26 @@
-# Sürüm politikası
+# Release policy
 
-xs-project henüz numaralı release üretmez. Sürüm dönemi LLVM IR üretimi çalışır hale geldikten sonra başlayacaktır.
+xs-project does not produce numbered releases yet. The release period will begin after LLVM IR generation is working.
 
-Bu kararın nedeni pipeline sınırıdır: parser, AST, macro, HIR, MIR, borrow checker, XLIL ve LLVM backend katmanları parça parça
-ilerlerken kullanıcıya “sürüm” adıyla yarı tamamlanmış native derleyici sözü verilmez.
+The reason is the pipeline boundary: while parser, AST, macro, HIR, MIR, borrow checker, XLIL, and LLVM backend layers are
+being developed incrementally, the project should not promise a half-complete native compiler under a versioned release name.
 
-## Bugünkü durum
+## Current status
 
-- Kök [../CHANGELOG.md](../CHANGELOG.md) dosyası `Unreleased` geliştirme günlüğüdür.
-- `Unreleased` başlığı kararlı release anlamına gelmez.
-- Commit ve test geçmişi implementation ilerlemesini gösterir.
+- The root [../CHANGELOG.md](../CHANGELOG.md) file is an `Unreleased` development log.
+- The `Unreleased` heading does not mean a stable release.
+- Commit and test history show implementation progress.
 
-## İlk sürüm eşiği
+## First release threshold
 
-İlk numaralı sürüm için beklenen minimum eşik:
+The expected minimum threshold for the first numbered release:
 
-1. typed ve borrow-check geçmiş MIR’den XLIL’e function body lowering,
-2. XLIL’den LLVM IR function body lowering,
+1. function body lowering from typed, borrow-checked MIR to XLIL,
+2. XLIL to LLVM IR function body lowering,
 3. LLVM module verification,
 4. object emission,
-5. proje hedeflerine göre link,
-6. `xs build` ile native artifact üretimi.
+5. linking according to project targets,
+6. native artifact generation through `xs build`.
 
-Bu eşik tamamlandıktan sonra changelog `Unreleased` altında biriken kullanıcıya görünür değişiklikler ilk sürüm başlığına
-taşınabilir.
+After this threshold is reached, user-visible changes accumulated under `Unreleased` may be moved into the first release
+heading.

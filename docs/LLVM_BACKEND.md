@@ -1,62 +1,62 @@
-# LLVM backend altyapısının durumu
+# LLVM backend infrastructure status
 
-LLVM backend, frontend’den ayrı `xs_backend_llvm` kütüphanesidir. Backend doğrudan AST veya HIR kabul etmez.
-HIR ve MIR LLVM’e bağlı değildir; fakat hedef bağımsız XLIL tip/veri sözlüğüne bağlıdır. LLVM C API, target triple ve
-data layout kavramları yalnızca backend katmanında bulunur. Gerçek fonksiyon gövdesi üretimi, tip denetiminden ve
-borrow checker’dan geçmiş monomorfize MIR düğümleri XLIL’e indirildikten sonra eklenecektir.
+The LLVM backend is the `xs_backend_llvm` library, separate from the frontend. It does not accept AST or HIR directly. HIR
+and MIR do not depend on LLVM, but they may use the target-independent XLIL type/data vocabulary. LLVM C API concepts such
+as target triples and data layouts exist only in the backend layer. Real function body generation will be added after typed,
+borrow-checked, monomorphized MIR nodes are lowered to XLIL.
 
-LLVM şu an ana backend odağıdır, ancak HIR/MIR/XLIL tasarımı başka backend’lere taşınabilir kalmalıdır. Hedefe özel
-assembly gerekirse backend/runtime katmanında izole tutulur; NASM `.asm`/`.inc` kullanımı x86-64’e kilitlenmeden,
-ARM64 uyumluluğu korunarak yapılabilir.
+LLVM is the primary backend focus today, but the HIR/MIR/XLIL design must remain portable to other backends. Target-specific
+assembly, if needed, is isolated in backend/runtime layers. NASM `.asm`/`.inc` files may be used only without locking the
+design to x86-64; ARM64 compatibility must be preserved.
 
-## Uygulanan bileşenler
+## Implemented components
 
-- Bir LLVM context ve target machine yaşam döngüsü
-- Açık target triple veya yerel target triple seçimi
-- Target data layout üretimi
-- Her codegen unit için bağımsız LLVM module
-- Sayısal X# primitive tiplerinin LLVM tiplerine eşlenmesi
-- Gövdesiz fonksiyon bildirimi ve signature lowering
-- `default<O0>` ile `default<O3>` arasında LLVM optimizasyon pipeline seçimi
-- LLVM module doğrulaması
-- Codegen unit başına object file emission
-- Shell kullanmadan, argümanları çağıran tarafından verilen linker invocation katmanı
+- LLVM context and target-machine lifetime management
+- Explicit target triple or native target triple selection
+- Target data layout generation
+- Independent LLVM module per codegen unit
+- Numeric X# primitive type mapping to LLVM types
+- Body-less function declaration and signature lowering
+- LLVM optimization pipeline selection from `default<O0>` through `default<O3>`
+- LLVM module verification
+- Object file emission per codegen unit
+- Linker invocation layer that does not use a shell and receives arguments from the caller
 
-Nesne dosyası üretimi ve linker çağrısı altyapı olarak çalışır; henüz `xs build` komutuna bağlanmamıştır.
+Object file emission and linker invocation work as infrastructure, but are not wired into `xs build` yet.
 
-## Bilerek ertelenen tip eşlemeleri
+## Intentionally deferred type mappings
 
-`str` henüz LLVM storage tipine indirilmez:
+`str` is not lowered to an LLVM storage type yet:
 
-- `str` UTF-16’dır.
-- `str` uzunluğu UTF-16 temsilinin izin verdiği ölçüde sınırsızdır.
-- Sahiplik, uzunluk alanı türü ve runtime değer yerleşimi henüz belgelenmemiştir.
+- `str` is UTF-16.
+- `str` length is unbounded except by the representation allowed by UTF-16/runtime/platform limits.
+- Ownership, length-field type, and runtime value layout are not fully implemented in code yet.
 
-`bool`, HIR aşamasında 1 bit primitive olarak çözülür ve LLVM backend tarafından `i1` tipine indirilir.
+`bool` is resolved as a 1-bit primitive in HIR and lowered to `i1` by the LLVM backend.
 
-`byte` ve `sbyte` HIR düzeyinde ayrı unsigned/signed 8 bit primitive tiplerdir. LLVM storage tipi ikisi için de
-`i8` olur; signedness kararı karşılaştırma, dönüşüm ve aritmetik operasyon seçimi sırasında typed MIR’dan gelir.
+`byte` and `sbyte` are separate unsigned/signed 8-bit primitive types at the HIR level. Their LLVM storage type is `i8` for
+both; signedness is selected later by typed MIR operations such as comparisons, conversions, and arithmetic.
 
-`char`, belgelenmiş 16 bit genişliği nedeniyle LLVM `i16` tipine indirilir.
+`char` lowers to LLVM `i16` because its documented width is 16 bits.
 
-`str` için backend `XS_BACKEND_DEFERRED` döndürür. Böylece geçici bir ABI veya runtime yerleşimi uydurulmaz.
+For `str`, the backend returns `XS_BACKEND_DEFERRED`. This avoids inventing a temporary ABI or runtime layout.
 
-## Korunan aşama sınırı
+## Preserved stage boundary
 
-Backend sırası şu şekilde korunacaktır:
+The backend order is preserved as:
 
 ```text
-Borrow-checked ve optimize MIR
-    → monomorfizasyon
-    → codegen unit ayırma
+Borrow-checked and optimized MIR
+    → monomorphization
+    → codegen unit splitting
     → XLIL
-    → LLVM module ve function signature lowering
+    → LLVM module and function signature lowering
     → XLIL function body lowering
-    → LLVM optimizasyonu
+    → LLVM optimization
     → object file emission
     → linker invocation
 ```
 
-XLIL function body lowering henüz yoktur. Backend yalnızca fonksiyon bildirimini üretir ve basic block eklemez;
-backend testi bu sınırı özellikle doğrular. Böylece AST veya tamamlanmamış HIR davranışı doğrudan LLVM IR’a
-çevrilmez.
+XLIL function body lowering does not exist yet. The backend only emits function declarations and does not add basic blocks;
+backend tests explicitly verify that boundary. This prevents AST or unfinished HIR behavior from being lowered directly to
+LLVM IR.

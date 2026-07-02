@@ -1,22 +1,22 @@
 # xs-project
 
-`xs-project`, X# dili ve derleyici ailesi için LLVM-project tarzı monorepo köküdür. Bugünkü ana odak X# derleyicisi
-(`xs`) ve üçüncü parti araçların kullanabileceği public `.xsproj` manifest parser/lexer/model API’sidir (`xsproj`).
+`xs-project` is the LLVM-project-style monorepo root for the X# language and compiler family. The current focus is the X#
+compiler (`xs`) and the public `.xsproj` manifest lexer/parser/model API (`xsproj`) that third-party tools can use.
 
-Bu depo deneysel ama ciddi bir compiler çalışma alanıdır: her adım build edilebilir/test edilebilir kalmalı, mimari HIR/MIR
-katmanlarını LLVM’e bağlamamalı ve belgelenmiş derleme akışı korunmalıdır.
+This repository is experimental, but it is treated as serious compiler infrastructure: every step must remain buildable and
+testable, the HIR/MIR layers must not depend on LLVM, and the documented compilation flow must be preserved.
 
-## Hızlı başlangıç
+## Quick start
 
-Gereken ana araçlar:
+Required core tools:
 
 - CMake
 - Ninja
-- Clang / LLVM araçları
+- Clang / LLVM tools
 - LLD
-- BusyBox veya GNU dışı küçük coreutils alternatifleri önerilir
+- BusyBox or non-GNU small coreutils alternatives are preferred
 
-Varsayılan debug build:
+Default debug build:
 
 ```text
 cmake --preset clang-debug
@@ -24,7 +24,7 @@ cmake --build --preset clang-debug
 ctest --preset clang-debug --output-on-failure
 ```
 
-OOM geçmişi olan makinelerde test/build için 2GB sanal bellek limiti önerilir:
+On machines with prior OOM issues, use a 2GB virtual memory limit for build/test runs:
 
 ```text
 ulimit -v 2097152
@@ -32,37 +32,37 @@ cmake --build --preset clang-debug
 ctest --preset clang-debug --output-on-failure
 ```
 
-Örnek proje kontrolü:
+Check the example project:
 
 ```text
 ./build/clang-debug/xs check -proj XS/example/MyApp.xsproj
 ```
 
-## Monorepo dizinleri
+## Monorepo directories
 
-| Yol | Durum | Amaç |
+| Path | Status | Purpose |
 | --- | --- | --- |
-| `include/` | aktif | Projeler arası ortak public C başlıkları |
-| `xs/` | aktif | X# derleyicisi, CLI, lexer/parser, AST, macro, HIR, MIR, XLIL, LLVM backend altyapısı |
-| `xsproj/` | aktif | Public C23 `.xsproj` parser/lexer/model API’si |
-| `Spec/` | aktif kaynak belge | X# syntax ve dil davranışı örnek/spec dosyaları |
-| `docs/` | aktif belge | Mimari, build, CLI, backend, roadmap ve implementation durumu |
-| `tests/` | aktif | C tabanlı birim ve integration testleri |
+| `include/` | active | Shared public C headers across projects |
+| `xs/` | active | X# compiler, CLI, lexer/parser, AST, macro, HIR, MIR, XLIL, LLVM backend infrastructure |
+| `xsproj/` | active | Public C23 `.xsproj` parser/lexer/model API |
+| `Spec/` | active source documentation | X# syntax and language behavior examples/spec files |
+| `docs/` | active documentation | Architecture, build, CLI, backend, roadmap, and implementation status |
+| `tests/` | active | C-based unit and integration tests |
 | `xsfmt/` | future | Rust nightly + Serde formatter |
 | `xstidy/` | future | Rust nightly + Serde linter |
 | `xs-analyzer/` | future | Rust language server + TypeScript VS Code extension |
-| `xs-backend/` | future | C23 ağırlıklı native XS Backend |
+| `xs-backend/` | future | C23-heavy native XS Backend |
 
-## Derleyici pipeline’ı
+## Compiler pipeline
 
-Belgelenmiş sıra:
+Documented order:
 
 ```text
-.xs kaynakları
-    → lexing ve parsing
+.xs sources
+    → lexing and parsing
     → structural AST
     → macro expansion
-    → HIR ve dependency graph
+    → HIR and dependency graph
     → type checking
     → MIR
     → borrow checker
@@ -76,33 +76,33 @@ Belgelenmiş sıra:
     → linking
 ```
 
-Bu sıra yalnız doküman hedefi değildir; implementation kararlarında sınır çizgisidir. Frontend eksikleri backend içinde
-uydurulmaz. HIR ve MIR LLVM API’ye bağlı değildir; backend giriş noktası hedef bağımsız XLIL katmanıdır.
+This order is not just documentation; it is an implementation boundary. Missing frontend behavior must not be invented in
+the backend. HIR and MIR do not depend on the LLVM API; the backend entry language is the target-independent XLIL layer.
 
-## Şu an çalışan ana özellikler
+## Current working features
 
-- C23 tabanlı, Clang/LLVM odaklı build sistemi
-- Anti-GNU CMake/toolchain kontrolleri
-- `.xsproj` manifest parser/lexer/model public C API’si
-- X# lexer ve structural AST parser
-- Declaration/statement macro expansion için synthetic reparse ve expanded view altyapısı
-- HIR symbol table, import/name/type çözümleme başlangıcı
-- Primitive tip metadata ve nominal user-defined type resolution
-- Literal initializer/assignment/return kontrolleri
-- MIR model API, text writer, borrow-check iskeleti ve bazı MIR optimizasyonları
-- XLIL model/writer ve sınırlı MIR → XLIL lowering çekirdeği
-- LLVM context/module/target/object/link altyapısı
+- C23-based, Clang/LLVM-focused build system
+- Anti-GNU CMake/toolchain checks
+- `.xsproj` manifest parser/lexer/model public C API
+- X# lexer and structural AST parser
+- Synthetic reparse and expanded-view infrastructure for declaration/statement macro expansion
+- HIR symbol table plus import/name/type resolution bootstrap
+- Primitive type metadata and nominal user-defined type resolution
+- Literal initializer/assignment/return checks
+- MIR model API, text writer, borrow-check skeleton, and a few MIR optimization passes
+- XLIL model/writer and limited MIR → XLIL lowering core
+- LLVM context/module/target/object/link infrastructure
 
-Güncel ayrıntılı durum için [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) dosyasına bak.
+For the detailed current status, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
 
-## Sürüm politikası
+## Release policy
 
-Numaralı X# sürümleri LLVM IR üretimi çalışır hale geldikten sonra başlayacaktır. O zamana kadar kök
-[CHANGELOG.md](CHANGELOG.md) dosyası `Unreleased` geliştirme günlüğü olarak tutulur.
+Numbered X# releases will begin after LLVM IR generation is working. Until then, the root [CHANGELOG.md](CHANGELOG.md) file is
+kept as an `Unreleased` development log.
 
-## CLI özeti
+## CLI summary
 
-Bugünkü desteklenen komutlar:
+Currently supported command shapes:
 
 ```text
 xs check -proj MyApp.xsproj
@@ -113,41 +113,41 @@ xs build --output xlil -proj MyApp.xsproj
 xs run -proj MyApp.xsproj
 ```
 
-`xs build` ve `xs run` uçtan uca native executable üretimi tamamlanana kadar bazı yollar bilinçli diagnostic/failure
-üretebilir. Ara çıktı uzantıları:
+Some `xs build` and `xs run` paths may intentionally emit diagnostics/failures until end-to-end native executable generation
+is complete. Intermediate output extensions:
 
 - `.xhir`: HIR text dump
 - `.xmir`: MIR text dump
 - `.xlil`: XLIL text registry
 
-`.xlil` hiçbir zaman binary format olmayacaktır.
+`.xlil` will never be a binary format.
 
-## Geliştirme kuralları
+## Development rules
 
-- Ana implementation dili C23’tür.
-- Yeni/touched C kodunda `#include <stdbool.h>` kullanma; C23 `bool` kullan.
-- Yeni/touched C kodunda `NULL` yerine `nullptr` tercih et.
-- C ve header dosyaları 500 satırı aşmamalıdır.
-- CMake kullanılır; Meson kullanılmaz.
-- GNU C compiler, GNU Make, GNU binutils fallback’leri ve GNU C dialect’leri reddedilir.
-- Kalıcı shell script yazılmaz; otomasyon için Java source-file veya D tercih edilir.
-- Satır sayımı için `busybox wc` gibi GNU dışı araçları tercih et.
-- Test/build sırasında OOM riskine karşı `ulimit -v 2097152` kullan.
+- The primary implementation language is C23.
+- Do not use `#include <stdbool.h>` in new/touched C code; use C23 `bool`.
+- Prefer `nullptr` over `NULL` in new/touched C code.
+- C and header files must not exceed 500 lines.
+- Use CMake; do not use Meson.
+- GNU C compiler, GNU Make, GNU binutils fallbacks, and GNU C dialects are rejected.
+- Do not add persistent shell scripts; use Java source-file tools or D for automation.
+- Prefer non-GNU tools such as `busybox wc` for line counting.
+- Use `ulimit -v 2097152` during test/build runs to reduce OOM risk.
 
-Daha geniş katkı ve çalışma kuralları için [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) ve [.agents/AGENTS.md](.agents/AGENTS.md)
-dosyalarına bak.
+For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and
+[.agents/AGENTS.md](.agents/AGENTS.md).
 
-## Dokümantasyon haritası
+## Documentation map
 
-- [docs/README.md](docs/README.md): dokümantasyon giriş noktası
-- [docs/BUILDING.md](docs/BUILDING.md): build, test, toolchain ve OOM notları
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): derleyici mimarisi ve aşama sınırları
-- [docs/CLI.md](docs/CLI.md): CLI sözleşmesi ve mevcut durum
-- [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md): ayrıntılı implementation durumu
-- [docs/TODO.md](docs/TODO.md): X# v0 kararları ve takip listesi
-- [docs/MONOREPO.md](docs/MONOREPO.md): monorepo seçim modeli
-- [docs/LLVM_BACKEND.md](docs/LLVM_BACKEND.md): LLVM backend altyapısı
+- [docs/README.md](docs/README.md): documentation entry point
+- [docs/BUILDING.md](docs/BUILDING.md): build, test, toolchain, and OOM notes
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): compiler architecture and stage boundaries
+- [docs/CLI.md](docs/CLI.md): CLI contract and current status
+- [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md): detailed implementation status
+- [docs/TODO.md](docs/TODO.md): X# v0 decisions and tracking list
+- [docs/MONOREPO.md](docs/MONOREPO.md): monorepo selection model
+- [docs/LLVM_BACKEND.md](docs/LLVM_BACKEND.md): LLVM backend infrastructure
 
-## Lisans
+## License
 
-Lisans ve notice bilgisi için kökteki `LICENSE.txt` ve `NOTICE.txt` dosyalarına bak.
+For license and notice information, see the root `LICENSE.txt` and `NOTICE.txt` files.

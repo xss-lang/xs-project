@@ -1,41 +1,39 @@
 # xs-project monorepo
 
-Bu depo X# için LLVM-project benzeri tek checkout monorepo modelini kullanır. LLVM tarafındaki
-`LLVM_ENABLE_PROJECTS` / `LLVM_ENABLE_RUNTIMES` ayrımının X# karşılığı olarak `XS_ENABLE_PROJECTS` ve
-`XS_ENABLE_RUNTIMES` kullanılır.
+This repository uses an LLVM-project-style single-checkout monorepo model for X#. The X# equivalents of LLVM’s
+`LLVM_ENABLE_PROJECTS` / `LLVM_ENABLE_RUNTIMES` split are `XS_ENABLE_PROJECTS` and `XS_ENABLE_RUNTIMES`.
 
-Kök checkout adı/mantığı `xs-project`tir. Üst seviye CMake project adı `xs_project`tir.
+The checkout/root concept is `xs-project`. The top-level CMake project name is `xs_project`.
 
-## Etkin projeler
+## Active projects
 
-Üst seviye CMake seçimi:
+Top-level CMake selection:
 
-```sh
+```text
 cmake --preset clang-debug -DXS_ENABLE_PROJECTS=xs
 ```
 
-Varsayılan değer `xs` projesidir. `all` değeri tüm kararlı projeleri seçer.
+The default value is `xs`. The value `all` selects all stable projects.
 
-## Kararlı proje
+## Stable projects
 
-- `xs`: X# derleyicisi, public C23 API başlıkları, CLI ve mevcut test hedefleri.
-- `xsproj`: public C23 `.xsproj` manifest parser/lexer/model API’si.
+- `xs`: the X# compiler, public C23 API headers, CLI, and current test targets.
+- `xsproj`: the public C23 `.xsproj` manifest parser/lexer/model API.
 
-Projeler arası ortak public C başlıkları kök `include/` altında yaşar. `xs` projesinin C kaynakları `xs/sources/`
-altında, `xs`-özel başlıkları `xs/include/` altında; `xsproj` projesinin C kaynakları `xsproj/sources/` altında,
-`xsproj`-özel başlıkları `xsproj/include/` altında yaşar.
+Shared public C headers live under root `include/`. `xs` C sources live under `xs/sources/`, `xs`-specific headers under
+`xs/include/`; `xsproj` C sources live under `xsproj/sources/`, and `xsproj`-specific headers under `xsproj/include/`.
 
-## Runtime seçimi
+## Runtime selection
 
-Üst seviye runtime seçimi:
+Top-level runtime selection:
 
-```sh
+```text
 cmake --preset clang-debug -DXS_ENABLE_RUNTIMES=
 ```
 
-Şu an build edilebilir runtime yoktur. Gelecekte X# runtime ayrı bir monorepo runtime projesi olarak eklenecektir.
+There is no buildable runtime today. A future X# runtime will be added as a separate monorepo runtime project.
 
-## Gelecek projeler
+## Future projects
 
 - `xsfmt`: future Rust nightly + Serde formatter project.
 - `xstidy`: future Rust nightly + Serde linter project.
@@ -43,22 +41,21 @@ cmake --preset clang-debug -DXS_ENABLE_RUNTIMES=
 - `xs-backend`: future native XS Backend project.
 - `xsrt`
 
-Future project dizinleri kendi köklerinde tutulur ama henüz CMake build’e alınmaz. Implementation başladığında
-`XS_ENABLE_PROJECTS` ile build’e alınabilir hale getirilecektir. `xsrt` runtime tarafında aynı registry mantığıyla
-`XS_ENABLE_RUNTIMES` üzerinden etkinleşecektir.
+Future project directories live at their own roots, but are not included in the CMake build yet. Once implementation starts,
+they can become selectable through `XS_ENABLE_PROJECTS`. `xsrt` will use the same registry idea on the runtime side through
+`XS_ENABLE_RUNTIMES`.
 
-## Tool konfigürasyon standardı
+## Tool configuration standard
 
-`xsfmt`, `xstidy` ve ileride eklenecek developer tool projeleri kullanıcı konfigürasyonu için TOML kullanır. Bu karar tool
-config dosyaları içindir; `.xsproj` proje manifest syntax'ı ayrı XSPROJ formatı olarak kalır.
+`xsfmt`, `xstidy`, and future developer tool projects use TOML for user configuration. This applies to tool configuration
+files only; the `.xsproj` project manifest syntax remains a separate XSPROJ format.
 
-## CMake sözleşmesi
+## CMake contract
 
-- `XS_ENABLE_PROJECTS=xs`: mevcut derleyiciyi build eder.
-- `XS_ENABLE_PROJECTS=xsproj`: yalnız `.xsproj` public parser kütüphanesini ve testini build eder.
-- `XS_ENABLE_PROJECTS=all`: tüm kararlı projeleri build eder.
-- `XS_ENABLE_RUNTIMES=`: bugün hiçbir runtime build etmez.
-- `XS_ENABLE_RUNTIMES=all`: bugün hiçbir kararlı runtime olmadığı için boş listeye genişler.
-- Future project adı verilirse CMake bilinçli şekilde hata verir; bu, henüz implementation olmayan araçların sessizce build’e
-  girdi sanılmasını engeller.
-- Future runtime adı verilirse CMake aynı şekilde bilinçli hata verir.
+- `XS_ENABLE_PROJECTS=xs`: builds the current compiler.
+- `XS_ENABLE_PROJECTS=xsproj`: builds only the `.xsproj` public parser library and its test.
+- `XS_ENABLE_PROJECTS=all`: builds all stable projects.
+- `XS_ENABLE_RUNTIMES=`: builds no runtime today.
+- `XS_ENABLE_RUNTIMES=all`: expands to an empty list today because there is no stable runtime.
+- Selecting a future project intentionally fails in CMake; this prevents unfinished tools from appearing to build silently.
+- Selecting a future runtime intentionally fails in the same way.

@@ -1,392 +1,387 @@
-# X# derleyicisinin mevcut durumu
+# Current X# compiler status
 
-Derleyici C23 ile yazılır; Clang, CMake, Ninja, LLVM araçları ve LLD kullanır. GNU C derleyicisi, GNU Make
-üreteçleri, GNU binutils, GNU C lehçeleri ve `_GNU_SOURCE` kullanımı yapılandırma veya derleme aşamasında reddedilir.
-Yeni ve dokunulan C kodunda `bool` doğrudan C23'ten alınır, `#include <stdbool.h>` kullanılmaz ve null pointer sabiti
-olarak `NULL` yerine `nullptr` tercih edilir.
+The compiler is written in C23 and uses Clang, CMake, Ninja, LLVM tools, and LLD. The GNU C compiler, GNU Make generators,
+GNU binutils, GNU C dialects, and `_GNU_SOURCE` are rejected during configuration or build. New and touched C code uses C23
+`bool` directly, does not include `<stdbool.h>`, and prefers `nullptr` over `NULL`.
 
-Belgelenmiş derleme sırası korunur:
+The documented compilation order is preserved:
 
 ```text
-.xs kaynakları
-    → sözcüksel analiz ve ayrıştırma
-    → yapısal AST
-    → makro genişletme
-    → HIR ve bağımlılık grafiği
-    → tip denetimi
+.xs sources
+    → lexing and parsing
+    → structural AST
+    → macro expansion
+    → HIR and dependency graph
+    → type checking
     → MIR
     → borrow checker
-    → MIR optimizasyonu
-    → monomorfizasyon
-    → codegen unit ayırma
+    → MIR optimization
+    → monomorphization
+    → codegen unit splitting
     → XLIL
-    → LLVM IR ve LLVM optimizasyonu
-    → nesne kodu
-    → bağlama
+    → LLVM IR and LLVM optimization
+    → object code
+    → linking
 ```
 
-## Tamamlanan altyapı
+## Implemented infrastructure
 
-### Monorepo düzeni
+### Monorepo layout
 
-- Depo LLVM-project benzeri monorepo seçimine geçirilmiştir.
-- Monorepo kökü `xs-project`, üst seviye CMake project adı `xs_project` olarak düzenlenmiştir.
-- Üst seviye CMake `XS_ENABLE_PROJECTS` değişkenini tanır; varsayılan kararlı proje `xs` olur.
-- LLVM tarafındaki `LLVM_ENABLE_RUNTIMES` ayrımına paralel olarak `XS_ENABLE_RUNTIMES` eklenmiştir; bugün build edilebilir
-  runtime yoktur.
-- `XS_ENABLE_PROJECTS=all` tüm kararlı projeleri seçer.
-- `xs` ve `xsproj` kararlı build edilebilir projelerdir.
-- Kök `include/` dizini projeler arası ortak public C başlıkları için ayrılmıştır; `xs/include/` yalnız `xs`, `xsproj/include/`
-  yalnız `xsproj` başlıkları içindir.
-- `xsfmt` ve `xstidy` Rust nightly + Serde future project olarak, `xs-analyzer` Rust language server ve TypeScript VS Code
-  extension future project olarak, `xs-backend` future native backend project olarak, `xsrt` future runtime olarak kayıtlıdır;
-  henüz build’e alınmazlar.
+- The repository has moved to an LLVM-project-like monorepo selection model.
+- The monorepo root is `xs-project`; the top-level CMake project name is `xs_project`.
+- Top-level CMake recognizes `XS_ENABLE_PROJECTS`; the default stable project is `xs`.
+- `XS_ENABLE_RUNTIMES` was added in parallel with LLVM’s `LLVM_ENABLE_RUNTIMES`; there is no buildable runtime today.
+- `XS_ENABLE_PROJECTS=all` selects all stable projects.
+- `xs` and `xsproj` are stable buildable projects.
+- The root `include/` directory is reserved for shared public C headers across projects; `xs/include/` is for `xs` only, and
+  `xsproj/include/` is for `xsproj` only.
+- `xsfmt` and `xstidy` are future Rust nightly + Serde projects; `xs-analyzer` is a future Rust language server and
+  TypeScript VS Code extension project; `xs-backend` is a future native backend project; `xsrt` is a future runtime. They are
+  not included in the build yet.
 
-### XLIL bağlı orta katman kuralı
+### XLIL-bound middle-layer rule
 
-- HIR ve MIR LLVM’e bağlı değildir ve bağlı olmayacaktır.
-- HIR ve MIR, hedef bağımsız XLIL tip/veri sözlüğüne bağlıdır.
-- HIR/MIR başlıkları LLVM C API, target triple, data layout veya LLVM type/value kavramlarını içermez; XLIL başlıklarını
-  kullanabilir.
-- XLIL, HIR/MIR’in ortak düşük seviyeli sözlüğü ve backend’lerin ortak giriş noktası olarak LLVM IR’dan önce konumlanır.
-- LLVM IR üretimi ayrı backend katmanıdır; HIR/MIR/XLIL LLVM C API kavramlarını taşımaz.
-- Backend tüketicileri typed, borrow-checked ve monomorfize MIR hazır olduktan sonra MIR’i XLIL’e, oradan kendi hedef
-  IR’larına indirir.
-- Planlanan HIR baseline JIT public API yüzeyi `#include <xs/hir/jit.h>`, MIR performance JIT public API yüzeyi
-  `#include <xs/mir/jit.h>` ve XLIL AOT public API yüzeyi `#include <xs/lil/aot.h>` olarak ayrılır; bu API’ler HIR/MIR’i
-  LLVM C API’ye bağımlı hale getirmez.
-- LLVM şu an birincil backend odağıdır; fakat mimari Cranelift, C backend, interpreter veya başka hedefler eklenebilecek şekilde
-  korunur.
-- Hedefe özel assembly gerekirse ayrı backend/runtime katmanında tutulur. NASM `.asm`/`.inc` kullanımı serbesttir ama x86-64’e
-  kilitlenemez; ARM64 uyumluluğu korunmalıdır.
+- HIR and MIR do not and will not depend on LLVM.
+- HIR and MIR are tied to the target-independent XLIL type/data vocabulary.
+- HIR/MIR headers do not contain LLVM C API, target triple, data layout, or LLVM type/value concepts. They may include XLIL
+  headers.
+- XLIL is positioned before LLVM IR as the shared low-level vocabulary for HIR/MIR and the common input for backends.
+- LLVM IR generation is a separate backend layer; HIR/MIR/XLIL do not carry LLVM C API concepts.
+- Backend consumers lower typed, borrow-checked, monomorphized MIR to XLIL and then to their own target IR.
+- Planned public API surfaces are `#include <xs/hir/jit.h>` for the HIR baseline JIT, `#include <xs/mir/jit.h>` for the MIR
+  performance JIT, and `#include <xs/lil/aot.h>` for XLIL AOT. These APIs must not make HIR/MIR depend on the LLVM C API.
+- LLVM is the current primary backend focus, but the architecture remains open to Cranelift, a C backend, an interpreter, or
+  other targets.
+- Target-specific assembly, if needed, belongs in a separate backend/runtime layer. NASM `.asm`/`.inc` use is allowed, but it
+  must not lock the design to x86-64; ARM64 compatibility must be preserved.
 
-### Anti-GNU yapı kuralı
+### Anti-GNU build rule
 
-- CMake yalnızca Clang, Ninja, LLVM binutils eşdeğerleri ve LLD hattını kabul eder.
-- `llvm-ar`, `llvm-ranlib`, `llvm-nm`, `llvm-objcopy`, `llvm-objdump`, `llvm-strip` ve `ld.lld` dışındaki fallback araçlar
-  reddedilir.
-- GCC ve GNU Make generator reddedilir.
-- Derleyici `-std=c23` ve `CMAKE_C_EXTENSIONS OFF` ile katı ISO C23 kipinde derlenir.
-- `gnu23` gibi GNU C lehçeleri ve `_GNU_SOURCE` reddedilir.
+- CMake accepts only Clang, Ninja, LLVM-binutils equivalents, and LLD.
+- Fallback tools other than `llvm-ar`, `llvm-ranlib`, `llvm-nm`, `llvm-objcopy`, `llvm-objdump`, `llvm-strip`, and `ld.lld`
+  are rejected.
+- GCC and GNU Make generators are rejected.
+- The compiler is built in strict ISO C23 mode with `-std=c23` and `CMAKE_C_EXTENSIONS OFF`.
+- GNU C dialects such as `gnu23` and `_GNU_SOURCE` are rejected.
 
-### Proje sistemi
+### Project system
 
-- `.xsproj` dosyaları özgün X# proje sözdizimiyle ayrıştırılır.
-- `.xsproj` lexer, parser ve proje modeli uygulaması `xsproj/sources/` altında tutulur.
-- `.xsproj` lexer/parser kodu `.xs` lexer/parser koduyla ortak değildir; yalnız `//` ve `///` satır yorumları desteklenir,
-  multiline comment desteklenmez.
-- `.xsproj` parser iç derleyici detayı değildir; üçüncü taraf araçların `.xsproj` dosyalarını JSON benzeri şekilde
-  okuyabilmesi için public C23 API yüzeyi `#include <xs/project.h>` altında sağlanır.
-- Zorunlu alanlar, tekrar eden alanlar, bilinmeyen alanlar ve `appRelease` değerleri doğrulanır.
-- `entry: nil` olduğunda belgelenmiş ilk ek kaynak seçimi uygulanır.
-- Proje içindeki göreli yollar `.xsproj` dosyasının bulunduğu dizinden çözülür.
-- `xs check -proj <proje.xsproj>` çalışır.
-- `xs build --output hir|mir|xlil -proj <proje.xsproj>` seçenekleri tanınır.
-- `.xhir`, `.xmir` ve `.xlil` resmi ara-kod çıktıları structural AST tamamlanana ve formatları belgelenene kadar
-  üretilmez.
-- `compilerOptions.xsBackend` opsiyonel olarak `"LLVM"` veya `"XS"` değerlerini kabul eder.
-- `xsBackend` şimdilik yalnızca doğrulanıp proje modelinde saklanır; derleme akışını veya backend seçimini etkilemez.
+- `.xsproj` files are parsed with the X# project manifest syntax.
+- The `.xsproj` lexer, parser, and project model implementation live under `xsproj/sources/`.
+- `.xsproj` lexer/parser code is not shared with the `.xs` lexer/parser. It supports only `//` and `///` line comments; it
+  does not support multiline comments.
+- The `.xsproj` parser is not just an internal compiler detail. A public C23 API surface under `#include <xs/project.h>` lets
+  third-party tools read `.xsproj` files in a JSON-like model.
+- Required fields, duplicate fields, unknown fields, and `appRelease` values are validated.
+- When `entry: nil`, the documented first additional source selection rule is applied.
+- Project-relative paths are resolved from the directory containing the `.xsproj` file.
+- `xs check -proj <project.xsproj>` works.
+- `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
+- Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
+  formats are documented.
+- `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
+- `xsBackend` is currently only validated and stored in the project model; it does not affect the compilation flow or backend
+  selection yet.
 
-### Lexer ve yapısal AST
+### Lexer and structural AST
 
-- Belgelenmiş anahtar sözcükler, operatörler, yorumlar ve çok satırlı metinler tokenlaştırılır.
-- ASCII tanımlayıcı kuralları uygulanır.
-- Onluk tam sayılar, kayan noktalı sayılar, bilimsel gösterim ve `'` basamak ayırıcıları doğrulanır.
-- String ve character literal kaynak yazımları AST literal düğümlerine taşınır; `char` değerinin 16-bit karakter
-  olarak çözümlenmesi HIR tip aşamasına bırakılır.
-- Parser arena tabanlı yapısal AST üretir.
-- AST düğümleri dosya kimliği, offset, satır ve sütun içeren tam kaynak konumu taşır.
-- Bildirim, tip, statement, expression, pattern ve makro düğüm aileleri temsil edilir.
-- Top-level ve class member context’te `name!();` biçimli macro call’lar `XS_SYNTAX_DECL_MACRO_CALL` declaration düğümüyle
-  yapısal AST’ye alınır. Bu düğüm item/declaration üreten macro expansion için giriş noktasıdır; üretilen item’ların
-  scope’a gerçek AST replacement olarak eklenmesi sonraki makro genişletme adımıdır.
-- Named, generic, array, fixed array, pointer, reference, tuple, unit ve `fn(...) => T` function type düğümleri
-  yapısal AST'de ayrıştırılır.
-- Lexer `>>` tokenını shift-right operatörü olarak korur; structural parser `>` bekleyen generic type/generic parameter
-  kapanışlarında `>>` tokenını iki ayrı `>` gibi tüketebilir.
-- Reference type içindeki lifetime yazımları Rust temel biçimleriyle (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`)
-  `XS_SYNTAX_LIFETIME` düğümüyle AST'ye taşınır; lifetime elision ve doğrulama borrow checker aşamasına bırakılır.
-- Fonksiyon parametreleri, dönüş tipi, `throws` tipleri ve fonksiyon gövdeleri yapısal düğümlerdir; ham gövde aralığı
-  olarak saklanmaz. `=>` ile gelen dönüş tipi `XS_SYNTAX_FLAG_RETURN_TYPE` ile işaretlenir; `throws` tipleri dönüş
-  tipi gibi yorumlanmaz.
-- `data` declaration gövdeleri field-only olarak ayrıştırılır; method, constructor, destructor, inheritance ve interface
-  üyeleri AST üretmeden diagnostic verir.
-- Class constructor adı class adıyla eşleşmek zorundadır ve class başına en fazla bir constructor parser diagnostic'iyle
-  doğrulanır.
-- Interface declaration gövdeleri yalnızca gövdesiz function declaration imzaları kabul eder.
-- Class `extends` bildirimi en fazla bir kez ve tek base class ile kullanılabilir; class `implements` bildirimi çoklu
-  interface listesi kabul eder. Interface gövdesinde `extends` veya `implements` diagnostic üretir.
-- Interface dışındaki gövdesiz function declaration sözdizimi `incomplete fn ...;` gerektirir; `incomplete fn` gövde
-  içerirse parser diagnostic üretir.
-- Regular enum variant'ları payload type içeremez; `enum data` en az bir typed variant gerektirir ve tuple payload
-  parser diagnostic'iyle reddedilir.
-- `fn(...) { ... }`, `fn(...) => T { ... }` ve `move fn(...) { ... }` function expression/closure biçimleri AST'de
-  `XS_SYNTAX_EXPR_FUNCTION` düğümüyle temsil edilir; `move` capture ayrı AST bayrağıdır.
-- `new()` object creation ifadesi AST'de `XS_SYNTAX_EXPR_NEW` olarak tutulur; constructed type kaynakta yazılmadığı
-  durumlarda HIR tarafından bağlamdan çözülür.
-- Data syntax içindeki `set.field{value}` AST'de `XS_SYNTAX_EXPR_FIELD_SET`, `value get.field` ise member access
-  düğümü olarak tutulur.
-- Stdio syntax içindeki `[target]` I/O hedefleri `XS_SYNTAX_EXPR_IO_TARGET` düğümüyle temsil edilir.
-- `if`, `for`, for-each, `while`, `match`, `try`, `catch`, `finally`, `return`, `throw`, `break` ve `continue`
-  yapısal olarak ayrıştırılır.
+- Documented keywords, operators, comments, and multiline text are tokenized.
+- ASCII identifier rules are applied.
+- Decimal integers, floating-point numbers, scientific notation, and `'` digit separators are validated.
+- String and character literal source spellings are carried into AST literal nodes; resolving `char` as a 16-bit character is
+  left to the HIR type stage.
+- The parser produces an arena-based structural AST.
+- AST nodes carry full source location: file id, offset, line, and column.
+- Declaration, type, statement, expression, pattern, and macro node families are represented.
+- In top-level and class-member contexts, `name!();` macro calls are represented as `XS_SYNTAX_DECL_MACRO_CALL` declaration
+  nodes. This node is the entry point for item/declaration-producing macro expansion; inserting produced items as real AST
+  replacements in scope is a later macro-expansion step.
+- Named, generic, array, fixed array, pointer, reference, tuple, unit, and `fn(...) => T` function type nodes are parsed into
+  the structural AST.
+- The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
+  tokens when closing generic type/generic parameter contexts.
+- Lifetime spellings in reference types follow Rust base forms (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`) and are carried
+  into the AST as `XS_SYNTAX_LIFETIME` nodes. Lifetime elision and validation are left to the borrow-checker stage.
+- Function parameters, return type, `throws` types, and function bodies are structural nodes; bodies are not stored as raw
+  ranges. The `=>` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not interpreted as return
+  types.
+- `data` declaration bodies are parsed as field-only. Methods, constructors, destructors, inheritance, and interface members
+  in data bodies emit diagnostics without producing AST members.
+- Class constructor names must match the class name. At most one constructor per class is validated with parser diagnostics.
+- Interface declaration bodies accept only body-less function declaration signatures.
+- Class `extends` may be used at most once and with one base class; class `implements` accepts a list of interfaces.
+  `extends` or `implements` inside an interface body produces a diagnostic.
+- Body-less function declarations outside interfaces require `incomplete fn ...;`. An `incomplete fn` with a body produces a
+  parser diagnostic.
+- Regular enum variants cannot contain payload types. `enum data` requires at least one typed variant, and tuple payloads are
+  rejected with parser diagnostics.
+- `fn(...) { ... }`, `fn(...) => T { ... }`, and `move fn(...) { ... }` function expression/closure forms are represented as
+  `XS_SYNTAX_EXPR_FUNCTION` nodes. `move` capture is a separate AST flag.
+- `new()` object creation is represented as `XS_SYNTAX_EXPR_NEW`; when the constructed type is not written in source, HIR will
+  resolve it from context.
+- In data syntax, `set.field{value}` is represented as `XS_SYNTAX_EXPR_FIELD_SET`, while `value get.field` is represented as
+  member access.
+- In stdio syntax, `[target]` I/O targets are represented as `XS_SYNTAX_EXPR_IO_TARGET`.
+- `if`, `for`, for-each, `while`, `match`, `try`, `catch`, `finally`, `return`, `throw`, `break`, and `continue` are parsed
+  structurally.
 
-### Modül keşfi ve import grafiği
+### Module discovery and import graph
 
-- Proje kökü, etkin `.xsproj` dosyasının bulunduğu dizindir.
-- Proje kökü altındaki `.xs` dosyaları özyinelemeli olarak taranır.
-- Modüller dosya adına göre değil, bildirilmiş tam modül yoluna göre kaydedilir.
-- Aynı modül adının birden fazla dosyada bildirilmesi hata üretir.
-- `imports` ve `from ... imports ...` bağımlılıkları bildirilmiş modül adına göre çözülür.
-- Bulunamayan import hedefleri hata üretir.
-- Import edilen fakat `addFiles` içinde bulunmayan kaynaklar bağımlılık grafiğine alınır ve denetlenir.
+- The project root is the directory containing the active `.xsproj` file.
+- `.xs` files under the project root are scanned recursively.
+- Modules are registered by their declared full module path, not by file name.
+- Declaring the same module name in multiple files is an error.
+- `imports` and `from ... imports ...` dependencies are resolved by declared module name.
+- Missing import targets produce errors.
+- Imported sources that are not listed in `addFiles` are added to the dependency graph and checked.
 
-Bu katman HIR dizini altında bulunur.
+This layer lives under the HIR directory.
 
-### HIR sembol toplama
+### HIR symbol collection
 
-- `xs check` akışı yapısal AST ve makro doğrulamadan sonra HIR sembol toplama aşamasını çalıştırır.
-- Proje denetiminde direct kaynaklar ve import grafiğinden gelen kaynaklar ortak HIR sembol tablosuna alınır.
-- Dosya içindeki `module` ve `namespace` bildirimleri etkin HIR namespace yolunu belirler.
-- Dosyada `public namespace` kullanıldıysa, explicit visibility modifier taşımayan top-level declaration'lar HIR'da public
-  kabul edilir.
-- `public namespace`, explicit `private`, `internal` veya `protected` visibility modifier'larını ezmez.
-- Üst seviye `fn`, `class`, `interface`, `enum`, `data` ve `macroRules!` bildirimleri sembol tablosuna alınır.
-- `xs_hir_collect_symbols_expanded`, declaration macro expansion set verildiğinde `XS_SYNTAX_DECL_MACRO_CALL` düğümünün
-  synthetic declaration reparse tree’sindeki üretilmiş declaration’ları macro call’ın bulunduğu etkin HIR namespace içinde
-  sembol tablosuna alır. Duplicate symbol kontrolleri normal declaration’larla aynı namespace kuralını kullanır.
-- `xs_hir_collect_member_symbols`, class/interface owner sembolü için ayrı HIR member symbol table üretir. V0 kapsamı field,
-  field-benzeri macro çıktısı, method, constructor, destructor ve nested type üyeleridir.
-- Method aynı adla tekrar edilirse X# method merge kuralına göre son declaration lookup sonucunda kazanır; field/nested member
-  ad çakışmaları diagnostic üretir.
-- Semboller kısa ad, namespace adı, tam nitelikli ad, görünürlük, kaynak konumu ve kaynak AST düğümünü taşır.
-- Aynı namespace içinde aynı kısa ada sahip üst seviye bildirimler hata üretir.
-- Aynı kısa ad farklı namespace altında kullanılabilir.
-- `imports Module;` bildirimi import edilen modülün public üst seviye sembollerini modül nitelikli yerel adlarla açar.
-- `from Module imports Name;`, `from Module imports Name as Alias;` ve `from Module imports *;` bildirimi public
-  üst seviye sembolleri yerel import kapsamına açar.
-- Public olmayan semboller dış modül importuyla açılmaz.
-- Fonksiyon gövdelerindeki doğrudan çağrı hedefleri, aynı namespace sembolleri ve import kapsamı üzerinden çözümlenir.
-- Başka namespace/modül üzerinden tam nitelikli çağrı hedefleri yalnızca public sembollere çözümlenebilir.
-- Public olmayan semboller yalnızca aynı namespace ve aynı kaynak dosya içinden doğrudan qualified adla çözümlenebilir.
-- İlk segmenti yerel parametre/değişken olan çağrı hedefleri tip denetimine ertelenir.
-- Explicit named type taşıyan local değişken/parametre üzerindeki `value.Method()` çağrıları HIR member symbol table üzerinden
-  varlık açısından doğrulanır. Receiver tipi şu aşamada yalnız doğrudan identifier receiver ve named type annotation ile
-  çözümlenir.
-- HIR member symbol table, declaration macro expansion sonrası class/interface içinde üretilen field-benzeri variable ve
-  method declaration’larını normal member declaration order içine alır. Macro-generated member adları orijinal member adlarıyla
-  çakışırsa diagnostic üretir; yalnız method-method aynı ad merge/overload adayı olarak tutulur.
-- `xs_hir_validate_name_uses_expanded`, statement macro replacement set verildiğinde doğrudan statement child listelerini
-  `xs_macro_expand_child_statements` expanded view’i üzerinden dolaşır. Böylece macro expansion sonrası oluşan function/method
-  call hedefleri HIR symbol/import scope içinde doğrulanır.
+- The `xs check` flow runs HIR symbol collection after structural AST and macro validation.
+- During project checking, direct sources and sources discovered through the import graph are collected into one shared HIR
+  symbol table.
+- File-level `module` and `namespace` declarations determine the active HIR namespace path.
+- If a file uses `public namespace`, top-level declarations without an explicit visibility modifier are treated as public in
+  HIR.
+- `public namespace` does not override explicit `private`, `internal`, or `protected` visibility modifiers.
+- Top-level `fn`, `class`, `interface`, `enum`, `data`, and `macroRules!` declarations are collected into the symbol table.
+- `xs_hir_collect_symbols_expanded`, when given a declaration macro expansion set, collects synthetic declarations produced
+  by `XS_SYNTAX_DECL_MACRO_CALL` reparse trees into the active HIR namespace of the macro call. Duplicate symbol checks use
+  the same namespace rule as normal declarations.
+- `xs_hir_collect_member_symbols` produces a separate HIR member symbol table for a class/interface owner symbol. V0 scope
+  covers fields, field-like macro output, methods, constructors, destructors, and nested types.
+- If methods repeat with the same name, the last declaration wins in lookup according to the X# method-merge rule; field and
+  nested-member name conflicts produce diagnostics.
+- Symbols carry short name, namespace name, fully qualified name, visibility, source location, and source AST node.
+- Duplicate top-level declarations with the same short name in the same namespace are errors.
+- The same short name may be used under different namespaces.
+- `imports Module;` opens the imported module’s public top-level symbols under module-qualified local names.
+- `from Module imports Name;`, `from Module imports Name as Alias;`, and `from Module imports *;` open public top-level
+  symbols into the local import scope.
+- Non-public symbols are not opened through external module imports.
+- Direct call targets in function bodies are resolved through same-namespace symbols and the import scope.
+- Fully qualified call targets through another namespace/module resolve only to public symbols.
+- Non-public symbols can be resolved only from the same namespace and same source file through direct qualified names.
+- Calls where the first segment is a local parameter/variable are deferred to type checking.
+- `value.Method()` calls on locals/parameters with explicit named type annotations are validated for member existence through
+  the HIR member symbol table. At this stage the receiver type is resolved only for direct identifier receivers and named type
+  annotations.
+- After declaration macro expansion, the HIR member symbol table includes field-like variables and method declarations
+  produced inside classes/interfaces in normal member declaration order. Macro-generated member names that conflict with
+  original members produce diagnostics; only method-method same-name cases remain merge/overload candidates.
+- `xs_hir_validate_name_uses_expanded`, when given a statement macro replacement set, traverses direct statement child lists
+  through the `xs_macro_expand_child_statements` expanded view. This validates function/method call targets produced after
+  macro expansion against the HIR symbol/import scope.
 
-Bu aşama henüz metot/operator çözümleme, overload seçimi, generic constraint çözümleme veya tip tabanlı çağrı çözümleme
-yapmaz. Member symbol table bu aşamalar için ilk HIR veri modelidir; method varlık doğrulaması dispatch, override veya
-overload seçimi kararı vermez.
+This stage does not yet perform method/operator resolution, overload selection, generic constraint membership resolution, or
+type-based call resolution. The member symbol table is the first HIR data model for those later stages; method existence
+validation does not decide dispatch, override, or overload selection.
 
-### HIR tip çözümleme başlangıcı
+### HIR type resolution bootstrap
 
-- `xs check` akışı HIR import ve ad çözümlemeden sonra HIR tip çözümleme aşamasını çalıştırır.
-- `Spec/Types.txt` içindeki primitive tip adları tanınır.
-- `bool` HIR aşamasında 1 bit primitive olarak çözülür; LLVM backend bunu `i1` tipine indirir.
-- `byte` unsigned 8 bit, `sbyte` signed 8 bit olarak HIR düzeyinde ayrı primitive tiplerdir.
-- `char` 16 bit karakter tipidir.
-- `str` UTF-16’dır ve uzunluğu UTF-16 temsilinin izin verdiği ölçüde sınırsız kabul edilir.
-- X# nominal typing kullanır; HIR type identity user-defined tiplerde ad/sembol kimliğine dayanır ve aynı structural shape
-  otomatik uyumluluk sağlamaz.
-- HIR primitive metadata, runtime layout'u belgelenmiş primitive tipler için XLIL tip eşlemesini taşır.
-- `str` runtime/ABI layout'u tamamlanmadığı için henüz XLIL tipine eşlenmez.
-- Fonksiyon, data, enum, class/interface üyesi ve generic constraint içindeki tip adları doğrulanır.
-- Generic parametre adları kendi declaration scope’unda tanınır.
-- Kullanıcı tanımlı `class`, `interface`, `enum` ve `data` tipleri HIR sembol tablosu ve import kapsamı üzerinden çözülür.
-- Başka namespace/modül üzerinden tam nitelikli tip kullanımları yalnızca public tip sembollerine çözümlenebilir.
-- Public olmayan tip sembolleri yalnızca aynı namespace ve aynı kaynak dosya içinden çözümlenebilir.
-- Generic tip kullanımlarında tip argümanı sayısı declaration’daki generic parametre sayısıyla eşleşmelidir.
-- Generic type erasure olmadığı ve default generic parametre desteklenmediği için generic tiplerin argümansız kullanımı hata
-  üretir.
-- Aynı declaration scope içinde aynı generic parametre adı tekrar tanımlanamaz.
-- Generic constraint tipleri interface sembollerine çözümlenmelidir; generic interface constraint kullanımlarında arity ve
-  type argument çözümlemesi de HIR type resolution aşamasında yapılır.
-- Generic parametreler birden fazla constraint taşıyabilir; constraint listesindeki `, Identifier :` yeni generic parametre
-  başlatır, aksi halde virgül aynı parametreye ek constraint ayırır.
-- `xs_hir_check_expression_types_with_macros`, explicit primitive type annotation taşıyan variable initializer'larda literal
-  uyumluluğunu ve aynı local’a yapılan doğrudan assignment içindeki literal RHS uyumluluğunu denetler. Şimdilik integer,
-  float, string, char ve bool literal türleri primitive hedef tiplerle eşleştirilir. Explicit primitive return type taşıyan
-  function içindeki `return <literal>;` statement'ları da aynı literal uyumluluğu ile denetlenir. `nil`, `new`, identifier,
-  call ve diğer expression biçimleri genel expression type inference tamamlanana kadar ertelenir.
-- Aynı HIR expression check aşaması local block/function scope içinde `val`, `const` ve `static` immutable declaration’lara
-  doğrudan identifier assignment yapılmasını diagnostic olarak bildirir. Field, index, dereference ve alias/borrow temelli
-  mutability kuralları sonraki borrow/type-check aşamalarına ertelenir.
-- `xs_hir_resolve_types_expanded`, statement macro replacement set verildiğinde doğrudan statement child listelerini
-  `xs_macro_expand_child_statements` expanded view’i üzerinden dolaşır. Böylece macro expansion sonrası oluşan type
-  kullanımları da HIR symbol/import scope içinde doğrulanır.
+- The `xs check` flow runs HIR type resolution after HIR import and name resolution.
+- Primitive type names from `Spec/Types.txt` are recognized.
+- `bool` is resolved as a 1-bit primitive in HIR; the LLVM backend lowers it to `i1`.
+- `byte` is an unsigned 8-bit primitive and `sbyte` is a signed 8-bit primitive at the HIR level.
+- `char` is a 16-bit character type.
+- `str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
+- X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
+  shape does not imply compatibility.
+- HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.
+- `str` is not mapped to an XLIL type yet because its runtime/ABI layout is incomplete.
+- Type names inside functions, data, enum, class/interface members, and generic constraints are validated.
+- Generic parameter names are recognized in their own declaration scope.
+- User-defined `class`, `interface`, `enum`, and `data` types are resolved through the HIR symbol table and import scope.
+- Fully qualified type uses through another namespace/module can resolve only to public type symbols.
+- Non-public type symbols can be resolved only from the same namespace and same source file.
+- Generic type uses must provide the same number of type arguments as the declaration’s generic parameter count.
+- Because generic type erasure and default generic parameters are not supported, using generic types without arguments is an
+  error.
+- Duplicate generic parameter names in the same declaration scope are errors.
+- Generic constraint types must resolve to interface symbols. For generic interface constraint uses, arity and type argument
+  resolution are also performed during HIR type resolution.
+- Generic parameters may carry multiple constraints. In a constraint list, `, Identifier :` starts a new generic parameter;
+  otherwise the comma separates another constraint on the same parameter.
+- `xs_hir_check_expression_types_with_macros` checks literal compatibility for variable initializers with explicit primitive
+  type annotations and direct assignment literal RHS values to the same local. For now, integer, float, string, char, and
+  bool literal kinds are matched against primitive target types. `return <literal>;` statements inside functions with
+  explicit primitive return types are checked with the same literal compatibility logic. `nil`, `new`, identifiers, calls,
+  and other expression forms are deferred until general expression type inference is complete.
+- The same HIR expression-check stage reports diagnostics for direct identifier assignment to `val`, `const`, and `static`
+  immutable declarations inside local block/function scopes. Field, index, dereference, alias/borrow-based mutability rules
+  are deferred to later borrow/type-check stages.
+- `xs_hir_resolve_types_expanded`, when given a statement macro replacement set, traverses direct statement child lists
+  through the `xs_macro_expand_child_statements` expanded view. This validates type uses produced after macro expansion
+  against the HIR symbol/import scope.
 
-Bu aşama henüz genel expression type inference, overload seçimi, constraint üyelik/uyumluluk denetimi, trait/interface
-uyumluluğu veya ABI/layout kararı üretmez.
+This stage does not yet produce general expression type inference, overload selection, constraint membership/compatibility
+checks, trait/interface compatibility, or ABI/layout decisions.
 
-### Makro doğrulama ve kapsam çözümleme
+### Macro validation and scope resolution
 
-- Makro matcher değişkenleri, tekrar derinlikleri ve genişletme değişkenleri doğrulanır.
-- Aynı scope içindeki doğrudan ve dolaylı makro recursion hatadır.
-- Makro tanımları genişletme öncesinde ilgili scope için toplanır.
-- Macro fragment/token matcher yardımcıları `xs/sources/macro/fragment.c` içinde ayrılmıştır; validation, expansion
-  traversal ve future fragment reparse desteği `xs/sources/macro/expansion.c` dosyasını büyütmeden genişletilmelidir.
-- Aynı scope içinde metinsel tanımdan önce makro çağrısı kabul edilir.
-- İç scope’ta tanımlanan makro dış scope’tan çağrılamaz.
-- Çağrıların görülebilir bir makro tanımına çözümlendiği denetlenir.
-- Tam token matcher kuralları ve boş matcher kuralları eşleştirilebilir.
-- Tek token'la kesin doğrulanabilen `tt`, `ident`, `literal`, `lifetime` ve `vis` fragment matcher'ları çağrı token'larına
-  göre eşleştirilir.
-- Makro genişletme hazırlık API'si `xs_macro_prepare_expansion` olarak eklenmiştir. Bu aşama çağrıları scope içinde
-  çözer, tek-token fragment veya tam-token matcher ile yapısal yeniden ayrıştırma gerektirmeden genişletilebilir çağrıları
-  sayar, basit expansion token/substitution planı üretir ve `meta` fragmentı için genişletmeyi bilinçli olarak erteler.
-- `expr`, `stmt`, `block`, `ty`, `path`, `item` ve `pat` fragment v0 desteği, validation ve expansion sırasında matcher içinde
-  tek kalan fragment olduğu durumda çağrı parantezi içindeki token dizisini tek expression/statement/block/type/path/item/pattern
-  fragment olarak yakalar. Expansion içinde `$name` kullanımı bu token dizisini statement veya declaration reparse aşamasına
-  taşır.
-- `xs_macro_expand_tokens` basit desteklenen çağrılar için call span ve genişletilmiş token listesi üretir. Bir macro
-  çağrısında birden fazla desteklenen rule eşleşirse, her rule declaration order ile ayrı expansion kaydı üretir. Bu çıktı
-  henüz structural AST'ye geri yazılmaz; sonraki aşamadaki fragment reparse ve AST replacement için ara genişletme akışıdır.
-- `xs_macro_reparse_expansion_as_statement` desteklenen expansion token listesini synthetic bir fonksiyon gövdesi içinde
-  statement olarak yeniden structural AST parser'dan geçirir. Bu köprü gerçek macro call replacement değildir; fragment-level
-  reparse ve AST replacement için doğrulanabilir ara adımdır.
-- `xs_macro_reparse_result_statement` reparsed synthetic gövdeden replacement statement düğümünü çıkarır. Parent-child AST
-  replacement hâlâ sonraki adımdır.
-- `xs_macro_expand_statements`, desteklenen token expansion'ları statement olarak yeniden ayrıştırır ve çağrı span'ı ile
-  replacement statement düğümünü `XsMacroStatementExpansionSet` içinde eşler. Set, synthetic reparse ağaçlarının ownership'ini
-  tuttuğu için replacement düğümleri set serbest bırakılana kadar geçerlidir. Aynı statement macro call için birden fazla
-  rule eşleşirse set aynı call span’iyle declaration order içinde birden fazla replacement statement kaydı taşır. Bu API
-  yalnız statement context'teki macro call'ları statement replacement olarak üretir; başka expression içinde bulunan nested
-  macro call'lar token expansion düzeyinde kalır.
-- `xs_macro_statement_expansion_find`, bir `XS_SYNTAX_STMT_MACRO_CALL` düğümü için synthetic replacement statement düğümünü
-  macro katmanından döndürür. HIR tüketicileri replacement lookup için kendi span eşleme kodunu tutmaz.
-- `xs_macro_expand_declarations`, declaration context’teki `XS_SYNTAX_DECL_MACRO_CALL` düğümlerinin desteklenen token
-  expansion’larını synthetic source file olarak yeniden ayrıştırır ve `XsMacroDeclarationExpansionSet` içinde çağrı span’i,
-  reparse tree ownership’i ve üretilen declaration sayısını tutar. `xs_macro_declaration_expansion_find` declaration macro
-  call düğümü için ilgili synthetic declaration expansion kaydını döndürür.
-- `xs_macro_expand_top_level_declarations`, top-level declaration listesi için structural expanded view üretir. Bu view
-  original declaration düğümlerini korur, `XS_SYNTAX_DECL_MACRO_CALL` düğümlerini aynı call span’ine ait synthetic declaration
-  expansion kayıtlarıyla declaration order içinde materyalize eder ve parent-child AST rewrite tamamlanana kadar test edilebilir
-  expanded AST köprüsü sağlar.
-- `xs_macro_expand_child_declarations`, aynı expanded view mekanizmasını herhangi bir parent declaration'ın doğrudan çocukları
-  için üretir. HIR tip çözümleme, `class` ve `interface` içindeki declaration macro call’ların ürettiği function member ve
-  field-benzeri variable declaration’larını bu view üzerinden dolaşır.
-- `xs_macro_expand_child_statements`, statement block gibi parent node'ların doğrudan statement çocukları için structural
-  expanded view üretir. View original statement düğümlerini korur, `XS_SYNTAX_STMT_MACRO_CALL` düğümlerini aynı call span'ine
-  ait synthetic replacement statement kayıtlarıyla statement order içinde materyalize eder. Bu API fiziksel parent-child AST
-  rewrite yapmaz; HIR/MIR geçişlerinin statement macro replacement'ı ortak biçimde tüketmesi için ara köprüdür.
-- `xs_macro_materialize_expanded_tree`, declaration ve statement expansion set'lerini kullanarak ayrı bir syntax tree içinde
-  macro-call declaration/statement düğümlerini replacement düğümleriyle klonlar. Bu ağaç orijinal AST'yi değiştirmez; reparse
-  kaynak metinleri expansion set'leri tarafından sahiplenildiği için materyalize ağacın replacement text/span referansları
-  expansion set lifetime'ına bağlıdır.
-- HIR sembol toplama, top-level expanded declaration view üzerinden çalışır. Böylece aynı declaration macro call için birden
-  fazla eşleşen rule’dan gelen tüm declaration expansion kayıtları declaration order ile normal declaration akışına girer.
-- `xs check` akışı makro doğrulamadan sonra makro genişletme hazırlığını ve statement expansion set üretimini HIR sembol
-  toplama aşamasından önce çalıştırır. Driver bu replacement set'in lifetime'ını compilation unit boyunca tutar ve HIR ad
-  kullanımı ile HIR tip çözümleme traversal'larına verir. HIR ad ve tip çözümleme, statement child listelerini expanded
-  statement view üzerinden dolaştığı için aynı statement macro call’a ait tüm replacement statement kayıtları declaration
-  order ile normal statement akışına girer.
+- Macro matcher variables, repetition depths, and expansion variables are validated.
+- Direct and indirect macro recursion in the same scope is an error.
+- Macro definitions are collected for the relevant scope before expansion.
+- Macro fragment/token matcher helpers are separated into `xs/sources/macro/fragment.c`; validation, expansion traversal, and
+  future fragment reparse support must grow without bloating `xs/sources/macro/expansion.c`.
+- Macro calls before textual definition in the same scope are accepted.
+- Macros defined in an inner scope cannot be called from an outer scope.
+- Calls are checked to resolve to a visible macro definition.
+- Full token matcher rules and empty matcher rules can be matched.
+- Single-token fragment matchers that can be validated precisely (`tt`, `ident`, `literal`, `lifetime`, and `vis`) are matched
+  against call tokens.
+- The macro expansion preparation API is `xs_macro_prepare_expansion`. It resolves calls in scope, counts calls that can be
+  expanded without structural reparsing through single-token fragments or full-token matchers, produces a simple expansion
+  token/substitution plan, and intentionally defers `meta` fragments.
+- V0 support for `expr`, `stmt`, `block`, `ty`, `path`, `item`, and `pat` fragments captures the call-parentheses token
+  sequence as a single expression/statement/block/type/path/item/pattern fragment when the matcher contains exactly one
+  remaining fragment. `$name` use in expansion carries that token sequence to statement or declaration reparse.
+- `xs_macro_expand_tokens` produces call span and expanded token lists for simple supported calls. If multiple supported
+  rules match one macro call, each rule produces a separate expansion record in declaration order. This output is not written
+  back into the structural AST yet; it is an intermediate flow for later fragment-level reparse and AST replacement.
+- `xs_macro_reparse_expansion_as_statement` reparses a supported expansion token list as a statement inside a synthetic
+  function body. This is a bridge for fragment-level reparse and AST replacement, not final macro-call replacement.
+- `xs_macro_reparse_result_statement` extracts the replacement statement node from the reparsed synthetic body. Parent-child
+  AST replacement remains a later step.
+- `xs_macro_expand_statements` reparses supported token expansions as statements and maps call span to replacement statement
+  nodes inside `XsMacroStatementExpansionSet`. The set owns the synthetic reparse trees, so replacement nodes remain valid
+  until the set is freed. If multiple rules match the same statement macro call, the set carries multiple replacement
+  statements for the same call span in declaration order. This API only produces statement replacements for statement-context
+  macro calls; nested macro calls inside other expressions remain token-level expansions.
+- `xs_macro_statement_expansion_find` returns the synthetic replacement statement node for an `XS_SYNTAX_STMT_MACRO_CALL`.
+  HIR consumers do not keep their own span mapping code for replacement lookup.
+- `xs_macro_expand_declarations` reparses supported token expansions from declaration-context `XS_SYNTAX_DECL_MACRO_CALL`
+  nodes as synthetic source files and stores call span, reparse tree ownership, and produced declaration count inside
+  `XsMacroDeclarationExpansionSet`. `xs_macro_declaration_expansion_find` returns the synthetic declaration expansion record
+  for a declaration macro call node.
+- `xs_macro_expand_top_level_declarations` produces a structural expanded view for a top-level declaration list. The view
+  preserves original declaration nodes, materializes `XS_SYNTAX_DECL_MACRO_CALL` nodes through synthetic declaration
+  expansion records with matching call spans, and provides a testable expanded-AST bridge until parent-child AST rewrite is
+  complete.
+- `xs_macro_expand_child_declarations` provides the same expanded-view mechanism for the direct children of any parent
+  declaration. HIR type resolution traverses function members and field-like variable declarations produced by declaration
+  macro calls inside `class` and `interface` through this view.
+- `xs_macro_expand_child_statements` produces a structural expanded view for direct statement children of nodes such as
+  statement blocks. The view preserves original statement nodes and materializes `XS_SYNTAX_STMT_MACRO_CALL` nodes through
+  synthetic replacement statement records with matching call spans in statement order. This API does not physically rewrite
+  parent-child AST; it is an intermediate bridge shared by HIR/MIR passes that consume statement macro replacement.
+- `xs_macro_materialize_expanded_tree` clones an expanded tree into a separate syntax tree, replacing macro-call
+  declaration/statement nodes with replacements from declaration and statement expansion sets. It does not mutate the
+  original AST; replacement text/span references in the materialized tree are tied to the expansion set lifetime because the
+  expansion sets own the reparse source text.
+- HIR symbol collection operates through the top-level expanded declaration view. All declaration expansion records from all
+  matching rules for the same declaration macro call enter the normal declaration flow in declaration order.
+- The `xs check` flow runs macro validation, macro expansion preparation, and statement expansion set generation before HIR
+  symbol collection. The driver keeps the replacement set alive for the compilation unit and passes it to HIR name-use and
+  HIR type-resolution traversals. HIR name and type resolution traverse statement child lists through the expanded statement
+  view, so all replacement statement records for the same statement macro call enter the normal statement flow in declaration
+  order.
 
-Declaration/item context macro call AST girişi, declaration reparse set üretimi, top-level/child declaration expanded view,
-statement expanded view, ayrı expanded tree materyalizasyonu, HIR sembol toplama entegrasyonu ve class/interface
-function/field-benzeri member expansion’ın HIR tip traversal’a bağlanması vardır. Üretilmiş declaration/statement
-düğümlerinin ana AST üzerinde in-place parent-child replacement olarak yazılması ve field-benzeri declaration’ın
-`XS_SYNTAX_CLASS_FIELD` olarak yeniden sınıflandırılması sonraki adımdır.
+Declaration/item-context macro-call AST input, declaration reparse set generation, top-level/child declaration expanded views,
+statement expanded view, separate expanded tree materialization, HIR symbol-collection integration, and class/interface
+function/field-like member expansion wired into HIR type traversal all exist. Writing generated declaration/statement nodes
+back as in-place parent-child replacements on the main AST and reclassifying field-like declarations as `XS_SYNTAX_CLASS_FIELD`
+remain next steps.
 
-`meta` fragment yakalama ile tam AST genişletme hâlâ tamamlanmamıştır. `expr`, `stmt`, `block`, `ty`, `path`, `item` ve
-`pat` fragment desteği şimdilik tek token dizisiyle sınırlıdır. Desteklenmeyen fragment matcher’lar için semantik uydurulmaz.
+`meta` fragment capture and full AST expansion are still incomplete. `expr`, `stmt`, `block`, `ty`, `path`, `item`, and
+`pat` fragment support is currently limited to a single token sequence. Unsupported fragment matchers do not invent
+semantics.
 
-### MIR modeli
+### MIR model
 
-- `xs/mir.h` altında modül, fonksiyon bildirimi, fonksiyon tanımı, basic block ve terminator için C23 API vardır.
-- MIR fonksiyon tanımları basic block listesi taşır.
-- MIR fonksiyon tanımları local table taşır; local kind, tip, mutability ve isim bilgisi saklanır.
-- MIR place modeli root local ve `field`/`deref`/`index` projection zinciriyle başlatılmıştır.
-- MIR SSA value table ve `const.i64`, `add.i64`, `load`, `store` instruction çekirdeği vardır.
-- Her basic block şimdilik `return`, `goto`, `branch` veya `unreachable` terminator’ü alabilir.
-- MIR text writer declaration ve gövdeli function çıktısını deterministik yazar.
-- `xs/mir/borrow_checker.h` altında ilk MIR doğrulama/borrow-check iskeleti vardır.
-- Borrow checker iskeleti terminator zorunluluğunu, return type uyumunu ve immutable local köküne yapılan `store`
-  işlemlerini doğrular.
-- Borrow checker ayrıca instruction result/value id, `load`/`store` place id, `goto`/`branch` hedefi, `branch` condition tipi
-  ve `add.i64` operand tip/id tutarlılığını doğrular.
-- `xs/mir/optimizer.h` altında ilk MIR optimizasyon API’si vardır.
-- CFG cleanup pass’i entry block’tan erişilemeyen block’ları kaldırır ve kalan block id / `goto` / `branch` hedeflerini
-  yeniden yazar.
-- Constant folding pass’i iki `const.i64` operandlı `add.i64` instruction’ını `const.i64` sonucuna indirger.
+- `xs/mir.h` exposes a C23 API for modules, function declarations, function definitions, basic blocks, and terminators.
+- MIR function definitions carry a basic block list.
+- MIR function definitions carry a local table; local kind, type, mutability, and name are stored.
+- The MIR place model starts with a root local plus a `field`/`deref`/`index` projection chain.
+- MIR has an SSA value table and core `const.i64`, `add.i64`, `load`, and `store` instructions.
+- Each basic block may currently have a `return`, `goto`, `branch`, or `unreachable` terminator.
+- The MIR text writer deterministically writes declarations and functions with bodies.
+- `xs/mir/borrow_checker.h` contains the first MIR validation/borrow-check skeleton.
+- The borrow-checker skeleton validates mandatory terminators, return type compatibility, and `store` operations into
+  immutable local roots.
+- The borrow checker also validates instruction result/value ids, `load`/`store` place ids, `goto`/`branch` targets, branch
+  condition type, and `add.i64` operand type/id consistency.
+- `xs/mir/optimizer.h` contains the initial MIR optimization API.
+- The CFG cleanup pass removes blocks unreachable from the entry block and rewrites remaining block ids plus `goto`/`branch`
+  targets.
+- Constant folding lowers `add.i64` instructions with two `const.i64` operands to a `const.i64` result.
 
-Bu aşama henüz statement/expression lowering, genel instruction set, exception edge, async state machine, region/loan/move
-analizi, drop noktası doğrulaması veya kapsamlı MIR optimizasyon pass setini üretmez.
+This stage does not yet produce statement/expression lowering, the full instruction set, exception edges, async state
+machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.
 
-### LLVM backend altyapısı
+### LLVM backend infrastructure
 
-- Frontend’den ayrı `xs_backend_llvm` kütüphanesi vardır.
-- LLVM context, target machine, target triple ve data layout yönetilir.
-- Her codegen unit için ayrı LLVM module oluşturulur.
-- Belgelenmiş sayısal primitive tipler LLVM tiplerine eşlenir.
-- Gövdesiz fonksiyon bildirimi ve fonksiyon imzası indirgeme desteği vardır.
-- `default<O0>`–`default<O3>` LLVM optimizasyon pipeline’ları yapılandırılabilir.
-- LLVM module doğrulaması ve nesne dosyası üretimi çalışır.
-- Linker, shell kullanılmadan ve argüman politikası üst katmana bırakılarak çağrılabilir.
+- A separate `xs_backend_llvm` library exists outside the frontend.
+- LLVM context, target machine, target triple, and data layout are managed.
+- A separate LLVM module is created for each codegen unit.
+- Documented numeric primitive types map to LLVM types.
+- Body-less function declarations and function signature lowering are supported.
+- LLVM optimization pipelines from `default<O0>` through `default<O3>` can be configured.
+- LLVM module verification and object file emission work.
+- The linker can be invoked without a shell, with argument policy left to the upper layer.
 
-Ayrıntılar: [LLVM_BACKEND.md](LLVM_BACKEND.md)
+Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 
-### XLIL hedefi
+### XLIL target
 
-- `XS/XLIL.md`, X# için resmi düşük seviyeli ara dili XLIL olarak tanımlar.
-- `.xhir` HIR kodu, `.xmir` MIR kodu ve `.xlil` XLIL kodu uzantısıdır; bu formatların resmi içeriği henüz
-  belgelenmemiştir.
-- XLIL, HIR/MIR'in bağlı olduğu hedef bağımsız tip/veri sözlüğüdür.
-- XLIL, LLVM IR’dan önce ve backend’lerin ortak giriş noktası olacak şekilde tasarlanır.
-- `.xlil` her zaman text registry formatıdır; binary XLIL formatı eklenmeyecektir.
-- XLIL CLR kadar high-level değildir, assembly kadar low-level değildir; assembly’ye benzeyen ama aynı olmayan hedef bağımsız
-  orta-düşük seviye registry dilidir.
-- XLIL bytecode veya sanal makine formatı değildir.
-- Kararlı XLIL registry/generation C23 API hedefi `#include <xs/lil.h>` olarak belgelenmiştir.
-- XLIL AOT C23 API hedefi `#include <xs/lil/aot.h>` olarak ayrılmıştır; concrete object/link davranışı gelene kadar yalnız
-  planlanan public yüzeyi işaretler.
-- Harici frontend ve araçlar ileride XLIL üreterek XS LLVM backend’inden, daha sonra XS Backend’inden native executable
-  alabilmelidir.
-- Üçüncü parti diller `xs/lil.h` ile XLIL üretebilir; XLIL AOT için `xs/lil/aot.h`, HIR baseline JIT ve MIR performance JIT
-  için ayrı public başlıklar `xs/hir/jit.h` ve `xs/mir/jit.h` olarak planlanır.
-- Planlanan doğrudan XLIL derleme girişi `xs build --xlil -file <girdi.xlil>` biçimindedir; komut henüz uygulanmamıştır.
-- `xs/lil.h` altında hedef bağımsız XLIL modül, primitive tip, fonksiyon bildirimi, fonksiyon gövdesi, basic block,
-  `const.i64` ve `return` API çekirdeği vardır.
-- XLIL text writer modül başlığı, fonksiyon bildirimi ve ilk gövdeli function/block kayıtlarını yazar.
-- MIR → XLIL lowering ilk gövde köprüsü `const.i64` instruction ve `return` terminator içeren düz blokları XLIL function
-  body kayıtlarına indirir.
-- `xs/mono/plan.h` altında ilk monomorfizasyon plan API’si vardır; şimdilik yalnız zaten concrete MIR fonksiyonlarını stable
-  `_XS_FN_..._G0` sembol adına bağlar, reachable generic instantiation üretimi sonraki adımdır.
-- `xs/codegen/units.h` altında hedef bağımsız codegen unit planlama API’si vardır; MIR fonksiyonları varsayılan v0
-  politikasına göre module path bazlı codegen unit’lere ayrılır. Mono plandan üretildiğinde unit adı kaynak module path’inden,
-  function adı stable monomorfize sembolden alınır.
+- `XS/XLIL.md` defines XLIL as the official low-level intermediate language for X#.
+- `.xhir`, `.xmir`, and `.xlil` are the extensions for HIR, MIR, and XLIL code; the official contents of these formats are
+  not fully documented yet.
+- XLIL is the target-independent type/data vocabulary that HIR/MIR depend on.
+- XLIL is designed to sit before LLVM IR and act as the common input point for backends.
+- `.xlil` is always a text registry format; no binary XLIL format will be added.
+- XLIL is not as high-level as CLR and not as low-level as assembly; it is an assembly-like but distinct
+  target-independent mid/low-level registry language.
+- XLIL is not bytecode or a virtual-machine format.
+- The stable XLIL registry/generation C23 API target is documented as `#include <xs/lil.h>`.
+- The XLIL AOT C23 API target is separated as `#include <xs/lil/aot.h>`; until concrete object/link behavior exists, it only
+  marks the planned public surface.
+- External frontends and tools should eventually be able to produce XLIL and use the XS LLVM backend, and later the XS
+  Backend, to produce native executables.
+- Third-party languages can generate XLIL through `xs/lil.h`; XLIL AOT, HIR baseline JIT, and MIR performance JIT are planned
+  as separate public headers: `xs/lil/aot.h`, `xs/hir/jit.h`, and `xs/mir/jit.h`.
+- The planned direct XLIL compilation entry is `xs build --xlil -file <input.xlil>`; the command is not implemented yet.
+- `xs/lil.h` contains target-independent core APIs for XLIL modules, primitive types, function declarations, function bodies,
+  basic blocks, `const.i64`, and `return`.
+- The XLIL text writer emits module headers, function declarations, and initial function/block records with bodies.
+- The first MIR → XLIL body bridge lowers flat blocks containing `const.i64` instructions and a `return` terminator to XLIL
+  function body records.
+- `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
+  stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
+- `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path
+  based codegen units by the default v0 policy. When produced from a mono plan, the unit name comes from the source module
+  path and the function name comes from the stable monomorphized symbol.
 
-XLIL instruction set, function body modeli, runtime/ABI yerleşimi ve MIR → XLIL function body lowering kararları
-[TODO.md](TODO.md) altında X# v0 sözleşmesi olarak sabitlenmiştir; implementation aşamalı tamamlanacaktır.
+XLIL instruction set, function body model, runtime/ABI layout, and MIR → XLIL body lowering decisions are fixed as the X# v0
+contract in [TODO.md](TODO.md); implementation will complete them incrementally.
 
-## Henüz tamamlanmayan aşamalar
+## Unfinished stages
 
-X# v0 için büyük dil, runtime, ABI, MIR, XLIL, backend ve tooling kararları [TODO.md](TODO.md) altında sabitlenmiştir.
-Kalan işler karar beklemez; bu sözleşmeye göre aşamalı implementation gerektirir. Küçük uygulama kararları belgelenmiş
-sözdizimi ve mevcut mimariyle uyumlu kaldığı sürece uygulama sırasında alınır.
+Large language, runtime, ABI, MIR, XLIL, backend, and tooling decisions for X# v0 are fixed in [TODO.md](TODO.md). Remaining
+work does not wait for decisions; it requires incremental implementation according to that contract. Small implementation
+decisions are made during development as long as they remain compatible with documented syntax and the current architecture.
 
-- Makro fragment matcher eşleme motoru ve AST makro genişletmesi
-- HIR metot ve operatör çözümleme
-- Modül/import dışındaki tip, fonksiyon çağrısı, generic ve trait/interface bağımlılık kenarları
-- Expression tip denetimi ve generic constraint doğrulaması
-- Send, Sync, mutability ve async/await doğrulamaları
-- MIR statement/expression lowering, exception yolları ve async state machine üretimi
-- Borrow checker ve drop noktalarının doğrulanması
-- MIR optimizasyonları
-- Monomorfizasyon, codegen unit ayırma ve artımlı derleme önbelleği
-- XLIL function body veri modeli ve MIR → XLIL body lowering
-- XLIL’den LLVM IR’a fonksiyon gövdesi indirgeme
-- Runtime/ABI yerleşimi tamamlanmamış `str` tipinin LLVM eşlemesi
-- Üretilmiş nesne dosyalarının proje hedeflerine göre bağlanması
-- `xs build` ve `xs run` komutlarının uçtan uca tamamlanması
+- Macro fragment matcher engine and AST macro expansion
+- HIR method and operator resolution
+- Type, function-call, generic, and trait/interface dependency edges beyond module/import
+- Expression type checking and generic constraint validation
+- Send, Sync, mutability, and async/await validation
+- MIR statement/expression lowering, exception paths, and async state machine generation
+- Borrow checker and drop-point validation
+- MIR optimizations
+- Monomorphization, codegen unit splitting, and incremental compilation cache
+- XLIL function body data model and MIR → XLIL body lowering
+- XLIL to LLVM IR function body lowering
+- LLVM mapping for `str`, whose runtime/ABI layout is not fully implemented
+- Linking generated object files according to project targets
+- End-to-end `xs build` and `xs run`
 
-Tamamlanmamış semantik aşamalar için parser veya LLVM backend içinde geçici dil kuralı üretilmez.
+Temporary language rules are not invented in the parser or LLVM backend for unfinished semantic stages.
 
-## Derleme ve test
+## Build and test
 
 ```text
 cmake --preset clang-debug
@@ -394,7 +389,7 @@ cmake --build --preset clang-debug
 ctest --preset clang-debug
 ```
 
-Örnek projeyi denetlemek için:
+To check the example project:
 
 ```text
 ./build/clang-debug/xs check -proj XS/example/MyApp.xsproj

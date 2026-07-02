@@ -1,148 +1,157 @@
-# X# v0 kararları ve uygulama takip listesi
+# X# v0 decisions and implementation tracking list
 
-Bu dosya artık “sorulacak büyük kararlar” listesi değildir. Buradaki kararlar X# v0 için uygulanacak sözleşmedir.
-Eksik kalan işler karar eksikliği yüzünden değil, yalnızca implementation tamamlanmadığı için eksiktir.
-Yeni kararlar kullanıcıdan ek belge beklemeden burada sabitlenir; mevcut belgelenmiş X# kuralları her zaman önceliklidir.
-Eksik alanlarda Rust, TypeScript, C#, C23 ve hedef assembly geleneklerinden X# ile uyumlu ölçüde ilham alınabilir.
+This file is no longer a list of “large decisions to ask about.” The decisions here are the contract to implement for X# v0.
+Remaining gaps are implementation gaps, not missing-decision gaps. New decisions are fixed here without waiting for more
+external documentation; existing documented X# rules always take priority. Missing areas may draw on Rust, TypeScript, C#,
+C23, and target assembly conventions as long as the result fits X#.
 
-## Dil semantiği kararları
+## Language semantic decisions
 
-- Macro expansion sonrası declaration conflict çözümü AST üzerinde yapılır. Aynı namespace ve aynı declaration kind içindeki
-  aynı isimler hatadır. `public`/dosya-yerel görünürlük conflict kuralını değiştirmez; görünürlük yalnız erişimi belirler.
-- Macro expansion deterministiktir: dosya sırası, source order ve expansion depth sırasıyla kullanılır. Sonsuz recursion için
-  sabit depth limiti diagnostic üretir.
-- Lifetime kuralları Rust modelinden alınır: lexical region inference, outlives bound, higher-ranked lifetime bound ve elision
-  kuralları Rust 2021 ile uyumlu olacak şekilde uygulanır. X# syntax farklı olduğunda aynı semantik AST alanlarına indirilir.
-- X# nominal typing kullanır. User-defined tip kimliği ad/sembol üzerinden belirlenir; alanları ve yapısı aynı olan iki ayrı
-  tip uyumlu kabul edilmez.
-- Trait/interface uyumluluğu nominaldir. Bir tip yalnız açıkça ilgili interface’i implement ettiğinde uyumludur. Structural
-  uyumluluk yalnız ayrı bir `structural` özelliği belgelenirse eklenecektir.
-- Generic constraint doğrulaması nominal interface üyeliğine dayanır. Tüm constraint’ler conjunctive kabul edilir; herhangi
-  biri sağlanmazsa instantiation hatadır.
-- Overload seçim sırası: namespace/import visibility filtresi, arity filtresi, exact type match, coercion-free generic
-  substitution, constraint doğrulaması, en spesifik aday seçimi. Eşit özgüllük ambiguity diagnostic üretir.
-- Method merge, class inheritance zinciri boyunca nominal override kurallarıyla yapılır. Aynı imzada override için base
-  declaration görünür olmalıdır; overload set’leri ayrı tutulur.
-- Operator resolution önce primitive built-in operator set’ini, sonra visible user-defined operator set’ini dener. User-defined
-  operator primitive exact match’i gölgeleyemez.
-- `throws` function type’ın parçasıdır. Checked exception listesi HIR type-check sırasında doğrulanır, MIR terminator’lerinde
-  normal ve exceptional edge olarak temsil edilir.
-- `async fn` public olarak `Task<T>` döndürür; `T` return tipidir, `void` için `Task<void>` kullanılır. `await` yalnız awaitable
-  trait/interface sözleşmesini sağlayan değerlerde geçerlidir.
-- `Send` ve `Sync` auto-trait’tir. Primitive immutable değerler Send+Sync kabul edilir; raw runtime/resource handle tipleri
-  açık implement gerektirir. Mutable aliasing borrow checker tarafından engellenir.
-- Mutability place tabanlıdır. `mut` binding yeniden atama ve mutable borrow üretme yetkisi verir; immutable binding mutable
-  borrow veremez.
-- Drop sırası lexical scope içinde ters declaration sırasıdır. Partial initialization için yalnız initialize edilmiş field/value
-  drop edilir.
+- Declaration conflicts after macro expansion are resolved on the AST. Same names in the same namespace and same declaration
+  kind are errors. `public`/file-local visibility does not change conflict rules; visibility only controls access.
+- Macro expansion is deterministic: file order, source order, and expansion-depth order are used. Infinite recursion produces
+  a diagnostic at a fixed depth limit.
+- Lifetime rules are taken from the Rust model: lexical region inference, outlives bounds, higher-ranked lifetime bounds, and
+  elision rules are compatible with Rust 2021. When X# syntax differs, it lowers to equivalent semantic AST fields.
+- X# uses nominal typing. User-defined type identity is based on names/symbols; two distinct types with the same fields and
+  shape are not compatible.
+- Trait/interface compatibility is nominal. A type is compatible with an interface only when it explicitly implements that
+  interface. Structural compatibility may be added only if a separate `structural` feature is documented.
+- Generic constraint validation is based on nominal interface membership. All constraints are conjunctive; instantiation is an
+  error if any constraint is not satisfied.
+- Overload selection order: namespace/import visibility filter, arity filter, exact type match, coercion-free generic
+  substitution, constraint validation, most-specific candidate selection. Equal specificity produces an ambiguity diagnostic.
+- Method merge follows nominal override rules along the class inheritance chain. The base declaration must be visible for an
+  override with the same signature; overload sets remain separate.
+- Operator resolution tries the primitive built-in operator set first, then the visible user-defined operator set. A
+  user-defined operator cannot shadow a primitive exact match.
+- `throws` is part of the function type. Checked exception lists are validated during HIR type checking and are represented as
+  normal and exceptional edges in MIR terminators.
+- `async fn` publicly returns `Task<T>`; `T` is the return type, and `Task<void>` is used for `void`. `await` is valid only on
+  values satisfying the awaitable trait/interface contract.
+- `Send` and `Sync` are auto-traits. Primitive immutable values are considered Send+Sync; raw runtime/resource handle types
+  require explicit implementation. Mutable aliasing is prevented by the borrow checker.
+- Mutability is place-based. A `mut` binding grants reassignment and mutable-borrow creation authority; an immutable binding
+  cannot produce a mutable borrow.
+- Drop order is reverse declaration order within the lexical scope. For partial initialization, only initialized fields/values
+  are dropped.
 
-## Runtime ve ABI kararları
+## Runtime and ABI decisions
 
-- `char` 16-bit UTF-16 code unit’tir. Tek başına surrogate code unit taşıyabilir; scalar-value garantisi `char` seviyesinde
-  verilmez.
-- `str` UTF-16 code unit dizisidir. Uzunluk `size_t` code unit sayısıdır; uzunluk sınırı platform adres alanı ve `size_t` ile
-  sınırlıdır. Null terminator zorunlu değildir.
-- `str` v0 runtime layout’u `length: size_t`, `data: const uint16_t *`, `owner: void *` alanlarından oluşan fat handle’dır.
-  `owner == NULL` borrowed/static string anlamına gelir.
-- String literal normalization yalnız escape çözümleme yapar; Unicode canonical normalization yapmaz. Invalid escape diagnostic
-  üretir; ham UTF-16 surrogate pair’leri korunur.
-- `data` ve `class` field layout’u declaration order’a göre yapılır. Alignment ve padding hedef platform ABI’sine göre belirlenir.
-- `class` değeri referans semantiğine sahiptir; object handle pointer-sized opaque reference olarak taşınır.
-- `data` değeri value semantiğine sahiptir; field’ları inline taşınır.
-- `enum` tag tipi varsayılan `u32`’dir. `enum data` layout’u `u32 tag` + en büyük payload için aligned union biçimindedir.
-- Niche optimization v0’da yoktur. ABI kararlılığı için enum/data enum representation açık layout’a bağlı kalır.
-- Interface dispatch v0’da itable kullanır: object header type descriptor’a, type descriptor interface id’den method table’a gider.
-- Generic interface dispatch monomorfizasyon sonrası concrete itable ile yapılır.
-- Cross-module public interface visibility module registry ve package metadata ile doğrulanır; private interface implement bilgisi
-  dış modüle export edilmez.
-- Exception ABI v0’da platform unwind desteği varsa zero-cost unwind, yoksa runtime personality abstraction kullanır. MIR cleanup
-  edge’leri drop noktalarını taşır.
-- `throw` payload’u runtime exception object reference’ıdır. `catch` nominal type match yapar.
-- Async runtime ABI `Task<T>` header, state enum, poll function pointer, result storage ve exception slot içerir.
-- Scheduler v0 work-stealing gerektirmez; platform thread pool abstraction yeterlidir. Cancellation cooperative flag ile yapılır.
-- Thread/sync runtime C23 atomics ve platform native thread primitive’leri üzerinde ince soyutlama kullanır; GNU pthread uzantılarına
-  bağlı değildir.
+- `char` is a 16-bit UTF-16 code unit. It may hold a standalone surrogate code unit; `char` does not guarantee scalar values.
+- `str` is a UTF-16 code-unit sequence. Length is a `size_t` code-unit count, limited by the platform address space and
+  `size_t`. A null terminator is not required.
+- `str` v0 runtime layout is a fat handle with `length: size_t`, `data: const uint16_t *`, and `owner: void *`.
+  `owner == NULL` means a borrowed/static string.
+- String literal normalization performs only escape resolution; it does not perform Unicode canonical normalization. Invalid
+  escapes produce diagnostics; raw UTF-16 surrogate pairs are preserved.
+- `data` and `class` field layout follows declaration order. Alignment and padding are determined by the target platform ABI.
+- `class` values use reference semantics; object handles are pointer-sized opaque references.
+- `data` values use value semantics; fields are stored inline.
+- The default `enum` tag type is `u32`. `enum data` layout is `u32 tag` plus an aligned union large enough for the largest
+  payload.
+- Niche optimization does not exist in v0. ABI stability keeps enum/data-enum representation tied to explicit layout.
+- Interface dispatch in v0 uses an itable: object header to type descriptor, type descriptor from interface id to method
+  table.
+- Generic interface dispatch happens through a concrete itable after monomorphization.
+- Cross-module public interface visibility is checked through module registry and package metadata; private interface
+  implementation details are not exported to other modules.
+- Exception ABI in v0 uses zero-cost unwinding when platform unwind support exists; otherwise it uses a runtime personality
+  abstraction. MIR cleanup edges carry drop points.
+- A `throw` payload is a runtime exception object reference. `catch` performs nominal type matching.
+- Async runtime ABI contains a `Task<T>` header, state enum, poll function pointer, result storage, and exception slot.
+- The v0 scheduler does not require work-stealing; a platform thread pool abstraction is enough. Cancellation uses a
+  cooperative flag.
+- Thread/sync runtime uses C23 atomics and thin abstractions over platform-native thread primitives; it does not depend on GNU
+  pthread extensions.
 
-## MIR kararları
+## MIR decisions
 
-- MIR function, local table, basic block listesi ve terminator zorunluluğundan oluşur.
-- Basic block tek girişli label’dır; block son instruction’dan sonra tam olarak bir terminator taşır.
-- Value modeli typed SSA value id kullanır. Mutable memory için place/projection kullanılır.
-- Place `local`, `field`, `deref`, `index` projection zinciridir.
-- Terminator seti v0: `return`, `goto`, `switch`, `call`, `throw`, `unreachable`, `drop_then`.
-- Exception yolları terminator üzerinde explicit exceptional target olarak tutulur.
-- Borrow checker girdileri region id, loan id, move path, initialized path, drop flag ve alias set’lerinden oluşur.
-- Borrow checker kuralı Rust NLL modeline yakındır: shared borrow çoklu olabilir, mutable borrow exclusive’dır, moved place okunamaz.
-- Drop point doğrulaması MIR üzerinde yapılır; moved veya uninitialized value drop edilmez.
-- MIR optimizasyon pass sırası: CFG cleanup, unreachable elimination, copy propagation, constant folding, dead store elimination,
-  drop flag simplification, second CFG cleanup.
-- MIR optimizasyonları observable drop order, exception edge ve borrow-check sonucu değiştiremez.
+- A MIR function consists of a local table, a basic block list, and a mandatory terminator.
+- A basic block is a single-entry label; exactly one terminator follows the final instruction.
+- The value model uses typed SSA value ids. Mutable memory uses places/projections.
+- A place is a chain of `local`, `field`, `deref`, and `index` projections.
+- Terminator set for v0: `return`, `goto`, `switch`, `call`, `throw`, `unreachable`, `drop_then`.
+- Exception paths are stored as explicit exceptional targets on terminators.
+- Borrow checker inputs consist of region ids, loan ids, move paths, initialized paths, drop flags, and alias sets.
+- Borrow checker rules are close to Rust NLL: shared borrows may be multiple, mutable borrows are exclusive, and moved places
+  cannot be read.
+- Drop-point validation runs on MIR; moved or uninitialized values are not dropped.
+- MIR optimization pass order: CFG cleanup, unreachable elimination, copy propagation, constant folding, dead store
+  elimination, drop flag simplification, second CFG cleanup.
+- MIR optimizations must not change observable drop order, exception edges, or borrow-check results.
 
-## Monomorfizasyon ve codegen kararları
+## Monomorphization and codegen decisions
 
-- Monomorfizasyon lazy yapılır: reachable generic instantiation görüldükçe üretilir.
-- Cache key `package-id`, `symbol-id`, canonical type arguments, target triple ve backend abi version’dan oluşur.
-- Symbol naming stable mangling kullanır: `_XS` prefix, module path, symbol kind, generic argument hash.
-- Aynı instantiation package boundary içinde paylaşılır; public generic instantiation cross-package cache’e yazılabilir.
-- Codegen unit ayırma varsayılan olarak module path bazlıdır. Büyük module’ler function count eşiğine göre alt unit’e bölünebilir.
-- Incremental cache content-addressed artifact store’dur; hash girdisi HIR/MIR canonical dump, target triple ve compiler version’dır.
+- Monomorphization is lazy: reachable generic instantiations are generated as they are discovered.
+- Cache key fields are `package-id`, `symbol-id`, canonical type arguments, target triple, and backend ABI version.
+- Symbol naming uses stable mangling: `_XS` prefix, module path, symbol kind, and generic argument hash.
+- The same instantiation is shared within a package boundary; public generic instantiations may be written to a cross-package
+  cache.
+- Codegen unit splitting is module-path based by default. Large modules may be split into sub-units by function-count
+  threshold.
+- The incremental cache is a content-addressed artifact store; the hash input is the canonical HIR/MIR dump, target triple,
+  and compiler version.
 
-## XLIL kararları
+## XLIL decisions
 
-- XLIL backend’lerin ortak public giriş dilidir; HIR/MIR LLVM’e değil XLIL tip/veri sözlüğüne bağlı kalır.
-- `.xlil` her zaman text registry formatıdır; binary XLIL formatı eklenmeyecektir.
-- XLIL, CLR kadar high-level değildir ve assembly kadar low-level değildir; assembly’ye benzeyen ama hedef mimariden bağımsız
-  bir orta-düşük seviye registry dilidir.
-- XLIL registry dosyası `xlil module <name>` başlığıyla başlar ve declaration/definition kayıtları içerir.
-- Function body modeli typed SSA, explicit basic block ve terminator yapısını kullanır.
-- XLIL instruction set v0: constants, arithmetic, compare, load/store, address projection, call, branch, switch, return, throw,
-  landingpad/cleanup, aggregate construct/extract.
-- XLIL runtime ABI’ye özgü object layout’u tarif etmez; yalnız hedef bağımsız tip, sembol ve control-flow taşır.
-- MIR → XLIL lowering borrow-check ve monomorfizasyon sonrası yapılır.
-- XLIL → LLVM IR lowering target triple/data layout bilerek LLVM module/function/body üretir.
-- XLIL public C23 API `#include <xs/lil.h>` altında AOT üretim, XLIL registry üretimi, modül, type, function, block,
-  value ve instruction builder yüzeyleri sağlar.
-- Üçüncü parti diller `xs/lil.h` üzerinden XLIL üreterek LLVM backend’i ve ileride XS Backend’i hedefleyebilir.
+- XLIL is the shared public input language for backends; HIR/MIR remain tied to the XLIL type/data vocabulary instead of LLVM.
+- `.xlil` is always a text registry format; no binary XLIL format will be added.
+- XLIL is not as high-level as CLR and not as low-level as assembly; it is an assembly-like, target-independent
+  mid/low-level registry language.
+- An XLIL registry file starts with `xlil module <name>` and contains declaration/definition records.
+- The function body model uses typed SSA, explicit basic blocks, and terminators.
+- XLIL instruction set v0: constants, arithmetic, compare, load/store, address projection, call, branch, switch, return,
+  throw, landingpad/cleanup, aggregate construct/extract.
+- XLIL does not describe runtime ABI-specific object layout; it only carries target-independent types, symbols, and control
+  flow.
+- MIR → XLIL lowering runs after borrow checking and monomorphization.
+- XLIL → LLVM IR lowering intentionally uses target triple/data layout to produce LLVM modules, functions, and bodies.
+- The XLIL public C23 API under `#include <xs/lil.h>` provides AOT generation, XLIL registry generation, module, type,
+  function, block, value, and instruction builder surfaces.
+- Third-party languages can generate XLIL through `xs/lil.h` and target the LLVM backend and future XS Backend.
 
-## JIT ve public ara katman API kararları
+## JIT and public intermediate API decisions
 
-- HIR baseline JIT public C23 API hedefi `#include <xs/hir/jit.h>` başlığıdır.
-- HIR baseline JIT hızlı geliştirme, denetim ve debug çalıştırması içindir; optimize native performans hedefi değildir.
-- MIR performance JIT public C23 API hedefi `#include <xs/mir/jit.h>` başlığıdır.
-- MIR performance JIT typed, borrow-check geçmiş ve optimizasyonlardan geçirilmiş MIR üzerinde çalışır.
-- XLIL AOT public C23 API hedefi `#include <xs/lil/aot.h>` başlığıdır.
-- JIT/AOT API’leri HIR/MIR’i LLVM API’ye bağlamaz; gerekirse XLIL veya backend abstraction üzerinden hedefe iner.
-- Bu API yüzeyleri üçüncü parti dil ve araçlar tarafından kullanılabilir olacak şekilde C23 public ABI olarak tasarlanır.
-- JIT başlıkları ve davranışları implementation gelmeden sahte/stub semantik ile genişletilmeyecektir.
+- HIR baseline JIT public C23 API target: `#include <xs/hir/jit.h>`.
+- HIR baseline JIT is for fast development, checking, and debug execution; it is not the optimized native performance target.
+- MIR performance JIT public C23 API target: `#include <xs/mir/jit.h>`.
+- MIR performance JIT runs on typed, borrow-checked, optimized MIR.
+- XLIL AOT public C23 API target: `#include <xs/lil/aot.h>`.
+- JIT/AOT APIs do not tie HIR/MIR to the LLVM API; when needed, they lower through XLIL or a backend abstraction.
+- These API surfaces are designed as public C23 ABI for third-party languages and tools.
+- JIT headers and behavior will not be extended with fake/stub semantics before implementation exists.
 
-## Backend ve link kararları
+## Backend and link decisions
 
-- LLVM backend v0 birincil backend’tir. XS Backend seçeneği parse/model düzeyinde kabul edilir, implementation hazır olana kadar
-  diagnostic ile reddedilir.
-- Object output adı `<target-name>.o` veya platform object suffix’idir. Executable output proje `appName` değerinden türetilir.
-- Linker abstraction shell çağırmaz; argv listesiyle çalışır.
-- Linux hedefinde varsayılan linker `ld.lld` veya `clang --target=<triple> -fuse-ld=lld` yoludur; GNU binutils kullanılmaz.
-- Runtime linkleme explicit XS runtime archive/shared object üzerinden yapılır.
-- Object/link artifact dizini `build/xs/<profile>/<target>/` olarak belirlenir.
+- LLVM backend v0 is the primary backend. The XS Backend option is accepted at parse/model level; until implementation is
+  ready, it produces a feature diagnostic.
+- Object output name is `<target-name>.o` or the platform object suffix. Executable output is derived from the project
+  `appName`.
+- Linker abstraction does not invoke a shell; it runs through an argv list.
+- On Linux, the default linker path is `ld.lld` or `clang --target=<triple> -fuse-ld=lld`; GNU binutils are not used.
+- Runtime linking is done through an explicit XS runtime archive/shared object.
+- Object/link artifact directory is `build/xs/<profile>/<target>/`.
 
-## Tooling ve proje akışı kararları
+## Tooling and project-flow decisions
 
-- `.xhir`, `.xmir`, `.xlil` text dump formatları deterministik, newline-normalized ve source-order stable olur.
-- `xsfmt`, `xstidy` ve ileride eklenecek developer tool projelerinin kullanıcı konfigürasyon formatı TOML'dır.
-- TOML yalnız tool configuration standardıdır; `.xsproj` proje manifest formatının yerine geçmez.
-- `xs check` parse, macro expansion, HIR, type-check ve borrow-independent semantic checks çalıştırır; object üretmez.
-- `xs build` tüm check aşamalarını, MIR, borrow checker, monomorfizasyon, XLIL, backend ve link akışını çalıştırır.
-- `xs run` önce `xs build` yapar, sonra executable’ı argument forwarding ile başlatır.
-- `xs build --xlil -file <girdi.xlil>` proje manifesti okumadan XLIL parse, verify, backend ve link akışını çalıştırır.
-- Başarılı komut exit code `0`, diagnostic error varsa `1`, internal compiler error varsa `70` döndürür.
-- Diagnostic kodları `XS####` biçimindedir. Severity: note, warning, error, fatal.
-- Makine-okunur diagnostic çıktı ileride `--diagnostic-format json` ile JSON Lines olarak sağlanır.
-- `compilerOptions.xsBackend: "LLVM"` LLVM backend’i seçer; `"XS"` XS Backend hazır değilse feature diagnostic üretir.
-- Public module/package dağıtımı manifest metadata, exported symbol table ve compiled interface summary içerir.
-- Cross-project import çözümleme package name/version, target triple compatibility ve exported module path üzerinden yapılır.
+- `.xhir`, `.xmir`, and `.xlil` text dump formats are deterministic, newline-normalized, and source-order stable.
+- `xsfmt`, `xstidy`, and future developer tool projects use TOML for user configuration.
+- TOML is only the tool configuration standard; it does not replace the `.xsproj` project manifest format.
+- `xs check` runs parse, macro expansion, HIR, type-check, and borrow-independent semantic checks; it does not produce objects.
+- `xs build` runs all check stages, MIR, borrow checker, monomorphization, XLIL, backend, and link flow.
+- `xs run` first runs `xs build`, then launches the executable with argument forwarding.
+- `xs build --xlil -file <input.xlil>` runs XLIL parse, verify, backend, and link without reading a project manifest.
+- Successful commands exit with code `0`; diagnostic errors exit with `1`; internal compiler errors exit with `70`.
+- Diagnostic codes use the `XS####` format. Severity values: note, warning, error, fatal.
+- Machine-readable diagnostic output will be provided later as JSON Lines through `--diagnostic-format json`.
+- `compilerOptions.xsBackend: "LLVM"` selects the LLVM backend; `"XS"` produces a feature diagnostic until XS Backend is
+  ready.
+- Public module/package distribution includes manifest metadata, exported symbol table, and compiled interface summary.
+- Cross-project import resolution uses package name/version, target triple compatibility, and exported module path.
 
-## Uygulama durumu
+## Implementation status
 
-- Kararlar yukarıda sabitlenmiştir; implementation bu sözleşmeye doğru aşamalı ilerleyecektir.
-- Geçici veya belgelenmemiş ABI/API eklenmeyecek; yeni implementation bu dosyadaki kararlara ve `docs/IMPLEMENTATION.md` akışına
-  bağlanacaktır.
+- The decisions above are fixed; implementation will move toward this contract incrementally.
+- No temporary or undocumented ABI/API will be added. New implementation work will be tied to this file and to the
+  [IMPLEMENTATION.md](IMPLEMENTATION.md) flow.

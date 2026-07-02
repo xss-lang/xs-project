@@ -1,14 +1,14 @@
-# Build ve test rehberi
+# Build and test guide
 
-xs-project C23, CMake, Ninja, Clang/LLVM ve LLD üzerine kuruludur. GNU C compiler, GNU Make generator, GNU binutils
-fallback’leri, GNU C dialect’leri ve `_GNU_SOURCE` desteklenmez.
+xs-project is built on C23, CMake, Ninja, Clang/LLVM, and LLD. The GNU C compiler, GNU Make generators, GNU binutils
+fallbacks, GNU C dialects, and `_GNU_SOURCE` are not supported.
 
-## Gereken araçlar
+## Required tools
 
 - `cmake`
 - `ninja`
 - `clang`
-- LLVM araçları:
+- LLVM tools:
   - `llvm-ar`
   - `llvm-ranlib`
   - `llvm-nm`
@@ -17,7 +17,7 @@ fallback’leri, GNU C dialect’leri ve `_GNU_SOURCE` desteklenmez.
   - `llvm-strip`
 - `ld.lld`
 
-GNU dışı yardımcı araçlar tercih edilir:
+Non-GNU helper tools are preferred:
 
 - `fd`
 - `rg`
@@ -25,9 +25,9 @@ GNU dışı yardımcı araçlar tercih edilir:
 - `sd`
 - `busybox wc`
 - `tokei`
-- `uutils-coreutils` araçları
+- `uutils-coreutils` tools
 
-## Varsayılan build
+## Default build
 
 ```text
 cmake --preset clang-debug
@@ -35,16 +35,16 @@ cmake --build --preset clang-debug
 ctest --preset clang-debug --output-on-failure
 ```
 
-Preset:
+Preset details:
 
 - generator: Ninja
 - compiler: Clang
-- build dir: `build/clang-debug`
-- varsayılan proje: `xs`
+- build directory: `build/clang-debug`
+- default project: `xs`
 
-## OOM güvenli çalışma
+## OOM-safe workflow
 
-Geçmişte parser/project testleri OOM üretmiştir. Uzun test/build koşularında 2GB sanal bellek limiti kullan:
+Parser/project tests have previously triggered OOM conditions. Use a 2GB virtual memory limit for longer build/test runs:
 
 ```text
 ulimit -v 2097152
@@ -52,12 +52,12 @@ cmake --build --preset clang-debug
 ctest --preset clang-debug --output-on-failure
 ```
 
-Testlerin hızlı olması beklenir. Bir test aniden çok bellek tüketirse infinite loop, parser progress bug’ı veya büyüyen
-macro expansion şüphesiyle ele alınmalıdır.
+Tests are expected to run quickly. If a test suddenly consumes a lot of memory, treat it as a possible infinite loop, parser
+progress bug, or runaway macro expansion.
 
-## Proje seçimi
+## Project selection
 
-Kararlı projeler:
+Stable projects:
 
 ```text
 cmake --preset clang-debug -DXS_ENABLE_PROJECTS=xs
@@ -65,19 +65,19 @@ cmake --preset clang-debug -DXS_ENABLE_PROJECTS=xsproj
 cmake --preset clang-debug -DXS_ENABLE_PROJECTS=all
 ```
 
-`xsproj` tek başına build edildiğinde LLVM package gerektirmemelidir. Future projeler (`xsfmt`, `xstidy`, `xs-analyzer`,
-`xs-backend`) şimdilik bilinçli CMake hatası üretir.
+`xsproj` must not require the LLVM package when built by itself. Future projects (`xsfmt`, `xstidy`, `xs-analyzer`,
+`xs-backend`) intentionally produce CMake errors for now.
 
-## Faydalı doğrulamalar
+## Useful checks
 
 ```text
 git diff --check
 rg -n "\bNULL\b|#include <stdbool\.h>" xs xsproj tests include
-busybox wc -l <dosya.c> <dosya.h>
+busybox wc -l <file.c> <file.h>
 ```
 
-C ve header dosyaları 500 satırı aşmamalıdır. Yeni veya dokunulan C kodunda `nullptr` ve C23 `bool` kullanılmalıdır.
+C and header files must not exceed 500 lines. New or touched C code should use `nullptr` and C23 `bool`.
 
-## Build çıktıları
+## Build outputs
 
-`build/` generated alandır. Test ve build sonrası kirli görünebilir; normal commit kapsamına alınmaz.
+`build/` is a generated area. It may look dirty after build/test runs and should not be included in normal commits.
