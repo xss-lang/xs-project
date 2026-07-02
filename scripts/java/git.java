@@ -20,6 +20,7 @@ class Git
       "node_modules/",
       "dist/",
       "out/",
+      "XS/",
       "Cargo.lock",
       ":(glob)**/build/**",
       ":(glob)**/target/**",
