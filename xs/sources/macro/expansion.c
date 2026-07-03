@@ -26,7 +26,8 @@ typedef struct
 
 static bool list_add(MacroList *list, const XsSyntaxNode *node)
 {
-  if (list->count == list->capacity) {
+  if (list->count == list->capacity)
+  {
     size_t capacity = list->capacity == 0 ? 8 : list->capacity * 2;
     const XsSyntaxNode **items = realloc(list->items, capacity * sizeof(*items));
     if (items == nullptr)
@@ -40,7 +41,8 @@ static bool list_add(MacroList *list, const XsSyntaxNode *node)
 
 static XsText macro_name(const XsSyntaxNode *macro)
 {
-  for (size_t i = 0; i < macro->child_count; ++i) {
+  for (size_t i = 0; i < macro->child_count; ++i)
+  {
     if (macro->children[i]->kind == XS_SYNTAX_IDENTIFIER)
       return macro->children[i]->text;
   }
@@ -49,8 +51,10 @@ static XsText macro_name(const XsSyntaxNode *macro)
 
 static XsText call_name(const XsSyntaxNode *call)
 {
-  if (call->kind == XS_SYNTAX_STMT_MACRO_CALL) {
-    for (size_t i = 0; i < call->child_count; ++i) {
+  if (call->kind == XS_SYNTAX_STMT_MACRO_CALL)
+  {
+    for (size_t i = 0; i < call->child_count; ++i)
+    {
       XsText name = call_name(call->children[i]);
       if (name.data != nullptr)
         return name;
@@ -59,7 +63,8 @@ static XsText call_name(const XsSyntaxNode *call)
   }
   if (call->kind != XS_SYNTAX_EXPR_MACRO_CALL)
     return (XsText){0};
-  for (size_t i = 0; i < call->child_count; ++i) {
+  for (size_t i = 0; i < call->child_count; ++i)
+  {
     if (call->children[i]->kind == XS_SYNTAX_IDENTIFIER)
       return call->children[i]->text;
   }
@@ -71,17 +76,20 @@ static bool rule_supported(const XsSyntaxNode *rule)
   if (rule->child_count < 2)
     return false;
   const XsSyntaxNode *matcher = rule->children[0];
-  for (size_t i = 0; i < matcher->child_count; ++i) {
+  for (size_t i = 0; i < matcher->child_count; ++i)
+  {
     const XsSyntaxNode *element = matcher->children[i];
     if (element->kind == XS_SYNTAX_MACRO_MATCHER_REPETITION)
       return false;
-    if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
+    if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT)
+    {
       if (element->child_count < 2 || !xs_macro_fragment_supported(element->children[1]->text))
         return false;
     }
   }
   const XsSyntaxNode *expansion = rule->children[1];
-  for (size_t i = 0; i < expansion->child_count; ++i) {
+  for (size_t i = 0; i < expansion->child_count; ++i)
+  {
     if (expansion->children[i]->kind == XS_SYNTAX_MACRO_EXPANSION_REPETITION)
       return false;
   }
@@ -90,7 +98,8 @@ static bool rule_supported(const XsSyntaxNode *rule)
 
 static const XsSyntaxNode *find_capture(const CaptureSet *captures, XsText name)
 {
-  for (size_t i = 0; i < captures->count; ++i) {
+  for (size_t i = 0; i < captures->count; ++i)
+  {
     if (xs_macro_text_equal(captures->items[i].name, name))
       return captures->items[i].argument;
   }
@@ -124,17 +133,21 @@ static bool rule_matches(const XsSyntaxNode *rule, const XsSyntaxNode *call, Cap
 {
   const XsSyntaxNode *matcher = rule->children[0];
   size_t argument = 1;
-  for (size_t i = 0; i < matcher->child_count; ++i) {
+  for (size_t i = 0; i < matcher->child_count; ++i)
+  {
     if (argument >= call->child_count)
       return false;
     const XsSyntaxNode *element = matcher->children[i];
-    if (element->kind == XS_SYNTAX_MACRO_MATCHER_TOKEN) {
+    if (element->kind == XS_SYNTAX_MACRO_MATCHER_TOKEN)
+    {
       const XsSyntaxNode *value = call->children[argument++];
       if (!xs_macro_token_text_matches(element, value))
         return false;
     }
-    if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT) {
-      if (xs_macro_fragment_is_sequence(element)) {
+    if (element->kind == XS_SYNTAX_MACRO_MATCHER_FRAGMENT)
+    {
+      if (xs_macro_fragment_is_sequence(element))
+      {
         if (i + 1 != matcher->child_count)
           return false;
         return add_capture_sequence(captures, element, call, argument, call->child_count - argument);
@@ -150,18 +163,23 @@ static bool rule_matches(const XsSyntaxNode *rule, const XsSyntaxNode *call, Cap
 static bool plan_expansion(const XsSyntaxNode *rule, const CaptureSet *captures, XsMacroExpansionReport *report)
 {
   const XsSyntaxNode *expansion = rule->children[1];
-  for (size_t i = 0; i < expansion->child_count; ++i) {
+  for (size_t i = 0; i < expansion->child_count; ++i)
+  {
     const XsSyntaxNode *element = expansion->children[i];
-    if (element->kind == XS_SYNTAX_MACRO_EXPANSION_TOKEN) {
+    if (element->kind == XS_SYNTAX_MACRO_EXPANSION_TOKEN)
+    {
       ++report->output_tokens_planned;
       continue;
     }
-    if (element->kind == XS_SYNTAX_MACRO_EXPANSION_VARIABLE && element->child_count != 0) {
+    if (element->kind == XS_SYNTAX_MACRO_EXPANSION_VARIABLE && element->child_count != 0)
+    {
       const XsSyntaxNode *argument = find_capture(captures, element->children[0]->text);
       if (argument == nullptr)
         return false;
-      for (size_t capture = 0; capture < captures->count; ++capture) {
-        if (xs_macro_text_equal(captures->items[capture].name, element->children[0]->text)) {
+      for (size_t capture = 0; capture < captures->count; ++capture)
+      {
+        if (xs_macro_text_equal(captures->items[capture].name, element->children[0]->text))
+        {
           report->output_tokens_planned += captures->items[capture].argument_count;
           break;
         }
@@ -174,7 +192,8 @@ static bool plan_expansion(const XsSyntaxNode *rule, const CaptureSet *captures,
 
 static const XsSyntaxNode *resolve_macro(const MacroList *visible, XsText name)
 {
-  for (size_t i = visible->count; i > 0; --i) {
+  for (size_t i = visible->count; i > 0; --i)
+  {
     if (xs_macro_text_equal(macro_name(visible->items[i - 1]), name))
       return visible->items[i - 1];
   }
@@ -188,17 +207,21 @@ static bool prepare_scope(const XsSyntaxNode *scope, const MacroList *inherited,
                           XsMacroExpansionReport *report)
 {
   MacroList visible = {0};
-  for (size_t i = 0; i < inherited->count; ++i) {
+  for (size_t i = 0; i < inherited->count; ++i)
+  {
     if (!list_add(&visible, inherited->items[i]))
       return false;
   }
-  for (size_t i = 0; i < scope->child_count; ++i) {
+  for (size_t i = 0; i < scope->child_count; ++i)
+  {
     if (scope->children[i]->kind == XS_SYNTAX_DECL_MACRO && !list_add(&visible, scope->children[i]))
       return false;
   }
-  for (size_t i = 0; i < scope->child_count; ++i) {
+  for (size_t i = 0; i < scope->child_count; ++i)
+  {
     if (scope->children[i]->kind != XS_SYNTAX_DECL_MACRO &&
-        !prepare_node(scope->children[i], &visible, diagnostics, report)) {
+        !prepare_node(scope->children[i], &visible, diagnostics, report))
+    {
       free(visible.items);
       return false;
     }
@@ -224,21 +247,25 @@ static bool prepare_call(const XsSyntaxNode *call, const MacroList *visible, XsD
   ++report->calls_resolved;
   bool has_deferred_rule = false;
   bool matched = false;
-  for (size_t i = 0; i < macro->child_count; ++i) {
+  for (size_t i = 0; i < macro->child_count; ++i)
+  {
     const XsSyntaxNode *rule = macro->children[i];
     if (rule->kind != XS_SYNTAX_MACRO_RULE || rule->child_count == 0)
       continue;
-    if (!rule_supported(rule)) {
+    if (!rule_supported(rule))
+    {
       has_deferred_rule = true;
       continue;
     }
     CaptureSet captures = {0};
-    if (rule_matches(rule, call, &captures) && plan_expansion(rule, &captures, report)) {
+    if (rule_matches(rule, call, &captures) && plan_expansion(rule, &captures, report))
+    {
       matched = true;
       continue;
     }
   }
-  if (matched) {
+  if (matched)
+  {
     ++report->calls_expandable;
     return true;
   }
@@ -256,7 +283,8 @@ static bool prepare_node(const XsSyntaxNode *node, const MacroList *visible, XsD
     return prepare_scope(node, visible, diagnostics, report);
   if (node->kind == XS_SYNTAX_EXPR_MACRO_CALL)
     return prepare_call(node, visible, diagnostics, report);
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     if (!prepare_node(node->children[i], visible, diagnostics, report))
       return false;
   }
@@ -269,7 +297,8 @@ bool xs_macro_prepare_expansion(const XsSyntaxTree *tree, XsDiagnostics *diagnos
     return false;
   *report = (XsMacroExpansionReport){0};
   MacroList empty = {0};
-  if (!prepare_scope(tree->root, &empty, diagnostics, report)) {
+  if (!prepare_scope(tree->root, &empty, diagnostics, report))
+  {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while preparing macro expansion");
     return false;
@@ -279,10 +308,12 @@ bool xs_macro_prepare_expansion(const XsSyntaxTree *tree, XsDiagnostics *diagnos
 
 static bool expansion_set_add(XsMacroExpansionSet *set, XsSpan call_span, XsMacroExpansion **out)
 {
-  if (set->count == set->capacity) {
+  if (set->count == set->capacity)
+  {
     size_t capacity = set->capacity == 0 ? 8 : set->capacity * 2;
     XsMacroExpansion *items = realloc(set->items, capacity * sizeof(*items));
-    if (items == nullptr) {
+    if (items == nullptr)
+    {
       set->allocation_failed = true;
       return false;
     }
@@ -297,10 +328,12 @@ static bool expansion_set_add(XsMacroExpansionSet *set, XsSpan call_span, XsMacr
 
 static bool expansion_add_token(XsMacroExpansion *expansion, XsMacroExpansionToken token, XsMacroExpansionSet *set)
 {
-  if (expansion->token_count == expansion->token_capacity) {
+  if (expansion->token_count == expansion->token_capacity)
+  {
     size_t capacity = expansion->token_capacity == 0 ? 4 : expansion->token_capacity * 2;
     XsMacroExpansionToken *tokens = realloc(expansion->tokens, capacity * sizeof(*tokens));
-    if (tokens == nullptr) {
+    if (tokens == nullptr)
+    {
       set->allocation_failed = true;
       return false;
     }
@@ -315,24 +348,31 @@ static bool emit_rule_tokens(const XsSyntaxNode *rule, const CaptureSet *capture
                              XsMacroExpansionSet *set)
 {
   const XsSyntaxNode *body = rule->children[1];
-  for (size_t i = 0; i < body->child_count; ++i) {
+  for (size_t i = 0; i < body->child_count; ++i)
+  {
     const XsSyntaxNode *element = body->children[i];
-    if (element->kind == XS_SYNTAX_MACRO_EXPANSION_TOKEN) {
+    if (element->kind == XS_SYNTAX_MACRO_EXPANSION_TOKEN)
+    {
       XsSpan span = {.start = element->span.start_offset, .end = element->span.end_offset};
       XsMacroExpansionToken token = {.kind = element->token_kind, .text = element->text, .source_span = span};
       if (!expansion_add_token(expansion, token, set))
         return false;
-    } else if (element->kind == XS_SYNTAX_MACRO_EXPANSION_VARIABLE && element->child_count != 0) {
+    }
+    else if (element->kind == XS_SYNTAX_MACRO_EXPANSION_VARIABLE && element->child_count != 0)
+    {
       const Capture *capture = nullptr;
-      for (size_t index = 0; index < captures->count; ++index) {
-        if (xs_macro_text_equal(captures->items[index].name, element->children[0]->text)) {
+      for (size_t index = 0; index < captures->count; ++index)
+      {
+        if (xs_macro_text_equal(captures->items[index].name, element->children[0]->text))
+        {
           capture = &captures->items[index];
           break;
         }
       }
       if (capture == nullptr)
         return false;
-      for (size_t offset = 0; offset < capture->argument_count; ++offset) {
+      for (size_t offset = 0; offset < capture->argument_count; ++offset)
+      {
         const XsSyntaxNode *argument =
             capture->call == nullptr ? capture->argument : capture->call->children[capture->argument_index + offset];
         XsSpan span = {.start = argument->span.start_offset, .end = argument->span.end_offset};
@@ -351,16 +391,20 @@ static bool expand_node(const XsSyntaxNode *node, const MacroList *visible, XsMa
 static bool expand_scope(const XsSyntaxNode *scope, const MacroList *inherited, XsMacroExpansionSet *set)
 {
   MacroList visible = {0};
-  for (size_t i = 0; i < inherited->count; ++i) {
+  for (size_t i = 0; i < inherited->count; ++i)
+  {
     if (!list_add(&visible, inherited->items[i]))
       return false;
   }
-  for (size_t i = 0; i < scope->child_count; ++i) {
+  for (size_t i = 0; i < scope->child_count; ++i)
+  {
     if (scope->children[i]->kind == XS_SYNTAX_DECL_MACRO && !list_add(&visible, scope->children[i]))
       return false;
   }
-  for (size_t i = 0; i < scope->child_count; ++i) {
-    if (scope->children[i]->kind != XS_SYNTAX_DECL_MACRO && !expand_node(scope->children[i], &visible, set)) {
+  for (size_t i = 0; i < scope->child_count; ++i)
+  {
+    if (scope->children[i]->kind != XS_SYNTAX_DECL_MACRO && !expand_node(scope->children[i], &visible, set))
+    {
       free(visible.items);
       return false;
     }
@@ -375,7 +419,8 @@ static bool expand_call(const XsSyntaxNode *call, const MacroList *visible, XsMa
   if (macro == nullptr)
     return true;
   bool success = true;
-  for (size_t i = 0; i < macro->child_count; ++i) {
+  for (size_t i = 0; i < macro->child_count; ++i)
+  {
     const XsSyntaxNode *rule = macro->children[i];
     if (rule->kind != XS_SYNTAX_MACRO_RULE || !rule_supported(rule))
       continue;
@@ -397,7 +442,8 @@ static bool expand_node(const XsSyntaxNode *node, const MacroList *visible, XsMa
     return expand_scope(node, visible, set);
   if (node->kind == XS_SYNTAX_EXPR_MACRO_CALL)
     return expand_call(node, visible, set);
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     if (!expand_node(node->children[i], visible, set))
       return false;
   }
@@ -418,7 +464,8 @@ bool xs_macro_expand_tokens(const XsSyntaxTree *tree, XsDiagnostics *diagnostics
     return false;
   *set = (XsMacroExpansionSet){0};
   MacroList empty = {0};
-  if (!expand_scope(tree->root, &empty, set)) {
+  if (!expand_scope(tree->root, &empty, set))
+  {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while expanding macro tokens");
     return false;

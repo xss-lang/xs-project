@@ -59,7 +59,8 @@ static const Keyword keywords[] = {
 
 XsTokenKind xs_token_keyword(const char *text, size_t length)
 {
-  for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); ++i) {
+  for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); ++i)
+  {
     if (strlen(keywords[i].text) == length && memcmp(keywords[i].text, text, length) == 0)
       return keywords[i].kind;
   }

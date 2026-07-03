@@ -6,7 +6,8 @@
 
 static XsMirStatus set_error(XsMirError *error, XsMirStatus status, const char *message)
 {
-  if (error != NULL) {
+  if (error != NULL)
+  {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s", message == NULL ? "MIR to XLIL lowering error" : message);
   }
@@ -17,7 +18,8 @@ XsMirStatus xs_lil_module_add_mir_function_declarations(XsLilModule *module, con
 {
   if (module == NULL || mir == NULL)
     return set_error(error, XS_MIR_INVALID_ARGUMENT, "valid XLIL and MIR modules are required");
-  for (size_t i = 0; i < xs_mir_module_function_count(mir); ++i) {
+  for (size_t i = 0; i < xs_mir_module_function_count(mir); ++i)
+  {
     const XsMirFunction *function = xs_mir_module_function_at(mir, i);
     XsLilError lil_error = {0};
     XsLilStatus status = xs_lil_module_add_function(
@@ -43,8 +45,10 @@ static XsMirStatus map_lil_status(XsLilStatus status, const XsLilError *lil_erro
 static XsMirStatus lower_instruction(const XsMirInstruction *instruction, XsLilBlock *block, XsLilValueId *values,
                                      XsMirError *error)
 {
-  switch (instruction->kind) {
-  case XS_MIR_INSTRUCTION_CONST_I64: {
+  switch (instruction->kind)
+  {
+  case XS_MIR_INSTRUCTION_CONST_I64:
+  {
     XsLilError lil_error = {0};
     XsLilStatus status =
         xs_lil_block_add_const_i64(block, instruction->immediate_i64, &values[instruction->result], &lil_error);
@@ -62,8 +66,10 @@ static XsMirStatus lower_terminator(const XsMirFunction *function, const XsMirBl
                                     const XsLilValueId *values, XsMirError *error)
 {
   (void)function;
-  switch (mir_block->terminator.kind) {
-  case XS_MIR_TERMINATOR_RETURN: {
+  switch (mir_block->terminator.kind)
+  {
+  case XS_MIR_TERMINATOR_RETURN:
+  {
     XsLilError lil_error = {0};
     XsLilStatus status =
         mir_block->terminator.has_value
@@ -84,30 +90,36 @@ static XsMirStatus lower_terminator(const XsMirFunction *function, const XsMirBl
 static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil_function, XsMirError *error)
 {
   XsLilValueId *values = NULL;
-  if (function->value_count != 0) {
+  if (function->value_count != 0)
+  {
     values = calloc(function->value_count, sizeof(*values));
     if (values == NULL)
       return set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while lowering MIR values to XLIL");
   }
-  for (size_t block_index = 0; block_index < function->block_count; ++block_index) {
+  for (size_t block_index = 0; block_index < function->block_count; ++block_index)
+  {
     const XsMirBlock *mir_block = function->blocks[block_index];
     XsLilBlock *xlil_block = NULL;
     XsLilError lil_error = {0};
     XsLilStatus lil_status = xs_lil_function_append_block(xlil_function, mir_block->label, &xlil_block, &lil_error);
     XsMirStatus status = map_lil_status(lil_status, &lil_error, error);
-    if (status != XS_MIR_OK) {
+    if (status != XS_MIR_OK)
+    {
       free(values);
       return status;
     }
-    for (size_t instruction_index = 0; instruction_index < mir_block->instruction_count; ++instruction_index) {
+    for (size_t instruction_index = 0; instruction_index < mir_block->instruction_count; ++instruction_index)
+    {
       status = lower_instruction(&mir_block->instructions[instruction_index], xlil_block, values, error);
-      if (status != XS_MIR_OK) {
+      if (status != XS_MIR_OK)
+      {
         free(values);
         return status;
       }
     }
     status = lower_terminator(function, mir_block, xlil_block, values, error);
-    if (status != XS_MIR_OK) {
+    if (status != XS_MIR_OK)
+    {
       free(values);
       return status;
     }
@@ -120,7 +132,8 @@ XsMirStatus xs_lil_module_add_mir_function_bodies(XsLilModule *module, const XsM
 {
   if (module == NULL || mir == NULL)
     return set_error(error, XS_MIR_INVALID_ARGUMENT, "valid XLIL and MIR modules are required");
-  for (size_t i = 0; i < xs_mir_module_function_count(mir); ++i) {
+  for (size_t i = 0; i < xs_mir_module_function_count(mir); ++i)
+  {
     const XsMirFunction *function = xs_mir_module_function_at(mir, i);
     XsLilError lil_error = {0};
     XsLilFunction *xlil_function = NULL;
@@ -134,7 +147,8 @@ XsMirStatus xs_lil_module_add_mir_function_bodies(XsLilModule *module, const XsM
     XsMirStatus status = map_lil_status(lil_status, &lil_error, error);
     if (status != XS_MIR_OK)
       return status;
-    if (function->is_definition) {
+    if (function->is_definition)
+    {
       status = lower_body(function, xlil_function, error);
       if (status != XS_MIR_OK)
         return status;

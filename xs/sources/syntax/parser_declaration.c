@@ -21,12 +21,15 @@ static void parse_generics(SyntaxParser *parser, XsSyntaxNode *parent)
 {
   if (!accept(parser, XS_TOKEN_LESS))
     return;
-  while (parser->current.kind != XS_TOKEN_GREATER && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_GREATER && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t start = parser->current.span.start;
     XsSyntaxNode *parameter = node(parser, XS_SYNTAX_GENERIC_PARAMETER, (XsSpan){start, start});
     xs_syntax_node_add(parser->tree, parameter, identifier(parser));
-    if (accept(parser, XS_TOKEN_COLON)) {
-      do {
+    if (accept(parser, XS_TOKEN_COLON))
+    {
+      do
+      {
         xs_syntax_node_add(parser->tree, parameter, parse_type(parser));
         if (parser->current.kind != XS_TOKEN_COMMA || generic_constraint_comma_starts_parameter(parser))
           break;
@@ -44,8 +47,10 @@ static void parse_generics(SyntaxParser *parser, XsSyntaxNode *parent)
 static void parse_parameters(SyntaxParser *parser, XsSyntaxNode *function)
 {
   expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' before parameters");
-  if (parser->current.kind != XS_TOKEN_RIGHT_PAREN) {
-    do {
+  if (parser->current.kind != XS_TOKEN_RIGHT_PAREN)
+  {
+    do
+    {
       size_t start = parser->current.span.start;
       XsSyntaxNode *parameter = node(parser, XS_SYNTAX_PARAMETER, (XsSpan){start, start});
       xs_syntax_node_add(parser->tree, parameter, identifier(parser));
@@ -65,22 +70,28 @@ static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, s
   xs_syntax_node_add(parser->tree, function, identifier(parser));
   parse_generics(parser, function);
   parse_parameters(parser, function);
-  if (accept(parser, XS_TOKEN_FAT_ARROW)) {
+  if (accept(parser, XS_TOKEN_FAT_ARROW))
+  {
     XsSyntaxNode *return_type = parse_type(parser);
     return_type->flags |= XS_SYNTAX_FLAG_RETURN_TYPE;
     xs_syntax_node_add(parser->tree, function, return_type);
   }
-  if (accept(parser, XS_TOKEN_KW_THROWS)) {
-    do {
+  if (accept(parser, XS_TOKEN_KW_THROWS))
+  {
+    do
+    {
       xs_syntax_node_add(parser->tree, function, parse_type(parser));
     } while (accept(parser, XS_TOKEN_COMMA));
   }
-  if (accept(parser, XS_TOKEN_SEMICOLON)) {
+  if (accept(parser, XS_TOKEN_SEMICOLON))
+  {
     if (!signature_allowed && (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) == 0)
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
                          "function declarations without bodies must be marked incomplete");
     function->flags |= XS_SYNTAX_FLAG_INCOMPLETE;
-  } else {
+  }
+  else
+  {
     if ((function->flags & XS_SYNTAX_FLAG_INCOMPLETE) != 0)
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                          "incomplete functions must not have bodies");
@@ -93,13 +104,18 @@ static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, s
 static XsSyntaxNode *parse_import(SyntaxParser *parser, bool selected, size_t start)
 {
   XsSyntaxNode *import = node(parser, XS_SYNTAX_DECL_IMPORT, (XsSpan){start, parser->previous.span.end});
-  if (selected) {
+  if (selected)
+  {
     xs_syntax_node_add(parser->tree, import, parse_path(parser));
     expect(parser, XS_TOKEN_KW_IMPORTS, "expected imports after module path");
-    if (accept(parser, XS_TOKEN_STAR)) {
+    if (accept(parser, XS_TOKEN_STAR))
+    {
       import->flags |= XS_SYNTAX_FLAG_WILDCARD;
-    } else {
-      do {
+    }
+    else
+    {
+      do
+      {
         XsSyntaxNode *name =
             node(parser, XS_SYNTAX_IMPORT_NAME, (XsSpan){parser->current.span.start, parser->current.span.start});
         xs_syntax_node_add(parser->tree, name, identifier(parser));
@@ -109,8 +125,11 @@ static XsSyntaxNode *parse_import(SyntaxParser *parser, bool selected, size_t st
         xs_syntax_node_add(parser->tree, import, name);
       } while (accept(parser, XS_TOKEN_COMMA));
     }
-  } else {
-    do {
+  }
+  else
+  {
+    do
+    {
       xs_syntax_node_add(parser->tree, import, parse_path(parser));
     } while (accept(parser, XS_TOKEN_COMMA));
     if (accept(parser, XS_TOKEN_KW_AS))
@@ -141,11 +160,13 @@ static XsSyntaxNode *parse_enum(SyntaxParser *parser, Modifiers modifiers, size_
   parse_generics(parser, declaration);
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before enum variants");
   bool has_payload_variant = false;
-  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t start_variant = parser->current.span.start;
     XsSyntaxNode *variant = node(parser, XS_SYNTAX_ENUM_VARIANT, (XsSpan){start_variant, start_variant});
     xs_syntax_node_add(parser->tree, variant, identifier(parser));
-    if (accept(parser, XS_TOKEN_COLON)) {
+    if (accept(parser, XS_TOKEN_COLON))
+    {
       XsSpan colon_span = parser->previous.span;
       has_payload_variant = true;
       if (!data_enum)
@@ -181,12 +202,14 @@ static bool data_member_is_forbidden(const SyntaxParser *parser)
 static void skip_forbidden_data_member(SyntaxParser *parser)
 {
   size_t depth = 0;
-  do {
+  do
+  {
     if (parser->current.kind == XS_TOKEN_LEFT_BRACE || parser->current.kind == XS_TOKEN_LEFT_PAREN ||
         parser->current.kind == XS_TOKEN_LEFT_BRACKET)
       ++depth;
     else if (parser->current.kind == XS_TOKEN_RIGHT_BRACE || parser->current.kind == XS_TOKEN_RIGHT_PAREN ||
-             parser->current.kind == XS_TOKEN_RIGHT_BRACKET) {
+             parser->current.kind == XS_TOKEN_RIGHT_BRACKET)
+    {
       if (depth == 0)
         return;
       --depth;
@@ -204,8 +227,10 @@ static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_
   xs_syntax_node_add(parser->tree, declaration, identifier(parser));
   parse_generics(parser, declaration);
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before data fields");
-  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
-    if (data_member_is_forbidden(parser)) {
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
+    if (data_member_is_forbidden(parser))
+    {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                          "data declarations may only contain fields");
       skip_forbidden_data_member(parser);
@@ -236,10 +261,13 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before declaration members");
   bool constructor_seen = false;
   bool extends_seen = false;
-  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t before = parser->current.span.start;
-    if (accept(parser, XS_TOKEN_KW_EXTENDS)) {
-      if (interface) {
+    if (accept(parser, XS_TOKEN_KW_EXTENDS))
+    {
+      if (interface)
+      {
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
                            "interfaces may only contain function declarations");
         skip_forbidden_data_member(parser);
@@ -250,40 +278,53 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
                            "a class may contain at most one extends declaration");
       extends_seen = true;
       xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
-      if (accept(parser, XS_TOKEN_COMMA)) {
+      if (accept(parser, XS_TOKEN_COMMA))
+      {
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
                            "extends accepts exactly one base class");
-        do {
+        do
+        {
           (void)parse_type(parser);
         } while (accept(parser, XS_TOKEN_COMMA));
       }
       expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after extends or implements");
-    } else if (accept(parser, XS_TOKEN_KW_IMPLEMENTS)) {
-      if (interface) {
+    }
+    else if (accept(parser, XS_TOKEN_KW_IMPLEMENTS))
+    {
+      if (interface)
+      {
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
                            "interfaces may only contain function declarations");
         skip_forbidden_data_member(parser);
         continue;
       }
-      do {
+      do
+      {
         xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
       } while (accept(parser, XS_TOKEN_COMMA));
       expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after extends or implements");
-    } else {
+    }
+    else
+    {
       Modifiers member = parse_modifiers(parser);
-      if (accept(parser, XS_TOKEN_KW_FN)) {
+      if (accept(parser, XS_TOKEN_KW_FN))
+      {
         XsSyntaxNode *function = parse_function(parser, member, before, interface);
-        if (interface && (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) == 0) {
+        if (interface && (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) == 0)
+        {
           XsSpan function_span = {function->span.start_offset, function->span.end_offset};
           xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, function_span,
                              "interface methods must be declarations without bodies");
         }
         xs_syntax_node_add(parser->tree, declaration, function);
-      } else if (interface) {
+      }
+      else if (interface)
+      {
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                            "interfaces may only contain function declarations");
         skip_forbidden_data_member(parser);
-      } else if (accept(parser, XS_TOKEN_KW_CLASS))
+      }
+      else if (accept(parser, XS_TOKEN_KW_CLASS))
         xs_syntax_node_add(parser->tree, declaration, parse_class(parser, member, before, false));
       else if (accept(parser, XS_TOKEN_KW_ENUM))
         xs_syntax_node_add(parser->tree, declaration, parse_enum(parser, member, before));
@@ -293,19 +334,22 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
         xs_syntax_node_add(parser->tree, declaration, parse_macro(parser, before));
       else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_BANG)
         xs_syntax_node_add(parser->tree, declaration, parse_declaration_macro_call(parser, before));
-      else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON) {
+      else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON)
+      {
         XsSyntaxNode *field = parse_variable(parser, true);
         field->kind = XS_SYNTAX_CLASS_FIELD;
         field->visibility = member.visibility;
         field->flags |= member.flags;
         xs_syntax_node_add(parser->tree, declaration, field);
-      } else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN) {
+      }
+      else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN)
+      {
         XsSyntaxNode *constructor =
             node(parser, XS_SYNTAX_CLASS_CONSTRUCTOR, (XsSpan){before, parser->current.span.end});
         XsSyntaxNode *constructor_name = identifier(parser);
-        XsSpan constructor_span =
-            constructor_name == nullptr ? parser->previous.span
-                                     : (XsSpan){constructor_name->span.start_offset, constructor_name->span.end_offset};
+        XsSpan constructor_span = constructor_name == nullptr ? parser->previous.span
+                                                              : (XsSpan){constructor_name->span.start_offset,
+                                                                         constructor_name->span.end_offset};
         if (class_name != nullptr && constructor_name != nullptr &&
             !syntax_text_equal(class_name->text, constructor_name->text))
           xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, constructor_span,
@@ -319,7 +363,9 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
         xs_syntax_node_add(parser->tree, constructor, parse_block(parser));
         finish_node(parser, constructor, parser->previous.span.end);
         xs_syntax_node_add(parser->tree, declaration, constructor);
-      } else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_DOT) {
+      }
+      else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_DOT)
+      {
         XsSyntaxNode *destructor = node(parser, XS_SYNTAX_CLASS_DESTRUCTOR, (XsSpan){before, parser->current.span.end});
         xs_syntax_node_add(parser->tree, destructor, identifier(parser));
         expect(parser, XS_TOKEN_DOT, "expected '.' in destructor declaration");
@@ -332,13 +378,16 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
         xs_syntax_node_add(parser->tree, destructor, parse_block(parser));
         finish_node(parser, destructor, parser->previous.span.end);
         xs_syntax_node_add(parser->tree, declaration, destructor);
-      } else {
+      }
+      else
+      {
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                            "expected class or interface member");
         advance(parser);
       }
     }
-    if (parser->current.span.start == before) {
+    if (parser->current.span.start == before)
+    {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                          "parser made no progress in declaration members");
       advance(parser);
@@ -353,7 +402,8 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
 {
   size_t start = parser->current.span.start;
   Modifiers modifiers = parse_modifiers(parser);
-  if (accept(parser, XS_TOKEN_KW_MODULE) || accept(parser, XS_TOKEN_KW_NAMESPACE)) {
+  if (accept(parser, XS_TOKEN_KW_MODULE) || accept(parser, XS_TOKEN_KW_NAMESPACE))
+  {
     bool module = parser->previous.kind == XS_TOKEN_KW_MODULE;
     XsSyntaxNode *declaration = node(parser, module ? XS_SYNTAX_DECL_MODULE : XS_SYNTAX_DECL_NAMESPACE,
                                      (XsSpan){start, parser->previous.span.end});
@@ -383,7 +433,8 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
     return parse_declaration_macro_call(parser, start);
   if (parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
       parser->current.kind == XS_TOKEN_KW_ATOMIC ||
-      (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON)) {
+      (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON))
+  {
     XsSyntaxNode *variable = parse_variable(parser, true);
     attach_modifiers(parser, variable, modifiers);
     return variable;

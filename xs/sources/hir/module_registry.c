@@ -22,7 +22,8 @@ static char *copy_span(const XsSource *source, XsSpan span)
 {
   size_t length = span.end - span.start;
   char *copy = malloc(length + 1);
-  if (copy != NULL) {
+  if (copy != NULL)
+  {
     memcpy(copy, source->text + span.start, length);
     copy[length] = '\0';
   }
@@ -54,10 +55,12 @@ static bool has_suffix(const char *text, const char *suffix)
 
 bool append_issue(XsModuleIssues *issues, const char *path, size_t start, size_t end, const char *message)
 {
-  if (issues->count == issues->capacity) {
+  if (issues->count == issues->capacity)
+  {
     size_t capacity = issues->capacity == 0 ? 8 : issues->capacity * 2;
     XsModuleIssue *items = realloc(issues->issues, capacity * sizeof(*items));
-    if (items == NULL) {
+    if (items == NULL)
+    {
       issues->allocation_failed = true;
       return false;
     }
@@ -70,7 +73,8 @@ bool append_issue(XsModuleIssues *issues, const char *path, size_t start, size_t
       .end = end,
       .message = copy_text(message),
   };
-  if (issue.source_path == NULL || issue.message == NULL) {
+  if (issue.source_path == NULL || issue.message == NULL)
+  {
     free(issue.source_path);
     free(issue.message);
     issues->allocation_failed = true;
@@ -85,23 +89,27 @@ char *read_file(const char *path, size_t *length)
   FILE *file = fopen(path, "rb");
   if (file == NULL)
     return NULL;
-  if (fseek(file, 0, SEEK_END) != 0) {
+  if (fseek(file, 0, SEEK_END) != 0)
+  {
     fclose(file);
     return NULL;
   }
   long size = ftell(file);
-  if (size < 0 || fseek(file, 0, SEEK_SET) != 0) {
+  if (size < 0 || fseek(file, 0, SEEK_SET) != 0)
+  {
     fclose(file);
     return NULL;
   }
   char *text = malloc((size_t)size + 1);
-  if (text == NULL) {
+  if (text == NULL)
+  {
     fclose(file);
     return NULL;
   }
   size_t count = fread(text, 1, (size_t)size, file);
   fclose(file);
-  if (count != (size_t)size) {
+  if (count != (size_t)size)
+  {
     free(text);
     return NULL;
   }
@@ -113,7 +121,8 @@ char *read_file(const char *path, size_t *length)
 static XsToken scanner_token(ModuleScanner *scanner)
 {
   XsToken token;
-  do {
+  do
+  {
     token = xs_lexer_next(&scanner->lexer);
   } while (token.kind == XS_TOKEN_DOC_COMMENT || token.kind == XS_TOKEN_MODULE_COMMENT);
   return token;
@@ -133,15 +142,18 @@ char *scan_path(ModuleScanner *scanner, size_t *start, size_t *end)
   size_t length = *end - *start;
   char *result = copy_span(scanner->source, scanner->current.span);
   scanner_advance(scanner);
-  while (scanner->current.kind == XS_TOKEN_DOT) {
+  while (scanner->current.kind == XS_TOKEN_DOT)
+  {
     scanner_advance(scanner);
-    if (scanner->current.kind != XS_TOKEN_IDENTIFIER) {
+    if (scanner->current.kind != XS_TOKEN_IDENTIFIER)
+    {
       free(result);
       return NULL;
     }
     size_t segment_length = scanner->current.span.end - scanner->current.span.start;
     char *grown = realloc(result, length + segment_length + 2);
-    if (grown == NULL) {
+    if (grown == NULL)
+    {
       free(result);
       return NULL;
     }
@@ -162,7 +174,8 @@ static bool scan_module_declaration(const char *path, char **module_name, size_t
   *module_name = NULL;
   size_t length = 0;
   char *text = read_file(path, &length);
-  if (text == NULL) {
+  if (text == NULL)
+  {
     append_issue(issues, path, 0, 0, "source file could not be read during module discovery");
     return false;
   }
@@ -172,10 +185,12 @@ static bool scan_module_declaration(const char *path, char **module_name, size_t
   ModuleScanner scanner = {.source = &source};
   xs_lexer_init(&scanner.lexer, &source, &diagnostics);
   scanner_advance(&scanner);
-  if (scanner.current.kind == XS_TOKEN_KW_MODULE) {
+  if (scanner.current.kind == XS_TOKEN_KW_MODULE)
+  {
     scanner_advance(&scanner);
     *module_name = scan_path(&scanner, start, end);
-    if (*module_name == NULL || scanner.current.kind != XS_TOKEN_SEMICOLON) {
+    if (*module_name == NULL || scanner.current.kind != XS_TOKEN_SEMICOLON)
+    {
       append_issue(issues, path, *start, *end, "invalid module path or missing ';' in module declaration");
       free(*module_name);
       *module_name = NULL;
@@ -189,7 +204,8 @@ static bool scan_module_declaration(const char *path, char **module_name, size_t
 
 static bool append_module(XsModuleRegistry *registry, XsDiscoveredModule module)
 {
-  if (registry->count == registry->capacity) {
+  if (registry->count == registry->capacity)
+  {
     size_t capacity = registry->capacity == 0 ? 8 : registry->capacity * 2;
     XsDiscoveredModule *items = realloc(registry->modules, capacity * sizeof(*items));
     if (items == NULL)
@@ -203,7 +219,8 @@ static bool append_module(XsModuleRegistry *registry, XsDiscoveredModule module)
 
 const XsDiscoveredModule *xs_module_registry_find(const XsModuleRegistry *registry, const char *module_name)
 {
-  for (size_t i = 0; i < registry->count; ++i) {
+  for (size_t i = 0; i < registry->count; ++i)
+  {
     if (strcmp(registry->modules[i].module_name, module_name) == 0)
       return &registry->modules[i];
   }
@@ -213,50 +230,63 @@ const XsDiscoveredModule *xs_module_registry_find(const XsModuleRegistry *regist
 static bool discover_path(const char *path, XsModuleRegistry *registry, XsModuleIssues *issues)
 {
   DIR *directory = opendir(path);
-  if (directory == NULL) {
+  if (directory == NULL)
+  {
     append_issue(issues, path, 0, 0, strerror(errno));
     return false;
   }
   bool success = true;
   struct dirent *entry;
-  while ((entry = readdir(directory)) != NULL) {
+  while ((entry = readdir(directory)) != NULL)
+  {
     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
       continue;
     char *child = join_path(path, entry->d_name);
-    if (child == NULL) {
+    if (child == NULL)
+    {
       issues->allocation_failed = true;
       success = false;
       break;
     }
     struct stat info;
-    if (stat(child, &info) != 0) {
+    if (stat(child, &info) != 0)
+    {
       append_issue(issues, child, 0, 0, strerror(errno));
       success = false;
-    } else if (S_ISDIR(info.st_mode)) {
+    }
+    else if (S_ISDIR(info.st_mode))
+    {
       success = discover_path(child, registry, issues) && success;
-    } else if (S_ISREG(info.st_mode) && has_suffix(child, ".xs")) {
+    }
+    else if (S_ISREG(info.st_mode) && has_suffix(child, ".xs"))
+    {
       char *module_name = NULL;
       size_t start = 0;
       size_t end = 0;
       if (!scan_module_declaration(child, &module_name, &start, &end, issues))
         success = false;
-      if (module_name != NULL) {
+      if (module_name != NULL)
+      {
         const XsDiscoveredModule *duplicate = xs_module_registry_find(registry, module_name);
-        if (duplicate != NULL) {
+        if (duplicate != NULL)
+        {
           char message[512];
           snprintf(message, sizeof(message), "duplicate module '%s'; first declared in %s", module_name,
                    duplicate->source_path);
           append_issue(issues, child, start, end, message);
           free(module_name);
           success = false;
-        } else {
+        }
+        else
+        {
           XsDiscoveredModule module = {
               .module_name = module_name,
               .source_path = copy_text(child),
               .declaration_start = start,
               .declaration_end = end,
           };
-          if (module.source_path == NULL || !append_module(registry, module)) {
+          if (module.source_path == NULL || !append_module(registry, module))
+          {
             free(module.module_name);
             free(module.source_path);
             issues->allocation_failed = true;

@@ -31,10 +31,12 @@ XsSyntaxNode *parse_block(SyntaxParser *parser)
   if (!expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before block"))
     return node(parser, XS_SYNTAX_STMT_BLOCK, (XsSpan){start, start});
   XsSyntaxNode *block = node(parser, XS_SYNTAX_STMT_BLOCK, (XsSpan){start, parser->previous.span.end});
-  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t before = parser->current.span.start;
     xs_syntax_node_add(parser->tree, block, parse_statement(parser));
-    if (parser->current.span.start == before) {
+    if (parser->current.span.start == before)
+    {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                          "parser made no progress in block");
       advance(parser);
@@ -53,8 +55,10 @@ static XsSyntaxNode *parse_if(SyntaxParser *parser)
   xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
   expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after if condition");
   xs_syntax_node_add(parser->tree, statement, parse_block(parser));
-  while (accept(parser, XS_TOKEN_KW_ELSE)) {
-    if (accept(parser, XS_TOKEN_KW_IF)) {
+  while (accept(parser, XS_TOKEN_KW_ELSE))
+  {
+    if (accept(parser, XS_TOKEN_KW_IF))
+    {
       XsSyntaxNode *branch =
           node(parser, XS_SYNTAX_STMT_ELSE_IF, (XsSpan){parser->previous.span.start, parser->previous.span.end});
       expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after else if");
@@ -63,7 +67,9 @@ static XsSyntaxNode *parse_if(SyntaxParser *parser)
       xs_syntax_node_add(parser->tree, branch, parse_block(parser));
       finish_node(parser, branch, parser->previous.span.end);
       xs_syntax_node_add(parser->tree, statement, branch);
-    } else {
+    }
+    else
+    {
       xs_syntax_node_add(parser->tree, statement, parse_block(parser));
       break;
     }
@@ -76,16 +82,22 @@ static bool for_header_is_each(const SyntaxParser *parser)
 {
   SyntaxParser lookahead = *parser;
   size_t depth = 0;
-  while (lookahead.current.kind != XS_TOKEN_EOF) {
+  while (lookahead.current.kind != XS_TOKEN_EOF)
+  {
     if (lookahead.current.kind == XS_TOKEN_LEFT_PAREN)
       ++depth;
-    else if (lookahead.current.kind == XS_TOKEN_RIGHT_PAREN) {
+    else if (lookahead.current.kind == XS_TOKEN_RIGHT_PAREN)
+    {
       if (depth == 0)
         return false;
       --depth;
-    } else if (lookahead.current.kind == XS_TOKEN_KW_IN && depth == 0) {
+    }
+    else if (lookahead.current.kind == XS_TOKEN_KW_IN && depth == 0)
+    {
       return true;
-    } else if (lookahead.current.kind == XS_TOKEN_SEMICOLON && depth == 0) {
+    }
+    else if (lookahead.current.kind == XS_TOKEN_SEMICOLON && depth == 0)
+    {
       return false;
     }
     advance(&lookahead);
@@ -99,13 +111,17 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
   bool each = for_header_is_each(parser);
   XsSyntaxNode *statement =
       node(parser, each ? XS_SYNTAX_STMT_FOR_EACH : XS_SYNTAX_STMT_FOR, (XsSpan){start, parser->previous.span.end});
-  if (each) {
+  if (each)
+  {
     xs_syntax_node_add(parser->tree, statement, parse_pattern(parser));
     expect(parser, XS_TOKEN_KW_IN, "expected in after for-each pattern");
     xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
     expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after for-each iterable");
-  } else {
-    if (parser->current.kind != XS_TOKEN_SEMICOLON) {
+  }
+  else
+  {
+    if (parser->current.kind != XS_TOKEN_SEMICOLON)
+    {
       if (parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
           parser->current.kind == XS_TOKEN_KW_STATIC || parser->current.kind == XS_TOKEN_KW_ATOMIC ||
           (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON))
@@ -133,7 +149,8 @@ static XsSyntaxNode *parse_match(SyntaxParser *parser, size_t start)
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_MATCH, (XsSpan){start, parser->previous.span.end});
   xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before match arms");
-  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t arm_start = parser->current.span.start;
     XsSyntaxNode *arm = node(parser, XS_SYNTAX_MATCH_ARM, (XsSpan){arm_start, arm_start});
     xs_syntax_node_add(parser->tree, arm, parse_pattern(parser));
@@ -153,7 +170,8 @@ static XsSyntaxNode *parse_try(SyntaxParser *parser, size_t start)
 {
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_TRY, (XsSpan){start, parser->previous.span.end});
   xs_syntax_node_add(parser->tree, statement, parse_block(parser));
-  while (accept(parser, XS_TOKEN_KW_CATCH)) {
+  while (accept(parser, XS_TOKEN_KW_CATCH))
+  {
     size_t catch_start = parser->previous.span.start;
     XsSyntaxNode *clause = node(parser, XS_SYNTAX_CATCH, (XsSpan){catch_start, parser->previous.span.end});
     expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after catch");
@@ -176,7 +194,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   size_t start = parser->current.span.start;
   if (parser->current.kind == XS_TOKEN_LEFT_BRACE)
     return parse_block(parser);
-  if (accept(parser, XS_TOKEN_KW_RETURN)) {
+  if (accept(parser, XS_TOKEN_KW_RETURN))
+  {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_RETURN, (XsSpan){start, parser->previous.span.end});
     if (parser->current.kind != XS_TOKEN_SEMICOLON)
       xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
@@ -192,7 +211,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     return parse_match(parser, start);
   if (accept(parser, XS_TOKEN_KW_TRY))
     return parse_try(parser, start);
-  if (accept(parser, XS_TOKEN_KW_WHILE)) {
+  if (accept(parser, XS_TOKEN_KW_WHILE))
+  {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_WHILE, (XsSpan){start, parser->previous.span.end});
     expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after while");
     xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
@@ -203,7 +223,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     finish_node(parser, statement, parser->previous.span.end);
     return statement;
   }
-  if (accept(parser, XS_TOKEN_KW_BREAK) || accept(parser, XS_TOKEN_KW_CONTINUE)) {
+  if (accept(parser, XS_TOKEN_KW_BREAK) || accept(parser, XS_TOKEN_KW_CONTINUE))
+  {
     bool is_break = parser->previous.kind == XS_TOKEN_KW_BREAK;
     XsSyntaxNode *statement = node(parser, is_break ? XS_SYNTAX_STMT_BREAK : XS_SYNTAX_STMT_CONTINUE,
                                    (XsSpan){start, parser->previous.span.end});
@@ -216,7 +237,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     finish_node(parser, statement, parser->previous.span.end);
     return statement;
   }
-  if (accept(parser, XS_TOKEN_KW_THROW)) {
+  if (accept(parser, XS_TOKEN_KW_THROW))
+  {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_THROW, (XsSpan){start, parser->previous.span.end});
     xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after throw");
@@ -225,7 +247,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   }
   if (parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
       parser->current.kind == XS_TOKEN_KW_STATIC || parser->current.kind == XS_TOKEN_KW_ATOMIC ||
-      (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON)) {
+      (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON))
+  {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_VARIABLE, (XsSpan){start, start});
     xs_syntax_node_add(parser->tree, statement, parse_variable(parser, true));
     finish_node(parser, statement, parser->previous.span.end);

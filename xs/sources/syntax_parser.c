@@ -8,7 +8,8 @@
 static XsToken read_token(SyntaxParser *parser)
 {
   XsToken token;
-  do {
+  do
+  {
     token = xs_lexer_next(&parser->lexer);
   } while (token.kind == XS_TOKEN_DOC_COMMENT || token.kind == XS_TOKEN_MODULE_COMMENT);
   return token;
@@ -23,7 +24,8 @@ void advance(SyntaxParser *parser)
 
 bool accept(SyntaxParser *parser, XsTokenKind kind)
 {
-  if (kind == XS_TOKEN_GREATER && parser->current.kind == XS_TOKEN_SHIFT_RIGHT) {
+  if (kind == XS_TOKEN_GREATER && parser->current.kind == XS_TOKEN_SHIFT_RIGHT)
+  {
     parser->previous =
         (XsToken){.kind = XS_TOKEN_GREATER, .span = {parser->current.span.start, parser->current.span.start + 1}};
     parser->current =
@@ -73,7 +75,8 @@ XsSyntaxNode *parse_path(SyntaxParser *parser)
   if (segment == nullptr)
     return path;
   xs_syntax_node_add(parser->tree, path, segment);
-  while (accept(parser, XS_TOKEN_DOT)) {
+  while (accept(parser, XS_TOKEN_DOT))
+  {
     segment = identifier(parser);
     if (segment == nullptr)
       break;
@@ -88,28 +91,42 @@ Modifiers parse_modifiers(SyntaxParser *parser)
   Modifiers result = {.visibility = XS_SYNTAX_VISIBILITY_DEFAULT,
                       .span = {parser->current.span.start, parser->current.span.start}};
   bool progress = true;
-  while (progress) {
+  while (progress)
+  {
     progress = false;
     XsToken token = parser->current;
-    if (accept(parser, XS_TOKEN_KW_PUBLIC)) {
+    if (accept(parser, XS_TOKEN_KW_PUBLIC))
+    {
       result.visibility = XS_SYNTAX_VISIBILITY_PUBLIC;
       progress = true;
-    } else if (accept(parser, XS_TOKEN_KW_PRIVATE)) {
+    }
+    else if (accept(parser, XS_TOKEN_KW_PRIVATE))
+    {
       result.visibility = XS_SYNTAX_VISIBILITY_PRIVATE;
       progress = true;
-    } else if (accept(parser, XS_TOKEN_KW_PROTECTED)) {
+    }
+    else if (accept(parser, XS_TOKEN_KW_PROTECTED))
+    {
       result.visibility = XS_SYNTAX_VISIBILITY_PROTECTED;
       progress = true;
-    } else if (accept(parser, XS_TOKEN_KW_INTERNAL)) {
+    }
+    else if (accept(parser, XS_TOKEN_KW_INTERNAL))
+    {
       result.visibility = XS_SYNTAX_VISIBILITY_INTERNAL;
       progress = true;
-    } else if (accept(parser, XS_TOKEN_KW_ASYNC)) {
+    }
+    else if (accept(parser, XS_TOKEN_KW_ASYNC))
+    {
       result.flags |= XS_SYNTAX_FLAG_ASYNC;
       progress = true;
-    } else if (accept(parser, XS_TOKEN_KW_STATIC)) {
+    }
+    else if (accept(parser, XS_TOKEN_KW_STATIC))
+    {
       result.flags |= XS_SYNTAX_FLAG_STATIC;
       progress = true;
-    } else if (accept(parser, XS_TOKEN_KW_INCOMPLETE)) {
+    }
+    else if (accept(parser, XS_TOKEN_KW_INCOMPLETE))
+    {
       result.flags |= XS_SYNTAX_FLAG_INCOMPLETE;
       progress = true;
     }
@@ -148,11 +165,14 @@ bool xs_syntax_parse(const XsSource *source, uint64_t file_id, XsDiagnostics *di
 
   bool seen_declaration = false;
   bool seen_module = false;
-  while (parser.current.kind != XS_TOKEN_EOF) {
+  while (parser.current.kind != XS_TOKEN_EOF)
+  {
     size_t before = parser.current.span.start;
     XsSyntaxNode *declaration = parse_declaration(&parser, true);
-    if (declaration != nullptr) {
-      if (declaration->kind == XS_SYNTAX_DECL_MODULE) {
+    if (declaration != nullptr)
+    {
+      if (declaration->kind == XS_SYNTAX_DECL_MODULE)
+      {
         if (seen_declaration)
           xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
                              (XsSpan){declaration->span.start_offset, declaration->span.end_offset},
@@ -170,7 +190,8 @@ bool xs_syntax_parse(const XsSource *source, uint64_t file_id, XsDiagnostics *di
       xs_syntax_node_add(tree, tree->root, declaration);
       seen_declaration = true;
     }
-    if (parser.current.span.start == before) {
+    if (parser.current.span.start == before)
+    {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, parser.current.span, "parser made no progress at top level");
       advance(&parser);
     }

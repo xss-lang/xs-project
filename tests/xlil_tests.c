@@ -7,8 +7,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -34,7 +36,8 @@ static void test_module_and_text_writer(void)
   CHECK(strcmp(xs_lil_type_name((XsLilType){.kind = XS_LIL_TYPE_I8}), "i8") == 0);
 
   FILE *stream = tmpfile();
-  if (stream == NULL) {
+  if (stream == NULL)
+  {
     ++failures;
     xs_lil_module_destroy(module);
     return;
@@ -66,7 +69,8 @@ static void test_function_body_text_writer(void)
   CHECK(xs_lil_block_set_return_value(entry, value, &error) == XS_LIL_OK);
 
   FILE *stream = tmpfile();
-  if (stream == NULL) {
+  if (stream == NULL)
+  {
     ++failures;
     xs_lil_module_destroy(module);
     return;

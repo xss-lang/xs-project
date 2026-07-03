@@ -12,8 +12,7 @@ static const XsSyntaxNode *macro_call_expr(const XsSyntaxNode *node)
 
 static bool clone_expanded_node(XsSyntaxTree *target, const XsSyntaxNode *source,
                                 const XsMacroDeclarationExpansionSet *declarations,
-                                const XsMacroStatementExpansionSet *statements,
-                                XsSyntaxNode **result);
+                                const XsMacroStatementExpansionSet *statements, XsSyntaxNode **result);
 
 static bool add_cloned_subtree(XsSyntaxTree *target, XsSyntaxNode *parent, const XsSyntaxNode *source)
 {
@@ -21,16 +20,17 @@ static bool add_cloned_subtree(XsSyntaxTree *target, XsSyntaxNode *parent, const
   return clone != nullptr && xs_syntax_node_add(target, parent, clone);
 }
 
-static bool add_declaration_replacements(XsSyntaxTree *target, XsSyntaxNode *parent,
-                                         const XsSyntaxNode *macro_call,
+static bool add_declaration_replacements(XsSyntaxTree *target, XsSyntaxNode *parent, const XsSyntaxNode *macro_call,
                                          const XsMacroDeclarationExpansionSet *declarations)
 {
   const XsSyntaxNode *call = macro_call_expr(macro_call);
-  for (size_t i = 0; declarations != nullptr && i < declarations->count; ++i) {
+  for (size_t i = 0; declarations != nullptr && i < declarations->count; ++i)
+  {
     const XsMacroDeclarationExpansion *expansion = &declarations->items[i];
     if (!spans_equal(expansion->call_span, call) || expansion->reparse.tree.root == nullptr)
       continue;
-    for (size_t j = 0; j < expansion->reparse.tree.root->child_count; ++j) {
+    for (size_t j = 0; j < expansion->reparse.tree.root->child_count; ++j)
+    {
       if (!add_cloned_subtree(target, parent, expansion->reparse.tree.root->children[j]))
         return false;
     }
@@ -38,12 +38,12 @@ static bool add_declaration_replacements(XsSyntaxTree *target, XsSyntaxNode *par
   return true;
 }
 
-static bool add_statement_replacements(XsSyntaxTree *target, XsSyntaxNode *parent,
-                                       const XsSyntaxNode *macro_call,
+static bool add_statement_replacements(XsSyntaxTree *target, XsSyntaxNode *parent, const XsSyntaxNode *macro_call,
                                        const XsMacroStatementExpansionSet *statements)
 {
   const XsSyntaxNode *call = macro_call_expr(macro_call);
-  for (size_t i = 0; statements != nullptr && i < statements->count; ++i) {
+  for (size_t i = 0; statements != nullptr && i < statements->count; ++i)
+  {
     const XsMacroStatementExpansion *expansion = &statements->items[i];
     if (!spans_equal(expansion->call_span, call) || expansion->statement == nullptr)
       continue;
@@ -53,19 +53,21 @@ static bool add_statement_replacements(XsSyntaxTree *target, XsSyntaxNode *paren
   return true;
 }
 
-static bool clone_expanded_children(XsSyntaxTree *target, XsSyntaxNode *parent,
-                                    const XsSyntaxNode *source,
+static bool clone_expanded_children(XsSyntaxTree *target, XsSyntaxNode *parent, const XsSyntaxNode *source,
                                     const XsMacroDeclarationExpansionSet *declarations,
                                     const XsMacroStatementExpansionSet *statements)
 {
-  for (size_t i = 0; i < source->child_count; ++i) {
+  for (size_t i = 0; i < source->child_count; ++i)
+  {
     const XsSyntaxNode *child = source->children[i];
-    if (child->kind == XS_SYNTAX_DECL_MACRO_CALL) {
+    if (child->kind == XS_SYNTAX_DECL_MACRO_CALL)
+    {
       if (!add_declaration_replacements(target, parent, child, declarations))
         return false;
       continue;
     }
-    if (child->kind == XS_SYNTAX_STMT_MACRO_CALL) {
+    if (child->kind == XS_SYNTAX_STMT_MACRO_CALL)
+    {
       if (!add_statement_replacements(target, parent, child, statements))
         return false;
       continue;
@@ -80,8 +82,7 @@ static bool clone_expanded_children(XsSyntaxTree *target, XsSyntaxNode *parent,
 
 static bool clone_expanded_node(XsSyntaxTree *target, const XsSyntaxNode *source,
                                 const XsMacroDeclarationExpansionSet *declarations,
-                                const XsMacroStatementExpansionSet *statements,
-                                XsSyntaxNode **result)
+                                const XsMacroStatementExpansionSet *statements, XsSyntaxNode **result)
 {
   XsSyntaxNode *clone = xs_syntax_node_clone_shallow(target, source);
   if (clone == nullptr)
@@ -92,16 +93,15 @@ static bool clone_expanded_node(XsSyntaxTree *target, const XsSyntaxNode *source
   return true;
 }
 
-bool xs_macro_materialize_expanded_tree(const XsSyntaxTree *tree,
-                                        const XsMacroDeclarationExpansionSet *declarations,
-                                        const XsMacroStatementExpansionSet *statements,
-                                        XsDiagnostics *diagnostics,
+bool xs_macro_materialize_expanded_tree(const XsSyntaxTree *tree, const XsMacroDeclarationExpansionSet *declarations,
+                                        const XsMacroStatementExpansionSet *statements, XsDiagnostics *diagnostics,
                                         XsSyntaxTree *expanded)
 {
   if (tree == nullptr || tree->root == nullptr || diagnostics == nullptr || expanded == nullptr)
     return false;
   xs_syntax_tree_init(expanded, tree->source, tree->file_id);
-  if (!clone_expanded_node(expanded, tree->root, declarations, statements, &expanded->root)) {
+  if (!clone_expanded_node(expanded, tree->root, declarations, statements, &expanded->root))
+  {
     xs_syntax_tree_free(expanded);
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while materializing expanded macro tree");

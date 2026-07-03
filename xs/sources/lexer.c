@@ -17,7 +17,8 @@ static bool starts_with(const XsLexer *lexer, const char *text, size_t length)
 {
   if (lexer->cursor + length > lexer->source->length)
     return false;
-  for (size_t i = 0; i < length; ++i) {
+  for (size_t i = 0; i < length; ++i)
+  {
     if (lexer->source->text[lexer->cursor + i] != text[i])
       return false;
   }
@@ -56,24 +57,34 @@ static bool skip_block_comment(XsLexer *lexer, bool document, size_t start)
 {
   size_t depth = 1;
   lexer->cursor += document ? 4 : 3;
-  while (!at_end(lexer)) {
-    if (starts_with(lexer, "///{", 4)) {
+  while (!at_end(lexer))
+  {
+    if (starts_with(lexer, "///{", 4))
+    {
       ++depth;
       lexer->cursor += 4;
-    } else if (starts_with(lexer, "//{", 3)) {
+    }
+    else if (starts_with(lexer, "//{", 3))
+    {
       ++depth;
       lexer->cursor += 3;
-    } else if (starts_with(lexer, "}///", 4)) {
+    }
+    else if (starts_with(lexer, "}///", 4))
+    {
       --depth;
       lexer->cursor += 4;
       if (depth == 0)
         return true;
-    } else if (starts_with(lexer, "}//", 3)) {
+    }
+    else if (starts_with(lexer, "}//", 3))
+    {
       --depth;
       lexer->cursor += 3;
       if (depth == 0)
         return true;
-    } else {
+    }
+    else
+    {
       ++lexer->cursor;
     }
   }
@@ -83,16 +94,22 @@ static bool skip_block_comment(XsLexer *lexer, bool document, size_t start)
 
 static void skip_trivia(XsLexer *lexer)
 {
-  for (;;) {
+  for (;;)
+  {
     while (!at_end(lexer) && isspace((unsigned char)peek(lexer, 0)) != 0)
       ++lexer->cursor;
-    if (starts_with(lexer, "//{", 3)) {
+    if (starts_with(lexer, "//{", 3))
+    {
       size_t start = lexer->cursor;
       if (!skip_block_comment(lexer, false, start))
         return;
-    } else if (starts_with(lexer, "//", 2) && !starts_with(lexer, "///", 3) && !starts_with(lexer, "//!", 3)) {
+    }
+    else if (starts_with(lexer, "//", 2) && !starts_with(lexer, "///", 3) && !starts_with(lexer, "//!", 3))
+    {
       skip_line_comment(lexer);
-    } else {
+    }
+    else
+    {
       return;
     }
   }
@@ -101,7 +118,8 @@ static void skip_trivia(XsLexer *lexer)
 static XsToken lex_doc_comment(XsLexer *lexer)
 {
   size_t start = lexer->cursor;
-  if (starts_with(lexer, "///{", 4)) {
+  if (starts_with(lexer, "///{", 4))
+  {
     skip_block_comment(lexer, true, start);
     return token(XS_TOKEN_DOC_COMMENT, start, lexer->cursor);
   }
@@ -131,40 +149,47 @@ static XsToken lex_number(XsLexer *lexer)
 {
   size_t start = lexer->cursor;
   bool invalid = false;
-  while (isdigit((unsigned char)peek(lexer, 0)) != 0 || peek(lexer, 0) == '\'') {
+  while (isdigit((unsigned char)peek(lexer, 0)) != 0 || peek(lexer, 0) == '\'')
+  {
     if (peek(lexer, 0) == '\'' && (lexer->cursor == start || isdigit((unsigned char)peek(lexer, 1)) == 0))
       invalid = true;
     ++lexer->cursor;
   }
   XsTokenKind kind = XS_TOKEN_INTEGER;
-  if (peek(lexer, 0) == '.' && isdigit((unsigned char)peek(lexer, 1)) != 0) {
+  if (peek(lexer, 0) == '.' && isdigit((unsigned char)peek(lexer, 1)) != 0)
+  {
     kind = XS_TOKEN_FLOAT;
     ++lexer->cursor;
-    while (isdigit((unsigned char)peek(lexer, 0)) != 0 || peek(lexer, 0) == '\'') {
+    while (isdigit((unsigned char)peek(lexer, 0)) != 0 || peek(lexer, 0) == '\'')
+    {
       if (peek(lexer, 0) == '\'' && isdigit((unsigned char)peek(lexer, 1)) == 0)
         invalid = true;
       ++lexer->cursor;
     }
   }
-  if (peek(lexer, 0) == 'e' || peek(lexer, 0) == 'E') {
+  if (peek(lexer, 0) == 'e' || peek(lexer, 0) == 'E')
+  {
     kind = XS_TOKEN_FLOAT;
     ++lexer->cursor;
     if (peek(lexer, 0) == '+' || peek(lexer, 0) == '-')
       ++lexer->cursor;
     if (isdigit((unsigned char)peek(lexer, 0)) == 0)
       invalid = true;
-    while (isdigit((unsigned char)peek(lexer, 0)) != 0 || peek(lexer, 0) == '\'') {
+    while (isdigit((unsigned char)peek(lexer, 0)) != 0 || peek(lexer, 0) == '\'')
+    {
       if (peek(lexer, 0) == '\'' && isdigit((unsigned char)peek(lexer, 1)) == 0)
         invalid = true;
       ++lexer->cursor;
     }
   }
-  if (peek(lexer, 0) == '\'' || peek(lexer, 0) == '_' || is_identifier_start(peek(lexer, 0))) {
+  if (peek(lexer, 0) == '\'' || peek(lexer, 0) == '_' || is_identifier_start(peek(lexer, 0)))
+  {
     invalid = true;
     while (peek(lexer, 0) == '\'' || is_identifier_continue(peek(lexer, 0)))
       ++lexer->cursor;
   }
-  if (invalid) {
+  if (invalid)
+  {
     error(lexer, start, lexer->cursor, "invalid decimal numeric literal");
     return token(XS_TOKEN_ERROR, start, lexer->cursor);
   }
@@ -180,15 +205,19 @@ static bool validate_escape(XsLexer *lexer, size_t slash)
 {
   char escape = peek(lexer, 0);
   if (escape == '\'' || escape == '"' || escape == '\\' || escape == '0' || escape == 'a' || escape == 'b' ||
-      escape == 'f' || escape == 'n' || escape == 'r' || escape == 't' || escape == 'v') {
+      escape == 'f' || escape == 'n' || escape == 'r' || escape == 't' || escape == 'v')
+  {
     ++lexer->cursor;
     return true;
   }
   size_t digits = escape == 'u' ? 4 : escape == 'U' ? 8 : escape == 'x' ? 2 : 0;
-  if (digits != 0) {
+  if (digits != 0)
+  {
     ++lexer->cursor;
-    for (size_t i = 0; i < digits; ++i) {
-      if (!is_hex(peek(lexer, 0))) {
+    for (size_t i = 0; i < digits; ++i)
+    {
+      if (!is_hex(peek(lexer, 0)))
+      {
         error(lexer, slash, lexer->cursor, "invalid hexadecimal escape sequence");
         return false;
       }
@@ -207,21 +236,27 @@ static XsToken lex_string(XsLexer *lexer)
   size_t start = lexer->cursor;
   bool multiline = starts_with(lexer, "\"\"\"", 3);
   lexer->cursor += multiline ? 3 : 1;
-  while (!at_end(lexer)) {
-    if (multiline && starts_with(lexer, "\"\"\"", 3)) {
+  while (!at_end(lexer))
+  {
+    if (multiline && starts_with(lexer, "\"\"\"", 3))
+    {
       lexer->cursor += 3;
       return token(XS_TOKEN_STRING, start, lexer->cursor);
     }
-    if (!multiline && peek(lexer, 0) == '"') {
+    if (!multiline && peek(lexer, 0) == '"')
+    {
       ++lexer->cursor;
       return token(XS_TOKEN_STRING, start, lexer->cursor);
     }
     if (!multiline && peek(lexer, 0) == '\n')
       break;
-    if (peek(lexer, 0) == '\\') {
+    if (peek(lexer, 0) == '\\')
+    {
       size_t slash = lexer->cursor++;
       (void)validate_escape(lexer, slash);
-    } else {
+    }
+    else
+    {
       ++lexer->cursor;
     }
   }
@@ -232,14 +267,16 @@ static XsToken lex_string(XsLexer *lexer)
 static XsToken lex_character(XsLexer *lexer)
 {
   size_t start = lexer->cursor++;
-  if (is_identifier_start(peek(lexer, 0))) {
+  if (is_identifier_start(peek(lexer, 0)))
+  {
     size_t value_start = lexer->cursor;
     ++lexer->cursor;
     while (is_identifier_continue(peek(lexer, 0)))
       ++lexer->cursor;
     if (peek(lexer, 0) != '\'')
       return token(XS_TOKEN_LIFETIME, start, lexer->cursor);
-    if (lexer->cursor - value_start == 1) {
+    if (lexer->cursor - value_start == 1)
+    {
       ++lexer->cursor;
       return token(XS_TOKEN_CHARACTER, start, lexer->cursor);
     }
@@ -247,23 +284,29 @@ static XsToken lex_character(XsLexer *lexer)
     error(lexer, start, lexer->cursor, "character literal must contain one character");
     return token(XS_TOKEN_ERROR, start, lexer->cursor);
   }
-  if (at_end(lexer) || peek(lexer, 0) == '\n' || peek(lexer, 0) == '\'') {
+  if (at_end(lexer) || peek(lexer, 0) == '\n' || peek(lexer, 0) == '\'')
+  {
     error(lexer, start, lexer->cursor, "empty character literal");
     return token(XS_TOKEN_ERROR, start, lexer->cursor);
   }
-  if (peek(lexer, 0) == '\\') {
+  if (peek(lexer, 0) == '\\')
+  {
     size_t slash = lexer->cursor++;
-    if (!validate_escape(lexer, slash)) {
+    if (!validate_escape(lexer, slash))
+    {
       while (!at_end(lexer) && peek(lexer, 0) != '\n' && peek(lexer, 0) != '\'')
         ++lexer->cursor;
       if (peek(lexer, 0) == '\'')
         ++lexer->cursor;
       return token(XS_TOKEN_ERROR, start, lexer->cursor);
     }
-  } else {
+  }
+  else
+  {
     ++lexer->cursor;
   }
-  if (peek(lexer, 0) != '\'') {
+  if (peek(lexer, 0) != '\'')
+  {
     while (!at_end(lexer) && peek(lexer, 0) != '\n' && peek(lexer, 0) != '\'')
       ++lexer->cursor;
     if (peek(lexer, 0) == '\'')
@@ -277,7 +320,8 @@ static XsToken lex_character(XsLexer *lexer)
 
 static XsToken one_or_two(XsLexer *lexer, size_t start, char second, XsTokenKind one, XsTokenKind two)
 {
-  if (peek(lexer, 0) == second) {
+  if (peek(lexer, 0) == second)
+  {
     ++lexer->cursor;
     return token(two, start, lexer->cursor);
   }
@@ -310,7 +354,8 @@ XsToken xs_lexer_next(XsLexer *lexer)
   if (character == '\'')
     return lex_character(lexer);
   ++lexer->cursor;
-  switch (character) {
+  switch (character)
+  {
   case '(':
     return token(XS_TOKEN_LEFT_PAREN, start, lexer->cursor);
   case ')':
@@ -330,13 +375,15 @@ XsToken xs_lexer_next(XsLexer *lexer)
   case ':':
     return token(XS_TOKEN_COLON, start, lexer->cursor);
   case '.':
-    if (starts_with(lexer, "..", 2)) {
+    if (starts_with(lexer, "..", 2))
+    {
       lexer->cursor += 2;
       return token(XS_TOKEN_ELLIPSIS, start, lexer->cursor);
     }
     return token(XS_TOKEN_DOT, start, lexer->cursor);
   case '=':
-    if (peek(lexer, 0) == '>') {
+    if (peek(lexer, 0) == '>')
+    {
       ++lexer->cursor;
       return token(XS_TOKEN_FAT_ARROW, start, lexer->cursor);
     }
@@ -344,21 +391,25 @@ XsToken xs_lexer_next(XsLexer *lexer)
   case '!':
     return one_or_two(lexer, start, '=', XS_TOKEN_BANG, XS_TOKEN_NOT_EQUAL);
   case '>':
-    if (starts_with(lexer, ">>", 2)) {
+    if (starts_with(lexer, ">>", 2))
+    {
       lexer->cursor += 2;
       return token(XS_TOKEN_SWITCH_INPUT, start, lexer->cursor);
     }
-    if (peek(lexer, 0) == '>') {
+    if (peek(lexer, 0) == '>')
+    {
       ++lexer->cursor;
       return token(XS_TOKEN_SHIFT_RIGHT, start, lexer->cursor);
     }
     return one_or_two(lexer, start, '=', XS_TOKEN_GREATER, XS_TOKEN_GREATER_EQUAL);
   case '<':
-    if (starts_with(lexer, "<<", 2)) {
+    if (starts_with(lexer, "<<", 2))
+    {
       lexer->cursor += 2;
       return token(XS_TOKEN_SWITCH_OUTPUT, start, lexer->cursor);
     }
-    if (peek(lexer, 0) == '<') {
+    if (peek(lexer, 0) == '<')
+    {
       ++lexer->cursor;
       return token(XS_TOKEN_SHIFT_LEFT, start, lexer->cursor);
     }

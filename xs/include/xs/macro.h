@@ -125,26 +125,18 @@ bool xs_macro_expand_declarations(const XsSyntaxTree *tree, XsDiagnostics *diagn
                                   XsMacroDeclarationExpansionSet *set);
 const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpansionSet *set,
                                                       const XsSyntaxNode *statement);
-bool xs_macro_statement_expansion_matches(const XsMacroStatementExpansion *expansion,
-                                          const XsSyntaxNode *statement);
+bool xs_macro_statement_expansion_matches(const XsMacroStatementExpansion *expansion, const XsSyntaxNode *statement);
 const XsMacroDeclarationExpansion *xs_macro_declaration_expansion_find(const XsMacroDeclarationExpansionSet *set,
                                                                        const XsSyntaxNode *declaration);
 bool xs_macro_expand_top_level_declarations(const XsSyntaxTree *tree,
                                             const XsMacroDeclarationExpansionSet *declarations,
-                                            XsDiagnostics *diagnostics,
-                                            XsMacroExpandedDeclarationSet *expanded);
-bool xs_macro_expand_child_declarations(const XsSyntaxNode *parent,
-                                        const XsMacroDeclarationExpansionSet *declarations,
-                                        XsDiagnostics *diagnostics,
-                                        XsMacroExpandedDeclarationSet *expanded);
-bool xs_macro_expand_child_statements(const XsSyntaxNode *parent,
-                                      const XsMacroStatementExpansionSet *statements,
-                                      XsDiagnostics *diagnostics,
-                                      XsMacroExpandedStatementSet *expanded);
-bool xs_macro_materialize_expanded_tree(const XsSyntaxTree *tree,
-                                        const XsMacroDeclarationExpansionSet *declarations,
-                                        const XsMacroStatementExpansionSet *statements,
-                                        XsDiagnostics *diagnostics,
+                                            XsDiagnostics *diagnostics, XsMacroExpandedDeclarationSet *expanded);
+bool xs_macro_expand_child_declarations(const XsSyntaxNode *parent, const XsMacroDeclarationExpansionSet *declarations,
+                                        XsDiagnostics *diagnostics, XsMacroExpandedDeclarationSet *expanded);
+bool xs_macro_expand_child_statements(const XsSyntaxNode *parent, const XsMacroStatementExpansionSet *statements,
+                                      XsDiagnostics *diagnostics, XsMacroExpandedStatementSet *expanded);
+bool xs_macro_materialize_expanded_tree(const XsSyntaxTree *tree, const XsMacroDeclarationExpansionSet *declarations,
+                                        const XsMacroStatementExpansionSet *statements, XsDiagnostics *diagnostics,
                                         XsSyntaxTree *expanded);
 void xs_macro_expanded_declaration_set_free(XsMacroExpandedDeclarationSet *set);
 void xs_macro_expanded_statement_set_free(XsMacroExpandedStatementSet *set);

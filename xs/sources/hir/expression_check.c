@@ -35,7 +35,8 @@ static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKi
 {
   if (node == nullptr)
     return nullptr;
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     if (node->children[i]->kind == kind)
       return node->children[i];
   }
@@ -72,7 +73,8 @@ static const XsHirPrimitiveInfo *primitive_from_type(const XsSyntaxNode *type)
 
 static const char *literal_kind_name(XsTokenKind kind)
 {
-  switch (kind) {
+  switch (kind)
+  {
   case XS_TOKEN_INTEGER:
     return "integer";
   case XS_TOKEN_FLOAT:
@@ -117,8 +119,7 @@ static bool report_literal_type_error(XsDiagnostics *diagnostics, const XsSyntax
 }
 
 static bool report_assignment_literal_type_error(XsDiagnostics *diagnostics, const XsSyntaxNode *literal,
-                                                 const XsHirPrimitiveInfo *primitive,
-                                                 const LocalBinding *binding)
+                                                 const XsHirPrimitiveInfo *primitive, const LocalBinding *binding)
 {
   int length = binding->name.length > 128 ? 128 : (int)binding->name.length;
   char message[320];
@@ -170,18 +171,20 @@ static bool local_scope_add(LocalScope *scope, const XsSyntaxNode *declaration)
   const XsSyntaxNode *identifier = declaration_identifier(declaration);
   if (scope == nullptr || identifier == nullptr)
     return true;
-  if (scope->count == scope->capacity) {
+  if (scope->count == scope->capacity)
+  {
     size_t capacity = scope->capacity == 0 ? 8 : scope->capacity * 2;
     LocalBinding *bindings = realloc(scope->bindings, capacity * sizeof(*bindings));
-    if (bindings == nullptr) {
+    if (bindings == nullptr)
+    {
       scope->allocation_failed = true;
       return false;
     }
     scope->bindings = bindings;
     scope->capacity = capacity;
   }
-  bool immutable = (declaration->flags & (XS_SYNTAX_FLAG_IMMUTABLE | XS_SYNTAX_FLAG_CONSTANT |
-                                          XS_SYNTAX_FLAG_STATIC_CONSTANT)) != 0;
+  bool immutable =
+      (declaration->flags & (XS_SYNTAX_FLAG_IMMUTABLE | XS_SYNTAX_FLAG_CONSTANT | XS_SYNTAX_FLAG_STATIC_CONSTANT)) != 0;
   scope->bindings[scope->count++] =
       (LocalBinding){.name = identifier->text, .declaration = declaration, .immutable = immutable};
   return true;
@@ -189,8 +192,10 @@ static bool local_scope_add(LocalScope *scope, const XsSyntaxNode *declaration)
 
 static const LocalBinding *local_scope_find(const LocalScope *scope, XsText name)
 {
-  for (const LocalScope *current = scope; current != nullptr; current = current->parent) {
-    for (size_t i = current->count; i > 0; --i) {
+  for (const LocalScope *current = scope; current != nullptr; current = current->parent)
+  {
+    for (size_t i = current->count; i > 0; --i)
+    {
       if (text_equal(current->bindings[i - 1].name, name))
         return &current->bindings[i - 1];
     }
@@ -208,7 +213,8 @@ static bool has_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
   if (node == nullptr)
     return false;
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     if (node->children[i]->kind == kind)
       return true;
   }
@@ -219,7 +225,8 @@ static const XsHirPrimitiveInfo *function_return_primitive(const XsSyntaxNode *f
 {
   if (function == nullptr || (function->kind != XS_SYNTAX_DECL_FUNCTION && function->kind != XS_SYNTAX_EXPR_FUNCTION))
     return nullptr;
-  for (size_t i = 0; i < function->child_count; ++i) {
+  for (size_t i = 0; i < function->child_count; ++i)
+  {
     const XsSyntaxNode *child = function->children[i];
     if (child->kind == XS_SYNTAX_TYPE_NAMED && (child->flags & XS_SYNTAX_FLAG_RETURN_TYPE) != 0)
       return primitive_from_type(child);
@@ -241,7 +248,7 @@ static const XsSyntaxNode *assignment_identifier_target(const XsSyntaxNode *node
 static const XsSyntaxNode *assignment_value(const XsSyntaxNode *node)
 {
   return node != nullptr && node->kind == XS_SYNTAX_EXPR_ASSIGNMENT && node->child_count >= 3 ? node->children[2]
-                                                                                            : nullptr;
+                                                                                              : nullptr;
 }
 
 static bool check_return_statement(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
@@ -284,7 +291,8 @@ static bool check_children(const XsSyntaxNode *node, const XsMacroDeclarationExp
                            XsDiagnostics *diagnostics)
 {
   bool success = true;
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     success = check_node(node->children[i], macro_declarations, macro_statements, context, diagnostics) && success;
   }
   return success;
@@ -316,8 +324,8 @@ static bool check_expanded_statement_children(const XsSyntaxNode *node,
     return false;
   bool success = true;
   for (size_t i = 0; i < expanded.count; ++i)
-    success = check_node(expanded.items[i].statement, macro_declarations, macro_statements, context, diagnostics) &&
-              success;
+    success =
+        check_node(expanded.items[i].statement, macro_declarations, macro_statements, context, diagnostics) && success;
   xs_macro_expanded_statement_set_free(&expanded);
   return success;
 }
@@ -354,7 +362,8 @@ static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansi
   if (node->kind == XS_SYNTAX_DECL_FUNCTION || node->kind == XS_SYNTAX_EXPR_FUNCTION ||
       node->kind == XS_SYNTAX_STMT_BLOCK)
     return check_scoped_node(node, macro_declarations, macro_statements, context, diagnostics);
-  if (node->kind == XS_SYNTAX_DECL_VARIABLE) {
+  if (node->kind == XS_SYNTAX_DECL_VARIABLE)
+  {
     success = check_variable_initializer(node, diagnostics) && success;
     success = local_scope_add(context.scope, node) && success;
   }

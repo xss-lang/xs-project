@@ -6,7 +6,8 @@ static bool macro_fragment_kind_valid(SyntaxParser *parser, XsToken token)
 {
   static const char *const kinds[] = {"expr", "ident",   "ty",   "path", "pat",      "stmt", "block",
                                       "item", "literal", "meta", "tt",   "lifetime", "vis"};
-  for (size_t i = 0; i < sizeof(kinds) / sizeof(kinds[0]); ++i) {
+  for (size_t i = 0; i < sizeof(kinds) / sizeof(kinds[0]); ++i)
+  {
     if (token_text_is(parser, token, kinds[i]))
       return true;
   }
@@ -21,7 +22,8 @@ static bool macro_has_variable(const XsSyntaxNode *value, const XsSource *source
       value->children[0]->text.length == text.end - text.start &&
       memcmp(value->children[0]->text.data, source->text + text.start, value->children[0]->text.length) == 0)
     return true;
-  for (size_t i = 0; i < value->child_count; ++i) {
+  for (size_t i = 0; i < value->child_count; ++i)
+  {
     if (macro_has_variable(value->children[i], source, text))
       return true;
   }
@@ -30,10 +32,13 @@ static bool macro_has_variable(const XsSyntaxNode *value, const XsSource *source
 
 static void parse_matcher_elements(SyntaxParser *parser, XsSyntaxNode *macro, XsSyntaxNode *parent, XsTokenKind closing)
 {
-  while (parser->current.kind != closing && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != closing && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t start = parser->current.span.start;
-    if (accept(parser, XS_TOKEN_DOLLAR)) {
-      if (accept(parser, XS_TOKEN_LEFT_PAREN)) {
+    if (accept(parser, XS_TOKEN_DOLLAR))
+    {
+      if (accept(parser, XS_TOKEN_LEFT_PAREN))
+      {
         XsSyntaxNode *repetition =
             node(parser, XS_SYNTAX_MACRO_MATCHER_REPETITION, (XsSpan){start, parser->previous.span.end});
         parse_matcher_elements(parser, macro, repetition, XS_TOKEN_RIGHT_PAREN);
@@ -81,7 +86,8 @@ static void add_expansion_token(SyntaxParser *parser, XsSyntaxNode *parent, XsTo
 
 static XsTokenKind matching_closing_delimiter(XsTokenKind opening)
 {
-  switch (opening) {
+  switch (opening)
+  {
   case XS_TOKEN_LEFT_BRACE:
     return XS_TOKEN_RIGHT_BRACE;
   case XS_TOKEN_LEFT_PAREN:
@@ -95,10 +101,13 @@ static XsTokenKind matching_closing_delimiter(XsTokenKind opening)
 
 static void parse_expansion_elements(SyntaxParser *parser, XsSyntaxNode *parent, XsTokenKind closing)
 {
-  while (parser->current.kind != closing && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != closing && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t start = parser->current.span.start;
-    if (accept(parser, XS_TOKEN_DOLLAR)) {
-      if (accept(parser, XS_TOKEN_LEFT_PAREN)) {
+    if (accept(parser, XS_TOKEN_DOLLAR))
+    {
+      if (accept(parser, XS_TOKEN_LEFT_PAREN))
+      {
         XsSyntaxNode *repetition =
             node(parser, XS_SYNTAX_MACRO_EXPANSION_REPETITION, (XsSpan){start, parser->previous.span.end});
         parse_expansion_elements(parser, repetition, XS_TOKEN_RIGHT_PAREN);
@@ -109,7 +118,9 @@ static void parse_expansion_elements(SyntaxParser *parser, XsSyntaxNode *parent,
           expect(parser, XS_TOKEN_STAR, "macro expansion repetition must end with '*' or '+'");
         finish_node(parser, repetition, parser->previous.span.end);
         xs_syntax_node_add(parser->tree, parent, repetition);
-      } else {
+      }
+      else
+      {
         XsSyntaxNode *variable =
             node(parser, XS_SYNTAX_MACRO_EXPANSION_VARIABLE, (XsSpan){start, parser->current.span.end});
         xs_syntax_node_add(parser->tree, variable, identifier(parser));
@@ -122,7 +133,8 @@ static void parse_expansion_elements(SyntaxParser *parser, XsSyntaxNode *parent,
     XsTokenKind nested_closing = matching_closing_delimiter(token.kind);
     advance(parser);
     add_expansion_token(parser, parent, token);
-    if (nested_closing != XS_TOKEN_EOF) {
+    if (nested_closing != XS_TOKEN_EOF)
+    {
       parse_expansion_elements(parser, parent, nested_closing);
       token = parser->current;
       if (expect(parser, nested_closing, "expected closing delimiter in macro expansion"))
@@ -137,7 +149,8 @@ XsSyntaxNode *parse_macro(SyntaxParser *parser, size_t start)
   expect(parser, XS_TOKEN_BANG, "expected '!' after macroRules");
   xs_syntax_node_add(parser->tree, macro, identifier(parser));
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before macro rules");
-  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t start_rule = parser->current.span.start;
     XsSyntaxNode *rule = node(parser, XS_SYNTAX_MACRO_RULE, (XsSpan){start_rule, start_rule});
     XsSyntaxNode *matcher = node(parser, XS_SYNTAX_MACRO_MATCHER, (XsSpan){start_rule, start_rule});

@@ -9,8 +9,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -42,7 +44,8 @@ static bool has_identifier(const XsSyntaxNode *node, const char *value)
     return false;
   if (node->kind == XS_SYNTAX_IDENTIFIER && text_is(node->text, value))
     return true;
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     if (has_identifier(node->children[i], value))
       return true;
   }
@@ -106,7 +109,8 @@ static void test_child_declaration_view_expands_member_macro_calls(void)
   CHECK(class_node != nullptr);
   CHECK(xs_macro_expand_child_declarations(class_node, &declarations, &diagnostics, &expanded));
   const XsSyntaxNode *generated = nullptr;
-  for (size_t i = 0; i < expanded.count; ++i) {
+  for (size_t i = 0; i < expanded.count; ++i)
+  {
     if (expanded.items[i].from_macro_expansion && expanded.items[i].declaration->kind == XS_SYNTAX_DECL_FUNCTION)
       generated = expanded.items[i].declaration;
   }
@@ -140,7 +144,8 @@ static void test_child_declaration_view_expands_field_like_macro_calls(void)
   CHECK(class_node != nullptr);
   CHECK(xs_macro_expand_child_declarations(class_node, &declarations, &diagnostics, &expanded));
   const XsSyntaxNode *field_like = nullptr;
-  for (size_t i = 0; i < expanded.count; ++i) {
+  for (size_t i = 0; i < expanded.count; ++i)
+  {
     if (expanded.items[i].from_macro_expansion && expanded.items[i].declaration->kind == XS_SYNTAX_DECL_VARIABLE)
       field_like = expanded.items[i].declaration;
   }
@@ -174,7 +179,8 @@ static void test_child_statement_view_expands_macro_calls(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   const XsSyntaxNode *function = nullptr;
-  for (size_t i = 0; tree.root != nullptr && i < tree.root->child_count; ++i) {
+  for (size_t i = 0; tree.root != nullptr && i < tree.root->child_count; ++i)
+  {
     const XsSyntaxNode *child = tree.root->children[i];
     const XsSyntaxNode *name = child->kind == XS_SYNTAX_DECL_FUNCTION ? first_identifier(child) : nullptr;
     if (name != nullptr && text_is(name->text, "Main"))

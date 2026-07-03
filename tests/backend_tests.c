@@ -9,8 +9,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -18,7 +20,8 @@ static int failures;
 
 int main(int argc, char **argv)
 {
-  if (argc != 3) {
+  if (argc != 3)
+  {
     fprintf(stderr, "backend test requires object path and linker path\n");
     return 2;
   }

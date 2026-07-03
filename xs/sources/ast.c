@@ -15,10 +15,12 @@ void xs_ast_free(XsAst *ast)
 
 bool xs_ast_push(XsAst *ast, XsAstNode node)
 {
-  if (ast->count == ast->capacity) {
+  if (ast->count == ast->capacity)
+  {
     size_t capacity = ast->capacity == 0 ? 16 : ast->capacity * 2;
     XsAstNode *items = realloc(ast->items, capacity * sizeof(*items));
-    if (items == NULL) {
+    if (items == NULL)
+    {
       ast->allocation_failed = true;
       return false;
     }

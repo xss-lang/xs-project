@@ -12,7 +12,8 @@ void xs_lil_clear_error(XsLilError *error)
 
 XsLilStatus xs_lil_set_error(XsLilError *error, XsLilStatus status, const char *message)
 {
-  if (error != NULL) {
+  if (error != NULL)
+  {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s", message == NULL ? "XLIL error" : message);
   }
@@ -37,7 +38,8 @@ XsLilStatus xs_lil_write_checked(FILE *stream, XsLilError *error, const char *te
 
 static void function_free(XsLilFunction *function)
 {
-  for (size_t i = 0; i < function->block_count; ++i) {
+  for (size_t i = 0; i < function->block_count; ++i)
+  {
     XsLilBlock *block = function->blocks[i];
     free(block->label);
     free(block->instructions);
@@ -59,7 +61,8 @@ XsLilStatus xs_lil_module_create(const char *name, XsLilModule **module, XsLilEr
   if (*module == NULL)
     return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while creating XLIL module");
   (*module)->name = xs_lil_copy_text(name);
-  if ((*module)->name == NULL) {
+  if ((*module)->name == NULL)
+  {
     xs_lil_module_destroy(*module);
     *module = NULL;
     return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while naming XLIL module");
@@ -85,7 +88,8 @@ const char *xs_lil_module_name(const XsLilModule *module)
 
 static XsLilStatus append_function(XsLilModule *module, XsLilFunction function, XsLilError *error)
 {
-  if (module->function_count == module->function_capacity) {
+  if (module->function_count == module->function_capacity)
+  {
     size_t capacity = module->function_capacity == 0 ? 8 : module->function_capacity * 2;
     XsLilFunction *functions = realloc(module->functions, capacity * sizeof(*functions));
     if (functions == NULL)
@@ -112,13 +116,16 @@ static XsLilStatus add_function(XsLilModule *module, const char *name, XsLilType
       .parameter_count = parameter_count,
       .is_definition = is_definition,
   };
-  if (function.name == NULL) {
+  if (function.name == NULL)
+  {
     function_free(&function);
     return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while naming XLIL function");
   }
-  if (parameter_count != 0) {
+  if (parameter_count != 0)
+  {
     function.parameters = malloc(parameter_count * sizeof(*function.parameters));
-    if (function.parameters == NULL) {
+    if (function.parameters == NULL)
+    {
       function_free(&function);
       return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while copying XLIL parameters");
     }
@@ -152,7 +159,8 @@ size_t xs_lil_module_function_count(const XsLilModule *module)
 
 static XsLilStatus add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error)
 {
-  if (function->value_count == function->value_capacity) {
+  if (function->value_count == function->value_capacity)
+  {
     size_t capacity = function->value_capacity == 0 ? 8 : function->value_capacity * 2;
     XsLilValue *values = realloc(function->values, capacity * sizeof(*values));
     if (values == NULL)
@@ -174,7 +182,8 @@ XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *la
   if (function == NULL || !function->is_definition || label == NULL || label[0] == '\0')
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
                             "valid XLIL function definition and block label are required");
-  if (function->block_count == function->block_capacity) {
+  if (function->block_count == function->block_capacity)
+  {
     size_t capacity = function->block_capacity == 0 ? 4 : function->block_capacity * 2;
     XsLilBlock **blocks = realloc(function->blocks, capacity * sizeof(*blocks));
     if (blocks == NULL)
@@ -186,7 +195,8 @@ XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *la
   if (created == NULL)
     return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while adding XLIL block");
   *created = (XsLilBlock){.label = xs_lil_copy_text(label), .owner = function, .id = (uint32_t)function->block_count};
-  if (created->label == NULL) {
+  if (created->label == NULL)
+  {
     free(created);
     return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while naming XLIL block");
   }
@@ -202,7 +212,8 @@ static XsLilStatus append_instruction(XsLilBlock *block, XsLilInstruction instru
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
   if (block->terminator.kind != XS_LIL_TERMINATOR_NONE)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "cannot add XLIL instruction after terminator");
-  if (block->instruction_count == block->instruction_capacity) {
+  if (block->instruction_count == block->instruction_capacity)
+  {
     size_t capacity = block->instruction_capacity == 0 ? 8 : block->instruction_capacity * 2;
     XsLilInstruction *instructions = realloc(block->instructions, capacity * sizeof(*instructions));
     if (instructions == NULL)
@@ -246,13 +257,16 @@ static XsLilStatus set_terminator(XsLilBlock *block, XsLilTerminator terminator,
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
   if (block->terminator.kind != XS_LIL_TERMINATOR_NONE)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL block already has a terminator");
-  if (terminator.kind == XS_LIL_TERMINATOR_RETURN && terminator.has_value) {
+  if (terminator.kind == XS_LIL_TERMINATOR_RETURN && terminator.has_value)
+  {
     if ((size_t)terminator.value >= block->owner->value_count)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL return references an unknown value");
     if (block->owner->values[terminator.value].type.kind != block->owner->return_type.kind)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
                               "XLIL return value type does not match function return type");
-  } else if (terminator.kind == XS_LIL_TERMINATOR_RETURN && block->owner->return_type.kind != XS_LIL_TYPE_VOID) {
+  }
+  else if (terminator.kind == XS_LIL_TERMINATOR_RETURN && block->owner->return_type.kind != XS_LIL_TYPE_VOID)
+  {
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL return is missing a value");
   }
   block->terminator = terminator;

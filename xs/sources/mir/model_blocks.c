@@ -11,7 +11,8 @@ XsMirStatus xs_mir_function_append_block(XsMirFunction *function, const char *la
   if (function == NULL || !function->is_definition || label == NULL || label[0] == '\0')
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT,
                             "valid MIR function definition and block label are required");
-  if (function->block_count == function->block_capacity) {
+  if (function->block_count == function->block_capacity)
+  {
     size_t capacity = function->block_capacity == 0 ? 4 : function->block_capacity * 2;
     XsMirBlock **blocks = realloc(function->blocks, capacity * sizeof(*blocks));
     if (blocks == NULL)
@@ -27,7 +28,8 @@ XsMirStatus xs_mir_function_append_block(XsMirFunction *function, const char *la
       .owner = function,
       .id = (XsMirBlockId)function->block_count,
   };
-  if (created->label == NULL) {
+  if (created->label == NULL)
+  {
     free(created);
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while naming MIR block");
   }
@@ -89,7 +91,8 @@ XsMirStatus xs_mir_block_set_return_value(XsMirBlock *block, XsMirValueId value,
 
 XsMirStatus xs_mir_block_set_goto(XsMirBlock *block, const XsMirBlock *target, XsMirError *error)
 {
-  if (target == NULL) {
+  if (target == NULL)
+  {
     xs_mir_clear_error(error);
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR goto target is required");
   }
@@ -99,7 +102,8 @@ XsMirStatus xs_mir_block_set_goto(XsMirBlock *block, const XsMirBlock *target, X
 XsMirStatus xs_mir_block_set_branch(XsMirBlock *block, XsMirValueId condition, const XsMirBlock *then_target,
                                     const XsMirBlock *else_target, XsMirError *error)
 {
-  if (then_target == NULL || else_target == NULL) {
+  if (then_target == NULL || else_target == NULL)
+  {
     xs_mir_clear_error(error);
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR branch targets are required");
   }
@@ -126,7 +130,8 @@ static XsMirStatus append_instruction(XsMirBlock *block, XsMirInstruction instru
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR block is required");
   if (block->terminator.kind != XS_MIR_TERMINATOR_NONE)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "cannot add MIR instruction after terminator");
-  if (block->instruction_count == block->instruction_capacity) {
+  if (block->instruction_count == block->instruction_capacity)
+  {
     size_t capacity = block->instruction_capacity == 0 ? 8 : block->instruction_capacity * 2;
     XsMirInstruction *instructions = realloc(block->instructions, capacity * sizeof(*instructions));
     if (instructions == NULL)

@@ -3,7 +3,8 @@
 static void advance(XsParser *parser)
 {
   parser->previous = parser->current;
-  do {
+  do
+  {
     parser->current = xs_lexer_next(&parser->lexer);
   } while (parser->current.kind == XS_TOKEN_DOC_COMMENT || parser->current.kind == XS_TOKEN_MODULE_COMMENT);
 }
@@ -43,7 +44,8 @@ static bool skip_balanced(XsParser *parser, XsTokenKind open, XsTokenKind close,
     return false;
   size_t start = parser->current.span.start;
   size_t depth = 0;
-  do {
+  do
+  {
     if (parser->current.kind == open)
       ++depth;
     else if (parser->current.kind == close)
@@ -52,7 +54,8 @@ static bool skip_balanced(XsParser *parser, XsTokenKind open, XsTokenKind close,
     if (parser->previous.kind == XS_TOKEN_EOF || parser->previous.kind == XS_TOKEN_ERROR)
       break;
   } while (depth != 0);
-  if (depth != 0) {
+  if (depth != 0)
+  {
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){start, parser->previous.span.end},
                        "unterminated delimited construct");
     return false;
@@ -64,15 +67,21 @@ static bool skip_balanced(XsParser *parser, XsTokenKind open, XsTokenKind close,
 static bool skip_until_semicolon(XsParser *parser, XsSpan *span)
 {
   size_t start = parser->current.span.start;
-  while (parser->current.kind != XS_TOKEN_SEMICOLON && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_SEMICOLON && parser->current.kind != XS_TOKEN_EOF)
+  {
     XsSpan ignored;
-    if (parser->current.kind == XS_TOKEN_LEFT_PAREN) {
+    if (parser->current.kind == XS_TOKEN_LEFT_PAREN)
+    {
       if (!skip_balanced(parser, XS_TOKEN_LEFT_PAREN, XS_TOKEN_RIGHT_PAREN, &ignored))
         return false;
-    } else if (parser->current.kind == XS_TOKEN_LEFT_BRACKET) {
+    }
+    else if (parser->current.kind == XS_TOKEN_LEFT_BRACKET)
+    {
       if (!skip_balanced(parser, XS_TOKEN_LEFT_BRACKET, XS_TOKEN_RIGHT_BRACKET, &ignored))
         return false;
-    } else {
+    }
+    else
+    {
       advance(parser);
     }
   }
@@ -88,14 +97,17 @@ static bool parse_named_block(XsParser *parser, XsAst *ast, XsAstItemKind kind, 
   if (!expect(parser, XS_TOKEN_IDENTIFIER, "expected declaration name"))
     return false;
   XsSpan name = parser->previous.span;
-  if (parser->current.kind == XS_TOKEN_LEFT_PAREN) {
+  if (parser->current.kind == XS_TOKEN_LEFT_PAREN)
+  {
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                        "parentheses are not allowed in this declaration");
     return false;
   }
-  if (accept(parser, XS_TOKEN_LESS)) {
+  if (accept(parser, XS_TOKEN_LESS))
+  {
     size_t depth = 1;
-    while (depth != 0 && parser->current.kind != XS_TOKEN_EOF) {
+    while (depth != 0 && parser->current.kind != XS_TOKEN_EOF)
+    {
       if (accept(parser, XS_TOKEN_LESS))
         ++depth;
       else if (accept(parser, XS_TOKEN_GREATER))
@@ -103,13 +115,15 @@ static bool parse_named_block(XsParser *parser, XsAst *ast, XsAstItemKind kind, 
       else
         advance(parser);
     }
-    if (depth != 0) {
+    if (depth != 0)
+    {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, name, "unterminated generic parameter list");
       return false;
     }
   }
   XsSpan body;
-  if (!skip_balanced(parser, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE, &body)) {
+  if (!skip_balanced(parser, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE, &body))
+  {
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected declaration body");
     return false;
   }
@@ -128,9 +142,11 @@ static bool parse_function(XsParser *parser, XsAst *ast, XsVisibility visibility
   if (!expect(parser, XS_TOKEN_IDENTIFIER, "expected function name"))
     return false;
   XsSpan name = parser->previous.span;
-  if (accept(parser, XS_TOKEN_LESS)) {
+  if (accept(parser, XS_TOKEN_LESS))
+  {
     size_t depth = 1;
-    while (depth != 0 && parser->current.kind != XS_TOKEN_EOF) {
+    while (depth != 0 && parser->current.kind != XS_TOKEN_EOF)
+    {
       if (accept(parser, XS_TOKEN_LESS))
         ++depth;
       else if (accept(parser, XS_TOKEN_GREATER))
@@ -140,7 +156,8 @@ static bool parse_function(XsParser *parser, XsAst *ast, XsVisibility visibility
     }
   }
   XsSpan parameters;
-  if (!skip_balanced(parser, XS_TOKEN_LEFT_PAREN, XS_TOKEN_RIGHT_PAREN, &parameters)) {
+  if (!skip_balanced(parser, XS_TOKEN_LEFT_PAREN, XS_TOKEN_RIGHT_PAREN, &parameters))
+  {
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                        "expected function parameter list");
     return false;
@@ -150,9 +167,12 @@ static bool parse_function(XsParser *parser, XsAst *ast, XsVisibility visibility
     advance(parser);
 
   XsSpan body = {parser->current.span.start, parser->current.span.start};
-  if (accept(parser, XS_TOKEN_SEMICOLON)) {
+  if (accept(parser, XS_TOKEN_SEMICOLON))
+  {
     body = parser->previous.span;
-  } else if (!skip_balanced(parser, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE, &body)) {
+  }
+  else if (!skip_balanced(parser, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE, &body))
+  {
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected function body or ';'");
     return false;
   }
@@ -176,17 +196,20 @@ static bool parse_macro(XsParser *parser, XsAst *ast, size_t start)
     return false;
   size_t body_start = parser->previous.span.start;
 
-  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
     XsSpan matcher;
     XsSpan expansion;
-    if (!skip_balanced(parser, XS_TOKEN_LEFT_PAREN, XS_TOKEN_RIGHT_PAREN, &matcher)) {
+    if (!skip_balanced(parser, XS_TOKEN_LEFT_PAREN, XS_TOKEN_RIGHT_PAREN, &matcher))
+    {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                          "expected macro matcher in parentheses");
       return false;
     }
     if (!expect(parser, XS_TOKEN_COLON, "expected ':' after macro matcher"))
       return false;
-    if (!skip_balanced(parser, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE, &expansion)) {
+    if (!skip_balanced(parser, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE, &expansion))
+    {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                          "expected macro expansion in braces");
       return false;
@@ -209,12 +232,14 @@ static bool parse_item(XsParser *parser, XsAst *ast)
   bool incomplete = accept(parser, XS_TOKEN_KW_INCOMPLETE);
   bool is_async = accept(parser, XS_TOKEN_KW_ASYNC);
 
-  if (accept(parser, XS_TOKEN_KW_MODULE) || accept(parser, XS_TOKEN_KW_NAMESPACE)) {
+  if (accept(parser, XS_TOKEN_KW_MODULE) || accept(parser, XS_TOKEN_KW_NAMESPACE))
+  {
     XsTokenKind keyword = parser->previous.kind;
     if (keyword == XS_TOKEN_KW_MODULE && ast->count != 0)
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
                          "module must be the first declaration in the file");
-    if (keyword == XS_TOKEN_KW_NAMESPACE) {
+    if (keyword == XS_TOKEN_KW_NAMESPACE)
+    {
       bool has_module = false;
       for (size_t i = 0; i < ast->count; ++i)
         has_module = has_module || ast->items[i].kind == XS_AST_MODULE;
@@ -229,8 +254,10 @@ static bool parse_item(XsParser *parser, XsAst *ast)
       return false;
     XsAstItem item = {.span = {start, parser->previous.span.end}, .name = name, .visibility = visibility};
     XsAstItemKind kind = keyword == XS_TOKEN_KW_MODULE ? XS_AST_MODULE : XS_AST_NAMESPACE;
-    if (kind == XS_AST_MODULE) {
-      for (size_t i = 0; i < ast->count; ++i) {
+    if (kind == XS_AST_MODULE)
+    {
+      for (size_t i = 0; i < ast->count; ++i)
+      {
         if (ast->items[i].kind == XS_AST_MODULE)
           xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, name,
                              "only one module declaration is allowed per file");
@@ -238,7 +265,8 @@ static bool parse_item(XsParser *parser, XsAst *ast)
     }
     return xs_ast_push(ast, (XsAstNode){.kind = kind, .item = item});
   }
-  if (accept(parser, XS_TOKEN_KW_IMPORTS) || accept(parser, XS_TOKEN_KW_FROM)) {
+  if (accept(parser, XS_TOKEN_KW_IMPORTS) || accept(parser, XS_TOKEN_KW_FROM))
+  {
     XsSpan import_span;
     if (!skip_until_semicolon(parser, &import_span))
       return false;
@@ -255,7 +283,8 @@ static bool parse_item(XsParser *parser, XsAst *ast)
     return parse_named_block(parser, ast, XS_AST_INTERFACE, visibility, incomplete, false, start);
   if (accept(parser, XS_TOKEN_KW_DATA))
     return parse_named_block(parser, ast, XS_AST_DATA, visibility, incomplete, false, start);
-  if (accept(parser, XS_TOKEN_KW_ENUM)) {
+  if (accept(parser, XS_TOKEN_KW_ENUM))
+  {
     bool data_enum = accept(parser, XS_TOKEN_KW_DATA);
     return parse_named_block(parser, ast, XS_AST_ENUM, visibility, incomplete, data_enum, start);
   }
@@ -267,8 +296,10 @@ static bool parse_item(XsParser *parser, XsAst *ast)
 
 static void synchronize(XsParser *parser)
 {
-  while (parser->current.kind != XS_TOKEN_EOF) {
-    switch (parser->current.kind) {
+  while (parser->current.kind != XS_TOKEN_EOF)
+  {
+    switch (parser->current.kind)
+    {
     case XS_TOKEN_KW_MODULE:
     case XS_TOKEN_KW_NAMESPACE:
     case XS_TOKEN_KW_IMPORTS:
@@ -295,9 +326,11 @@ void xs_parser_init(XsParser *parser, const XsSource *source, XsDiagnostics *dia
 
 bool xs_parser_parse(XsParser *parser, XsAst *ast)
 {
-  while (parser->current.kind != XS_TOKEN_EOF) {
+  while (parser->current.kind != XS_TOKEN_EOF)
+  {
     size_t failed_at = parser->current.span.start;
-    if (!parse_item(parser, ast)) {
+    if (!parse_item(parser, ast))
+    {
       synchronize(parser);
       if (parser->current.kind != XS_TOKEN_EOF && parser->current.span.start == failed_at)
         advance(parser);

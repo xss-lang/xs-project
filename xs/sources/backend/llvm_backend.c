@@ -34,7 +34,8 @@ static void clear_error(XsBackendError *error)
 
 static XsBackendStatus set_error(XsBackendError *error, XsBackendStatus status, const char *message)
 {
-  if (error != NULL) {
+  if (error != NULL)
+  {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s", message == NULL ? "unknown backend error" : message);
   }
@@ -52,7 +53,8 @@ static char *copy_text(const char *text)
 
 static LLVMCodeGenOptLevel codegen_level(XsLlvmOptimizationLevel level)
 {
-  switch (level) {
+  switch (level)
+  {
   case XS_LLVM_OPT_NONE:
     return LLVMCodeGenLevelNone;
   case XS_LLVM_OPT_LESS:
@@ -82,14 +84,16 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
 
   char *default_triple = NULL;
   const char *requested_triple = config->target_triple;
-  if (requested_triple == NULL || requested_triple[0] == '\0') {
+  if (requested_triple == NULL || requested_triple[0] == '\0')
+  {
     default_triple = LLVMGetDefaultTargetTriple();
     requested_triple = default_triple;
   }
 
   LLVMTargetRef target = NULL;
   char *llvm_error = NULL;
-  if (LLVMGetTargetFromTriple(requested_triple, &target, &llvm_error) != 0) {
+  if (LLVMGetTargetFromTriple(requested_triple, &target, &llvm_error) != 0)
+  {
     XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, llvm_error);
     LLVMDisposeMessage(llvm_error);
     if (default_triple != NULL)
@@ -98,7 +102,8 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
   }
 
   XsLlvmBackend *result = calloc(1, sizeof(*result));
-  if (result == NULL) {
+  if (result == NULL)
+  {
     if (default_triple != NULL)
       LLVMDisposeMessage(default_triple);
     return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while creating LLVM backend");
@@ -114,23 +119,27 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
   if (default_triple != NULL)
     LLVMDisposeMessage(default_triple);
 
-  if (result->context == NULL || result->target_triple == NULL || result->target_machine == NULL) {
+  if (result->context == NULL || result->target_triple == NULL || result->target_machine == NULL)
+  {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not create the target context or target machine");
   }
   result->target_data = LLVMCreateTargetDataLayout(result->target_machine);
-  if (result->target_data == NULL) {
+  if (result->target_data == NULL)
+  {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not determine target data layout");
   }
   char *layout = LLVMCopyStringRepOfTargetData(result->target_data);
-  if (layout == NULL) {
+  if (layout == NULL)
+  {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not format target data layout");
   }
   result->data_layout = copy_text(layout);
   LLVMDisposeMessage(layout);
-  if (result->target_data == NULL || result->data_layout == NULL) {
+  if (result->target_data == NULL || result->data_layout == NULL)
+  {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not determine target data layout");
   }
@@ -179,7 +188,8 @@ XsBackendStatus xs_llvm_codegen_unit_create(XsLlvmBackend *backend, const char *
     return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while creating codegen unit");
   (*unit)->backend = backend;
   (*unit)->module = LLVMModuleCreateWithNameInContext(name, backend->context);
-  if ((*unit)->module == NULL) {
+  if ((*unit)->module == NULL)
+  {
     free(*unit);
     *unit = NULL;
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not create a module for the codegen unit");
@@ -210,7 +220,8 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
   if (backend == NULL || type == NULL)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "backend and LLVM type output are required");
   *type = NULL;
-  switch (primitive) {
+  switch (primitive)
+  {
   case XS_PRIMITIVE_UNIT:
     *type = LLVMVoidTypeInContext(backend->context);
     break;
@@ -276,18 +287,22 @@ XsBackendStatus xs_llvm_declare_function(XsLlvmCodegenUnit *unit, const XsFuncti
   if (status != XS_BACKEND_OK)
     return status;
   LLVMTypeRef *parameters = NULL;
-  if (signature->parameter_count != 0) {
+  if (signature->parameter_count != 0)
+  {
     parameters = malloc(signature->parameter_count * sizeof(*parameters));
     if (parameters == NULL)
       return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering function signature");
   }
-  for (size_t i = 0; i < signature->parameter_count; ++i) {
+  for (size_t i = 0; i < signature->parameter_count; ++i)
+  {
     status = xs_llvm_primitive_type(unit->backend, signature->parameter_types[i], &parameters[i], error);
-    if (status != XS_BACKEND_OK) {
+    if (status != XS_BACKEND_OK)
+    {
       free(parameters);
       return status;
     }
-    if (LLVMGetTypeKind(parameters[i]) == LLVMVoidTypeKind) {
+    if (LLVMGetTypeKind(parameters[i]) == LLVMVoidTypeKind)
+    {
       free(parameters);
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function parameters cannot have unit type");
     }
@@ -313,7 +328,8 @@ XsBackendStatus xs_llvm_optimize_codegen_unit(XsLlvmCodegenUnit *unit, XsBackend
   clear_error(error);
   if (unit == NULL)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "codegen unit is required");
-  if (unit->backend->verify_modules) {
+  if (unit->backend->verify_modules)
+  {
     XsBackendStatus status = verify_module(unit, error);
     if (status != XS_BACKEND_OK)
       return status;
@@ -323,7 +339,8 @@ XsBackendStatus xs_llvm_optimize_codegen_unit(XsLlvmCodegenUnit *unit, XsBackend
   LLVMErrorRef llvm_error =
       LLVMRunPasses(unit->module, pipelines[unit->backend->optimization], unit->backend->target_machine, options);
   LLVMDisposePassBuilderOptions(options);
-  if (llvm_error != NULL) {
+  if (llvm_error != NULL)
+  {
     char *message = LLVMGetErrorMessage(llvm_error);
     XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, message);
     LLVMDisposeErrorMessage(message);
@@ -337,7 +354,8 @@ XsBackendStatus xs_llvm_emit_object_file(XsLlvmCodegenUnit *unit, const char *pa
   clear_error(error);
   if (unit == NULL || path == NULL || path[0] == '\0')
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "codegen unit and object-file path are required");
-  if (unit->backend->verify_modules) {
+  if (unit->backend->verify_modules)
+  {
     XsBackendStatus status = verify_module(unit, error);
     if (status != XS_BACKEND_OK)
       return status;
@@ -349,7 +367,8 @@ XsBackendStatus xs_llvm_emit_object_file(XsLlvmCodegenUnit *unit, const char *pa
   int failed = LLVMTargetMachineEmitToFile(unit->backend->target_machine, unit->module, mutable_path, LLVMObjectFile,
                                            &llvm_error);
   free(mutable_path);
-  if (failed != 0) {
+  if (failed != 0)
+  {
     XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, llvm_error);
     LLVMDisposeMessage(llvm_error);
     return status;

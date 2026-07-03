@@ -8,8 +8,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -48,7 +50,8 @@ static void test_data_rejects_non_field_members(void)
       "data User { fn GetName() {} }\n",      "data User { User(name: str) {} }\n", "data User { User.Drop() {} }\n",
       "data User { implements Runnable; }\n", "data User { extends Person; }\n",
   };
-  for (size_t index = 0; index < sizeof(texts) / sizeof(texts[0]); ++index) {
+  for (size_t index = 0; index < sizeof(texts) / sizeof(texts[0]); ++index)
+  {
     XsSource source = {.path = "InvalidData.xs", .text = texts[index], .length = strlen(texts[index])};
     XsDiagnostics diagnostics;
     XsSyntaxTree tree;

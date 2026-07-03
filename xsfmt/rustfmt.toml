@@ -24,6 +24,7 @@ empty_item_single_line = true
 fn_single_line = false
 where_single_line = false
 struct_lit_single_line = false
+indent_style = "Visual"
 
 fn_params_layout = "Tall"
 binop_separator = "Back"

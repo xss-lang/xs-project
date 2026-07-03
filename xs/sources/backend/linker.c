@@ -11,7 +11,8 @@ extern char **environ;
 
 static XsBackendStatus linker_error(XsBackendError *error, XsBackendStatus status, const char *message)
 {
-  if (error != NULL) {
+  if (error != NULL)
+  {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s", message);
   }

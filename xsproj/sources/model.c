@@ -19,7 +19,8 @@ void xs_project_free(XsProject *project)
   free_value(&project->app_version);
   free_value(&project->app_release);
   free_value(&project->app_license);
-  for (size_t i = 0; i < project->author_count; ++i) {
+  for (size_t i = 0; i < project->author_count; ++i)
+  {
     free_value(&project->authors[i].name);
     free_value(&project->authors[i].email);
   }
@@ -30,12 +31,14 @@ void xs_project_free(XsProject *project)
   for (size_t i = 0; i < project->additional_file_count; ++i)
     free_value(&project->additional_files[i]);
   free(project->additional_files);
-  for (size_t i = 0; i < project->target_count; ++i) {
+  for (size_t i = 0; i < project->target_count; ++i)
+  {
     free_value(&project->targets[i].os_name);
     free_value(&project->targets[i].os_arch);
   }
   free(project->targets);
-  for (size_t i = 0; i < project->external_module_count; ++i) {
+  for (size_t i = 0; i < project->external_module_count; ++i)
+  {
     free_value(&project->external_modules[i].name);
     free_value(&project->external_modules[i].version);
   }

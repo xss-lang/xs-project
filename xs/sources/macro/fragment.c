@@ -58,9 +58,9 @@ bool xs_macro_fragment_supported(XsText kind)
 bool xs_macro_fragment_is_sequence(const XsSyntaxNode *fragment)
 {
   return xs_macro_fragment_kind_is(fragment, "expr") || xs_macro_fragment_kind_is(fragment, "stmt") ||
-         xs_macro_fragment_kind_is(fragment, "block") ||
-         xs_macro_fragment_kind_is(fragment, "ty") || xs_macro_fragment_kind_is(fragment, "path") ||
-         xs_macro_fragment_kind_is(fragment, "item") || xs_macro_fragment_kind_is(fragment, "pat");
+         xs_macro_fragment_kind_is(fragment, "block") || xs_macro_fragment_kind_is(fragment, "ty") ||
+         xs_macro_fragment_kind_is(fragment, "path") || xs_macro_fragment_kind_is(fragment, "item") ||
+         xs_macro_fragment_kind_is(fragment, "pat");
 }
 
 bool xs_macro_fragment_matches(const XsSyntaxNode *fragment, const XsSyntaxNode *argument)

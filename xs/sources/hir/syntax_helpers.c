@@ -26,7 +26,8 @@ const XsSyntaxNode *xs_hir_first_child_kind(const XsSyntaxNode *node, XsSyntaxKi
 {
   if (node == NULL)
     return NULL;
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     if (node->children[i]->kind == kind)
       return node->children[i];
   }
@@ -38,7 +39,8 @@ const XsSyntaxNode *xs_hir_second_child_kind(const XsSyntaxNode *node, XsSyntaxK
   bool found_first = false;
   if (node == NULL)
     return NULL;
-  for (size_t i = 0; i < node->child_count; ++i) {
+  for (size_t i = 0; i < node->child_count; ++i)
+  {
     if (node->children[i]->kind != kind)
       continue;
     if (found_first)
@@ -54,7 +56,8 @@ char *xs_hir_path_to_string(const XsSyntaxNode *path)
     return NULL;
   size_t length = 0;
   size_t segments = 0;
-  for (size_t i = 0; i < path->child_count; ++i) {
+  for (size_t i = 0; i < path->child_count; ++i)
+  {
     if (path->children[i]->kind != XS_SYNTAX_IDENTIFIER)
       continue;
     length += path->children[i]->text.length;
@@ -66,7 +69,8 @@ char *xs_hir_path_to_string(const XsSyntaxNode *path)
   if (result == NULL)
     return NULL;
   size_t offset = 0;
-  for (size_t i = 0; i < path->child_count; ++i) {
+  for (size_t i = 0; i < path->child_count; ++i)
+  {
     if (path->children[i]->kind != XS_SYNTAX_IDENTIFIER)
       continue;
     if (offset != 0)
@@ -87,7 +91,8 @@ char *xs_hir_join_qualified(const char *namespace_name, const char *name)
   if (result == NULL)
     return NULL;
   size_t offset = 0;
-  if (has_namespace) {
+  if (has_namespace)
+  {
     memcpy(result, namespace_name, namespace_length + 1);
     offset = namespace_length;
     result[offset++] = '.';

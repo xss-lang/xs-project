@@ -14,8 +14,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -34,7 +36,8 @@ static void test_module_and_text_writer(void)
   CHECK(xs_mir_module_function_count(module) == 1);
 
   FILE *stream = tmpfile();
-  if (stream == NULL) {
+  if (stream == NULL)
+  {
     ++failures;
     xs_mir_module_destroy(module);
     return;
@@ -106,7 +109,8 @@ static void test_function_definition_blocks_and_terminators(void)
   CHECK(xs_mir_block_terminator_kind(done) == XS_MIR_TERMINATOR_RETURN);
 
   FILE *stream = tmpfile();
-  if (stream == NULL) {
+  if (stream == NULL)
+  {
     ++failures;
     xs_mir_module_destroy(module);
     return;
@@ -240,7 +244,8 @@ static void test_branch_terminator_checks_condition_and_reachability(void)
   CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
 
   FILE *stream = tmpfile();
-  if (stream == NULL) {
+  if (stream == NULL)
+  {
     ++failures;
     xs_mir_module_destroy(module);
     return;
@@ -330,7 +335,8 @@ static void test_constant_optimizer_folds_i64_add(void)
   CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_CONST_I64);
 
   FILE *stream = tmpfile();
-  if (stream == NULL) {
+  if (stream == NULL)
+  {
     ++failures;
     xs_mir_module_destroy(module);
     return;
@@ -411,7 +417,8 @@ static void test_xlil_body_lowering_for_const_return(void)
   CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
   CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL) {
+  if (stream == NULL)
+  {
     ++failures;
     xs_lil_module_destroy(xlil);
     xs_mir_module_destroy(mir);

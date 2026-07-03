@@ -83,8 +83,7 @@ void xs_hir_symbol_table_init(XsHirSymbolTable *table);
 void xs_hir_symbol_table_free(XsHirSymbolTable *table);
 const XsHirSymbol *xs_hir_symbol_table_find(const XsHirSymbolTable *table, const char *qualified_name);
 bool xs_hir_collect_symbols(const XsSyntaxTree *tree, XsHirSymbolTable *table, XsDiagnostics *diagnostics);
-bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree,
-                                     const XsMacroDeclarationExpansionSet *macro_declarations,
+bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree, const XsMacroDeclarationExpansionSet *macro_declarations,
                                      XsHirSymbolTable *table, XsDiagnostics *diagnostics);
 const char *xs_hir_symbol_kind_name(XsHirSymbolKind kind);
 const char *xs_hir_member_kind_name(XsHirMemberKind kind);
@@ -93,8 +92,7 @@ void xs_hir_member_symbol_table_init(XsHirMemberSymbolTable *table);
 void xs_hir_member_symbol_table_free(XsHirMemberSymbolTable *table);
 const XsHirMemberSymbol *xs_hir_member_symbol_table_find(const XsHirMemberSymbolTable *table,
                                                          const char *owner_qualified_name, const char *name);
-bool xs_hir_collect_member_symbols(const XsHirSymbol *owner,
-                                   const XsMacroDeclarationExpansionSet *macro_declarations,
+bool xs_hir_collect_member_symbols(const XsHirSymbol *owner, const XsMacroDeclarationExpansionSet *macro_declarations,
                                    XsHirMemberSymbolTable *table, XsDiagnostics *diagnostics);
 
 void xs_hir_import_scope_init(XsHirImportScope *scope);

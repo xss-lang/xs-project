@@ -9,8 +9,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -163,13 +165,15 @@ static void test_macro_expansion_preparation_report(void)
   CHECK(statements.count == 2);
   CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
   CHECK(statements.count < 2 || statements.items[1].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
-  CHECK(statements.count < 2 || xs_syntax_find_first(statements.items[1].statement, XS_SYNTAX_EXPR_IDENTIFIER) != nullptr);
+  CHECK(statements.count < 2 ||
+        xs_syntax_find_first(statements.items[1].statement, XS_SYNTAX_EXPR_IDENTIFIER) != nullptr);
   const XsSyntaxNode *macro_statement = xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MACRO_CALL);
   const XsSyntaxNode *found = xs_macro_statement_expansion_find(&statements, macro_statement);
   CHECK(found != nullptr && found->kind == XS_SYNTAX_STMT_EXPRESSION);
   CHECK(xs_macro_statement_expansion_find(&statements, tree.root) == nullptr);
   xs_macro_statement_expansion_set_free(&statements);
-  if (expansions.count >= 2) {
+  if (expansions.count >= 2)
+  {
     XsMacroReparseResult reparse;
     CHECK(xs_macro_reparse_expansion_as_statement(&expansions.items[1], 22, &diagnostics, &reparse));
     const XsSyntaxNode *replacement = xs_macro_reparse_result_statement(&reparse);
@@ -216,8 +220,7 @@ static void test_macro_expansion_preparation_report(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_EXPRESSION);
-  CHECK(statements.count < 1 ||
-        xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_EXPR_LITERAL) != nullptr);
+  CHECK(statements.count < 1 || xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_EXPR_LITERAL) != nullptr);
   xs_macro_statement_expansion_set_free(&statements);
   xs_macro_expansion_set_free(&expansions);
   xs_syntax_tree_free(&tree);
@@ -249,8 +252,7 @@ static void test_statement_fragment_expansion(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_VARIABLE);
-  CHECK(statements.count < 1 ||
-        xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_TYPE_NAMED) != nullptr);
+  CHECK(statements.count < 1 || xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_TYPE_NAMED) != nullptr);
   xs_macro_statement_expansion_set_free(&statements);
   xs_macro_expansion_set_free(&expansions);
   xs_syntax_tree_free(&tree);
@@ -329,8 +331,7 @@ static void test_type_fragment_expansion(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(statements.count < 1 || statements.items[0].statement->kind == XS_SYNTAX_STMT_VARIABLE);
-  CHECK(statements.count < 1 ||
-        xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_TYPE_NAMED) != nullptr);
+  CHECK(statements.count < 1 || xs_syntax_find_first(statements.items[0].statement, XS_SYNTAX_TYPE_NAMED) != nullptr);
   xs_macro_statement_expansion_set_free(&statements);
   xs_macro_expansion_set_free(&expansions);
   xs_syntax_tree_free(&tree);
@@ -389,8 +390,9 @@ static void test_path_fragment_expansion(void)
 
 static void test_pattern_fragment_expansion(void)
 {
-  const char *text = "macroRules! matchIt { ($case:pat): { match value { $case -> { return; }, else -> { return; }, } }; }"
-                     "fn Main() { matchIt!(nil); }";
+  const char *text =
+      "macroRules! matchIt { ($case:pat): { match value { $case -> { return; }, else -> { return; }, } }; }"
+      "fn Main() { matchIt!(nil); }";
   XsSource source = {.path = "MacroPatternFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;

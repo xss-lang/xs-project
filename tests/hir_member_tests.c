@@ -9,15 +9,16 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
   } while (0)
 
-static bool parse_symbols(const char *text, XsSyntaxTree *tree, XsHirSymbolTable *symbols,
-                          XsDiagnostics *diagnostics)
+static bool parse_symbols(const char *text, XsSyntaxTree *tree, XsHirSymbolTable *symbols, XsDiagnostics *diagnostics)
 {
   XsSource source = {.path = "Members.xs", .text = text, .length = strlen(text)};
   xs_diagnostics_init(diagnostics);

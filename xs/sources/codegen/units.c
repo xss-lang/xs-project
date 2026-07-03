@@ -27,7 +27,8 @@ static void clear_error(XsCodegenUnitsError *error)
 
 static XsCodegenUnitsStatus set_error(XsCodegenUnitsError *error, XsCodegenUnitsStatus status, const char *message)
 {
-  if (error != NULL) {
+  if (error != NULL)
+  {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s", message == NULL ? "codegen unit planning error" : message);
   }
@@ -71,7 +72,8 @@ void xs_codegen_plan_destroy(XsCodegenPlan *plan)
 static const char *last_dot(const char *text)
 {
   const char *result = NULL;
-  for (const char *cursor = text; *cursor != '\0'; ++cursor) {
+  for (const char *cursor = text; *cursor != '\0'; ++cursor)
+  {
     if (*cursor == '.')
       result = cursor;
   }
@@ -88,7 +90,8 @@ static char *unit_name_for_function(const XsMirModule *module, const char *funct
 
 static XsCodegenUnitPlan *find_unit(XsCodegenPlan *plan, const char *name)
 {
-  for (size_t i = 0; i < plan->unit_count; ++i) {
+  for (size_t i = 0; i < plan->unit_count; ++i)
+  {
     if (strcmp(plan->units[i].name, name) == 0)
       return &plan->units[i];
   }
@@ -98,7 +101,8 @@ static XsCodegenUnitPlan *find_unit(XsCodegenPlan *plan, const char *name)
 static XsCodegenUnitsStatus append_unit(XsCodegenPlan *plan, char *name, XsCodegenUnitPlan **unit,
                                         XsCodegenUnitsError *error)
 {
-  if (plan->unit_count == plan->unit_capacity) {
+  if (plan->unit_count == plan->unit_capacity)
+  {
     size_t capacity = plan->unit_capacity == 0 ? 4 : plan->unit_capacity * 2;
     XsCodegenUnitPlan *units = realloc(plan->units, capacity * sizeof(*units));
     if (units == NULL)
@@ -114,7 +118,8 @@ static XsCodegenUnitsStatus append_unit(XsCodegenPlan *plan, char *name, XsCodeg
 static XsCodegenUnitsStatus append_function(XsCodegenUnitPlan *unit, const char *function_name,
                                             XsCodegenUnitsError *error)
 {
-  if (unit->function_count == unit->function_capacity) {
+  if (unit->function_count == unit->function_capacity)
+  {
     size_t capacity = unit->function_capacity == 0 ? 8 : unit->function_capacity * 2;
     char **functions = realloc(unit->functions, capacity * sizeof(*functions));
     if (functions == NULL)
@@ -140,26 +145,33 @@ XsCodegenUnitsStatus xs_codegen_plan_create_from_mir(const XsMirModule *module, 
   XsCodegenPlan *created = calloc(1, sizeof(*created));
   if (created == NULL)
     return set_error(error, XS_CODEGEN_UNITS_ALLOCATION_FAILED, "out of memory while creating a codegen plan");
-  for (size_t i = 0; i < xs_mir_module_function_count(module); ++i) {
+  for (size_t i = 0; i < xs_mir_module_function_count(module); ++i)
+  {
     const XsMirFunction *function = xs_mir_module_function_at(module, i);
     char *unit_name = unit_name_for_function(module, xs_mir_function_name(function));
-    if (unit_name == NULL) {
+    if (unit_name == NULL)
+    {
       xs_codegen_plan_destroy(created);
       return set_error(error, XS_CODEGEN_UNITS_ALLOCATION_FAILED, "out of memory while naming a codegen unit");
     }
     XsCodegenUnitPlan *unit = find_unit(created, unit_name);
-    if (unit == NULL) {
+    if (unit == NULL)
+    {
       XsCodegenUnitsStatus status = append_unit(created, unit_name, &unit, error);
-      if (status != XS_CODEGEN_UNITS_OK) {
+      if (status != XS_CODEGEN_UNITS_OK)
+      {
         free(unit_name);
         xs_codegen_plan_destroy(created);
         return status;
       }
-    } else {
+    }
+    else
+    {
       free(unit_name);
     }
     XsCodegenUnitsStatus status = append_function(unit, xs_mir_function_name(function), error);
-    if (status != XS_CODEGEN_UNITS_OK) {
+    if (status != XS_CODEGEN_UNITS_OK)
+    {
       xs_codegen_plan_destroy(created);
       return status;
     }
@@ -205,31 +217,39 @@ XsCodegenUnitsStatus xs_codegen_plan_create_from_mono(const XsMonoPlan *mono, Xs
   XsCodegenPlan *created = calloc(1, sizeof(*created));
   if (created == NULL)
     return set_error(error, XS_CODEGEN_UNITS_ALLOCATION_FAILED, "out of memory while creating a codegen plan");
-  for (size_t i = 0; i < xs_mono_plan_entry_count(mono); ++i) {
+  for (size_t i = 0; i < xs_mono_plan_entry_count(mono); ++i)
+  {
     const char *unit_name_view = xs_mono_plan_entry_unit_name(mono, i);
     const char *symbol_name = xs_mono_plan_entry_symbol_name(mono, i);
-    if (unit_name_view == NULL || unit_name_view[0] == '\0' || symbol_name == NULL || symbol_name[0] == '\0') {
+    if (unit_name_view == NULL || unit_name_view[0] == '\0' || symbol_name == NULL || symbol_name[0] == '\0')
+    {
       xs_codegen_plan_destroy(created);
       return set_error(error, XS_CODEGEN_UNITS_INVALID_ARGUMENT, "mono plan contains an invalid codegen entry");
     }
     char *unit_name = copy_text(unit_name_view);
-    if (unit_name == NULL) {
+    if (unit_name == NULL)
+    {
       xs_codegen_plan_destroy(created);
       return set_error(error, XS_CODEGEN_UNITS_ALLOCATION_FAILED, "out of memory while naming a codegen unit");
     }
     XsCodegenUnitPlan *unit = find_unit(created, unit_name);
-    if (unit == NULL) {
+    if (unit == NULL)
+    {
       XsCodegenUnitsStatus status = append_unit(created, unit_name, &unit, error);
-      if (status != XS_CODEGEN_UNITS_OK) {
+      if (status != XS_CODEGEN_UNITS_OK)
+      {
         free(unit_name);
         xs_codegen_plan_destroy(created);
         return status;
       }
-    } else {
+    }
+    else
+    {
       free(unit_name);
     }
     XsCodegenUnitsStatus status = append_function(unit, symbol_name, error);
-    if (status != XS_CODEGEN_UNITS_OK) {
+    if (status != XS_CODEGEN_UNITS_OK)
+    {
       xs_codegen_plan_destroy(created);
       return status;
     }

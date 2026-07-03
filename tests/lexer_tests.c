@@ -7,8 +7,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -21,9 +23,11 @@ static void expect_tokens(const char *text, const XsTokenKind *expected, size_t 
   XsLexer lexer;
   xs_diagnostics_init(&diagnostics);
   xs_lexer_init(&lexer, &source, &diagnostics);
-  for (size_t i = 0; i < count; ++i) {
+  for (size_t i = 0; i < count; ++i)
+  {
     XsToken actual = xs_lexer_next(&lexer);
-    if (actual.kind != expected[i]) {
+    if (actual.kind != expected[i])
+    {
       fprintf(stderr, "token %zu: expected %s, got %s\n", i, xs_token_kind_name(expected[i]),
               xs_token_kind_name(actual.kind));
       ++failures;
@@ -69,7 +73,7 @@ static void test_documented_operators(void)
 static void test_keywords(void)
 {
   static const XsTokenKind expected[] = {
-      XS_TOKEN_KW_MODULE,    XS_TOKEN_KW_NAMESPACE, XS_TOKEN_KW_IMPORTS, XS_TOKEN_KW_FROM, XS_TOKEN_KW_CLASS,
+      XS_TOKEN_KW_MODULE,    XS_TOKEN_KW_NAMESPACE, XS_TOKEN_KW_IMPORTS, XS_TOKEN_KW_FROM,  XS_TOKEN_KW_CLASS,
       XS_TOKEN_KW_INTERFACE, XS_TOKEN_KW_DATA,      XS_TOKEN_KW_ENUM,    XS_TOKEN_KW_ASYNC, XS_TOKEN_KW_AWAIT,
       XS_TOKEN_KW_MOVE,      XS_TOKEN_KW_MUT,       XS_TOKEN_KW_TRY,     XS_TOKEN_KW_CATCH, XS_TOKEN_KW_FINALLY,
       XS_TOKEN_KW_THROW,     XS_TOKEN_KW_THROWS,    XS_TOKEN_EOF,
@@ -114,7 +118,8 @@ static void test_macro_tokens(void)
 static void test_invalid_numbers(void)
 {
   const char *texts[] = {"1_000", "100'", "1''000", "0xFF", "1e'10", "1value"};
-  for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i) {
+  for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i)
+  {
     XsSource source = {.path = "<test>", .text = texts[i], .length = strlen(texts[i])};
     XsDiagnostics diagnostics;
     XsLexer lexer;
@@ -129,7 +134,8 @@ static void test_invalid_numbers(void)
 static void test_invalid_characters(void)
 {
   const char *texts[] = {"''", "'ab'", "'\n", "'\\q'"};
-  for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i) {
+  for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i)
+  {
     XsSource source = {.path = "<test>", .text = texts[i], .length = strlen(texts[i])};
     XsDiagnostics diagnostics;
     XsLexer lexer;

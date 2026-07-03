@@ -9,8 +9,10 @@
 static int failures;
 
 #define CHECK(condition)                                                                                               \
-  do {                                                                                                                 \
-    if (!(condition)) {                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(condition))                                                                                                  \
+    {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
@@ -35,7 +37,8 @@ static void test_function_tree(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 42, &diagnostics, &tree));
   CHECK(tree.root != nullptr && tree.root->kind == XS_SYNTAX_FILE);
-  if (tree.root == nullptr) {
+  if (tree.root == nullptr)
+  {
     xs_syntax_tree_free(&tree);
     xs_diagnostics_free(&diagnostics);
     return;
@@ -43,7 +46,8 @@ static void test_function_tree(void)
   CHECK(tree.root->child_count == 1);
   const XsSyntaxNode *function = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_FUNCTION);
   CHECK(function != nullptr);
-  if (function == nullptr) {
+  if (function == nullptr)
+  {
     xs_syntax_tree_free(&tree);
     xs_diagnostics_free(&diagnostics);
     return;

@@ -6,7 +6,8 @@ static XsMirStatus write_signature(const XsMirFunction *function, FILE *stream, 
 {
   if (fprintf(stream, "%s fn %s(", function->is_definition ? "define" : "declare", function->qualified_name) < 0)
     return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR function signature");
-  for (size_t parameter = 0; parameter < function->parameter_count; ++parameter) {
+  for (size_t parameter = 0; parameter < function->parameter_count; ++parameter)
+  {
     if (parameter != 0 && fputs(", ", stream) == EOF)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR function parameter separator");
     if (fputs(xs_lil_type_name(function->parameters[parameter]), stream) == EOF)
@@ -19,9 +20,11 @@ static XsMirStatus write_signature(const XsMirFunction *function, FILE *stream, 
 
 static XsMirStatus write_terminator(const XsMirBlock *block, FILE *stream, XsMirError *error)
 {
-  switch (block->terminator.kind) {
+  switch (block->terminator.kind)
+  {
   case XS_MIR_TERMINATOR_RETURN:
-    if (block->terminator.has_value) {
+    if (block->terminator.has_value)
+    {
       if (fprintf(stream, "  return %u\n", block->terminator.value) < 0)
         return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR return terminator");
       return XS_MIR_OK;
@@ -52,7 +55,8 @@ static XsMirStatus write_terminator(const XsMirBlock *block, FILE *stream, XsMir
 
 static const char *local_kind_name(XsMirLocalKind kind)
 {
-  switch (kind) {
+  switch (kind)
+  {
   case XS_MIR_LOCAL_PARAMETER:
     return "param";
   case XS_MIR_LOCAL_VARIABLE:
@@ -65,7 +69,8 @@ static const char *local_kind_name(XsMirLocalKind kind)
 
 static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *stream, XsMirError *error)
 {
-  switch (instruction->kind) {
+  switch (instruction->kind)
+  {
   case XS_MIR_INSTRUCTION_CONST_I64:
     if (fprintf(stream, "  v%u = const.i64 %lld\n", instruction->result, (long long)instruction->immediate_i64) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR const.i64 instruction");
@@ -94,29 +99,34 @@ XsMirStatus xs_mir_module_write_text(const XsMirModule *module, FILE *stream, Xs
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR module and stream are required");
   if (fprintf(stream, "mir module %s\n", module->name) < 0)
     return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR module header");
-  for (size_t i = 0; i < module->function_count; ++i) {
+  for (size_t i = 0; i < module->function_count; ++i)
+  {
     const XsMirFunction *function = &module->functions[i];
     XsMirStatus status = write_signature(function, stream, error);
     if (status != XS_MIR_OK)
       return status;
-    if (!function->is_definition) {
+    if (!function->is_definition)
+    {
       if (fputc('\n', stream) == EOF)
         return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not finish MIR declaration");
       continue;
     }
     if (fputs(" {\n", stream) == EOF)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not open MIR function body");
-    for (size_t local = 0; local < function->local_count; ++local) {
+    for (size_t local = 0; local < function->local_count; ++local)
+    {
       const XsMirLocal *entry = &function->locals[local];
       if (fprintf(stream, "local %zu %s %s%s: %s\n", local, local_kind_name(entry->kind),
                   entry->is_mutable ? "mut " : "", entry->name, xs_lil_type_name(entry->type)) < 0)
         return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR local");
     }
-    for (size_t block_index = 0; block_index < function->block_count; ++block_index) {
+    for (size_t block_index = 0; block_index < function->block_count; ++block_index)
+    {
       const XsMirBlock *block = function->blocks[block_index];
       if (fprintf(stream, "bb%u %s:\n", block->id, block->label) < 0)
         return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR block label");
-      for (size_t instruction = 0; instruction < block->instruction_count; ++instruction) {
+      for (size_t instruction = 0; instruction < block->instruction_count; ++instruction)
+      {
         status = write_instruction(&block->instructions[instruction], stream, error);
         if (status != XS_MIR_OK)
           return status;
