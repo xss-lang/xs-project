@@ -127,15 +127,13 @@ is complete. Intermediate output extensions:
 - The primary implementation language is C23.
 - Do not use `#include <stdbool.h>` in new/touched C code; use C23 `bool`.
 - Prefer `nullptr` over `NULL` in new/touched C code.
-- C and header files must not exceed 500 lines.
 - Use CMake; do not use Meson.
 - GNU C compiler, GNU Make, GNU binutils fallbacks, and GNU C dialects are rejected.
 - Do not add persistent shell scripts; use Java source-file tools or D for automation.
 - Prefer non-GNU tools such as `busybox wc` for line counting.
 - Use `ulimit -v 2097152` during test/build runs to reduce OOM risk.
 
-For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and
-[.agents/AGENTS.md](.agents/AGENTS.md).
+For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
 ## Documentation map
 
