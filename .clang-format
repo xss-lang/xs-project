@@ -19,20 +19,7 @@ IndentGotoLabels: true
 IndentExternBlock: AfterExternBlock
 IndentWrappedFunctionNames: false
 
-BreakBeforeBraces: Custom
-BraceWrapping:
-  AfterCaseLabel: false
-  AfterControlStatement: Never
-  AfterEnum: true
-  AfterExternBlock: false
-  AfterFunction: true
-  AfterStruct: true
-  AfterUnion: true
-  BeforeElse: false
-  BeforeWhile: false
-  IndentBraces: false
-  SplitEmptyFunction: false
-  SplitEmptyRecord: true
+BreakBeforeBraces: Allman
 
 InsertBraces: false
 RemoveBracesLLVM: false
