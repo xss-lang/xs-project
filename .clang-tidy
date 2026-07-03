@@ -33,14 +33,13 @@ Checks:
   - "-portability-avoid-pragma-once"
   - "-portability-restrict-system-includes"
 
-
 HeaderFileExtensions:
   - h
 
 ImplementationFileExtensions:
   - c
 
-HeaderFilterRegex: "./(xs|xsproj|tests|include)/.*"
+HeaderFilterRegex: ".*/(xs|xsproj|tests|include)/.*"
 ExcludeHeaderFilterRegex: "(^|.*/)(build|cmake-build.*|vendor|third_party|external|subprojects)/.*"
 
 SystemHeaders: false
