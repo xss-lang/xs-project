@@ -33,7 +33,6 @@ Checks:
   - "-portability-avoid-pragma-once"
   - "-portability-restrict-system-includes"
 
-WarningsAsErrors: ""
 
 HeaderFileExtensions:
   - h
@@ -41,7 +40,7 @@ HeaderFileExtensions:
 ImplementationFileExtensions:
   - c
 
-HeaderFilterRegex: "^/home/hasan/Projeler/XS/(xs|xsproj|tests)/"
+HeaderFilterRegex: "./*(xs|xsproj|tests|include)/.*"
 ExcludeHeaderFilterRegex: "(^|.*/)(build|cmake-build.*|vendor|third_party|external|subprojects)/.*"
 
 SystemHeaders: false

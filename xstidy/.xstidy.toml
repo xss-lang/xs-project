@@ -1,5 +1,4 @@
 # X# Projesinde bu dosya olmazsa xstidy çalışmaz.
-# key = value düşünürsek, key kısmı belli, ekleme yapma. Value kısmı ise clang-tidy ve Clippy'den ilham al.
 # Bu dosya X# için geliştirilmiş bir yapılandırma dosyasıdır. Bu dosya, X# kodunun analiz edilmesi ve iyileştirilmesi için kullanılacak kuralları ve ayarları içerir.
 
 [Comments]
