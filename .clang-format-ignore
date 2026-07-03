@@ -1,0 +1,16 @@
+CMakeLists.txt
+**/CMakeLists.txt
+*.cmake
+**/*.cmake
+
+**/*.toml
+**/*.md
+**/*.json
+**/*.txt
+
+/xstidy/**
+/xsfmt/**
+/xs-backend/**/.rs
+/xs-backend/**/.ts
+/xs-backend/**/.js
+/Spec/**
