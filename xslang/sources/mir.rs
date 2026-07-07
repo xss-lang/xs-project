@@ -1,0 +1,457 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+use std::collections::{HashMap, HashSet};
+
+use crate::hir::async_check::Span;
+
+pub mod optimizer;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LocalId(pub u32);
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct BlockId(pub u32);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Local
+{
+  pub id: LocalId,
+  pub name: String,
+  pub mutable: bool,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Statement
+{
+  Use
+  {
+    local: LocalId, span: Span
+  },
+  Move
+  {
+    local: LocalId, span: Span
+  },
+  BorrowShared
+  {
+    local: LocalId, span: Span
+  },
+  BorrowMutable
+  {
+    local: LocalId, span: Span
+  },
+  EndBorrow
+  {
+    local: LocalId, span: Span
+  },
+  Drop
+  {
+    local: LocalId, span: Span
+  },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Terminator
+{
+  Return(Option<LocalId>),
+  Goto(BlockId),
+  Unreachable,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BasicBlock
+{
+  pub id: BlockId,
+  pub statements: Vec<Statement>,
+  pub terminator: Option<Terminator>,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Function
+{
+  pub name: String,
+  pub locals: Vec<Local>,
+  pub blocks: Vec<BasicBlock>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DiagnosticCode
+{
+  MissingTerminator,
+  UnknownLocal,
+  UseAfterMove,
+  MoveWhileBorrowed,
+  MutableBorrowConflict,
+  ImmutableLocalMutableBorrow,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Diagnostic
+{
+  pub code: DiagnosticCode,
+  pub message: String,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+struct BorrowState
+{
+  moved: bool,
+  shared_count: u32,
+  mutable_active: bool,
+}
+
+#[derive(Default)]
+pub struct BorrowChecker
+{
+  diagnostics: Vec<Diagnostic>,
+  local_defs: HashMap<LocalId, Local>,
+  states: HashMap<LocalId, BorrowState>,
+}
+
+impl BorrowChecker
+{
+  #[must_use]
+  pub fn new() -> Self
+  {
+    Self::default()
+  }
+
+  #[must_use]
+  pub fn check_function(mut self, function: &Function) -> Vec<Diagnostic>
+  {
+    for local in &function.locals
+    {
+      self.local_defs.insert(local.id, local.clone());
+      self.states.insert(local.id, BorrowState::default());
+    }
+    for block in &function.blocks
+    {
+      self.check_block(block);
+    }
+    self.diagnostics
+  }
+
+  fn check_block(&mut self, block: &BasicBlock)
+  {
+    if block.terminator.is_none()
+    {
+      self.report(DiagnosticCode::MissingTerminator,
+                  "MIR block is missing a terminator",
+                  block.span);
+    }
+    for statement in &block.statements
+    {
+      self.check_statement(statement);
+    }
+  }
+
+  fn check_statement(&mut self, statement: &Statement)
+  {
+    match *statement
+    {
+      Statement::Use { local,
+                       span, } |
+      Statement::Drop { local,
+                        span, } => self.require_live(local, span),
+      Statement::Move { local,
+                        span, } => self.move_local(local, span),
+      Statement::BorrowShared { local,
+                                span, } => self.borrow_shared(local, span),
+      Statement::BorrowMutable { local,
+                                 span, } => self.borrow_mutable(local, span),
+      Statement::EndBorrow { local, .. } => self.end_borrow(local),
+    }
+  }
+
+  fn require_live(&mut self, local: LocalId, span: Span)
+  {
+    let Some(state) = self.state(local, span)
+    else
+    {
+      return;
+    };
+    if state.moved
+    {
+      self.report(DiagnosticCode::UseAfterMove, "local is used after it was moved", span);
+    }
+  }
+
+  fn move_local(&mut self, local: LocalId, span: Span)
+  {
+    let Some(state) = self.state(local, span)
+    else
+    {
+      return;
+    };
+    if state.moved
+    {
+      self.report(DiagnosticCode::UseAfterMove,
+                  "local is moved after it was already moved",
+                  span);
+      return;
+    }
+    if state.shared_count != 0 || state.mutable_active
+    {
+      self.report(DiagnosticCode::MoveWhileBorrowed,
+                  "local cannot be moved while borrowed",
+                  span);
+      return;
+    }
+    state.moved = true;
+  }
+
+  fn borrow_shared(&mut self, local: LocalId, span: Span)
+  {
+    let Some(state) = self.state(local, span)
+    else
+    {
+      return;
+    };
+    if state.moved
+    {
+      self.report(DiagnosticCode::UseAfterMove,
+                  "local is borrowed after it was moved",
+                  span);
+      return;
+    }
+    if state.mutable_active
+    {
+      self.report(DiagnosticCode::MutableBorrowConflict,
+                  "shared borrow conflicts with active mutable borrow",
+                  span);
+      return;
+    }
+    state.shared_count += 1;
+  }
+
+  fn borrow_mutable(&mut self, local: LocalId, span: Span)
+  {
+    if !self.local_defs.get(&local).is_some_and(|local| local.mutable)
+    {
+      self.report(DiagnosticCode::ImmutableLocalMutableBorrow,
+                  "immutable local cannot be mutably borrowed",
+                  span);
+      return;
+    }
+    let Some(state) = self.state(local, span)
+    else
+    {
+      return;
+    };
+    if state.moved
+    {
+      self.report(DiagnosticCode::UseAfterMove,
+                  "local is mutably borrowed after it was moved",
+                  span);
+      return;
+    }
+    if state.shared_count != 0 || state.mutable_active
+    {
+      self.report(DiagnosticCode::MutableBorrowConflict,
+                  "mutable borrow conflicts with an active borrow",
+                  span);
+      return;
+    }
+    state.mutable_active = true;
+  }
+
+  fn end_borrow(&mut self, local: LocalId)
+  {
+    if let Some(state) = self.states.get_mut(&local)
+    {
+      if state.mutable_active
+      {
+        state.mutable_active = false;
+      }
+      else if state.shared_count != 0
+      {
+        state.shared_count -= 1;
+      }
+    }
+  }
+
+  fn state(&mut self, local: LocalId, span: Span) -> Option<&mut BorrowState>
+  {
+    if !self.local_defs.contains_key(&local)
+    {
+      self.report(DiagnosticCode::UnknownLocal, "MIR references an unknown local", span);
+      return None;
+    }
+    self.states.get_mut(&local)
+  }
+
+  fn report(&mut self, code: DiagnosticCode, message: &str, span: Span)
+  {
+    self.diagnostics.push(Diagnostic { code,
+                                       message: message.to_string(),
+                                       span });
+  }
+}
+
+pub fn reachable_blocks(function: &Function) -> HashSet<BlockId>
+{
+  let mut known = HashMap::new();
+  for block in &function.blocks
+  {
+    known.insert(block.id, block);
+  }
+  let Some(entry) = function.blocks.first()
+  else
+  {
+    return HashSet::new();
+  };
+  let mut reachable = HashSet::new();
+  let mut stack = vec![entry.id];
+  while let Some(block_id) = stack.pop()
+  {
+    if !reachable.insert(block_id)
+    {
+      continue;
+    }
+    if let Some(Terminator::Goto(next)) = known.get(&block_id).and_then(|block| block.terminator.as_ref())
+    {
+      stack.push(*next);
+    }
+  }
+  reachable
+}
+
+#[cfg(test)]
+mod tests
+{
+  use super::*;
+
+  fn span(start: u32, end: u32) -> Span
+  {
+    Span::new(1, start, end)
+  }
+
+  fn local(id: u32, mutable: bool) -> Local
+  {
+    Local { id: LocalId(id),
+            name: format!("local{id}"),
+            mutable,
+            span: span(0, 1) }
+  }
+
+  fn function(statements: Vec<Statement>, terminator: Option<Terminator>) -> Function
+  {
+    Function { name: "main".to_string(),
+               locals: vec![local(0, true), local(1, false)],
+               blocks: vec![BasicBlock { id: BlockId(0),
+                                         statements,
+                                         terminator,
+                                         span: span(0, 10) }] }
+  }
+
+  #[test]
+  fn accepts_move_after_borrow_ends()
+  {
+    let function = function(vec![Statement::BorrowShared { local: LocalId(0),
+                                                           span: span(1, 2) },
+                                 Statement::EndBorrow { local: LocalId(0),
+                                                        span: span(2, 3) },
+                                 Statement::Move { local: LocalId(0),
+                                                   span: span(3, 4) }],
+                            Some(Terminator::Return(None)));
+
+    assert!(BorrowChecker::new().check_function(&function).is_empty());
+  }
+
+  #[test]
+  fn rejects_use_after_move()
+  {
+    let function = function(vec![Statement::Move { local: LocalId(0),
+                                                   span: span(1, 2) },
+                                 Statement::Use { local: LocalId(0),
+                                                  span: span(3, 4) }],
+                            Some(Terminator::Return(None)));
+
+    let diagnostics = BorrowChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::UseAfterMove);
+  }
+
+  #[test]
+  fn rejects_move_while_borrowed()
+  {
+    let function = function(vec![Statement::BorrowShared { local: LocalId(0),
+                                                           span: span(1, 2) },
+                                 Statement::Move { local: LocalId(0),
+                                                   span: span(3, 4) }],
+                            Some(Terminator::Return(None)));
+
+    let diagnostics = BorrowChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::MoveWhileBorrowed);
+  }
+
+  #[test]
+  fn rejects_mutable_borrow_conflict()
+  {
+    let function = function(vec![Statement::BorrowShared { local: LocalId(0),
+                                                           span: span(1, 2) },
+                                 Statement::BorrowMutable { local: LocalId(0),
+                                                            span: span(3, 4) }],
+                            Some(Terminator::Return(None)));
+
+    let diagnostics = BorrowChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::MutableBorrowConflict);
+  }
+
+  #[test]
+  fn rejects_mutable_borrow_of_immutable_local()
+  {
+    let function = function(vec![Statement::BorrowMutable { local: LocalId(1),
+                                                            span: span(1, 2) }],
+                            Some(Terminator::Return(None)));
+
+    let diagnostics = BorrowChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::ImmutableLocalMutableBorrow);
+  }
+
+  #[test]
+  fn reports_missing_terminator()
+  {
+    let diagnostics = BorrowChecker::new().check_function(&function(vec![], None));
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::MissingTerminator);
+  }
+
+  #[test]
+  fn computes_reachable_blocks_through_goto()
+  {
+    let function = Function { name: "main".to_string(),
+                              locals: vec![],
+                              blocks: vec![BasicBlock { id: BlockId(0),
+                                                        statements: vec![],
+                                                        terminator: Some(Terminator::Goto(BlockId(1))),
+                                                        span: span(0, 1) },
+                                           BasicBlock { id: BlockId(1),
+                                                        statements: vec![],
+                                                        terminator: Some(Terminator::Return(None)),
+                                                        span: span(1, 2) },
+                                           BasicBlock { id: BlockId(2),
+                                                        statements: vec![],
+                                                        terminator: Some(Terminator::Return(None)),
+                                                        span: span(2, 3) }] };
+
+    let reachable = reachable_blocks(&function);
+
+    assert!(reachable.contains(&BlockId(0)));
+    assert!(reachable.contains(&BlockId(1)));
+    assert!(!reachable.contains(&BlockId(2)));
+  }
+}
