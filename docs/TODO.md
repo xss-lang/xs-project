@@ -144,6 +144,10 @@ C23, and target assembly conventions as long as the result fits X#.
 
 - `.xhir`, `.xmir`, and `.xlil` are human-readable text formats. They are deterministic, newline-normalized, and
   source-order stable.
+- `.xhir` and `.xmir` are not binary formats and are not opaque serialized compiler state. They must stay suitable for
+  direct inspection, code review, and text-based regression fixtures.
+- `.xhir` and `.xmir` are not assembly-like. XHIR is a structured semantic tree/record dump; XMIR is a structured
+  control-flow/borrow-analysis dump.
 - `xsfmt`, `xstidy`, and future developer tool projects use TOML for user configuration.
 - TOML is only the tool configuration standard; it does not replace the `.xsproj` project manifest format.
 - `xs check` runs parse, macro expansion, HIR, type-check, and borrow-independent semantic checks; it does not produce objects.

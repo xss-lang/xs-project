@@ -28,7 +28,11 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - CLI paths for `xs check -proj ...` and `xs build --output hir|mir|xlil -proj ...`.
 - CLI recognition for direct file forms: `xs build --output hir|mir|xlil -file ...` and
   `xs build --hir|--mir|--xlil -file ...`.
-- Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats.
+- Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats, not binary or opaque
+  serialized compiler state.
+- XHIR and XMIR documentation now separates their structured text design from XLIL's assembly-like registry format.
+- Rust `xslang` gained initial structured XHIR/XMIR text writers plus parser subsets.
+- XHIR parsing now covers the checked-function subset emitted by the Rust writer.
 - Root README and strengthened documentation set under `docs/`.
 
 ### Changed

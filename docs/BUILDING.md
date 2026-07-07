@@ -81,7 +81,7 @@ rg -n "\bNULL\b|#include <stdbool\.h>" xs xsproj tests include
 busybox wc -l <file.c> <file.h>
 ```
 
-C and header files must not exceed 500 lines. New or touched C code should use `nullptr` and C23 `bool`.
+Files must not exceed 1000 lines. New or touched C code should use `nullptr` and C23 `bool`.
 
 ## Build outputs
 

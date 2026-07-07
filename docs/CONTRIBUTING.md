@@ -14,7 +14,7 @@ This repository is compiler infrastructure. Prefer small, testable patches that 
 - Shell scripts are not added as persistent project artifacts.
 - Use CMake; do not use Meson.
 - Do not add dependencies on GNU toolchain behavior.
-- C and header files must not exceed 500 lines.
+- Files must not exceed 1000 lines. New or touched C and header files should stay much smaller when practical.
 - In new/touched C code, use `nullptr` instead of `NULL`, and C23 `bool` instead of `<stdbool.h>`.
 
 ## Patch size

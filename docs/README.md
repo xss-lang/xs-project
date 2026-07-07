@@ -18,15 +18,19 @@ Recommended order for newcomers:
 3. [ARCHITECTURE.md](ARCHITECTURE.md): compiler pipeline and layer boundaries
 4. [CLI.md](CLI.md): user commands and current status
 5. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
-6. [TODO.md](TODO.md): X# v0 decisions and remaining implementation work
-7. [RELEASES.md](RELEASES.md): release policy tied to the LLVM IR milestone
-8. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
-9. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
+6. [XHIR.md](XHIR.md): human-readable HIR text format direction
+7. [XMIR.md](XMIR.md): human-readable MIR text format direction
+8. [XLIL.md](XLIL.md): backend input text registry direction
+9. [TODO.md](TODO.md): X# v0 decisions and remaining implementation work
+10. [RELEASES.md](RELEASES.md): release policy tied to the LLVM IR milestone
+11. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
+12. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
 
 ## Documentation authority
 
 - For documented X# syntax, `Spec/` has priority.
 - For the `.xsproj` format, `Spec/ProjectSystem.xs` and the public C API headers have priority.
+- For XHIR/XMIR text-output decisions, read `docs/XHIR.md`, `docs/XMIR.md`, and `docs/TODO.md` together.
 - For XLIL decisions, read `docs/XLIL.md`, `docs/TODO.md`, and `xs/include/xs/lil.h` together.
 - For implementation order, [IMPLEMENTATION.md](IMPLEMENTATION.md) is authoritative.
 - Major semantic and ABI decisions are tracked as the X# v0 contract in [TODO.md](TODO.md).

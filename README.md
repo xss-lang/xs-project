@@ -95,6 +95,7 @@ the backend. HIR and MIR do not depend on the LLVM API; the backend entry langua
 - Primitive type metadata and nominal user-defined type resolution
 - Literal initializer/assignment/return checks
 - MIR model API, text writer, borrow-check skeleton, and a few MIR optimization passes
+- XHIR/XMIR structured text writer and header parser bootstrap in Rust `xslang`
 - XLIL model, assembly-like text writer/parser/verifier, and limited MIR → XLIL lowering core
 - LLVM context/module/target/object/link infrastructure
 
@@ -128,12 +129,15 @@ The `-proj` forms run through a project manifest. The `-file` forms are reserved
 flows; they are accepted by the CLI and may intentionally emit diagnostics until the corresponding pipeline is connected.
 Intermediate output extensions:
 
-- `.xhir`: human-readable HIR text
-- `.xmir`: human-readable MIR text
+- `.xhir`: human-readable HIR text, intended for direct semantic inspection and review
+- `.xmir`: human-readable MIR text, intended for direct control-flow/borrow inspection and review
 - `.xlil`: XLIL text registry
 
-`.xlil` will never be a binary format. Current XLIL text is assembly-like and uses directive/label/value records such as
-`.xlil module`, `.extern`, `.func`, `bb0.entry:`, `%0:i64 = const 42`, `br bb1`, `ret %0`, and `.end`.
+`.xhir`, `.xmir`, and `.xlil` are intentionally text formats, not opaque serialized compiler state. `.xhir` and `.xmir`
+must remain human-readable even when their official record grammar becomes stricter. They are not assembly-like: XHIR is a
+structured semantic tree/record dump, and XMIR is a structured control-flow/analysis dump. `.xlil` will never be a binary
+format. Current XLIL text is assembly-like and uses directive/label/value records such as `.xlil module`, `.extern`, `.func`,
+`bb0.entry:`, `%0:i64 = const 42`, `br bb1`, `ret %0`, and `.end`.
 
 ## Development rules
 
@@ -143,6 +147,7 @@ Intermediate output extensions:
 - Use CMake; do not use Meson.
 - GNU C compiler, GNU Make, GNU binutils fallbacks, and GNU C dialects are rejected.
 - Do not add persistent shell scripts; use Java source-file tools or D for automation.
+- Keep files under 1000 lines; prefer smaller modules when a component starts to sprawl.
 - Prefer non-GNU tools such as `busybox wc` for line counting.
 - Use `ulimit -v 2097152` during test/build runs to reduce OOM risk.
 

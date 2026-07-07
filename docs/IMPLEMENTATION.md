@@ -340,8 +340,12 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 ### XLIL target
 
 - `docs/XLIL.md` defines XLIL as the official low-level intermediate language for X#.
-- `.xhir`, `.xmir`, and `.xlil` are the extensions for HIR, MIR, and XLIL code. They are human-readable text formats; the
-  official contents of `.xhir` and `.xmir` are not fully documented yet.
+- `.xhir`, `.xmir`, and `.xlil` are the extensions for HIR, MIR, and XLIL code. They are human-readable text formats, not
+  binary or opaque serialized compiler state.
+- `.xhir` and `.xmir` are intended for direct developer inspection, code review, regression fixtures, and debugging. Their
+  official record grammar is not fully documented yet, but future grammar changes must keep that human-readable property.
+- `.xhir` and `.xmir` are not assembly-like. XHIR should expose resolved semantic structure; XMIR should expose structured
+  control-flow, places, drops, regions, and analysis results. See [XHIR.md](XHIR.md) and [XMIR.md](XMIR.md).
 - XLIL is the target-independent type/data vocabulary that HIR/MIR depend on.
 - XLIL is designed to sit before LLVM IR and act as the common input point for backends.
 - `.xlil` is always a text registry format; no binary XLIL format will be added.
@@ -368,6 +372,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path
   based codegen units by the default v0 policy. When produced from a mono plan, the unit name comes from the source module
   path and the function name comes from the stable monomorphized symbol.
+- Rust `xslang` contains the first XHIR/XMIR structured text writer and header parser bootstrap. These outputs are
+  intentionally separate from XLIL's assembly-like registry records.
 
 XLIL instruction set, function body model, runtime/ABI layout, and MIR → XLIL body lowering decisions are fixed as the X# v0
 contract in [TODO.md](TODO.md); implementation will complete them incrementally.

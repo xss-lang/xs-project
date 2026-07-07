@@ -65,7 +65,10 @@ ready until native executable generation is complete.
 - `.xlil`: XLIL text registry
 
 `.xhir`, `.xmir`, and `.xlil` are text formats. `.xhir` and `.xmir` are human-readable compiler intermediate dumps;
-`.xlil` is a human-readable backend input registry. They will not be binary formats.
+`.xlil` is a human-readable backend input registry. They will not be binary formats or opaque serialized compiler state.
+Future `.xhir` and `.xmir` grammar changes must preserve direct human inspection and code-review friendliness. XHIR and
+XMIR are not assembly-like formats; XHIR is a structured semantic tree/record dump, while XMIR is a structured
+control-flow/analysis dump.
 
 ## Direct file builds
 

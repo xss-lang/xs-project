@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::hir::async_check::Span;
 
 pub mod optimizer;
+pub mod text;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LocalId(pub u32);
