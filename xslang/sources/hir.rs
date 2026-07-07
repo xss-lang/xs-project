@@ -4,3 +4,4 @@
  */
 
 pub mod async_check;
+pub mod type_check;
