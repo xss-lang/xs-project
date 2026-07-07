@@ -42,8 +42,8 @@ The documented compilation order is preserved:
 - The root `include/` directory is reserved for shared public C headers across projects; `xs/include/` is for `xs` only, and
   `xsproj/include/` is for `xsproj` only.
 - `xsfmt` and `xstidy` are future Rust nightly + Serde projects; `xs-analyzer` is a future Rust language server and
-  TypeScript VS Code extension project; `xs-backend` is a future native backend project; `xsrt` is a future runtime. They are
-  not included in the build yet.
+  TypeScript VS Code extension project; `xslang` is the future Rust compiler-core crate; `xs-backend` is a future native
+  backend project; `xsrt` is a future runtime. They are not included in the CMake build yet.
 
 ### XLIL-bound middle-layer rule
 
@@ -224,6 +224,11 @@ validation does not decide dispatch, override, or overload selection.
 
 This stage does not yet produce general expression type inference, overload selection, constraint membership/compatibility
 checks, trait/interface compatibility, or ABI/layout decisions.
+
+The growing semantic-analysis and type-checking implementation now starts in the isolated Rust `xslang` crate instead of
+adding new semantic rules to the old C23 HIR prototypes. The first checked Rust rule validates that `await` expressions occur
+only inside async function bodies. The crate is not wired into the C23 driver yet; integration will use a bulk structural
+syntax transfer boundary so one compiler layer is not split across C and Rust.
 
 ### Macro validation and scope resolution
 

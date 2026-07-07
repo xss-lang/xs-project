@@ -6,7 +6,7 @@
 # This mirrors the LLVM-style "enable projects from one checkout" model.
 
 set(XS_MONOREPO_STABLE_PROJECTS xs xsproj)
-set(XS_MONOREPO_FUTURE_PROJECTS xsfmt xstidy xs-analyzer xs-backend)
+set(XS_MONOREPO_FUTURE_PROJECTS xslang xsfmt xstidy xs-analyzer xs-backend)
 set(XS_MONOREPO_STABLE_RUNTIMES)
 set(XS_MONOREPO_FUTURE_RUNTIMES xsrt)
 
