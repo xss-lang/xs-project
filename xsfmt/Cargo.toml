@@ -12,4 +12,4 @@ name = "xsfmt"
 path = "sources/main.rs"
 
 [dependencies]
-serde = { version = "1", features = "all" }
+serde = { version = "1", features = ["derive"] }

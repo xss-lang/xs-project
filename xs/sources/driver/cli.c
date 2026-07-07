@@ -12,6 +12,7 @@
 #include "xs/hir/type_resolution.h"
 #include "xs/macro.h"
 #include "xs/project.h"
+#include "xs/source_include.h"
 #include "xs/syntax_ast.h"
 #include "xs/syntax_parser.h"
 
@@ -237,9 +238,15 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
     fprintf(stderr, "xs: '%s' kaynak dosyası okunamadı\n", unit->path);
     return false;
   }
-  unit->source = (XsSource){.path = unit->path, .text = unit->text, .length = length};
   xs_diagnostics_init(&unit->diagnostics);
   unit->diagnostics_initialized = true;
+  unit->source = (XsSource){.path = unit->path, .text = unit->text, .length = length};
+  XsIncludedSource included;
+  if (!xs_source_expand_includes(&unit->source, &unit->diagnostics, &included))
+    return false;
+  free(unit->text);
+  unit->text = included.text;
+  unit->source = (XsSource){.path = unit->path, .text = unit->text, .length = included.length};
   xs_hir_import_scope_init(&unit->imports);
   unit->imports_initialized = true;
   bool success = xs_syntax_parse(&unit->source, file_id, &unit->diagnostics, &unit->tree);

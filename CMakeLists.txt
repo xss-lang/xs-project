@@ -134,6 +134,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/hir/type_resolution.c
     xs/sources/hir/type_resolution_macro_view.c
     xs/sources/parser.c
+    xs/sources/source_include.c
     xs/sources/syntax_ast.c
     xs/sources/syntax_parser.c
     xs/sources/syntax/parser_macro.c
@@ -257,6 +258,11 @@ if(BUILD_TESTING)
     target_link_libraries(xs_syntax_macro_tests PRIVATE xs_compiler)
     add_test(NAME syntax_macro COMMAND xs_syntax_macro_tests)
     set_tests_properties(syntax_macro PROPERTIES TIMEOUT 5)
+
+    add_executable(xs_source_include_tests tests/source_include_tests.c)
+    target_link_libraries(xs_source_include_tests PRIVATE xs_compiler)
+    add_test(NAME source_include COMMAND xs_source_include_tests)
+    set_tests_properties(source_include PROPERTIES TIMEOUT 5)
 
     add_executable(xs_syntax_macro_view_tests tests/syntax_macro_view_tests.c)
     target_link_libraries(xs_syntax_macro_view_tests PRIVATE xs_compiler)

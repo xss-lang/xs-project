@@ -21,6 +21,30 @@ Macros:
 - Are not hygienic.
 }//
 
+// include!() is a built-in source inclusion macro.
+//
+// It is expanded before lexing and parsing.
+//
+// It is not a macroRules! declaration and is not resolved through
+// the AST macro scope system.
+//
+// include!() accepts only a local relative file path string.
+// The included file is inserted textually at the call site.
+//
+// Valid:
+//
+// include!("foo.xs");
+// include!("./foo.xs");
+// include!("../foo.xs");
+//
+// Invalid:
+//
+// include!();
+// include!("/tmp/foo.xs");
+//
+// include!() cannot include packages, modules or libraries.
+// It is only for local source files.
+
 imports Stdio;
 
 
@@ -683,6 +707,8 @@ macroRules! invalidSecond {
 // Compiler flow:
 //
 // .xs source code
+//     ↓
+// Source include expansion
 //     ↓
 // Lexing + Parsing
 //     ↓
