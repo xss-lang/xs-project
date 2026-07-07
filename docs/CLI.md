@@ -17,6 +17,12 @@ xs run -proj MyApp.xsproj
 xs build --output hir -proj MyApp.xsproj
 xs build --output mir -proj MyApp.xsproj
 xs build --output xlil -proj MyApp.xsproj
+xs build --output hir -file Main.xs
+xs build --output mir -file Main.xs
+xs build --output xlil -file Main.xs
+xs build --hir -file Main.xs
+xs build --mir -file Main.xs
+xs build --xlil -file Main.xs
 ```
 
 On usage errors, the CLI prints:
@@ -24,6 +30,8 @@ On usage errors, the CLI prints:
 ```text
 usage: xs <check|run> -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>
+usage: xs build [--output hir|mir|xlil] -file <input>
+usage: xs build [--hir|--mir|--xlil] -file <input>
 ```
 
 ## `xs check`
@@ -42,6 +50,9 @@ usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>
 `xs build` will eventually run the full check, MIR, borrow checker, monomorphization, XLIL, backend, object, and link flow.
 Today, some output modes may intentionally fail because the intermediate formats are not complete yet.
 
+`-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and
+`--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.
+
 ## `xs run`
 
 `xs run` will eventually run `xs build` first and then execute the generated executable. Full run semantics are not considered
@@ -49,18 +60,31 @@ ready until native executable generation is complete.
 
 ## Intermediate outputs
 
-- `.xhir`: HIR text
-- `.xmir`: MIR text
+- `.xhir`: human-readable HIR text
+- `.xmir`: human-readable MIR text
 - `.xlil`: XLIL text registry
 
-`.xlil` will never be a binary format.
+`.xhir`, `.xmir`, and `.xlil` are text formats. `.xhir` and `.xmir` are human-readable compiler intermediate dumps;
+`.xlil` is a human-readable backend input registry. They will not be binary formats.
 
-## Future direct XLIL build
+## Direct file builds
 
-Planned form:
+Recognized forms:
 
 ```text
+xs build --output hir -file foo.xs
+xs build --output mir -file foo.xs
+xs build --output xlil -file foo.xs
+xs build --hir -file foo.xs
+xs build --mir -file foo.xs
 xs build --xlil -file foo.xlil
 ```
 
-This path will skip project manifests and run XLIL parse/verify/backend/link directly. It is not implemented yet.
+The direct file paths skip project manifests. Their final semantics depend on the selected intermediate kind:
+
+- `hir`: parse/check a single `.xs` input and emit `.xhir`.
+- `mir`: parse/check/lower a single `.xs` input and emit `.xmir`.
+- `xlil` with `.xs`: lower a single X# source file to `.xlil`.
+- `xlil` with `.xlil`: parse/verify/backend/link an existing XLIL registry.
+
+The CLI recognizes the forms now; full production semantics are still being connected.

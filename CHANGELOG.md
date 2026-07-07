@@ -22,10 +22,13 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - Generic arity, duplicate generic parameter, and generic interface constraint checks.
 - Primitive type metadata for `bool`, `byte`, `sbyte`, `char`, integer types, supported float types, and `str`.
 - MIR model API, MIR writer, borrow-check skeleton, and initial optimizer passes.
-- XLIL model/writer and limited MIR-to-XLIL body lowering.
+- XLIL model, assembly-like text writer/parser/verifier, and limited MIR-to-XLIL body lowering.
 - LLVM backend infrastructure for context/module/target/data layout management, signature lowering, object emission,
   and linker abstraction.
 - CLI paths for `xs check -proj ...` and `xs build --output hir|mir|xlil -proj ...`.
+- CLI recognition for direct file forms: `xs build --output hir|mir|xlil -file ...` and
+  `xs build --hir|--mir|--xlil -file ...`.
+- Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats.
 - Root README and strengthened documentation set under `docs/`.
 
 ### Changed
@@ -35,6 +38,8 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - `char` is documented as a 16-bit UTF-16 code unit.
 - `str` is treated as UTF-16 and unbounded up to runtime allocator and target environment limits.
 - HIR and MIR are documented as independent from LLVM and tied to the XLIL vocabulary instead.
+- XLIL text moved away from C-like function records toward assembly-like `.xlil`, `.extern`, `.func`, label, typed SSA
+  value, `br`, and `ret` records.
 - Structural parser can consume a `>>` token as two closing `>` tokens when ending generic type/parameter lists.
 - `match` examples and tests use the parenthesized subject form, such as `match (value) { ... }`.
 - X# no longer exposes `float16` or `double` as language primitive type names.

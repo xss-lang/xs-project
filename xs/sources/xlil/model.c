@@ -274,6 +274,12 @@ static XsLilStatus set_terminator(XsLilBlock *block, XsLilTerminator terminator,
   {
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL return is missing a value");
   }
+  else if (terminator.kind == XS_LIL_TERMINATOR_BRANCH)
+  {
+    if ((size_t)terminator.target >= block->owner->block_count ||
+        block->owner->blocks[terminator.target]->id != terminator.target)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL branch target is unknown");
+  }
   block->terminator = terminator;
   return XS_LIL_OK;
 }
@@ -287,6 +293,11 @@ XsLilStatus xs_lil_block_set_return_value(XsLilBlock *block, XsLilValueId value,
 {
   return set_terminator(block, (XsLilTerminator){.kind = XS_LIL_TERMINATOR_RETURN, .has_value = true, .value = value},
                         error);
+}
+
+XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLilError *error)
+{
+  return set_terminator(block, (XsLilTerminator){.kind = XS_LIL_TERMINATOR_BRANCH, .target = target}, error);
 }
 
 const char *xs_lil_type_name(XsLilType type)

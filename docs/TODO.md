@@ -104,7 +104,9 @@ C23, and target assembly conventions as long as the result fits X#.
 - `.xlil` is always a text registry format; no binary XLIL format will be added.
 - XLIL is not as high-level as CLR and not as low-level as assembly; it is an assembly-like, target-independent
   mid/low-level registry language.
-- An XLIL registry file starts with `xlil module <name>` and contains declaration/definition records.
+- An XLIL registry file starts with `.xlil module <name>` and contains directive-style declaration/definition records.
+- Current XLIL text uses assembly-like records: `.extern`, `.func`, `bbN.label:`, `%N:type = ...`, `br bbN`, `ret`, and
+  `.end`.
 - The function body model uses typed SSA, explicit basic blocks, and terminators.
 - XLIL instruction set v0: constants, arithmetic, compare, load/store, address projection, call, branch, switch, return,
   throw, landingpad/cleanup, aggregate construct/extract.
@@ -140,13 +142,16 @@ C23, and target assembly conventions as long as the result fits X#.
 
 ## Tooling and project-flow decisions
 
-- `.xhir`, `.xmir`, and `.xlil` text dump formats are deterministic, newline-normalized, and source-order stable.
+- `.xhir`, `.xmir`, and `.xlil` are human-readable text formats. They are deterministic, newline-normalized, and
+  source-order stable.
 - `xsfmt`, `xstidy`, and future developer tool projects use TOML for user configuration.
 - TOML is only the tool configuration standard; it does not replace the `.xsproj` project manifest format.
 - `xs check` runs parse, macro expansion, HIR, type-check, and borrow-independent semantic checks; it does not produce objects.
 - `xs build` runs all check stages, MIR, borrow checker, monomorphization, XLIL, backend, and link flow.
 - `xs run` first runs `xs build`, then launches the executable with argument forwarding.
-- `xs build --xlil -file <input.xlil>` runs XLIL parse, verify, backend, and link without reading a project manifest.
+- `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` run direct file flows
+  without reading a project manifest.
+- `xs build --xlil -file <input.xlil>` parses/verifies XLIL, then runs backend and link.
 - Successful commands exit with code `0`; diagnostic errors exit with `1`; internal compiler errors exit with `70`.
 - Diagnostic codes use the `XS####` format. Severity values: note, warning, error, fatal.
 - Machine-readable diagnostic output will be provided later as JSON Lines through `--diagnostic-format json`.

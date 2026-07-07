@@ -13,8 +13,8 @@ use crate::xlil::{BlockId, Function, Type};
 pub enum DiagnosticCode
 {
   UnsupportedReturnValue,
-  UnsupportedGotoTerminator,
   MissingMirTerminator,
+  MissingBranchTarget,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -51,7 +51,7 @@ impl MirToXlilLowerer
     for block in &function.blocks
     {
       let xlil_block = blocks[&block.id];
-      self.lower_terminator(block, xlil_block, &mut lowered);
+      self.lower_terminator(block, xlil_block, &blocks, &mut lowered);
     }
     if self.diagnostics.is_empty()
     {
@@ -63,7 +63,11 @@ impl MirToXlilLowerer
     }
   }
 
-  fn lower_terminator(&mut self, block: &mir::BasicBlock, xlil_block: BlockId, lowered: &mut Function)
+  fn lower_terminator(&mut self,
+                      block: &mir::BasicBlock,
+                      xlil_block: BlockId,
+                      blocks: &HashMap<mir::BlockId, BlockId>,
+                      lowered: &mut Function)
   {
     match block.terminator
     {
@@ -79,9 +83,23 @@ impl MirToXlilLowerer
       Some(mir::Terminator::Return(Some(_))) => self.report(DiagnosticCode::UnsupportedReturnValue,
                                                             "MIR return values are lowered after value mapping exists",
                                                             block.span),
-      Some(mir::Terminator::Goto(_)) => self.report(DiagnosticCode::UnsupportedGotoTerminator,
-                                                    "MIR goto lowering waits for XLIL branch terminators",
-                                                    block.span),
+      Some(mir::Terminator::Goto(target)) =>
+      {
+        let Some(target) = blocks.get(&target).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingBranchTarget,
+                      "MIR goto target block is missing",
+                      block.span);
+          return;
+        };
+        if !lowered.set_branch(xlil_block, target)
+        {
+          self.report(DiagnosticCode::MissingBranchTarget,
+                      "XLIL branch target block is missing",
+                      block.span);
+        }
+      }
       Some(mir::Terminator::Unreachable) | None => self.report(DiagnosticCode::MissingMirTerminator,
                                                                "MIR terminator cannot yet be lowered to XLIL",
                                                                block.span),
@@ -145,7 +163,7 @@ mod tests
   }
 
   #[test]
-  fn rejects_goto_until_branch_terminators_exist()
+  fn lowers_goto_to_branch_terminator()
   {
     let function = MirFunction { name: "Branch".to_string(),
                                  locals: vec![],
@@ -159,9 +177,10 @@ mod tests
                                                            terminator: Some(mir::Terminator::Return(None)),
                                                            span: span(1, 2) }] };
 
-    let diagnostics = MirToXlilLowerer::new().lower_function(&function)
-                                             .expect_err("lowering must diagnose");
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
 
-    assert_eq!(diagnostics[0].code, DiagnosticCode::UnsupportedGotoTerminator);
+    assert_eq!(lowered.blocks[0].terminator,
+               Some(Terminator::Branch(crate::xlil::BlockId(1))));
   }
 }

@@ -39,6 +39,29 @@ future body records are stored as text.
 
 An `.xlil` file is not executable bytecode. It is backend input.
 
+Current text records intentionally look closer to assembly than to C-like declarations:
+
+```text
+.xlil module App
+.extern Check : (u8, i8, bool) -> bool
+.func Answer : () -> i64
+bb0.entry:
+  %0:i64 = const 42
+  ret %0
+.end
+```
+
+Format notes:
+
+- `.xlil module <name>` starts a registry file.
+- `.extern <symbol> : (<params>) -> <return>` declares an external function.
+- `.func <symbol> : (<params>) -> <return>` starts a function body.
+- `bbN.<label>:` starts a basic block.
+- `%N:type` names a typed SSA value.
+- `br bbN` transfers control to another basic block.
+- `ret` and `ret %N` are the current return terminators.
+- `.end` closes a function body.
+
 ## Public API
 
 XLIL will expose a stable C23 API through:

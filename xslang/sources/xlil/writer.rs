@@ -9,7 +9,7 @@ use crate::xlil::{Block, Function, Instruction, Module, Terminator, ValueId, typ
 
 pub fn write_module(module: &Module, output: &mut impl Write) -> fmt::Result
 {
-  writeln!(output, "xlil module {}", module.name)?;
+  writeln!(output, ".xlil module {}", module.name)?;
   for function in &module.functions
   {
     write_function(function, output)?;
@@ -29,29 +29,27 @@ fn write_function(function: &Function, output: &mut impl Write) -> fmt::Result
 {
   if function.is_definition
   {
-    write!(output, "define ")?;
+    write!(output, ".func ")?;
   }
   else
   {
-    write!(output, "declare ")?;
+    write!(output, ".extern ")?;
   }
   write_signature(function, output)?;
   if !function.is_definition
   {
-    writeln!(output)?;
     return Ok(());
   }
-  writeln!(output, " {{")?;
   for block in &function.blocks
   {
     write_block(block, output)?;
   }
-  writeln!(output, "}}")
+  writeln!(output, ".end")
 }
 
 fn write_signature(function: &Function, output: &mut impl Write) -> fmt::Result
 {
-  write!(output, "{} {}(", type_name(function.return_type), function.name)?;
+  write!(output, "{} : (", function.name)?;
   for (index, parameter) in function.parameters.iter().enumerate()
   {
     if index != 0
@@ -60,12 +58,12 @@ fn write_signature(function: &Function, output: &mut impl Write) -> fmt::Result
     }
     write!(output, "{}", type_name(*parameter))?;
   }
-  write!(output, ")")
+  writeln!(output, ") -> {}", type_name(function.return_type))
 }
 
 fn write_block(block: &Block, output: &mut impl Write) -> fmt::Result
 {
-  writeln!(output, "bb{} {}:", block.id.0, block.label)?;
+  writeln!(output, "bb{}.{}:", block.id.0, block.label)?;
   for instruction in &block.instructions
   {
     write_instruction(instruction, output)?;
@@ -73,7 +71,8 @@ fn write_block(block: &Block, output: &mut impl Write) -> fmt::Result
   match block.terminator
   {
     Some(Terminator::Return(value)) => write_return(value, output),
-    None => writeln!(output, "  <missing terminator>"),
+    Some(Terminator::Branch(target)) => writeln!(output, "  br bb{}", target.0),
+    None => writeln!(output, "  .missing_terminator"),
   }
 }
 
@@ -82,7 +81,7 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
   match *instruction
   {
     Instruction::ConstI64 { result,
-                            value, } => writeln!(output, "  r{} = const.i64 {}", result.0, value),
+                            value, } => writeln!(output, "  %{}:i64 = const {}", result.0, value),
   }
 }
 
@@ -90,8 +89,8 @@ fn write_return(value: Option<ValueId>, output: &mut impl Write) -> fmt::Result
 {
   match value
   {
-    Some(value) => writeln!(output, "  return r{}", value.0),
-    None => writeln!(output, "  return"),
+    Some(value) => writeln!(output, "  ret %{}", value.0),
+    None => writeln!(output, "  ret"),
   }
 }
 
@@ -108,7 +107,7 @@ mod tests
     module.add_function(Function::declaration("xs$App$External", Type::I64, vec![Type::I64]));
 
     assert_eq!(module_to_string(&module),
-               "xlil module App\ndeclare i64 xs$App$External(i64)\n");
+               ".xlil module App\n.extern xs$App$External : (i64) -> i64\n");
   }
 
   #[test]
@@ -121,7 +120,7 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               "xlil module App\ndefine void xs$App$Main() {\nbb0 entry:\n  return\n}\n");
+               ".xlil module App\n.func xs$App$Main : () -> void\nbb0.entry:\n  ret\n.end\n");
   }
 
   #[test]
@@ -135,6 +134,21 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               "xlil module App\ndefine i64 xs$App$Value() {\nbb0 entry:\n  r0 = const.i64 42\n  return r0\n}\n");
+               ".xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n");
+  }
+
+  #[test]
+  fn writes_branch_terminator()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$Branch", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+    let exit = function.append_block("exit");
+    assert!(function.set_branch(entry, exit));
+    assert!(function.set_return(exit, None));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n");
   }
 }

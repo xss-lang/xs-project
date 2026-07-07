@@ -95,7 +95,7 @@ the backend. HIR and MIR do not depend on the LLVM API; the backend entry langua
 - Primitive type metadata and nominal user-defined type resolution
 - Literal initializer/assignment/return checks
 - MIR model API, text writer, borrow-check skeleton, and a few MIR optimization passes
-- XLIL model/writer and limited MIR → XLIL lowering core
+- XLIL model, assembly-like text writer/parser/verifier, and limited MIR → XLIL lowering core
 - LLVM context/module/target/object/link infrastructure
 
 For the detailed current status, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
@@ -115,17 +115,25 @@ xs build -proj MyApp.xsproj
 xs build --output hir -proj MyApp.xsproj
 xs build --output mir -proj MyApp.xsproj
 xs build --output xlil -proj MyApp.xsproj
+xs build --output hir -file Main.xs
+xs build --output mir -file Main.xs
+xs build --output xlil -file Main.xs
+xs build --hir -file Main.xs
+xs build --mir -file Main.xs
+xs build --xlil -file Main.xs
 xs run -proj MyApp.xsproj
 ```
 
-Some `xs build` and `xs run` paths may intentionally emit diagnostics/failures until end-to-end native executable generation
-is complete. Intermediate output extensions:
+The `-proj` forms run through a project manifest. The `-file` forms are reserved for direct single-file/intermediate input
+flows; they are accepted by the CLI and may intentionally emit diagnostics until the corresponding pipeline is connected.
+Intermediate output extensions:
 
-- `.xhir`: HIR text dump
-- `.xmir`: MIR text dump
+- `.xhir`: human-readable HIR text
+- `.xmir`: human-readable MIR text
 - `.xlil`: XLIL text registry
 
-`.xlil` will never be a binary format.
+`.xlil` will never be a binary format. Current XLIL text is assembly-like and uses directive/label/value records such as
+`.xlil module`, `.extern`, `.func`, `bb0.entry:`, `%0:i64 = const 42`, `br bb1`, `ret %0`, and `.end`.
 
 ## Development rules
 
@@ -150,6 +158,7 @@ For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CON
 - [docs/TODO.md](docs/TODO.md): X# v0 decisions and tracking list
 - [docs/MONOREPO.md](docs/MONOREPO.md): monorepo selection model
 - [docs/LLVM_BACKEND.md](docs/LLVM_BACKEND.md): LLVM backend infrastructure
+- [docs/XLIL.md](docs/XLIL.md): XLIL text registry and public API direction
 
 ## License
 

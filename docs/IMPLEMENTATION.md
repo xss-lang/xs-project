@@ -83,6 +83,8 @@ The documented compilation order is preserved:
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
 - `xs check -proj <project.xsproj>` works.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
+- `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized, but
+  direct file production is not connected yet.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -338,8 +340,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 ### XLIL target
 
 - `docs/XLIL.md` defines XLIL as the official low-level intermediate language for X#.
-- `.xhir`, `.xmir`, and `.xlil` are the extensions for HIR, MIR, and XLIL code; the official contents of these formats are
-  not fully documented yet.
+- `.xhir`, `.xmir`, and `.xlil` are the extensions for HIR, MIR, and XLIL code. They are human-readable text formats; the
+  official contents of `.xhir` and `.xmir` are not fully documented yet.
 - XLIL is the target-independent type/data vocabulary that HIR/MIR depend on.
 - XLIL is designed to sit before LLVM IR and act as the common input point for backends.
 - `.xlil` is always a text registry format; no binary XLIL format will be added.
@@ -353,10 +355,12 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   Backend, to produce native executables.
 - Third-party languages can generate XLIL through `xs/lil.h`; XLIL AOT, HIR baseline JIT, and MIR performance JIT are planned
   as separate public headers: `xs/lil/aot.h`, `xs/hir/jit.h`, and `xs/mir/jit.h`.
-- The planned direct XLIL compilation entry is `xs build --xlil -file <input.xlil>`; the command is not implemented yet.
+- Direct file compilation entries are recognized as `xs build --output hir|mir|xlil -file <input>` and
+  `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, primitive types, function declarations, function bodies,
   basic blocks, `const.i64`, and `return`.
-- The XLIL text writer emits module headers, function declarations, and initial function/block records with bodies.
+- The XLIL text writer emits assembly-like registry records: `.xlil module`, `.extern`, `.func`, `bbN.label:`,
+  `%N:type = const <value>`, `br bbN`, `ret`, and `.end`.
 - The first MIR → XLIL body bridge lowers flat blocks containing `const.i64` instructions and a `return` terminator to XLIL
   function body records.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to

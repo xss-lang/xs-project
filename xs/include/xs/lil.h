@@ -50,6 +50,7 @@ typedef struct
 } XsLilType;
 
 typedef uint32_t XsLilValueId;
+typedef uint32_t XsLilBlockId;
 
 typedef struct XsLilBlock XsLilBlock;
 typedef struct XsLilFunction XsLilFunction;
@@ -71,6 +72,7 @@ XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *la
 XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_set_return(XsLilBlock *block, XsLilError *error);
 XsLilStatus xs_lil_block_set_return_value(XsLilBlock *block, XsLilValueId value, XsLilError *error);
+XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLilError *error);
 
 const char *xs_lil_type_name(XsLilType type);
 XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, XsLilError *error);

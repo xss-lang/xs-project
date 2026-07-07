@@ -105,6 +105,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/ast.c
     xs/sources/codegen/units.c
     xs/sources/driver/cli.c
+    xs/sources/driver/options.c
     xs/sources/lexer.c
     xs/sources/macro/expanded_view.c
     xs/sources/macro/expansion.c
@@ -197,6 +198,24 @@ if(BUILD_TESTING)
 
     add_test(NAME build_output_xlil COMMAND xs build --output xlil -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
     set_tests_properties(build_output_xlil PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME build_file_output_hir COMMAND xs build --output hir -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+    set_tests_properties(build_file_output_hir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME build_file_output_mir COMMAND xs build --output mir -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+    set_tests_properties(build_file_output_mir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME build_file_output_xlil COMMAND xs build --output xlil -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+    set_tests_properties(build_file_output_xlil PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME build_file_short_hir COMMAND xs build --hir -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+    set_tests_properties(build_file_short_hir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME build_file_short_mir COMMAND xs build --mir -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+    set_tests_properties(build_file_short_mir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME build_file_short_xlil COMMAND xs build --xlil -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+    set_tests_properties(build_file_short_xlil PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
     add_executable(xs_backend_tests tests/backend_tests.c)
     target_link_libraries(xs_backend_tests PRIVATE xs_backend_llvm)

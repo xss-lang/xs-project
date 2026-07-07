@@ -434,8 +434,8 @@ static void test_xlil_body_lowering_for_const_return(void)
   char buffer[256] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "define i64 App.Answer() {\n") != NULL);
-  CHECK(strstr(buffer, "bb0 entry:\n  r0 = const.i64 42\n  return r0\n}\n") != NULL);
+  CHECK(strstr(buffer, ".func App.Answer : () -> i64\n") != NULL);
+  CHECK(strstr(buffer, "bb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n") != NULL);
   fclose(stream);
   xs_lil_module_destroy(xlil);
   xs_mir_module_destroy(mir);

@@ -4,6 +4,8 @@
  */
 
 pub mod lowering;
+pub mod parser;
+pub mod verify;
 pub mod writer;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -65,6 +67,7 @@ pub enum Instruction
 pub enum Terminator
 {
   Return(Option<ValueId>),
+  Branch(BlockId),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -157,6 +160,32 @@ impl Function
     true
   }
 
+  pub fn set_branch(&mut self, block: BlockId, target: BlockId) -> bool
+  {
+    if self.block(target).is_none()
+    {
+      return false;
+    }
+    let Some(block) = self.block_mut(block)
+    else
+    {
+      return false;
+    };
+    if block.terminator.is_some()
+    {
+      return false;
+    }
+    block.terminator = Some(Terminator::Branch(target));
+    true
+  }
+
+  fn block(&self, block: BlockId) -> Option<&Block>
+  {
+    self.blocks
+        .get(block.0 as usize)
+        .filter(|candidate| candidate.id == block)
+  }
+
   fn block_mut(&mut self, block: BlockId) -> Option<&mut Block>
   {
     self.blocks
@@ -211,6 +240,32 @@ pub fn type_name(value_type: Type) -> &'static str
   }
 }
 
+#[must_use]
+pub fn type_from_name(name: &str) -> Option<Type>
+{
+  let kind = match name
+  {
+    "void" => TypeKind::Void,
+    "bool" => TypeKind::Bool,
+    "u8" => TypeKind::U8,
+    "i8" => TypeKind::I8,
+    "u16" => TypeKind::U16,
+    "i16" => TypeKind::I16,
+    "u32" => TypeKind::U32,
+    "i32" => TypeKind::I32,
+    "u64" => TypeKind::U64,
+    "i64" => TypeKind::I64,
+    "u128" => TypeKind::U128,
+    "i128" => TypeKind::I128,
+    "f16" => TypeKind::F16,
+    "f32" => TypeKind::F32,
+    "f64" => TypeKind::F64,
+    "f128" => TypeKind::F128,
+    _ => return None,
+  };
+  Some(Type { kind })
+}
+
 #[cfg(test)]
 mod tests
 {
@@ -246,9 +301,28 @@ mod tests
   }
 
   #[test]
+  fn sets_branch_to_existing_block()
+  {
+    let mut function = Function::definition("Branch", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+    let exit = function.append_block("exit");
+
+    assert!(function.set_branch(entry, exit));
+    assert_eq!(function.blocks[0].terminator, Some(Terminator::Branch(exit)));
+  }
+
+  #[test]
   fn reports_primitive_type_names()
   {
     assert_eq!(type_name(Type::VOID), "void");
     assert_eq!(type_name(Type::I64), "i64");
+  }
+
+  #[test]
+  fn parses_primitive_type_names()
+  {
+    assert_eq!(type_from_name("void"), Some(Type::VOID));
+    assert_eq!(type_from_name("i64"), Some(Type::I64));
+    assert_eq!(type_from_name("unknown"), None);
   }
 }

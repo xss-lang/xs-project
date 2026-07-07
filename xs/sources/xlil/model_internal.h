@@ -17,6 +17,7 @@ typedef enum
 {
   XS_LIL_TERMINATOR_NONE,
   XS_LIL_TERMINATOR_RETURN,
+  XS_LIL_TERMINATOR_BRANCH,
 } XsLilTerminatorKind;
 
 typedef struct
@@ -24,6 +25,7 @@ typedef struct
   XsLilTerminatorKind kind;
   bool has_value;
   XsLilValueId value;
+  XsLilBlockId target;
 } XsLilTerminator;
 
 typedef struct

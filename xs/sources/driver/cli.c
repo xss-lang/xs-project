@@ -5,6 +5,8 @@
 
 #include "xs/driver.h"
 
+#include "options.h"
+
 #include "xs/diagnostic.h"
 #include "xs/hir/expression_check.h"
 #include "xs/hir/module_registry.h"
@@ -20,37 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum
-{
-  XS_BUILD_OUTPUT_NONE,
-  XS_BUILD_OUTPUT_HIR,
-  XS_BUILD_OUTPUT_MIR,
-  XS_BUILD_OUTPUT_XLIL,
-} XsBuildOutput;
-
-typedef struct
-{
-  const char *command;
-  const char *manifest_path;
-  XsBuildOutput output;
-} XsCliOptions;
-
-static const char *output_extension(XsBuildOutput output)
-{
-  switch (output)
-  {
-  case XS_BUILD_OUTPUT_HIR:
-    return ".xhir";
-  case XS_BUILD_OUTPUT_MIR:
-    return ".xmir";
-  case XS_BUILD_OUTPUT_XLIL:
-    return ".xlil";
-  case XS_BUILD_OUTPUT_NONE:
-    return "";
-  }
-  return "";
-}
 
 static char *copy_text(const char *text)
 {
@@ -145,7 +116,7 @@ static char *project_root(const char *manifest_path)
 
 static char *build_output_path(const char *manifest_path, XsBuildOutput output)
 {
-  const char *extension = output_extension(output);
+  const char *extension = xs_cli_output_extension(output);
   const char *slash = strrchr(manifest_path, '/');
   const char *base = slash == nullptr ? manifest_path : slash + 1;
   size_t base_length = strlen(base);
@@ -284,7 +255,7 @@ static bool emit_requested_output(XsBuildOutput output, const XsHirSymbolTable *
     return false;
   }
   fprintf(stderr, "xs: '%s' üretilmedi; structural AST tamamlanmadan resmi %s kodu üretimi yapılmaz\n", path,
-          output_extension(output));
+          xs_cli_output_extension(output));
   free(path);
   return false;
 }
@@ -424,66 +395,22 @@ static int run_project_command(const XsCliOptions *options)
   return success ? 0 : 1;
 }
 
-static bool parse_output_kind(const char *text, XsBuildOutput *output)
+static int run_file_command(const XsCliOptions *options)
 {
-  if (strcmp(text, "hir") == 0)
-  {
-    *output = XS_BUILD_OUTPUT_HIR;
-    return true;
-  }
-  if (strcmp(text, "mir") == 0)
-  {
-    *output = XS_BUILD_OUTPUT_MIR;
-    return true;
-  }
-  if (strcmp(text, "xlil") == 0)
-  {
-    *output = XS_BUILD_OUTPUT_XLIL;
-    return true;
-  }
-  return false;
-}
-
-static bool parse_cli(int argc, char **argv, XsCliOptions *options)
-{
-  if (argc < 4)
-    return false;
-  if (strcmp(argv[1], "check") != 0 && strcmp(argv[1], "build") != 0 && strcmp(argv[1], "run") != 0)
-    return false;
-  *options = (XsCliOptions){.command = argv[1]};
-  for (int i = 2; i < argc; ++i)
-  {
-    if (strcmp(argv[i], "-proj") == 0)
-    {
-      if (++i >= argc || options->manifest_path != nullptr)
-        return false;
-      options->manifest_path = argv[i];
-    }
-    else if (strcmp(argv[i], "--output") == 0)
-    {
-      if (++i >= argc || options->output != XS_BUILD_OUTPUT_NONE)
-        return false;
-      if (!parse_output_kind(argv[i], &options->output))
-        return false;
-    }
-    else
-    {
-      return false;
-    }
-  }
-  if (options->manifest_path == nullptr)
-    return false;
-  return strcmp(options->command, "build") == 0 || options->output == XS_BUILD_OUTPUT_NONE;
+  fprintf(stderr, "xs: -file '%s' için %s üretimi henüz bağlı değil\n", options->file_path,
+          xs_cli_output_extension(options->output));
+  return 1;
 }
 
 int xs_driver_main(int argc, char **argv)
 {
   XsCliOptions options = {0};
-  if (!parse_cli(argc, argv, &options))
+  if (!xs_cli_parse(argc, argv, &options))
   {
-    fprintf(stderr, "kullanım: xs <check|run> -proj <proje.xsproj>\n");
-    fprintf(stderr, "kullanım: xs build [--output hir|mir|xlil] -proj <proje.xsproj>\n");
+    xs_cli_print_usage(stderr);
     return 2;
   }
+  if (options.file_path != nullptr)
+    return run_file_command(&options);
   return run_project_command(&options);
 }

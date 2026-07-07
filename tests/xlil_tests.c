@@ -51,9 +51,9 @@ static void test_module_and_text_writer(void)
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
   char buffer[128] = {0};
   CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
-  CHECK(strstr(buffer, "xlil module App.Main\n") != NULL);
+  CHECK(strstr(buffer, ".xlil module App.Main\n") != NULL);
   CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
-  CHECK(strstr(buffer, "declare bool Check(u8, i8, bool)\n") != NULL);
+  CHECK(strstr(buffer, ".extern Check : (u8, i8, bool) -> bool\n") != NULL);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -85,8 +85,8 @@ static void test_function_body_text_writer(void)
   char buffer[256] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "define i64 Answer() {\n") != NULL);
-  CHECK(strstr(buffer, "bb0 entry:\n  r0 = const.i64 42\n  return r0\n}\n") != NULL);
+  CHECK(strstr(buffer, ".func Answer : () -> i64\n") != NULL);
+  CHECK(strstr(buffer, "bb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n") != NULL);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -105,10 +105,43 @@ static void test_function_body_rejects_missing_return_value(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_function_body_branch_text_writer(void)
+{
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_create("App.Branch", &module, &error) == XS_LIL_OK);
+  XsLilFunction *function = NULL;
+  CHECK(xs_lil_module_add_function_definition(module, "Jump", (XsLilType){.kind = XS_LIL_TYPE_VOID}, NULL, 0, &function,
+                                              &error) == XS_LIL_OK);
+  XsLilBlock *entry = NULL;
+  XsLilBlock *exit = NULL;
+  CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
+  CHECK(xs_lil_function_append_block(function, "exit", &exit, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_branch(entry, 1, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return(exit, &error) == XS_LIL_OK);
+
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[256] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "bb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
   test_function_body_text_writer();
   test_function_body_rejects_missing_return_value();
+  test_function_body_branch_text_writer();
   return failures == 0 ? 0 : 1;
 }
