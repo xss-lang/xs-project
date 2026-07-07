@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/hir/type_info.h"
 
 #include <string.h>
@@ -81,12 +86,6 @@ static const XsHirPrimitiveInfo primitive_types[] = {
      .is_integer = true,
      .has_xlil_type = true,
      .xlil_type = {.kind = XS_LIL_TYPE_U128}},
-    {.name = "float16",
-     .kind = XS_HIR_PRIMITIVE_FLOAT16,
-     .bit_width = 16,
-     .is_float = true,
-     .has_xlil_type = true,
-     .xlil_type = {.kind = XS_LIL_TYPE_F16}},
     {.name = "float32",
      .kind = XS_HIR_PRIMITIVE_FLOAT32,
      .bit_width = 32,
@@ -99,22 +98,16 @@ static const XsHirPrimitiveInfo primitive_types[] = {
      .is_float = true,
      .has_xlil_type = true,
      .xlil_type = {.kind = XS_LIL_TYPE_F64}},
-    {.name = "double",
-     .kind = XS_HIR_PRIMITIVE_DOUBLE,
-     .bit_width = 128,
-     .is_float = true,
-     .has_xlil_type = true,
-     .xlil_type = {.kind = XS_LIL_TYPE_F128}},
 };
 
 const XsHirPrimitiveInfo *xs_hir_primitive_find(const char *name, size_t length)
 {
-  if (name == NULL)
-    return NULL;
+  if (name == nullptr)
+    return nullptr;
   for (size_t i = 0; i < sizeof(primitive_types) / sizeof(primitive_types[0]); ++i)
   {
     if (strlen(primitive_types[i].name) == length && memcmp(primitive_types[i].name, name, length) == 0)
       return &primitive_types[i];
   }
-  return NULL;
+  return nullptr;
 }

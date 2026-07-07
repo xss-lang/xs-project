@@ -1,5 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/hir/type_resolution.h"
 #include "xs/hir/type_info.h"
+#include "type_resolution_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -401,39 +407,6 @@ static bool declaration_opens_generic_scope(XsSyntaxKind kind)
          kind == XS_SYNTAX_DECL_ENUM || kind == XS_SYNTAX_DECL_DATA;
 }
 
-static bool declaration_has_child_macro_call(const XsSyntaxNode *node)
-{
-  if (node == nullptr)
-    return false;
-  for (size_t i = 0; i < node->child_count; ++i)
-  {
-    if (node->children[i]->kind == XS_SYNTAX_DECL_MACRO_CALL)
-      return true;
-  }
-  return false;
-}
-
-static bool node_has_statement_macro_child(const XsSyntaxNode *node)
-{
-  if (node == nullptr)
-    return false;
-  for (size_t i = 0; i < node->child_count; ++i)
-  {
-    if (node->children[i]->kind == XS_SYNTAX_STMT_MACRO_CALL)
-      return true;
-  }
-  return false;
-}
-
-static bool declaration_uses_expanded_member_view(const XsSyntaxNode *node,
-                                                  const XsMacroDeclarationExpansionSet *macro_declarations)
-{
-  if (macro_declarations == nullptr || node == nullptr)
-    return false;
-  return (node->kind == XS_SYNTAX_DECL_CLASS || node->kind == XS_SYNTAX_DECL_INTERFACE) &&
-         declaration_has_child_macro_call(node);
-}
-
 static bool resolve_declaration_types(const XsSyntaxNode *node, const char *namespace_name, uint64_t current_file_id,
                                       const GenericScope *generics, const XsHirSymbolTable *symbols,
                                       const XsHirImportScope *imports, XsDiagnostics *diagnostics,
@@ -457,7 +430,7 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
       node->kind == XS_SYNTAX_TYPE_MUTABLE_REFERENCE || node->kind == XS_SYNTAX_TYPE_TUPLE ||
       node->kind == XS_SYNTAX_TYPE_FUNCTION)
     return resolve_type_node(node, namespace_name, current_file_id, active, symbols, imports, diagnostics);
-  if (declaration_uses_expanded_member_view(node, macro_declarations))
+  if (xs_hir_declaration_uses_expanded_member_view(node, macro_declarations))
   {
     XsMacroExpandedDeclarationSet expanded = {0};
     if (!xs_macro_expand_child_declarations(node, macro_declarations, diagnostics, &expanded))
@@ -469,7 +442,7 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
     xs_macro_expanded_declaration_set_free(&expanded);
     return success;
   }
-  if (macro_statements != nullptr && node_has_statement_macro_child(node))
+  if (macro_statements != nullptr && xs_hir_node_has_statement_macro_child(node))
   {
     XsMacroExpandedStatementSet expanded = {0};
     if (!xs_macro_expand_child_statements(node, macro_statements, diagnostics, &expanded))

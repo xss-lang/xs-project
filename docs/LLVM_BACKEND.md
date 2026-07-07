@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # LLVM backend infrastructure status
 
 The LLVM backend is the `xs_backend_llvm` library, separate from the frontend. It does not accept AST or HIR directly. HIR

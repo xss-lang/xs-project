@@ -1,0 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#ifndef XS_HIR_TYPE_RESOLUTION_INTERNAL_H
+#define XS_HIR_TYPE_RESOLUTION_INTERNAL_H
+
+#include "xs/macro.h"
+#include "xs/syntax_ast.h"
+
+bool xs_hir_declaration_uses_expanded_member_view(const XsSyntaxNode *node,
+                                                  const XsMacroDeclarationExpansionSet *macro_declarations);
+bool xs_hir_node_has_statement_macro_child(const XsSyntaxNode *node);
+
+#endif

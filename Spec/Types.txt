@@ -16,14 +16,14 @@ Uint32 -> u32
 Uint -> u64
 Uint128 -> u128
 
-float16 -> f16
 float32 -> f32
 float -> f64
-double -> f128
 
 Olmayanlar:
 int64
 Uint64
 float64
+float16
+double
 ...
 çünkü bunlar var.

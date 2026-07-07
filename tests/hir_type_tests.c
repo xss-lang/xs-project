@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/diagnostic.h"
 #include "xs/hir/symbol_table.h"
 #include "xs/hir/type_info.h"
@@ -73,9 +78,11 @@ static void test_primitive_and_generic_types(void)
 {
   const char *text = "module App;\n"
                      "fn Keep<T>(a: str, b: bool, c: byte, d: sbyte, e: char, f: int16, g: int32, h: int,\n"
-                     "           i: int128, j: Uint16, k: Uint32, l: Uint, m: Uint128, n: float16,\n"
-                     "           o: float32, p: float, q: double, r: T) => T { return r; }\n";
+                     "           i: int128, j: Uint16, k: Uint32, l: Uint, m: Uint128,\n"
+                     "           n: float32, o: float, p: T) => T { return p; }\n";
   CHECK(check_single_source(text));
+  CHECK(!check_single_source("module App;\nfn Main(value: float16) {}\n"));
+  CHECK(!check_single_source("module App;\nfn Main(value: double) {}\n"));
 }
 
 static void test_local_user_type(void)

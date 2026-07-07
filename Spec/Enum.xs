@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // enum system:
 
 //{
@@ -104,7 +107,7 @@ enum Color {
 
 // pattern matching
 fn Parse(token: Token) {
-    match token {
+    match (token) {
         Token.Identifier(value) -> {
         },
         Token.Integer(value) -> {

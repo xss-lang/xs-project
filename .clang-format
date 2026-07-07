@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+# SPDX-License-Identifier: Apache-2.0
+
 # yaml-language-server: $schema=https://json.schemastore.org/clang-format
 ---
 # clang-format uses the Cpp language mode for C, C++, Objective-C, and Objective-C++.

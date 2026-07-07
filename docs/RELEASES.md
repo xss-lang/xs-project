@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Release policy
 
 xs-project does not produce numbered releases yet. The release period will begin after LLVM IR generation is working.

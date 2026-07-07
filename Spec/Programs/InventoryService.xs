@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // Complete-language example program:
 // A small in-memory order service using ownership, Arc, Mutex, channels and generics.
 

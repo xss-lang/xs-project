@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/diagnostic.h"
 #include "xs/syntax_ast.h"
 #include "xs/syntax_parser.h"
@@ -31,7 +36,7 @@ static void test_top_level_variable_declaration_structure(void)
 {
   const char *text = "data User { name: str }\n"
                      "user: User = { set.name{\"Alfa\"}; };\n"
-                     "public static Pi: double = 3.141592653589793;\n";
+                     "public static Pi: float = 3.141592653589793;\n";
   XsSource source = {.path = "TopLevelData.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;

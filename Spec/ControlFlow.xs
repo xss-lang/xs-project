@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // control flow system:
 
 //{
@@ -55,7 +58,7 @@ fn Main() {
         x = x + 1;
     }
 
-    match x {
+    match (x) {
         0 -> {
             x = 1;
         },
@@ -111,7 +114,7 @@ fn TestWhile() {
 
 // VALID
 fn TestMatch(x: int) {
-    match x {
+    match (x) {
         0 -> {
             x = 10;
         },
@@ -127,7 +130,7 @@ fn TestMatch(x: int) {
 
 // INVALID
 fn InvalidMatchExpression(x: int) {
-    y: int = match x {
+    y: int = match (x) {
         0 -> {
             10;
         },

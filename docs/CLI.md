@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # CLI contract
 
 The `xs` command currently works through a project manifest. The manifest syntax is the `.xsproj` format; it is not JSON,

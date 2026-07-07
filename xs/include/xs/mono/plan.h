@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef XS_MONO_PLAN_H
 #define XS_MONO_PLAN_H
 

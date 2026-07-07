@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // variable system:
 
 //{
@@ -24,10 +27,8 @@ fn Main() {
     ularge: uint = 30;
     uhuge: uint128 = 40;
 
-    half: float16 = 1.5;
     single: float32 = 2.5;
-    doublePrecision: float = 3.5;
-    quadPrecision: double = 4.5;
+    floating: float = 3.5;
 
     // reassignment
     x = 10;

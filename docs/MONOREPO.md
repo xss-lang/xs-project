@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # xs-project monorepo
 
 This repository uses an LLVM-project-style single-checkout monorepo model for X#. The X# equivalents of LLVM’s

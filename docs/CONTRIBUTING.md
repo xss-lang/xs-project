@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Contribution and workflow rules
 
 This repository is compiler infrastructure. Prefer small, testable patches that preserve architecture boundaries.

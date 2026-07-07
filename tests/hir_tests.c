@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/diagnostic.h"
 #include "xs/hir/jit.h"
 #include "xs/hir/symbol_table.h"

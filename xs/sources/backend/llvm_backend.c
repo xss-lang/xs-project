@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/backend/llvm_backend.h"
 
 #include <llvm-c/Analysis.h>
@@ -249,17 +254,11 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
   case XS_PRIMITIVE_UINT128:
     *type = LLVMInt128TypeInContext(backend->context);
     break;
-  case XS_PRIMITIVE_FLOAT16:
-    *type = LLVMHalfTypeInContext(backend->context);
-    break;
   case XS_PRIMITIVE_FLOAT32:
     *type = LLVMFloatTypeInContext(backend->context);
     break;
   case XS_PRIMITIVE_FLOAT:
     *type = LLVMDoubleTypeInContext(backend->context);
-    break;
-  case XS_PRIMITIVE_DOUBLE:
-    *type = LLVMFP128TypeInContext(backend->context);
     break;
   case XS_PRIMITIVE_STR:
     return set_error(error, XS_BACKEND_DEFERRED,

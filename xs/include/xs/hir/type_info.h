@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef XS_HIR_TYPE_INFO_H
 #define XS_HIR_TYPE_INFO_H
 
@@ -20,10 +25,8 @@ typedef enum
   XS_HIR_PRIMITIVE_UINT32,
   XS_HIR_PRIMITIVE_UINT,
   XS_HIR_PRIMITIVE_UINT128,
-  XS_HIR_PRIMITIVE_FLOAT16,
   XS_HIR_PRIMITIVE_FLOAT32,
   XS_HIR_PRIMITIVE_FLOAT,
-  XS_HIR_PRIMITIVE_DOUBLE,
 } XsHirPrimitiveKind;
 
 typedef struct

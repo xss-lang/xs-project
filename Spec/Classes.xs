@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // class system:
 
 //{
@@ -84,7 +87,7 @@ fn Main() {
 
 // static field
 class Math {
-    static Pi: double = 3.141592653589793;
+    static Pi: float = 3.141592653589793;
 }
 
 // static method

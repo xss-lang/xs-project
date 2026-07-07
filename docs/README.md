@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # xs-project documentation
 
 This directory contains the active architecture and implementation documentation for the X# compiler. The `Spec/` directory

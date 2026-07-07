@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/diagnostic.h"
 #include "xs/macro.h"
 #include "xs/syntax_ast.h"
@@ -391,7 +396,7 @@ static void test_path_fragment_expansion(void)
 static void test_pattern_fragment_expansion(void)
 {
   const char *text =
-      "macroRules! matchIt { ($case:pat): { match value { $case -> { return; }, else -> { return; }, } }; }"
+      "macroRules! matchIt { ($case:pat): { match (value) { $case -> { return; }, else -> { return; }, } }; }"
       "fn Main() { matchIt!(nil); }";
   XsSource source = {.path = "MacroPatternFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;

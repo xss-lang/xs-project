@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Build and test guide
 
 xs-project is built on C23, CMake, Ninja, Clang/LLVM, and LLD. The GNU C compiler, GNU Make generators, GNU binutils

@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/diagnostic.h"
 #include "xs/macro.h"
 #include "xs/syntax_ast.h"
@@ -108,7 +113,7 @@ static void test_control_flow_structure(void)
   const char *text = "fn Flow(value: int) {\n"
                      "  for (i: int = 0; i < 3; i = i + 1) { continue; }\n"
                      "  while (value > 0) { break; }\n"
-                     "  match value { 0 -> { return; }, else -> { throw IOException(\"x\"); }, }\n"
+                     "  match (value) { 0 -> { return; }, else -> { throw IOException(\"x\"); }, }\n"
                      "  try {} catch (error: IOException) {} finally {}\n"
                      "}\n";
   XsSource source = {.path = "Flow.xs", .text = text, .length = strlen(text)};
@@ -235,7 +240,7 @@ static void test_character_literal_structure(void)
   const char *text = "fn Main(value: char) {\n"
                      "  letter: char = 'A';\n"
                      "  newline: char = '\\n';\n"
-                     "  match value { 'A' -> { return; }, else -> { return; }, }\n"
+                     "  match (value) { 'A' -> { return; }, else -> { return; }, }\n"
                      "}\n";
   XsSource source = {.path = "CharacterLiteral.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;

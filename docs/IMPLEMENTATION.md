@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Current X# compiler status
 
 The compiler is written in C23 and uses Clang, CMake, Ninja, LLVM tools, and LLD. The GNU C compiler, GNU Make generators,

@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "xs/project.h"
 
 #include "parser_internal.h"
@@ -12,7 +17,7 @@ static bool parse_value(ProjectParser *parser, XsProjectValue *value)
     value->span = parser->current.span;
     value->text = copy_string(parser, parser->current.span);
     project_advance(parser);
-    return value->text != NULL;
+    return value->text != nullptr;
   }
   if (parser->current.kind == PROJECT_IDENTIFIER && token_is(parser, parser->current, "nil"))
   {
@@ -27,7 +32,7 @@ static bool parse_value(ProjectParser *parser, XsProjectValue *value)
   return false;
 }
 
-static void finish_field(ProjectParser *parser)
+void finish_field(ProjectParser *parser)
 {
   if (project_accept(parser, PROJECT_SEMICOLON))
   {
@@ -58,7 +63,7 @@ static bool append_author(ProjectParser *parser, XsProjectAuthor author)
 {
   size_t count = parser->project->author_count;
   XsProjectAuthor *items = realloc(parser->project->authors, (count + 1) * sizeof(*items));
-  if (items == NULL)
+  if (items == nullptr)
   {
     project_error(parser, author.name.span, "compiler ran out of memory while reading authors");
     return false;
@@ -73,7 +78,7 @@ static bool append_file(ProjectParser *parser, XsProjectValue value)
 {
   size_t count = parser->project->additional_file_count;
   XsProjectValue *items = realloc(parser->project->additional_files, (count + 1) * sizeof(*items));
-  if (items == NULL)
+  if (items == nullptr)
   {
     project_error(parser, value.span, "compiler ran out of memory while reading source files");
     return false;
@@ -88,7 +93,7 @@ static bool append_target(ProjectParser *parser, XsProjectTarget target)
 {
   size_t count = parser->project->target_count;
   XsProjectTarget *items = realloc(parser->project->targets, (count + 1) * sizeof(*items));
-  if (items == NULL)
+  if (items == nullptr)
   {
     project_error(parser, target.os_name.span, "compiler ran out of memory while reading output targets");
     return false;
@@ -103,7 +108,7 @@ static bool append_module(ProjectParser *parser, XsProjectModule module)
 {
   size_t count = parser->project->external_module_count;
   XsProjectModule *items = realloc(parser->project->external_modules, (count + 1) * sizeof(*items));
-  if (items == NULL)
+  if (items == nullptr)
   {
     project_error(parser, module.name.span, "compiler ran out of memory while reading external modules");
     return false;
@@ -114,7 +119,7 @@ static bool append_module(ProjectParser *parser, XsProjectModule module)
   return true;
 }
 
-static void skip_unknown(ProjectParser *parser)
+void skip_unknown(ProjectParser *parser)
 {
   if (parser->current.kind == PROJECT_RIGHT_BRACE || parser->current.kind == PROJECT_RIGHT_BRACKET)
   {
@@ -156,14 +161,14 @@ static void skip_unknown(ProjectParser *parser)
   finish_field(parser);
 }
 
-static void duplicate_field(ProjectParser *parser, ProjectToken name, unsigned *seen, unsigned bit)
+void duplicate_field(ProjectParser *parser, ProjectToken name, unsigned *seen, unsigned bit)
 {
   if ((*seen & bit) != 0)
     project_error(parser, name.span, "field is defined more than once");
   *seen |= bit;
 }
 
-static void parse_scalar_field(ProjectParser *parser, XsProjectValue *value)
+void parse_scalar_field(ProjectParser *parser, XsProjectValue *value)
 {
   if (project_expect(parser, PROJECT_COLON, "expected ':' after field name"))
     parse_value(parser, value);
@@ -173,12 +178,12 @@ static void parse_scalar_field(ProjectParser *parser, XsProjectValue *value)
 static void validate_xs_backend(ProjectParser *parser)
 {
   const XsProjectValue *backend = &parser->project->xs_backend;
-  if (backend->is_nil || backend->text == NULL ||
+  if (backend->is_nil || backend->text == nullptr ||
       (strcmp(backend->text, "LLVM") != 0 && strcmp(backend->text, "XS") != 0))
     project_error(parser, backend->span, "compilerOptions.xsBackend must be LLVM or XS");
 }
 
-static void parse_authors(ProjectParser *parser)
+void parse_authors(ProjectParser *parser)
 {
   if (!project_expect(parser, PROJECT_LEFT_BRACE, "expected '{' after appAuthors"))
     return;
@@ -333,7 +338,7 @@ static void parse_output(ProjectParser *parser)
     project_error(parser, parser->current.span, "output must contain at least one target");
 }
 
-static void parse_compiler_options(ProjectParser *parser)
+void parse_compiler_options(ProjectParser *parser)
 {
   if (!project_expect(parser, PROJECT_LEFT_BRACE, "expected '{' after compilerOptions"))
     return;
@@ -429,7 +434,7 @@ static XsProjectModule parse_external_module(ProjectParser *parser)
   return module;
 }
 
-static void parse_external_modules(ProjectParser *parser)
+void parse_external_modules(ProjectParser *parser)
 {
   if (!project_expect(parser, PROJECT_LEFT_BRACE, "expected '{' after externalModules"))
     return;
@@ -447,86 +452,4 @@ static void parse_external_modules(ProjectParser *parser)
     finish_field(parser);
   }
   project_expect(parser, PROJECT_RIGHT_BRACE, "expected '}' after externalModules");
-}
-
-bool xs_project_parse(const XsSource *source, XsDiagnostics *diagnostics, XsProject *project)
-{
-  ProjectParser parser = {.source = source, .diagnostics = diagnostics, .project = project};
-  project_advance(&parser);
-  unsigned seen = 0;
-  skip_newlines(&parser);
-  while (parser.current.kind != PROJECT_EOF)
-  {
-    if (parser.current.kind != PROJECT_IDENTIFIER)
-    {
-      project_error(&parser, parser.current.span, "expected a top-level project field");
-      skip_unknown(&parser);
-      continue;
-    }
-    ProjectToken name = parser.current;
-    project_advance(&parser);
-    if (token_is(&parser, name, "appName"))
-    {
-      duplicate_field(&parser, name, &seen, 1U);
-      parse_scalar_field(&parser, &project->app_name);
-    }
-    else if (token_is(&parser, name, "appVersion"))
-    {
-      duplicate_field(&parser, name, &seen, 2U);
-      parse_scalar_field(&parser, &project->app_version);
-    }
-    else if (token_is(&parser, name, "appRelease"))
-    {
-      duplicate_field(&parser, name, &seen, 4U);
-      parse_scalar_field(&parser, &project->app_release);
-    }
-    else if (token_is(&parser, name, "appLicense"))
-    {
-      duplicate_field(&parser, name, &seen, 8U);
-      parse_scalar_field(&parser, &project->app_license);
-    }
-    else if (token_is(&parser, name, "appAuthors"))
-    {
-      duplicate_field(&parser, name, &seen, 16U);
-      parse_authors(&parser);
-      finish_field(&parser);
-    }
-    else if (token_is(&parser, name, "compilerOptions"))
-    {
-      duplicate_field(&parser, name, &seen, 32U);
-      parse_compiler_options(&parser);
-      finish_field(&parser);
-    }
-    else if (token_is(&parser, name, "externalModules"))
-    {
-      duplicate_field(&parser, name, &seen, 64U);
-      parse_external_modules(&parser);
-      finish_field(&parser);
-    }
-    else
-    {
-      project_error(&parser, name.span, "unknown top-level project field");
-      skip_unknown(&parser);
-    }
-  }
-
-  if ((seen & 1U) == 0)
-    project_error(&parser, parser.current.span, "required field appName is missing");
-  if ((seen & 2U) == 0)
-    project_error(&parser, parser.current.span, "required field appVersion is missing");
-  if ((seen & 4U) == 0)
-    project_error(&parser, parser.current.span, "required field appRelease is missing");
-  if ((seen & 8U) == 0)
-    project_error(&parser, parser.current.span, "required field appLicense is missing");
-  if ((seen & 16U) == 0)
-    project_error(&parser, parser.current.span, "required field appAuthors is missing");
-  if ((seen & 32U) == 0)
-    project_error(&parser, parser.current.span, "required field compilerOptions is missing");
-
-  if (!project->app_release.is_nil && project->app_release.text != NULL &&
-      strcmp(project->app_release.text, "ALPHA") != 0 && strcmp(project->app_release.text, "BETA") != 0 &&
-      strcmp(project->app_release.text, "STABLE") != 0)
-    project_error(&parser, project->app_release.span, "appRelease must be ALPHA, BETA, STABLE, or nil");
-
-  return !xs_diagnostics_has_error(diagnostics);
 }

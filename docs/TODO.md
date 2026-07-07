@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # X# v0 decisions and implementation tracking list
 
 This file is no longer a list of “large decisions to ask about.” The decisions here are the contract to implement for X# v0.

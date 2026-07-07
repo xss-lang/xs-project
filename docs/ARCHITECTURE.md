@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Compiler architecture
 
 The X# compiler is developed as a staged, testable pipeline. Each stage produces its own data model; later stages must not

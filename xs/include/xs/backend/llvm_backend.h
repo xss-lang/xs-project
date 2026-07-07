@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef XS_BACKEND_LLVM_BACKEND_H
 #define XS_BACKEND_LLVM_BACKEND_H
 
@@ -54,10 +59,8 @@ typedef enum
   XS_PRIMITIVE_UINT32,
   XS_PRIMITIVE_UINT,
   XS_PRIMITIVE_UINT128,
-  XS_PRIMITIVE_FLOAT16,
   XS_PRIMITIVE_FLOAT32,
   XS_PRIMITIVE_FLOAT,
-  XS_PRIMITIVE_DOUBLE,
 } XsPrimitiveType;
 
 typedef struct

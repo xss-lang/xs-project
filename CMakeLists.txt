@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+# SPDX-License-Identifier: Apache-2.0
+
 cmake_minimum_required(VERSION 3.20)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -87,6 +90,7 @@ if(XS_BUILD_PROJECT_XS OR XS_BUILD_PROJECT_XSPROJ)
     xsproj/sources/lexer.c
     xsproj/sources/model.c
     xsproj/sources/parser.c
+    xsproj/sources/parser_main.c
   )
   target_include_directories(xsproj PUBLIC include xsproj/include)
   target_compile_options(xsproj PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
@@ -128,6 +132,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/hir/syntax_helpers.c
     xs/sources/hir/type_info.c
     xs/sources/hir/type_resolution.c
+    xs/sources/hir/type_resolution_macro_view.c
     xs/sources/parser.c
     xs/sources/syntax_ast.c
     xs/sources/syntax_parser.c

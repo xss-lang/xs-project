@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # xs-project
 
 `xs-project` is the LLVM-project-style monorepo root for the X# language and compiler family. The current focus is the X#
