@@ -332,7 +332,7 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 
 ### XLIL target
 
-- `XS/XLIL.md` defines XLIL as the official low-level intermediate language for X#.
+- `docs/XLIL.md` defines XLIL as the official low-level intermediate language for X#.
 - `.xhir`, `.xmir`, and `.xlil` are the extensions for HIR, MIR, and XLIL code; the official contents of these formats are
   not fully documented yet.
 - XLIL is the target-independent type/data vocabulary that HIR/MIR depend on.
@@ -397,5 +397,5 @@ ctest --preset clang-debug
 To check the example project:
 
 ```text
-./build/clang-debug/xs check -proj XS/example/MyApp.xsproj
+./build/clang-debug/xs check -proj tests/fixtures/example_project/MyApp.xsproj
 ```

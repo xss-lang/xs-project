@@ -40,7 +40,7 @@ ctest --preset clang-debug --output-on-failure
 Check the example project:
 
 ```text
-./build/clang-debug/xs check -proj XS/example/MyApp.xsproj
+./build/clang-debug/xs check -proj tests/fixtures/example_project/MyApp.xsproj
 ```
 
 ## Monorepo directories

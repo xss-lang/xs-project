@@ -27,7 +27,7 @@ Recommended order for newcomers:
 
 - For documented X# syntax, `Spec/` has priority.
 - For the `.xsproj` format, `Spec/ProjectSystem.xs` and the public C API headers have priority.
-- For XLIL decisions, read `XS/XLIL.md`, `docs/TODO.md`, and `xs/include/xs/lil.h` together.
+- For XLIL decisions, read `docs/XLIL.md`, `docs/TODO.md`, and `xs/include/xs/lil.h` together.
 - For implementation order, [IMPLEMENTATION.md](IMPLEMENTATION.md) is authoritative.
 - Major semantic and ABI decisions are tracked as the X# v0 contract in [TODO.md](TODO.md).
 

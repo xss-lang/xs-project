@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
 appName: "MyApp"
 appVersion: "0.1.0"
 appRelease: "BETA"
@@ -38,4 +41,4 @@ externalModules {
 
 // Comment
 /// Doc Comment
-// Multiline comment .xsproj'da yoktur.
+// Multiline comment .xsproj does not support multiline comments.

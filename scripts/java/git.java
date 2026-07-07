@@ -35,16 +35,9 @@ class Git
       ":(glob)**/Cargo.lock"
   };
 
-  static final String[] CLEAN_WORKTREE_DIRECTORIES = {
-      "build",
-      "target",
-      "node_modules",
-      "dist",
-      "out"
-  };
-
   enum Command
   {
+    CLEAN,
     UPDATE,
     UNCOM,
     HELP
@@ -157,10 +150,12 @@ class Git
     System.out.println("""
         usage:
           git update "Commit message"
+          git clean
           git uncom
           git help
 
         commands:
+          clean    Stage Git hygiene fixes without committing: untrack generated/ignored files.
           update   Run safe git add, commit with the given message, then force-with-lease push to origin/current-branch.
           uncom    Show uncommitted changes.
           help     Show this help.
@@ -169,8 +164,9 @@ class Git
           generated paths from GENERATED_PATHS
           tracked files ignored by .gitignore / standard Git ignore rules
 
-        update first restores tracked generated build/output dirt before staging:
-          build/, target/, node_modules/, dist/, out/, Cargo.lock
+        update automatically runs clean before and after git add --all:
+          tracked generated files are removed from the index with git rm --cached
+          local generated files stay on disk and remain ignored
 
         generated paths:
           build/, .agents/, .codex, target/, node_modules/, dist/, out/, Cargo.lock
@@ -180,6 +176,7 @@ class Git
 
         examples:
           git update "Fix parser"
+          git clean
           git uncom
           git help
         """);
@@ -189,6 +186,10 @@ class Git
   {
     if (args.length == 1 && args[0].equals("help")) {
       return new Cli(Command.HELP, null);
+    }
+
+    if (args.length == 1 && args[0].equals("clean")) {
+      return new Cli(Command.CLEAN, null);
     }
 
     if (args.length == 1 && args[0].equals("uncom")) {
@@ -247,17 +248,6 @@ class Git
         || path.endsWith("/Cargo.lock");
   }
 
-  static boolean isCleanableGeneratedPath(String path)
-  {
-    for (String directory : CLEAN_WORKTREE_DIRECTORIES) {
-      if (isGeneratedDirectory(path, directory)) {
-        return true;
-      }
-    }
-
-    return path.equals("Cargo.lock") || path.endsWith("/Cargo.lock");
-  }
-
   static List<String> ignoredTrackedFiles() throws IOException, InterruptedException
   {
     return captureNullSeparated(
@@ -268,7 +258,7 @@ class Git
         "--exclude-standard");
   }
 
-  static void removeExcludedPathsFromIndex() throws IOException, InterruptedException
+  static LinkedHashSet<String> generatedAndIgnoredPathspecs() throws IOException, InterruptedException
   {
     LinkedHashSet<String> pathspecs = new LinkedHashSet<>();
 
@@ -282,49 +272,40 @@ class Git
       }
     }
 
-    int resetCode = runWithInput(
-        toNullSeparatedBytes(pathspecs),
-        "git",
-        "reset",
-        "--quiet",
-        "--pathspec-from-file=-",
-        "--pathspec-file-nul");
-
-    if (resetCode != 0) {
-      exit(resetCode, "error: excluded paths could not be removed from the index");
-    }
+    return pathspecs;
   }
 
-  static void restoreCleanableGeneratedWorktreeChanges() throws IOException, InterruptedException
+  static void untrackGeneratedAndIgnoredFiles() throws IOException, InterruptedException
   {
-    LinkedHashSet<String> paths = new LinkedHashSet<>();
+    LinkedHashSet<String> pathspecs = generatedAndIgnoredPathspecs();
 
-    for (String path : captureNullSeparated("git", "ls-files", "-m", "-d", "-z")) {
-      if (isCleanableGeneratedPath(path)) {
-        paths.add(path);
-      }
-    }
-
-    if (paths.isEmpty()) {
+    if (pathspecs.isEmpty()) {
       return;
     }
 
-    int restoreCode = runWithInput(
-        toNullSeparatedBytes(paths),
+    int rmCode = runWithInput(
+        toNullSeparatedBytes(pathspecs),
         "git",
-        "restore",
-        "--quiet",
+        "rm",
+        "--cached",
+        "-r",
+        "--ignore-unmatch",
         "--pathspec-from-file=-",
         "--pathspec-file-nul");
 
-    if (restoreCode != 0) {
-      exit(restoreCode, "error: generated worktree dirt could not be restored");
+    if (rmCode != 0) {
+      exit(rmCode, "error: generated or ignored files could not be removed from the index");
     }
+  }
+
+  static void clean() throws IOException, InterruptedException
+  {
+    untrackGeneratedAndIgnoredFiles();
   }
 
   static void update(String message) throws IOException, InterruptedException
   {
-    restoreCleanableGeneratedWorktreeChanges();
+    clean();
 
     int addCode = run("git", "add", "--all");
 
@@ -332,7 +313,7 @@ class Git
       exit(addCode, "error: git add --all failed");
     }
 
-    removeExcludedPathsFromIndex();
+    clean();
 
     int diffCode = runQuiet("git", "diff", "--cached", "--quiet");
 
@@ -356,6 +337,13 @@ class Git
 
     if (pushCode != 0) {
       exit(pushCode, "error: git push --force-with-lease failed");
+    }
+
+    String status = capture("git", "status", "--short");
+
+    if (!status.isBlank()) {
+      System.err.print(status);
+      exit(1, "error: update completed, but the work tree is still dirty");
     }
   }
 
@@ -383,6 +371,7 @@ class Git
     requireGitRepo();
 
     switch (cli.command()) {
+      case CLEAN -> clean();
       case UPDATE -> update(cli.message());
       case UNCOM -> uncom();
       case HELP -> help();

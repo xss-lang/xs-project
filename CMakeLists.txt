@@ -183,18 +183,18 @@ if(BUILD_TESTING)
     add_test(NAME parser COMMAND xs_parser_tests)
     set_tests_properties(parser PROPERTIES TIMEOUT 5)
 
-    add_test(NAME example_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
+    add_test(NAME example_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
     set_tests_properties(example_project PROPERTIES TIMEOUT 5)
     add_test(NAME macro_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/macro_project/MacroApp.xsproj)
     set_tests_properties(macro_project PROPERTIES TIMEOUT 5)
 
-    add_test(NAME build_output_hir COMMAND xs build --output hir -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
+    add_test(NAME build_output_hir COMMAND xs build --output hir -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
     set_tests_properties(build_output_hir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
-    add_test(NAME build_output_mir COMMAND xs build --output mir -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
+    add_test(NAME build_output_mir COMMAND xs build --output mir -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
     set_tests_properties(build_output_mir PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
-    add_test(NAME build_output_xlil COMMAND xs build --output xlil -proj ${XS_SOURCE_FROM_BINARY}/XS/example/MyApp.xsproj)
+    add_test(NAME build_output_xlil COMMAND xs build --output xlil -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
     set_tests_properties(build_output_xlil PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
     add_executable(xs_backend_tests tests/backend_tests.c)
