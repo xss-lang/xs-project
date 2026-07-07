@@ -305,15 +305,15 @@ mod tests
   #[test]
   fn rejects_literal_initializer_type_mismatch()
   {
-    let function =
-      Function { name: "main".to_string(),
-                 return_type: None,
-                 locals: vec![],
-                 body: vec![Statement::Let { local: local("count", primitive(PrimitiveType::I64), true),
-                                             initializer:
-                                               Some(Expression::Literal { literal:
-                                                                            Literal::String("bad".to_string()),
-                                                                          span: span(10, 15) }) }] };
+    let function = Function { name: "main".to_string(),
+                              return_type: None,
+                              locals: vec![],
+                              body:
+                                vec![Statement::Let { local: local("count", primitive(PrimitiveType::I64), true),
+                                                      initializer:
+                                                        Some(Expression::Literal { literal:
+                                                                                     Literal::String("bad".to_string()),
+                                                                                   span: span(10, 15) }) }] };
 
     let diagnostics = TypeChecker::new().check_function(&function);
 
@@ -345,11 +345,10 @@ mod tests
   #[test]
   fn validates_return_literal_type()
   {
-    let function =
-      Function { name: "answer".to_string(),
-                 return_type: Some(primitive(PrimitiveType::I64)),
-                 locals: vec![],
-                 body: vec![Statement::Return { value: Some(Expression::Literal { literal:
+    let function = Function { name: "answer".to_string(),
+                              return_type: Some(primitive(PrimitiveType::I64)),
+                              locals: vec![],
+                              body: vec![Statement::Return { value: Some(Expression::Literal { literal:
                                                                                     Literal::Integer("42".to_string()),
                                                                                   span: span(10, 12) }),
                                                 span: span(3, 12) }] };
@@ -360,11 +359,10 @@ mod tests
   #[test]
   fn rejects_return_literal_type_mismatch()
   {
-    let function =
-      Function { name: "answer".to_string(),
-                 return_type: Some(primitive(PrimitiveType::Bool)),
-                 locals: vec![],
-                 body: vec![Statement::Return { value: Some(Expression::Literal { literal:
+    let function = Function { name: "answer".to_string(),
+                              return_type: Some(primitive(PrimitiveType::Bool)),
+                              locals: vec![],
+                              body: vec![Statement::Return { value: Some(Expression::Literal { literal:
                                                                                     Literal::Integer("42".to_string()),
                                                                                   span: span(10, 12) }),
                                                 span: span(3, 12) }] };
