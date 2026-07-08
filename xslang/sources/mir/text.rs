@@ -7,12 +7,12 @@ use std::fmt::Write;
 
 use super::optimizer::{OptimizationPass, OptimizationReport};
 use super::verify::{Diagnostic as VerifyDiagnostic, DiagnosticCode as VerifyDiagnosticCode};
-use super::{BasicBlock, Function, LocalId, Parameter, Statement, Terminator};
-use crate::xlil::type_name;
 
 pub mod parser;
+mod writer;
 
 pub use parser::{XmirParseDiagnostic, parse_xmir_function};
+pub use writer::function_to_xmir;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XmirDocumentHeader
@@ -29,63 +29,6 @@ pub fn parse_xmir_header(text: &str) -> Option<XmirDocumentHeader>
   let function = lines.next()?.strip_prefix("function ")?.to_string();
   Some(XmirDocumentHeader { version,
                             function })
-}
-
-#[must_use]
-pub fn function_to_xmir(function: &Function) -> String
-{
-  let mut output = String::new();
-  let _ = writeln!(output, ".xmir version 0");
-  let _ = writeln!(output, "function {}", function.name);
-  let _ = writeln!(output, "returns {}", type_name(function.return_type));
-  if !function.parameters.is_empty()
-  {
-    let _ = writeln!(output);
-    let _ = writeln!(output, "parameters");
-    for parameter in &function.parameters
-    {
-      write_parameter(&mut output, parameter);
-    }
-  }
-  if !function.locals.is_empty()
-  {
-    let _ = writeln!(output);
-    let _ = writeln!(output, "locals");
-    for local in &function.locals
-    {
-      let mutability = if local.mutable
-      {
-        "mutable"
-      }
-      else
-      {
-        "immutable"
-      };
-      let _ = writeln!(output, "  local {}", local.id.0);
-      let _ = writeln!(output, "    name {}", local.name);
-      if let Some(value_type) = local.value_type
-      {
-        let _ = writeln!(output, "    type {}", type_name(value_type));
-      }
-      let _ = writeln!(output, "    mutability {mutability}");
-    }
-  }
-  if !function.blocks.is_empty()
-  {
-    let _ = writeln!(output);
-    let _ = writeln!(output, "control_flow");
-    for block in &function.blocks
-    {
-      write_block(&mut output, block);
-    }
-  }
-  output
-}
-
-fn write_parameter(output: &mut String, parameter: &Parameter)
-{
-  let _ = writeln!(output, "  parameter {}", parameter.name);
-  let _ = writeln!(output, "    type {}", type_name(parameter.value_type));
 }
 
 #[must_use]
@@ -176,27 +119,6 @@ pub fn parse_xmir_verify_analysis(text: &str) -> Result<Vec<VerifyDiagnostic>, V
   else
   {
     Err(parser.diagnostics)
-  }
-}
-
-fn write_block(output: &mut String, block: &BasicBlock)
-{
-  let _ = writeln!(output, "  block {}", block.id.0);
-  if !block.statements.is_empty()
-  {
-    let _ = writeln!(output, "    statements");
-    for statement in &block.statements
-    {
-      write_statement(output, statement);
-    }
-  }
-  match &block.terminator
-  {
-    Some(terminator) => write_terminator(output, terminator),
-    None =>
-    {
-      let _ = writeln!(output, "    terminator missing");
-    }
   }
 }
 
@@ -400,134 +322,12 @@ fn parse_removed_items(line: &str, line_number: usize, diagnostics: &mut Vec<Xmi
   }
 }
 
-fn write_statement(output: &mut String, statement: &Statement)
-{
-  match statement
-  {
-    Statement::Use { local, .. } => write_local_statement(output, "use", *local),
-    Statement::Move { local, .. } => write_local_statement(output, "move", *local),
-    Statement::BorrowShared { local, .. } => write_local_statement(output, "borrow shared", *local),
-    Statement::BorrowMutable { local, .. } => write_local_statement(output, "borrow mutable", *local),
-    Statement::EndBorrow { local, .. } => write_local_statement(output, "borrow end", *local),
-    Statement::ConstI64 { local,
-                          value,
-                          .. } =>
-    {
-      let _ = writeln!(output, "      statement const.i64");
-      let _ = writeln!(output, "        target local {}", local.0);
-      let _ = writeln!(output, "        value {value}");
-    }
-    Statement::ConstBool { local,
-                           value,
-                           .. } =>
-    {
-      let _ = writeln!(output, "      statement const.bool");
-      let _ = writeln!(output, "        target local {}", local.0);
-      let _ = writeln!(output, "        value {value}");
-    }
-    Statement::AddI64 { result,
-                        left,
-                        right,
-                        .. } =>
-    {
-      let _ = writeln!(output, "      statement add.i64");
-      let _ = writeln!(output, "        result local {}", result.0);
-      let _ = writeln!(output, "        left local {}", left.0);
-      let _ = writeln!(output, "        right local {}", right.0);
-    }
-    Statement::SubI64 { result,
-                        left,
-                        right,
-                        .. } =>
-    {
-      let _ = writeln!(output, "      statement sub.i64");
-      let _ = writeln!(output, "        result local {}", result.0);
-      let _ = writeln!(output, "        left local {}", left.0);
-      let _ = writeln!(output, "        right local {}", right.0);
-    }
-    Statement::MulI64 { result,
-                        left,
-                        right,
-                        .. } =>
-    {
-      let _ = writeln!(output, "      statement mul.i64");
-      let _ = writeln!(output, "        result local {}", result.0);
-      let _ = writeln!(output, "        left local {}", left.0);
-      let _ = writeln!(output, "        right local {}", right.0);
-    }
-    Statement::EqI64 { result,
-                       left,
-                       right,
-                       .. } =>
-    {
-      let _ = writeln!(output, "      statement eq.i64");
-      let _ = writeln!(output, "        result local {}", result.0);
-      let _ = writeln!(output, "        left local {}", left.0);
-      let _ = writeln!(output, "        right local {}", right.0);
-    }
-    Statement::Call { result,
-                      function,
-                      arguments,
-                      return_type,
-                      .. } =>
-    {
-      let _ = writeln!(output, "      statement call");
-      let _ = writeln!(output, "        function {function}");
-      let _ = writeln!(output, "        returns {}", type_name(*return_type));
-      if let Some(result) = result
-      {
-        let _ = writeln!(output, "        result local {}", result.0);
-      }
-      else
-      {
-        let _ = writeln!(output, "        result discard");
-      }
-      for argument in arguments
-      {
-        let _ = writeln!(output, "        argument local {}", argument.0);
-      }
-    }
-    Statement::Drop { local, .. } => write_local_statement(output, "drop", *local),
-  }
-}
-
-fn write_local_statement(output: &mut String, name: &str, local: LocalId)
-{
-  let _ = writeln!(output, "      statement {name}");
-  let _ = writeln!(output, "        local {}", local.0);
-}
-
-fn write_terminator(output: &mut String, terminator: &Terminator)
-{
-  match terminator
-  {
-    Terminator::Return(Some(local)) =>
-    {
-      let _ = writeln!(output, "    terminator return");
-      let _ = writeln!(output, "      value local {}", local.0);
-    }
-    Terminator::Return(None) =>
-    {
-      let _ = writeln!(output, "    terminator return");
-    }
-    Terminator::Goto(block) =>
-    {
-      let _ = writeln!(output, "    terminator goto");
-      let _ = writeln!(output, "      target block {}", block.0);
-    }
-    Terminator::Unreachable =>
-    {
-      let _ = writeln!(output, "    terminator unreachable");
-    }
-  }
-}
-
 #[cfg(test)]
 mod tests
 {
   use super::*;
   use crate::hir::async_check::Span;
-  use crate::mir::{BasicBlock, BlockId, Local, LocalId, Parameter};
+  use crate::mir::{BasicBlock, BlockId, Function, Local, LocalId, Parameter, Statement, Terminator};
 
   fn span() -> Span
   {
