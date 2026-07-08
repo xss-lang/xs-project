@@ -18,6 +18,7 @@
 #include "xs/syntax_ast.h"
 #include "xs/syntax_parser.h"
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,6 +77,101 @@ static bool has_suffix(const char *text, const char *suffix)
   size_t text_length = strlen(text);
   size_t suffix_length = strlen(suffix);
   return text_length >= suffix_length && strcmp(text + text_length - suffix_length, suffix) == 0;
+}
+
+static const char *ir_version_prefix(XsBuildOutput output)
+{
+  switch (output)
+  {
+  case XS_BUILD_OUTPUT_HIR:
+    return ".xhir version ";
+  case XS_BUILD_OUTPUT_MIR:
+    return ".xmir version ";
+  case XS_BUILD_OUTPUT_XLIL:
+    return ".xlil version ";
+  case XS_BUILD_OUTPUT_NONE:
+    return "";
+  }
+  return "";
+}
+
+static const char *ir_kind_name(XsBuildOutput output)
+{
+  switch (output)
+  {
+  case XS_BUILD_OUTPUT_HIR:
+    return "XHIR";
+  case XS_BUILD_OUTPUT_MIR:
+    return "XMIR";
+  case XS_BUILD_OUTPUT_XLIL:
+    return "XLIL";
+  case XS_BUILD_OUTPUT_NONE:
+    return "output";
+  }
+  return "output";
+}
+
+static bool is_direct_ir_input(const XsCliOptions *options)
+{
+  return options->output != XS_BUILD_OUTPUT_NONE && has_suffix(options->file_path, xs_cli_output_extension(options->output));
+}
+
+static bool supported_ir_version(uint32_t version)
+{
+  return version == 0;
+}
+
+static bool parse_ir_version_line(const char *line, const char *prefix, uint32_t *version)
+{
+  size_t prefix_length = strlen(prefix);
+  if (strncmp(line, prefix, prefix_length) != 0)
+    return false;
+  const char *digits = line + prefix_length;
+  if (*digits == '\0')
+    return false;
+  uint32_t value = 0;
+  for (const char *cursor = digits; *cursor != '\0'; ++cursor)
+  {
+    if (*cursor < '0' || *cursor > '9')
+      return false;
+    uint32_t digit = (uint32_t)(*cursor - '0');
+    if (value > (UINT32_MAX - digit) / 10U)
+      return false;
+    value = value * 10U + digit;
+  }
+  *version = value;
+  return true;
+}
+
+static bool validate_direct_ir_version(XsBuildOutput output, const char *path, const char *text, size_t length)
+{
+  const char *prefix = ir_version_prefix(output);
+  size_t line_length = 0;
+  while (line_length < length && text[line_length] != '\n' && text[line_length] != '\r')
+    ++line_length;
+  char *line = malloc(line_length + 1U);
+  if (line == nullptr)
+  {
+    fprintf(stderr, "xs: out of memory while checking %s version\n", ir_kind_name(output));
+    return false;
+  }
+  memcpy(line, text, line_length);
+  line[line_length] = '\0';
+  uint32_t version = 0;
+  bool parsed = parse_ir_version_line(line, prefix, &version);
+  free(line);
+  if (!parsed)
+  {
+    fprintf(stderr, "xs: %s file '%s' has an invalid version header\n", ir_kind_name(output), path);
+    return false;
+  }
+  if (!supported_ir_version(version))
+  {
+    fprintf(stderr, "xs: %s version %" PRIu32 " is not supported; supported version is 0\n", ir_kind_name(output),
+            version);
+    return false;
+  }
+  return true;
 }
 
 static char *project_path(const char *manifest_path, const char *source_path)
@@ -397,6 +493,23 @@ static int run_project_command(const XsCliOptions *options)
 
 static int run_file_command(const XsCliOptions *options)
 {
+  if (is_direct_ir_input(options))
+  {
+    size_t length = 0;
+    char *text = read_file(options->file_path, &length);
+    if (text == nullptr)
+    {
+      fprintf(stderr, "xs: input file '%s' could not be read\n", options->file_path);
+      return 2;
+    }
+    bool valid_version = validate_direct_ir_version(options->output, options->file_path, text, length);
+    free(text);
+    if (!valid_version)
+      return 1;
+    fprintf(stderr, "xs: %s direct compilation for '%s' is not wired yet\n", ir_kind_name(options->output),
+            options->file_path);
+    return 1;
+  }
   fprintf(stderr, "xs: %s emission for -file '%s' is not wired yet\n", xs_cli_output_extension(options->output),
           options->file_path);
   return 1;

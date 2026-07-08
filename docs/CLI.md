@@ -93,3 +93,5 @@ The direct file paths skip project manifests. Their final semantics depend on th
 - `xlil` with `.xlil`: parse the `.xlil version N` header, verify the supported XLIL registry, then backend/link it.
 
 The CLI recognizes the forms now; full production semantics are still being connected.
+For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
+unsupported grammar versions before reporting that full direct compilation is not wired yet.

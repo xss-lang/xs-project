@@ -217,6 +217,18 @@ if(BUILD_TESTING)
     add_test(NAME build_file_short_xlil COMMAND xs build --xlil -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
     set_tests_properties(build_file_short_xlil PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
+    add_test(NAME direct_xhir_unsupported_version COMMAND xs build --hir -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/intermediate/Unsupported.xhir)
+    set_tests_properties(direct_xhir_unsupported_version PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME direct_xmir_unsupported_version COMMAND xs build --mir -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/intermediate/Unsupported.xmir)
+    set_tests_properties(direct_xmir_unsupported_version PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME direct_xlil_unsupported_version COMMAND xs build --xlil -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/intermediate/Unsupported.xlil)
+    set_tests_properties(direct_xlil_unsupported_version PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
+    add_test(NAME direct_xlil_supported_version COMMAND xs build --xlil -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/intermediate/Supported.xlil)
+    set_tests_properties(direct_xlil_supported_version PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+
     add_executable(xs_backend_tests tests/backend_tests.c)
     target_link_libraries(xs_backend_tests PRIVATE xs_backend_llvm)
     add_test(NAME backend COMMAND xs_backend_tests ${XS_BACKEND_TEST_OBJECT} ${XS_LLD_EXECUTABLE})
