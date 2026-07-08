@@ -167,6 +167,7 @@ const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
     OptimizationPass::FoldConstI64Sub => "fold_const_i64_sub",
     OptimizationPass::FoldConstI64Mul => "fold_const_i64_mul",
     OptimizationPass::FoldConstI64Eq => "fold_const_i64_eq",
+    OptimizationPass::FoldConstBoolBranch => "fold_const_bool_branch",
   }
 }
 
@@ -292,6 +293,7 @@ fn parse_optimization_pass(name: &str,
     "fold_const_i64_sub" => Some(OptimizationPass::FoldConstI64Sub),
     "fold_const_i64_mul" => Some(OptimizationPass::FoldConstI64Mul),
     "fold_const_i64_eq" => Some(OptimizationPass::FoldConstI64Eq),
+    "fold_const_bool_branch" => Some(OptimizationPass::FoldConstBoolBranch),
     _ =>
     {
       diagnostics.push(XmirParseDiagnostic { line,
@@ -753,6 +755,8 @@ mod tests
     let reports = vec![OptimizationReport { pass: OptimizationPass::RemoveUnreachableBlocks,
                                             removed_items: 2 },
                        OptimizationReport { pass: OptimizationPass::RemoveRedundantEndBorrow,
+                                            removed_items: 1 },
+                       OptimizationReport { pass: OptimizationPass::FoldConstBoolBranch,
                                             removed_items: 1 }];
 
     let text = optimizer_analysis_to_xmir(&reports);
@@ -760,6 +764,7 @@ mod tests
 
     assert_eq!(parsed, reports);
     assert!(text.contains("analysis optimizer"));
+    assert!(text.contains("fold_const_bool_branch"));
     assert!(!text.contains(".pass"));
   }
 

@@ -326,6 +326,8 @@ semantics.
   targets.
 - Constant folding lowers `add.i64`, `sub.i64`, and `mul.i64` instructions with two `const.i64` operands to a `const.i64`
   result, and lowers `eq.i64` with two `const.i64` operands to a `const.bool` result.
+- Constant branch folding lowers a `branch_if` whose condition is a same-block known `const.bool` to a direct `goto`; the
+  following CFG cleanup can then remove the dead target block.
 - Rust `xslang` also contains a target-independent MIR structural verifier for duplicate local/block ids, missing
   terminators, unknown local references, and unknown block targets. This verifier is separate from LLVM and runs before
   borrow-check-specific reasoning.
@@ -340,7 +342,7 @@ semantics.
 - Rust `xslang` MIR and XLIL models also carry the first conditional control-flow primitive. MIR writes/parses
   `branch_if` records with `condition local N`, `then block A`, and `else block B`; XLIL writes/parses assembly-like
   `br_if %N, bbA, bbB` terminators. Verifiers require a `bool` condition and existing target blocks. HIR lowering does not
-  emit conditional control-flow yet.
+  emit conditional control-flow yet. The MIR optimizer can fold same-block constant `branch_if` conditions to `goto`.
 - Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Int` locals, `Int`
   literals, and local returns into a single-entry MIR block with typed XLIL-vocabulary local records. Unsupported HIR
   expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering diagnostics instead of

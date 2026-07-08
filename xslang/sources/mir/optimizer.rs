@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use super::verify::{Diagnostic as VerifyDiagnostic, verify_function};
-use super::{BasicBlock, Function, LocalId, Statement, reachable_blocks};
+use super::{BasicBlock, Function, LocalId, Statement, Terminator, reachable_blocks};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OptimizationPass
@@ -17,6 +17,7 @@ pub enum OptimizationPass
   FoldConstI64Sub,
   FoldConstI64Mul,
   FoldConstI64Eq,
+  FoldConstBoolBranch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -79,6 +80,18 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   {
     reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Eq,
                                       removed_items: folded_eqs });
+  }
+  let folded_branches = fold_const_bool_branches(&mut function);
+  if folded_branches != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstBoolBranch,
+                                      removed_items: folded_branches });
+  }
+  let removed_blocks = remove_unreachable_blocks(&mut function);
+  if removed_blocks != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::RemoveUnreachableBlocks,
+                                      removed_items: removed_blocks });
   }
   OptimizedFunction { function,
                       reports }
@@ -396,6 +409,75 @@ fn fold_const_i64_eqs_in_block(block: &mut BasicBlock) -> usize
   folded
 }
 
+fn fold_const_bool_branches(function: &mut Function) -> usize
+{
+  let mut folded = 0;
+  for block in &mut function.blocks
+  {
+    folded += fold_const_bool_branch_in_block(block);
+  }
+  folded
+}
+
+fn fold_const_bool_branch_in_block(block: &mut BasicBlock) -> usize
+{
+  let mut constants = HashMap::new();
+  for statement in &block.statements
+  {
+    match statement
+    {
+      Statement::ConstI64 { local, .. } =>
+      {
+        constants.remove(local);
+      }
+      Statement::ConstBool { local,
+                             value,
+                             .. } =>
+      {
+        constants.insert(*local, *value);
+      }
+      Statement::AddI64 { result, .. } |
+      Statement::SubI64 { result, .. } |
+      Statement::MulI64 { result, .. } |
+      Statement::EqI64 { result, .. } =>
+      {
+        constants.remove(result);
+      }
+      Statement::Call { result, .. } =>
+      {
+        if let Some(result) = result
+        {
+          constants.remove(result);
+        }
+      }
+      _ =>
+      {}
+    }
+  }
+  let Some(Terminator::BranchIf { condition,
+                                  then_block,
+                                  else_block, }) = block.terminator
+  else
+  {
+    return 0;
+  };
+  let Some(condition) = constants.get(&condition).copied()
+  else
+  {
+    return 0;
+  };
+  let target = if condition
+  {
+    then_block
+  }
+  else
+  {
+    else_block
+  };
+  block.terminator = Some(Terminator::Goto(target));
+  1
+}
+
 #[cfg(test)]
 mod tests
 {
@@ -688,5 +770,48 @@ mod tests
                      Statement::ConstBool { local: LocalId(2),
                                             value: true,
                                             .. }));
+  }
+
+  #[test]
+  fn folds_const_bool_branch_and_removes_dead_target()
+  {
+    let function =
+      Function { name: "branch".to_string(),
+                 parameters: vec![],
+                 return_type: Type::VOID,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "condition".to_string(),
+                                      value_type: Some(Type::BOOL),
+                                      mutable: false,
+                                      span: span(0, 1) }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstBool { local: LocalId(0),
+                                                                                   value: true,
+                                                                                   span: span(1, 2) }],
+                                           terminator: Some(Terminator::BranchIf { condition: LocalId(0),
+                                                                                   then_block: BlockId(1),
+                                                                                   else_block: BlockId(2) }),
+                                           span: span(0, 3) },
+                              BasicBlock { id: BlockId(1),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(3, 4) },
+                              BasicBlock { id: BlockId(2),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(4, 5) }] };
+
+    let optimized = optimize_verified_function(function).expect("valid input should optimize");
+
+    assert!(optimized.reports
+                     .iter()
+                     .any(|report| report.pass == OptimizationPass::FoldConstBoolBranch && report.removed_items == 1));
+    assert!(optimized.reports
+                     .iter()
+                     .any(|report| report.pass == OptimizationPass::RemoveUnreachableBlocks &&
+                                   report.removed_items == 1));
+    assert_eq!(optimized.function.blocks.len(), 2);
+    assert_eq!(optimized.function.blocks[0].terminator,
+               Some(Terminator::Goto(BlockId(1))));
   }
 }
