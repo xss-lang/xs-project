@@ -386,9 +386,13 @@ impl MirToXlilLowerer
         {
           Some(Type::BOOL) =>
           {}
-          Some(_) => self.report(DiagnosticCode::UnsupportedLocalType,
-                                 "MIR branch_if condition local must have XLIL bool type",
-                                 block.span),
+          Some(_) =>
+          {
+            self.report(DiagnosticCode::UnsupportedLocalType,
+                        "MIR branch_if condition local must have XLIL bool type",
+                        block.span);
+            return;
+          }
           None => self.report(DiagnosticCode::MissingLocalType,
                               "MIR branch_if condition local has no XLIL value type",
                               block.span),
@@ -807,6 +811,118 @@ mod tests
 
     assert_eq!(lowered.blocks[0].terminator,
                Some(Terminator::Branch(crate::xlil::BlockId(1))));
+  }
+
+  #[test]
+  fn rejects_branch_if_non_bool_condition()
+  {
+    let function = MirFunction { name: "BadBranchIfType".to_string(),
+                                 parameters: vec![],
+                                 return_type: Type::VOID,
+                                 locals: vec![Local { id: LocalId(0),
+                                                      name: "condition".to_string(),
+                                                      value_type: Some(Type::I64),
+                                                      mutable: false,
+                                                      span: span(0, 1) }],
+                                 blocks: vec![BasicBlock { id: MirBlockId(0),
+                                                           statements:
+                                                             vec![mir::Statement::ConstI64 { local: LocalId(0),
+                                                                                             value: 1,
+                                                                                             span: span(1, 2) }],
+                                                           terminator:
+                                                             Some(mir::Terminator::BranchIf { condition: LocalId(0),
+                                                                                              then_block:
+                                                                                                MirBlockId(1),
+                                                                                              else_block:
+                                                                                                MirBlockId(2) }),
+                                                           span: span(0, 3) },
+                                              BasicBlock { id: MirBlockId(1),
+                                                           statements: vec![],
+                                                           terminator: Some(mir::Terminator::Return(None)),
+                                                           span: span(3, 4) },
+                                              BasicBlock { id: MirBlockId(2),
+                                                           statements: vec![],
+                                                           terminator: Some(mir::Terminator::Return(None)),
+                                                           span: span(4, 5) }] };
+
+    let diagnostics = MirToXlilLowerer::new().lower_function(&function)
+                                             .expect_err("lowering must diagnose");
+
+    assert_eq!(diagnostics, vec![Diagnostic { code:
+                                                DiagnosticCode::UnsupportedLocalType,
+                                              message: "MIR branch_if condition \
+                                                        local must have XLIL bool \
+                                                        type"
+                                                             .to_string(),
+                                              span: span(0, 3) }]);
+  }
+
+  #[test]
+  fn reports_branch_if_missing_condition_type_and_value()
+  {
+    let function = MirFunction { name: "BadBranchIfValue".to_string(),
+                                 parameters: vec![],
+                                 return_type: Type::VOID,
+                                 locals: vec![Local { id: LocalId(0),
+                                                      name: "condition".to_string(),
+                                                      value_type: None,
+                                                      mutable: false,
+                                                      span: span(0, 1) }],
+                                 blocks: vec![BasicBlock { id: MirBlockId(0),
+                                                           statements: vec![],
+                                                           terminator:
+                                                             Some(mir::Terminator::BranchIf { condition: LocalId(0),
+                                                                                              then_block:
+                                                                                                MirBlockId(1),
+                                                                                              else_block:
+                                                                                                MirBlockId(2) }),
+                                                           span: span(0, 3) },
+                                              BasicBlock { id: MirBlockId(1),
+                                                           statements: vec![],
+                                                           terminator: Some(mir::Terminator::Return(None)),
+                                                           span: span(3, 4) },
+                                              BasicBlock { id: MirBlockId(2),
+                                                           statements: vec![],
+                                                           terminator: Some(mir::Terminator::Return(None)),
+                                                           span: span(4, 5) }] };
+
+    let diagnostics = MirToXlilLowerer::new().lower_function(&function)
+                                             .expect_err("lowering must diagnose");
+
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::MissingLocalType));
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::MissingLocalValue));
+  }
+
+  #[test]
+  fn reports_branch_if_missing_target()
+  {
+    let function = MirFunction { name: "BadBranchIfTarget".to_string(),
+                                 parameters: vec![],
+                                 return_type: Type::VOID,
+                                 locals: vec![Local { id: LocalId(0),
+                                                      name: "condition".to_string(),
+                                                      value_type: Some(Type::BOOL),
+                                                      mutable: false,
+                                                      span: span(0, 1) }],
+                                 blocks: vec![BasicBlock { id: MirBlockId(0),
+                                                           statements:
+                                                             vec![mir::Statement::ConstBool { local: LocalId(0),
+                                                                                              value: true,
+                                                                                              span: span(1, 2) }],
+                                                           terminator:
+                                                             Some(mir::Terminator::BranchIf { condition: LocalId(0),
+                                                                                              then_block:
+                                                                                                MirBlockId(1),
+                                                                                              else_block:
+                                                                                                MirBlockId(2) }),
+                                                           span: span(0, 3) }] };
+
+    let diagnostics = MirToXlilLowerer::new().lower_function(&function)
+                                             .expect_err("lowering must diagnose");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::MissingBranchTarget);
   }
 
   #[test]
