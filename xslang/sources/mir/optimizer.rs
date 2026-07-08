@@ -130,6 +130,7 @@ mod tests
   use super::*;
   use crate::hir::async_check::Span;
   use crate::mir::{BasicBlock, BlockId, Function, Local, Terminator};
+  use crate::xlil::Type;
 
   fn span(start: u32, end: u32) -> Span
   {
@@ -149,6 +150,7 @@ mod tests
   fn removes_unreachable_blocks()
   {
     let function = Function { name: "main".to_string(),
+                              return_type: Type::VOID,
                               locals: vec![],
                               blocks: vec![BasicBlock { id: BlockId(0),
                                                         statements: vec![],
@@ -175,6 +177,7 @@ mod tests
   {
     let function =
       Function { name: "main".to_string(),
+                 return_type: Type::VOID,
                  locals: vec![local(0)],
                  blocks: vec![BasicBlock { id: BlockId(0),
                                            statements: vec![Statement::EndBorrow { local: LocalId(0),
@@ -197,6 +200,7 @@ mod tests
   fn verified_optimizer_rejects_invalid_input()
   {
     let function = Function { name: "bad".to_string(),
+                              return_type: Type::VOID,
                               locals: vec![],
                               blocks: vec![BasicBlock { id: BlockId(0),
                                                         statements: vec![Statement::Use { local: LocalId(9),
@@ -214,6 +218,7 @@ mod tests
   {
     let function =
       Function { name: "main".to_string(),
+                 return_type: Type::VOID,
                  locals: vec![local(0)],
                  blocks: vec![BasicBlock { id: BlockId(0),
                                            statements: vec![Statement::BorrowShared { local: LocalId(0),

@@ -37,6 +37,7 @@ pub fn function_to_xmir(function: &Function) -> String
   let mut output = String::new();
   let _ = writeln!(output, ".xmir version 0");
   let _ = writeln!(output, "function {}", function.name);
+  let _ = writeln!(output, "returns {}", type_name(function.return_type));
   if !function.locals.is_empty()
   {
     let _ = writeln!(output);
@@ -193,6 +194,9 @@ fn verify_diagnostic_code_name(code: &VerifyDiagnosticCode) -> &'static str
     VerifyDiagnosticCode::MissingTerminator => "missing_terminator",
     VerifyDiagnosticCode::UnknownLocal => "unknown_local",
     VerifyDiagnosticCode::UnknownBlock => "unknown_block",
+    VerifyDiagnosticCode::MissingLocalType => "missing_local_type",
+    VerifyDiagnosticCode::LocalTypeMismatch => "local_type_mismatch",
+    VerifyDiagnosticCode::ReturnTypeMismatch => "return_type_mismatch",
   }
 }
 
@@ -205,6 +209,9 @@ fn parse_verify_diagnostic_code(name: &str) -> Option<VerifyDiagnosticCode>
     "missing_terminator" => Some(VerifyDiagnosticCode::MissingTerminator),
     "unknown_local" => Some(VerifyDiagnosticCode::UnknownLocal),
     "unknown_block" => Some(VerifyDiagnosticCode::UnknownBlock),
+    "missing_local_type" => Some(VerifyDiagnosticCode::MissingLocalType),
+    "local_type_mismatch" => Some(VerifyDiagnosticCode::LocalTypeMismatch),
+    "return_type_mismatch" => Some(VerifyDiagnosticCode::ReturnTypeMismatch),
     _ => None,
   }
 }
@@ -435,6 +442,7 @@ mod tests
   {
     let function =
       Function { name: "Main".to_string(),
+                 return_type: crate::xlil::Type::VOID,
                  locals: vec![Local { id: LocalId(0),
                                       name: "message".to_string(),
                                       value_type: None,
@@ -451,6 +459,7 @@ mod tests
     let text = function_to_xmir(&function);
 
     assert!(text.contains(".xmir version 0\nfunction Main"));
+    assert!(text.contains("returns void"));
     assert!(text.contains("control_flow"));
     assert!(text.contains("statement borrow shared"));
     assert!(text.contains("terminator return"));
@@ -473,6 +482,7 @@ mod tests
   {
     let function =
       Function { name: "Flow".to_string(),
+                 return_type: crate::xlil::Type::I64,
                  locals: vec![Local { id: LocalId(0),
                                       name: "result".to_string(),
                                       value_type: Some(crate::xlil::Type::I64),
@@ -504,6 +514,7 @@ mod tests
     let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
 
     assert_eq!(parsed.name, "Flow");
+    assert_eq!(parsed.return_type, crate::xlil::Type::I64);
     assert_eq!(parsed.locals[0].name, "result");
     assert_eq!(parsed.locals[0].value_type, Some(crate::xlil::Type::I64));
     assert!(parsed.locals[0].mutable);
@@ -544,9 +555,10 @@ mod tests
   fn parsed_xmir_can_be_structurally_verified()
   {
     let function = Function { name: "Verified".to_string(),
+                              return_type: crate::xlil::Type::I64,
                               locals: vec![Local { id: LocalId(0),
                                                    name: "value".to_string(),
-                                                   value_type: None,
+                                                   value_type: Some(crate::xlil::Type::I64),
                                                    mutable: false,
                                                    span: span() }],
                               blocks: vec![BasicBlock { id: BlockId(0),

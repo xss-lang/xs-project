@@ -82,6 +82,7 @@ pub struct BasicBlock
 pub struct Function
 {
   pub name: String,
+  pub return_type: Type,
   pub locals: Vec<Local>,
   pub blocks: Vec<BasicBlock>,
 }
@@ -354,6 +355,7 @@ mod tests
   fn function(statements: Vec<Statement>, terminator: Option<Terminator>) -> Function
   {
     Function { name: "main".to_string(),
+               return_type: Type::VOID,
                locals: vec![local(0, true), local(1, false)],
                blocks: vec![BasicBlock { id: BlockId(0),
                                          statements,
@@ -446,6 +448,7 @@ mod tests
   fn computes_reachable_blocks_through_goto()
   {
     let function = Function { name: "main".to_string(),
+                              return_type: Type::VOID,
                               locals: vec![],
                               blocks: vec![BasicBlock { id: BlockId(0),
                                                         statements: vec![],

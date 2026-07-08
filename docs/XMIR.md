@@ -67,6 +67,7 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 
 - `.xmir version 0`
 - `function <name>`
+- `returns <xlil-type>`
 - `locals`, including optional `type <xlil-type>` records for values that can lower into XLIL
 - `control_flow`
 - `block`

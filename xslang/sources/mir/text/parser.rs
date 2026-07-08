@@ -44,7 +44,9 @@ impl Parser<'_>
   {
     self.expect_exact(".xmir version 0");
     let name = self.function_name();
+    let return_type = self.return_type();
     let mut function = Function { name,
+                                  return_type,
                                   locals: Vec::new(),
                                   blocks: Vec::new() };
     while let Some(line) = self.next_non_empty()
@@ -79,6 +81,27 @@ impl Parser<'_>
     };
     self.index += 1;
     name.to_string()
+  }
+
+  fn return_type(&mut self) -> Type
+  {
+    let Some(line) = self.current()
+    else
+    {
+      return Type::VOID;
+    };
+    let Some(type_name) = line.strip_prefix("returns ")
+    else
+    {
+      return Type::VOID;
+    };
+    self.index += 1;
+    let return_type = type_from_name(type_name);
+    if return_type.is_none()
+    {
+      self.report(format!("unknown return type '{type_name}'"));
+    }
+    return_type.unwrap_or(Type::VOID)
   }
 
   fn locals(&mut self, function: &mut Function)

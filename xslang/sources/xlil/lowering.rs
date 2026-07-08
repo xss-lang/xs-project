@@ -45,7 +45,7 @@ impl MirToXlilLowerer
   pub fn lower_function(mut self, function: &mir::Function) -> Result<Function, Vec<Diagnostic>>
   {
     let local_types = local_types(function);
-    let mut lowered = Function::definition(function.name.clone(), self.return_type(function, &local_types), vec![]);
+    let mut lowered = Function::definition(function.name.clone(), function.return_type, vec![]);
     let mut blocks = HashMap::new();
     let mut values = HashMap::new();
     for block in &function.blocks
@@ -57,7 +57,7 @@ impl MirToXlilLowerer
     {
       let xlil_block = blocks[&block.id];
       self.lower_statements(block, xlil_block, &local_types, &mut values, &mut lowered);
-      self.lower_terminator(block, xlil_block, &blocks, &values, &mut lowered);
+      self.lower_terminator(block, xlil_block, &blocks, &local_types, &values, &mut lowered);
     }
     if self.diagnostics.is_empty()
     {
@@ -67,30 +67,6 @@ impl MirToXlilLowerer
     {
       Err(self.diagnostics)
     }
-  }
-
-  fn return_type(&mut self, function: &mir::Function, local_types: &HashMap<mir::LocalId, Option<Type>>) -> Type
-  {
-    for block in &function.blocks
-    {
-      let Some(mir::Terminator::Return(Some(local))) = block.terminator
-      else
-      {
-        continue;
-      };
-      return match local_types.get(&local).copied().flatten()
-      {
-        Some(value_type) => value_type,
-        None =>
-        {
-          self.report(DiagnosticCode::MissingLocalType,
-                      "MIR return local has no XLIL value type",
-                      block.span);
-          Type::VOID
-        }
-      };
-    }
-    Type::VOID
   }
 
   fn lower_statements(&mut self,
@@ -142,6 +118,7 @@ impl MirToXlilLowerer
                       block: &mir::BasicBlock,
                       xlil_block: BlockId,
                       blocks: &HashMap<mir::BlockId, BlockId>,
+                      local_types: &HashMap<mir::LocalId, Option<Type>>,
                       values: &HashMap<mir::LocalId, ValueId>,
                       lowered: &mut Function)
   {
@@ -158,6 +135,12 @@ impl MirToXlilLowerer
       }
       Some(mir::Terminator::Return(Some(local))) =>
       {
+        if local_types.get(&local).copied().flatten().is_none()
+        {
+          self.report(DiagnosticCode::MissingLocalType,
+                      "MIR return local has no XLIL value type",
+                      block.span);
+        }
         let Some(value) = values.get(&local).copied()
         else
         {
@@ -228,6 +211,7 @@ mod tests
   fn lowers_void_return_function_skeleton()
   {
     let function = MirFunction { name: "Main".to_string(),
+                                 return_type: Type::VOID,
                                  locals: vec![],
                                  blocks: vec![BasicBlock { id: MirBlockId(0),
                                                            statements: vec![],
@@ -246,6 +230,7 @@ mod tests
   fn rejects_return_value_without_type_and_value_mapping()
   {
     let function = MirFunction { name: "Value".to_string(),
+                                 return_type: Type::I64,
                                  locals: vec![],
                                  blocks: vec![BasicBlock { id: MirBlockId(0),
                                                            statements: vec![],
@@ -267,6 +252,7 @@ mod tests
   {
     let function =
       MirFunction { name: "Value".to_string(),
+                    return_type: Type::I64,
                     locals: vec![Local { id: LocalId(0),
                                          name: "answer".to_string(),
                                          value_type: Some(Type::I64),
@@ -294,6 +280,7 @@ mod tests
   fn lowers_goto_to_branch_terminator()
   {
     let function = MirFunction { name: "Branch".to_string(),
+                                 return_type: Type::VOID,
                                  locals: vec![],
                                  blocks: vec![BasicBlock { id: MirBlockId(0),
                                                            statements: vec![],

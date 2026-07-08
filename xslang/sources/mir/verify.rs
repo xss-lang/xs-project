@@ -17,6 +17,9 @@ pub enum DiagnosticCode
   MissingTerminator,
   UnknownLocal,
   UnknownBlock,
+  MissingLocalType,
+  LocalTypeMismatch,
+  ReturnTypeMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -112,9 +115,6 @@ impl<'a> Verifier<'a>
                        span, } |
       Statement::Move { local,
                         span, } |
-      Statement::ConstI64 { local,
-                            span,
-                            .. } |
       Statement::BorrowShared { local,
                                 span, } |
       Statement::BorrowMutable { local,
@@ -123,6 +123,9 @@ impl<'a> Verifier<'a>
                              span, } |
       Statement::Drop { local,
                         span, } => self.verify_local(local, span),
+      Statement::ConstI64 { local,
+                            span,
+                            .. } => self.verify_const_i64(local, span),
     }
   }
 
@@ -130,9 +133,18 @@ impl<'a> Verifier<'a>
   {
     match *terminator
     {
-      Terminator::Return(Some(local)) => self.verify_local(local, span),
+      Terminator::Return(Some(local)) => self.verify_return_value(local, span),
       Terminator::Goto(block) => self.verify_block_target(block, span),
-      Terminator::Return(None) | Terminator::Unreachable =>
+      Terminator::Return(None) =>
+      {
+        if self.function.return_type != crate::xlil::Type::VOID
+        {
+          self.report(DiagnosticCode::ReturnTypeMismatch,
+                      "non-void MIR function must return a typed local".to_string(),
+                      span);
+        }
+      }
+      Terminator::Unreachable =>
       {}
     }
   }
@@ -157,6 +169,48 @@ impl<'a> Verifier<'a>
     }
   }
 
+  fn verify_const_i64(&mut self, local: LocalId, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(crate::xlil::Type::I64) =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             "const.i64 target local must have XLIL i64 type".to_string(),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          "const.i64 target local has no XLIL value type".to_string(),
+                          span),
+    }
+  }
+
+  fn verify_return_value(&mut self, local: LocalId, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(value_type) if value_type == self.function.return_type =>
+      {}
+      Some(_) => self.report(DiagnosticCode::ReturnTypeMismatch,
+                             "MIR return local type does not match function return type".to_string(),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          "MIR return local has no XLIL value type".to_string(),
+                          span),
+    }
+  }
+
   fn report(&mut self, code: DiagnosticCode, message: String, span: Span)
   {
     self.diagnostics.push(Diagnostic { code,
@@ -170,6 +224,7 @@ mod tests
 {
   use super::*;
   use crate::mir::{Local, LocalId};
+  use crate::xlil::Type;
 
   fn span(start: u32, end: u32) -> Span
   {
@@ -181,6 +236,15 @@ mod tests
     Local { id: LocalId(id),
             name: format!("local{id}"),
             value_type: None,
+            mutable: true,
+            span: span(0, 1) }
+  }
+
+  fn typed_local(id: u32, value_type: Type) -> Local
+  {
+    Local { id: LocalId(id),
+            name: format!("local{id}"),
+            value_type: Some(value_type),
             mutable: true,
             span: span(0, 1) }
   }
@@ -197,7 +261,8 @@ mod tests
   fn accepts_valid_function()
   {
     let function = Function { name: "main".to_string(),
-                              locals: vec![local(0)],
+                              return_type: Type::I64,
+                              locals: vec![typed_local(0, Type::I64)],
                               blocks: vec![block(0, Some(Terminator::Return(Some(LocalId(0)))))] };
 
     assert!(verify_function(&function).is_empty());
@@ -207,6 +272,7 @@ mod tests
   fn reports_duplicate_ids_and_missing_terminator()
   {
     let function = Function { name: "bad".to_string(),
+                              return_type: Type::VOID,
                               locals: vec![local(0), local(0)],
                               blocks: vec![block(0, None), block(0, Some(Terminator::Return(None)))] };
 
@@ -221,6 +287,7 @@ mod tests
   fn reports_unknown_references()
   {
     let function = Function { name: "bad".to_string(),
+                              return_type: Type::VOID,
                               locals: vec![local(0)],
                               blocks: vec![BasicBlock { id: BlockId(0),
                                                         statements: vec![Statement::Use { local: LocalId(9),
@@ -232,5 +299,37 @@ mod tests
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::UnknownLocal);
     assert_eq!(diagnostics[1].code, DiagnosticCode::UnknownBlock);
+  }
+
+  #[test]
+  fn reports_return_type_mismatch()
+  {
+    let function = Function { name: "bad_return".to_string(),
+                              return_type: Type::I64,
+                              locals: vec![],
+                              blocks: vec![block(0, Some(Terminator::Return(None)))] };
+
+    let diagnostics = verify_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::ReturnTypeMismatch);
+  }
+
+  #[test]
+  fn reports_const_i64_type_mismatch()
+  {
+    let function =
+      Function { name: "bad_const".to_string(),
+                 return_type: Type::VOID,
+                 locals: vec![local(0)],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 1,
+                                                                                  span: span(1, 2) }],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(0, 3) }] };
+
+    let diagnostics = verify_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::MissingLocalType);
   }
 }
