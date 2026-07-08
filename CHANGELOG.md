@@ -35,6 +35,7 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - XHIR parsing now covers the checked-function subset emitted by the Rust writer.
 - XMIR tests now cover goto, local return values, unreachable terminators, and the current local statement records.
 - Rust `xslang` gained a MIR structural verifier for duplicate ids, missing terminators, and unknown local/block references.
+- Rust `xslang` optimizer gained a verified entry point that checks MIR before and after optimization.
 - Root README and strengthened documentation set under `docs/`.
 
 ### Changed

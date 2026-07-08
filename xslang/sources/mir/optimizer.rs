@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 
+use super::verify::{Diagnostic as VerifyDiagnostic, verify_function};
 use super::{BasicBlock, Function, LocalId, Statement, reachable_blocks};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -28,6 +29,13 @@ pub struct OptimizedFunction
   pub reports: Vec<OptimizationReport>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum OptimizationError
+{
+  InputInvalid(Vec<VerifyDiagnostic>),
+  OutputInvalid(Vec<VerifyDiagnostic>),
+}
+
 #[must_use]
 pub fn optimize_function(mut function: Function) -> OptimizedFunction
 {
@@ -46,6 +54,22 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   }
   OptimizedFunction { function,
                       reports }
+}
+
+pub fn optimize_verified_function(function: Function) -> Result<OptimizedFunction, OptimizationError>
+{
+  let input_diagnostics = verify_function(&function);
+  if !input_diagnostics.is_empty()
+  {
+    return Err(OptimizationError::InputInvalid(input_diagnostics));
+  }
+  let optimized = optimize_function(function);
+  let output_diagnostics = verify_function(&optimized.function);
+  if !output_diagnostics.is_empty()
+  {
+    return Err(OptimizationError::OutputInvalid(output_diagnostics));
+  }
+  Ok(optimized)
 }
 
 fn remove_unreachable_blocks(function: &mut Function) -> usize
@@ -166,5 +190,41 @@ mod tests
     assert_eq!(optimized.function.blocks[0].statements.len(), 2);
     assert_eq!(optimized.reports[0].pass, OptimizationPass::RemoveRedundantEndBorrow);
     assert_eq!(optimized.reports[0].removed_items, 1);
+  }
+
+  #[test]
+  fn verified_optimizer_rejects_invalid_input()
+  {
+    let function = Function { name: "bad".to_string(),
+                              locals: vec![],
+                              blocks: vec![BasicBlock { id: BlockId(0),
+                                                        statements: vec![Statement::Use { local: LocalId(9),
+                                                                                          span: span(1, 2) }],
+                                                        terminator: Some(Terminator::Return(None)),
+                                                        span: span(0, 3) }] };
+
+    let error = optimize_verified_function(function).expect_err("invalid input must fail");
+
+    assert!(matches!(error, OptimizationError::InputInvalid(_)));
+  }
+
+  #[test]
+  fn verified_optimizer_returns_valid_output()
+  {
+    let function =
+      Function { name: "main".to_string(),
+                 locals: vec![local(0)],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::BorrowShared { local: LocalId(0),
+                                                                                      span: span(1, 2) },
+                                                            Statement::EndBorrow { local: LocalId(0),
+                                                                                   span: span(2, 3) }],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(0, 4) }] };
+
+    let optimized = optimize_verified_function(function).expect("valid input should optimize");
+
+    assert!(verify_function(&optimized.function).is_empty());
+    assert!(optimized.reports.is_empty());
   }
 }

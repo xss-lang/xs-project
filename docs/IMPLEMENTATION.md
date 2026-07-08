@@ -323,6 +323,8 @@ semantics.
 - Rust `xslang` also contains a target-independent MIR structural verifier for duplicate local/block ids, missing
   terminators, unknown local references, and unknown block targets. This verifier is separate from LLVM and runs before
   borrow-check-specific reasoning.
+- Rust `xslang` optimizer exposes `optimize_verified_function`, which validates MIR before optimization and verifies the
+  optimized MIR before returning it.
 
 This stage does not yet produce statement/expression lowering, the full instruction set, exception edges, async state
 machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.
