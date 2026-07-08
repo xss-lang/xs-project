@@ -1,24 +1,24 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-// X# için VS Code settings.json ayarıdır.
-// Inlay Hits yoktur
+// VS Code settings.json defaults for X#.
+// Inlay hints are not configured here.
 
 {
   "[xs]": {
     "editor.defaultFormatter": "xs-lang.xs-analyzer"
   },
 
-  // xs-analyzer: temel LSP davranışı.
-  "rust-analyzer.checkOnSave": true, // yazılmazsa varsayılan true
+  // xs-analyzer: baseline LSP behavior.
+  "rust-analyzer.checkOnSave": true, // defaults to true if omitted
 
   // CodeLens / hover.
-  "xs-analyzer.lens.enable": true, // yazılmazsa varsayılan false
-  "xs-analyzer.lens.run.enable": true, // yazılmazsa varsayılan false
-  "xs-analyzer.lens.debug.enable": true, // yazılmazsa varsayılan false
-  "xs-analyzer.hover.actions.enable": true, // yazılmazsa varsayılan false
+  "xs-analyzer.lens.enable": true, // defaults to false if omitted
+  "xs-analyzer.lens.run.enable": true, // defaults to false if omitted
+  "xs-analyzer.lens.debug.enable": true, // defaults to false if omitted
+  "xs-analyzer.hover.actions.enable": true, // defaults to false if omitted
 
-  // Büyük projelerde gereksiz klasörleri izleme/dizinleme.
+  // Avoid watching and indexing noisy directories in large projects.
   "files.watcherExclude": {
     "**/target/**": true,
     "**/.git/**": true
@@ -30,6 +30,6 @@
     "**/target": true
   },
 
-  // XS Analyzer Debug CodeLens kullanacaksan faydalı.
-  "debug.allowBreakpointsEverywhere": true // yazılmazsa varsayılan false
+  // Useful when XS Analyzer Debug CodeLens is enabled.
+  "debug.allowBreakpointsEverywhere": true // defaults to false if omitted
 }

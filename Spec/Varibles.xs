@@ -4,9 +4,9 @@
 // variable system:
 
 //{
-Type annotation zorunludur.
-Normal değişkenler mutable'dır.
-Top-level variables desteklenmez.
+Type annotations are required.
+Normal variables are mutable.
+Top-level variables are not supported.
 }//
 
 fn Main() {
@@ -17,17 +17,17 @@ fn Main() {
     letter: Char = "A";
     data: Byte = 255;
 
-    small: int16 = 10;
-    normal: int32 = 20;
+    small: Short = 10;
+    normal: Long = 20;
     large: Int = 30;
-    huge: int128 = 40;
+    huge: Integer = 40;
 
-    usmall: uint16 = 10;
-    unormal: uint32 = 20;
+    usmall: UShort = 10;
+    unormal: ULong = 20;
     ularge: UInt = 30;
-    uhuge: uint128 = 40;
+    uhuge: UInteger = 40;
 
-    single: float32 = 2.5;
+    single: SFloat = 2.5;
     floating: Float = 3.5;
 
     // reassignment

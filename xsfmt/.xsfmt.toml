@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 # SPDX-License-Identifier: Apache-2.0
 
-# Eğer X# projesinde bu dosya olmazsa XS profilinde çalışır.
-# XS profili aşağıdadır
+# If an X# project does not provide this file, xsfmt uses the XS profile.
+# The XS profile defaults are listed below.
 
-BasedOnStyle = "XS" # Aşağıdaki ayarlar XS profilinin varsayılanlarıdır. BasedOnStyle = "XS" yazmak ile aşağıdaki ayarları yazmak ayndır. Bu ayarlar XS profilinde değiştirilebilir. Örnek: BasedOnStyle = "Google", BreakBeforeBraces = "Allman"
+BasedOnStyle = "XS" # The settings below are the XS profile defaults. Writing BasedOnStyle = "XS" is equivalent to writing these values. Projects may override these defaults, for example BasedOnStyle = "Google" or BreakBeforeBraces = "Allman".
 
 [Indentation]
 IndentWidth = 2

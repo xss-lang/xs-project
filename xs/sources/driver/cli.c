@@ -206,7 +206,7 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   unit->text = read_file(unit->path, &length);
   if (unit->text == nullptr)
   {
-    fprintf(stderr, "xs: '%s' kaynak dosyası okunamadı\n", unit->path);
+    fprintf(stderr, "xs: source file '%s' could not be read\n", unit->path);
     return false;
   }
   xs_diagnostics_init(&unit->diagnostics);
@@ -251,10 +251,10 @@ static bool emit_requested_output(XsBuildOutput output, const XsHirSymbolTable *
   char *path = build_output_path(manifest_path, output);
   if (path == nullptr)
   {
-    fprintf(stderr, "xs: çıktı dosyası hazırlanırken bellek tükendi\n");
+    fprintf(stderr, "xs: out of memory while preparing the output file\n");
     return false;
   }
-  fprintf(stderr, "xs: '%s' üretilmedi; structural AST tamamlanmadan resmi %s kodu üretimi yapılmaz\n", path,
+  fprintf(stderr, "xs: '%s' was not produced; official %s code emission waits for structural AST completion\n", path,
           xs_cli_output_extension(output));
   free(path);
   return false;
@@ -274,7 +274,7 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
   {
     free(direct);
     free(root);
-    fprintf(stderr, "xs: proje grafiği hazırlanırken bellek tükendi\n");
+    fprintf(stderr, "xs: out of memory while preparing the project graph\n");
     return false;
   }
   size_t direct_index = 0;
@@ -361,14 +361,14 @@ static int run_project_command(const XsCliOptions *options)
 {
   if (!has_suffix(options->manifest_path, ".xsproj"))
   {
-    fprintf(stderr, "xs: -proj bir .xsproj dosya yolu ile kullanılmalıdır\n");
+    fprintf(stderr, "xs: -proj must be used with a .xsproj file path\n");
     return 2;
   }
   size_t length = 0;
   char *text = read_file(options->manifest_path, &length);
   if (text == nullptr)
   {
-    fprintf(stderr, "xs: '%s' proje dosyası okunamadı\n", options->manifest_path);
+    fprintf(stderr, "xs: project file '%s' could not be read\n", options->manifest_path);
     return 2;
   }
 
@@ -384,7 +384,7 @@ static int run_project_command(const XsCliOptions *options)
 
   if (success && strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE)
   {
-    fprintf(stderr, "xs: %s henüz kullanılamıyor; MIR, XLIL lowering, nesne kodu ve bağlama aşamaları tamamlanmadı\n",
+    fprintf(stderr, "xs: %s is not available yet; MIR, XLIL lowering, object code, and linking are incomplete\n",
             options->command);
     success = false;
   }
@@ -397,8 +397,8 @@ static int run_project_command(const XsCliOptions *options)
 
 static int run_file_command(const XsCliOptions *options)
 {
-  fprintf(stderr, "xs: -file '%s' için %s üretimi henüz bağlı değil\n", options->file_path,
-          xs_cli_output_extension(options->output));
+  fprintf(stderr, "xs: %s emission for -file '%s' is not wired yet\n", xs_cli_output_extension(options->output),
+          options->file_path);
   return 1;
 }
 

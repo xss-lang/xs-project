@@ -4,8 +4,8 @@
 // control flow system:
 
 //{
-match expression değildir.
-match bir statement'tır.
+match is not an expression.
+match is a statement.
 
 Supported statements:
 - if

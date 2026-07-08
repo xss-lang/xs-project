@@ -83,11 +83,11 @@ my-value
 
 // Invalid:
 
-sayı
-kullanıcı
-değer
-Δvalue
-名前
+number
+user_name
+value_name
+name-with-dash
+1prefixed_name
 
 
 // An identifier cannot begin with a digit.
@@ -370,7 +370,7 @@ fn ValidIdentifiers() {
 
 fn InvalidIdentifiers() {
     user-name: Int = 1;
-    sayı: Int = 2;
+    number_name: Int = 2;
     1value: Int = 3;
     class: Int = 4;
 }

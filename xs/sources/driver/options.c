@@ -104,8 +104,8 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
 
 void xs_cli_print_usage(FILE *stream)
 {
-  fprintf(stream, "kullanım: xs <check|run> -proj <proje.xsproj>\n");
-  fprintf(stream, "kullanım: xs build [--output hir|mir|xlil] -proj <proje.xsproj>\n");
-  fprintf(stream, "kullanım: xs build [--output hir|mir|xlil] -file <girdi>\n");
-  fprintf(stream, "kullanım: xs build [--hir|--mir|--xlil] -file <girdi>\n");
+  fprintf(stream, "usage: xs <check|run> -proj <project.xsproj>\n");
+  fprintf(stream, "usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>\n");
+  fprintf(stream, "usage: xs build [--output hir|mir|xlil] -file <input>\n");
+  fprintf(stream, "usage: xs build [--hir|--mir|--xlil] -file <input>\n");
 }

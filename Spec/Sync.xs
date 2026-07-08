@@ -37,16 +37,16 @@ imports Mutex;
 // mutex creation
 
 fn MutexCreation() {
-    counter: Mutex<int32> = Mutex.new(0);
+    counter: Mutex<Long> = Mutex.new(0);
 }
 
 
 // locking
 
 fn MutexLock() {
-    counter: Mutex<int32> = Mutex.new(0);
+    counter: Mutex<Long> = Mutex.new(0);
 
-    value: Mutex<int32> = counter.lock();
+    value: Mutex<Long> = counter.lock();
 
     *value += 1;
 }
@@ -66,16 +66,16 @@ fn MutexLock() {
 // automatic unlocking
 
 fn MutexAutomaticUnlock() {
-    counter: Mutex<int32> = Mutex.new(0);
+    counter: Mutex<Long> = Mutex.new(0);
 
     {
-        value: Mutex<int32> = counter.lock();
+        value: Mutex<Long> = counter.lock();
         *value += 1;
     }
 
     // The lock has been released.
 
-    secondValue: Mutex<int32> = counter.lock();
+    secondValue: Mutex<Long> = counter.lock();
     *secondValue += 1;
 }
 
@@ -83,10 +83,10 @@ fn MutexAutomaticUnlock() {
 // same-thread guard movement
 
 fn MoveMutexGuard() {
-    counter: Mutex<int32> = Mutex.new(0);
+    counter: Mutex<Long> = Mutex.new(0);
 
-    firstGuard: Mutex<int32> = counter.lock();
-    secondGuard: Mutex<int32> = firstGuard;
+    firstGuard: Mutex<Long> = counter.lock();
+    secondGuard: Mutex<Long> = firstGuard;
 
     *secondGuard += 1;
 }
@@ -100,11 +100,11 @@ fn MoveMutexGuard() {
 // non-reentrant mutex
 
 fn InvalidRecursiveMutexLock() {
-    counter: Mutex<int32> = Mutex.new(0);
+    counter: Mutex<Long> = Mutex.new(0);
 
-    firstGuard: Mutex<int32> = counter.lock();
+    firstGuard: Mutex<Long> = counter.lock();
 
-    secondGuard: Mutex<int32> = counter.lock();
+    secondGuard: Mutex<Long> = counter.lock();
 }
 
 // The second lock() is a compile-time error because the
@@ -124,10 +124,10 @@ fn InvalidRecursiveMutexLock() {
 // poisoned mutex recovery
 
 fn RecoverPoisonedMutex() {
-    counter: Mutex<int32> = Mutex.new(0);
+    counter: Mutex<Long> = Mutex.new(0);
 
     try {
-        value: Mutex<int32> = counter.lock();
+        value: Mutex<Long> = counter.lock();
     }
     catch (error: SyncException) {
         counter.unlock();
@@ -167,10 +167,10 @@ fn RecoverPoisonedMutex() {
 imports Thread;
 
 fn MoveMutexToThread() {
-    counter: Mutex<int32> = Mutex.new(42);
+    counter: Mutex<Long> = Mutex.new(42);
 
     Thread.spawn(move fn() {
-        value: Mutex<int32> = counter.lock();
+        value: Mutex<Long> = counter.lock();
         *value += 1;
     });
 
@@ -592,10 +592,10 @@ fn AtomicCreation() {
 // supported atomic value types
 
 //{
-// int16
-// int32
+// Short
+// Long
 // Int
-// int128
+// Integer
 //
 // Uint16
 // Uint32
