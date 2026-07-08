@@ -10,6 +10,7 @@ pub enum DiagnosticCode
 {
   EmptyInput,
   InvalidModuleHeader,
+  InvalidVersionHeader,
   InvalidFunctionRecord,
   InvalidSignature,
   InvalidType,
@@ -56,16 +57,29 @@ impl Parser<'_>
 {
   fn module(&mut self) -> Option<Module>
   {
-    let Some(header) = self.next_line()
+    let Some(version) = self.next_line()
     else
     {
       self.report(DiagnosticCode::EmptyInput, 1, "XLIL input is empty");
       return None;
     };
+    if version != ".xlil version 0"
+    {
+      self.report(DiagnosticCode::InvalidVersionHeader,
+                  1,
+                  "XLIL version header is invalid");
+      return None;
+    }
+    let Some(header) = self.next_line()
+    else
+    {
+      self.report(DiagnosticCode::InvalidModuleHeader, 2, "XLIL module header is missing");
+      return None;
+    };
     let Some(name) = header.strip_prefix(".xlil module ")
     else
     {
-      self.report(DiagnosticCode::InvalidModuleHeader, 1, "XLIL module header is invalid");
+      self.report(DiagnosticCode::InvalidModuleHeader, 2, "XLIL module header is invalid");
       return None;
     };
     let mut module = Module::new(name);
@@ -355,7 +369,8 @@ mod tests
   fn parses_function_declaration()
   {
     let module =
-      parse_module(".xlil module App\n.extern xs$App$External : (i64) -> i64\n").expect("parse should succeed");
+      parse_module(".xlil version 0\n.xlil module App\n.extern xs$App$External : (i64) -> i64\n")
+        .expect("parse should succeed");
 
     assert_eq!(module.name, "App");
     assert_eq!(module.functions.len(), 1);
@@ -364,9 +379,19 @@ mod tests
   }
 
   #[test]
+  fn rejects_missing_version_header()
+  {
+    let diagnostics =
+      parse_module(".xlil module App\n.extern xs$App$External : (i64) -> i64\n").expect_err("parse must fail");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidVersionHeader);
+  }
+
+  #[test]
   fn roundtrips_const_i64_function()
   {
-    let text = ".xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  \
+                ret %0\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -376,7 +401,8 @@ mod tests
   #[test]
   fn parses_missing_terminator_marker()
   {
-    let text = ".xlil module App\n.func xs$App$Broken : () -> void\nbb0.entry:\n  .missing_terminator\n.end\n";
+    let text =
+      ".xlil version 0\n.xlil module App\n.func xs$App$Broken : () -> void\nbb0.entry:\n  .missing_terminator\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -386,7 +412,8 @@ mod tests
   #[test]
   fn rejects_unknown_type()
   {
-    let diagnostics = parse_module(".xlil module App\n.extern bad : () -> nope\n").expect_err("parse must fail");
+    let diagnostics =
+      parse_module(".xlil version 0\n.xlil module App\n.extern bad : () -> nope\n").expect_err("parse must fail");
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidType);
   }
@@ -394,7 +421,8 @@ mod tests
   #[test]
   fn roundtrips_branch_function()
   {
-    let text = ".xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br \
+                bb1\nbb1.exit:\n  ret\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 

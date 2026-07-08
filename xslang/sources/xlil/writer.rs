@@ -9,6 +9,7 @@ use crate::xlil::{Block, Function, Instruction, Module, Terminator, ValueId, typ
 
 pub fn write_module(module: &Module, output: &mut impl Write) -> fmt::Result
 {
+  writeln!(output, ".xlil version 0")?;
   writeln!(output, ".xlil module {}", module.name)?;
   for function in &module.functions
   {
@@ -107,7 +108,7 @@ mod tests
     module.add_function(Function::declaration("xs$App$External", Type::I64, vec![Type::I64]));
 
     assert_eq!(module_to_string(&module),
-               ".xlil module App\n.extern xs$App$External : (i64) -> i64\n");
+               ".xlil version 0\n.xlil module App\n.extern xs$App$External : (i64) -> i64\n");
   }
 
   #[test]
@@ -120,7 +121,7 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil module App\n.func xs$App$Main : () -> void\nbb0.entry:\n  ret\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Main : () -> void\nbb0.entry:\n  ret\n.end\n");
   }
 
   #[test]
@@ -134,7 +135,7 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n");
   }
 
   #[test]
@@ -149,6 +150,7 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br \
+                bb1\nbb1.exit:\n  ret\n.end\n");
   }
 }

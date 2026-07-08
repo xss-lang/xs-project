@@ -24,7 +24,7 @@ pub struct XmirDocumentHeader
 pub fn parse_xmir_header(text: &str) -> Option<XmirDocumentHeader>
 {
   let mut lines = text.lines();
-  let version = lines.next()?.strip_prefix("xmir version ")?.parse().ok()?;
+  let version = lines.next()?.strip_prefix(".xmir version ")?.parse().ok()?;
   let function = lines.next()?.strip_prefix("function ")?.to_string();
   Some(XmirDocumentHeader { version,
                             function })
@@ -34,7 +34,7 @@ pub fn parse_xmir_header(text: &str) -> Option<XmirDocumentHeader>
 pub fn function_to_xmir(function: &Function) -> String
 {
   let mut output = String::new();
-  let _ = writeln!(output, "xmir version 0");
+  let _ = writeln!(output, ".xmir version 0");
   let _ = writeln!(output, "function {}", function.name);
   if !function.locals.is_empty()
   {
@@ -436,7 +436,7 @@ mod tests
 
     let text = function_to_xmir(&function);
 
-    assert!(text.contains("xmir version 0\nfunction Main"));
+    assert!(text.contains(".xmir version 0\nfunction Main"));
     assert!(text.contains("control_flow"));
     assert!(text.contains("statement borrow shared"));
     assert!(text.contains("terminator return"));
@@ -511,7 +511,7 @@ mod tests
   #[test]
   fn rejects_invalid_xmir_function()
   {
-    let diagnostics = parse_xmir_function("xmir version 0\nfunction Main\n\ncontrol_flow\n  block nope\n    \
+    let diagnostics = parse_xmir_function(".xmir version 0\nfunction Main\n\ncontrol_flow\n  block nope\n    \
                                            terminator return\n").expect_err("invalid block id should fail");
 
     assert_eq!(diagnostics.len(), 1);

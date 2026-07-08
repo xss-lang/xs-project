@@ -28,7 +28,7 @@ instruction stream.
 The exact grammar will be tightened as HIR stabilizes, but the intended shape is record/tree oriented:
 
 ```text
-xhir version 0
+.xhir version 0
 module App
 
 imports
@@ -57,11 +57,12 @@ reviewer should be able to understand which declaration or expression changed wi
 
 Rust `xslang` currently parses the module-symbol and checked-function subsets emitted by the first XHIR writer:
 
-- `xhir version 0`
+- `.xhir version 0`
 - `module <name>` with `imports`, `declarations`, and `symbol` records
 - `function <name>` with `signature`, `locals`, and `body`
 - primitive and named type records
 - literal, local, assignment, let, expression, and return records
+- `analysis typecheck` records for type-check diagnostics, spans, and messages
 
 Additional declaration kinds, generic constraints, interface relations, macro-expansion records, and richer expression forms
 will be added as the checked HIR model stabilizes.

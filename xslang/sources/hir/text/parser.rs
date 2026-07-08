@@ -59,7 +59,7 @@ impl Parser<'_>
 {
   fn module_symbols(&mut self) -> Module
   {
-    self.expect_exact("xhir version 0");
+    self.expect_exact(".xhir version 0");
     let name = self.module_name();
     let mut module = Module { name,
                               imports: Vec::new(),
@@ -82,7 +82,7 @@ impl Parser<'_>
 
   fn function(&mut self) -> Function
   {
-    self.expect_exact("xhir version 0");
+    self.expect_exact(".xhir version 0");
     let name = self.function_name();
     let mut function = Function { name,
                                   return_type: None,

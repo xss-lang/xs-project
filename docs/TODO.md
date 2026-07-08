@@ -104,7 +104,8 @@ C23, and target assembly conventions as long as the result fits X#.
 - `.xlil` is always a text registry format; no binary XLIL format will be added.
 - XLIL is not as high-level as CLR and not as low-level as assembly; it is an assembly-like, target-independent
   mid/low-level registry language.
-- An XLIL registry file starts with `.xlil module <name>` and contains directive-style declaration/definition records.
+- An XLIL registry file starts with `.xlil version 0`, followed by `.xlil module <name>`, and contains directive-style
+  declaration/definition records.
 - Current XLIL text uses assembly-like records: `.extern`, `.func`, `bbN.label:`, `%N:type = ...`, `br bbN`, `ret`, and
   `.end`.
 - The function body model uses typed SSA, explicit basic blocks, and terminators.

@@ -34,10 +34,12 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - Rust `xslang` gained initial structured XHIR/XMIR text writers plus parser subsets.
 - XHIR parsing now covers the checked-function subset emitted by the Rust writer.
 - XMIR tests now cover goto, local return values, unreachable terminators, and the current local statement records.
+- XLIL text now starts with `.xlil version 0` before module records.
 - Rust `xslang` gained a MIR structural verifier for duplicate ids, missing terminators, and unknown local/block references.
 - Rust `xslang` optimizer gained a verified entry point that checks MIR before and after optimization.
 - XMIR text support gained optimizer analysis writer/parser coverage for optimization pass reports.
 - XMIR text support gained structural verifier analysis writer/parser coverage.
+- XHIR text support gained type-check analysis writer/parser coverage.
 - Root README and strengthened documentation set under `docs/`.
 
 ### Changed

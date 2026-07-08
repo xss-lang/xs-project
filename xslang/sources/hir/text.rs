@@ -6,6 +6,7 @@
 use std::fmt::Write;
 
 use super::symbols::{Import, Module, SymbolKind, Visibility};
+use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
 use super::type_check::{Expression, Function, Literal, PrimitiveType, Statement, Type};
 
 pub mod parser;
@@ -31,7 +32,7 @@ pub struct XhirDocumentHeader
 pub fn parse_xhir_header(text: &str) -> Option<XhirDocumentHeader>
 {
   let mut lines = text.lines();
-  let version = lines.next()?.strip_prefix("xhir version ")?.parse().ok()?;
+  let version = lines.next()?.strip_prefix(".xhir version ")?.parse().ok()?;
   let declaration = lines.next()?;
   if let Some(name) = declaration.strip_prefix("module ")
   {
@@ -52,7 +53,7 @@ pub fn parse_xhir_header(text: &str) -> Option<XhirDocumentHeader>
 pub fn module_symbols_to_xhir(module: &Module) -> String
 {
   let mut output = String::new();
-  let _ = writeln!(output, "xhir version 0");
+  let _ = writeln!(output, ".xhir version 0");
   let _ = writeln!(output, "module {}", module.name);
   if !module.imports.is_empty()
   {
@@ -81,7 +82,7 @@ pub fn module_symbols_to_xhir(module: &Module) -> String
 pub fn function_to_xhir(function: &Function) -> String
 {
   let mut output = String::new();
-  let _ = writeln!(output, "xhir version 0");
+  let _ = writeln!(output, ".xhir version 0");
   let _ = writeln!(output, "function {}", function.name);
   let _ = writeln!(output, "  signature");
   match &function.return_type
@@ -126,6 +127,64 @@ pub fn function_to_xhir(function: &Function) -> String
   output
 }
 
+#[must_use]
+pub fn typecheck_analysis_to_xhir(diagnostics: &[TypeDiagnostic]) -> String
+{
+  let mut output = String::new();
+  let _ = writeln!(output, "analysis typecheck");
+  for diagnostic in diagnostics
+  {
+    let _ = writeln!(output, "  diagnostic {}", type_diagnostic_code_name(&diagnostic.code));
+    let _ = writeln!(output,
+                     "    span {}:{}..{}",
+                     diagnostic.span.file_id, diagnostic.span.start, diagnostic.span.end);
+    let _ = writeln!(output, "    message {}", diagnostic.message);
+  }
+  output
+}
+
+pub fn parse_xhir_typecheck_analysis(text: &str) -> Result<Vec<TypeDiagnostic>, Vec<XhirParseDiagnostic>>
+{
+  let mut lines = text.lines().enumerate();
+  let Some((_, "analysis typecheck")) = lines.next()
+  else
+  {
+    let message = "expected typecheck analysis section".to_string();
+    return Err(vec![XhirParseDiagnostic { line: 1,
+                                          message }]);
+  };
+  let mut parsed = Vec::new();
+  let mut diagnostics = Vec::new();
+  while let Some((line_index, line)) = lines.next()
+  {
+    let Some(code_name) = line.strip_prefix("  diagnostic ")
+    else
+    {
+      let message = format!("expected typecheck diagnostic record, found '{line}'");
+      diagnostics.push(XhirParseDiagnostic { line: line_index + 1,
+                                             message });
+      continue;
+    };
+    let code = parse_type_diagnostic_code(code_name, line_index + 1, &mut diagnostics);
+    let span = parse_analysis_span(&mut lines, &mut diagnostics);
+    let message = parse_analysis_message(&mut lines, &mut diagnostics);
+    if let (Some(code), Some(span), Some(message)) = (code, span, message)
+    {
+      parsed.push(TypeDiagnostic { code,
+                                   message,
+                                   span });
+    }
+  }
+  if diagnostics.is_empty()
+  {
+    Ok(parsed)
+  }
+  else
+  {
+    Err(diagnostics)
+  }
+}
+
 fn write_import(output: &mut String, import: &Import)
 {
   match import
@@ -153,6 +212,88 @@ fn write_import(output: &mut String, import: &Import)
       }
     }
   }
+}
+
+fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
+{
+  match code
+  {
+    TypeDiagnosticCode::LiteralTypeMismatch => "literal_type_mismatch",
+    TypeDiagnosticCode::ImmutableAssignment => "immutable_assignment",
+    TypeDiagnosticCode::UnknownLocal => "unknown_local",
+  }
+}
+
+fn parse_type_diagnostic_code(name: &str,
+                              line: usize,
+                              diagnostics: &mut Vec<XhirParseDiagnostic>)
+                              -> Option<TypeDiagnosticCode>
+{
+  match name
+  {
+    "literal_type_mismatch" => Some(TypeDiagnosticCode::LiteralTypeMismatch),
+    "immutable_assignment" => Some(TypeDiagnosticCode::ImmutableAssignment),
+    "unknown_local" => Some(TypeDiagnosticCode::UnknownLocal),
+    _ =>
+    {
+      diagnostics.push(XhirParseDiagnostic { line,
+                                             message: format!("unknown typecheck diagnostic code '{name}'") });
+      None
+    }
+  }
+}
+
+fn parse_analysis_span<'a>(lines: &mut impl Iterator<Item = (usize, &'a str)>,
+                           diagnostics: &mut Vec<XhirParseDiagnostic>)
+                           -> Option<crate::hir::async_check::Span>
+{
+  let Some((line_index, line)) = lines.next()
+  else
+  {
+    diagnostics.push(XhirParseDiagnostic { line: 1,
+                                           message: "missing diagnostic span".to_string() });
+    return None;
+  };
+  let Some(text) = line.strip_prefix("    span ")
+  else
+  {
+    diagnostics.push(XhirParseDiagnostic { line: line_index + 1,
+                                           message: "expected diagnostic span".to_string() });
+    return None;
+  };
+  parse_span(text).or_else(|| {
+                    diagnostics.push(XhirParseDiagnostic { line: line_index + 1,
+                                                           message: format!("invalid diagnostic span '{text}'") });
+                    None
+                  })
+}
+
+fn parse_analysis_message<'a>(lines: &mut impl Iterator<Item = (usize, &'a str)>,
+                              diagnostics: &mut Vec<XhirParseDiagnostic>)
+                              -> Option<String>
+{
+  let Some((line_index, line)) = lines.next()
+  else
+  {
+    diagnostics.push(XhirParseDiagnostic { line: 1,
+                                           message: "missing diagnostic message".to_string() });
+    return None;
+  };
+  let Some(message) = line.strip_prefix("    message ")
+  else
+  {
+    diagnostics.push(XhirParseDiagnostic { line: line_index + 1,
+                                           message: "expected diagnostic message".to_string() });
+    return None;
+  };
+  Some(message.to_string())
+}
+
+fn parse_span(text: &str) -> Option<crate::hir::async_check::Span>
+{
+  let (file_id, rest) = text.split_once(':')?;
+  let (start, end) = rest.split_once("..")?;
+  Some(crate::hir::async_check::Span::new(file_id.parse().ok()?, start.parse().ok()?, end.parse().ok()?))
 }
 
 fn write_statement(output: &mut String, statement: &Statement, indent: usize)
@@ -292,7 +433,7 @@ mod tests
   use super::*;
   use crate::hir::async_check::Span;
   use crate::hir::symbols::{Symbol, SymbolKind};
-  use crate::hir::type_check::Local;
+  use crate::hir::type_check::{Diagnostic, DiagnosticCode, Local};
 
   fn span() -> Span
   {
@@ -314,7 +455,7 @@ mod tests
 
     let text = module_symbols_to_xhir(&module);
 
-    assert!(text.contains("xhir version 0\nmodule App"));
+    assert!(text.contains(".xhir version 0\nmodule App"));
     assert!(text.contains("import println from std.io"));
     assert!(text.contains("symbol Main\n    kind function\n    visibility public"));
     assert!(!text.contains(".func"));
@@ -373,8 +514,8 @@ mod tests
   #[test]
   fn rejects_invalid_xhir_module_symbols()
   {
-    let diagnostics = parse_xhir_module_symbols("xhir version 0\nmodule App\n\ndeclarations\n  symbol Main\n    kind \
-                                                 nope\n").expect_err("invalid symbol kind should fail");
+    let diagnostics = parse_xhir_module_symbols(".xhir version 0\nmodule App\n\ndeclarations\n  symbol Main\n    \
+                                                 kind nope\n").expect_err("invalid symbol kind should fail");
 
     assert_eq!(diagnostics.len(), 2);
   }
@@ -383,9 +524,37 @@ mod tests
   fn rejects_invalid_xhir_function()
   {
     let diagnostics =
-      parse_xhir_function("xhir version 0\nfunction Main\n  signature\n    returns ?\n").expect_err("unknown return \
-                                                                                                     type should fail");
+      parse_xhir_function(".xhir version 0\nfunction Main\n  signature\n    returns ?\n").expect_err("unknown return \
+                                                                                                      type should \
+                                                                                                      fail");
 
     assert_eq!(diagnostics.len(), 1);
+  }
+
+  #[test]
+  fn roundtrips_typecheck_analysis()
+  {
+    let diagnostics = vec![Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                        message: "literal is not assignable".to_string(),
+                                        span: span() },
+                           Diagnostic { code: DiagnosticCode::UnknownLocal,
+                                        message: "unknown local 'value'".to_string(),
+                                        span: Span::new(1, 4, 8) }];
+
+    let text = typecheck_analysis_to_xhir(&diagnostics);
+    let parsed = parse_xhir_typecheck_analysis(&text).expect("typecheck analysis should parse");
+
+    assert_eq!(parsed, diagnostics);
+    assert!(text.contains("analysis typecheck"));
+    assert!(!text.contains(".diagnostic"));
+  }
+
+  #[test]
+  fn rejects_invalid_typecheck_analysis()
+  {
+    let diagnostics = parse_xhir_typecheck_analysis("analysis typecheck\n  diagnostic nope\n    span bad\n    \
+                                                     message broken\n").expect_err("invalid analysis must fail");
+
+    assert_eq!(diagnostics.len(), 2);
   }
 }

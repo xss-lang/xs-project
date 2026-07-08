@@ -51,6 +51,8 @@ static void test_module_and_text_writer(void)
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
   char buffer[128] = {0};
   CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
+  CHECK(strstr(buffer, ".xlil version 0\n") != NULL);
+  CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
   CHECK(strstr(buffer, ".xlil module App.Main\n") != NULL);
   CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
   CHECK(strstr(buffer, ".extern Check : (u8, i8, bool) -> bool\n") != NULL);

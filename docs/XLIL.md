@@ -42,6 +42,7 @@ An `.xlil` file is not executable bytecode. It is backend input.
 Current text records intentionally look closer to assembly than to C-like declarations:
 
 ```text
+.xlil version 0
 .xlil module App
 .extern Check : (u8, i8, bool) -> bool
 .func Answer : () -> i64
@@ -53,7 +54,8 @@ bb0.entry:
 
 Format notes:
 
-- `.xlil module <name>` starts a registry file.
+- `.xlil version 0` starts a registry file and declares the text grammar version.
+- `.xlil module <name>` declares the module name after the version header.
 - `.extern <symbol> : (<params>) -> <return>` declares an external function.
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
 - `bbN.<label>:` starts a basic block.

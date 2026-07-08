@@ -370,8 +370,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, primitive types, function declarations, function bodies,
   basic blocks, `const.i64`, and `return`.
-- The XLIL text writer emits assembly-like registry records: `.xlil module`, `.extern`, `.func`, `bbN.label:`,
-  `%N:type = const <value>`, `br bbN`, `ret`, and `.end`.
+- The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
+  `bbN.label:`, `%N:type = const <value>`, `br bbN`, `ret`, and `.end`.
 - The first MIR → XLIL body bridge lowers flat blocks containing `const.i64` instructions and a `return` terminator to XLIL
   function body records.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
@@ -381,6 +381,7 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   path and the function name comes from the stable monomorphized symbol.
 - Rust `xslang` contains the first XHIR/XMIR structured text writer and header parser bootstrap. These outputs are
   intentionally separate from XLIL's assembly-like registry records.
+- Rust `xslang` XHIR text support can write and parse type-check diagnostic analysis records.
 
 XLIL instruction set, function body model, runtime/ABI layout, and MIR → XLIL body lowering decisions are fixed as the X# v0
 contract in [TODO.md](TODO.md); implementation will complete them incrementally.

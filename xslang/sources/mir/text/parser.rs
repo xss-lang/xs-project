@@ -41,7 +41,7 @@ impl Parser<'_>
 {
   fn function(&mut self) -> Function
   {
-    self.expect_exact("xmir version 0");
+    self.expect_exact(".xmir version 0");
     let name = self.function_name();
     let mut function = Function { name,
                                   locals: Vec::new(),

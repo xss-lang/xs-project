@@ -28,7 +28,7 @@ control-flow document rather than an assembly listing.
 The exact grammar will be tightened as MIR stabilizes, but the intended shape is CFG/document oriented:
 
 ```text
-xmir version 0
+.xmir version 0
 module App
 
 function Main
@@ -65,7 +65,7 @@ the later assembly-like backend input; XMIR is the compiler's readable mid-level
 
 Rust `xslang` currently parses the function/control-flow subset emitted by the first XMIR writer:
 
-- `xmir version 0`
+- `.xmir version 0`
 - `function <name>`
 - `locals`
 - `control_flow`

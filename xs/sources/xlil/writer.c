@@ -66,6 +66,8 @@ XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, Xs
   xs_lil_clear_error(error);
   if (module == NULL || stream == NULL)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL module and stream are required");
+  if (xs_lil_write_checked(stream, error, ".xlil version 0\n") != XS_LIL_OK)
+    return error == NULL ? XS_LIL_IO_ERROR : error->status;
   if (fprintf(stream, ".xlil module %s\n", module->name) < 0)
     return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL module header");
   for (size_t i = 0; i < module->function_count; ++i)
