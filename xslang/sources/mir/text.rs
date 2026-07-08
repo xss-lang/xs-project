@@ -244,6 +244,7 @@ const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
     OptimizationPass::FoldConstI64Add => "fold_const_i64_add",
     OptimizationPass::FoldConstI64Sub => "fold_const_i64_sub",
     OptimizationPass::FoldConstI64Mul => "fold_const_i64_mul",
+    OptimizationPass::FoldConstI64Eq => "fold_const_i64_eq",
   }
 }
 
@@ -368,6 +369,7 @@ fn parse_optimization_pass(name: &str,
     "fold_const_i64_add" => Some(OptimizationPass::FoldConstI64Add),
     "fold_const_i64_sub" => Some(OptimizationPass::FoldConstI64Sub),
     "fold_const_i64_mul" => Some(OptimizationPass::FoldConstI64Mul),
+    "fold_const_i64_eq" => Some(OptimizationPass::FoldConstI64Eq),
     _ =>
     {
       diagnostics.push(XmirParseDiagnostic { line,
@@ -415,6 +417,14 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        target local {}", local.0);
       let _ = writeln!(output, "        value {value}");
     }
+    Statement::ConstBool { local,
+                           value,
+                           .. } =>
+    {
+      let _ = writeln!(output, "      statement const.bool");
+      let _ = writeln!(output, "        target local {}", local.0);
+      let _ = writeln!(output, "        value {value}");
+    }
     Statement::AddI64 { result,
                         left,
                         right,
@@ -441,6 +451,16 @@ fn write_statement(output: &mut String, statement: &Statement)
                         .. } =>
     {
       let _ = writeln!(output, "      statement mul.i64");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        left local {}", left.0);
+      let _ = writeln!(output, "        right local {}", right.0);
+    }
+    Statement::EqI64 { result,
+                       left,
+                       right,
+                       .. } =>
+    {
+      let _ = writeln!(output, "      statement eq.i64");
       let _ = writeln!(output, "        result local {}", result.0);
       let _ = writeln!(output, "        left local {}", left.0);
       let _ = writeln!(output, "        right local {}", right.0);
@@ -804,6 +824,51 @@ mod tests
                                                                          left: LocalId(0),
                                                                          right: LocalId(1),
                                                                          .. }));
+  }
+
+  #[test]
+  fn roundtrips_const_bool_and_eq_i64_statement()
+  {
+    let function =
+      Function { name: "EqFlow".to_string(),
+                 parameters: vec![],
+                 return_type: crate::xlil::Type::BOOL,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "left".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(1),
+                                      name: "right".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(2),
+                                      name: "same".to_string(),
+                                      value_type: Some(crate::xlil::Type::BOOL),
+                                      mutable: false,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 7,
+                                                                                  span: span() },
+                                                            Statement::ConstI64 { local: LocalId(1),
+                                                                                  value: 7,
+                                                                                  span: span() },
+                                                            Statement::EqI64 { result: LocalId(2),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span() }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span() }] };
+
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
+
+    assert!(matches!(parsed.blocks[0].statements[2], Statement::EqI64 { result: LocalId(2),
+                                                                        left: LocalId(0),
+                                                                        right: LocalId(1),
+                                                                        .. }));
   }
 
   #[test]

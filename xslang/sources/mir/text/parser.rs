@@ -229,9 +229,11 @@ impl Parser<'_>
       match kind
       {
         "const.i64" => block.statements.push(self.const_i64_statement()),
+        "const.bool" => block.statements.push(self.const_bool_statement()),
         "add.i64" => block.statements.push(self.add_i64_statement()),
         "sub.i64" => block.statements.push(self.sub_i64_statement()),
         "mul.i64" => block.statements.push(self.mul_i64_statement()),
+        "eq.i64" => block.statements.push(self.eq_i64_statement()),
         "call" => block.statements.push(self.call_statement()),
         "use" | "move" | "borrow shared" | "borrow mutable" | "borrow end" | "drop" =>
         {
@@ -460,6 +462,60 @@ impl Parser<'_>
     }
   }
 
+  fn const_bool_statement(&mut self) -> Statement
+  {
+    let local = self.const_bool_target();
+    let value = self.const_bool_value();
+    Statement::ConstBool { local,
+                           value,
+                           span: span() }
+  }
+
+  fn const_bool_target(&mut self) -> LocalId
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing const.bool target".to_string());
+      return LocalId(0);
+    };
+    self.index += 1;
+    let Some(local) = line.strip_prefix("        target local ")
+    else
+    {
+      self.report("expected const.bool target".to_string());
+      return LocalId(0);
+    };
+    self.local_id(local)
+  }
+
+  fn const_bool_value(&mut self) -> bool
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing const.bool value".to_string());
+      return false;
+    };
+    self.index += 1;
+    let Some(value) = line.strip_prefix("        value ")
+    else
+    {
+      self.report("expected const.bool value".to_string());
+      return false;
+    };
+    match value
+    {
+      "true" => true,
+      "false" => false,
+      _ =>
+      {
+        self.report(format!("invalid const.bool value '{value}'"));
+        false
+      }
+    }
+  }
+
   fn add_i64_statement(&mut self) -> Statement
   {
     let result = self.binary_i64_local("add.i64", "result");
@@ -491,6 +547,17 @@ impl Parser<'_>
                         left,
                         right,
                         span: span() }
+  }
+
+  fn eq_i64_statement(&mut self) -> Statement
+  {
+    let result = self.binary_i64_local("eq.i64", "result");
+    let left = self.binary_i64_local("eq.i64", "left");
+    let right = self.binary_i64_local("eq.i64", "right");
+    Statement::EqI64 { result,
+                       left,
+                       right,
+                       span: span() }
   }
 
   fn binary_i64_local(&mut self, instruction: &str, field: &str) -> LocalId

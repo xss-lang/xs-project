@@ -63,6 +63,10 @@ pub enum Statement
   {
     local: LocalId, value: i64, span: Span
   },
+  ConstBool
+  {
+    local: LocalId, value: bool, span: Span
+  },
   AddI64
   {
     result: LocalId,
@@ -78,6 +82,13 @@ pub enum Statement
     span: Span,
   },
   MulI64
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  EqI64
   {
     result: LocalId,
     left: LocalId,
@@ -206,6 +217,9 @@ impl BorrowChecker
       Statement::ConstI64 { local,
                             span,
                             .. } |
+      Statement::ConstBool { local,
+                             span,
+                             .. } |
       Statement::Drop { local,
                         span, } => self.require_live(local, span),
       Statement::AddI64 { left,
@@ -222,7 +236,12 @@ impl BorrowChecker
                           right,
                           result,
                           span,
-                          .. } =>
+                          .. } |
+      Statement::EqI64 { left,
+                         right,
+                         result,
+                         span,
+                         .. } =>
       {
         self.require_live(left, span);
         self.require_live(right, span);

@@ -38,6 +38,7 @@ pub struct Type
 impl Type
 {
   pub const VOID: Self = Self { kind: TypeKind::Void };
+  pub const BOOL: Self = Self { kind: TypeKind::Bool };
   pub const I64: Self = Self { kind: TypeKind::I64 };
 }
 
@@ -61,6 +62,10 @@ pub enum Instruction
   {
     result: ValueId, value: i64
   },
+  ConstBool
+  {
+    result: ValueId, value: bool
+  },
   AddI64
   {
     result: ValueId,
@@ -74,6 +79,12 @@ pub enum Instruction
     right: ValueId,
   },
   MulI64
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  EqI64
   {
     result: ValueId,
     left: ValueId,
@@ -159,6 +170,18 @@ impl Function
     Some(result)
   }
 
+  pub fn add_const_bool(&mut self, block: BlockId, value: bool) -> Option<ValueId>
+  {
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::BOOL });
+    self.block_mut(block)?
+        .instructions
+        .push(Instruction::ConstBool { result,
+                                       value });
+    Some(result)
+  }
+
   pub fn add_i64(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
   {
     self.block(block)?;
@@ -207,6 +230,23 @@ impl Function
     self.block_mut(block)?.instructions.push(Instruction::MulI64 { result,
                                                                    left,
                                                                    right });
+    Some(result)
+  }
+
+  pub fn eq_i64(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !self.value(left).is_some_and(|value| value.value_type == Type::I64) ||
+       !self.value(right).is_some_and(|value| value.value_type == Type::I64)
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::BOOL });
+    self.block_mut(block)?.instructions.push(Instruction::EqI64 { result,
+                                                                  left,
+                                                                  right });
     Some(result)
   }
 
@@ -453,6 +493,31 @@ mod tests
     let result = function.mul_i64(block, left, right).expect("mul should be added");
 
     assert_eq!(result, ValueId(2));
+    assert!(function.set_return(block, Some(result)));
+  }
+
+  #[test]
+  fn adds_bool_const_and_i64_equality()
+  {
+    let mut function = Function::definition("Eq", Type::BOOL, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i64(block, 7).expect("left const should be added");
+    let right = function.add_const_i64(block, 7).expect("right const should be added");
+    let result = function.eq_i64(block, left, right).expect("eq should be added");
+
+    assert_eq!(result, ValueId(2));
+    assert!(function.set_return(block, Some(result)));
+  }
+
+  #[test]
+  fn adds_bool_const_instruction()
+  {
+    let mut function = Function::definition("Truth", Type::BOOL, vec![]);
+    let block = function.append_block("entry");
+    let result = function.add_const_bool(block, true)
+                         .expect("bool const should be added");
+
+    assert_eq!(result, ValueId(0));
     assert!(function.set_return(block, Some(result)));
   }
 

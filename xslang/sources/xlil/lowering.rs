@@ -88,6 +88,12 @@ impl MirToXlilLowerer
       {
         self.lower_const_i64(local, value, span, xlil_block, local_types, values, lowered);
       }
+      if let mir::Statement::ConstBool { local,
+                                         value,
+                                         span, } = *statement
+      {
+        self.lower_const_bool(local, value, span, xlil_block, local_types, values, lowered);
+      }
       if let mir::Statement::AddI64 { result,
                                       left,
                                       right,
@@ -108,6 +114,13 @@ impl MirToXlilLowerer
                                       span, } = *statement
       {
         self.lower_binary_i64(result, left, right, span, "mul.i64", xlil_block, values, lowered);
+      }
+      if let mir::Statement::EqI64 { result,
+                                     left,
+                                     right,
+                                     span, } = *statement
+      {
+        self.lower_eq_i64(result, left, right, span, xlil_block, values, lowered);
       }
       if let mir::Statement::Call { result,
                                     ref function,
@@ -150,6 +163,33 @@ impl MirToXlilLowerer
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           "MIR const.i64 target local has no XLIL value type",
+                          span),
+    }
+  }
+
+  fn lower_const_bool(&mut self,
+                      local: mir::LocalId,
+                      value: bool,
+                      span: Span,
+                      xlil_block: BlockId,
+                      local_types: &HashMap<mir::LocalId, Option<Type>>,
+                      values: &mut HashMap<mir::LocalId, ValueId>,
+                      lowered: &mut Function)
+  {
+    match local_types.get(&local).copied().flatten()
+    {
+      Some(Type::BOOL) =>
+      {
+        if let Some(value_id) = lowered.add_const_bool(xlil_block, value)
+        {
+          values.insert(local, value_id);
+        }
+      }
+      Some(_) => self.report(DiagnosticCode::UnsupportedLocalType,
+                             "MIR const.bool target local must have XLIL bool type",
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          "MIR const.bool target local has no XLIL value type",
                           span),
     }
   }
@@ -237,6 +277,42 @@ impl MirToXlilLowerer
     {
       self.report(DiagnosticCode::UnsupportedLocalType,
                   &format!("MIR {instruction} operands must lower to XLIL i64 values"),
+                  span);
+      return;
+    };
+    values.insert(result, value);
+  }
+
+  fn lower_eq_i64(&mut self,
+                  result: mir::LocalId,
+                  left: mir::LocalId,
+                  right: mir::LocalId,
+                  span: Span,
+                  xlil_block: BlockId,
+                  values: &mut HashMap<mir::LocalId, ValueId>,
+                  lowered: &mut Function)
+  {
+    let Some(left) = values.get(&left).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  "MIR eq.i64 left operand does not have a lowered XLIL value",
+                  span);
+      return;
+    };
+    let Some(right) = values.get(&right).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  "MIR eq.i64 right operand does not have a lowered XLIL value",
+                  span);
+      return;
+    };
+    let Some(value) = lowered.eq_i64(xlil_block, left, right)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedLocalType,
+                  "MIR eq.i64 operands must lower to XLIL i64 values",
                   span);
       return;
     };
@@ -590,6 +666,55 @@ mod tests
                                                                           crate::xlil::ValueId(0),
                                                                         right:
                                                                           crate::xlil::ValueId(1) });
+    assert_eq!(lowered.blocks[0].terminator,
+               Some(Terminator::Return(Some(crate::xlil::ValueId(2)))));
+  }
+
+  #[test]
+  fn lowers_const_bool_and_eq_i64_statement()
+  {
+    let function =
+      MirFunction { name: "Eq".to_string(),
+                    parameters: vec![],
+                    return_type: Type::BOOL,
+                    locals: vec![Local { id: LocalId(0),
+                                         name: "left".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) },
+                                 Local { id: LocalId(1),
+                                         name: "right".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) },
+                                 Local { id: LocalId(2),
+                                         name: "same".to_string(),
+                                         value_type: Some(Type::BOOL),
+                                         mutable: false,
+                                         span: span(0, 1) }],
+                    blocks: vec![BasicBlock { id: MirBlockId(0),
+                                              statements: vec![mir::Statement::ConstI64 { local: LocalId(0),
+                                                                                          value: 7,
+                                                                                          span: span(1, 2) },
+                                                               mir::Statement::ConstI64 { local: LocalId(1),
+                                                                                          value: 7,
+                                                                                          span: span(2, 3) },
+                                                               mir::Statement::EqI64 { result: LocalId(2),
+                                                                                       left: LocalId(0),
+                                                                                       right: LocalId(1),
+                                                                                       span: span(3, 4) }],
+                                              terminator: Some(mir::Terminator::Return(Some(LocalId(2)))),
+                                              span: span(0, 5) }] };
+
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
+
+    assert_eq!(lowered.blocks[0].instructions[2], Instruction::EqI64 { result:
+                                                                         crate::xlil::ValueId(2),
+                                                                       left:
+                                                                         crate::xlil::ValueId(0),
+                                                                       right:
+                                                                         crate::xlil::ValueId(1) });
     assert_eq!(lowered.blocks[0].terminator,
                Some(Terminator::Return(Some(crate::xlil::ValueId(2)))));
   }

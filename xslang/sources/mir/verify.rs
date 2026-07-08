@@ -150,6 +150,9 @@ impl<'a> Verifier<'a>
       Statement::ConstI64 { local,
                             span,
                             .. } => self.verify_const_i64(local, span),
+      Statement::ConstBool { local,
+                             span,
+                             .. } => self.verify_const_bool(local, span),
       Statement::AddI64 { result,
                           left,
                           right,
@@ -162,6 +165,10 @@ impl<'a> Verifier<'a>
                           left,
                           right,
                           span, } => self.verify_i64_binary(result, left, right, "mul.i64", span),
+      Statement::EqI64 { result,
+                         left,
+                         right,
+                         span, } => self.verify_eq_i64(result, left, right, span),
       Statement::Call { result,
                         ref arguments,
                         return_type,
@@ -231,11 +238,60 @@ impl<'a> Verifier<'a>
     }
   }
 
+  fn verify_const_bool(&mut self, local: LocalId, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(crate::xlil::Type::BOOL) =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             "const.bool target local must have XLIL bool type".to_string(),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          "const.bool target local has no XLIL value type".to_string(),
+                          span),
+    }
+  }
+
   fn verify_i64_binary(&mut self, result: LocalId, left: LocalId, right: LocalId, instruction: &str, span: Span)
   {
     self.verify_i64_local(result, &format!("{instruction} result local"), span);
     self.verify_i64_local(left, &format!("{instruction} left operand"), span);
     self.verify_i64_local(right, &format!("{instruction} right operand"), span);
+  }
+
+  fn verify_eq_i64(&mut self, result: LocalId, left: LocalId, right: LocalId, span: Span)
+  {
+    self.verify_bool_local(result, "eq.i64 result local", span);
+    self.verify_i64_local(left, "eq.i64 left operand", span);
+    self.verify_i64_local(right, "eq.i64 right operand", span);
+  }
+
+  fn verify_bool_local(&mut self, local: LocalId, label: &str, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(crate::xlil::Type::BOOL) =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             format!("{label} must have XLIL bool type"),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          format!("{label} has no XLIL value type"),
+                          span),
+    }
   }
 
   fn verify_i64_local(&mut self, local: LocalId, label: &str, span: Span)

@@ -108,7 +108,7 @@ impl Verifier
   {
     match *instruction
     {
-      Instruction::ConstI64 { result, .. } =>
+      Instruction::ConstI64 { result, .. } | Instruction::ConstBool { result, .. } =>
       {
         if value_type(function, result).is_none()
         {
@@ -139,6 +139,14 @@ impl Verifier
         self.i64_value(function, result, "XLIL mul.i64 result");
         self.i64_value(function, left, "XLIL mul.i64 left operand");
         self.i64_value(function, right, "XLIL mul.i64 right operand");
+      }
+      Instruction::EqI64 { result,
+                           left,
+                           right, } =>
+      {
+        self.bool_value(function, result, "XLIL eq.i64 result");
+        self.i64_value(function, left, "XLIL eq.i64 left operand");
+        self.i64_value(function, right, "XLIL eq.i64 right operand");
       }
       Instruction::Call { result,
                           ref arguments,
@@ -227,6 +235,17 @@ impl Verifier
       {}
       Some(_) | None => self.report(DiagnosticCode::InstructionResultUnknown,
                                     &format!("{label} must reference an i64 value")),
+    }
+  }
+
+  fn bool_value(&mut self, function: &Function, value: ValueId, label: &str)
+  {
+    match value_type(function, value)
+    {
+      Some(crate::xlil::Type::BOOL) =>
+      {}
+      Some(_) | None => self.report(DiagnosticCode::InstructionResultUnknown,
+                                    &format!("{label} must reference a bool value")),
     }
   }
 
@@ -376,6 +395,21 @@ mod tests
     let left = function.add_const_i64(block, 6).expect("left const should be added");
     let right = function.add_const_i64(block, 7).expect("right const should be added");
     let result = function.mul_i64(block, left, right).expect("mul should be added");
+    assert!(function.set_return(block, Some(result)));
+    module.add_function(function);
+
+    assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn accepts_eq_i64_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("eq", Type::BOOL, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i64(block, 7).expect("left const should be added");
+    let right = function.add_const_i64(block, 7).expect("right const should be added");
+    let result = function.eq_i64(block, left, right).expect("eq should be added");
     assert!(function.set_return(block, Some(result)));
     module.add_function(function);
 
