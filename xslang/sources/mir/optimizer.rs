@@ -140,6 +140,7 @@ mod tests
   {
     Local { id: LocalId(id),
             name: format!("local{id}"),
+            value_type: None,
             mutable: true,
             span: span(0, 1) }
   }

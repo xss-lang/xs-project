@@ -5,6 +5,7 @@
 
 use crate::hir::async_check::Span;
 use crate::mir::{BasicBlock, BlockId, Function, Local, LocalId, Statement, Terminator};
+use crate::xlil::{Type, type_from_name};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XmirParseDiagnostic
@@ -98,9 +99,11 @@ impl Parser<'_>
       let id = self.local_id(id_text);
       self.index += 1;
       let name = self.local_name();
+      let value_type = self.local_type();
       let mutable = self.local_mutability();
       function.locals.push(Local { id,
                                    name,
+                                   value_type,
                                    mutable,
                                    span: span() });
     }
@@ -152,23 +155,37 @@ impl Parser<'_>
         break;
       };
       self.index += 1;
-      let local = self.statement_local();
       match kind
       {
-        "use" => block.statements.push(Statement::Use { local,
-                                                        span: span() }),
-        "move" => block.statements.push(Statement::Move { local,
-                                                          span: span() }),
-        "borrow shared" => block.statements.push(Statement::BorrowShared { local,
-                                                                           span: span() }),
-        "borrow mutable" => block.statements.push(Statement::BorrowMutable { local,
-                                                                             span: span() }),
-        "borrow end" => block.statements.push(Statement::EndBorrow { local,
-                                                                     span: span() }),
-        "drop" => block.statements.push(Statement::Drop { local,
-                                                          span: span() }),
+        "const.i64" => block.statements.push(self.const_i64_statement()),
+        "use" | "move" | "borrow shared" | "borrow mutable" | "borrow end" | "drop" =>
+        {
+          self.local_statement(block, kind);
+        }
         _ => self.report(format!("unknown statement kind '{kind}'")),
       }
+    }
+  }
+
+  fn local_statement(&mut self, block: &mut BasicBlock, kind: &str)
+  {
+    let local = self.statement_local();
+    match kind
+    {
+      "use" => block.statements.push(Statement::Use { local,
+                                                      span: span() }),
+      "move" => block.statements.push(Statement::Move { local,
+                                                        span: span() }),
+      "borrow shared" => block.statements.push(Statement::BorrowShared { local,
+                                                                         span: span() }),
+      "borrow mutable" => block.statements.push(Statement::BorrowMutable { local,
+                                                                           span: span() }),
+      "borrow end" => block.statements.push(Statement::EndBorrow { local,
+                                                                   span: span() }),
+      "drop" => block.statements.push(Statement::Drop { local,
+                                                        span: span() }),
+      _ =>
+      {}
     }
   }
 
@@ -276,6 +293,27 @@ impl Parser<'_>
     }
   }
 
+  fn local_type(&mut self) -> Option<Type>
+  {
+    let Some(line) = self.current()
+    else
+    {
+      return None;
+    };
+    let Some(type_name) = line.strip_prefix("    type ")
+    else
+    {
+      return None;
+    };
+    self.index += 1;
+    let value_type = type_from_name(type_name);
+    if value_type.is_none()
+    {
+      self.report(format!("unknown local type '{type_name}'"));
+    }
+    value_type
+  }
+
   fn statement_local(&mut self) -> LocalId
   {
     let Some(line) = self.current()
@@ -292,6 +330,59 @@ impl Parser<'_>
       return LocalId(0);
     };
     self.local_id(local)
+  }
+
+  fn const_i64_statement(&mut self) -> Statement
+  {
+    let local = self.const_i64_target();
+    let value = self.const_i64_value();
+    Statement::ConstI64 { local,
+                          value,
+                          span: span() }
+  }
+
+  fn const_i64_target(&mut self) -> LocalId
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing const.i64 target".to_string());
+      return LocalId(0);
+    };
+    self.index += 1;
+    let Some(local) = line.strip_prefix("        target local ")
+    else
+    {
+      self.report("expected const.i64 target".to_string());
+      return LocalId(0);
+    };
+    self.local_id(local)
+  }
+
+  fn const_i64_value(&mut self) -> i64
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing const.i64 value".to_string());
+      return 0;
+    };
+    self.index += 1;
+    let Some(value) = line.strip_prefix("        value ")
+    else
+    {
+      self.report("expected const.i64 value".to_string());
+      return 0;
+    };
+    match value.parse()
+    {
+      Ok(value) => value,
+      Err(_) =>
+      {
+        self.report(format!("invalid const.i64 value '{value}'"));
+        0
+      }
+    }
   }
 
   fn local_id(&mut self, text: &str) -> LocalId

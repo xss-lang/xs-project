@@ -67,10 +67,10 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 
 - `.xmir version 0`
 - `function <name>`
-- `locals`
+- `locals`, including optional `type <xlil-type>` records for values that can lower into XLIL
 - `control_flow`
 - `block`
-- local-use, move, borrow, end-borrow, and drop statements
+- local-use, move, borrow, end-borrow, `const.i64`, and drop statements
 - `return`, `goto`, `unreachable`, and `missing` terminators
 - optional local return values and goto targets
 - `analysis optimizer` records for optimization pass reports and removed item counts

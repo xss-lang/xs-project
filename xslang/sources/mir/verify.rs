@@ -112,6 +112,9 @@ impl<'a> Verifier<'a>
                        span, } |
       Statement::Move { local,
                         span, } |
+      Statement::ConstI64 { local,
+                            span,
+                            .. } |
       Statement::BorrowShared { local,
                                 span, } |
       Statement::BorrowMutable { local,
@@ -177,6 +180,7 @@ mod tests
   {
     Local { id: LocalId(id),
             name: format!("local{id}"),
+            value_type: None,
             mutable: true,
             span: span(0, 1) }
   }

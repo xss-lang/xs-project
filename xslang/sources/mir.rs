@@ -6,6 +6,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::hir::async_check::Span;
+use crate::xlil::Type;
 
 pub mod optimizer;
 pub mod text;
@@ -22,6 +23,7 @@ pub struct Local
 {
   pub id: LocalId,
   pub name: String,
+  pub value_type: Option<Type>,
   pub mutable: bool,
   pub span: Span,
 }
@@ -48,6 +50,10 @@ pub enum Statement
   EndBorrow
   {
     local: LocalId, span: Span
+  },
+  ConstI64
+  {
+    local: LocalId, value: i64, span: Span
   },
   Drop
   {
@@ -158,6 +164,9 @@ impl BorrowChecker
     {
       Statement::Use { local,
                        span, } |
+      Statement::ConstI64 { local,
+                            span,
+                            .. } |
       Statement::Drop { local,
                         span, } => self.require_live(local, span),
       Statement::Move { local,
@@ -337,6 +346,7 @@ mod tests
   {
     Local { id: LocalId(id),
             name: format!("local{id}"),
+            value_type: None,
             mutable,
             span: span(0, 1) }
   }

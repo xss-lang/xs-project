@@ -372,8 +372,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   basic blocks, `const.i64`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
   `bbN.label:`, `%N:type = const <value>`, `br bbN`, `ret`, and `.end`.
-- The first MIR → XLIL body bridge lowers flat blocks containing `const.i64` instructions and a `return` terminator to XLIL
-  function body records.
+- The first MIR → XLIL body bridge lowers typed MIR `const.i64` local statements and matching local return values to XLIL
+  `const` instructions and `ret %N` terminators.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
   stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path

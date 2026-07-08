@@ -7,12 +7,15 @@ use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::mir;
-use crate::xlil::{BlockId, Function, Type};
+use crate::xlil::{BlockId, Function, Type, ValueId};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
 {
   UnsupportedReturnValue,
+  MissingLocalType,
+  UnsupportedLocalType,
+  MissingLocalValue,
   MissingMirTerminator,
   MissingBranchTarget,
 }
@@ -41,8 +44,10 @@ impl MirToXlilLowerer
 
   pub fn lower_function(mut self, function: &mir::Function) -> Result<Function, Vec<Diagnostic>>
   {
-    let mut lowered = Function::definition(function.name.clone(), Type::VOID, vec![]);
+    let local_types = local_types(function);
+    let mut lowered = Function::definition(function.name.clone(), self.return_type(function, &local_types), vec![]);
     let mut blocks = HashMap::new();
+    let mut values = HashMap::new();
     for block in &function.blocks
     {
       let xlil_block = lowered.append_block(format!("bb{}", block.id.0));
@@ -51,7 +56,8 @@ impl MirToXlilLowerer
     for block in &function.blocks
     {
       let xlil_block = blocks[&block.id];
-      self.lower_terminator(block, xlil_block, &blocks, &mut lowered);
+      self.lower_statements(block, xlil_block, &local_types, &mut values, &mut lowered);
+      self.lower_terminator(block, xlil_block, &blocks, &values, &mut lowered);
     }
     if self.diagnostics.is_empty()
     {
@@ -63,10 +69,80 @@ impl MirToXlilLowerer
     }
   }
 
+  fn return_type(&mut self, function: &mir::Function, local_types: &HashMap<mir::LocalId, Option<Type>>) -> Type
+  {
+    for block in &function.blocks
+    {
+      let Some(mir::Terminator::Return(Some(local))) = block.terminator
+      else
+      {
+        continue;
+      };
+      return match local_types.get(&local).copied().flatten()
+      {
+        Some(value_type) => value_type,
+        None =>
+        {
+          self.report(DiagnosticCode::MissingLocalType,
+                      "MIR return local has no XLIL value type",
+                      block.span);
+          Type::VOID
+        }
+      };
+    }
+    Type::VOID
+  }
+
+  fn lower_statements(&mut self,
+                      block: &mir::BasicBlock,
+                      xlil_block: BlockId,
+                      local_types: &HashMap<mir::LocalId, Option<Type>>,
+                      values: &mut HashMap<mir::LocalId, ValueId>,
+                      lowered: &mut Function)
+  {
+    for statement in &block.statements
+    {
+      if let mir::Statement::ConstI64 { local,
+                                        value,
+                                        span, } = *statement
+      {
+        self.lower_const_i64(local, value, span, xlil_block, local_types, values, lowered);
+      }
+    }
+  }
+
+  fn lower_const_i64(&mut self,
+                     local: mir::LocalId,
+                     value: i64,
+                     span: Span,
+                     xlil_block: BlockId,
+                     local_types: &HashMap<mir::LocalId, Option<Type>>,
+                     values: &mut HashMap<mir::LocalId, ValueId>,
+                     lowered: &mut Function)
+  {
+    match local_types.get(&local).copied().flatten()
+    {
+      Some(Type::I64) =>
+      {
+        if let Some(value_id) = lowered.add_const_i64(xlil_block, value)
+        {
+          values.insert(local, value_id);
+        }
+      }
+      Some(_) => self.report(DiagnosticCode::UnsupportedLocalType,
+                             "MIR const.i64 target local must have XLIL i64 type",
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          "MIR const.i64 target local has no XLIL value type",
+                          span),
+    }
+  }
+
   fn lower_terminator(&mut self,
                       block: &mir::BasicBlock,
                       xlil_block: BlockId,
                       blocks: &HashMap<mir::BlockId, BlockId>,
+                      values: &HashMap<mir::LocalId, ValueId>,
                       lowered: &mut Function)
   {
     match block.terminator
@@ -80,9 +156,23 @@ impl MirToXlilLowerer
                       block.span);
         }
       }
-      Some(mir::Terminator::Return(Some(_))) => self.report(DiagnosticCode::UnsupportedReturnValue,
-                                                            "MIR return values are lowered after value mapping exists",
-                                                            block.span),
+      Some(mir::Terminator::Return(Some(local))) =>
+      {
+        let Some(value) = values.get(&local).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR return local does not have a lowered XLIL value",
+                      block.span);
+          return;
+        };
+        if !lowered.set_return(xlil_block, Some(value))
+        {
+          self.report(DiagnosticCode::UnsupportedReturnValue,
+                      "MIR return value does not match the lowered XLIL function signature",
+                      block.span);
+        }
+      }
       Some(mir::Terminator::Goto(target)) =>
       {
         let Some(target) = blocks.get(&target).copied()
@@ -114,12 +204,20 @@ impl MirToXlilLowerer
   }
 }
 
+fn local_types(function: &mir::Function) -> HashMap<mir::LocalId, Option<Type>>
+{
+  function.locals
+          .iter()
+          .map(|local| (local.id, local.value_type))
+          .collect()
+}
+
 #[cfg(test)]
 mod tests
 {
   use super::*;
-  use crate::mir::{BasicBlock, BlockId as MirBlockId, Function as MirFunction, LocalId};
-  use crate::xlil::Terminator;
+  use crate::mir::{BasicBlock, BlockId as MirBlockId, Function as MirFunction, Local, LocalId};
+  use crate::xlil::{Instruction, Terminator};
 
   fn span(start: u32, end: u32) -> Span
   {
@@ -145,7 +243,7 @@ mod tests
   }
 
   #[test]
-  fn rejects_return_value_until_value_mapping_exists()
+  fn rejects_return_value_without_type_and_value_mapping()
   {
     let function = MirFunction { name: "Value".to_string(),
                                  locals: vec![],
@@ -158,8 +256,38 @@ mod tests
     let diagnostics = MirToXlilLowerer::new().lower_function(&function)
                                              .expect_err("lowering must diagnose");
 
-    assert_eq!(diagnostics.len(), 1);
-    assert_eq!(diagnostics[0].code, DiagnosticCode::UnsupportedReturnValue);
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::MissingLocalType));
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::MissingLocalValue));
+  }
+
+  #[test]
+  fn lowers_i64_const_and_return_value()
+  {
+    let function =
+      MirFunction { name: "Value".to_string(),
+                    locals: vec![Local { id: LocalId(0),
+                                         name: "answer".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) }],
+                    blocks: vec![BasicBlock { id: MirBlockId(0),
+                                              statements: vec![mir::Statement::ConstI64 { local: LocalId(0),
+                                                                                          value: 42,
+                                                                                          span: span(1, 2) }],
+                                              terminator: Some(mir::Terminator::Return(Some(LocalId(0)))),
+                                              span: span(0, 3) }] };
+
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
+
+    assert_eq!(lowered.return_type, Type::I64);
+    assert_eq!(lowered.blocks[0].instructions,
+               vec![Instruction::ConstI64 { result: crate::xlil::ValueId(0),
+                                            value: 42 }]);
+    assert_eq!(lowered.blocks[0].terminator,
+               Some(Terminator::Return(Some(crate::xlil::ValueId(0)))));
   }
 
   #[test]

@@ -8,6 +8,7 @@ use std::fmt::Write;
 use super::optimizer::{OptimizationPass, OptimizationReport};
 use super::verify::{Diagnostic as VerifyDiagnostic, DiagnosticCode as VerifyDiagnosticCode};
 use super::{BasicBlock, Function, LocalId, Statement, Terminator};
+use crate::xlil::type_name;
 
 pub mod parser;
 
@@ -52,6 +53,10 @@ pub fn function_to_xmir(function: &Function) -> String
       };
       let _ = writeln!(output, "  local {}", local.id.0);
       let _ = writeln!(output, "    name {}", local.name);
+      if let Some(value_type) = local.value_type
+      {
+        let _ = writeln!(output, "    type {}", type_name(value_type));
+      }
       let _ = writeln!(output, "    mutability {mutability}");
     }
   }
@@ -370,6 +375,14 @@ fn write_statement(output: &mut String, statement: &Statement)
     Statement::BorrowShared { local, .. } => write_local_statement(output, "borrow shared", *local),
     Statement::BorrowMutable { local, .. } => write_local_statement(output, "borrow mutable", *local),
     Statement::EndBorrow { local, .. } => write_local_statement(output, "borrow end", *local),
+    Statement::ConstI64 { local,
+                          value,
+                          .. } =>
+    {
+      let _ = writeln!(output, "      statement const.i64");
+      let _ = writeln!(output, "        target local {}", local.0);
+      let _ = writeln!(output, "        value {value}");
+    }
     Statement::Drop { local, .. } => write_local_statement(output, "drop", *local),
   }
 }
@@ -424,6 +437,7 @@ mod tests
       Function { name: "Main".to_string(),
                  locals: vec![Local { id: LocalId(0),
                                       name: "message".to_string(),
+                                      value_type: None,
                                       mutable: false,
                                       span: span() }],
                  blocks: vec![BasicBlock { id: BlockId(0),
@@ -461,10 +475,14 @@ mod tests
       Function { name: "Flow".to_string(),
                  locals: vec![Local { id: LocalId(0),
                                       name: "result".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
                                       mutable: true,
                                       span: span() }],
                  blocks: vec![BasicBlock { id: BlockId(0),
-                                           statements: vec![Statement::Use { local: LocalId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 7,
+                                                                                  span: span() },
+                                                            Statement::Use { local: LocalId(0),
                                                                              span: span() },
                                                             Statement::Move { local: LocalId(0),
                                                                               span: span() },
@@ -487,15 +505,20 @@ mod tests
 
     assert_eq!(parsed.name, "Flow");
     assert_eq!(parsed.locals[0].name, "result");
+    assert_eq!(parsed.locals[0].value_type, Some(crate::xlil::Type::I64));
     assert!(parsed.locals[0].mutable);
     assert_eq!(parsed.blocks[0].terminator, Some(Terminator::Goto(BlockId(1))));
     assert_eq!(parsed.blocks[1].terminator, Some(Terminator::Return(Some(LocalId(0)))));
     assert_eq!(parsed.blocks[2].terminator, Some(Terminator::Unreachable));
-    assert!(matches!(parsed.blocks[0].statements[0], Statement::Use { local: LocalId(0),
+    assert!(matches!(parsed.blocks[0].statements[0], Statement::ConstI64 { local:
+                                                                             LocalId(0),
+                                                                           value: 7,
+                                                                           .. }));
+    assert!(matches!(parsed.blocks[0].statements[1], Statement::Use { local: LocalId(0),
                                                                       .. }));
-    assert!(matches!(parsed.blocks[0].statements[1], Statement::Move { local: LocalId(0),
+    assert!(matches!(parsed.blocks[0].statements[2], Statement::Move { local: LocalId(0),
                                                                        .. }));
-    assert!(matches!(parsed.blocks[0].statements[2], Statement::Drop { local: LocalId(0),
+    assert!(matches!(parsed.blocks[0].statements[3], Statement::Drop { local: LocalId(0),
                                                                        .. }));
     assert!(matches!(parsed.blocks[1].statements[0], Statement::BorrowMutable { local:
                                                                                   LocalId(0),
@@ -523,6 +546,7 @@ mod tests
     let function = Function { name: "Verified".to_string(),
                               locals: vec![Local { id: LocalId(0),
                                                    name: "value".to_string(),
+                                                   value_type: None,
                                                    mutable: false,
                                                    span: span() }],
                               blocks: vec![BasicBlock { id: BlockId(0),
