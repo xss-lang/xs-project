@@ -104,6 +104,12 @@ pub enum Terminator
 {
   Return(Option<ValueId>),
   Branch(BlockId),
+  BranchIf
+  {
+    condition: ValueId,
+    then_block: BlockId,
+    else_block: BlockId,
+  },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -325,6 +331,33 @@ impl Function
     true
   }
 
+  pub fn set_branch_if(&mut self, block: BlockId, condition: ValueId, then_block: BlockId, else_block: BlockId)
+                       -> bool
+  {
+    if self.block(then_block).is_none() || self.block(else_block).is_none()
+    {
+      return false;
+    }
+    if !self.value(condition)
+            .is_some_and(|value| value.value_type == Type::BOOL)
+    {
+      return false;
+    }
+    let Some(block) = self.block_mut(block)
+    else
+    {
+      return false;
+    };
+    if block.terminator.is_some()
+    {
+      return false;
+    }
+    block.terminator = Some(Terminator::BranchIf { condition,
+                                                   then_block,
+                                                   else_block });
+    true
+  }
+
   fn block(&self, block: BlockId) -> Option<&Block>
   {
     self.blocks
@@ -519,6 +552,23 @@ mod tests
 
     assert_eq!(result, ValueId(0));
     assert!(function.set_return(block, Some(result)));
+  }
+
+  #[test]
+  fn sets_conditional_branch_with_bool_condition()
+  {
+    let mut function = Function::definition("BranchIf", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+    let then_block = function.append_block("then");
+    let else_block = function.append_block("else");
+    let condition = function.add_const_bool(entry, true)
+                            .expect("bool const should be added");
+
+    assert!(function.set_branch_if(entry, condition, then_block, else_block));
+    assert_eq!(function.blocks[0].terminator,
+               Some(Terminator::BranchIf { condition,
+                                           then_block,
+                                           else_block }));
   }
 
   #[test]

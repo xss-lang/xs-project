@@ -243,6 +243,10 @@ impl Parser<'_>
       {
         block.terminator = self.branch_terminator(target, line_number);
       }
+      else if let Some(branch_if) = line.strip_prefix("  br_if ")
+      {
+        block.terminator = self.branch_if_terminator(branch_if, line_number);
+      }
       else if line == "  .missing_terminator"
       {
         block.terminator = None;
@@ -538,6 +542,46 @@ impl Parser<'_>
     Some(Terminator::Branch(target))
   }
 
+  fn branch_if_terminator(&mut self, text: &str, line: usize) -> Option<Terminator>
+  {
+    let Some((condition, targets)) = text.split_once(", ")
+    else
+    {
+      self.report(DiagnosticCode::InvalidTerminator,
+                  line,
+                  "XLIL br_if terminator is invalid");
+      return None;
+    };
+    let condition = self.value_operand(condition, line)?;
+    let Some((then_block, else_block)) = targets.split_once(", ")
+    else
+    {
+      self.report(DiagnosticCode::InvalidTerminator,
+                  line,
+                  "XLIL br_if targets are invalid");
+      return None;
+    };
+    Some(Terminator::BranchIf { condition,
+                                then_block: self.branch_target(then_block, line)?,
+                                else_block: self.branch_target(else_block, line)? })
+  }
+
+  fn branch_target(&mut self, text: &str, line: usize) -> Option<BlockId>
+  {
+    let Some(target) = text.strip_prefix("bb")
+    else
+    {
+      self.report(DiagnosticCode::InvalidTerminator, line, "XLIL branch target is invalid");
+      return None;
+    };
+    let parsed = target.parse::<u32>().ok().map(BlockId);
+    if parsed.is_none()
+    {
+      self.report(DiagnosticCode::InvalidTerminator, line, "XLIL branch target is invalid");
+    }
+    parsed
+  }
+
   fn value_id(&mut self, text: &str, line: usize) -> Option<ValueId>
   {
     let parsed = text.parse::<u32>().ok().map(ValueId);
@@ -672,6 +716,17 @@ mod tests
   {
     let text = ".xlil version 0\n.xlil module App\n.func xs$App$Truth : () -> bool\nbb0.entry:\n  %0:bool = \
                 const.bool true\n  ret %0\n.end\n";
+
+    let module = parse_module(text).expect("parse should succeed");
+
+    assert_eq!(module_to_string(&module), text);
+  }
+
+  #[test]
+  fn roundtrips_branch_if_function()
+  {
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %0:bool = \
+                const.bool true\n  br_if %0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 

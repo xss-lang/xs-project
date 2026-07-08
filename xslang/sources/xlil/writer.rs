@@ -73,6 +73,11 @@ fn write_block(block: &Block, output: &mut impl Write) -> fmt::Result
   {
     Some(Terminator::Return(value)) => write_return(value, output),
     Some(Terminator::Branch(target)) => writeln!(output, "  br bb{}", target.0),
+    Some(Terminator::BranchIf { condition,
+                                then_block,
+                                else_block, }) => writeln!(output,
+                                                           "  br_if %{}, bb{}, bb{}",
+                                                           condition.0, then_block.0, else_block.0),
     None => writeln!(output, "  .missing_terminator"),
   }
 }
@@ -190,6 +195,26 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br \
                 bb1\nbb1.exit:\n  ret\n.end\n");
+  }
+
+  #[test]
+  fn writes_branch_if_terminator()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$BranchIf", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+    let then_block = function.append_block("then");
+    let else_block = function.append_block("else");
+    let condition = function.add_const_bool(entry, true)
+                            .expect("bool const should be added");
+    assert!(function.set_branch_if(entry, condition, then_block, else_block));
+    assert!(function.set_return(then_block, None));
+    assert!(function.set_return(else_block, None));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %0:bool = \
+                const.bool true\n  br_if %0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n");
   }
 
   #[test]

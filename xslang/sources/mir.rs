@@ -114,6 +114,12 @@ pub enum Terminator
 {
   Return(Option<LocalId>),
   Goto(BlockId),
+  BranchIf
+  {
+    condition: LocalId,
+    then_block: BlockId,
+    else_block: BlockId,
+  },
   Unreachable,
 }
 
@@ -205,6 +211,10 @@ impl BorrowChecker
     for statement in &block.statements
     {
       self.check_statement(statement);
+    }
+    if let Some(Terminator::BranchIf { condition, .. }) = block.terminator
+    {
+      self.require_live(condition, block.span);
     }
   }
 
@@ -418,9 +428,18 @@ pub fn reachable_blocks(function: &Function) -> HashSet<BlockId>
     {
       continue;
     }
-    if let Some(Terminator::Goto(next)) = known.get(&block_id).and_then(|block| block.terminator.as_ref())
+    match known.get(&block_id).and_then(|block| block.terminator.as_ref())
     {
-      stack.push(*next);
+      Some(Terminator::Goto(next)) => stack.push(*next),
+      Some(Terminator::BranchIf { then_block,
+                                  else_block,
+                                  .. }) =>
+      {
+        stack.push(*then_block);
+        stack.push(*else_block);
+      }
+      _ =>
+      {}
     }
   }
   reachable
@@ -479,6 +498,21 @@ mod tests
                                  Statement::Use { local: LocalId(0),
                                                   span: span(3, 4) }],
                             Some(Terminator::Return(None)));
+
+    let diagnostics = BorrowChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::UseAfterMove);
+  }
+
+  #[test]
+  fn rejects_branch_if_condition_after_move()
+  {
+    let function = function(vec![Statement::Move { local: LocalId(0),
+                                                   span: span(1, 2) }],
+                            Some(Terminator::BranchIf { condition: LocalId(0),
+                                                        then_block: BlockId(0),
+                                                        else_block: BlockId(0) }));
 
     let diagnostics = BorrowChecker::new().check_function(&function);
 
@@ -563,5 +597,35 @@ mod tests
     assert!(reachable.contains(&BlockId(0)));
     assert!(reachable.contains(&BlockId(1)));
     assert!(!reachable.contains(&BlockId(2)));
+  }
+
+  #[test]
+  fn computes_reachable_blocks_through_branch_if()
+  {
+    let function =
+      Function { name: "main".to_string(),
+                 parameters: vec![],
+                 return_type: Type::VOID,
+                 locals: vec![],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::BranchIf { condition: LocalId(0),
+                                                                                   then_block: BlockId(1),
+                                                                                   else_block: BlockId(2) }),
+                                           span: span(0, 1) },
+                              BasicBlock { id: BlockId(1),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(1, 2) },
+                              BasicBlock { id: BlockId(2),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(2, 3) }] };
+
+    let reachable = reachable_blocks(&function);
+
+    assert!(reachable.contains(&BlockId(0)));
+    assert!(reachable.contains(&BlockId(1)));
+    assert!(reachable.contains(&BlockId(2)));
   }
 }

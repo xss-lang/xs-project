@@ -286,6 +286,7 @@ impl Parser<'_>
       "missing" => None,
       "return" => Some(self.return_terminator()),
       "goto" => Some(Terminator::Goto(self.goto_target())),
+      "branch_if" => Some(self.branch_if_terminator()),
       "unreachable" => Some(Terminator::Unreachable),
       _ =>
       {
@@ -322,6 +323,53 @@ impl Parser<'_>
       return BlockId(0);
     };
     self.block_id(target)
+  }
+
+  fn branch_if_terminator(&mut self) -> Terminator
+  {
+    let condition = self.branch_if_condition();
+    let then_block = self.branch_if_block("then");
+    let else_block = self.branch_if_block("else");
+    Terminator::BranchIf { condition,
+                           then_block,
+                           else_block }
+  }
+
+  fn branch_if_condition(&mut self) -> LocalId
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing branch_if condition".to_string());
+      return LocalId(0);
+    };
+    self.index += 1;
+    let Some(local) = line.strip_prefix("      condition local ")
+    else
+    {
+      self.report("expected branch_if condition".to_string());
+      return LocalId(0);
+    };
+    self.local_id(local)
+  }
+
+  fn branch_if_block(&mut self, field: &str) -> BlockId
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report(format!("missing branch_if {field} block"));
+      return BlockId(0);
+    };
+    self.index += 1;
+    let expected = format!("      {field} block ");
+    let Some(block) = line.strip_prefix(&expected)
+    else
+    {
+      self.report(format!("expected branch_if {field} block"));
+      return BlockId(0);
+    };
+    self.block_id(block)
   }
 
   fn local_name(&mut self) -> String

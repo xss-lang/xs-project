@@ -208,6 +208,15 @@ fn write_terminator(output: &mut String, terminator: &Terminator)
       let _ = writeln!(output, "    terminator goto");
       let _ = writeln!(output, "      target block {}", block.0);
     }
+    Terminator::BranchIf { condition,
+                           then_block,
+                           else_block, } =>
+    {
+      let _ = writeln!(output, "    terminator branch_if");
+      let _ = writeln!(output, "      condition local {}", condition.0);
+      let _ = writeln!(output, "      then block {}", then_block.0);
+      let _ = writeln!(output, "      else block {}", else_block.0);
+    }
     Terminator::Unreachable =>
     {
       let _ = writeln!(output, "    terminator unreachable");

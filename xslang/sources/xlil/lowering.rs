@@ -378,6 +378,52 @@ impl MirToXlilLowerer
                       block.span);
         }
       }
+      Some(mir::Terminator::BranchIf { condition,
+                                       then_block,
+                                       else_block, }) =>
+      {
+        match local_types.get(&condition).copied().flatten()
+        {
+          Some(Type::BOOL) =>
+          {}
+          Some(_) => self.report(DiagnosticCode::UnsupportedLocalType,
+                                 "MIR branch_if condition local must have XLIL bool type",
+                                 block.span),
+          None => self.report(DiagnosticCode::MissingLocalType,
+                              "MIR branch_if condition local has no XLIL value type",
+                              block.span),
+        }
+        let Some(condition) = values.get(&condition).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR branch_if condition does not have a lowered XLIL value",
+                      block.span);
+          return;
+        };
+        let Some(then_block) = blocks.get(&then_block).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingBranchTarget,
+                      "MIR branch_if then target block is missing",
+                      block.span);
+          return;
+        };
+        let Some(else_block) = blocks.get(&else_block).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingBranchTarget,
+                      "MIR branch_if else target block is missing",
+                      block.span);
+          return;
+        };
+        if !lowered.set_branch_if(xlil_block, condition, then_block, else_block)
+        {
+          self.report(DiagnosticCode::MissingBranchTarget,
+                      "XLIL conditional branch could not be created",
+                      block.span);
+        }
+      }
       Some(mir::Terminator::Unreachable) | None => self.report(DiagnosticCode::MissingMirTerminator,
                                                                "MIR terminator cannot yet be lowered to XLIL",
                                                                block.span),
@@ -761,5 +807,46 @@ mod tests
 
     assert_eq!(lowered.blocks[0].terminator,
                Some(Terminator::Branch(crate::xlil::BlockId(1))));
+  }
+
+  #[test]
+  fn lowers_branch_if_terminator()
+  {
+    let function = MirFunction { name: "BranchIf".to_string(),
+                                 parameters: vec![],
+                                 return_type: Type::VOID,
+                                 locals: vec![Local { id: LocalId(0),
+                                                      name: "condition".to_string(),
+                                                      value_type: Some(Type::BOOL),
+                                                      mutable: false,
+                                                      span: span(0, 1) }],
+                                 blocks: vec![BasicBlock { id: MirBlockId(0),
+                                                           statements:
+                                                             vec![mir::Statement::ConstBool { local: LocalId(0),
+                                                                                              value: true,
+                                                                                              span: span(1, 2) }],
+                                                           terminator:
+                                                             Some(mir::Terminator::BranchIf { condition: LocalId(0),
+                                                                                              then_block:
+                                                                                                MirBlockId(1),
+                                                                                              else_block:
+                                                                                                MirBlockId(2) }),
+                                                           span: span(0, 3) },
+                                              BasicBlock { id: MirBlockId(1),
+                                                           statements: vec![],
+                                                           terminator: Some(mir::Terminator::Return(None)),
+                                                           span: span(3, 4) },
+                                              BasicBlock { id: MirBlockId(2),
+                                                           statements: vec![],
+                                                           terminator: Some(mir::Terminator::Return(None)),
+                                                           span: span(4, 5) }] };
+
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
+
+    assert_eq!(lowered.blocks[0].terminator,
+               Some(Terminator::BranchIf { condition: crate::xlil::ValueId(0),
+                                           then_block: crate::xlil::BlockId(1),
+                                           else_block: crate::xlil::BlockId(2) }));
   }
 }

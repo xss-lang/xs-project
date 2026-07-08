@@ -672,6 +672,45 @@ mod tests
   }
 
   #[test]
+  fn roundtrips_branch_if_terminator()
+  {
+    let function =
+      Function { name: "BranchIfFlow".to_string(),
+                 parameters: vec![],
+                 return_type: crate::xlil::Type::VOID,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "condition".to_string(),
+                                      value_type: Some(crate::xlil::Type::BOOL),
+                                      mutable: false,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstBool { local: LocalId(0),
+                                                                                   value: true,
+                                                                                   span: span() }],
+                                           terminator: Some(Terminator::BranchIf { condition: LocalId(0),
+                                                                                   then_block: BlockId(1),
+                                                                                   else_block: BlockId(2) }),
+                                           span: span() },
+                              BasicBlock { id: BlockId(1),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span() },
+                              BasicBlock { id: BlockId(2),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span() }] };
+
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
+
+    assert!(text.contains("terminator branch_if"));
+    assert_eq!(parsed.blocks[0].terminator,
+               Some(Terminator::BranchIf { condition: LocalId(0),
+                                           then_block: BlockId(1),
+                                           else_block: BlockId(2) }));
+  }
+
+  #[test]
   fn rejects_non_xmir_header()
   {
     assert_eq!(parse_xmir_header(".func Main : () -> void\n"), None);

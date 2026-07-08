@@ -19,5 +19,6 @@ Current core slices include:
 - A first HIR to MIR lowering bridge for void functions, `Int` locals, `Int` literals, and local returns.
 - MIR structural verification, borrow-checking, optimizer scaffolding, and structured XMIR parser/writer modules.
 - MIR and XLIL `add.i64`/`sub.i64`/`mul.i64` plus `const.bool`/`eq.i64` support, including XMIR/XLIL round-tripping and MIR constant folding for constant operands.
-- MIR to XLIL lowering for typed `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, call, branch, and return records.
+- MIR and XLIL conditional terminator infrastructure: MIR `branch_if`, XLIL `br_if`, verifier checks, and MIR-to-XLIL lowering for already-lowered `bool` conditions.
+- MIR to XLIL lowering for typed `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, call, unconditional/conditional branch, and return records.
 - Monomorphization and codegen-unit planning models that do not depend on LLVM.

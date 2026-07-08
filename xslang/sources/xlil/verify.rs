@@ -84,10 +84,11 @@ impl Verifier
       self.report(DiagnosticCode::DefinitionHasNoBlocks,
                   "XLIL function definition must contain at least one block");
     }
-    let mut blocks = HashSet::new();
+    let blocks = function.blocks.iter().map(|block| block.id).collect::<HashSet<_>>();
+    let mut seen_blocks = HashSet::new();
     for block in &function.blocks
     {
-      if !blocks.insert(block.id)
+      if !seen_blocks.insert(block.id)
       {
         self.report(DiagnosticCode::DuplicateBlockId,
                     "XLIL block ids must be unique within a function");
@@ -200,6 +201,22 @@ impl Verifier
         {
           self.report(DiagnosticCode::BranchTargetUnknown,
                       "XLIL branch target must reference an existing block");
+        }
+      }
+      Terminator::BranchIf { condition,
+                             then_block,
+                             else_block, } =>
+      {
+        self.bool_value(function, *condition, "XLIL br_if condition");
+        if !blocks.contains(then_block)
+        {
+          self.report(DiagnosticCode::BranchTargetUnknown,
+                      "XLIL br_if then target must reference an existing block");
+        }
+        if !blocks.contains(else_block)
+        {
+          self.report(DiagnosticCode::BranchTargetUnknown,
+                      "XLIL br_if else target must reference an existing block");
         }
       }
     }
@@ -414,6 +431,46 @@ mod tests
     module.add_function(function);
 
     assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn accepts_branch_if_with_bool_condition()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("branch_if", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+    let then_block = function.append_block("then");
+    let else_block = function.append_block("else");
+    let condition = function.add_const_bool(entry, true)
+                            .expect("bool const should be added");
+    assert!(function.set_branch_if(entry, condition, then_block, else_block));
+    assert!(function.set_return(then_block, None));
+    assert!(function.set_return(else_block, None));
+    module.add_function(function);
+
+    assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn rejects_branch_if_non_bool_and_unknown_targets()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("bad_branch_if", Type::VOID, vec![]);
+    function.values.push(Value { id: ValueId(0),
+                                 value_type: Type::I64 });
+    function.blocks.push(Block { id: BlockId(0),
+                                 label: "entry".to_string(),
+                                 instructions: vec![],
+                                 terminator: Some(Terminator::BranchIf { condition: ValueId(0),
+                                                                         then_block: BlockId(1),
+                                                                         else_block: BlockId(2) }) });
+    module.add_function(function);
+
+    let diagnostics = verify_module(&module);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::InstructionResultUnknown);
+    assert_eq!(diagnostics[1].code, DiagnosticCode::BranchTargetUnknown);
+    assert_eq!(diagnostics[2].code, DiagnosticCode::BranchTargetUnknown);
   }
 
   #[test]

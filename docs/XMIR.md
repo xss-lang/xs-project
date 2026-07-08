@@ -69,9 +69,9 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `locals`, including optional `type <xlil-type>` records for values that can lower into XLIL
 - `control_flow`
 - `block`
-- local-use, move, borrow, end-borrow, `const.i64`, `call`, and drop statements
-- `return`, `goto`, `unreachable`, and `missing` terminators
-- optional local return values and goto targets
+- local-use, move, borrow, end-borrow, `const.i64`, `const.bool`, arithmetic, compare, `call`, and drop statements
+- `return`, `goto`, `branch_if`, `unreachable`, and `missing` terminators
+- optional local return values, goto targets, and named `branch_if` condition/then/else fields
 - `analysis optimizer` records for optimization pass reports and removed item counts
 - `analysis verify` records for structural verifier diagnostics, spans, and messages
 

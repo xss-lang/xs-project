@@ -183,6 +183,14 @@ impl<'a> Verifier<'a>
     {
       Terminator::Return(Some(local)) => self.verify_return_value(local, span),
       Terminator::Goto(block) => self.verify_block_target(block, span),
+      Terminator::BranchIf { condition,
+                             then_block,
+                             else_block, } =>
+      {
+        self.verify_bool_local(condition, "branch_if condition local", span);
+        self.verify_block_target(then_block, span);
+        self.verify_block_target(else_block, span);
+      }
       Terminator::Return(None) =>
       {
         if self.function.return_type != crate::xlil::Type::VOID
@@ -530,6 +538,42 @@ mod tests
                                            span: span(0, 3) }] };
 
     assert!(verify_function(&function).is_empty());
+  }
+
+  #[test]
+  fn accepts_branch_if_with_bool_condition()
+  {
+    let function = Function { name: "branch".to_string(),
+                              parameters: vec![],
+                              return_type: Type::VOID,
+                              locals: vec![typed_local(0, Type::BOOL)],
+                              blocks: vec![block(0,
+                                                 Some(Terminator::BranchIf { condition: LocalId(0),
+                                                                             then_block: BlockId(1),
+                                                                             else_block: BlockId(2) })),
+                                           block(1, Some(Terminator::Return(None))),
+                                           block(2, Some(Terminator::Return(None)))] };
+
+    assert!(verify_function(&function).is_empty());
+  }
+
+  #[test]
+  fn reports_branch_if_type_and_target_errors()
+  {
+    let function = Function { name: "bad_branch".to_string(),
+                              parameters: vec![],
+                              return_type: Type::VOID,
+                              locals: vec![typed_local(0, Type::I64)],
+                              blocks: vec![block(0,
+                                                 Some(Terminator::BranchIf { condition: LocalId(0),
+                                                                             then_block: BlockId(1),
+                                                                             else_block: BlockId(2) }))] };
+
+    let diagnostics = verify_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::LocalTypeMismatch);
+    assert_eq!(diagnostics[1].code, DiagnosticCode::UnknownBlock);
+    assert_eq!(diagnostics[2].code, DiagnosticCode::UnknownBlock);
   }
 
   #[test]

@@ -64,6 +64,7 @@ Format notes:
 - `%N:type = call <symbol>(%A, %B)` calls another function and stores a typed result.
 - `call <symbol>(%A, %B)` calls a void function and discards the result.
 - `br bbN` transfers control to another basic block.
+- `br_if %N, bbA, bbB` branches to `bbA` when the `bool` condition `%N` is true, otherwise to `bbB`.
 - `ret` and `ret %N` are the current return terminators.
 - `.end` closes a function body.
 

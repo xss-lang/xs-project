@@ -313,13 +313,14 @@ semantics.
 - The MIR place model starts with a root local plus a `field`/`deref`/`index` projection chain.
 - MIR has an SSA value table and core `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `load`, and
   `store` instructions.
-- Each basic block may currently have a `return`, `goto`, `branch`, or `unreachable` terminator.
+- Each basic block may currently have a `return`, `goto`, `branch_if`, or `unreachable` terminator in the Rust MIR model.
 - The MIR text writer deterministically writes declarations and functions with bodies.
 - `xs/mir/borrow_checker.h` contains the first MIR validation/borrow-check skeleton.
 - The borrow-checker skeleton validates mandatory terminators, return type compatibility, and `store` operations into
   immutable local roots.
-- The borrow checker also validates instruction result/value ids, `load`/`store` place ids, `goto`/`branch` targets, branch
-  condition type, `add.i64`/`sub.i64`/`mul.i64` operand type/id consistency, and `eq.i64` i64-to-bool result consistency.
+- The borrow checker also validates instruction result/value ids, `load`/`store` place ids, `goto`/`branch_if` targets,
+  `branch_if` condition liveness/type, `add.i64`/`sub.i64`/`mul.i64` operand type/id consistency, and `eq.i64` i64-to-bool
+  result consistency.
 - `xs/mir/optimizer.h` contains the initial MIR optimization API.
 - The CFG cleanup pass removes blocks unreachable from the entry block and rewrites remaining block ids plus `goto`/`branch`
   targets.
@@ -336,6 +337,10 @@ semantics.
   text parsers/writers round-trip them, the MIR verifier checks operand/result types, MIR → XLIL lowering emits matching
   XLIL instructions, and the Rust MIR optimizer folds arithmetic and equality comparisons when operands are known
   `const.i64` values.
+- Rust `xslang` MIR and XLIL models also carry the first conditional control-flow primitive. MIR writes/parses
+  `branch_if` records with `condition local N`, `then block A`, and `else block B`; XLIL writes/parses assembly-like
+  `br_if %N, bbA, bbB` terminators. Verifiers require a `bool` condition and existing target blocks. HIR lowering does not
+  emit conditional control-flow yet.
 - Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Int` locals, `Int`
   literals, and local returns into a single-entry MIR block with typed XLIL-vocabulary local records. Unsupported HIR
   expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering diagnostics instead of
@@ -384,11 +389,12 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, primitive types, function declarations, function bodies,
   basic blocks, `const.i64`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
-  `bbN.label:`, `%N:type = const <value>`, `br bbN`, `ret`, and `.end`.
+  `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %N, bbA, bbB`, `ret`, and `.end`.
 - MIR functions carry explicit XLIL-vocabulary parameter and return types. The first MIR → XLIL body bridge lowers MIR
   parameter signatures, typed MIR `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, and `eq.i64` local statements,
-  typed call statements whose arguments already have lowered XLIL values, and matching local return values to XLIL
-  signatures, `const`, arithmetic, compare, `call`, and `ret %N` records.
+  typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
+  with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,
+  compare, `call`, `br`, `br_if`, and `ret %N` records.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
   stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path
