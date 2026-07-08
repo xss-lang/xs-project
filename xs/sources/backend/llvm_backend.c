@@ -269,17 +269,79 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
   return XS_BACKEND_OK;
 }
 
+XsBackendStatus xs_llvm_lil_type(XsLlvmBackend *backend, XsLilType type, LLVMTypeRef *llvm_type, XsBackendError *error)
+{
+  clear_error(error);
+  if (backend == nullptr || llvm_type == nullptr)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "backend and LLVM type output are required");
+  *llvm_type = nullptr;
+  switch (type.kind)
+  {
+  case XS_LIL_TYPE_VOID:
+    *llvm_type = LLVMVoidTypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_BOOL:
+    *llvm_type = LLVMInt1TypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_U8:
+  case XS_LIL_TYPE_I8:
+    *llvm_type = LLVMInt8TypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_U16:
+  case XS_LIL_TYPE_I16:
+    *llvm_type = LLVMInt16TypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_U32:
+  case XS_LIL_TYPE_I32:
+    *llvm_type = LLVMInt32TypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_U64:
+  case XS_LIL_TYPE_I64:
+    *llvm_type = LLVMInt64TypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_U128:
+  case XS_LIL_TYPE_I128:
+    *llvm_type = LLVMInt128TypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_F32:
+    *llvm_type = LLVMFloatTypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_F64:
+    *llvm_type = LLVMDoubleTypeInContext(backend->context);
+    break;
+  case XS_LIL_TYPE_F16:
+  case XS_LIL_TYPE_F128:
+    return set_error(error, XS_BACKEND_DEFERRED, "XLIL f16 and f128 lowering is deferred");
+  default:
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "unknown XLIL type");
+  }
+  return XS_BACKEND_OK;
+}
+
+static XsBackendStatus declare_function_with_types(XsLlvmCodegenUnit *unit, const char *name, LLVMTypeRef return_type,
+                                                   const LLVMTypeRef *parameter_types, size_t parameter_count,
+                                                   LLVMValueRef *function, XsBackendError *error)
+{
+  if (unit == nullptr || name == nullptr || name[0] == '\0' || return_type == nullptr || function == nullptr ||
+      (parameter_count != 0 && parameter_types == nullptr))
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and function signature are required");
+  if (parameter_count > (size_t)UINT_MAX)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function has too many parameters for LLVM C API");
+  if (LLVMGetNamedFunction(unit->module, name) != nullptr)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function is already declared in this codegen unit");
+  LLVMTypeRef function_type =
+      LLVMFunctionType(return_type, (LLVMTypeRef *)parameter_types, (unsigned)parameter_count, false);
+  *function = LLVMAddFunction(unit->module, name, function_type);
+  return XS_BACKEND_OK;
+}
+
 XsBackendStatus xs_llvm_declare_function(XsLlvmCodegenUnit *unit, const XsFunctionSignature *signature,
                                          LLVMValueRef *function, XsBackendError *error)
 {
   clear_error(error);
-  if (unit == nullptr || signature == nullptr || signature->name == nullptr || function == nullptr ||
+  if (unit == nullptr || signature == nullptr ||
       (signature->parameter_count != 0 && signature->parameter_types == nullptr))
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and function signature are required");
-  if (signature->parameter_count > (size_t)UINT_MAX)
-    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function has too many parameters for LLVM C API");
-  if (LLVMGetNamedFunction(unit->module, signature->name) != nullptr)
-    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function is already declared in this codegen unit");
 
   LLVMTypeRef return_type = nullptr;
   XsBackendStatus status = xs_llvm_primitive_type(unit->backend, signature->return_type, &return_type, error);
@@ -306,10 +368,48 @@ XsBackendStatus xs_llvm_declare_function(XsLlvmCodegenUnit *unit, const XsFuncti
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function parameters cannot have unit type");
     }
   }
-  LLVMTypeRef function_type = LLVMFunctionType(return_type, parameters, (unsigned)signature->parameter_count, false);
+  status = declare_function_with_types(unit, signature->name, return_type, parameters, signature->parameter_count,
+                                       function, error);
   free(parameters);
-  *function = LLVMAddFunction(unit->module, signature->name, function_type);
-  return XS_BACKEND_OK;
+  return status;
+}
+
+XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char *name, XsLilType return_type,
+                                             const XsLilType *parameter_types, size_t parameter_count,
+                                             LLVMValueRef *function, XsBackendError *error)
+{
+  clear_error(error);
+  if (unit == nullptr || name == nullptr || function == nullptr || (parameter_count != 0 && parameter_types == nullptr))
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and XLIL function signature are required");
+  LLVMTypeRef lowered_return_type = nullptr;
+  XsBackendStatus status = xs_llvm_lil_type(unit->backend, return_type, &lowered_return_type, error);
+  if (status != XS_BACKEND_OK)
+    return status;
+  LLVMTypeRef *lowered_parameters = nullptr;
+  if (parameter_count != 0)
+  {
+    lowered_parameters = malloc(parameter_count * sizeof(*lowered_parameters));
+    if (lowered_parameters == nullptr)
+      return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering XLIL function signature");
+  }
+  for (size_t i = 0; i < parameter_count; ++i)
+  {
+    status = xs_llvm_lil_type(unit->backend, parameter_types[i], &lowered_parameters[i], error);
+    if (status != XS_BACKEND_OK)
+    {
+      free(lowered_parameters);
+      return status;
+    }
+    if (LLVMGetTypeKind(lowered_parameters[i]) == LLVMVoidTypeKind)
+    {
+      free(lowered_parameters);
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function parameters cannot have void type");
+    }
+  }
+  status = declare_function_with_types(unit, name, lowered_return_type, lowered_parameters, parameter_count, function,
+                                       error);
+  free(lowered_parameters);
+  return status;
 }
 
 static XsBackendStatus verify_module(XsLlvmCodegenUnit *unit, XsBackendError *error)

@@ -105,6 +105,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/ast.c
     xs/sources/codegen/units.c
     xs/sources/driver/cli.c
+    xs/sources/driver/direct_xlil.c
     xs/sources/driver/options.c
     xs/sources/lexer.c
     xs/sources/macro/expanded_view.c

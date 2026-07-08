@@ -78,6 +78,11 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_SFLOAT, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetTypeKind(type) == LLVMFloatTypeKind);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_STR, &type, &error) == XS_BACKEND_DEFERRED);
+  CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &type, &error) == XS_BACKEND_OK);
+  CHECK(LLVMGetIntTypeWidth(type) == 1);
+  CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_I64}, &type, &error) == XS_BACKEND_OK);
+  CHECK(LLVMGetIntTypeWidth(type) == 64);
+  CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_F16}, &type, &error) == XS_BACKEND_DEFERRED);
 
   const XsPrimitiveType parameters[] = {XS_PRIMITIVE_INT, XS_PRIMITIVE_INT};
   XsFunctionSignature signature = {
@@ -91,12 +96,18 @@ int main(int argc, char **argv)
   CHECK(function != nullptr);
   CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 2);
   CHECK(LLVMCountBasicBlocks(function) == 0);
+  const XsLilType import_parameters[] = {{.kind = XS_LIL_TYPE_I64}};
+  CHECK(xs_llvm_declare_lil_function(first, "Import", (XsLilType){.kind = XS_LIL_TYPE_I64}, import_parameters, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(function != nullptr);
+  CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 1);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);
   char ir_path[4096] = {0};
   CHECK(snprintf(ir_path, sizeof(ir_path), "%s.ll", argv[1]) > 0);
   CHECK(xs_llvm_write_ir_file(first, ir_path, &error) == XS_BACKEND_OK);
   CHECK(file_contains(ir_path, "target triple"));
   CHECK(file_contains(ir_path, "declare i64 @Add(i64, i64)"));
+  CHECK(file_contains(ir_path, "declare i64 @Import(i64)"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
 
   const char *linker_arguments[] = {"--version"};

@@ -1,2 +1,3 @@
 .xlil version 0
 .xlil module App
+.extern Import : (i64) -> i64

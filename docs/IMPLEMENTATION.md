@@ -83,8 +83,9 @@ The documented compilation order is preserved:
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
 - `xs check -proj <project.xsproj>` works.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
-- `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized, but
-  direct file production is not connected yet.
+- `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized.
+- Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
+- Direct `.xlil` inputs can validate the version/module headers and emit LLVM IR declarations for top-level signatures.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -358,10 +359,11 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - A separate LLVM module is created for each codegen unit.
 - Documented numeric primitive types map to LLVM types.
 - Body-less function declarations and function signature lowering are supported.
+- XLIL function declaration signatures lower through the XLIL type vocabulary rather than through HIR primitive types.
 - LLVM optimization pipelines from `default<O0>` through `default<O3>` can be configured.
 - LLVM module verification, LLVM IR text emission, and object file emission work.
-- `xs build --xlil -file <input.xlil>` can validate the XLIL version/module header and emit an LLVM IR module shell. XLIL
-  function records and body lowering are not connected to that CLI path yet.
+- `xs build --xlil -file <input.xlil>` can validate the XLIL version/module header and emit LLVM IR declarations from
+  top-level `.extern` and `.func` signatures. XLIL function body lowering is not connected to that CLI path yet.
 - The linker can be invoked without a shell, with argument policy left to the upper layer.
 
 Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)

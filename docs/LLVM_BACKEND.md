@@ -22,6 +22,8 @@ design to x86-64; ARM64 compatibility must be preserved.
 - Independent LLVM module per codegen unit
 - Numeric X# primitive type mapping to LLVM types
 - Body-less function declaration and signature lowering
+- XLIL type mapping for function declarations
+- Direct `.xlil` top-level `.extern`/`.func` signature lowering to LLVM declarations
 - LLVM optimization pipeline selection from `default<O0>` through `default<O3>`
 - LLVM module verification
 - Object file emission per codegen unit
@@ -62,6 +64,7 @@ Borrow-checked and optimized MIR
     → linker invocation
 ```
 
-XLIL function body lowering does not exist yet. The backend emits function declarations, can write verified LLVM IR text for
-the current codegen unit, and does not add basic blocks from XLIL bodies yet. Backend tests explicitly verify that boundary.
-This prevents AST or unfinished HIR behavior from being lowered directly to LLVM IR.
+XLIL function body lowering does not exist yet. The backend emits function declarations from the public C API and from
+direct `.xlil` registry signatures, can write verified LLVM IR text for the current codegen unit, and does not add basic
+blocks from XLIL bodies yet. Backend tests explicitly verify that boundary. This prevents AST or unfinished HIR behavior
+from being lowered directly to LLVM IR.

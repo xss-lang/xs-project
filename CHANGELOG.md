@@ -28,7 +28,8 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - CLI paths for `xs check -proj ...` and `xs build --output hir|mir|xlil -proj ...`.
 - CLI recognition for direct file forms: `xs build --output hir|mir|xlil -file ...` and
   `xs build --hir|--mir|--xlil -file ...`.
-- Direct `.xlil` inputs with supported version/module headers can produce an LLVM IR module shell.
+- Direct `.xlil` inputs with supported version/module headers and top-level `.extern`/`.func` signatures can produce LLVM IR
+  declarations.
 - Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats, not binary or opaque
   serialized compiler state.
 - XHIR and XMIR documentation now separates their structured text design from XLIL's assembly-like registry format.
@@ -67,4 +68,4 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - MIR statement/expression lowering, exception edges, and async state machine generation are incomplete.
 - Borrow checker is not yet a full region/loan/move/drop model.
 - End-to-end `xs build`/`xs run` object/link/native executable flow is incomplete.
-- Direct XLIL build mode (`xs build --xlil -file ...`) is not implemented yet.
+- Direct XLIL build mode does not lower function bodies yet.
