@@ -8,6 +8,14 @@ pub mod parser;
 pub mod verify;
 pub mod writer;
 
+pub const SUPPORTED_XLIL_VERSION: u32 = 0;
+
+#[must_use]
+pub const fn is_supported_xlil_version(version: u32) -> bool
+{
+  matches!(version, SUPPORTED_XLIL_VERSION)
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TypeKind
 {

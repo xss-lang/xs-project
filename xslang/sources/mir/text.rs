@@ -14,6 +14,14 @@ mod writer;
 pub use parser::{XmirParseDiagnostic, parse_xmir_function};
 pub use writer::function_to_xmir;
 
+pub const SUPPORTED_XMIR_VERSION: u32 = 0;
+
+#[must_use]
+pub const fn is_supported_xmir_version(version: u32) -> bool
+{
+  matches!(version, SUPPORTED_XMIR_VERSION)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XmirDocumentHeader
 {
@@ -716,6 +724,16 @@ mod tests
   fn rejects_non_xmir_header()
   {
     assert_eq!(parse_xmir_header(".func Main : () -> void\n"), None);
+  }
+
+  #[test]
+  fn rejects_unsupported_xmir_version()
+  {
+    let diagnostics = parse_xmir_function(".xmir version 1\nfunction Main\nreturns void\n").expect_err("unsupported \
+                                                                                                        XMIR version \
+                                                                                                        must fail");
+
+    assert!(diagnostics[0].message.contains("unsupported XMIR version 1"));
   }
 
   #[test]

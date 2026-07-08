@@ -75,6 +75,10 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `analysis optimizer` records for optimization pass reports and removed item counts
 - `analysis verify` records for structural verifier diagnostics, spans, and messages
 
+The version header is part of the `xs build` input contract. It tells the compiler which XMIR text grammar version it is
+being asked to parse. Version `0` is the only supported XMIR version today; future versions can be accepted explicitly
+without changing the structured, human-readable format direction.
+
 Parsed XMIR can be passed to the Rust MIR structural verifier. The current verifier checks duplicate local/block ids,
 missing terminators, unknown local references, and unknown block targets before borrow checking.
 The verified optimizer API uses the same structural verifier before and after MIR optimization.

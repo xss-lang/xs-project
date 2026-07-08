@@ -369,6 +369,9 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - `docs/XLIL.md` defines XLIL as the official low-level intermediate language for X#.
 - `.xhir`, `.xmir`, and `.xlil` are the extensions for HIR, MIR, and XLIL code. They are human-readable text formats, not
   binary or opaque serialized compiler state.
+- Their leading `version N` records are compiler input contracts for `xs build`; they select the supported XHIR/XMIR/XLIL
+  text grammar version to parse. Version `0` is the only supported version today, but the parser structure is open to adding
+  later versions explicitly.
 - `.xhir` and `.xmir` are intended for direct developer inspection, code review, regression fixtures, and debugging. Their
   official record grammar is not fully documented yet, but future grammar changes must keep that human-readable property.
 - `.xhir` and `.xmir` are not assembly-like. XHIR should expose resolved semantic structure; XMIR should expose structured

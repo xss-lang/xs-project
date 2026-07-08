@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use crate::xlil::{Block, BlockId, Function, Instruction, Module, Terminator, Type, Value, ValueId, type_from_name};
+use crate::xlil::{
+  Block, BlockId, Function, Instruction, Module, SUPPORTED_XLIL_VERSION, Terminator, Type, Value, ValueId,
+  is_supported_xlil_version, type_from_name,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -57,17 +60,8 @@ impl Parser<'_>
 {
   fn module(&mut self) -> Option<Module>
   {
-    let Some(version) = self.next_line()
-    else
+    if !self.version_header()
     {
-      self.report(DiagnosticCode::EmptyInput, 1, "XLIL input is empty");
-      return None;
-    };
-    if version != ".xlil version 0"
-    {
-      self.report(DiagnosticCode::InvalidVersionHeader,
-                  1,
-                  "XLIL version header is invalid");
       return None;
     }
     let Some(header) = self.next_line()
@@ -98,6 +92,42 @@ impl Parser<'_>
       module.add_function(function);
     }
     Some(module)
+  }
+
+  fn version_header(&mut self) -> bool
+  {
+    let Some(version) = self.next_line()
+    else
+    {
+      self.report(DiagnosticCode::EmptyInput, 1, "XLIL input is empty");
+      return false;
+    };
+    let Some(version) = version.strip_prefix(".xlil version ")
+    else
+    {
+      self.report(DiagnosticCode::InvalidVersionHeader,
+                  1,
+                  "XLIL version header is invalid");
+      return false;
+    };
+    match version.parse::<u32>()
+    {
+      Ok(version) if is_supported_xlil_version(version) => true,
+      Ok(version) =>
+      {
+        self.report(DiagnosticCode::InvalidVersionHeader,
+                    1,
+                    &format!("XLIL version {version} is not supported; supported version is {SUPPORTED_XLIL_VERSION}"));
+        false
+      }
+      Err(_) =>
+      {
+        self.report(DiagnosticCode::InvalidVersionHeader,
+                    1,
+                    "XLIL version number is invalid");
+        false
+      }
+    }
   }
 
   fn function(&mut self) -> Option<Function>
@@ -643,6 +673,32 @@ mod tests
       parse_module(".xlil module App\n.extern xs$App$External : (i64) -> i64\n").expect_err("parse must fail");
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidVersionHeader);
+  }
+
+  #[test]
+  fn rejects_empty_input()
+  {
+    let diagnostics = parse_module("").expect_err("empty input must fail");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::EmptyInput);
+  }
+
+  #[test]
+  fn rejects_unsupported_version()
+  {
+    let diagnostics = parse_module(".xlil version 1\n.xlil module App\n").expect_err("unsupported version must fail");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidVersionHeader);
+    assert!(diagnostics[0].message.contains("version 1 is not supported"));
+  }
+
+  #[test]
+  fn rejects_invalid_version_number()
+  {
+    let diagnostics = parse_module(".xlil version current\n.xlil module App\n").expect_err("invalid version must fail");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidVersionHeader);
+    assert!(diagnostics[0].message.contains("version number is invalid"));
   }
 
   #[test]

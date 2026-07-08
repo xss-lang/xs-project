@@ -55,7 +55,7 @@ bb0.entry:
 
 Format notes:
 
-- `.xlil version 0` starts a registry file and declares the text grammar version.
+- `.xlil version 0` starts a registry file and declares the XLIL text grammar version that `xs build` should parse.
 - `.xlil module <name>` declares the module name after the version header.
 - `.extern <symbol> : (<params>) -> <return>` declares an external function.
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
@@ -67,6 +67,9 @@ Format notes:
 - `br_if %N, bbA, bbB` branches to `bbA` when the `bool` condition `%N` is true, otherwise to `bbB`.
 - `ret` and `ret %N` are the current return terminators.
 - `.end` closes a function body.
+
+Version `0` is the only supported XLIL version today. The header exists so `xs build --xlil -file <input.xlil>` can select
+the correct XLIL grammar as the format evolves. It is not a bytecode VM version and does not make `.xlil` binary.
 
 ## Public API
 

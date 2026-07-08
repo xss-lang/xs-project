@@ -85,9 +85,11 @@ xs build --xlil -file foo.xlil
 
 The direct file paths skip project manifests. Their final semantics depend on the selected intermediate kind:
 
-- `hir`: parse/check a single `.xs` input and emit `.xhir`.
-- `mir`: parse/check/lower a single `.xs` input and emit `.xmir`.
+- `hir` with `.xs`: parse/check a single `.xs` input and emit `.xhir`.
+- `hir` with `.xhir`: parse the `.xhir version N` header and accept only supported XHIR grammar versions.
+- `mir` with `.xs`: parse/check/lower a single `.xs` input and emit `.xmir`.
+- `mir` with `.xmir`: parse the `.xmir version N` header and accept only supported XMIR grammar versions.
 - `xlil` with `.xs`: lower a single X# source file to `.xlil`.
-- `xlil` with `.xlil`: parse/verify/backend/link an existing XLIL registry.
+- `xlil` with `.xlil`: parse the `.xlil version N` header, verify the supported XLIL registry, then backend/link it.
 
 The CLI recognizes the forms now; full production semantics are still being connected.

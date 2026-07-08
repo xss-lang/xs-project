@@ -7,6 +7,8 @@ use crate::hir::async_check::Span;
 use crate::mir::{BasicBlock, BlockId, Function, Local, LocalId, Parameter, Statement, Terminator};
 use crate::xlil::{Type, type_from_name};
 
+use super::{SUPPORTED_XMIR_VERSION, is_supported_xmir_version};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XmirParseDiagnostic
 {
@@ -42,7 +44,7 @@ impl Parser<'_>
 {
   fn function(&mut self) -> Function
   {
-    self.expect_exact(".xmir version 0");
+    self.xmir_version();
     let name = self.function_name();
     let return_type = self.return_type();
     let mut function = Function { name,
@@ -747,11 +749,30 @@ impl Parser<'_>
     }
   }
 
-  fn expect_exact(&mut self, expected: &str)
+  fn xmir_version(&mut self)
   {
-    if self.current().as_deref() != Some(expected)
+    let Some(line) = self.current()
+    else
     {
-      self.report(format!("expected '{expected}'"));
+      self.report("missing XMIR version header".to_string());
+      return;
+    };
+    let Some(version) = line.strip_prefix(".xmir version ")
+    else
+    {
+      self.report("expected XMIR version header".to_string());
+      self.index += 1;
+      return;
+    };
+    match version.parse::<u32>()
+    {
+      Ok(version) if is_supported_xmir_version(version) =>
+      {}
+      Ok(version) =>
+      {
+        self.report(format!("unsupported XMIR version {version}; supported version is {SUPPORTED_XMIR_VERSION}"))
+      }
+      Err(_) => self.report("invalid XMIR version number".to_string()),
     }
     self.index += 1;
   }

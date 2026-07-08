@@ -7,6 +7,8 @@ use crate::hir::async_check::Span;
 use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
 use crate::hir::type_check::{Expression, Function, Literal, Local, PrimitiveType, Statement, Type};
 
+use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XhirParseDiagnostic
 {
@@ -59,7 +61,7 @@ impl Parser<'_>
 {
   fn module_symbols(&mut self) -> Module
   {
-    self.expect_exact(".xhir version 0");
+    self.xhir_version();
     let name = self.module_name();
     let mut module = Module { name,
                               imports: Vec::new(),
@@ -82,7 +84,7 @@ impl Parser<'_>
 
   fn function(&mut self) -> Function
   {
-    self.expect_exact(".xhir version 0");
+    self.xhir_version();
     let name = self.function_name();
     let mut function = Function { name,
                                   return_type: None,
@@ -464,11 +466,30 @@ impl Parser<'_>
     }
   }
 
-  fn expect_exact(&mut self, expected: &str)
+  fn xhir_version(&mut self)
   {
-    if self.current().as_deref() != Some(expected)
+    let Some(line) = self.current()
+    else
     {
-      self.report(format!("expected '{expected}'"));
+      self.report("missing XHIR version header".to_string());
+      return;
+    };
+    let Some(version) = line.strip_prefix(".xhir version ")
+    else
+    {
+      self.report("expected XHIR version header".to_string());
+      self.index += 1;
+      return;
+    };
+    match version.parse::<u32>()
+    {
+      Ok(version) if is_supported_xhir_version(version) =>
+      {}
+      Ok(version) =>
+      {
+        self.report(format!("unsupported XHIR version {version}; supported version is {SUPPORTED_XHIR_VERSION}"))
+      }
+      Err(_) => self.report("invalid XHIR version number".to_string()),
     }
     self.index += 1;
   }

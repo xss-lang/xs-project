@@ -64,6 +64,10 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - literal, local, assignment, let, expression, and return records
 - `analysis typecheck` records for type-check diagnostics, spans, and messages
 
+The version header is part of the `xs build` input contract. It tells the compiler which XHIR text grammar version it is
+being asked to parse. Version `0` is the only supported XHIR version today; future versions can be accepted explicitly
+without changing the human-readable text requirement.
+
 Additional declaration kinds, generic constraints, interface relations, macro-expansion records, and richer expression forms
 will be added as the checked HIR model stabilizes.
 

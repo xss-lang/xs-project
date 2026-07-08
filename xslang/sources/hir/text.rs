@@ -13,6 +13,14 @@ pub mod parser;
 
 pub use parser::{XhirParseDiagnostic, parse_xhir_function, parse_xhir_module_symbols};
 
+pub const SUPPORTED_XHIR_VERSION: u32 = 0;
+
+#[must_use]
+pub const fn is_supported_xhir_version(version: u32) -> bool
+{
+  matches!(version, SUPPORTED_XHIR_VERSION)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum XhirDocumentKind
 {
@@ -509,6 +517,17 @@ mod tests
   fn rejects_non_xhir_header()
   {
     assert_eq!(parse_xhir_header(".func Main : () -> void\n"), None);
+  }
+
+  #[test]
+  fn rejects_unsupported_xhir_version()
+  {
+    let diagnostics =
+      parse_xhir_function(".xhir version 1\nfunction Main\n  signature\n    returns void\n").expect_err("unsupported \
+                                                                                                         XHIR version \
+                                                                                                         must fail");
+
+    assert!(diagnostics[0].message.contains("unsupported XHIR version 1"));
   }
 
   #[test]

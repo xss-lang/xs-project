@@ -5,11 +5,11 @@
 
 use std::fmt::{self, Write};
 
-use crate::xlil::{Block, Function, Instruction, Module, Terminator, ValueId, type_name};
+use crate::xlil::{Block, Function, Instruction, Module, SUPPORTED_XLIL_VERSION, Terminator, ValueId, type_name};
 
 pub fn write_module(module: &Module, output: &mut impl Write) -> fmt::Result
 {
-  writeln!(output, ".xlil version 0")?;
+  writeln!(output, ".xlil version {SUPPORTED_XLIL_VERSION}")?;
   writeln!(output, ".xlil module {}", module.name)?;
   for function in &module.functions
   {
