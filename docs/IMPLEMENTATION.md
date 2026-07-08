@@ -330,9 +330,13 @@ semantics.
   optimized MIR before returning it.
 - Rust `xslang` XMIR text support can write and parse optimizer analysis records for optimization pass reports.
 - Rust `xslang` XMIR text support can also write and parse structural verifier diagnostic analysis records.
+- Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Int` locals, `Int`
+  literals, and local returns into a single-entry MIR block with typed XLIL-vocabulary local records. Unsupported HIR
+  expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering diagnostics instead of
+  inventing temporary backend semantics.
 
-This stage does not yet produce statement/expression lowering, the full instruction set, exception edges, async state
-machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.
+This stage does not yet produce complete statement/expression lowering, the full instruction set, exception edges, async
+state machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.
 
 ### LLVM backend infrastructure
 
@@ -401,7 +405,7 @@ decisions are made during development as long as they remain compatible with doc
 - Type, function-call, generic, and trait/interface dependency edges beyond module/import
 - Expression type checking and generic constraint validation
 - Send, Sync, mutability, and async/await validation
-- MIR statement/expression lowering, exception paths, and async state machine generation
+- Complete MIR statement/expression lowering, exception paths, and async state machine generation
 - Borrow checker and drop-point validation
 - MIR optimizations
 - Monomorphization, codegen unit splitting, and incremental compilation cache

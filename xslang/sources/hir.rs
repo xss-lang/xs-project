@@ -5,6 +5,7 @@
 
 pub mod async_check;
 pub mod generics;
+pub mod mir_lowering;
 pub mod send_sync;
 pub mod symbols;
 pub mod text;

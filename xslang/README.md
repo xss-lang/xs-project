@@ -12,3 +12,11 @@ New semantic-analysis, typed-HIR, MIR, borrow-checker, optimizer, monomorphizati
 
 The crate is not wired into the C23 compiler driver yet. The initial modules are small, deterministic, and unit-tested so the
 Rust core can grow without splitting one compiler layer across C and Rust.
+
+Current core slices include:
+
+- HIR type-checking helpers and structured XHIR text support.
+- A first HIR to MIR lowering bridge for void functions, `Int` locals, `Int` literals, and local returns.
+- MIR structural verification, borrow-checking, optimizer scaffolding, and structured XMIR text support.
+- MIR to XLIL lowering for typed `const.i64`, call, branch, and return records.
+- Monomorphization and codegen-unit planning models that do not depend on LLVM.
