@@ -37,6 +37,7 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - Rust `xslang` gained a MIR structural verifier for duplicate ids, missing terminators, and unknown local/block references.
 - Rust `xslang` optimizer gained a verified entry point that checks MIR before and after optimization.
 - XMIR text support gained optimizer analysis writer/parser coverage for optimization pass reports.
+- XMIR text support gained structural verifier analysis writer/parser coverage.
 - Root README and strengthened documentation set under `docs/`.
 
 ### Changed

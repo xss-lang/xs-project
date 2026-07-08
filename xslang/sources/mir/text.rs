@@ -6,6 +6,7 @@
 use std::fmt::Write;
 
 use super::optimizer::{OptimizationPass, OptimizationReport};
+use super::verify::{Diagnostic as VerifyDiagnostic, DiagnosticCode as VerifyDiagnosticCode};
 use super::{BasicBlock, Function, LocalId, Statement, Terminator};
 
 pub mod parser;
@@ -125,6 +126,38 @@ pub fn parse_xmir_optimizer_analysis(text: &str) -> Result<Vec<OptimizationRepor
   }
 }
 
+#[must_use]
+pub fn verify_analysis_to_xmir(diagnostics: &[VerifyDiagnostic]) -> String
+{
+  let mut output = String::new();
+  let _ = writeln!(output, "analysis verify");
+  for diagnostic in diagnostics
+  {
+    let _ = writeln!(output, "  diagnostic {}", verify_diagnostic_code_name(&diagnostic.code));
+    let _ = writeln!(output,
+                     "    span {}:{}..{}",
+                     diagnostic.span.file_id, diagnostic.span.start, diagnostic.span.end);
+    let _ = writeln!(output, "    message {}", diagnostic.message);
+  }
+  output
+}
+
+pub fn parse_xmir_verify_analysis(text: &str) -> Result<Vec<VerifyDiagnostic>, Vec<XmirParseDiagnostic>>
+{
+  let mut parser = VerifyAnalysisParser { lines: text.lines().collect(),
+                                          index: 0,
+                                          diagnostics: Vec::new() };
+  let diagnostics = parser.parse();
+  if parser.diagnostics.is_empty()
+  {
+    Ok(diagnostics)
+  }
+  else
+  {
+    Err(parser.diagnostics)
+  }
+}
+
 fn write_block(output: &mut String, block: &BasicBlock)
 {
   let _ = writeln!(output, "  block {}", block.id.0);
@@ -146,6 +179,31 @@ fn write_block(output: &mut String, block: &BasicBlock)
   }
 }
 
+fn verify_diagnostic_code_name(code: &VerifyDiagnosticCode) -> &'static str
+{
+  match code
+  {
+    VerifyDiagnosticCode::DuplicateLocal => "duplicate_local",
+    VerifyDiagnosticCode::DuplicateBlock => "duplicate_block",
+    VerifyDiagnosticCode::MissingTerminator => "missing_terminator",
+    VerifyDiagnosticCode::UnknownLocal => "unknown_local",
+    VerifyDiagnosticCode::UnknownBlock => "unknown_block",
+  }
+}
+
+fn parse_verify_diagnostic_code(name: &str) -> Option<VerifyDiagnosticCode>
+{
+  match name
+  {
+    "duplicate_local" => Some(VerifyDiagnosticCode::DuplicateLocal),
+    "duplicate_block" => Some(VerifyDiagnosticCode::DuplicateBlock),
+    "missing_terminator" => Some(VerifyDiagnosticCode::MissingTerminator),
+    "unknown_local" => Some(VerifyDiagnosticCode::UnknownLocal),
+    "unknown_block" => Some(VerifyDiagnosticCode::UnknownBlock),
+    _ => None,
+  }
+}
+
 const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
 {
   match pass
@@ -153,6 +211,115 @@ const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
     OptimizationPass::RemoveUnreachableBlocks => "remove_unreachable_blocks",
     OptimizationPass::RemoveRedundantEndBorrow => "remove_redundant_end_borrow",
   }
+}
+
+struct VerifyAnalysisParser<'a>
+{
+  lines: Vec<&'a str>,
+  index: usize,
+  diagnostics: Vec<XmirParseDiagnostic>,
+}
+
+impl VerifyAnalysisParser<'_>
+{
+  fn parse(&mut self) -> Vec<VerifyDiagnostic>
+  {
+    if self.current().as_deref() != Some("analysis verify")
+    {
+      self.report("expected verify analysis section".to_string());
+      return Vec::new();
+    }
+    self.index += 1;
+    let mut parsed = Vec::new();
+    while let Some(line) = self.current()
+    {
+      let Some(code_name) = line.strip_prefix("  diagnostic ").map(ToString::to_string)
+      else
+      {
+        self.report(format!("expected verifier diagnostic record, found '{line}'"));
+        self.index += 1;
+        continue;
+      };
+      let code = self.diagnostic_code(&code_name);
+      self.index += 1;
+      let span = self.span();
+      let message = self.message();
+      if let (Some(code), Some(span), Some(message)) = (code, span, message)
+      {
+        parsed.push(VerifyDiagnostic { code,
+                                       message,
+                                       span });
+      }
+    }
+    parsed
+  }
+
+  fn diagnostic_code(&mut self, name: &str) -> Option<VerifyDiagnosticCode>
+  {
+    let code = parse_verify_diagnostic_code(name);
+    if code.is_none()
+    {
+      self.report(format!("unknown verifier diagnostic code '{name}'"));
+    }
+    code
+  }
+
+  fn span(&mut self) -> Option<crate::hir::async_check::Span>
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing diagnostic span".to_string());
+      return None;
+    };
+    self.index += 1;
+    let Some(text) = line.strip_prefix("    span ").map(ToString::to_string)
+    else
+    {
+      self.report("expected diagnostic span".to_string());
+      return None;
+    };
+    parse_span(&text).or_else(|| {
+                       self.report(format!("invalid diagnostic span '{text}'"));
+                       None
+                     })
+  }
+
+  fn message(&mut self) -> Option<String>
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing diagnostic message".to_string());
+      return None;
+    };
+    self.index += 1;
+    let Some(message) = line.strip_prefix("    message ").map(ToString::to_string)
+    else
+    {
+      self.report("expected diagnostic message".to_string());
+      return None;
+    };
+    Some(message)
+  }
+
+  fn current(&self) -> Option<String>
+  {
+    self.lines.get(self.index).map(|line| (*line).to_string())
+  }
+
+  fn report(&mut self, message: String)
+  {
+    self.diagnostics.push(XmirParseDiagnostic { line: self.index + 1,
+                                                message });
+  }
+}
+
+fn parse_span(text: &str) -> Option<crate::hir::async_check::Span>
+{
+  let (file_id, rest) = text.split_once(':')?;
+  let (start, end) = rest.split_once("..")?;
+  Some(crate::hir::async_check::Span::new(file_id.parse().ok()?, start.parse().ok()?, end.parse().ok()?))
 }
 
 fn parse_optimization_pass(name: &str,
@@ -390,6 +557,33 @@ mod tests
   {
     let diagnostics = parse_xmir_optimizer_analysis("analysis optimizer\n  pass nope\n    removed_items many\n")
       .expect_err("invalid optimizer analysis must fail");
+
+    assert_eq!(diagnostics.len(), 2);
+  }
+
+  #[test]
+  fn roundtrips_verify_analysis()
+  {
+    let diagnostics = vec![VerifyDiagnostic { code: VerifyDiagnosticCode::UnknownLocal,
+                                              message: "local id 7 is not declared".to_string(),
+                                              span: span() },
+                           VerifyDiagnostic { code: VerifyDiagnosticCode::MissingTerminator,
+                                              message: "MIR block is missing a terminator".to_string(),
+                                              span: Span::new(1, 4, 8) }];
+
+    let text = verify_analysis_to_xmir(&diagnostics);
+    let parsed = parse_xmir_verify_analysis(&text).expect("verify analysis should parse");
+
+    assert_eq!(parsed, diagnostics);
+    assert!(text.contains("analysis verify"));
+    assert!(!text.contains(".diagnostic"));
+  }
+
+  #[test]
+  fn rejects_invalid_verify_analysis()
+  {
+    let diagnostics = parse_xmir_verify_analysis("analysis verify\n  diagnostic nope\n    span bad\n    message \
+                                                  broken\n").expect_err("invalid verify analysis must fail");
 
     assert_eq!(diagnostics.len(), 2);
   }
