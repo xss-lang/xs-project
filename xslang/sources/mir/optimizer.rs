@@ -13,6 +13,7 @@ pub enum OptimizationPass
 {
   RemoveUnreachableBlocks,
   RemoveRedundantEndBorrow,
+  FoldConstI64Add,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -51,6 +52,12 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   {
     reports.push(OptimizationReport { pass: OptimizationPass::RemoveRedundantEndBorrow,
                                       removed_items: removed_end_borrows });
+  }
+  let folded_adds = fold_const_i64_adds(&mut function);
+  if folded_adds != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Add,
+                                      removed_items: folded_adds });
   }
   OptimizedFunction { function,
                       reports }
@@ -122,6 +129,69 @@ fn remove_redundant_end_borrows_in_block(block: &mut BasicBlock) -> usize
   }
   block.statements = optimized;
   removed
+}
+
+fn fold_const_i64_adds(function: &mut Function) -> usize
+{
+  let mut folded = 0;
+  for block in &mut function.blocks
+  {
+    folded += fold_const_i64_adds_in_block(block);
+  }
+  folded
+}
+
+fn fold_const_i64_adds_in_block(block: &mut BasicBlock) -> usize
+{
+  let mut constants = HashMap::new();
+  let mut folded = 0;
+  for statement in &mut block.statements
+  {
+    match statement
+    {
+      Statement::ConstI64 { local,
+                            value,
+                            .. } =>
+      {
+        constants.insert(*local, *value);
+      }
+      Statement::AddI64 { result,
+                          left,
+                          right,
+                          span, } =>
+      {
+        let result = *result;
+        let span = *span;
+        let (Some(left), Some(right)) = (constants.get(left).copied(), constants.get(right).copied())
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        let Some(value) = left.checked_add(right)
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        *statement = Statement::ConstI64 { local: result,
+                                           value,
+                                           span };
+        constants.insert(result, value);
+        folded += 1;
+      }
+      Statement::Call { result, .. } =>
+      {
+        if let Some(result) = result
+        {
+          constants.remove(result);
+        }
+      }
+      _ =>
+      {}
+    }
+  }
+  folded
 }
 
 #[cfg(test)]
@@ -236,5 +306,50 @@ mod tests
 
     assert!(verify_function(&optimized.function).is_empty());
     assert!(optimized.reports.is_empty());
+  }
+
+  #[test]
+  fn folds_const_i64_adds()
+  {
+    let function =
+      Function { name: "add".to_string(),
+                 parameters: vec![],
+                 return_type: Type::I64,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "left".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) },
+                              Local { id: LocalId(1),
+                                      name: "right".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) },
+                              Local { id: LocalId(2),
+                                      name: "sum".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 2,
+                                                                                  span: span(1, 2) },
+                                                            Statement::ConstI64 { local: LocalId(1),
+                                                                                  value: 3,
+                                                                                  span: span(2, 3) },
+                                                            Statement::AddI64 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(3, 4) }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span(0, 4) }] };
+
+    let optimized = optimize_verified_function(function).expect("valid input should optimize");
+
+    assert_eq!(optimized.reports[0].pass, OptimizationPass::FoldConstI64Add);
+    assert!(matches!(optimized.function.blocks[0].statements[2],
+                     Statement::ConstI64 { local: LocalId(2),
+                                           value: 5,
+                                           .. }));
   }
 }

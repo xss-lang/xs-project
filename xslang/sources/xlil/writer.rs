@@ -83,6 +83,9 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
   {
     Instruction::ConstI64 { result,
                             value, } => writeln!(output, "  %{}:i64 = const {}", result.0, value),
+    Instruction::AddI64 { result,
+                          left,
+                          right, } => writeln!(output, "  %{}:i64 = add.i64 %{}, %{}", result.0, left.0, right.0),
     Instruction::Call { result,
                         ref function,
                         ref arguments,
@@ -193,5 +196,22 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %0:i64 = const 7\n  \
                 %1:i64 = call xs$App$Callee(%0)\n  ret %1\n.end\n");
+  }
+
+  #[test]
+  fn writes_add_i64_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$Add", Type::I64, vec![]);
+    let entry = function.append_block("entry");
+    let left = function.add_const_i64(entry, 2).expect("left const should be added");
+    let right = function.add_const_i64(entry, 3).expect("right const should be added");
+    let result = function.add_i64(entry, left, right).expect("add should be added");
+    assert!(function.set_return(entry, Some(result)));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %0:i64 = const 2\n  \
+                %1:i64 = const 3\n  %2:i64 = add.i64 %0, %1\n  ret %2\n.end\n");
   }
 }

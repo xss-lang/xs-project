@@ -150,6 +150,10 @@ impl<'a> Verifier<'a>
       Statement::ConstI64 { local,
                             span,
                             .. } => self.verify_const_i64(local, span),
+      Statement::AddI64 { result,
+                          left,
+                          right,
+                          span, } => self.verify_add_i64(result, left, right, span),
       Statement::Call { result,
                         ref arguments,
                         return_type,
@@ -215,6 +219,34 @@ impl<'a> Verifier<'a>
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           "const.i64 target local has no XLIL value type".to_string(),
+                          span),
+    }
+  }
+
+  fn verify_add_i64(&mut self, result: LocalId, left: LocalId, right: LocalId, span: Span)
+  {
+    self.verify_i64_local(result, "add.i64 result local", span);
+    self.verify_i64_local(left, "add.i64 left operand", span);
+    self.verify_i64_local(right, "add.i64 right operand", span);
+  }
+
+  fn verify_i64_local(&mut self, local: LocalId, label: &str, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(crate::xlil::Type::I64) =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             format!("{label} must have XLIL i64 type"),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          format!("{label} has no XLIL value type"),
                           span),
     }
   }
@@ -413,6 +445,27 @@ mod tests
     let diagnostics = verify_function(&function);
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::MissingLocalType);
+  }
+
+  #[test]
+  fn accepts_i64_add_statement()
+  {
+    let function =
+      Function { name: "add".to_string(),
+                 parameters: vec![],
+                 return_type: Type::I64,
+                 locals: vec![typed_local(0, Type::I64),
+                              typed_local(1, Type::I64),
+                              typed_local(2, Type::I64)],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::AddI64 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(1, 2) }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span(0, 3) }] };
+
+    assert!(verify_function(&function).is_empty());
   }
 
   #[test]

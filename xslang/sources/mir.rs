@@ -63,6 +63,13 @@ pub enum Statement
   {
     local: LocalId, value: i64, span: Span
   },
+  AddI64
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
   Call
   {
     result: Option<LocalId>,
@@ -187,6 +194,16 @@ impl BorrowChecker
                             .. } |
       Statement::Drop { local,
                         span, } => self.require_live(local, span),
+      Statement::AddI64 { left,
+                          right,
+                          result,
+                          span,
+                          .. } =>
+      {
+        self.require_live(left, span);
+        self.require_live(right, span);
+        let _ = self.state(result, span);
+      }
       Statement::Call { result,
                         ref arguments,
                         span,

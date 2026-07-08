@@ -229,6 +229,7 @@ impl Parser<'_>
       match kind
       {
         "const.i64" => block.statements.push(self.const_i64_statement()),
+        "add.i64" => block.statements.push(self.add_i64_statement()),
         "call" => block.statements.push(self.call_statement()),
         "use" | "move" | "borrow shared" | "borrow mutable" | "borrow end" | "drop" =>
         {
@@ -455,6 +456,36 @@ impl Parser<'_>
         0
       }
     }
+  }
+
+  fn add_i64_statement(&mut self) -> Statement
+  {
+    let result = self.add_i64_local("result");
+    let left = self.add_i64_local("left");
+    let right = self.add_i64_local("right");
+    Statement::AddI64 { result,
+                        left,
+                        right,
+                        span: span() }
+  }
+
+  fn add_i64_local(&mut self, field: &str) -> LocalId
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report(format!("missing add.i64 {field} local"));
+      return LocalId(0);
+    };
+    self.index += 1;
+    let expected = format!("        {field} local ");
+    let Some(local) = line.strip_prefix(&expected)
+    else
+    {
+      self.report(format!("expected add.i64 {field} local"));
+      return LocalId(0);
+    };
+    self.local_id(local)
   }
 
   fn call_statement(&mut self) -> Statement

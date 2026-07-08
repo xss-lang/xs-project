@@ -276,6 +276,10 @@ impl Parser<'_>
     {
       return self.value_call(function, result, call, line);
     }
+    if let Some((result, operands)) = text.split_once(" = add.i64 ")
+    {
+      return self.add_i64(function, result, operands, line);
+    }
     let Some((result, rest)) = text.split_once(" = const ")
     else
     {
@@ -302,6 +306,34 @@ impl Parser<'_>
                                  value_type: Type::I64 });
     Some(Instruction::ConstI64 { result,
                                  value })
+  }
+
+  fn add_i64(&mut self, function: &mut Function, result: &str, operands: &str, line: usize) -> Option<Instruction>
+  {
+    let Some(result) = result.strip_suffix(":i64")
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL add.i64 result type is invalid");
+      return None;
+    };
+    let result = self.value_id(result, line)?;
+    let Some((left, right)) = operands.split_once(", ")
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL add.i64 operands are invalid");
+      return None;
+    };
+    let left = self.value_operand(left, line)?;
+    let right = self.value_operand(right, line)?;
+    function.values.push(Value { id: result,
+                                 value_type: Type::I64 });
+    Some(Instruction::AddI64 { result,
+                               left,
+                               right })
   }
 
   fn value_call(&mut self, function: &mut Function, result: &str, call: &str, line: usize) -> Option<Instruction>
@@ -362,18 +394,23 @@ impl Parser<'_>
     {
       for argument in arguments.split(", ")
       {
-        let Some(argument) = argument.strip_prefix('%')
-        else
-        {
-          self.report(DiagnosticCode::InvalidInstruction,
-                      line,
-                      "XLIL call argument is invalid");
-          return None;
-        };
-        parsed.push(self.value_id(argument, line)?);
+        parsed.push(self.value_operand(argument, line)?);
       }
     }
     Some((function.to_string(), parsed))
+  }
+
+  fn value_operand(&mut self, text: &str, line: usize) -> Option<ValueId>
+  {
+    let Some(value) = text.strip_prefix('%')
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL value operand is invalid");
+      return None;
+    };
+    self.value_id(value, line)
   }
 
   fn return_terminator(&mut self, text: &str, line: usize) -> Option<Terminator>
@@ -491,6 +528,17 @@ mod tests
   {
     let text = ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %0:i64 = const 7\n  \
                 %1:i64 = call xs$App$Callee(%0)\n  ret %1\n.end\n";
+
+    let module = parse_module(text).expect("parse should succeed");
+
+    assert_eq!(module_to_string(&module), text);
+  }
+
+  #[test]
+  fn roundtrips_add_i64_function()
+  {
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %0:i64 = const 2\n  \
+                %1:i64 = const 3\n  %2:i64 = add.i64 %0, %1\n  ret %2\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 

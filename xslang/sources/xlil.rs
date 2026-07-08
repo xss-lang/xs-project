@@ -61,6 +61,12 @@ pub enum Instruction
   {
     result: ValueId, value: i64
   },
+  AddI64
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
   Call
   {
     result: Option<ValueId>,
@@ -138,6 +144,23 @@ impl Function
                              value_type: Type::I64 });
     self.block_mut(block)?.instructions.push(Instruction::ConstI64 { result,
                                                                      value });
+    Some(result)
+  }
+
+  pub fn add_i64(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !self.value(left).is_some_and(|value| value.value_type == Type::I64) ||
+       !self.value(right).is_some_and(|value| value.value_type == Type::I64)
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::I64 });
+    self.block_mut(block)?.instructions.push(Instruction::AddI64 { result,
+                                                                   left,
+                                                                   right });
     Some(result)
   }
 
@@ -346,6 +369,19 @@ mod tests
 
     assert_eq!(result, Some(ValueId(1)));
     assert!(function.set_return(block, result));
+  }
+
+  #[test]
+  fn adds_i64_instruction_with_i64_operands()
+  {
+    let mut function = Function::definition("Add", Type::I64, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i64(block, 2).expect("left const should be added");
+    let right = function.add_const_i64(block, 3).expect("right const should be added");
+    let result = function.add_i64(block, left, right).expect("add should be added");
+
+    assert_eq!(result, ValueId(2));
+    assert!(function.set_return(block, Some(result)));
   }
 
   #[test]

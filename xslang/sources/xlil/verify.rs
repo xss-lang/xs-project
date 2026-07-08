@@ -116,6 +116,14 @@ impl Verifier
                       "XLIL instruction result must reference a declared value");
         }
       }
+      Instruction::AddI64 { result,
+                            left,
+                            right, } =>
+      {
+        self.i64_value(function, result, "XLIL add.i64 result");
+        self.i64_value(function, left, "XLIL add.i64 left operand");
+        self.i64_value(function, right, "XLIL add.i64 right operand");
+      }
       Instruction::Call { result,
                           ref arguments,
                           return_type,
@@ -192,6 +200,17 @@ impl Verifier
     {
       self.report(DiagnosticCode::ReturnValueTypeMismatch,
                   "XLIL return value type must match function return type");
+    }
+  }
+
+  fn i64_value(&mut self, function: &Function, value: ValueId, label: &str)
+  {
+    match value_type(function, value)
+    {
+      Some(crate::xlil::Type::I64) =>
+      {}
+      Some(_) | None => self.report(DiagnosticCode::InstructionResultUnknown,
+                                    &format!("{label} must reference an i64 value")),
     }
   }
 
@@ -300,6 +319,21 @@ mod tests
     let diagnostics = verify_module(&module);
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::InstructionResultUnknown);
+  }
+
+  #[test]
+  fn accepts_add_i64_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("add", Type::I64, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i64(block, 2).expect("left const should be added");
+    let right = function.add_const_i64(block, 3).expect("right const should be added");
+    let result = function.add_i64(block, left, right).expect("add should be added");
+    assert!(function.set_return(block, Some(result)));
+    module.add_function(function);
+
+    assert!(verify_module(&module).is_empty());
   }
 
   #[test]
