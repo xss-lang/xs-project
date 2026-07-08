@@ -7,6 +7,7 @@
 
 #include "options.h"
 
+#include "xs/backend/llvm_backend.h"
 #include "xs/diagnostic.h"
 #include "xs/hir/expression_check.h"
 #include "xs/hir/module_registry.h"
@@ -78,6 +79,8 @@ static bool has_suffix(const char *text, const char *suffix)
   size_t suffix_length = strlen(suffix);
   return text_length >= suffix_length && strcmp(text + text_length - suffix_length, suffix) == 0;
 }
+
+static char *direct_ir_output_path(const char *input_path);
 
 static const char *ir_version_prefix(XsBuildOutput output)
 {
@@ -174,6 +177,64 @@ static bool validate_direct_ir_version(XsBuildOutput output, const char *path, c
   return true;
 }
 
+static char *direct_xlil_module_name(const char *text, size_t length)
+{
+  size_t cursor = 0;
+  while (cursor < length && text[cursor] != '\n')
+    ++cursor;
+  if (cursor < length && text[cursor] == '\n')
+    ++cursor;
+  size_t line_start = cursor;
+  while (cursor < length && text[cursor] != '\n' && text[cursor] != '\r')
+    ++cursor;
+  const char *prefix = ".xlil module ";
+  size_t prefix_length = strlen(prefix);
+  if (cursor - line_start <= prefix_length || strncmp(text + line_start, prefix, prefix_length) != 0)
+    return nullptr;
+  size_t name_length = cursor - line_start - prefix_length;
+  char *name = malloc(name_length + 1U);
+  if (name == nullptr)
+    return nullptr;
+  memcpy(name, text + line_start + prefix_length, name_length);
+  name[name_length] = '\0';
+  return name;
+}
+
+static bool emit_direct_xlil_llvm_ir(const char *input_path, const char *text, size_t length)
+{
+  char *module_name = direct_xlil_module_name(text, length);
+  if (module_name == nullptr)
+  {
+    fprintf(stderr, "xs: XLIL file '%s' has an invalid module header\n", input_path);
+    return false;
+  }
+  char *output_path = direct_ir_output_path(input_path);
+  if (output_path == nullptr)
+  {
+    free(module_name);
+    fprintf(stderr, "xs: out of memory while preparing LLVM IR output path\n");
+    return false;
+  }
+  XsBackendError error = {0};
+  XsLlvmBackend *backend = nullptr;
+  XsLlvmCodegenUnit *unit = nullptr;
+  XsLlvmBackendConfig config = {.optimization = XS_LLVM_OPT_NONE, .verify_modules = true};
+  bool success = xs_llvm_backend_create(&config, &backend, &error) == XS_BACKEND_OK;
+  if (success)
+    success = xs_llvm_codegen_unit_create(backend, module_name, &unit, &error) == XS_BACKEND_OK;
+  if (success)
+    success = xs_llvm_write_ir_file(unit, output_path, &error) == XS_BACKEND_OK;
+  if (success)
+    fprintf(stderr, "xs: wrote LLVM IR '%s' from XLIL module '%s'\n", output_path, module_name);
+  else
+    fprintf(stderr, "xs: LLVM IR emission failed: %s\n", error.message);
+  xs_llvm_codegen_unit_destroy(unit);
+  xs_llvm_backend_destroy(backend);
+  free(output_path);
+  free(module_name);
+  return success;
+}
+
 static char *project_path(const char *manifest_path, const char *source_path)
 {
   if (source_path[0] == '/')
@@ -225,6 +286,23 @@ static char *build_output_path(const char *manifest_path, XsBuildOutput output)
   for (size_t i = 0; i < base_length; ++i)
     path[i] = base[i];
   memcpy(path + base_length, extension, extension_length + 1);
+  return path;
+}
+
+static char *direct_ir_output_path(const char *input_path)
+{
+  const char *slash = strrchr(input_path, '/');
+  const char *base = slash == nullptr ? input_path : slash + 1;
+  size_t base_length = strlen(base);
+  if (base_length >= 5 && strcmp(base + base_length - 5, ".xlil") == 0)
+    base_length -= 5;
+  const char *extension = ".ll";
+  size_t extension_length = strlen(extension);
+  char *path = malloc(base_length + extension_length + 1U);
+  if (path == nullptr)
+    return nullptr;
+  memcpy(path, base, base_length);
+  memcpy(path + base_length, extension, extension_length + 1U);
   return path;
 }
 
@@ -503,9 +581,18 @@ static int run_file_command(const XsCliOptions *options)
       return 2;
     }
     bool valid_version = validate_direct_ir_version(options->output, options->file_path, text, length);
-    free(text);
     if (!valid_version)
+    {
+      free(text);
       return 1;
+    }
+    if (options->output == XS_BUILD_OUTPUT_XLIL)
+    {
+      bool success = emit_direct_xlil_llvm_ir(options->file_path, text, length);
+      free(text);
+      return success ? 0 : 1;
+    }
+    free(text);
     fprintf(stderr, "xs: %s direct compilation for '%s' is not wired yet\n", ir_kind_name(options->output),
             options->file_path);
     return 1;

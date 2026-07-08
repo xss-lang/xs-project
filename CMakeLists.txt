@@ -163,6 +163,7 @@ if(XS_BUILD_PROJECT_XS)
   target_link_libraries(xs_backend_llvm PRIVATE ${XS_LLVM_LIBRARY})
   target_compile_options(xs_backend_llvm PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
   target_compile_options(xs_backend_llvm PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
+  target_link_libraries(xs PRIVATE xs_backend_llvm)
 endif()
 
 include(CTest)
@@ -227,7 +228,8 @@ if(BUILD_TESTING)
     set_tests_properties(direct_xlil_unsupported_version PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
     add_test(NAME direct_xlil_supported_version COMMAND xs build --xlil -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/intermediate/Supported.xlil)
-    set_tests_properties(direct_xlil_supported_version PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+    set_tests_properties(direct_xlil_supported_version PROPERTIES TIMEOUT 5
+                         PASS_REGULAR_EXPRESSION "wrote LLVM IR")
 
     add_executable(xs_backend_tests tests/backend_tests.c)
     target_link_libraries(xs_backend_tests PRIVATE xs_backend_llvm)

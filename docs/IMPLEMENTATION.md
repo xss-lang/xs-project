@@ -359,7 +359,9 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - Documented numeric primitive types map to LLVM types.
 - Body-less function declarations and function signature lowering are supported.
 - LLVM optimization pipelines from `default<O0>` through `default<O3>` can be configured.
-- LLVM module verification and object file emission work.
+- LLVM module verification, LLVM IR text emission, and object file emission work.
+- `xs build --xlil -file <input.xlil>` can validate the XLIL version/module header and emit an LLVM IR module shell. XLIL
+  function records and body lowering are not connected to that CLI path yet.
 - The linker can be invoked without a shell, with argument policy left to the upper layer.
 
 Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)

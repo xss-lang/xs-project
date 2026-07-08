@@ -348,6 +348,27 @@ XsBackendStatus xs_llvm_optimize_codegen_unit(XsLlvmCodegenUnit *unit, XsBackend
   return XS_BACKEND_OK;
 }
 
+XsBackendStatus xs_llvm_write_ir_file(XsLlvmCodegenUnit *unit, const char *path, XsBackendError *error)
+{
+  clear_error(error);
+  if (unit == nullptr || path == nullptr || path[0] == '\0')
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "codegen unit and LLVM IR path are required");
+  if (unit->backend->verify_modules)
+  {
+    XsBackendStatus status = verify_module(unit, error);
+    if (status != XS_BACKEND_OK)
+      return status;
+  }
+  char *llvm_error = nullptr;
+  if (LLVMPrintModuleToFile(unit->module, path, &llvm_error) != 0)
+  {
+    XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, llvm_error);
+    LLVMDisposeMessage(llvm_error);
+    return status;
+  }
+  return XS_BACKEND_OK;
+}
+
 XsBackendStatus xs_llvm_emit_object_file(XsLlvmCodegenUnit *unit, const char *path, XsBackendError *error)
 {
   clear_error(error);

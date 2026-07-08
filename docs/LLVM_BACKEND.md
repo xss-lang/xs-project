@@ -62,6 +62,6 @@ Borrow-checked and optimized MIR
     → linker invocation
 ```
 
-XLIL function body lowering does not exist yet. The backend only emits function declarations and does not add basic blocks;
-backend tests explicitly verify that boundary. This prevents AST or unfinished HIR behavior from being lowered directly to
-LLVM IR.
+XLIL function body lowering does not exist yet. The backend emits function declarations, can write verified LLVM IR text for
+the current codegen unit, and does not add basic blocks from XLIL bodies yet. Backend tests explicitly verify that boundary.
+This prevents AST or unfinished HIR behavior from being lowered directly to LLVM IR.

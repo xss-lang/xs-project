@@ -23,6 +23,18 @@ static int failures;
     }                                                                                                                  \
   } while (0)
 
+static bool file_contains(const char *path, const char *needle)
+{
+  FILE *file = fopen(path, "rb");
+  if (file == nullptr)
+    return false;
+  char buffer[4096] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1U, file);
+  fclose(file);
+  buffer[read] = '\0';
+  return strstr(buffer, needle) != nullptr;
+}
+
 int main(int argc, char **argv)
 {
   if (argc != 3)
@@ -80,6 +92,11 @@ int main(int argc, char **argv)
   CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 2);
   CHECK(LLVMCountBasicBlocks(function) == 0);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);
+  char ir_path[4096] = {0};
+  CHECK(snprintf(ir_path, sizeof(ir_path), "%s.ll", argv[1]) > 0);
+  CHECK(xs_llvm_write_ir_file(first, ir_path, &error) == XS_BACKEND_OK);
+  CHECK(file_contains(ir_path, "target triple"));
+  CHECK(file_contains(ir_path, "declare i64 @Add(i64, i64)"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
 
   const char *linker_arguments[] = {"--version"};
@@ -95,6 +112,7 @@ int main(int argc, char **argv)
   xs_llvm_codegen_unit_destroy(second);
   xs_llvm_codegen_unit_destroy(first);
   xs_llvm_backend_destroy(backend);
+  remove(ir_path);
   remove(argv[1]);
   return failures == 0 ? 0 : 1;
 }

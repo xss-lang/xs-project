@@ -23,11 +23,12 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - Primitive type metadata for `bool`, `byte`, `sbyte`, `char`, integer types, supported float types, and `str`.
 - MIR model API, MIR writer, borrow-check skeleton, and initial optimizer passes.
 - XLIL model, assembly-like text writer/parser/verifier, and limited MIR-to-XLIL body lowering.
-- LLVM backend infrastructure for context/module/target/data layout management, signature lowering, object emission,
-  and linker abstraction.
+- LLVM backend infrastructure for context/module/target/data layout management, signature lowering, LLVM IR text emission,
+  object emission, and linker abstraction.
 - CLI paths for `xs check -proj ...` and `xs build --output hir|mir|xlil -proj ...`.
 - CLI recognition for direct file forms: `xs build --output hir|mir|xlil -file ...` and
   `xs build --hir|--mir|--xlil -file ...`.
+- Direct `.xlil` inputs with supported version/module headers can produce an LLVM IR module shell.
 - Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats, not binary or opaque
   serialized compiler state.
 - XHIR and XMIR documentation now separates their structured text design from XLIL's assembly-like registry format.
