@@ -34,9 +34,9 @@ static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 
 static void test_top_level_variable_declaration_structure(void)
 {
-  const char *text = "data User { name: str }\n"
+  const char *text = "data User { name: Str }\n"
                      "user: User = { set.name{\"Alfa\"}; };\n"
-                     "public static Pi: float = 3.141592653589793;\n";
+                     "public static Pi: Float = 3.141592653589793;\n";
   XsSource source = {.path = "TopLevelData.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -52,7 +52,7 @@ static void test_top_level_variable_declaration_structure(void)
 static void test_data_rejects_non_field_members(void)
 {
   const char *texts[] = {
-      "data User { fn GetName() {} }\n",      "data User { User(name: str) {} }\n", "data User { User.Drop() {} }\n",
+      "data User { fn GetName() {} }\n",      "data User { User(name: Str) {} }\n", "data User { User.Drop() {} }\n",
       "data User { implements Runnable; }\n", "data User { extends Person; }\n",
   };
   for (size_t index = 0; index < sizeof(texts) / sizeof(texts[0]); ++index)
@@ -70,7 +70,7 @@ static void test_data_rejects_non_field_members(void)
 
 static void test_class_constructor_rules(void)
 {
-  const char *valid = "class User { User(name: str) {} }\n";
+  const char *valid = "class User { User(name: Str) {} }\n";
   XsSource source = {.path = "ConstructorValid.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -88,7 +88,7 @@ static void test_class_constructor_rules(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *duplicate = "class User { User() {} User(name: str) {} }\n";
+  const char *duplicate = "class User { User() {} User(name: Str) {} }\n";
   source = (XsSource){.path = "ConstructorDuplicate.xs", .text = duplicate, .length = strlen(duplicate)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 33, &diagnostics, &tree));
@@ -109,7 +109,7 @@ static void test_interface_member_rules(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *field = "interface Runnable { name: str; }\n";
+  const char *field = "interface Runnable { name: Str; }\n";
   source = (XsSource){.path = "InterfaceFieldInvalid.xs", .text = field, .length = strlen(field)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 35, &diagnostics, &tree));
@@ -203,7 +203,7 @@ static void test_incomplete_function_rules(void)
 
 static void test_enum_payload_rules(void)
 {
-  const char *valid = "enum data Token { Identifier: str, Integer: int, Plus, }\n";
+  const char *valid = "enum data Token { Identifier: Str, Integer: Int, Plus, }\n";
   XsSource source = {.path = "DataEnumValid.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -216,7 +216,7 @@ static void test_enum_payload_rules(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *typed_regular = "enum Color { Red: int, }\n";
+  const char *typed_regular = "enum Color { Red: Int, }\n";
   source = (XsSource){.path = "RegularEnumPayloadInvalid.xs", .text = typed_regular, .length = strlen(typed_regular)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 41, &diagnostics, &tree));
@@ -232,7 +232,7 @@ static void test_enum_payload_rules(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *tuple_payload = "enum data Token { Position: (int, int), }\n";
+  const char *tuple_payload = "enum data Token { Position: (Int, Int), }\n";
   source = (XsSource){.path = "DataEnumTupleInvalid.xs", .text = tuple_payload, .length = strlen(tuple_payload)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 43, &diagnostics, &tree));

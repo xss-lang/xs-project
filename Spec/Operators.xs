@@ -20,11 +20,17 @@ Logical Operators:
 Bitwise Operators:
 &
 |
+
+Optional Operators:
+?.
+??
+??=
+!
 }//
 
 fn Main() {
-    a: int = 10;
-    b: int = 20;
+    a: Int = 10;
+    b: Int = 20;
 
     // equality
     if (a == b) {
@@ -57,8 +63,21 @@ fn Main() {
     }
 
     // bitwise
-    result: int = a & b;
+    result: Int = a & b;
     result = a | b;
+
+    // optional conditional access
+    maybeUser: Optional<User> = None;
+    maybeName: Optional<Str> = maybeUser?.Name;
+
+    // optional coalescing
+    displayName: Str = maybeName ?? "guest";
+
+    // optional coalescing assignment
+    maybeName ??= Some("guest");
+
+    // optional-forgiving unboxing
+    forcedName: Str = maybeName!;
 }
 
 
@@ -88,8 +107,21 @@ if (!false) {
 
 
 // VALID
-value: int = 10 & 20;
+value: Int = 10 & 20;
 
 
 // VALID
-value: int = 10 | 20;
+value: Int = 10 | 20;
+
+
+// VALID
+name: Optional<Str> = None;
+display: Str = name ?? "fallback";
+
+
+// VALID
+name ??= Some("fallback");
+
+
+// VALID
+forced: Str = name!;

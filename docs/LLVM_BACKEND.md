@@ -31,20 +31,20 @@ Object file emission and linker invocation work as infrastructure, but are not w
 
 ## Intentionally deferred type mappings
 
-`str` is not lowered to an LLVM storage type yet:
+`Str` is not lowered to an LLVM storage type yet:
 
-- `str` is UTF-16.
-- `str` length is unbounded except by the representation allowed by UTF-16/runtime/platform limits.
+- `Str` is UTF-16.
+- `Str` length is unbounded except by the representation allowed by UTF-16/runtime/platform limits.
 - Ownership, length-field type, and runtime value layout are not fully implemented in code yet.
 
-`bool` is resolved as a 1-bit primitive in HIR and lowered to `i1` by the LLVM backend.
+`Bool` is resolved as a 1-bit primitive in HIR and lowered to `i1` by the LLVM backend.
 
-`byte` and `sbyte` are separate unsigned/signed 8-bit primitive types at the HIR level. Their LLVM storage type is `i8` for
+`Byte` and `SByte` are separate unsigned/signed 8-bit primitive types at the HIR level. Their LLVM storage type is `i8` for
 both; signedness is selected later by typed MIR operations such as comparisons, conversions, and arithmetic.
 
-`char` lowers to LLVM `i16` because its documented width is 16 bits.
+`Char` lowers to LLVM `i16` because its documented width is 16 bits.
 
-For `str`, the backend returns `XS_BACKEND_DEFERRED`. This avoids inventing a temporary ABI or runtime layout.
+For `Str`, the backend returns `XS_BACKEND_DEFERRED`. This avoids inventing a temporary ABI or runtime layout.
 
 ## Preserved stage boundary
 

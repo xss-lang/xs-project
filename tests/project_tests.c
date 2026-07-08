@@ -35,7 +35,7 @@ static void test_complete_project(void)
                      "appVersion: \"0.1.0\"\n"
                      "appRelease: \"BETA\"\n"
                      "appLicense: \"MIT\"\n"
-                     "appAuthors {\n[\"Alfa\", \"alfa@example.me\"]\n[\"Foo\", nil]\n}\n"
+                     "appAuthors {\n[\"Alfa\", \"alfa@example.me\"]\n[\"Foo\", None]\n}\n"
                      "compilerOptions {\n"
                      "xsVersion: \"26\"\n"
                      "xsBackend: \"LLVM\"\n"
@@ -58,13 +58,13 @@ static void test_complete_project(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_nil_entry_selects_first_file(void)
+static void test_none_entry_selects_first_file(void)
 {
-  const char *text = "appName: nil\nappVersion: nil\nappRelease: nil\nappLicense: nil\n"
-                     "appAuthors { [nil, nil] }\n"
-                     "compilerOptions {\nxsVersion: nil\n"
-                     "addFiles { entry: nil; [\"source/Foo.xs\"] }\n"
-                     "output { [osName: nil; osArch: nil] }\n}\n";
+  const char *text = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
+                     "appAuthors { [None, None] }\n"
+                     "compilerOptions {\nxsVersion: None\n"
+                     "addFiles { entry: None; [\"source/Foo.xs\"] }\n"
+                     "output { [osName: None; osArch: None] }\n}\n";
   XsProject project;
   XsDiagnostics diagnostics;
   CHECK(parse_project(text, &project, &diagnostics));
@@ -77,7 +77,7 @@ static void test_nil_entry_selects_first_file(void)
 static void test_invalid_manifest(void)
 {
   const char *text = "appName: \"A\" appVersion: \"1\"\n"
-                     "appRelease: \"RC\"\nappLicense: nil\nappAuthors {}\ncompilerOptions {}\n";
+                     "appRelease: \"RC\"\nappLicense: None\nappAuthors {}\ncompilerOptions {}\n";
   XsProject project;
   XsDiagnostics diagnostics;
   CHECK(!parse_project(text, &project, &diagnostics));
@@ -88,12 +88,12 @@ static void test_invalid_manifest(void)
 
 static void test_optimization_is_unknown(void)
 {
-  const char *text = "appName: nil\nappVersion: nil\nappRelease: nil\nappLicense: nil\n"
-                     "appAuthors { [nil, nil] }\n"
+  const char *text = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
+                     "appAuthors { [None, None] }\n"
                      "compilerOptions {\n"
                      "xsVersion: \"26\"; optimization: \"release\"\n"
-                     "addFiles { entry: nil }\n"
-                     "output { [osName: nil; osArch: nil] }\n"
+                     "addFiles { entry: None }\n"
+                     "output { [osName: None; osArch: None] }\n"
                      "}\n";
   XsProject project;
   XsDiagnostics diagnostics;
@@ -105,12 +105,12 @@ static void test_optimization_is_unknown(void)
 
 static void test_backend_option_validation(void)
 {
-  const char *valid = "appName: nil\nappVersion: nil\nappRelease: nil\nappLicense: nil\n"
-                      "appAuthors { [nil, nil] }\n"
+  const char *valid = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
+                      "appAuthors { [None, None] }\n"
                       "compilerOptions {\n"
                       "xsVersion: \"26\"; xsBackend: \"XS\"\n"
-                      "addFiles { entry: nil }\n"
-                      "output { [osName: nil; osArch: nil] }\n"
+                      "addFiles { entry: None }\n"
+                      "output { [osName: None; osArch: None] }\n"
                       "}\n";
   XsProject project;
   XsDiagnostics diagnostics;
@@ -119,12 +119,12 @@ static void test_backend_option_validation(void)
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "appName: nil\nappVersion: nil\nappRelease: nil\nappLicense: nil\n"
-                        "appAuthors { [nil, nil] }\n"
+  const char *invalid = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
+                        "appAuthors { [None, None] }\n"
                         "compilerOptions {\n"
                         "xsVersion: \"26\"; xsBackend: \"GCC\"\n"
-                        "addFiles { entry: nil }\n"
-                        "output { [osName: nil; osArch: nil] }\n"
+                        "addFiles { entry: None }\n"
+                        "output { [osName: None; osArch: None] }\n"
                         "}\n";
   CHECK(!parse_project(invalid, &project, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
@@ -135,15 +135,15 @@ static void test_backend_option_validation(void)
 static void test_project_comments_are_line_only(void)
 {
   const char *valid = "/// project doc comment\n"
-                      "appName: nil // line comment\n"
-                      "appVersion: nil\n"
-                      "appRelease: nil\n"
-                      "appLicense: nil\n"
-                      "appAuthors { [nil, nil] }\n"
+                      "appName: None // line comment\n"
+                      "appVersion: None\n"
+                      "appRelease: None\n"
+                      "appLicense: None\n"
+                      "appAuthors { [None, None] }\n"
                       "compilerOptions {\n"
-                      "xsVersion: nil\n"
-                      "addFiles { entry: nil }\n"
-                      "output { [osName: nil; osArch: nil] }\n"
+                      "xsVersion: None\n"
+                      "addFiles { entry: None }\n"
+                      "output { [osName: None; osArch: None] }\n"
                       "}\n";
   XsProject project;
   XsDiagnostics diagnostics;
@@ -157,7 +157,7 @@ static void test_project_comments_are_line_only(void)
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
 
-  const char *c_style_multiline = "/* not supported */\nappName: nil\n";
+  const char *c_style_multiline = "/* not supported */\nappName: None\n";
   CHECK(!parse_project(c_style_multiline, &project, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_project_free(&project);
@@ -167,7 +167,7 @@ static void test_project_comments_are_line_only(void)
 int main(void)
 {
   test_complete_project();
-  test_nil_entry_selects_first_file();
+  test_none_entry_selects_first_file();
   test_invalid_manifest();
   test_optimization_is_unknown();
   test_backend_option_validation();

@@ -46,7 +46,7 @@ fn Main() throws NetworkException {
         )
         .build();
 
-    response: Http.response<str> =
+    response: Http.response<Str> =
         client.send(
             request,
             HttpResponse.BodyHandlers.ofstr()
@@ -100,7 +100,7 @@ fn StringRequestBody() {
 
 // HttpRequest.BodyPublishers.ofstr(...):
 //
-// - Creates a request body from str.
+// - Creates a request body from Str.
 // - May receive a multiline string.
 
 
@@ -115,13 +115,13 @@ fn SendRequest() throws NetworkException {
         .uri(URI.create("https://example.com"))
         .build();
 
-    response: Http.response<str> =
+    response: Http.response<Str> =
         client.send(
             request,
             HttpResponse.BodyHandlers.ofstr()
         );
 
-    body: str = response.body();
+    body: Str = response.body();
 }
 
 
@@ -129,7 +129,7 @@ fn SendRequest() throws NetworkException {
 //
 // - Sends the request synchronously.
 // - Blocks until a response is available.
-// - Returns Http.response<str> when used with ofstr().
+// - Returns Http.response<Str> when used with ofstr().
 // - May throw NetworkException.
 
 
@@ -144,7 +144,7 @@ async fn SendRequestAsync() => Task<()> {
         .uri(URI.create("https://example.com"))
         .build();
 
-    response: Http.response<str> =
+    response: Http.response<Str> =
         await client.sendAsync(
             request,
             Http.Response.BodyHandlers.ofstr()
@@ -157,7 +157,7 @@ async fn SendRequestAsync() => Task<()> {
 // client.sendAsync(...):
 //
 // - Sends the request asynchronously.
-// - Returns Task<Http.response<str>> when used with ofstr().
+// - Returns Task<Http.response<Str>> when used with ofstr().
 // - Must be awaited according to Task<T> rules.
 // - A network failure is handled through NetworkException.
 
@@ -167,8 +167,8 @@ async fn SendRequestAsync() => Task<()> {
 // ============================================================
 
 fn ReadResponseBody(
-    response: Http.response<str>
-) => str {
+    response: Http.response<Str>
+) => Str {
     return response.body();
 }
 
@@ -209,7 +209,7 @@ fn CatchNetworkException() {
             .uri(URI.create("https://example.com"))
             .build();
 
-        response: Http.response<str> =
+        response: Http.response<Str> =
             client.send(
                 request,
                 HttpResponse.BodyHandlers.ofstr()
@@ -237,6 +237,6 @@ fn CatchNetworkException() {
 // Http.client
 // Http.request
 // Http.response<T>
-// Task<Http.response<str>>
+// Task<Http.response<Str>>
 // NetworkException
 //}//

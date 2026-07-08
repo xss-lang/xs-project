@@ -24,7 +24,7 @@ bool xs_ast_push(XsAst *ast, XsAstNode node)
   {
     size_t capacity = ast->capacity == 0 ? 16 : ast->capacity * 2;
     XsAstNode *items = realloc(ast->items, capacity * sizeof(*items));
-    if (items == NULL)
+    if (items == nullptr)
     {
       ast->allocation_failed = true;
       return false;

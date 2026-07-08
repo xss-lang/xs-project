@@ -33,8 +33,8 @@ value get.field
 // simple data
 
 data User {
-    name: str
-    age: int
+    name: Str
+    age: Int
 }
 
 
@@ -58,8 +58,8 @@ std.cout << user get.age << "\n";
 class Program {
 
     data User {
-        name: str
-        age: int
+        name: Str
+        age: Int
     }
 
 }
@@ -75,7 +75,7 @@ data Pair<T, U> {
 
 // generic data initialization
 
-pair: Pair<str, int> = {
+pair: Pair<Str, Int> = {
     set.first{"Alfa"};
     set.second{26};
 };
@@ -91,8 +91,8 @@ std.cout << pair get.second << "\n";
 // multiple fields
 
 data Point {
-    x: int
-    y: int
+    x: Int
+    y: Int
 }
 
 
@@ -110,8 +110,8 @@ std.cout << point get.y << "\n";
 // VALID
 
 data User {
-    name: str
-    age: int
+    name: Str
+    age: Int
 }
 
 
@@ -128,7 +128,7 @@ data Pair<T, U> {
 class Program {
 
     data User {
-        name: str
+        name: Str
     }
 
 }
@@ -166,7 +166,7 @@ data User {
 
 data User {
 
-    User(name: str) {
+    User(name: Str) {
     }
 
 }

@@ -39,7 +39,7 @@ static void test_top_level_declarations(void)
                      "interface Printable { fn Print(); } "
                      "data Pair<T, U> { first: T second: U } "
                      "enum Color { Red, Green, Blue } "
-                     "enum data Result<T> { Ok: T, Error: str } "
+                     "enum data Result<T> { Ok: T, Error: Str } "
                      "async fn Work() => Task<()> { return; }";
   XsAst ast;
   XsDiagnostics diagnostics;

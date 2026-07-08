@@ -369,7 +369,7 @@ fn literal_name(literal: &Literal) -> String
     Literal::Float(value) => format!("float {value}"),
     Literal::Char(value) => format!("char {value}"),
     Literal::String(value) => format!("string {value:?}"),
-    Literal::Nil => "nil".to_string(),
+    Literal::None => "None".to_string(),
   }
 }
 
@@ -386,21 +386,21 @@ const fn primitive_type_name(primitive: PrimitiveType) -> &'static str
 {
   match primitive
   {
-    PrimitiveType::Bool => "bool",
-    PrimitiveType::I16 => "i16",
-    PrimitiveType::I32 => "i32",
-    PrimitiveType::I64 => "i64",
-    PrimitiveType::I128 => "i128",
-    PrimitiveType::U8 => "u8",
-    PrimitiveType::I8 => "i8",
-    PrimitiveType::U16 => "u16",
-    PrimitiveType::U32 => "u32",
-    PrimitiveType::U64 => "u64",
-    PrimitiveType::U128 => "u128",
-    PrimitiveType::F32 => "f32",
-    PrimitiveType::F64 => "f64",
-    PrimitiveType::Char => "char",
-    PrimitiveType::Str => "str",
+    PrimitiveType::Bool => "Bool",
+    PrimitiveType::Byte => "Byte",
+    PrimitiveType::SByte => "SByte",
+    PrimitiveType::Char => "Char",
+    PrimitiveType::Short => "Short",
+    PrimitiveType::Long => "Long",
+    PrimitiveType::Int => "Int",
+    PrimitiveType::Integer => "Integer",
+    PrimitiveType::UShort => "UShort",
+    PrimitiveType::ULong => "ULong",
+    PrimitiveType::UInt => "UInt",
+    PrimitiveType::UInteger => "UInteger",
+    PrimitiveType::SFloat => "SFloat",
+    PrimitiveType::Float => "Float",
+    PrimitiveType::Str => "Str",
   }
 }
 
@@ -476,9 +476,9 @@ mod tests
   fn writes_checked_function_as_structured_xhir()
   {
     let function = Function { name: "Main".to_string(),
-                              return_type: Some(Type::Primitive(PrimitiveType::I64)),
+                              return_type: Some(Type::Primitive(PrimitiveType::Int)),
                               locals: vec![Local { name: "answer".to_string(),
-                                                   ty: Type::Primitive(PrimitiveType::I64),
+                                                   ty: Type::Primitive(PrimitiveType::Int),
                                                    mutable: false,
                                                    span: span() }],
                               body: vec![Statement::Return { value: Some(Expression::Literal { literal:
@@ -489,8 +489,8 @@ mod tests
     let text = function_to_xhir(&function);
 
     assert!(text.contains("function Main"));
-    assert!(text.contains("returns i64"));
-    assert!(text.contains("local answer: i64 immutable"));
+    assert!(text.contains("returns Int"));
+    assert!(text.contains("local answer: Int immutable"));
     assert!(text.contains("literal integer 42"));
     assert!(!text.contains("bb0"));
 
@@ -500,7 +500,7 @@ mod tests
 
     let parsed = parse_xhir_function(&text).expect("function should parse");
     assert_eq!(parsed.name, "Main");
-    assert_eq!(parsed.return_type, Some(Type::Primitive(PrimitiveType::I64)));
+    assert_eq!(parsed.return_type, Some(Type::Primitive(PrimitiveType::Int)));
     assert_eq!(parsed.locals.len(), 1);
     assert_eq!(parsed.body.len(), 1);
   }

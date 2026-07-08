@@ -24,7 +24,7 @@ bool xs_macro_token_text_matches(const XsSyntaxNode *matcher, const XsSyntaxNode
 static bool token_is_literal(XsTokenKind kind)
 {
   return kind == XS_TOKEN_INTEGER || kind == XS_TOKEN_FLOAT || kind == XS_TOKEN_STRING || kind == XS_TOKEN_CHARACTER ||
-         kind == XS_TOKEN_KW_TRUE || kind == XS_TOKEN_KW_FALSE || kind == XS_TOKEN_KW_NIL;
+         kind == XS_TOKEN_KW_TRUE || kind == XS_TOKEN_KW_FALSE || kind == XS_TOKEN_KW_NONE;
 }
 
 static bool token_is_visibility(XsTokenKind kind)

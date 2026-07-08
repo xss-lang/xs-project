@@ -4,10 +4,10 @@
 appName: "MacroApp"
 appVersion: "0.1.0"
 appRelease: "ALPHA"
-appLicense: nil
+appLicense: None
 
 appAuthors {
-    [nil, nil]
+    [None, None]
 }
 
 compilerOptions {

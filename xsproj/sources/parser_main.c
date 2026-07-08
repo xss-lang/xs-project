@@ -86,7 +86,7 @@ bool xs_project_parse(const XsSource *source, XsDiagnostics *diagnostics, XsProj
   if (!project->app_release.is_nil && project->app_release.text != nullptr &&
       strcmp(project->app_release.text, "ALPHA") != 0 && strcmp(project->app_release.text, "BETA") != 0 &&
       strcmp(project->app_release.text, "STABLE") != 0)
-    project_error(&parser, project->app_release.span, "appRelease must be ALPHA, BETA, STABLE, or nil");
+    project_error(&parser, project->app_release.span, "appRelease must be ALPHA, BETA, STABLE, or None");
 
   return !xs_diagnostics_has_error(diagnostics);
 }

@@ -46,17 +46,17 @@ class User {
 
 // fields
 class User {
-    name: str;
-    age: int;
+    name: Str;
+    age: Int;
 
-    enabled: bool = true;
+    enabled: Bool = true;
 }
 
 // constructor
 class User {
-    name: str;
+    name: Str;
 
-    User(name: str) {
+    User(name: Str) {
         this.name = name;
     }
 }
@@ -73,7 +73,7 @@ fn Main() {
 
 // methods
 class User {
-    fn GetName() => str {
+    fn GetName() => Str {
         return "Alfa";
     }
 }
@@ -87,12 +87,12 @@ fn Main() {
 
 // static field
 class Math {
-    static Pi: float = 3.141592653589793;
+    static Pi: Float = 3.141592653589793;
 }
 
 // static method
 class Math {
-    static fn Add(a: int, b: int) => int {
+    static fn Add(a: Int, b: Int) => Int {
         return a + b;
     }
 }
@@ -139,13 +139,13 @@ class Program {
 
 // visibility
 class User {
-    public name: str;
+    public name: Str;
 
-    private password: str;
+    private password: Str;
 
-    protected token: str;
+    protected token: Str;
 
-    internal id: int;
+    internal id: Int;
 }
 
 // incomplete class
@@ -155,20 +155,20 @@ incomplete class Animal {
 
 // method merging
 class Math {
-    fn Add(a: int) => int {
-        x: int = 1;
+    fn Add(a: Int) => Int {
+        x: Int = 1;
     }
 
-    fn Add(a: int, b: int) => int {
-        y: int = 2;
+    fn Add(a: Int, b: Int) => Int {
+        y: Int = 2;
     }
 }
 
 // equivalent
 class Math {
-    fn Add(a: int, b: int) => int {
-        x: int = 1;
-        y: int = 2;
+    fn Add(a: Int, b: Int) => Int {
+        x: Int = 1;
+        y: Int = 2;
     }
 }
 
@@ -180,19 +180,19 @@ class User {
 
 // VALID
 class User {
-    name: str;
+    name: Str;
 }
 
 
 // VALID
 class User {
-    name: str = "Alfa";
+    name: Str = "Alfa";
 }
 
 
 // VALID
 class User {
-    User(name: str) {
+    User(name: Str) {
     }
 }
 
@@ -202,7 +202,7 @@ class User {
     User() {
     }
 
-    User(name: str) {
+    User(name: Str) {
     }
 }
 // A class can only have one constructor.
@@ -210,7 +210,7 @@ class User {
 
 // VALID
 class Math {
-    static Counter: int = 0;
+    static Counter: Int = 0;
 }
 
 

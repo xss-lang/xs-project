@@ -11,24 +11,24 @@ Top-level variables desteklenmez.
 
 fn Main() {
     // mutable variables
-    x: int = 5;
-    name: str = "Alfa";
-    enabled: bool = true;
-    letter: char = "A";
-    data: byte = 255;
+    x: Int = 5;
+    name: Str = "Alfa";
+    enabled: Bool = true;
+    letter: Char = "A";
+    data: Byte = 255;
 
     small: int16 = 10;
     normal: int32 = 20;
-    large: int = 30;
+    large: Int = 30;
     huge: int128 = 40;
 
     usmall: uint16 = 10;
     unormal: uint32 = 20;
-    ularge: uint = 30;
+    ularge: UInt = 30;
     uhuge: uint128 = 40;
 
     single: float32 = 2.5;
-    floating: float = 3.5;
+    floating: Float = 3.5;
 
     // reassignment
     x = 10;
@@ -36,25 +36,25 @@ fn Main() {
     enabled = false;
 
     // immutable variable
-    val version: str = "1.0";
-    val maxPlayers: int = 100;
-    val isReady: bool = true;
+    val version: Str = "1.0";
+    val maxPlayers: Int = 100;
+    val isReady: Bool = true;
 
     // compile-time constant
-    const BuildNumber: int = 42;
-    const AppName: str = "Example";
-    const DebugMode: bool = false;
+    const BuildNumber: Int = 42;
+    const AppName: Str = "Example";
+    const DebugMode: Bool = false;
 
     // compile-time constant + static lifetime
-    static CacheSize: int = 1024;
-    static ProductName: str = "Example";
-    static IsProduction: bool = true;
+    static CacheSize: Int = 1024;
+    static ProductName: Str = "Example";
+    static IsProduction: Bool = true;
 }
 
 
 // VALID
 fn Main() {
-    x: int = 5;
+    x: Int = 5;
 }
 
 
@@ -67,13 +67,13 @@ fn Main() {
 
 // VALID
 fn Main() {
-    val x: int = 5;
+    val x: Int = 5;
 }
 
 
 // INVALID
 fn Main() {
-    val x: int = 5;
+    val x: Int = 5;
     x = 10;
 }
 // Cannot assign to immutable variable.
@@ -81,30 +81,30 @@ fn Main() {
 
 // VALID
 fn Main() {
-    const Version: int = 1;
+    const Version: Int = 1;
 }
 
 
 // INVALID
 fn Main() {
-    const Version: int = RuntimeValue();
+    const Version: Int = RuntimeValue();
 }
 // Const values must be compile-time constants.
 
 
 // VALID
 fn Main() {
-    static BufferSize: int = 4096;
+    static BufferSize: Int = 4096;
 }
 
 
 // INVALID
 fn Main() {
-    static BufferSize: int = RuntimeValue();
+    static BufferSize: Int = RuntimeValue();
 }
 // Static values must be compile-time constants.
 
 
 // INVALID
-Version: int = 1;
+Version: Int = 1;
 // Top-level variables are not allowed.

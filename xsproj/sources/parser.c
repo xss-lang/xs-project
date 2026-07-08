@@ -19,14 +19,14 @@ static bool parse_value(ProjectParser *parser, XsProjectValue *value)
     project_advance(parser);
     return value->text != nullptr;
   }
-  if (parser->current.kind == PROJECT_IDENTIFIER && token_is(parser, parser->current, "nil"))
+  if (parser->current.kind == PROJECT_IDENTIFIER && token_is(parser, parser->current, "None"))
   {
     value->span = parser->current.span;
     value->is_nil = true;
     project_advance(parser);
     return true;
   }
-  project_error(parser, parser->current.span, "expected a string or nil value");
+  project_error(parser, parser->current.span, "expected a string or None value");
   if (parser->current.kind != PROJECT_EOF)
     project_advance(parser);
   return false;

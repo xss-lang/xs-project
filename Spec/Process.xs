@@ -33,7 +33,8 @@ Built-in exceptions:
 
 - IOException
 - NetworkException
-- NilException
+- OptionalException
+- OptionalUnboxingException
 - ArgumentException
 - OutOfRangeException
 
@@ -118,7 +119,7 @@ throw IOException("File not found");
 
 // throws
 
-fn OpenFile(path: str)
+fn OpenFile(path: Str)
 throws IOException {
 }
 
@@ -133,7 +134,7 @@ throws IOException, NetworkException {
 // custom exception
 
 class LoginException {
-    message: str;
+    message: Str;
 }
 
 
@@ -170,7 +171,9 @@ throw IOException("Disk error");
 
 throw NetworkException("Connection failed");
 
-throw NilException("Unexpected nil");
+throw OptionalException("Unexpected None");
+
+throw OptionalUnboxingException("Cannot unbox None");
 
 throw ArgumentException("Invalid argument");
 
@@ -242,7 +245,7 @@ finally {
 
 // VALID
 
-fn OpenFile(path: str)
+fn OpenFile(path: Str)
 throws IOException {
 }
 
@@ -257,7 +260,7 @@ throws IOException, NetworkException {
 // VALID
 
 class LoginException {
-    message: str;
+    message: Str;
 }
 
 
@@ -296,7 +299,7 @@ catch (e) {
 
 // INVALID
 
-fn OpenFile(path: str) {
+fn OpenFile(path: Str) {
     throw IOException("File not found");
 }
 

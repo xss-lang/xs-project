@@ -25,8 +25,8 @@ Array initialization:
 
 Default values:
 - Numeric types -> 0
-- bool -> nil
-- str -> nil
+- Bool -> None
+- Str -> None
 
 Vector:
 - Collections.vector<T>
@@ -54,16 +54,16 @@ imports Collections;
 
 // arrays
 
-nums: int[] = {1, 2, 3};
+nums: Int[] = {1, 2, 3};
 
 nums[0] = 5;
 
-length: int = nums.len();
+length: Int = nums.len();
 
 
 // fixed-size arrays
 
-nums: int[3] = {1, 2, 3, 4};
+nums: Int[3] = {1, 2, 3, 4};
 
 // Result:
 // {1, 2, 3, 4}
@@ -71,7 +71,7 @@ nums: int[3] = {1, 2, 3, 4};
 
 // missing values
 
-nums: int[3] = {1, 2};
+nums: Int[3] = {1, 2};
 
 // Result:
 // {1, 2, 0, 0}
@@ -79,7 +79,7 @@ nums: int[3] = {1, 2};
 
 // excess values
 
-nums: int[3] = {1, 2, 3, 4, 5};
+nums: Int[3] = {1, 2, 3, 4, 5};
 
 // Result:
 // {1, 2, 3, 4}
@@ -87,23 +87,23 @@ nums: int[3] = {1, 2, 3, 4, 5};
 
 // string defaults
 
-names: str[3] = {"Hasan"};
+names: Str[3] = {"Hasan"};
 
 // Result:
-// {"Hasan", nil, nil, nil}
+// {"Hasan", None, None, None}
 
 
-// bool defaults
+// Bool defaults
 
-flags: bool[2] = {};
+flags: Bool[2] = {};
 
 // Result:
-// {nil, nil, nil}
+// {None, None, None}
 
 
 // immutable arrays
 
-val nums: int[] = {1, 2, 3};
+val nums: Int[] = {1, 2, 3};
 
 nums[0] = 5;
 
@@ -112,7 +112,7 @@ nums[0] = 5;
 
 // vectors
 
-users: Collections.vector<str> = {
+users: Collections.vector<Str> = {
     "Hasan",
     "Alfa",
 };
@@ -120,7 +120,7 @@ users: Collections.vector<str> = {
 
 // vector constructor
 
-users: Collections.vector<str> =
+users: Collections.vector<Str> =
     Collections.vector.new();
 
 
@@ -141,7 +141,7 @@ Collections.vector.pop(users[1]);
 
 // vector get
 
-name: str =
+name: Str =
     Collections.vector.get(users[0]);
 
 
@@ -155,13 +155,13 @@ Collections.vector.adjust(
 
 // vector length
 
-count: int =
+count: Int =
     Collections.vector.length(users);
 
 
 // hashmaps
 
-scores: Collections.hashmap<str, int> =
+scores: Collections.hashmap<Str, Int> =
     Collections.hashmap.new();
 
 
@@ -182,7 +182,7 @@ Collections.hashmap.insert(
 
 // get
 
-score: int =
+score: Int =
     Collections.hashmap.get(
         scores,
         "Alfa"
@@ -201,7 +201,7 @@ Collections.hashmap.delete(
 
 imports Collections, Stdio, Format;
 
-scores: Collections.hashmap<str, int> =
+scores: Collections.hashmap<Str, Int> =
     Collections.hashmap.new();
 
 Collections.hashmap.insert(
@@ -228,17 +228,17 @@ std.cout
 
 // VALID
 
-nums: int[] = {1, 2, 3};
+nums: Int[] = {1, 2, 3};
 
 
 // VALID
 
-nums: int[3] = {1, 2};
+nums: Int[3] = {1, 2};
 
 
 // VALID
 
-users: Collections.vector<str> =
+users: Collections.vector<Str> =
     Collections.vector.new();
 
 
@@ -267,7 +267,7 @@ Collections.vector.adjust(
 
 // VALID
 
-scores: Collections.hashmap<str, int> =
+scores: Collections.hashmap<Str, Int> =
     Collections.hashmap.new();
 
 
@@ -311,7 +311,7 @@ scores["Alfa"];
 
 // INVALID
 
-scores: Collections.hashmap<str, int> = {
+scores: Collections.hashmap<Str, Int> = {
     "Alfa": 90,
 };
 

@@ -57,19 +57,19 @@ static bool check_single_source(const char *text)
 
 static void test_hir_primitive_info(void)
 {
-  const XsHirPrimitiveInfo *string = xs_hir_primitive_find("str", 3);
+  const XsHirPrimitiveInfo *string = xs_hir_primitive_find("Str", 3);
   CHECK(string != nullptr && string->bit_width == 0 && string->code_unit_bit_width == 16 && string->is_text &&
         !string->has_xlil_type);
-  const XsHirPrimitiveInfo *boolean = xs_hir_primitive_find("bool", 4);
+  const XsHirPrimitiveInfo *boolean = xs_hir_primitive_find("Bool", 4);
   CHECK(boolean != nullptr && boolean->bit_width == 1 && boolean->has_xlil_type &&
         boolean->xlil_type.kind == XS_LIL_TYPE_BOOL);
-  const XsHirPrimitiveInfo *byte = xs_hir_primitive_find("byte", 4);
+  const XsHirPrimitiveInfo *byte = xs_hir_primitive_find("Byte", 4);
   CHECK(byte != nullptr && byte->bit_width == 8 && !byte->is_signed && byte->has_xlil_type &&
         byte->xlil_type.kind == XS_LIL_TYPE_U8);
-  const XsHirPrimitiveInfo *sbyte = xs_hir_primitive_find("sbyte", 5);
+  const XsHirPrimitiveInfo *sbyte = xs_hir_primitive_find("SByte", 5);
   CHECK(sbyte != nullptr && sbyte->bit_width == 8 && sbyte->is_signed && sbyte->has_xlil_type &&
         sbyte->xlil_type.kind == XS_LIL_TYPE_I8);
-  const XsHirPrimitiveInfo *character = xs_hir_primitive_find("char", 4);
+  const XsHirPrimitiveInfo *character = xs_hir_primitive_find("Char", 4);
   CHECK(character != nullptr && character->bit_width == 16 && character->has_xlil_type &&
         character->xlil_type.kind == XS_LIL_TYPE_U16);
 }
@@ -77,18 +77,18 @@ static void test_hir_primitive_info(void)
 static void test_primitive_and_generic_types(void)
 {
   const char *text = "module App;\n"
-                     "fn Keep<T>(a: str, b: bool, c: byte, d: sbyte, e: char, f: int16, g: int32, h: int,\n"
-                     "           i: int128, j: Uint16, k: Uint32, l: Uint, m: Uint128,\n"
-                     "           n: float32, o: float, p: T) => T { return p; }\n";
+                     "fn Keep<T>(a: Str, b: Bool, c: Byte, d: SByte, e: Char, f: Short, g: Long, h: Int,\n"
+                     "           i: Integer, j: UShort, k: ULong, l: UInt, m: UInteger,\n"
+                     "           n: SFloat, o: Float, p: T) => T { return p; }\n";
   CHECK(check_single_source(text));
-  CHECK(!check_single_source("module App;\nfn Main(value: float16) {}\n"));
+  CHECK(!check_single_source("module App;\nfn Main(value: Float16) {}\n"));
   CHECK(!check_single_source("module App;\nfn Main(value: double) {}\n"));
 }
 
 static void test_local_user_type(void)
 {
   const char *text = "module App;\n"
-                     "data User { name: str; }\n"
+                     "data User { name: Str; }\n"
                      "fn Main(value: User) {}\n";
   CHECK(check_single_source(text));
 }
@@ -98,7 +98,7 @@ static void test_generic_type_arity(void)
   const char *valid = "module App;\n"
                       "class Box<T> { value: T; }\n"
                       "data Pair<T, U> { first: T; second: U; }\n"
-                      "fn Main(box: Box<int>, pair: Pair<str, int>) {}\n";
+                      "fn Main(box: Box<Int>, pair: Pair<Str, Int>) {}\n";
   CHECK(check_single_source(valid));
   const char *missing = "module App;\n"
                         "class Box<T> { value: T; }\n"
@@ -106,11 +106,11 @@ static void test_generic_type_arity(void)
   CHECK(!check_single_source(missing));
   const char *too_few = "module App;\n"
                         "data Pair<T, U> { first: T; second: U; }\n"
-                        "fn Main(pair: Pair<int>) {}\n";
+                        "fn Main(pair: Pair<Int>) {}\n";
   CHECK(!check_single_source(too_few));
   const char *too_many = "module App;\n"
                          "class Box<T> { value: T; }\n"
-                         "fn Main(box: Box<int, str>) {}\n";
+                         "fn Main(box: Box<Int, Str>) {}\n";
   CHECK(!check_single_source(too_many));
 }
 
@@ -124,7 +124,7 @@ static void test_duplicate_generic_parameter_names(void)
 static void test_imported_user_type(void)
 {
   const char *library = "module Model;\n"
-                        "public data User { name: str; }\n";
+                        "public data User { name: Str; }\n";
   const char *main = "module App;\n"
                      "from Model imports User;\n"
                      "fn Main(value: User) {}\n";
@@ -151,7 +151,7 @@ static void test_public_namespace_exports_default_type(void)
 {
   const char *library = "module Model;\n"
                         "public namespace Records;\n"
-                        "data User { name: str; }\n";
+                        "data User { name: Str; }\n";
   const char *main = "module App;\n"
                      "fn Main(value: Model.Records.User) {}\n";
   XsSyntaxTree library_tree;
@@ -178,7 +178,7 @@ static void test_public_namespace_exports_default_type(void)
 static void test_private_qualified_type_visibility(void)
 {
   const char *library = "module Model;\n"
-                        "private data Secret { value: int; }\n";
+                        "private data Secret { value: Int; }\n";
   const char *main = "module App;\n"
                      "fn Main(value: Model.Secret) {}\n";
   XsSyntaxTree library_tree;
@@ -204,7 +204,7 @@ static void test_private_qualified_type_visibility(void)
 static void test_private_same_namespace_type_visibility(void)
 {
   const char *text = "module Model;\n"
-                     "private data Secret { value: int; }\n"
+                     "private data Secret { value: Int; }\n"
                      "fn Main(value: Model.Secret) {}\n";
   CHECK(check_single_source(text));
 }
@@ -212,7 +212,7 @@ static void test_private_same_namespace_type_visibility(void)
 static void test_private_same_namespace_different_file_type_visibility(void)
 {
   const char *library = "module Model;\n"
-                        "private data Secret { value: int; }\n";
+                        "private data Secret { value: Int; }\n";
   const char *main = "module Model;\n"
                      "fn Main(value: Model.Secret) {}\n";
   XsSyntaxTree library_tree;
@@ -248,15 +248,15 @@ static void test_generic_constraints(void)
   CHECK(check_single_source(multiple));
   const char *generic = "module App;\n"
                         "interface Parser<T> { fn Parse(value: T); }\n"
-                        "fn UseParser<T: Parser<int>>(value: T) {}\n";
+                        "fn UseParser<T: Parser<Int>>(value: T) {}\n";
   CHECK(check_single_source(generic));
   const char *invalid = "module App;\n"
-                        "data NotInterface { value: int; }\n"
+                        "data NotInterface { value: Int; }\n"
                         "fn PrintValue<T: NotInterface>(value: T) {}\n";
   CHECK(!check_single_source(invalid));
   const char *invalid_generic = "module App;\n"
                                 "class Box<T> { value: T; }\n"
-                                "fn UseBox<T: Box<int>>(value: T) {}\n";
+                                "fn UseBox<T: Box<Int>>(value: T) {}\n";
   CHECK(!check_single_source(invalid_generic));
 }
 
@@ -295,7 +295,7 @@ static void test_unknown_type_errors(void)
 static void test_expanded_macro_type_errors(void)
 {
   const char *main = "module App;\n"
-                     "macroRules! bad { (): { value: Missing = nil }; }\n"
+                     "macroRules! bad { (): { value: Missing = None }; }\n"
                      "fn Main() { bad!(); }\n";
   XsSource source = {.path = "MacroTypes.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
@@ -327,7 +327,7 @@ static void test_expanded_macro_type_errors(void)
 static void test_type_fragment_macro_type_errors(void)
 {
   const char *main = "module App;\n"
-                     "macroRules! declare { ($kind:ty): { value: $kind = nil }; }\n"
+                     "macroRules! declare { ($kind:ty): { value: $kind = None }; }\n"
                      "fn Main() { declare!(Missing); }\n";
   XsSource source = {.path = "MacroTypeFragmentTypes.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;

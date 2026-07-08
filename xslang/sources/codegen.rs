@@ -74,8 +74,8 @@ mod tests
   fn groups_monomorphized_functions_by_module_path()
   {
     let mono = create_mono_plan([instance("App", "Main", vec![]),
-                                 instance("App.Math", "Add", vec![arg("int")]),
-                                 instance("App.Math", "Add", vec![arg("str")])]);
+                                 instance("App.Math", "Add", vec![arg("Int")]),
+                                 instance("App.Math", "Add", vec![arg("Str")])]);
 
     let plan = split_codegen_units(&mono);
 

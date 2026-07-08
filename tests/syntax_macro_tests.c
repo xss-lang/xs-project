@@ -235,7 +235,7 @@ static void test_macro_expansion_preparation_report(void)
 static void test_statement_fragment_expansion(void)
 {
   const char *text = "macroRules! pass { ($body:stmt): { $body }; }"
-                     "fn Main() { pass!(value: Missing = nil;); }";
+                     "fn Main() { pass!(value: Missing = None;); }";
   XsSource source = {.path = "MacroStatementFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -277,7 +277,7 @@ static void test_statement_fragment_expansion(void)
 static void test_block_fragment_expansion(void)
 {
   const char *text = "macroRules! pass { ($body:block): { $body }; }"
-                     "fn Main() { pass!({ value: Missing = nil; }); }";
+                     "fn Main() { pass!({ value: Missing = None; }); }";
   XsSource source = {.path = "MacroBlockFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -316,7 +316,7 @@ static void test_block_fragment_expansion(void)
 
 static void test_type_fragment_expansion(void)
 {
-  const char *text = "macroRules! declare { ($kind:ty): { value: $kind = nil }; }"
+  const char *text = "macroRules! declare { ($kind:ty): { value: $kind = None }; }"
                      "fn Main() { declare!(Missing); }";
   XsSource source = {.path = "MacroTypeFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -342,7 +342,7 @@ static void test_type_fragment_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "macroRules! declare { ($kind:ty): { value: $kind = nil }; }"
+  const char *invalid = "macroRules! declare { ($kind:ty): { value: $kind = None }; }"
                         "fn Main() { declare!(); }";
   source = (XsSource){.path = "MacroTypeFragmentInvalid.xs", .text = invalid, .length = strlen(invalid)};
   xs_diagnostics_init(&diagnostics);
@@ -397,7 +397,7 @@ static void test_pattern_fragment_expansion(void)
 {
   const char *text =
       "macroRules! matchIt { ($case:pat): { match (value) { $case -> { return; }, else -> { return; }, } }; }"
-      "fn Main() { matchIt!(nil); }";
+      "fn Main() { matchIt!(None); }";
   XsSource source = {.path = "MacroPatternFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;

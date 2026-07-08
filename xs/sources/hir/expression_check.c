@@ -98,7 +98,7 @@ static const char *literal_kind_name(XsTokenKind kind)
 
 static bool literal_matches_primitive(XsTokenKind literal, const XsHirPrimitiveInfo *primitive)
 {
-  if (primitive == nullptr || literal == XS_TOKEN_KW_NIL)
+  if (primitive == nullptr || literal == XS_TOKEN_KW_NONE)
     return true;
   if (literal == XS_TOKEN_INTEGER)
     return primitive->is_integer && primitive->kind != XS_HIR_PRIMITIVE_BOOL &&

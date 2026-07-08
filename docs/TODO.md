@@ -43,10 +43,10 @@ C23, and target assembly conventions as long as the result fits X#.
 
 ## Runtime and ABI decisions
 
-- `char` is a 16-bit UTF-16 code unit. It may hold a standalone surrogate code unit; `char` does not guarantee scalar values.
-- `str` is a UTF-16 code-unit sequence. Length is a `size_t` code-unit count, limited by the platform address space and
+- `Char` is a 16-bit UTF-16 code unit. It may hold a standalone surrogate code unit; `Char` does not guarantee scalar values.
+- `Str` is a UTF-16 code-unit sequence. Length is a `size_t` code-unit count, limited by the platform address space and
   `size_t`. A null terminator is not required.
-- `str` v0 runtime layout is a fat handle with `length: size_t`, `data: const uint16_t *`, and `owner: void *`.
+- `Str` v0 runtime layout is a fat handle with `length: size_t`, `data: const uint16_t *`, and `owner: void *`.
   `owner == NULL` means a borrowed/static string.
 - String literal normalization performs only escape resolution; it does not perform Unicode canonical normalization. Invalid
   escapes produce diagnostics; raw UTF-16 surrogate pairs are preserved.

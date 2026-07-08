@@ -9,7 +9,7 @@ This file defines:
 - Identifier character rules
 - Reserved-word restrictions
 - Unicode restrictions
-- Decimal integer literals
+- Decimal Integer literals
 - Decimal floating-point literals
 - Scientific notation
 - Digit separators
@@ -119,16 +119,16 @@ _x2
 
 // Invalid examples:
 
-fn: int = 1;
-class: str = "A";
-module: bool = true;
-imports: int = 2;
-if: int = 3;
-else: int = 4;
-return: int = 5;
-match: int = 6;
-new: int = 7;
-nil: int = 8;
+fn: Int = 1;
+class: Str = "A";
+module: Bool = true;
+imports: Int = 2;
+if: Int = 3;
+else: Int = 4;
+return: Int = 5;
+match: Int = 6;
+new: Int = 7;
+None: Int = 8;
 
 
 // This rule applies to every language keyword and reserved word.
@@ -165,7 +165,7 @@ nil: int = 8;
 
 
 // ============================================================
-// Decimal integer literals
+// Decimal Integer literals
 // ============================================================
 
 // Integer literals use decimal notation.
@@ -195,9 +195,9 @@ nil: int = 8;
 
 // Such values may be represented as strings when needed:
 
-hexValue: str = "FF";
-binaryValue: str = "1010";
-octalValue: str = "77";
+hexValue: Str = "FF";
+binaryValue: Str = "1010";
+octalValue: Str = "77";
 
 
 // ============================================================
@@ -322,7 +322,7 @@ octalValue: str = "77";
 //
 // - identifiers
 // - reserved words
-// - decimal integer literals
+// - decimal Integer literals
 // - decimal floating-point literals
 // - scientific-notation literals
 // - string and character escape sequences
@@ -354,13 +354,13 @@ octalValue: str = "77";
 // ============================================================
 
 fn ValidIdentifiers() {
-    value: int = 42;
-    value2: int = 1'000;
-    _privateValue: int = 3;
+    value: Int = 42;
+    value2: Int = 1'000;
+    _privateValue: Int = 3;
 
-    floatingValue: float = 3.141'592;
-    smallValue: float = 0.000'001;
-    scientificValue: float = 1.234'567e-8;
+    floatingValue: Float = 3.141'592;
+    smallValue: Float = 0.000'001;
+    scientificValue: Float = 1.234'567e-8;
 }
 
 
@@ -369,20 +369,20 @@ fn ValidIdentifiers() {
 // ============================================================
 
 fn InvalidIdentifiers() {
-    user-name: int = 1;
-    sayı: int = 2;
-    1value: int = 3;
-    class: int = 4;
+    user-name: Int = 1;
+    sayı: Int = 2;
+    1value: Int = 3;
+    class: Int = 4;
 }
 
 
 fn InvalidNumericLiterals() {
-    first: int = 1_000;
-    second: int = '100;
-    third: int = 100';
-    fourth: int = 1''000;
-    fifth: int = 0xFF;
-    sixth: float = 1e'10;
+    first: Int = 1_000;
+    second: Int = '100;
+    third: Int = 100';
+    fourth: Int = 1''000;
+    fifth: Int = 0xFF;
+    sixth: Float = 1e'10;
 }
 
 

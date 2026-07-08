@@ -102,7 +102,7 @@ fn Main() {
 
 module Math;
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
@@ -114,14 +114,14 @@ fn Add(a: int, b: int) => int {
 
 module Math;
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
 
 // Invalid:
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
@@ -187,8 +187,8 @@ imports Math;
 // Conceptual discovered-module record:
 
 data DiscoveredModule {
-    moduleName: str
-    sourcePath: str
+    moduleName: Str
+    sourcePath: Str
 }
 
 
@@ -323,7 +323,7 @@ imports Math;
 
 module Math;
 
-public fn Add(a: int, b: int) => int {
+public fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
@@ -333,7 +333,7 @@ public fn Add(a: int, b: int) => int {
 imports Math;
 
 fn Main() {
-    value: int = Math.Add(2, 3);
+    value: Int = Math.Add(2, 3);
 }
 
 

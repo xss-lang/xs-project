@@ -201,17 +201,17 @@ appLicense: "MIT"
 // - "STABLE"
 
 
-// Metadata values may be nil:
+// Metadata values may be None:
 
-appName: nil
-appVersion: nil
-appRelease: nil
-appLicense: nil
+appName: None
+appVersion: None
+appRelease: None
+appLicense: None
 
 
-// Nil means that the value does not exist.
+// None means that the value does not exist.
 //
-// Nil metadata does not prevent output when compilerOptions,
+// None metadata does not prevent output when compilerOptions,
 // entry selection and output targets are valid.
 
 
@@ -221,7 +221,7 @@ appLicense: nil
 
 appAuthors {
     ["Alfa", "alfa@example.me"]
-    ["Foo", nil]
+    ["Foo", None]
 }
 
 
@@ -236,20 +236,20 @@ appAuthors {
 //     author email
 // ]
 //
-// Either value may be nil.
+// Either value may be None.
 
 
 // Valid:
 
 appAuthors {
-    ["Alfa", nil]
+    ["Alfa", None]
 }
 
 
 // Also valid:
 
 appAuthors {
-    [nil, nil]
+    [None, None]
 }
 
 
@@ -334,10 +334,10 @@ compilerOptions {
 // xsVersion selects the X# language version.
 
 
-// Nil version:
+// None version:
 
 compilerOptions {
-    xsVersion: nil
+    xsVersion: None
 
     addFiles {
         entry: "source/Main.xs"
@@ -352,7 +352,7 @@ compilerOptions {
 }
 
 
-// When xsVersion is nil:
+// When xsVersion is None:
 //
 // - No error occurs.
 // - No X# version is selected.
@@ -386,7 +386,7 @@ compilerOptions {
 
 // addFiles is required.
 //
-// entry is required as a field, but its value may be nil.
+// entry is required as a field, but its value may be None.
 //
 // The list below entry is optional.
 
@@ -413,10 +413,10 @@ addFiles {
 //     source/Bar.xs
 
 
-// When entry is nil and the list contains files:
+// When entry is None and the list contains files:
 
 addFiles {
-    entry: nil
+    entry: None
 
     [
         "source/Foo.xs",
@@ -434,10 +434,10 @@ addFiles {
 //     source/Bar.xs
 
 
-// When entry is nil and no file list exists:
+// When entry is None and no file list exists:
 
 addFiles {
-    entry: nil
+    entry: None
 }
 
 
@@ -531,17 +531,17 @@ output {
 }
 
 
-// Values may be nil:
+// Values may be None:
 
 output {
     [
-        osName: nil
-        osArch: nil
+        osName: None
+        osArch: None
     ]
 }
 
 
-// Nil values do not cause a manifest syntax error.
+// None values do not cause a manifest syntax error.
 //
 // Output is only produced when the compiler has enough valid
 // compiler and target information.
@@ -582,12 +582,12 @@ externalModules {
 // - moduleVersion
 
 
-// Values may be nil:
+// Values may be None:
 
 externalModules {
     addModule {
-        moduleName: nil
-        moduleVersion: nil
+        moduleName: None
+        moduleVersion: None
     }
 }
 
@@ -629,20 +629,20 @@ externalModules {
 
 
 // ============================================================
-// Nil project behavior
+// None project behavior
 // ============================================================
 
-// Every value position in .xsproj may contain nil.
+// Every value position in .xsproj may contain None.
 //
-// Nil means absence.
+// None means absence.
 //
-// A manifest in which every value is nil:
+// A manifest in which every value is None:
 //
 // - Is not a syntax error.
 // - Does not produce compilation output.
 
 
-// Metadata may remain nil while output is still produced,
+// Metadata may remain None while output is still produced,
 // provided the required compiler configuration, entry selection
 // and output target information are usable.
 
@@ -664,7 +664,7 @@ fn Main() {
 
 module Math;
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
@@ -676,14 +676,14 @@ fn Add(a: int, b: int) => int {
 
 module Math;
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
 
 // Invalid:
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
@@ -787,10 +787,10 @@ imports Math;
 // addFiles list
 //     Additional direct build-graph sources.
 //
-// entry: nil with a non-empty list
+// entry: None with a non-empty list
 //     First listed source becomes entry.
 //
-// entry: nil with no listed source
+// entry: None with no listed source
 //     No output is produced.
 //
 // imports

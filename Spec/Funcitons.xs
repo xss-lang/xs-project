@@ -9,7 +9,7 @@ Top-level execution yoktur.
 Top-level fn izinlidir.
 }//
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
   return a + b;
 }
 
@@ -23,7 +23,7 @@ class Program {
 }
 
 // INVALID: top-level execution yoktur.
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
   return a + b;
 }
 

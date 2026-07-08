@@ -112,21 +112,21 @@ mod tests
   #[test]
   fn creates_deterministic_unique_entries()
   {
-    let plan = create_mono_plan([instance("App.Core", "Keep", vec![arg("int")]),
-                                 instance("App.Core", "Keep", vec![arg("int")]),
-                                 instance("App.Core", "Keep", vec![arg("str")])]);
+    let plan = create_mono_plan([instance("App.Core", "Keep", vec![arg("Int")]),
+                                 instance("App.Core", "Keep", vec![arg("Int")]),
+                                 instance("App.Core", "Keep", vec![arg("Str")])]);
 
     assert_eq!(plan.entries.len(), 2);
-    assert_eq!(plan.entries[0].cache_key, "App.Core::Keep<int>");
-    assert_eq!(plan.entries[1].cache_key, "App.Core::Keep<str>");
+    assert_eq!(plan.entries[0].cache_key, "App.Core::Keep<Int>");
+    assert_eq!(plan.entries[1].cache_key, "App.Core::Keep<Str>");
   }
 
   #[test]
   fn stable_symbol_name_uses_module_function_and_types()
   {
-    let plan = create_mono_plan([instance("App.Core", "Map", vec![arg("List<int>"), arg("str")])]);
+    let plan = create_mono_plan([instance("App.Core", "Map", vec![arg("List<Int>"), arg("Str")])]);
 
-    assert_eq!(plan.entries[0].symbol_name, "xs$App$Core$Map$List$int$$str");
+    assert_eq!(plan.entries[0].symbol_name, "xs$App$Core$Map$List$Int$$Str");
   }
 
   #[test]

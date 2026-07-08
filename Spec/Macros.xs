@@ -219,7 +219,7 @@ macroRules! expressionMacro {
 
 macroRules! identifierMacro {
     ($name:ident): {
-        $name: int = 42;
+        $name: Int = 42;
     };
 }
 
@@ -573,7 +573,7 @@ fn CallBeforeDefinition() {
 
 macroRules! createValue {
     (): {
-        generatedValue: int = 42;
+        generatedValue: Int = 42;
     };
 }
 
@@ -625,12 +625,12 @@ fn GeneratedTypeBeforeCall() {
 
 macroRules! createConflictingValue {
     (): {
-        value: int = 42;
+        value: Int = 42;
     };
 }
 
 fn InvalidGeneratedNameConflict() {
-    value: int = 1;
+    value: Int = 1;
 
     createConflictingValue!();
 }

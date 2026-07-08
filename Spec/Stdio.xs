@@ -29,7 +29,7 @@ imports Stdio;
 fn StandardOutput() throws IOException {
     std.cout << "Hello\n";
 
-    value: int = 42;
+    value: Int = 42;
 
     std.cout
         << "Value: "
@@ -41,7 +41,7 @@ fn StandardOutput() throws IOException {
 // standard input
 
 fn StandardInput() throws IOException {
-    number: int;
+    number: Int;
 
     std.cout << "Enter a number: ";
     std.cin >> number;
@@ -63,7 +63,7 @@ fn StandardError() throws IOException {
 // standard streams through fout and fin
 
 fn StandardStreamEquivalents() throws IOException {
-    value: int;
+    value: Int;
 
     // Equivalent to std.cout
     std.fout << [stdout] << "Hello\n";
@@ -146,7 +146,7 @@ fn WriteFile() throws IOException {
 fn ChainedFileOutput() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    age: int = 26;
+    age: Int = 26;
 
     std.fout
         << [openedFile]
@@ -196,7 +196,7 @@ fn MultipleOutputTargets() throws IOException {
 fn ReadFile() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    text: str;
+    text: Str;
 
     std.fin >> [openedFile] >> text;
 }
@@ -210,7 +210,7 @@ fn ReadFile() throws IOException {
 fn ReadAndReset() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    text: str;
+    text: Str;
 
     std.fin
         >> [openedFile]
@@ -230,8 +230,8 @@ fn ReadAndReset() throws IOException {
 fn ChainedInput() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    name: str;
-    age: int;
+    name: Str;
+    age: Int;
 
     std.fin
         >> [openedFile]
@@ -247,8 +247,8 @@ fn ChainedInput() throws IOException {
 fn InputTargetPosition() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    name: str;
-    age: int;
+    name: Str;
+    age: Int;
 
     std.fin >> [openedFile] >> name >> age;
     std.fin >> name >> [openedFile] >> age;
@@ -264,8 +264,8 @@ fn MultipleInputTargets() throws IOException {
     firstFile: file = std.fopen("first.txt");
     secondFile: file = std.fopen("second.txt");
 
-    name: str;
-    age: int;
+    name: Str;
+    age: Int;
 
     std.fin
         >> [firstFile]
@@ -285,8 +285,8 @@ fn MultipleInputTargets() throws IOException {
 fn MixedInputTargets() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    name: str;
-    content: str;
+    name: Str;
+    content: Str;
 
     std.fin
         >> [stdin]
@@ -301,14 +301,14 @@ fn MixedInputTargets() throws IOException {
 fn PathChecks() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    fileCheck: bool = std.isFile(openedFile);
-    filePathCheck: bool = std.isFile("file.txt");
+    fileCheck: Bool = std.isFile(openedFile);
+    filePathCheck: Bool = std.isFile("file.txt");
 
-    directoryCheck: bool = std.isDir("folder");
-    openedFileDirectoryCheck: bool = std.isDir(openedFile);
+    directoryCheck: Bool = std.isDir("folder");
+    openedFileDirectoryCheck: Bool = std.isDir(openedFile);
 
-    pathExists: bool = std.exists("file.txt");
-    openedFileExists: bool = std.exists(openedFile);
+    pathExists: Bool = std.exists("file.txt");
+    openedFileExists: Bool = std.exists(openedFile);
 }
 
 // std.isFile(), std.isDir() and std.exists():
@@ -316,7 +316,7 @@ fn PathChecks() throws IOException {
 // - Accept a path string or an opened file value.
 // - Return true when the check succeeds positively.
 // - Return false when the check succeeds negatively.
-// - Return nil when an error occurs.
+// - Return None when an error occurs.
 //
 // std.exists() works with both files and directories.
 
@@ -326,14 +326,14 @@ fn PathChecks() throws IOException {
 fn OpenState() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    state: bool = std.isOpen(openedFile);
+    state: Bool = std.isOpen(openedFile);
 }
 
 // std.isOpen():
 //
 // - Returns true if the file is open.
 // - Returns false if the file is not open.
-// - Returns nil if the check fails.
+// - Returns None if the check fails.
 
 
 // file name
@@ -341,7 +341,7 @@ fn OpenState() throws IOException {
 fn FileName() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    name: str = std.fname(openedFile);
+    name: Str = std.fname(openedFile);
 }
 
 // std.fname():
@@ -362,16 +362,16 @@ fn FileName() throws IOException {
 fn FileSize() throws IOException, OutOfRangeException {
     openedFile: file = std.fopen("file.txt");
 
-    size: byte = std.fsize(openedFile);
+    size: Byte = std.fsize(openedFile);
 }
 
 // std.fsize():
 //
-// - Returns the file size as byte.
+// - Returns the file size as Byte.
 // - The size is measured in bytes.
-// - Returns nil when the operation fails.
+// - Returns None when the operation fails.
 // - Throws OutOfRangeException if the size exceeds
-//   the range supported by byte.
+//   the range supported by Byte.
 
 
 // escape sequences
@@ -408,7 +408,7 @@ fn EscapeSequences() throws IOException {
 // VALID
 
 fn ValidConsoleIO() throws IOException {
-    value: int;
+    value: Int;
 
     std.cout << "Value: ";
     std.cin >> value;
@@ -420,7 +420,7 @@ fn ValidConsoleIO() throws IOException {
 fn ValidFileIO() throws IOException {
     openedFile: file = std.fopen("file.txt");
 
-    text: str;
+    text: Str;
 
     std.fin >> [openedFile] >> text >> "\r";
 
@@ -482,8 +482,8 @@ fn InvalidSecondInputTarget() throws IOException {
     firstFile: file = std.fopen("first.txt");
     secondFile: file = std.fopen("second.txt");
 
-    name: str;
-    age: int;
+    name: Str;
+    age: Int;
 
     std.fin
         >> [firstFile]

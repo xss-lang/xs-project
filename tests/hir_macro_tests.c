@@ -262,8 +262,8 @@ static void test_multiple_matching_statement_rules_type_errors(void)
 {
   const char *text = "module App;\n"
                      "macroRules! both {\n"
-                     "  (): { value: int = nil; };\n"
-                     "  (): { broken: Missing = nil; };\n"
+                     "  (): { value: Int = None; };\n"
+                     "  (): { broken: Missing = None; };\n"
                      "}\n"
                      "fn Main() { both!(); }\n";
   XsSource source = {.path = "MacroMultipleStatementTypes.xs", .text = text, .length = strlen(text)};

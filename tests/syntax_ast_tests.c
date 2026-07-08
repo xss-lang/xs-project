@@ -35,7 +35,7 @@ static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 
 static void test_function_tree(void)
 {
-  const char *text = "fn Add(a: int, b: int) => int {\n    result: int = a + b;\n    return result;\n}\n";
+  const char *text = "fn Add(a: Int, b: Int) => Int {\n    result: Int = a + b;\n    return result;\n}\n";
   XsSource source = {.path = "Add.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -110,8 +110,8 @@ static void test_macro_call_declaration_structure(void)
 
 static void test_control_flow_structure(void)
 {
-  const char *text = "fn Flow(value: int) {\n"
-                     "  for (i: int = 0; i < 3; i = i + 1) { continue; }\n"
+  const char *text = "fn Flow(value: Int) {\n"
+                     "  for (i: Int = 0; i < 3; i = i + 1) { continue; }\n"
                      "  while (value > 0) { break; }\n"
                      "  match (value) { 0 -> { return; }, else -> { throw IOException(\"x\"); }, }\n"
                      "  try {} catch (error: IOException) {} finally {}\n"
@@ -133,8 +133,8 @@ static void test_control_flow_structure(void)
 static void test_function_expression_structure(void)
 {
   const char *text = "fn Spawn() {\n"
-                     "  Thread.spawn(move fn() => int { return 42; });\n"
-                     "  mapper: Mapper = fn(value: int) => int { return value + 1; };\n"
+                     "  Thread.spawn(move fn() => Int { return 42; });\n"
+                     "  mapper: Mapper = fn(value: Int) => Int { return value + 1; };\n"
                      "}\n";
   XsSource source = {.path = "ThreadClosure.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -186,7 +186,7 @@ static void test_data_field_set_and_get_structure(void)
 {
   const char *text = "fn Update(user: User) {\n"
                      "  set.name{\"Alfa\"};\n"
-                     "  name: str = user get.name;\n"
+                     "  name: Str = user get.name;\n"
                      "}\n";
   XsSource source = {.path = "DataAccess.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -202,7 +202,7 @@ static void test_data_field_set_and_get_structure(void)
 static void test_function_type_structure(void)
 {
   const char *text = "fn Main() {\n"
-                     "  mapper: fn(int, str) => bool = fn(value: int, name: str) => bool { return true; };\n"
+                     "  mapper: fn(Int, Str) => Bool = fn(value: Int, name: Str) => Bool { return true; };\n"
                      "  done: fn() => () = fn() { return; };\n"
                      "}\n";
   XsSource source = {.path = "FunctionTypes.xs", .text = text, .length = strlen(text)};
@@ -237,9 +237,9 @@ static void test_io_target_expression_structure(void)
 
 static void test_character_literal_structure(void)
 {
-  const char *text = "fn Main(value: char) {\n"
-                     "  letter: char = 'A';\n"
-                     "  newline: char = '\\n';\n"
+  const char *text = "fn Main(value: Char) {\n"
+                     "  letter: Char = 'A';\n"
+                     "  newline: Char = '\\n';\n"
                      "  match (value) { 'A' -> { return; }, else -> { return; }, }\n"
                      "}\n";
   XsSource source = {.path = "CharacterLiteral.xs", .text = text, .length = strlen(text)};
@@ -253,9 +253,31 @@ static void test_character_literal_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_optional_operator_structure(void)
+{
+  const char *text = "fn Main(user: Optional<User>, fallback: Str) {\n"
+                     "  name: Optional<Str> = user?.Name;\n"
+                     "  display: Str = name ?? fallback;\n"
+                     "  name ?"
+                     "?= Some(\"guest\");\n"
+                     "  forced: Str = name!;\n"
+                     "}\n";
+  XsSource source = {.path = "OptionalOperators.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 27, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_OPTIONAL_MEMBER_ACCESS) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_OPTIONAL_FORGIVING) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_BINARY) >= 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_ASSIGNMENT) >= 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_lifetime_type_structure(void)
 {
-  const char *text = "fn Print(first: &'a User, second: &'b mut User, shared: &'static str, inferred: &'_ User) {\n"
+  const char *text = "fn Print(first: &'a User, second: &'b mut User, shared: &'static Str, inferred: &'_ User) {\n"
                      "  return;\n"
                      "}\n";
   XsSource source = {.path = "Lifetimes.xs", .text = text, .length = strlen(text)};
@@ -273,7 +295,7 @@ static void test_lifetime_type_structure(void)
 static void test_nested_generic_type_closers(void)
 {
   const char *text = "interface Parser<T> { fn Parse(value: T); }\n"
-                     "fn UseParser<T: Parser<Box<int>> >(value: T, items: List<Box<int>>) {}\n";
+                     "fn UseParser<T: Parser<Box<Int>> >(value: T, items: List<Box<Int>>) {}\n";
   XsSource source = {.path = "NestedGenerics.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -297,6 +319,7 @@ int main(void)
   test_function_type_structure();
   test_io_target_expression_structure();
   test_character_literal_structure();
+  test_optional_operator_structure();
   test_lifetime_type_structure();
   test_nested_generic_type_closers();
   return failures == 0 ? 0 : 1;

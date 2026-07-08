@@ -50,7 +50,7 @@ module Math;
 
 public namespace Advanced;
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
@@ -59,7 +59,7 @@ fn Add(a: int, b: int) => int {
 imports Math;
 
 fn Main() {
-    result: int = Math.Add(1, 2);
+    result: Int = Math.Add(1, 2);
 }
 
 
@@ -71,7 +71,7 @@ imports Stdio, Math, Collections;
 imports Math as M;
 
 fn Main() {
-    result: int = M.Add(1, 2);
+    result: Int = M.Add(1, 2);
 }
 
 
@@ -79,7 +79,7 @@ fn Main() {
 from Math imports *;
 
 fn Main() {
-    result: int = Add(1, 2);
+    result: Int = Add(1, 2);
 }
 
 
@@ -87,7 +87,7 @@ fn Main() {
 from Math imports Add;
 
 fn Main() {
-    result: int = Add(1, 2);
+    result: Int = Add(1, 2);
 }
 
 
@@ -95,8 +95,8 @@ fn Main() {
 from Math imports Add, Subtract;
 
 fn Main() {
-    a: int = Add(1, 2);
-    b: int = Subtract(5, 3);
+    a: Int = Add(1, 2);
+    b: Int = Subtract(5, 3);
 }
 
 
@@ -104,7 +104,7 @@ fn Main() {
 from Math imports Add as Sum;
 
 fn Main() {
-    result: int = Sum(1, 2);
+    result: Int = Sum(1, 2);
 }
 
 
@@ -170,7 +170,7 @@ fn Main() {
 // VALID
 module Calculator;
 
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 
@@ -181,7 +181,7 @@ fn Add(a: int, b: int) => int {
 imports Calculator;
 
 fn Main() {
-    result: int = Calculator.Add(1, 2);
+    result: Int = Calculator.Add(1, 2);
 }
 
 
@@ -203,7 +203,7 @@ fn Add() {
 
 
 // INVALID
-fn Add(a: int, b: int) => int {
+fn Add(a: Int, b: Int) => Int {
     return a + b;
 }
 

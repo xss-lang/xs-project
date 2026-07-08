@@ -79,7 +79,7 @@ The documented compilation order is preserved:
 - The `.xsproj` parser is not just an internal compiler detail. A public C23 API surface under `#include <xs/project.h>` lets
   third-party tools read `.xsproj` files in a JSON-like model.
 - Required fields, duplicate fields, unknown fields, and `appRelease` values are validated.
-- When `entry: nil`, the documented first additional source selection rule is applied.
+- When `entry: None`, the documented first additional source selection rule is applied.
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
 - `xs check -proj <project.xsproj>` works.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
@@ -96,7 +96,7 @@ The documented compilation order is preserved:
 - Documented keywords, operators, comments, and multiline text are tokenized.
 - ASCII identifier rules are applied.
 - Decimal integers, floating-point numbers, scientific notation, and `'` digit separators are validated.
-- String and character literal source spellings are carried into AST literal nodes; resolving `char` as a 16-bit character is
+- String and character literal source spellings are carried into AST literal nodes; resolving `Char` as a 16-bit character is
   left to the HIR type stage.
 - The parser produces an arena-based structural AST.
 - AST nodes carry full source location: file id, offset, line, and column.
@@ -190,15 +190,18 @@ validation does not decide dispatch, override, or overload selection.
 ### HIR type resolution bootstrap
 
 - The `xs check` flow runs HIR type resolution after HIR import and name resolution.
-- Primitive type names from `Spec/Types.txt` are recognized.
-- `bool` is resolved as a 1-bit primitive in HIR; the LLVM backend lowers it to `i1`.
-- `byte` is an unsigned 8-bit primitive and `sbyte` is a signed 8-bit primitive at the HIR level.
-- `char` is a 16-bit character type.
-- `str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
+- The current primitive type names are recognized: `Str`, `Bool`, `Byte`, `SByte`, `Char`, `Short`, `Long`, `Int`,
+  `Integer`, `UShort`, `ULong`, `UInt`, `UInteger`, `SFloat`, and `Float`.
+- `Bool` is resolved as a 1-bit primitive in HIR; the LLVM backend lowers it to `i1`.
+- `Byte` is an unsigned 8-bit primitive and `SByte` is a signed 8-bit primitive at the HIR level.
+- `Char` is a 16-bit UTF-16 code-unit type.
+- `Str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
+- `Optional<T>` is a prelude wrapper type, not an enum lowering. `None`, `Some(...)`, `?.`, `??`, `??=`, and postfix `!`
+  are represented syntactically; full unboxing, exception, and flow-sensitive Optional semantics are later HIR work.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.
-- `str` is not mapped to an XLIL type yet because its runtime/ABI layout is incomplete.
+- `Str` is not mapped to an XLIL type yet because its runtime/ABI layout is incomplete.
 - Type names inside functions, data, enum, class/interface members, and generic constraints are validated.
 - Generic parameter names are recognized in their own declaration scope.
 - User-defined `class`, `interface`, `enum`, and `data` types are resolved through the HIR symbol table and import scope.
@@ -215,7 +218,7 @@ validation does not decide dispatch, override, or overload selection.
 - `xs_hir_check_expression_types_with_macros` checks literal compatibility for variable initializers with explicit primitive
   type annotations and direct assignment literal RHS values to the same local. For now, integer, float, string, char, and
   bool literal kinds are matched against primitive target types. `return <literal>;` statements inside functions with
-  explicit primitive return types are checked with the same literal compatibility logic. `nil`, `new`, identifiers, calls,
+  explicit primitive return types are checked with the same literal compatibility logic. `None`, `new`, identifiers, calls,
   and other expression forms are deferred until general expression type inference is complete.
 - The same HIR expression-check stage reports diagnostics for direct identifier assignment to `val`, `const`, and `static`
   immutable declarations inside local block/function scopes. Field, index, dereference, alias/borrow-based mutability rules
@@ -404,7 +407,7 @@ decisions are made during development as long as they remain compatible with doc
 - Monomorphization, codegen unit splitting, and incremental compilation cache
 - XLIL function body data model and MIR → XLIL body lowering
 - XLIL to LLVM IR function body lowering
-- LLVM mapping for `str`, whose runtime/ABI layout is not fully implemented
+- LLVM mapping for `Str`, whose runtime/ABI layout is not fully implemented
 - Linking generated object files according to project targets
 - End-to-end `xs build` and `xs run`
 

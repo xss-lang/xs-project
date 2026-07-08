@@ -10,36 +10,36 @@ imports Stdio, Collections, Process;
 
 enum data TodoError {
     Io: IOException,
-    InvalidCommand: str,
-    InvalidId: int,
+    InvalidCommand: Str,
+    InvalidId: Int,
 }
 
 enum data Command {
-    Add: str,
-    Done: int,
+    Add: Str,
+    Done: Int,
     List,
     Help,
 }
 
 data TodoItem {
-    id: int;
-    title: str;
-    done: bool;
+    id: Int;
+    title: Str;
+    done: Bool;
 }
 
 class TodoStore {
-    path: str;
-    nextId: int;
+    path: Str;
+    nextId: Int;
     items: Collections.vector<TodoItem>;
 
-    TodoStore(path: str) throws TodoError {
+    TodoStore(path: Str) throws TodoError {
         this.path = path;
         this.nextId = 1;
         this.items = Collections.vector<TodoItem>.new();
         this.Load();
     }
 
-    fn Add(title: str) throws TodoError {
+    fn Add(title: Str) throws TodoError {
         item: TodoItem = TodoItem {
             id: this.nextId,
             title: title,
@@ -51,8 +51,8 @@ class TodoStore {
         this.Save();
     }
 
-    fn MarkDone(id: int) throws TodoError {
-        for (index: int = 0; index < this.items.length(); index = index + 1) {
+    fn MarkDone(id: Int) throws TodoError {
+        for (index: Int = 0; index < this.items.length(); index = index + 1) {
             if (this.items[index].id == id) {
                 this.items[index].done = true;
                 this.Save();
@@ -70,7 +70,7 @@ class TodoStore {
         }
 
         for (item: TodoItem in this.items) {
-            status: str = item.done ? "x" : " ";
+            status: Str = item.done ? "x" : " ";
             std.cout << "[" << status << "] #" << item.id << " " << item.title << "\n";
         }
     }
@@ -81,10 +81,10 @@ class TodoStore {
         }
 
         opened: file = std.fopen(this.path);
-        content: str;
+        content: Str;
         std.fin >> [opened] >> content;
 
-        for (line: str in content.lines()) {
+        for (line: Str in content.lines()) {
             if (line.length() == 0) {
                 continue;
             }
@@ -111,26 +111,26 @@ class TodoStore {
 }
 
 class TodoCodec {
-    static fn Parse(line: str) => TodoItem throws TodoError {
-        parts: Collections.vector<str> = line.split("|");
+    static fn Parse(line: Str) => TodoItem throws TodoError {
+        parts: Collections.vector<Str> = line.split("|");
         if (parts.length() != 3) {
             throw TodoError.InvalidCommand(line);
         }
 
         return TodoItem {
-            id: int.Parse(parts[0]),
+            id: Int.Parse(parts[0]),
             title: parts[2],
             done: parts[1] == "done",
         };
     }
 
-    static fn Format(item: TodoItem) => str {
-        state: str = item.done ? "done" : "open";
+    static fn Format(item: TodoItem) => Str {
+        state: Str = item.done ? "done" : "open";
         return item.id.ToString() + "|" + state + "|" + item.title;
     }
 }
 
-fn ParseCommand(args: Collections.vector<str>) => Command throws TodoError {
+fn ParseCommand(args: Collections.vector<Str>) => Command throws TodoError {
     if (args.length() < 2) {
         return Command.Help;
     }
@@ -146,7 +146,7 @@ fn ParseCommand(args: Collections.vector<str>) => Command throws TodoError {
             if (args.length() != 3) {
                 throw TodoError.InvalidCommand("todo done <id>");
             }
-            return Command.Done(int.Parse(args[2]));
+            return Command.Done(Int.Parse(args[2]));
         },
         "list" -> {
             return Command.List;
@@ -166,7 +166,7 @@ fn PrintHelp() throws IOException {
     std.cout << "todo list\n";
 }
 
-fn Main(args: Collections.vector<str>) => int throws TodoError, IOException {
+fn Main(args: Collections.vector<Str>) => Int throws TodoError, IOException {
     store: TodoStore = new("todo.db");
     command: Command = ParseCommand(args);
 

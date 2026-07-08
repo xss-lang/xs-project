@@ -65,7 +65,7 @@ static void test_top_level_declaration_view_expands_macro_calls(void)
                      "  (): { incomplete fn Second(); };\n"
                      "}\n"
                      "make!();\n"
-                     "data Tail { value: int }\n";
+                     "data Tail { value: Int }\n";
   XsSource source = {.path = "ExpandedView.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -132,7 +132,7 @@ static void test_child_declaration_view_expands_field_like_macro_calls(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macroRules! make { (): { value: int; }; }\n"
+                     "  macroRules! make { (): { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "ExpandedFieldLikeMemberView.xs", .text = text, .length = strlen(text)};

@@ -229,7 +229,7 @@ impl Parser<'_>
   {
     self.index += 1;
     Statement::Expr(self.expression_with_indent("      ")
-                        .unwrap_or(Expression::Literal { literal: Literal::Nil,
+                        .unwrap_or(Expression::Literal { literal: Literal::None,
                                                          span: span() }))
   }
 
@@ -262,7 +262,7 @@ impl Parser<'_>
       self.index += 1;
       let nested_indent = format!("{indent}  ");
       let value = self.expression_with_indent(&nested_indent)
-                      .unwrap_or(Expression::Literal { literal: Literal::Nil,
+                      .unwrap_or(Expression::Literal { literal: Literal::None,
                                                        span: span() });
       return Some(Expression::Assign { target: target.to_string(),
                                        value: Box::new(value),
@@ -351,7 +351,7 @@ impl Parser<'_>
     {
       return Literal::String(value.trim_matches('"').to_string());
     }
-    Literal::Nil
+    Literal::None
   }
 
   fn imports(&mut self, module: &mut Module)
@@ -535,21 +535,21 @@ fn primitive_type(name: &str) -> Option<PrimitiveType>
 {
   match name
   {
-    "bool" => Some(PrimitiveType::Bool),
-    "i16" => Some(PrimitiveType::I16),
-    "i32" => Some(PrimitiveType::I32),
-    "i64" => Some(PrimitiveType::I64),
-    "i128" => Some(PrimitiveType::I128),
-    "u8" => Some(PrimitiveType::U8),
-    "i8" => Some(PrimitiveType::I8),
-    "u16" => Some(PrimitiveType::U16),
-    "u32" => Some(PrimitiveType::U32),
-    "u64" => Some(PrimitiveType::U64),
-    "u128" => Some(PrimitiveType::U128),
-    "f32" => Some(PrimitiveType::F32),
-    "f64" => Some(PrimitiveType::F64),
-    "char" => Some(PrimitiveType::Char),
-    "str" => Some(PrimitiveType::Str),
+    "Bool" => Some(PrimitiveType::Bool),
+    "Byte" => Some(PrimitiveType::Byte),
+    "SByte" => Some(PrimitiveType::SByte),
+    "Char" => Some(PrimitiveType::Char),
+    "Short" => Some(PrimitiveType::Short),
+    "Long" => Some(PrimitiveType::Long),
+    "Int" => Some(PrimitiveType::Int),
+    "Integer" => Some(PrimitiveType::Integer),
+    "UShort" => Some(PrimitiveType::UShort),
+    "ULong" => Some(PrimitiveType::ULong),
+    "UInt" => Some(PrimitiveType::UInt),
+    "UInteger" => Some(PrimitiveType::UInteger),
+    "SFloat" => Some(PrimitiveType::SFloat),
+    "Float" => Some(PrimitiveType::Float),
+    "Str" => Some(PrimitiveType::Str),
     _ => None,
   }
 }

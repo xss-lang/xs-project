@@ -40,7 +40,7 @@ imports Collections;
 
 // array iteration
 
-nums: int[] = {1, 2, 3};
+nums: Int[] = {1, 2, 3};
 
 for (num in nums.iter()) {
 
@@ -50,7 +50,7 @@ for (num in nums.iter()) {
 
 // vector iteration
 
-users: Collections.vector<str> = {
+users: Collections.vector<Str> = {
     "Hasan",
     "Alfa",
 };
@@ -63,7 +63,7 @@ for (user in users.iter()) {
 
 // empty collection iteration
 
-users: Collections.vector<str> =
+users: Collections.vector<Str> =
     Collections.vector.new();
 
 for (user in users.iter()) {
@@ -76,7 +76,7 @@ for (user in users.iter()) {
 
 // indexed iteration
 
-users: Collections.vector<str> = {
+users: Collections.vector<Str> = {
     "Hasan",
     "Alfa",
 };
@@ -148,7 +148,7 @@ for (user in users.iter()) {
 
 }
 
-count: int =
+count: Int =
     Collections.vector.length(users);
 
 

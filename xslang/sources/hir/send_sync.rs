@@ -168,7 +168,7 @@ mod tests
   fn environment() -> CapabilityEnvironment
   {
     let mut environment = CapabilityEnvironment::new();
-    environment.add_type("int", [Capability::Send, Capability::Sync]);
+    environment.add_type("Int", [Capability::Send, Capability::Sync]);
     environment.add_type("UniqueHandle", [Capability::Send]);
     environment.add_type("ThreadLocalCell", []);
     environment
@@ -198,7 +198,7 @@ mod tests
   #[test]
   fn accepts_sync_type_shared_across_threads()
   {
-    let diagnostics = SendSyncChecker::new().check(&[UseSite::ShareAcrossThreads { ty: ty("int"),
+    let diagnostics = SendSyncChecker::new().check(&[UseSite::ShareAcrossThreads { ty: ty("Int"),
                                                                                    span: span(0, 10) }],
                                                    &environment());
 

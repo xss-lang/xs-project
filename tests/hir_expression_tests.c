@@ -94,61 +94,61 @@ static void test_literal_initializer_expression_types(void)
 {
   const char *valid = "module App;\n"
                       "fn Main() {\n"
-                      "  a: int = 1;\n"
-                      "  b: bool = true;\n"
-                      "  c: str = \"hello\";\n"
-                      "  d: char = 'x';\n"
-                      "  e: float = 1.0;\n"
+                      "  a: Int = 1;\n"
+                      "  b: Bool = true;\n"
+                      "  c: Str = \"hello\";\n"
+                      "  d: Char = 'x';\n"
+                      "  e: Float = 1.0;\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: int = \"bad\"; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: bool = 1; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: char = 1; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: float = true; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = \"bad\"; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Bool = 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Char = 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Float = true; }\n"));
 }
 
 static void test_immutable_local_assignment_errors(void)
 {
   const char *valid = "module App;\n"
                       "fn Main() {\n"
-                      "  value: int = 1;\n"
+                      "  value: Int = 1;\n"
                       "  value = 2;\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { val value: int = 1; value = 2; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { const value: int = 1; value = 2; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { val value: Int = 1; value = 2; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { const value: Int = 1; value = 2; }\n"));
 }
 
 static void test_assignment_literal_expression_types(void)
 {
   const char *valid = "module App;\n"
                       "fn Main() {\n"
-                      "  value: int = 1;\n"
+                      "  value: Int = 1;\n"
                       "  value = 2;\n"
-                      "  flag: bool = false;\n"
+                      "  flag: Bool = false;\n"
                       "  flag = true;\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: int = 1; value = \"bad\"; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: bool = false; value = 1; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: str = \"ok\"; value = 'x'; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = 1; value = \"bad\"; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Bool = false; value = 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Str = \"ok\"; value = 'x'; }\n"));
 }
 
 static void test_return_literal_expression_types(void)
 {
-  CHECK(check_single_source_expressions("module App;\nfn Count() => int { return 1; }\n"));
-  CHECK(check_single_source_expressions("module App;\nfn Flag() => bool { return true; }\n"));
-  CHECK(check_single_source_expressions("module App;\nfn Name() => str { return \"xs\"; }\n"));
-  CHECK(check_single_source_expressions("module App;\nfn Main() throws int { return \"not checked yet\"; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Count() => int { return \"bad\"; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Flag() => bool { return 1; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Name() => str { return 'x'; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Count() => Int { return 1; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Flag() => Bool { return true; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Name() => Str { return \"xs\"; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Main() throws Int { return \"not checked yet\"; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Count() => Int { return \"bad\"; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Flag() => Bool { return 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Name() => Str { return 'x'; }\n"));
 }
 
 static void test_macro_literal_initializer_expression_errors(void)
 {
   const char *main = "module App;\n"
-                     "macroRules! bad { (): { value: int = \"bad\"; }; }\n"
+                     "macroRules! bad { (): { value: Int = \"bad\"; }; }\n"
                      "fn Main() { bad!(); }\n";
   CHECK(check_macro_expression_error(main, 96));
 }
@@ -157,7 +157,7 @@ static void test_macro_immutable_assignment_errors(void)
 {
   const char *main = "module App;\n"
                      "macroRules! bad { (): { value = 2; }; }\n"
-                     "fn Main() { val value: int = 1; bad!(); }\n";
+                     "fn Main() { val value: Int = 1; bad!(); }\n";
   CHECK(check_macro_expression_error(main, 97));
 }
 
@@ -165,7 +165,7 @@ static void test_macro_assignment_literal_expression_errors(void)
 {
   const char *main = "module App;\n"
                      "macroRules! bad { (): { value = \"bad\"; }; }\n"
-                     "fn Main() { value: int = 1; bad!(); }\n";
+                     "fn Main() { value: Int = 1; bad!(); }\n";
   CHECK(check_macro_expression_error(main, 98));
 }
 
@@ -173,7 +173,7 @@ static void test_macro_return_literal_expression_errors(void)
 {
   const char *main = "module App;\n"
                      "macroRules! bad { (): { return \"bad\"; }; }\n"
-                     "fn Main() => int { bad!(); }\n";
+                     "fn Main() => Int { bad!(); }\n";
   CHECK(check_macro_expression_error(main, 99));
 }
 

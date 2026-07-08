@@ -42,8 +42,8 @@ color: Color = Color.Red;
 
 // data enum
 enum data Token {
-    Identifier: str,
-    Integer: int,
+    Identifier: Str,
+    Integer: Int,
     Plus,
 }
 
@@ -58,8 +58,8 @@ class User {
 }
 
 enum data Value {
-    Text: str,
-    Number: int,
+    Text: Str,
+    Number: Int,
     User: User,
     Color: Color,
 }
@@ -79,14 +79,14 @@ internal enum Color {
 }
 
 public enum data Token {
-    Identifier: str,
-    Integer: int,
+    Identifier: Str,
+    Integer: Int,
     Plus,
 }
 
 internal enum data Token {
-    Identifier: str,
-    Integer: int,
+    Identifier: Str,
+    Integer: Int,
     Plus,
 }
 
@@ -135,14 +135,14 @@ enum Empty {
 
 // VALID
 enum data Token {
-    Identifier: str,
+    Identifier: Str,
 }
 
 
 // VALID
 enum data Token {
-    Identifier: str,
-    Integer: int,
+    Identifier: Str,
+    Integer: Int,
     Plus,
     Minus,
 }
@@ -162,7 +162,7 @@ token: Token = Token.Plus;
 
 // INVALID
 enum Color {
-    Red: int,
+    Red: Int,
 }
 // enum variants cannot contain types.
 
@@ -183,20 +183,20 @@ enum data Token {
 
 // INVALID
 enum data Token {
-    Position: int, int,
+    Position: Int, Int,
 }
 // enum data variants can contain at most one value.
 
 
 // INVALID
 enum data Token {
-    Position: (int, int),
+    Position: (Int, Int),
 }
 // tuple payloads are not supported.
 
 
 // INVALID
-value: int = Color.Red;
+value: Int = Color.Red;
 // enums cannot be converted to integers.
 
 

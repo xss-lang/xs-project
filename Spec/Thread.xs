@@ -41,12 +41,12 @@ fn SpawnThread() {
 // thread with result
 
 fn SpawnThreadWithResult() {
-    thread: Thread.handle<int> =
-        Thread.spawn(move fn() => int {
+    thread: Thread.handle<Int> =
+        Thread.spawn(move fn() => Int {
             return 42;
         });
 
-    value: int = thread.join();
+    value: Int = thread.join();
 }
 
 
@@ -78,11 +78,11 @@ fn ResultlessThreadHandle() {
 // ============================================================
 
 fn MoveValueToThread() {
-    value: str = "Alfa";
+    value: Str = "Alfa";
 
     thread: Thread.handle<()> =
         Thread.spawn(move fn() {
-            localValue: str = value;
+            localValue: Str = value;
         });
 
     thread.join();
@@ -116,14 +116,14 @@ fn InvalidNonSendCapture() {
 // ============================================================
 
 fn MoveThreadHandle() {
-    first: Thread.handle<int> =
-        Thread.spawn(move fn() => int {
+    first: Thread.handle<Int> =
+        Thread.spawn(move fn() => Int {
             return 42;
         });
 
-    second: Thread.handle<int> = first;
+    second: Thread.handle<Int> = first;
 
-    value: int = second.join();
+    value: Int = second.join();
 
     // first can no longer be used.
 }
@@ -150,12 +150,12 @@ fn MoveThreadHandle() {
 // ============================================================
 
 fn JoinThread() {
-    thread: Thread.handle<int> =
-        Thread.spawn(move fn() => int {
+    thread: Thread.handle<Int> =
+        Thread.spawn(move fn() => Int {
             return 42;
         });
 
-    value: int = thread.join();
+    value: Int = thread.join();
 }
 
 // join():
@@ -171,13 +171,13 @@ fn JoinThread() {
 // invalid second join
 
 fn InvalidSecondJoin() {
-    thread: Thread.handle<int> =
-        Thread.spawn(move fn() => int {
+    thread: Thread.handle<Int> =
+        Thread.spawn(move fn() => Int {
             return 42;
         });
 
-    value: int = thread.join();
-    secondValue: int = thread.join();
+    value: Int = thread.join();
+    secondValue: Int = thread.join();
 }
 
 // The second join() is a compile-time error because join()
@@ -194,13 +194,13 @@ fn InvalidSecondJoin() {
 // ============================================================
 
 fn JoinedThreadException() {
-    thread: Thread.handle<int> =
-        Thread.spawn(move fn() => int {
+    thread: Thread.handle<Int> =
+        Thread.spawn(move fn() => Int {
             throw IOException();
         });
 
     try {
-        value: int = thread.join();
+        value: Int = thread.join();
     }
     catch (error: IOException) {
     }
@@ -286,14 +286,14 @@ fn YieldThread() {
 // basic channel
 
 fn ChannelExample() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
     Thread.spawn(move fn() {
         tx.send(42);
     });
 
-    value: int = rx.recv();
+    value: Int = rx.recv();
 }
 
 
@@ -309,10 +309,10 @@ fn ChannelExample() {
 // sending
 
 fn SendChannelValue() {
-    (tx, rx): Thread.channel<str> =
+    (tx, rx): Thread.channel<Str> =
         Thread.channel();
 
-    message: str = "Alfa";
+    message: Str = "Alfa";
 
     tx.send(message);
 
@@ -329,14 +329,14 @@ fn SendChannelValue() {
 // receiving
 
 fn ReceiveChannelValue() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
     Thread.spawn(move fn() {
         tx.send(42);
     });
 
-    value: int = rx.recv();
+    value: Int = rx.recv();
 }
 
 // rx.recv():
@@ -351,12 +351,12 @@ fn ReceiveChannelValue() {
 // moving receiver to another thread
 
 fn MoveReceiverToThread() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
     receiverThread: Thread.handle<()> =
         Thread.spawn(move fn() {
-            value: int = rx.recv();
+            value: Int = rx.recv();
         });
 
     tx.send(42);
@@ -368,7 +368,7 @@ fn MoveReceiverToThread() {
 // moving sender to another thread
 
 fn MoveSenderToThread() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
     senderThread: Thread.handle<()> =
@@ -376,7 +376,7 @@ fn MoveSenderToThread() {
             tx.send(42);
         });
 
-    value: int = rx.recv();
+    value: Int = rx.recv();
 
     senderThread.join();
 }
@@ -385,10 +385,10 @@ fn MoveSenderToThread() {
 // invalid sender clone
 
 fn InvalidSenderClone() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
-    otherTx: Thread.channel<int> =
+    otherTx: Thread.channel<Int> =
         Thread.channel.clone(&tx);
 }
 
@@ -399,10 +399,10 @@ fn InvalidSenderClone() {
 // invalid receiver clone
 
 fn InvalidReceiverClone() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
-    otherRx: Thread.channel<int> =
+    otherRx: Thread.channel<Int> =
         Thread.channel.clone(&rx);
 }
 
@@ -420,11 +420,11 @@ imports Mutex, RwLock, Arc;
 // moving a mutex into a thread
 
 fn MoveMutexIntoThread() {
-    mutex: Mutex<int> = Mutex.new(42);
+    mutex: Mutex<Int> = Mutex.new(42);
 
     thread: Thread.handle<()> =
         Thread.spawn(move fn() {
-            guard: Mutex<int> = mutex.lock();
+            guard: Mutex<Int> = mutex.lock();
             *guard += 1;
         });
 
@@ -435,37 +435,37 @@ fn MoveMutexIntoThread() {
 // sharing a mutex between threads
 
 fn ShareMutexBetweenThreads() {
-    shared: Arc<Mutex<int>> =
+    shared: Arc<Mutex<Int>> =
         Arc.new(Mutex.new(42));
 
-    worker: Arc<Mutex<int>> =
+    worker: Arc<Mutex<Int>> =
         Arc.clone(&shared);
 
     thread: Thread.handle<()> =
         Thread.spawn(move fn() {
-            guard: Mutex<int> = worker.lock();
+            guard: Mutex<Int> = worker.lock();
             *guard += 1;
         });
 
     thread.join();
 
-    guard: Mutex<int> = shared.lock();
+    guard: Mutex<Int> = shared.lock();
 }
 
 
 // sharing an rwlock between threads
 
 fn ShareRwLockBetweenThreads() {
-    shared: Arc<RwLock<int>> =
+    shared: Arc<RwLock<Int>> =
         Arc.new(RwLock.new(42));
 
-    worker: Arc<RwLock<int>> =
+    worker: Arc<RwLock<Int>> =
         Arc.clone(&shared);
 
     thread: Thread.handle<()> =
         Thread.spawn(move fn() {
-            reader: RwLock<int> = worker.read();
-            value: int = *reader;
+            reader: RwLock<Int> = worker.read();
+            value: Int = *reader;
         });
 
     thread.join();

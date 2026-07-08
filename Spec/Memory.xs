@@ -38,7 +38,7 @@ Zero-cost abstractions are required.
 Iterators, generics and closures must not introduce
 runtime allocations unless explicitly documented.
 
-Small short-lived values should remain on the stack.
+Small Short-lived values should remain on the stack.
 
 Escape analysis may move values when necessary.
 
@@ -46,7 +46,7 @@ Resource destruction is deterministic.
 
 Destructors execute in LIFO order.
 
-nil is a valid value.
+None is a valid value for Optional<T>.
 }//
 
 // ownership
@@ -221,24 +221,24 @@ fn Main() {
 // a.Drop()
 
 
-// nil values
+// None values
 
-name: str = nil;
+name: Optional<Str> = None;
 
-enabled: bool = nil;
+enabled: Optional<Bool> = None;
 
-user: User = nil;
+user: Optional<User> = None;
 
 
 // VALID
 
-if (name == nil) {
+if (name == None) {
 }
 
 
 // VALID
 
-if (enabled == nil) {
+if (enabled == None) {
 }
 
 
@@ -247,7 +247,7 @@ if (enabled == nil) {
 if (enabled) {
 }
 
-// condition cannot be nil
+// condition cannot be None
 
 
 // stack allocation
@@ -270,7 +270,7 @@ fn CreatePoint() => Point {
 
 // zero-cost abstractions
 
-iter: Iterator<int> = numbers.Iterator();
+iter: Iterator<Int> = numbers.Iterator();
 
 
 // no hidden allocation
@@ -284,7 +284,7 @@ users: Collections.vector<User> =
 
 // INVALID DESIGN
 
-result: str = a + b;
+result: Str = a + b;
 
 // if allocation occurs here,
 // it must be visible or warned by the compiler

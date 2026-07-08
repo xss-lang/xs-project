@@ -9,31 +9,31 @@ module Programs.InventoryService;
 imports Collections, Stdio, Thread, Sync;
 
 enum data ServiceError {
-    UnknownProduct: str,
-    NotEnoughStock: str,
-    Closed: str,
+    UnknownProduct: Str,
+    NotEnoughStock: Str,
+    Closed: Str,
 }
 
 data Product {
-    sku: str;
-    name: str;
-    stock: int;
+    sku: Str;
+    name: Str;
+    stock: Int;
 }
 
 data OrderLine {
-    sku: str;
-    quantity: int;
+    sku: Str;
+    quantity: Int;
 }
 
 data Order {
-    id: int;
+    id: Int;
     lines: Collections.vector<OrderLine>;
 }
 
 data Receipt {
-    orderId: int;
-    accepted: bool;
-    message: str;
+    orderId: Int;
+    accepted: Bool;
+    message: Str;
 }
 
 interface Repository<K, V> {
@@ -41,21 +41,21 @@ interface Repository<K, V> {
     fn Put(key: K, value: V);
 }
 
-class InventoryRepository implements Repository<str, Product> {
-    products: Collections.hashmap<str, Product>;
+class InventoryRepository implements Repository<Str, Product> {
+    products: Collections.hashmap<Str, Product>;
 
     InventoryRepository() {
-        this.products = Collections.hashmap<str, Product>.new();
+        this.products = Collections.hashmap<Str, Product>.new();
     }
 
-    fn Get(key: str) => &Product throws ServiceError {
+    fn Get(key: Str) => &Product throws ServiceError {
         if (!this.products.contains(key)) {
             throw ServiceError.UnknownProduct(key);
         }
         return &this.products[key];
     }
 
-    fn Put(key: str, value: Product) {
+    fn Put(key: Str, value: Product) {
         this.products[key] = value;
     }
 
@@ -119,7 +119,7 @@ fn SeedInventory() => Arc<Mutex<InventoryRepository>> {
     return Arc.new(Mutex.new(repository));
 }
 
-fn MakeOrder(id: int, sku: str, quantity: int) => Order {
+fn MakeOrder(id: Int, sku: Str, quantity: Int) => Order {
     lines: Collections.vector<OrderLine> = Collections.vector<OrderLine>.new();
     lines.push(OrderLine {
         sku: sku,

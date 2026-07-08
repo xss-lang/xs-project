@@ -32,25 +32,25 @@ int main(int argc, char **argv)
   }
 
   XsBackendError error = {0};
-  XsLlvmBackend *backend = NULL;
+  XsLlvmBackend *backend = nullptr;
   XsLlvmBackendConfig config = {
       .optimization = XS_LLVM_OPT_NONE,
       .verify_modules = true,
   };
   CHECK(xs_llvm_backend_create(&config, &backend, &error) == XS_BACKEND_OK);
-  CHECK(backend != NULL);
-  CHECK(xs_llvm_backend_context(backend) != NULL);
-  CHECK(xs_llvm_backend_target_triple(backend) != NULL && xs_llvm_backend_target_triple(backend)[0] != '\0');
-  CHECK(xs_llvm_backend_data_layout(backend) != NULL && xs_llvm_backend_data_layout(backend)[0] != '\0');
+  CHECK(backend != nullptr);
+  CHECK(xs_llvm_backend_context(backend) != nullptr);
+  CHECK(xs_llvm_backend_target_triple(backend) != nullptr && xs_llvm_backend_target_triple(backend)[0] != '\0');
+  CHECK(xs_llvm_backend_data_layout(backend) != nullptr && xs_llvm_backend_data_layout(backend)[0] != '\0');
 
-  XsLlvmCodegenUnit *first = NULL;
-  XsLlvmCodegenUnit *second = NULL;
+  XsLlvmCodegenUnit *first = nullptr;
+  XsLlvmCodegenUnit *second = nullptr;
   CHECK(xs_llvm_codegen_unit_create(backend, "first", &first, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_codegen_unit_create(backend, "second", &second, &error) == XS_BACKEND_OK);
-  CHECK(first != NULL && second != NULL);
+  CHECK(first != nullptr && second != nullptr);
   CHECK(xs_llvm_codegen_unit_module(first) != xs_llvm_codegen_unit_module(second));
 
-  LLVMTypeRef type = NULL;
+  LLVMTypeRef type = nullptr;
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_BOOL, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetIntTypeWidth(type) == 1);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_BYTE, &type, &error) == XS_BACKEND_OK);
@@ -59,11 +59,11 @@ int main(int argc, char **argv)
   CHECK(LLVMGetIntTypeWidth(type) == 8);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_INT, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetIntTypeWidth(type) == 64);
-  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_INT128, &type, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_INTEGER, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetIntTypeWidth(type) == 128);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_CHAR, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetIntTypeWidth(type) == 16);
-  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_FLOAT32, &type, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_SFLOAT, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetTypeKind(type) == LLVMFloatTypeKind);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_STR, &type, &error) == XS_BACKEND_DEFERRED);
 
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
       .parameter_types = parameters,
       .parameter_count = 2,
   };
-  LLVMValueRef function = NULL;
+  LLVMValueRef function = nullptr;
   CHECK(xs_llvm_declare_function(first, &signature, &function, &error) == XS_BACKEND_OK);
-  CHECK(function != NULL);
+  CHECK(function != nullptr);
   CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 2);
   CHECK(LLVMCountBasicBlocks(function) == 0);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);

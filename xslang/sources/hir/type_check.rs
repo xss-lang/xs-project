@@ -9,19 +9,19 @@ use super::async_check::Span;
 pub enum PrimitiveType
 {
   Bool,
-  I16,
-  I32,
-  I64,
-  I128,
-  U8,
-  I8,
-  U16,
-  U32,
-  U64,
-  U128,
-  F32,
-  F64,
+  Byte,
+  SByte,
   Char,
+  Short,
+  Long,
+  Int,
+  Integer,
+  UShort,
+  ULong,
+  UInt,
+  UInteger,
+  SFloat,
+  Float,
   Str,
 }
 
@@ -49,7 +49,7 @@ pub enum Literal
   Float(String),
   Char(char),
   String(String),
-  Nil,
+  None,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -234,20 +234,20 @@ pub fn literal_matches_type(literal: &Literal, ty: &Type) -> bool
 
   match literal
   {
-    Literal::Nil => true,
+    Literal::None => true,
     Literal::Bool(_) => *primitive == PrimitiveType::Bool,
     Literal::Integer(_) => matches!(primitive,
-                                    PrimitiveType::I16 |
-                                    PrimitiveType::I32 |
-                                    PrimitiveType::I64 |
-                                    PrimitiveType::I128 |
-                                    PrimitiveType::U8 |
-                                    PrimitiveType::I8 |
-                                    PrimitiveType::U16 |
-                                    PrimitiveType::U32 |
-                                    PrimitiveType::U64 |
-                                    PrimitiveType::U128),
-    Literal::Float(_) => matches!(primitive, PrimitiveType::F32 | PrimitiveType::F64),
+                                    PrimitiveType::Byte |
+                                    PrimitiveType::SByte |
+                                    PrimitiveType::Short |
+                                    PrimitiveType::Long |
+                                    PrimitiveType::Int |
+                                    PrimitiveType::Integer |
+                                    PrimitiveType::UShort |
+                                    PrimitiveType::ULong |
+                                    PrimitiveType::UInt |
+                                    PrimitiveType::UInteger),
+    Literal::Float(_) => matches!(primitive, PrimitiveType::SFloat | PrimitiveType::Float),
     Literal::Char(_) => *primitive == PrimitiveType::Char,
     Literal::String(_) => *primitive == PrimitiveType::Str,
   }
@@ -284,7 +284,7 @@ mod tests
                               locals: vec![],
                               body: vec![
                 Statement::Let {
-                    local: local("count", primitive(PrimitiveType::I64), true),
+                    local: local("count", primitive(PrimitiveType::Int), true),
                     initializer: Some(Expression::Literal {
                         literal: Literal::Integer("1".to_string()),
                         span: span(10, 11),
@@ -309,7 +309,7 @@ mod tests
                               return_type: None,
                               locals: vec![],
                               body:
-                                vec![Statement::Let { local: local("count", primitive(PrimitiveType::I64), true),
+                                vec![Statement::Let { local: local("count", primitive(PrimitiveType::Int), true),
                                                       initializer:
                                                         Some(Expression::Literal { literal:
                                                                                      Literal::String("bad".to_string()),
@@ -346,7 +346,7 @@ mod tests
   fn validates_return_literal_type()
   {
     let function = Function { name: "answer".to_string(),
-                              return_type: Some(primitive(PrimitiveType::I64)),
+                              return_type: Some(primitive(PrimitiveType::Int)),
                               locals: vec![],
                               body: vec![Statement::Return { value: Some(Expression::Literal { literal:
                                                                                     Literal::Integer("42".to_string()),

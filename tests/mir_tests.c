@@ -359,8 +359,8 @@ static void test_constant_optimizer_folds_i64_add(void)
 static void test_hir_function_declaration_lowering(void)
 {
   const char *text = "module App;\n"
-                     "fn Add(a: int, b: int) => int { return a + b; }\n"
-                     "data User { value: int; }\n";
+                     "fn Add(a: Int, b: Int) => Int { return a + b; }\n"
+                     "data User { value: Int; }\n";
   XsSource source = {.path = "MirLowering.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;

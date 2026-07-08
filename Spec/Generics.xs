@@ -35,9 +35,9 @@ class Box<T> {
 
 // generic class usage
 
-numberBox: Box<int>;
+numberBox: Box<Int>;
 
-textBox: Box<str>;
+textBox: Box<Str>;
 
 
 // generic class with multiple parameters
@@ -48,7 +48,7 @@ class Pair<T, U> {
 }
 
 
-pair: Pair<str, int>;
+pair: Pair<Str, Int>;
 
 
 // generic function
@@ -59,9 +59,9 @@ fn Print<T>(value: T) {
 
 // generic function usage
 
-Print<int>(42);
+Print<Int>(42);
 
-Print<str>("Hello");
+Print<Str>("Hello");
 
 
 // generic class constraint
@@ -120,9 +120,9 @@ class Box<T> {
     value: T;
 }
 
-intBox: Box<int>;
+intBox: Box<Int>;
 
-strBox: Box<str>;
+strBox: Box<Str>;
 
 
 // Compiler generates separate specializations.
@@ -135,16 +135,16 @@ strBox: Box<str>;
 
 // generic collections
 
-users: Collections.vector<str>;
+users: Collections.vector<Str>;
 
-scores: Collections.hashmap<str, int>;
+scores: Collections.hashmap<Str, Int>;
 
 
 // generic enum data
 
 enum data Result<T> {
     Ok: T,
-    Error: str,
+    Error: Str,
 }
 
 
@@ -202,7 +202,7 @@ class Storage<T: Printable> {
 
 // INVALID
 
-class Box<T = str> {
+class Box<T = Str> {
 }
 
 
@@ -211,7 +211,7 @@ class Box<T = str> {
 
 // INVALID
 
-fn Print<T = str>(value: T) {
+fn Print<T = Str>(value: T) {
 }
 
 

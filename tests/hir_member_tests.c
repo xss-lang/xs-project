@@ -37,8 +37,8 @@ static void test_class_member_symbols(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  name: str;\n"
-                     "  fn GetName() => str { return name; }\n"
+                     "  name: Str;\n"
+                     "  fn GetName() => Str { return name; }\n"
                      "}\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
@@ -65,8 +65,8 @@ static void test_method_merge_uses_last_member_symbol(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  incomplete fn Merge(value: int);\n"
-                     "  incomplete fn Merge(value: str);\n"
+                     "  incomplete fn Merge(value: Int);\n"
+                     "  incomplete fn Merge(value: Str);\n"
                      "}\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
@@ -90,8 +90,8 @@ static void test_duplicate_field_member_errors(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  value: int;\n"
-                     "  value: str;\n"
+                     "  value: Int;\n"
+                     "  value: Str;\n"
                      "}\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
@@ -112,7 +112,7 @@ static void test_macro_generated_field_like_member_symbol(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macroRules! make { (): { value: int; }; }\n"
+                     "  macroRules! make { (): { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroMembers.xs", .text = text, .length = strlen(text)};
@@ -143,8 +143,8 @@ static void test_macro_generated_member_conflicts_with_field(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  value: int;\n"
-                     "  macroRules! make { (): { value: str; }; }\n"
+                     "  value: Int;\n"
+                     "  macroRules! make { (): { value: Str; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroFieldConflict.xs", .text = text, .length = strlen(text)};
@@ -175,7 +175,7 @@ static void test_macro_generated_member_conflicts_with_method(void)
   const char *text = "module App;\n"
                      "class User {\n"
                      "  incomplete fn value();\n"
-                     "  macroRules! make { (): { value: int; }; }\n"
+                     "  macroRules! make { (): { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroMethodFieldConflict.xs", .text = text, .length = strlen(text)};

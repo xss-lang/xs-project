@@ -19,7 +19,7 @@ Supported statements:
 }//
 
 fn Main() {
-    x: int = 5;
+    x: Int = 5;
 
     if (x > 0) {
         x = 10;
@@ -42,13 +42,13 @@ fn Main() {
         x = 0;
     }
 
-    for (i: int = 0; i < 10; i++) {
+    for (i: Int = 0; i < 10; i++) {
         if (i == 5) {
             break;
         }
     }
 
-    for (i: int = 0; i < 10; i++) {
+    for (i: Int = 0; i < 10; i++) {
         if (i == 5) {
             continue;
         }
@@ -73,7 +73,7 @@ fn Main() {
 
 
 // VALID
-fn TestIf(x: int) {
+fn TestIf(x: Int) {
     if (x > 0) {
         x = 1;
     }
@@ -81,7 +81,7 @@ fn TestIf(x: int) {
 
 
 // VALID
-fn TestElseIf(x: int) {
+fn TestElseIf(x: Int) {
     if (x > 0) {
         x = 1;
     }
@@ -96,7 +96,7 @@ fn TestElseIf(x: int) {
 
 // VALID
 fn TestFor() {
-    for (i: int = 0; i < 10; i++) {
+    for (i: Int = 0; i < 10; i++) {
         continue;
     }
 }
@@ -104,7 +104,7 @@ fn TestFor() {
 
 // VALID
 fn TestWhile() {
-    x: int = 0;
+    x: Int = 0;
 
     while (x < 10) {
         x = x + 1;
@@ -113,7 +113,7 @@ fn TestWhile() {
 
 
 // VALID
-fn TestMatch(x: int) {
+fn TestMatch(x: Int) {
     match (x) {
         0 -> {
             x = 10;
@@ -129,8 +129,8 @@ fn TestMatch(x: int) {
 
 
 // INVALID
-fn InvalidMatchExpression(x: int) {
-    y: int = match (x) {
+fn InvalidMatchExpression(x: Int) {
+    y: Int = match (x) {
         0 -> {
             10;
         },

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 fn Main() {
-    message: str = "Hello from X#\n";
-    hirOutput: str = ".xhir -> HIR code\n";
-    mirOutput: str = ".xmir -> MIR code\n";
-    xlilOutput: str = ".xlil -> XLIL code\n";
+    message: Str = "Hello from X#\n";
+    hirOutput: Str = ".xhir -> HIR code\n";
+    mirOutput: Str = ".xmir -> MIR code\n";
+    xlilOutput: Str = ".xlil -> XLIL code\n";
 }

@@ -65,7 +65,7 @@ XsSyntaxNode *parse_pattern(SyntaxParser *parser)
   if (parser->current.kind == XS_TOKEN_INTEGER || parser->current.kind == XS_TOKEN_FLOAT ||
       parser->current.kind == XS_TOKEN_STRING || parser->current.kind == XS_TOKEN_CHARACTER ||
       parser->current.kind == XS_TOKEN_KW_TRUE || parser->current.kind == XS_TOKEN_KW_FALSE ||
-      parser->current.kind == XS_TOKEN_KW_NIL)
+      parser->current.kind == XS_TOKEN_KW_NONE)
   {
     XsSyntaxNode *pattern = node(parser, XS_SYNTAX_PATTERN_LITERAL, parser->current.span);
     xs_syntax_node_add(parser->tree, pattern, parse_literal(parser));
@@ -191,14 +191,15 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
   case XS_TOKEN_CHARACTER:
   case XS_TOKEN_KW_TRUE:
   case XS_TOKEN_KW_FALSE:
-  case XS_TOKEN_KW_NIL:
+  case XS_TOKEN_KW_NONE:
     return parse_literal(parser);
   case XS_TOKEN_IDENTIFIER:
   {
     XsToken name = parser->current;
     advance(parser);
-    if (accept(parser, XS_TOKEN_BANG))
+    if (parser->current.kind == XS_TOKEN_BANG && parser->next.kind == XS_TOKEN_LEFT_PAREN)
     {
+      advance(parser);
       XsSyntaxNode *call = node(parser, XS_SYNTAX_EXPR_MACRO_CALL, (XsSpan){start, parser->previous.span.end});
       xs_syntax_node_add(parser->tree, call, node(parser, XS_SYNTAX_IDENTIFIER, name.span));
       if (!expect(parser, XS_TOKEN_LEFT_PAREN, "macro calls require parentheses"))
@@ -370,6 +371,38 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
       finish_node(parser, member, parser->previous.span.end);
       expression = member;
     }
+    else if (accept(parser, XS_TOKEN_QUESTION_DOT))
+    {
+      XsSyntaxNode *name = identifier(parser);
+      XsSyntaxKind kind = parser->current.kind == XS_TOKEN_LEFT_PAREN ? XS_SYNTAX_EXPR_OPTIONAL_METHOD_CALL
+                                                                      : XS_SYNTAX_EXPR_OPTIONAL_MEMBER_ACCESS;
+      XsSyntaxNode *member = node(parser, kind, (XsSpan){start, parser->previous.span.end});
+      xs_syntax_node_add(parser->tree, member, expression);
+      xs_syntax_node_add(parser->tree, member, name);
+      if (kind == XS_SYNTAX_EXPR_OPTIONAL_METHOD_CALL)
+      {
+        advance(parser);
+        if (parser->current.kind != XS_TOKEN_RIGHT_PAREN)
+        {
+          do
+          {
+            xs_syntax_node_add(parser->tree, member, parse_expression(parser, 1));
+          } while (accept(parser, XS_TOKEN_COMMA));
+        }
+        expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after optional method arguments");
+      }
+      finish_node(parser, member, parser->previous.span.end);
+      expression = member;
+    }
+    else if (accept(parser, XS_TOKEN_BANG))
+    {
+      XsSyntaxNode *forgiving =
+          node(parser, XS_SYNTAX_EXPR_OPTIONAL_FORGIVING, (XsSpan){start, parser->previous.span.end});
+      forgiving->token_kind = XS_TOKEN_BANG;
+      xs_syntax_node_add(parser->tree, forgiving, expression);
+      finish_node(parser, forgiving, parser->previous.span.end);
+      expression = forgiving;
+    }
     else if (accept(parser, XS_TOKEN_KW_GET))
     {
       expect(parser, XS_TOKEN_DOT, "expected '.' after get");
@@ -406,35 +439,38 @@ static unsigned precedence(XsTokenKind kind)
   case XS_TOKEN_STAR_ASSIGN:
   case XS_TOKEN_SLASH_ASSIGN:
   case XS_TOKEN_PERCENT_ASSIGN:
+  case XS_TOKEN_QUESTION_QUESTION_ASSIGN:
     return 1;
-  case XS_TOKEN_LOGICAL_OR:
+  case XS_TOKEN_QUESTION_QUESTION:
     return 2;
-  case XS_TOKEN_LOGICAL_AND:
+  case XS_TOKEN_LOGICAL_OR:
     return 3;
-  case XS_TOKEN_PIPE:
+  case XS_TOKEN_LOGICAL_AND:
     return 4;
-  case XS_TOKEN_AMPERSAND:
+  case XS_TOKEN_PIPE:
     return 5;
+  case XS_TOKEN_AMPERSAND:
+    return 6;
   case XS_TOKEN_EQUAL:
   case XS_TOKEN_NOT_EQUAL:
-    return 6;
+    return 7;
   case XS_TOKEN_GREATER:
   case XS_TOKEN_GREATER_EQUAL:
   case XS_TOKEN_LESS:
   case XS_TOKEN_LESS_EQUAL:
-    return 7;
+    return 8;
   case XS_TOKEN_SHIFT_LEFT:
   case XS_TOKEN_SHIFT_RIGHT:
   case XS_TOKEN_SWITCH_INPUT:
   case XS_TOKEN_SWITCH_OUTPUT:
-    return 8;
+    return 9;
   case XS_TOKEN_PLUS:
   case XS_TOKEN_MINUS:
-    return 9;
+    return 10;
   case XS_TOKEN_STAR:
   case XS_TOKEN_SLASH:
   case XS_TOKEN_PERCENT:
-    return 10;
+    return 11;
   default:
     return 0;
   }
@@ -452,7 +488,8 @@ XsSyntaxNode *parse_expression(SyntaxParser *parser, unsigned minimum_precedence
     XsToken operator_token = parser->current;
     advance(parser);
     bool assignment = current_precedence == 1;
-    XsSyntaxNode *right = parse_expression(parser, assignment ? current_precedence : current_precedence + 1);
+    bool right_associative = assignment || operator_kind == XS_TOKEN_QUESTION_QUESTION;
+    XsSyntaxNode *right = parse_expression(parser, right_associative ? current_precedence : current_precedence + 1);
     XsSyntaxNode *combined = node(parser, assignment ? XS_SYNTAX_EXPR_ASSIGNMENT : XS_SYNTAX_EXPR_BINARY,
                                   (XsSpan){left->span.start_offset, right->span.end_offset});
     combined->token_kind = operator_kind;

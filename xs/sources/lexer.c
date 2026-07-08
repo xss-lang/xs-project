@@ -395,6 +395,23 @@ XsToken xs_lexer_next(XsLexer *lexer)
     return one_or_two(lexer, start, '=', XS_TOKEN_ASSIGN, XS_TOKEN_EQUAL);
   case '!':
     return one_or_two(lexer, start, '=', XS_TOKEN_BANG, XS_TOKEN_NOT_EQUAL);
+  case '?':
+    if (peek(lexer, 0) == '?')
+    {
+      ++lexer->cursor;
+      if (peek(lexer, 0) == '=')
+      {
+        ++lexer->cursor;
+        return token(XS_TOKEN_QUESTION_QUESTION_ASSIGN, start, lexer->cursor);
+      }
+      return token(XS_TOKEN_QUESTION_QUESTION, start, lexer->cursor);
+    }
+    if (peek(lexer, 0) == '.')
+    {
+      ++lexer->cursor;
+      return token(XS_TOKEN_QUESTION_DOT, start, lexer->cursor);
+    }
+    return token(XS_TOKEN_QUESTION, start, lexer->cursor);
   case '>':
     if (starts_with(lexer, ">>", 2))
     {

@@ -73,7 +73,7 @@ static void test_source_include_ignores_comments_and_strings(void)
 {
   const char *text = "// include!(\"missing.xs\");\n"
                      "incomplete fn Main();\n"
-                     "fn Text() { value: str = \"include!(\\\"missing.xs\\\")\"; }\n";
+                     "fn Text() { value: Str = \"include!(\\\"missing.xs\\\")\"; }\n";
   XsSource source = {.path = "IgnoredInclude.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsIncludedSource expanded;

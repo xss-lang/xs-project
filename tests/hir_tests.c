@@ -48,7 +48,7 @@ static void test_module_namespace_symbols(void)
                      "public fn Main() {}\n"
                      "internal class Service {}\n"
                      "namespace Util;\n"
-                     "data Result { value: int; }\n";
+                     "data Result { value: Int; }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsDiagnostics diagnostics;
@@ -198,13 +198,13 @@ static void test_import_errors(void)
 static void test_name_use_resolution(void)
 {
   const char *library = "module Math.Advanced;\n"
-                        "public fn Add(a: int, b: int) => int { return a + b; }\n";
+                        "public fn Add(a: Int, b: Int) => Int { return a + b; }\n";
   const char *main = "module App;\n"
                      "imports Math.Advanced;\n"
                      "from Math.Advanced imports Add as Sum;\n"
                      "fn Main() {\n"
-                     "  first: int = Math.Advanced.Add(1, 2);\n"
-                     "  second: int = Sum(3, 4);\n"
+                     "  first: Int = Math.Advanced.Add(1, 2);\n"
+                     "  second: Int = Sum(3, 4);\n"
                      "}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;

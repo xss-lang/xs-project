@@ -44,7 +44,7 @@ declarations
     body
       block
         let message
-          type str
+          type Str
           value string "Hello from X#"
         call std.io.println
           arguments [message]

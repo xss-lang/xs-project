@@ -3,6 +3,6 @@
 
 module Math.Advanced;
 
-public fn Add(a: int, b: int) => int {
+public fn Add(a: Int, b: Int) => Int {
     return a + b;
 }

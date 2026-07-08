@@ -34,10 +34,10 @@ Borrow checking is performed at compile time.
 
 Lifetime analysis is performed at compile time.
 
-nil is a valid value.
+None is a valid value for Optional<T>.
 
 Ownership rules apply to all values,
-including values containing nil.
+including Optional<T> values containing None.
 }//
 
 // move by assignment
@@ -150,9 +150,9 @@ Rename(&mut user);
 
 // VALID
 
-user: User = nil;
+user: Optional<User> = None;
 
-if (user == nil) {
+if (user == None) {
 }
 
 
@@ -267,27 +267,27 @@ fn GetUser() => &User {
 }
 
 // INVALID
-// returning a reference to a value that does not live long enough
+// returning a reference to a value that does not live Long enough
 
 
-// nil values
+// None values
 
-name: str = nil;
+name: Optional<Str> = None;
 
-enabled: bool = nil;
+enabled: Optional<Bool> = None;
 
-user: User = nil;
+user: Optional<User> = None;
 
 
 // VALID
 
-if (name == nil) {
+if (name == None) {
 }
 
 
 // VALID
 
-if (enabled == nil) {
+if (enabled == None) {
 }
 
 
@@ -296,4 +296,4 @@ if (enabled == nil) {
 if (enabled) {
 }
 
-// condition cannot be nil
+// condition cannot be None

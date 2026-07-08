@@ -54,7 +54,7 @@ fn MutexLock() {
 // lock():
 //
 // - Waits until the mutex can be acquired.
-// - Does not return nil.
+// - Does not return None.
 // - Does not provide tryLock().
 // - Returns Mutex<T>.
 // - The returned Mutex<T> acts as the lock guard.
@@ -188,18 +188,18 @@ imports RwLock;
 // rwlock creation
 
 fn RwLockCreation() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 }
 
 
 // read lock
 
 fn RwLockRead() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
-    reader: RwLock<int> = value.read();
+    reader: RwLock<Int> = value.read();
 
-    result: int = *reader;
+    result: Int = *reader;
 }
 
 // read():
@@ -215,9 +215,9 @@ fn RwLockRead() {
 // invalid reader mutation
 
 fn InvalidReaderMutation() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
-    reader: RwLock<int> = value.read();
+    reader: RwLock<Int> = value.read();
 
     *reader = 50;
 }
@@ -228,9 +228,9 @@ fn InvalidReaderMutation() {
 // write lock
 
 fn RwLockWrite() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
-    writer: RwLock<int> = value.write();
+    writer: RwLock<Int> = value.write();
 
     *writer += 1;
 }
@@ -248,13 +248,13 @@ fn RwLockWrite() {
 // multiple readers
 
 fn MultipleReaders() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
-    reader1: RwLock<int> = value.read();
-    reader2: RwLock<int> = value.read();
+    reader1: RwLock<Int> = value.read();
+    reader2: RwLock<Int> = value.read();
 
-    first: int = *reader1;
-    second: int = *reader2;
+    first: Int = *reader1;
+    second: Int = *reader2;
 }
 
 // Multiple readers may hold the lock simultaneously.
@@ -273,10 +273,10 @@ fn MultipleReaders() {
 // reader and writer guard movement
 
 fn MoveRwLockGuards() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
-    reader: RwLock<int> = value.read();
-    otherReader: RwLock<int> = reader;
+    reader: RwLock<Int> = value.read();
+    otherReader: RwLock<Int> = reader;
 
     // reader can no longer be used.
 }
@@ -290,10 +290,10 @@ fn MoveRwLockGuards() {
 // non-reentrant rwlock
 
 fn InvalidReadToWriteUpgrade() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
-    reader: RwLock<int> = value.read();
-    writer: RwLock<int> = value.write();
+    reader: RwLock<Int> = value.read();
+    writer: RwLock<Int> = value.write();
 }
 
 // Acquiring write() while the same thread holds read()
@@ -303,12 +303,12 @@ fn InvalidReadToWriteUpgrade() {
 // invalid writer reentry
 
 fn InvalidWriterReentry() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
-    writer: RwLock<int> = value.write();
+    writer: RwLock<Int> = value.write();
 
-    reader: RwLock<int> = value.read();
-    secondWriter: RwLock<int> = value.write();
+    reader: RwLock<Int> = value.read();
+    secondWriter: RwLock<Int> = value.write();
 }
 
 // Both operations are invalid.
@@ -329,10 +329,10 @@ fn InvalidWriterReentry() {
 // poisoned rwlock recovery
 
 fn RecoverPoisonedRwLock() {
-    value: RwLock<int> = RwLock.new(42);
+    value: RwLock<Int> = RwLock.new(42);
 
     try {
-        writer: RwLock<int> = value.write();
+        writer: RwLock<Int> = value.write();
     }
     catch (error: SyncException) {
         value.rwunlock();
@@ -404,17 +404,17 @@ imports Arc;
 // arc creation
 
 fn ArcCreation() {
-    value: Arc<str> = Arc.new("Alfa");
+    value: Arc<Str> = Arc.new("Alfa");
 }
 
 
 // arc cloning
 
 fn ArcCloning() {
-    value: Arc<str> = Arc.new("Alfa");
+    value: Arc<Str> = Arc.new("Alfa");
 
-    second: Arc<str> = Arc.clone(&value);
-    third: Arc<str> = Arc.clone(&value);
+    second: Arc<Str> = Arc.clone(&value);
+    third: Arc<Str> = Arc.clone(&value);
 }
 
 // Arc.clone(&value):
@@ -428,9 +428,9 @@ fn ArcCloning() {
 // arc access
 
 fn ArcRead() {
-    strong: Arc<int> = Arc.new(42);
+    strong: Arc<Int> = Arc.new(42);
 
-    value: int = *strong;
+    value: Int = *strong;
 }
 
 // Dereferencing Arc<T> provides immutable access.
@@ -439,7 +439,7 @@ fn ArcRead() {
 // invalid arc mutation
 
 fn InvalidArcMutation() {
-    strong: Arc<int> = Arc.new(42);
+    strong: Arc<Int> = Arc.new(42);
 
     *strong = 50;
 }
@@ -468,13 +468,13 @@ fn InvalidArcMutation() {
 // shared mutex
 
 fn SharedMutex() {
-    shared: Arc<Mutex<str>> =
+    shared: Arc<Mutex<Str>> =
         Arc.new(Mutex.new("Alfa"));
 
-    second: Arc<Mutex<str>> =
+    second: Arc<Mutex<Str>> =
         Arc.clone(&shared);
 
-    guard: Mutex<str> = shared.lock();
+    guard: Mutex<Str> = shared.lock();
 
     *guard = "Beta";
 }
@@ -483,13 +483,13 @@ fn SharedMutex() {
 // shared rwlock
 
 fn SharedRwLock() {
-    shared: Arc<RwLock<int>> =
+    shared: Arc<RwLock<Int>> =
         Arc.new(RwLock.new(42));
 
-    second: Arc<RwLock<int>> =
+    second: Arc<RwLock<Int>> =
         Arc.clone(&shared);
 
-    reader: RwLock<int> = shared.read();
+    reader: RwLock<Int> = shared.read();
 }
 
 
@@ -503,9 +503,9 @@ imports WeakControl;
 // weak creation
 
 fn WeakCreation() {
-    strong: Arc<str> = Arc.new("Alfa");
+    strong: Arc<Str> = Arc.new("Alfa");
 
-    weak: Weak<str> = Arc.downgrade(&strong);
+    weak: Weak<Str> = Arc.downgrade(&strong);
 }
 
 // Arc.downgrade(&strong):
@@ -519,10 +519,10 @@ fn WeakCreation() {
 // weak cloning
 
 fn WeakCloning() {
-    strong: Arc<str> = Arc.new("Alfa");
-    weak: Weak<str> = Arc.downgrade(&strong);
+    strong: Arc<Str> = Arc.new("Alfa");
+    weak: Weak<Str> = Arc.downgrade(&strong);
 
-    otherWeak: Weak<str> =
+    otherWeak: Weak<Str> =
         WeakControl.clone(&weak);
 }
 
@@ -536,10 +536,10 @@ fn WeakCloning() {
 // weak upgrade
 
 fn WeakUpgrade() {
-    strong: Arc<str> = Arc.new("Alfa");
-    weak: Weak<str> = Arc.downgrade(&strong);
+    strong: Arc<Str> = Arc.new("Alfa");
+    weak: Weak<Str> = Arc.downgrade(&strong);
 
-    strongAgain: Arc<str> =
+    strongAgain: Arc<Str> =
         WeakControl.upgrade(&weak);
 }
 
@@ -582,8 +582,8 @@ imports Atomic;
 // atomic creation
 
 fn AtomicCreation() {
-    Atomic counter: int = Atomic.new(42);
-    Atomic flag: bool = Atomic.new(false);
+    Atomic counter: Int = Atomic.new(42);
+    Atomic flag: Bool = Atomic.new(false);
 }
 
 // Atomic.new() requires a compile-time constant initial value.
@@ -594,7 +594,7 @@ fn AtomicCreation() {
 //{
 // int16
 // int32
-// int
+// Int
 // int128
 //
 // Uint16
@@ -602,7 +602,7 @@ fn AtomicCreation() {
 // Uint
 // Uint128
 //
-// bool
+// Bool
 //}}
 
 
@@ -620,9 +620,9 @@ fn AtomicCreation() {
 // atomic load
 
 fn AtomicLoad() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
-    value: int =
+    value: Int =
         counter.load(Atomic.ordering.SeqCst);
 }
 
@@ -630,7 +630,7 @@ fn AtomicLoad() {
 // atomic store
 
 fn AtomicStore() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
     counter.store(
         43,
@@ -642,9 +642,9 @@ fn AtomicStore() {
 // atomic exchange
 
 fn AtomicExchange() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
-    oldValue: int =
+    oldValue: Int =
         counter.exchange(
             50,
             Atomic.ordering.SeqCst
@@ -657,9 +657,9 @@ fn AtomicExchange() {
 // atomic addition
 
 fn AtomicFetchAdd() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
-    oldValue: int =
+    oldValue: Int =
         counter.fetchAdd(
             1,
             Atomic.ordering.SeqCst
@@ -672,9 +672,9 @@ fn AtomicFetchAdd() {
 // atomic subtraction
 
 fn AtomicFetchSub() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
-    oldValue: int =
+    oldValue: Int =
         counter.fetchSub(
             1,
             Atomic.ordering.SeqCst
@@ -687,9 +687,9 @@ fn AtomicFetchSub() {
 // compare and exchange
 
 fn AtomicCompareExchange() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
-    oldValue: int =
+    oldValue: Int =
         counter.compareExchange(
             42,
             43,
@@ -707,12 +707,12 @@ fn AtomicCompareExchange() {
 // - Returns the previous value.
 
 
-// bool atomic operations
+// Bool atomic operations
 
 fn AtomicBool() {
-    Atomic flag: bool = Atomic.new(false);
+    Atomic flag: Bool = Atomic.new(false);
 
-    current: bool =
+    current: Bool =
         flag.load(Atomic.ordering.SeqCst);
 
     flag.store(
@@ -720,13 +720,13 @@ fn AtomicBool() {
         Atomic.ordering.SeqCst
     );
 
-    previous: bool =
+    previous: Bool =
         flag.exchange(
             false,
             Atomic.ordering.SeqCst
         );
 
-    oldValue: bool =
+    oldValue: Bool =
         flag.compareExchange(
             false,
             true,
@@ -735,14 +735,14 @@ fn AtomicBool() {
         );
 }
 
-// Atomic<bool> supports:
+// Atomic<Bool> supports:
 //
 // - load
 // - store
 // - exchange
 // - compareExchange
 //
-// Atomic<bool> does not support:
+// Atomic<Bool> does not support:
 //
 // - fetchAdd
 // - fetchSub
@@ -751,9 +751,9 @@ fn AtomicBool() {
 // invalid direct atomic read
 
 fn InvalidDirectAtomicRead() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
-    value: int = counter;
+    value: Int = counter;
 }
 
 // Direct atomic reads are compile-time errors.
@@ -763,7 +763,7 @@ fn InvalidDirectAtomicRead() {
 // invalid direct atomic assignment
 
 fn InvalidDirectAtomicAssignment() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
     counter = 50;
 }
@@ -775,9 +775,9 @@ fn InvalidDirectAtomicAssignment() {
 // invalid atomic initial value
 
 fn InvalidRuntimeAtomicInitialization() {
-    value: int = GetRuntimeValue();
+    value: Int = GetRuntimeValue();
 
-    Atomic counter: int = Atomic.new(value);
+    Atomic counter: Int = Atomic.new(value);
 }
 
 // Atomic.new() requires a compile-time constant.
@@ -786,9 +786,9 @@ fn InvalidRuntimeAtomicInitialization() {
 // atomic movement
 
 fn MoveAtomic() {
-    Atomic first: int = Atomic.new(42);
+    Atomic first: Int = Atomic.new(42);
 
-    Atomic second: int = first;
+    Atomic second: Int = first;
 
     // first can no longer be used.
 }
@@ -801,7 +801,7 @@ fn MoveAtomic() {
 // shared atomic
 
 fn SharedAtomic() {
-    shared: Arc<Atomic<int>> =
+    shared: Arc<Atomic<Int>> =
         Arc.new(Atomic.new(0));
 }
 
@@ -809,9 +809,9 @@ fn SharedAtomic() {
 // ordering validation
 
 fn InvalidLoadOrdering() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
-    value: int =
+    value: Int =
         counter.load(Atomic.ordering.Release);
 }
 
@@ -820,7 +820,7 @@ fn InvalidLoadOrdering() {
 
 
 fn InvalidStoreOrdering() {
-    Atomic counter: int = Atomic.new(42);
+    Atomic counter: Int = Atomic.new(42);
 
     counter.store(
         50,
@@ -857,7 +857,7 @@ fn InvalidStoreOrdering() {
 
 // async result
 
-async fn GetValue() => Task<int> {
+async fn GetValue() => Task<Int> {
     return 42;
 }
 
@@ -876,7 +876,7 @@ async fn RunUnitTask() => Task<()> {
 // awaiting
 
 async fn AwaitValue() => Task<()> {
-    value: int = await GetValue();
+    value: Int = await GetValue();
 }
 
 // await:
@@ -890,11 +890,11 @@ async fn AwaitValue() => Task<()> {
 // lazy execution
 
 async fn LazyTask() => Task<()> {
-    task: Task<int> = GetValue();
+    task: Task<Int> = GetValue();
 
     // GetValue has not started yet.
 
-    value: int = await task;
+    value: Int = await task;
 
     // GetValue begins when first awaited.
 }
@@ -903,7 +903,7 @@ async fn LazyTask() => Task<()> {
 // mandatory await
 
 async fn InvalidUnawaitedTask() => Task<()> {
-    task: Task<int> = GetValue();
+    task: Task<Int> = GetValue();
 }
 
 // Every created Task<T> must be awaited at least once.
@@ -913,10 +913,10 @@ async fn InvalidUnawaitedTask() => Task<()> {
 // repeated sequential await
 
 async fn RepeatedAwait() => Task<()> {
-    task: Task<int> = GetValue();
+    task: Task<Int> = GetValue();
 
-    first: int = await task;
-    second: int = await task;
+    first: Int = await task;
+    second: Int = await task;
 }
 
 // The same Task<T> may be awaited multiple times sequentially.
@@ -934,10 +934,10 @@ async fn RepeatedAwait() => Task<()> {
 // task movement
 
 async fn MoveTask() => Task<()> {
-    firstTask: Task<int> = GetValue();
-    secondTask: Task<int> = firstTask;
+    firstTask: Task<Int> = GetValue();
+    secondTask: Task<Int> = firstTask;
 
-    value: int = await secondTask;
+    value: Int = await secondTask;
 }
 
 // Task<T> is move-only.
@@ -962,7 +962,7 @@ async fn MoveTask() => Task<()> {
 
 async fn AsyncExceptionHandling() => Task<()> {
     try {
-        value: int = await FailingTask();
+        value: Int = await FailingTask();
     }
     catch (error: IOException) {
     }
@@ -1001,14 +1001,14 @@ imports Thread, Stdio;
 // channel creation and communication
 
 fn ChannelExample() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
     Thread.spawn(move fn() {
         tx.send(42);
     });
 
-    value: int = rx.recv();
+    value: Int = rx.recv();
 
     std.cout << value << "\n";
 }
@@ -1024,10 +1024,10 @@ fn ChannelExample() {
 // sending
 
 fn ChannelSendMovesValue() {
-    (tx, rx): Thread.channel<str> =
+    (tx, rx): Thread.channel<Str> =
         Thread.channel();
 
-    message: str = "Alfa";
+    message: Str = "Alfa";
 
     tx.send(message);
 
@@ -1040,14 +1040,14 @@ fn ChannelSendMovesValue() {
 // receiving
 
 fn ChannelReceive() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
     Thread.spawn(move fn() {
         tx.send(42);
     });
 
-    value: int = rx.recv();
+    value: Int = rx.recv();
 }
 
 // recv():
@@ -1060,11 +1060,11 @@ fn ChannelReceive() {
 // receiver movement
 
 fn MoveReceiverToThread() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
     Thread.spawn(move fn() {
-        value: int = rx.recv();
+        value: Int = rx.recv();
     });
 
     tx.send(42);
@@ -1076,10 +1076,10 @@ fn MoveReceiverToThread() {
 // invalid sender cloning
 
 fn InvalidSenderClone() {
-    (tx, rx): Thread.channel<int> =
+    (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
-    secondSender: Thread.channel<int> =
+    secondSender: Thread.channel<Int> =
         Thread.channel.clone(&tx);
 }
 
@@ -1092,10 +1092,10 @@ fn InvalidSenderClone() {
 // ============================================================
 
 fn CatchSyncException() {
-    mutex: Mutex<int> = Mutex.new(42);
+    mutex: Mutex<Int> = Mutex.new(42);
 
     try {
-        value: Mutex<int> = mutex.lock();
+        value: Mutex<Int> = mutex.lock();
     }
     catch (error: SyncException) {
     }

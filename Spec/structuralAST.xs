@@ -60,13 +60,13 @@ Those operations belong to later compiler stages.
 // Every AST node stores its source location.
 
 data SourceSpan {
-    fileId: uint
-    startOffset: uint
-    endOffset: uint
-    startLine: uint
-    startColumn: uint
-    endLine: uint
-    endColumn: uint
+    fileId: UInt
+    startOffset: UInt
+    endOffset: UInt
+    startLine: UInt
+    startColumn: UInt
+    endLine: UInt
+    endColumn: UInt
 }
 
 
@@ -92,7 +92,7 @@ data AstFile {
 }
 
 
-// moduleDeclaration may be nil.
+// moduleDeclaration may be None.
 //
 // A file without a module declaration may still be a direct
 // build-graph source.
@@ -159,7 +159,7 @@ data ImportName {
 }
 
 
-// alias may be nil.
+// alias may be None.
 
 
 // ============================================================
@@ -197,7 +197,7 @@ data VisibilityNode {
 // ============================================================
 
 data IdentifierNode {
-    text: str
+    text: Str
     span: SourceSpan
 }
 
@@ -248,9 +248,9 @@ data FunctionDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
 
-    isAsync: bool
-    isStatic: bool
-    isIncomplete: bool
+    isAsync: Bool
+    isStatic: Bool
+    isIncomplete: Bool
 
     genericParameters: GenericParameter[]
     parameters: ParameterDeclaration[]
@@ -263,7 +263,7 @@ data FunctionDeclaration {
 }
 
 
-// returnType may be nil when the function has no explicit
+// returnType may be None when the function has no explicit
 // `=> Type` declaration.
 //
 // A function without an explicit return type returns no value.
@@ -288,7 +288,7 @@ data ClassDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
 
-    isIncomplete: bool
+    isIncomplete: Bool
 
     genericParameters: GenericParameter[]
 
@@ -321,13 +321,13 @@ data FieldDeclaration {
     fieldType: TypeNode
     initializer: Expression
     visibility: VisibilityNode
-    isStatic: bool
-    isImmutable: bool
+    isStatic: Bool
+    isImmutable: Bool
     span: SourceSpan
 }
 
 
-// initializer may be nil.
+// initializer may be None.
 
 
 // ============================================================
@@ -383,7 +383,7 @@ data InterfaceDeclaration {
 data EnumDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
-    isDataEnum: bool
+    isDataEnum: Bool
     variants: EnumVariant[]
     span: SourceSpan
 }
@@ -396,7 +396,7 @@ data EnumVariant {
 }
 
 
-// payloadType may be nil.
+// payloadType may be None.
 //
 // Regular enum variants do not carry values.
 //
@@ -406,15 +406,15 @@ data EnumVariant {
 // Example:
 //
 // enum data Token {
-//     Identifier: str,
-//     Integer: int,
+//     Identifier: Str,
+//     Integer: Int,
 //     Plus,
 // }
 
 // EnumDeclaration
-// ├── Identifier -> str
-// ├── Integer    -> int
-// └── Plus       -> nil
+// ├── Identifier -> Str
+// ├── Integer    -> Int
+// └── Plus       -> None
 
 
 // ============================================================
@@ -545,8 +545,8 @@ data UnitTypeNode {
 
 // Example:
 //
-// Arc<Mutex<str>>
-// fn(int, str) => bool
+// Arc<Mutex<Str>>
+// fn(Int, Str) => Bool
 
 // GenericTypeNode
 // ├── baseType: Arc
@@ -554,7 +554,7 @@ data UnitTypeNode {
 //     └── GenericTypeNode
 //         ├── baseType: Mutex
 //         └── arguments
-//             └── NamedTypeNode(str)
+//             └── NamedTypeNode(Str)
 
 
 // ============================================================
@@ -571,7 +571,7 @@ data LifetimeNode {
 //
 // &'a User
 // &'a mut User
-// &'static str
+// &'static Str
 // &'_ User
 
 
@@ -637,7 +637,7 @@ data ReturnStatement {
 }
 
 
-// value may be nil for:
+// value may be None for:
 //
 // return;
 
@@ -662,7 +662,7 @@ data ElseIfBranch {
 }
 
 
-// elseBlock may be nil.
+// elseBlock may be None.
 
 
 // ============================================================
@@ -759,7 +759,7 @@ data CatchClause {
 }
 
 
-// finallyBlock may be nil.
+// finallyBlock may be None.
 
 
 // ============================================================
@@ -822,13 +822,13 @@ enum LiteralKind {
     String,
     Character,
     Boolean,
-    Nil,
+    None,
 }
 
 
 data LiteralExpression {
     kind: LiteralKind
-    sourceText: str
+    sourceText: Str
     span: SourceSpan
 }
 
@@ -843,7 +843,7 @@ data LiteralExpression {
 // "Alfa"
 // 'A'
 // true
-// nil
+// None
 
 
 // ============================================================
@@ -993,7 +993,7 @@ data NewExpression {
 }
 
 
-// `constructedType` may be nil when the source spelling is `new()`.
+// `constructedType` may be None when the source spelling is `new()`.
 // In that form HIR resolves the constructed type from the assignment,
 // argument or return context.
 
@@ -1019,7 +1019,7 @@ enum FunctionCaptureKind {
 
 // Examples:
 //
-// fn(value: int) => int {
+// fn(value: Int) => Int {
 //     return value + 1;
 // }
 //
@@ -1227,7 +1227,7 @@ enum data MacroMatcherElement {
 
 
 data MacroTokenMatcher {
-    tokenText: str
+    tokenText: Str
     span: SourceSpan
 }
 
@@ -1297,7 +1297,7 @@ enum data MacroExpansionElement {
 
 
 data MacroExpansionToken {
-    tokenText: str
+    tokenText: Str
     span: SourceSpan
 }
 
@@ -1347,7 +1347,7 @@ data MacroArgument {
 
 data TokenNode {
     kind: TokenKind
-    sourceText: str
+    sourceText: Str
     span: SourceSpan
 }
 
@@ -1454,7 +1454,7 @@ data TokenNode {
 
 // Source:
 //
-// fn Add(a: int, b: int) => int {
+// fn Add(a: Int, b: Int) => Int {
 //     return a + b;
 // }
 
@@ -1467,11 +1467,11 @@ data TokenNode {
 //     ├── parameters
 //     │   ├── ParameterDeclaration
 //     │   │   ├── name: a
-//     │   │   └── type: int
+//     │   │   └── type: Int
 //     │   └── ParameterDeclaration
 //     │       ├── name: b
-//     │       └── type: int
-//     ├── returnType: int
+//     │       └── type: Int
+//     ├── returnType: Int
 //     └── body
 //         └── BlockStatement
 //             └── ReturnStatement
