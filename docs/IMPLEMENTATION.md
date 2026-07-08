@@ -311,18 +311,19 @@ semantics.
 - MIR function definitions carry a basic block list.
 - MIR function definitions carry a local table; local kind, type, mutability, and name are stored.
 - The MIR place model starts with a root local plus a `field`/`deref`/`index` projection chain.
-- MIR has an SSA value table and core `const.i64`, `add.i64`, `load`, and `store` instructions.
+- MIR has an SSA value table and core `const.i64`, `add.i64`, `sub.i64`, `mul.i64`, `load`, and `store` instructions.
 - Each basic block may currently have a `return`, `goto`, `branch`, or `unreachable` terminator.
 - The MIR text writer deterministically writes declarations and functions with bodies.
 - `xs/mir/borrow_checker.h` contains the first MIR validation/borrow-check skeleton.
 - The borrow-checker skeleton validates mandatory terminators, return type compatibility, and `store` operations into
   immutable local roots.
 - The borrow checker also validates instruction result/value ids, `load`/`store` place ids, `goto`/`branch` targets, branch
-  condition type, and `add.i64` operand type/id consistency.
+  condition type, and `add.i64`/`sub.i64`/`mul.i64` operand type/id consistency.
 - `xs/mir/optimizer.h` contains the initial MIR optimization API.
 - The CFG cleanup pass removes blocks unreachable from the entry block and rewrites remaining block ids plus `goto`/`branch`
   targets.
-- Constant folding lowers `add.i64` instructions with two `const.i64` operands to a `const.i64` result.
+- Constant folding lowers `add.i64`, `sub.i64`, and `mul.i64` instructions with two `const.i64` operands to a `const.i64`
+  result.
 - Rust `xslang` also contains a target-independent MIR structural verifier for duplicate local/block ids, missing
   terminators, unknown local references, and unknown block targets. This verifier is separate from LLVM and runs before
   borrow-check-specific reasoning.
@@ -330,9 +331,10 @@ semantics.
   optimized MIR before returning it.
 - Rust `xslang` XMIR text support can write and parse optimizer analysis records for optimization pass reports.
 - Rust `xslang` XMIR text support can also write and parse structural verifier diagnostic analysis records.
-- Rust `xslang` MIR and XLIL models now carry `add.i64`. XMIR and XLIL text parsers/writers round-trip it, the MIR verifier
-  checks that its result and operands are typed `i64`, MIR → XLIL lowering emits an XLIL `add.i64`, and the Rust MIR
-  optimizer folds `add.i64` when both operands are known `const.i64` values.
+- Rust `xslang` MIR and XLIL models now carry `add.i64`, `sub.i64`, and `mul.i64`. XMIR and XLIL text parsers/writers
+  round-trip them, the MIR verifier checks that their results and operands are typed `i64`, MIR → XLIL lowering emits
+  matching XLIL arithmetic instructions, and the Rust MIR optimizer folds them when both operands are known `const.i64`
+  values.
 - Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Int` locals, `Int`
   literals, and local returns into a single-entry MIR block with typed XLIL-vocabulary local records. Unsupported HIR
   expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering diagnostics instead of
@@ -383,9 +385,9 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
   `bbN.label:`, `%N:type = const <value>`, `br bbN`, `ret`, and `.end`.
 - MIR functions carry explicit XLIL-vocabulary parameter and return types. The first MIR → XLIL body bridge lowers MIR
-  parameter signatures, typed MIR `const.i64` and `add.i64` local statements, typed call statements whose arguments already
-  have lowered XLIL values, and matching local return values to XLIL signatures, `const`, `add.i64`, `call`, and `ret %N`
-  records.
+  parameter signatures, typed MIR `const.i64`, `add.i64`, `sub.i64`, and `mul.i64` local statements, typed call statements
+  whose arguments already have lowered XLIL values, and matching local return values to XLIL signatures, `const`, arithmetic,
+  `call`, and `ret %N` records.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
   stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path

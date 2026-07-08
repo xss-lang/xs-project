@@ -230,6 +230,8 @@ impl Parser<'_>
       {
         "const.i64" => block.statements.push(self.const_i64_statement()),
         "add.i64" => block.statements.push(self.add_i64_statement()),
+        "sub.i64" => block.statements.push(self.sub_i64_statement()),
+        "mul.i64" => block.statements.push(self.mul_i64_statement()),
         "call" => block.statements.push(self.call_statement()),
         "use" | "move" | "borrow shared" | "borrow mutable" | "borrow end" | "drop" =>
         {
@@ -460,21 +462,43 @@ impl Parser<'_>
 
   fn add_i64_statement(&mut self) -> Statement
   {
-    let result = self.add_i64_local("result");
-    let left = self.add_i64_local("left");
-    let right = self.add_i64_local("right");
+    let result = self.binary_i64_local("add.i64", "result");
+    let left = self.binary_i64_local("add.i64", "left");
+    let right = self.binary_i64_local("add.i64", "right");
     Statement::AddI64 { result,
                         left,
                         right,
                         span: span() }
   }
 
-  fn add_i64_local(&mut self, field: &str) -> LocalId
+  fn sub_i64_statement(&mut self) -> Statement
+  {
+    let result = self.binary_i64_local("sub.i64", "result");
+    let left = self.binary_i64_local("sub.i64", "left");
+    let right = self.binary_i64_local("sub.i64", "right");
+    Statement::SubI64 { result,
+                        left,
+                        right,
+                        span: span() }
+  }
+
+  fn mul_i64_statement(&mut self) -> Statement
+  {
+    let result = self.binary_i64_local("mul.i64", "result");
+    let left = self.binary_i64_local("mul.i64", "left");
+    let right = self.binary_i64_local("mul.i64", "right");
+    Statement::MulI64 { result,
+                        left,
+                        right,
+                        span: span() }
+  }
+
+  fn binary_i64_local(&mut self, instruction: &str, field: &str) -> LocalId
   {
     let Some(line) = self.current()
     else
     {
-      self.report(format!("missing add.i64 {field} local"));
+      self.report(format!("missing {instruction} {field} local"));
       return LocalId(0);
     };
     self.index += 1;
@@ -482,7 +506,7 @@ impl Parser<'_>
     let Some(local) = line.strip_prefix(&expected)
     else
     {
-      self.report(format!("expected add.i64 {field} local"));
+      self.report(format!("expected {instruction} {field} local"));
       return LocalId(0);
     };
     self.local_id(local)

@@ -86,6 +86,12 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
     Instruction::AddI64 { result,
                           left,
                           right, } => writeln!(output, "  %{}:i64 = add.i64 %{}, %{}", result.0, left.0, right.0),
+    Instruction::SubI64 { result,
+                          left,
+                          right, } => writeln!(output, "  %{}:i64 = sub.i64 %{}, %{}", result.0, left.0, right.0),
+    Instruction::MulI64 { result,
+                          left,
+                          right, } => writeln!(output, "  %{}:i64 = mul.i64 %{}, %{}", result.0, left.0, right.0),
     Instruction::Call { result,
                         ref function,
                         ref arguments,
@@ -213,5 +219,39 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %0:i64 = const 2\n  \
                 %1:i64 = const 3\n  %2:i64 = add.i64 %0, %1\n  ret %2\n.end\n");
+  }
+
+  #[test]
+  fn writes_sub_i64_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$Sub", Type::I64, vec![]);
+    let entry = function.append_block("entry");
+    let left = function.add_const_i64(entry, 8).expect("left const should be added");
+    let right = function.add_const_i64(entry, 3).expect("right const should be added");
+    let result = function.sub_i64(entry, left, right).expect("sub should be added");
+    assert!(function.set_return(entry, Some(result)));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %0:i64 = const 8\n  \
+                %1:i64 = const 3\n  %2:i64 = sub.i64 %0, %1\n  ret %2\n.end\n");
+  }
+
+  #[test]
+  fn writes_mul_i64_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$Mul", Type::I64, vec![]);
+    let entry = function.append_block("entry");
+    let left = function.add_const_i64(entry, 6).expect("left const should be added");
+    let right = function.add_const_i64(entry, 7).expect("right const should be added");
+    let result = function.mul_i64(entry, left, right).expect("mul should be added");
+    assert!(function.set_return(entry, Some(result)));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %0:i64 = const 6\n  \
+                %1:i64 = const 7\n  %2:i64 = mul.i64 %0, %1\n  ret %2\n.end\n");
   }
 }

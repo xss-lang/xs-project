@@ -278,7 +278,15 @@ impl Parser<'_>
     }
     if let Some((result, operands)) = text.split_once(" = add.i64 ")
     {
-      return self.add_i64(function, result, operands, line);
+      return self.binary_i64(function, result, operands, "add.i64", line);
+    }
+    if let Some((result, operands)) = text.split_once(" = sub.i64 ")
+    {
+      return self.binary_i64(function, result, operands, "sub.i64", line);
+    }
+    if let Some((result, operands)) = text.split_once(" = mul.i64 ")
+    {
+      return self.binary_i64(function, result, operands, "mul.i64", line);
     }
     let Some((result, rest)) = text.split_once(" = const ")
     else
@@ -308,14 +316,20 @@ impl Parser<'_>
                                  value })
   }
 
-  fn add_i64(&mut self, function: &mut Function, result: &str, operands: &str, line: usize) -> Option<Instruction>
+  fn binary_i64(&mut self,
+                function: &mut Function,
+                result: &str,
+                operands: &str,
+                instruction: &str,
+                line: usize)
+                -> Option<Instruction>
   {
     let Some(result) = result.strip_suffix(":i64")
     else
     {
       self.report(DiagnosticCode::InvalidInstruction,
                   line,
-                  "XLIL add.i64 result type is invalid");
+                  &format!("XLIL {instruction} result type is invalid"));
       return None;
     };
     let result = self.value_id(result, line)?;
@@ -324,16 +338,26 @@ impl Parser<'_>
     {
       self.report(DiagnosticCode::InvalidInstruction,
                   line,
-                  "XLIL add.i64 operands are invalid");
+                  &format!("XLIL {instruction} operands are invalid"));
       return None;
     };
     let left = self.value_operand(left, line)?;
     let right = self.value_operand(right, line)?;
     function.values.push(Value { id: result,
                                  value_type: Type::I64 });
-    Some(Instruction::AddI64 { result,
-                               left,
-                               right })
+    match instruction
+    {
+      "add.i64" => Some(Instruction::AddI64 { result,
+                                              left,
+                                              right }),
+      "sub.i64" => Some(Instruction::SubI64 { result,
+                                              left,
+                                              right }),
+      "mul.i64" => Some(Instruction::MulI64 { result,
+                                              left,
+                                              right }),
+      _ => None,
+    }
   }
 
   fn value_call(&mut self, function: &mut Function, result: &str, call: &str, line: usize) -> Option<Instruction>
@@ -539,6 +563,28 @@ mod tests
   {
     let text = ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %0:i64 = const 2\n  \
                 %1:i64 = const 3\n  %2:i64 = add.i64 %0, %1\n  ret %2\n.end\n";
+
+    let module = parse_module(text).expect("parse should succeed");
+
+    assert_eq!(module_to_string(&module), text);
+  }
+
+  #[test]
+  fn roundtrips_sub_i64_function()
+  {
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %0:i64 = const 8\n  \
+                %1:i64 = const 3\n  %2:i64 = sub.i64 %0, %1\n  ret %2\n.end\n";
+
+    let module = parse_module(text).expect("parse should succeed");
+
+    assert_eq!(module_to_string(&module), text);
+  }
+
+  #[test]
+  fn roundtrips_mul_i64_function()
+  {
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %0:i64 = const 6\n  \
+                %1:i64 = const 7\n  %2:i64 = mul.i64 %0, %1\n  ret %2\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 

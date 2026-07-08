@@ -14,6 +14,8 @@ pub enum OptimizationPass
   RemoveUnreachableBlocks,
   RemoveRedundantEndBorrow,
   FoldConstI64Add,
+  FoldConstI64Sub,
+  FoldConstI64Mul,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -58,6 +60,18 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   {
     reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Add,
                                       removed_items: folded_adds });
+  }
+  let folded_subs = fold_const_i64_subs(&mut function);
+  if folded_subs != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Sub,
+                                      removed_items: folded_subs });
+  }
+  let folded_muls = fold_const_i64_muls(&mut function);
+  if folded_muls != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Mul,
+                                      removed_items: folded_muls });
   }
   OptimizedFunction { function,
                       reports }
@@ -169,6 +183,132 @@ fn fold_const_i64_adds_in_block(block: &mut BasicBlock) -> usize
           continue;
         };
         let Some(value) = left.checked_add(right)
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        *statement = Statement::ConstI64 { local: result,
+                                           value,
+                                           span };
+        constants.insert(result, value);
+        folded += 1;
+      }
+      Statement::Call { result, .. } =>
+      {
+        if let Some(result) = result
+        {
+          constants.remove(result);
+        }
+      }
+      _ =>
+      {}
+    }
+  }
+  folded
+}
+
+fn fold_const_i64_subs(function: &mut Function) -> usize
+{
+  let mut folded = 0;
+  for block in &mut function.blocks
+  {
+    folded += fold_const_i64_subs_in_block(block);
+  }
+  folded
+}
+
+fn fold_const_i64_subs_in_block(block: &mut BasicBlock) -> usize
+{
+  let mut constants = HashMap::new();
+  let mut folded = 0;
+  for statement in &mut block.statements
+  {
+    match statement
+    {
+      Statement::ConstI64 { local,
+                            value,
+                            .. } =>
+      {
+        constants.insert(*local, *value);
+      }
+      Statement::SubI64 { result,
+                          left,
+                          right,
+                          span, } =>
+      {
+        let result = *result;
+        let span = *span;
+        let (Some(left), Some(right)) = (constants.get(left).copied(), constants.get(right).copied())
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        let Some(value) = left.checked_sub(right)
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        *statement = Statement::ConstI64 { local: result,
+                                           value,
+                                           span };
+        constants.insert(result, value);
+        folded += 1;
+      }
+      Statement::Call { result, .. } =>
+      {
+        if let Some(result) = result
+        {
+          constants.remove(result);
+        }
+      }
+      _ =>
+      {}
+    }
+  }
+  folded
+}
+
+fn fold_const_i64_muls(function: &mut Function) -> usize
+{
+  let mut folded = 0;
+  for block in &mut function.blocks
+  {
+    folded += fold_const_i64_muls_in_block(block);
+  }
+  folded
+}
+
+fn fold_const_i64_muls_in_block(block: &mut BasicBlock) -> usize
+{
+  let mut constants = HashMap::new();
+  let mut folded = 0;
+  for statement in &mut block.statements
+  {
+    match statement
+    {
+      Statement::ConstI64 { local,
+                            value,
+                            .. } =>
+      {
+        constants.insert(*local, *value);
+      }
+      Statement::MulI64 { result,
+                          left,
+                          right,
+                          span, } =>
+      {
+        let result = *result;
+        let span = *span;
+        let (Some(left), Some(right)) = (constants.get(left).copied(), constants.get(right).copied())
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        let Some(value) = left.checked_mul(right)
         else
         {
           constants.remove(&result);
@@ -350,6 +490,96 @@ mod tests
     assert!(matches!(optimized.function.blocks[0].statements[2],
                      Statement::ConstI64 { local: LocalId(2),
                                            value: 5,
+                                           .. }));
+  }
+
+  #[test]
+  fn folds_const_i64_subs()
+  {
+    let function =
+      Function { name: "sub".to_string(),
+                 parameters: vec![],
+                 return_type: Type::I64,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "left".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) },
+                              Local { id: LocalId(1),
+                                      name: "right".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) },
+                              Local { id: LocalId(2),
+                                      name: "difference".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 8,
+                                                                                  span: span(1, 2) },
+                                                            Statement::ConstI64 { local: LocalId(1),
+                                                                                  value: 3,
+                                                                                  span: span(2, 3) },
+                                                            Statement::SubI64 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(3, 4) }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span(0, 4) }] };
+
+    let optimized = optimize_verified_function(function).expect("valid input should optimize");
+
+    assert_eq!(optimized.reports[0].pass, OptimizationPass::FoldConstI64Sub);
+    assert!(matches!(optimized.function.blocks[0].statements[2],
+                     Statement::ConstI64 { local: LocalId(2),
+                                           value: 5,
+                                           .. }));
+  }
+
+  #[test]
+  fn folds_const_i64_muls()
+  {
+    let function =
+      Function { name: "mul".to_string(),
+                 parameters: vec![],
+                 return_type: Type::I64,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "left".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) },
+                              Local { id: LocalId(1),
+                                      name: "right".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) },
+                              Local { id: LocalId(2),
+                                      name: "product".to_string(),
+                                      value_type: Some(Type::I64),
+                                      mutable: false,
+                                      span: span(0, 1) }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 6,
+                                                                                  span: span(1, 2) },
+                                                            Statement::ConstI64 { local: LocalId(1),
+                                                                                  value: 7,
+                                                                                  span: span(2, 3) },
+                                                            Statement::MulI64 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(3, 4) }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span(0, 4) }] };
+
+    let optimized = optimize_verified_function(function).expect("valid input should optimize");
+
+    assert_eq!(optimized.reports[0].pass, OptimizationPass::FoldConstI64Mul);
+    assert!(matches!(optimized.function.blocks[0].statements[2],
+                     Statement::ConstI64 { local: LocalId(2),
+                                           value: 42,
                                            .. }));
   }
 }

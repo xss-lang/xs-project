@@ -242,6 +242,8 @@ const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
     OptimizationPass::RemoveUnreachableBlocks => "remove_unreachable_blocks",
     OptimizationPass::RemoveRedundantEndBorrow => "remove_redundant_end_borrow",
     OptimizationPass::FoldConstI64Add => "fold_const_i64_add",
+    OptimizationPass::FoldConstI64Sub => "fold_const_i64_sub",
+    OptimizationPass::FoldConstI64Mul => "fold_const_i64_mul",
   }
 }
 
@@ -364,6 +366,8 @@ fn parse_optimization_pass(name: &str,
     "remove_unreachable_blocks" => Some(OptimizationPass::RemoveUnreachableBlocks),
     "remove_redundant_end_borrow" => Some(OptimizationPass::RemoveRedundantEndBorrow),
     "fold_const_i64_add" => Some(OptimizationPass::FoldConstI64Add),
+    "fold_const_i64_sub" => Some(OptimizationPass::FoldConstI64Sub),
+    "fold_const_i64_mul" => Some(OptimizationPass::FoldConstI64Mul),
     _ =>
     {
       diagnostics.push(XmirParseDiagnostic { line,
@@ -417,6 +421,26 @@ fn write_statement(output: &mut String, statement: &Statement)
                         .. } =>
     {
       let _ = writeln!(output, "      statement add.i64");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        left local {}", left.0);
+      let _ = writeln!(output, "        right local {}", right.0);
+    }
+    Statement::SubI64 { result,
+                        left,
+                        right,
+                        .. } =>
+    {
+      let _ = writeln!(output, "      statement sub.i64");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        left local {}", left.0);
+      let _ = writeln!(output, "        right local {}", right.0);
+    }
+    Statement::MulI64 { result,
+                        left,
+                        right,
+                        .. } =>
+    {
+      let _ = writeln!(output, "      statement mul.i64");
       let _ = writeln!(output, "        result local {}", result.0);
       let _ = writeln!(output, "        left local {}", left.0);
       let _ = writeln!(output, "        right local {}", right.0);
@@ -684,6 +708,98 @@ mod tests
     let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
 
     assert!(matches!(parsed.blocks[0].statements[2], Statement::AddI64 { result:
+                                                                           LocalId(2),
+                                                                         left: LocalId(0),
+                                                                         right: LocalId(1),
+                                                                         .. }));
+  }
+
+  #[test]
+  fn roundtrips_sub_i64_statement()
+  {
+    let function =
+      Function { name: "SubFlow".to_string(),
+                 parameters: vec![],
+                 return_type: crate::xlil::Type::I64,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "left".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(1),
+                                      name: "right".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(2),
+                                      name: "difference".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 8,
+                                                                                  span: span() },
+                                                            Statement::ConstI64 { local: LocalId(1),
+                                                                                  value: 3,
+                                                                                  span: span() },
+                                                            Statement::SubI64 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span() }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span() }] };
+
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
+
+    assert!(matches!(parsed.blocks[0].statements[2], Statement::SubI64 { result:
+                                                                           LocalId(2),
+                                                                         left: LocalId(0),
+                                                                         right: LocalId(1),
+                                                                         .. }));
+  }
+
+  #[test]
+  fn roundtrips_mul_i64_statement()
+  {
+    let function =
+      Function { name: "MulFlow".to_string(),
+                 parameters: vec![],
+                 return_type: crate::xlil::Type::I64,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "left".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(1),
+                                      name: "right".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(2),
+                                      name: "product".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 6,
+                                                                                  span: span() },
+                                                            Statement::ConstI64 { local: LocalId(1),
+                                                                                  value: 7,
+                                                                                  span: span() },
+                                                            Statement::MulI64 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span() }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span() }] };
+
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
+
+    assert!(matches!(parsed.blocks[0].statements[2], Statement::MulI64 { result:
                                                                            LocalId(2),
                                                                          left: LocalId(0),
                                                                          right: LocalId(1),

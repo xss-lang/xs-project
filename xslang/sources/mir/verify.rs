@@ -153,7 +153,15 @@ impl<'a> Verifier<'a>
       Statement::AddI64 { result,
                           left,
                           right,
-                          span, } => self.verify_add_i64(result, left, right, span),
+                          span, } => self.verify_i64_binary(result, left, right, "add.i64", span),
+      Statement::SubI64 { result,
+                          left,
+                          right,
+                          span, } => self.verify_i64_binary(result, left, right, "sub.i64", span),
+      Statement::MulI64 { result,
+                          left,
+                          right,
+                          span, } => self.verify_i64_binary(result, left, right, "mul.i64", span),
       Statement::Call { result,
                         ref arguments,
                         return_type,
@@ -223,11 +231,11 @@ impl<'a> Verifier<'a>
     }
   }
 
-  fn verify_add_i64(&mut self, result: LocalId, left: LocalId, right: LocalId, span: Span)
+  fn verify_i64_binary(&mut self, result: LocalId, left: LocalId, right: LocalId, instruction: &str, span: Span)
   {
-    self.verify_i64_local(result, "add.i64 result local", span);
-    self.verify_i64_local(left, "add.i64 left operand", span);
-    self.verify_i64_local(right, "add.i64 right operand", span);
+    self.verify_i64_local(result, &format!("{instruction} result local"), span);
+    self.verify_i64_local(left, &format!("{instruction} left operand"), span);
+    self.verify_i64_local(right, &format!("{instruction} right operand"), span);
   }
 
   fn verify_i64_local(&mut self, local: LocalId, label: &str, span: Span)

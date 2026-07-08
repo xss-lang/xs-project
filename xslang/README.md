@@ -18,6 +18,6 @@ Current core slices include:
 - HIR type-checking helpers and structured XHIR text support.
 - A first HIR to MIR lowering bridge for void functions, `Int` locals, `Int` literals, and local returns.
 - MIR structural verification, borrow-checking, optimizer scaffolding, and structured XMIR text support.
-- MIR and XLIL `add.i64` support, including XMIR/XLIL round-tripping and MIR constant folding for constant operands.
-- MIR to XLIL lowering for typed `const.i64`, `add.i64`, call, branch, and return records.
+- MIR and XLIL `add.i64`/`sub.i64`/`mul.i64` support, including XMIR/XLIL round-tripping and MIR constant folding for constant operands.
+- MIR to XLIL lowering for typed `const.i64`, `add.i64`, `sub.i64`, `mul.i64`, call, branch, and return records.
 - Monomorphization and codegen-unit planning models that do not depend on LLVM.

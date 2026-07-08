@@ -124,6 +124,22 @@ impl Verifier
         self.i64_value(function, left, "XLIL add.i64 left operand");
         self.i64_value(function, right, "XLIL add.i64 right operand");
       }
+      Instruction::SubI64 { result,
+                            left,
+                            right, } =>
+      {
+        self.i64_value(function, result, "XLIL sub.i64 result");
+        self.i64_value(function, left, "XLIL sub.i64 left operand");
+        self.i64_value(function, right, "XLIL sub.i64 right operand");
+      }
+      Instruction::MulI64 { result,
+                            left,
+                            right, } =>
+      {
+        self.i64_value(function, result, "XLIL mul.i64 result");
+        self.i64_value(function, left, "XLIL mul.i64 left operand");
+        self.i64_value(function, right, "XLIL mul.i64 right operand");
+      }
       Instruction::Call { result,
                           ref arguments,
                           return_type,
@@ -330,6 +346,36 @@ mod tests
     let left = function.add_const_i64(block, 2).expect("left const should be added");
     let right = function.add_const_i64(block, 3).expect("right const should be added");
     let result = function.add_i64(block, left, right).expect("add should be added");
+    assert!(function.set_return(block, Some(result)));
+    module.add_function(function);
+
+    assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn accepts_sub_i64_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("sub", Type::I64, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i64(block, 8).expect("left const should be added");
+    let right = function.add_const_i64(block, 3).expect("right const should be added");
+    let result = function.sub_i64(block, left, right).expect("sub should be added");
+    assert!(function.set_return(block, Some(result)));
+    module.add_function(function);
+
+    assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn accepts_mul_i64_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("mul", Type::I64, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i64(block, 6).expect("left const should be added");
+    let right = function.add_const_i64(block, 7).expect("right const should be added");
+    let result = function.mul_i64(block, left, right).expect("mul should be added");
     assert!(function.set_return(block, Some(result)));
     module.add_function(function);
 

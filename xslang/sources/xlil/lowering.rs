@@ -93,7 +93,21 @@ impl MirToXlilLowerer
                                       right,
                                       span, } = *statement
       {
-        self.lower_add_i64(result, left, right, span, xlil_block, values, lowered);
+        self.lower_binary_i64(result, left, right, span, "add.i64", xlil_block, values, lowered);
+      }
+      if let mir::Statement::SubI64 { result,
+                                      left,
+                                      right,
+                                      span, } = *statement
+      {
+        self.lower_binary_i64(result, left, right, span, "sub.i64", xlil_block, values, lowered);
+      }
+      if let mir::Statement::MulI64 { result,
+                                      left,
+                                      right,
+                                      span, } = *statement
+      {
+        self.lower_binary_i64(result, left, right, span, "mul.i64", xlil_block, values, lowered);
       }
       if let mir::Statement::Call { result,
                                     ref function,
@@ -185,20 +199,21 @@ impl MirToXlilLowerer
     }
   }
 
-  fn lower_add_i64(&mut self,
-                   result: mir::LocalId,
-                   left: mir::LocalId,
-                   right: mir::LocalId,
-                   span: Span,
-                   xlil_block: BlockId,
-                   values: &mut HashMap<mir::LocalId, ValueId>,
-                   lowered: &mut Function)
+  fn lower_binary_i64(&mut self,
+                      result: mir::LocalId,
+                      left: mir::LocalId,
+                      right: mir::LocalId,
+                      span: Span,
+                      instruction: &str,
+                      xlil_block: BlockId,
+                      values: &mut HashMap<mir::LocalId, ValueId>,
+                      lowered: &mut Function)
   {
     let Some(left) = values.get(&left).copied()
     else
     {
       self.report(DiagnosticCode::MissingLocalValue,
-                  "MIR add.i64 left operand does not have a lowered XLIL value",
+                  &format!("MIR {instruction} left operand does not have a lowered XLIL value"),
                   span);
       return;
     };
@@ -206,15 +221,22 @@ impl MirToXlilLowerer
     else
     {
       self.report(DiagnosticCode::MissingLocalValue,
-                  "MIR add.i64 right operand does not have a lowered XLIL value",
+                  &format!("MIR {instruction} right operand does not have a lowered XLIL value"),
                   span);
       return;
     };
-    let Some(value) = lowered.add_i64(xlil_block, left, right)
+    let value = match instruction
+    {
+      "add.i64" => lowered.add_i64(xlil_block, left, right),
+      "sub.i64" => lowered.sub_i64(xlil_block, left, right),
+      "mul.i64" => lowered.mul_i64(xlil_block, left, right),
+      _ => None,
+    };
+    let Some(value) = value
     else
     {
       self.report(DiagnosticCode::UnsupportedLocalType,
-                  "MIR add.i64 operands must lower to XLIL i64 values",
+                  &format!("MIR {instruction} operands must lower to XLIL i64 values"),
                   span);
       return;
     };
@@ -465,6 +487,104 @@ mod tests
                                          .expect("lowering should succeed");
 
     assert_eq!(lowered.blocks[0].instructions[2], Instruction::AddI64 { result:
+                                                                          crate::xlil::ValueId(2),
+                                                                        left:
+                                                                          crate::xlil::ValueId(0),
+                                                                        right:
+                                                                          crate::xlil::ValueId(1) });
+    assert_eq!(lowered.blocks[0].terminator,
+               Some(Terminator::Return(Some(crate::xlil::ValueId(2)))));
+  }
+
+  #[test]
+  fn lowers_sub_i64_statement()
+  {
+    let function =
+      MirFunction { name: "Sub".to_string(),
+                    parameters: vec![],
+                    return_type: Type::I64,
+                    locals: vec![Local { id: LocalId(0),
+                                         name: "left".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) },
+                                 Local { id: LocalId(1),
+                                         name: "right".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) },
+                                 Local { id: LocalId(2),
+                                         name: "difference".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) }],
+                    blocks: vec![BasicBlock { id: MirBlockId(0),
+                                              statements: vec![mir::Statement::ConstI64 { local: LocalId(0),
+                                                                                          value: 8,
+                                                                                          span: span(1, 2) },
+                                                               mir::Statement::ConstI64 { local: LocalId(1),
+                                                                                          value: 3,
+                                                                                          span: span(2, 3) },
+                                                               mir::Statement::SubI64 { result: LocalId(2),
+                                                                                        left: LocalId(0),
+                                                                                        right: LocalId(1),
+                                                                                        span: span(3, 4) }],
+                                              terminator: Some(mir::Terminator::Return(Some(LocalId(2)))),
+                                              span: span(0, 5) }] };
+
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
+
+    assert_eq!(lowered.blocks[0].instructions[2], Instruction::SubI64 { result:
+                                                                          crate::xlil::ValueId(2),
+                                                                        left:
+                                                                          crate::xlil::ValueId(0),
+                                                                        right:
+                                                                          crate::xlil::ValueId(1) });
+    assert_eq!(lowered.blocks[0].terminator,
+               Some(Terminator::Return(Some(crate::xlil::ValueId(2)))));
+  }
+
+  #[test]
+  fn lowers_mul_i64_statement()
+  {
+    let function =
+      MirFunction { name: "Mul".to_string(),
+                    parameters: vec![],
+                    return_type: Type::I64,
+                    locals: vec![Local { id: LocalId(0),
+                                         name: "left".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) },
+                                 Local { id: LocalId(1),
+                                         name: "right".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) },
+                                 Local { id: LocalId(2),
+                                         name: "product".to_string(),
+                                         value_type: Some(Type::I64),
+                                         mutable: false,
+                                         span: span(0, 1) }],
+                    blocks: vec![BasicBlock { id: MirBlockId(0),
+                                              statements: vec![mir::Statement::ConstI64 { local: LocalId(0),
+                                                                                          value: 6,
+                                                                                          span: span(1, 2) },
+                                                               mir::Statement::ConstI64 { local: LocalId(1),
+                                                                                          value: 7,
+                                                                                          span: span(2, 3) },
+                                                               mir::Statement::MulI64 { result: LocalId(2),
+                                                                                        left: LocalId(0),
+                                                                                        right: LocalId(1),
+                                                                                        span: span(3, 4) }],
+                                              terminator: Some(mir::Terminator::Return(Some(LocalId(2)))),
+                                              span: span(0, 5) }] };
+
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
+
+    assert_eq!(lowered.blocks[0].instructions[2], Instruction::MulI64 { result:
                                                                           crate::xlil::ValueId(2),
                                                                         left:
                                                                           crate::xlil::ValueId(0),
