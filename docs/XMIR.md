@@ -70,8 +70,9 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `locals`
 - `control_flow`
 - `block`
-- local-use statements
+- local-use, move, borrow, end-borrow, and drop statements
 - `return`, `goto`, `unreachable`, and `missing` terminators
+- optional local return values and goto targets
 
 Place projections, exception edges, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
 

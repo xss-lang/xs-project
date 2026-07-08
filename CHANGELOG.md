@@ -33,6 +33,7 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - XHIR and XMIR documentation now separates their structured text design from XLIL's assembly-like registry format.
 - Rust `xslang` gained initial structured XHIR/XMIR text writers plus parser subsets.
 - XHIR parsing now covers the checked-function subset emitted by the Rust writer.
+- XMIR tests now cover goto, local return values, unreachable terminators, and the current local statement records.
 - Root README and strengthened documentation set under `docs/`.
 
 ### Changed

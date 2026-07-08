@@ -180,6 +180,54 @@ mod tests
   }
 
   #[test]
+  fn roundtrips_goto_return_value_and_unreachable()
+  {
+    let function =
+      Function { name: "Flow".to_string(),
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "result".to_string(),
+                                      mutable: true,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::Use { local: LocalId(0),
+                                                                             span: span() },
+                                                            Statement::Move { local: LocalId(0),
+                                                                              span: span() },
+                                                            Statement::Drop { local: LocalId(0),
+                                                                              span: span() }],
+                                           terminator: Some(Terminator::Goto(BlockId(1))),
+                                           span: span() },
+                              BasicBlock { id: BlockId(1),
+                                           statements: vec![Statement::BorrowMutable { local: LocalId(0),
+                                                                                       span: span() }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(0)))),
+                                           span: span() },
+                              BasicBlock { id: BlockId(2),
+                                           statements: vec![],
+                                           terminator: Some(Terminator::Unreachable),
+                                           span: span() }] };
+
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
+
+    assert_eq!(parsed.name, "Flow");
+    assert_eq!(parsed.locals[0].name, "result");
+    assert!(parsed.locals[0].mutable);
+    assert_eq!(parsed.blocks[0].terminator, Some(Terminator::Goto(BlockId(1))));
+    assert_eq!(parsed.blocks[1].terminator, Some(Terminator::Return(Some(LocalId(0)))));
+    assert_eq!(parsed.blocks[2].terminator, Some(Terminator::Unreachable));
+    assert!(matches!(parsed.blocks[0].statements[0], Statement::Use { local: LocalId(0),
+                                                                      .. }));
+    assert!(matches!(parsed.blocks[0].statements[1], Statement::Move { local: LocalId(0),
+                                                                       .. }));
+    assert!(matches!(parsed.blocks[0].statements[2], Statement::Drop { local: LocalId(0),
+                                                                       .. }));
+    assert!(matches!(parsed.blocks[1].statements[0], Statement::BorrowMutable { local:
+                                                                                  LocalId(0),
+                                                                                .. }));
+  }
+
+  #[test]
   fn rejects_non_xmir_header()
   {
     assert_eq!(parse_xmir_header(".func Main : () -> void\n"), None);
