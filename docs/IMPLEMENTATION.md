@@ -325,6 +325,7 @@ semantics.
   borrow-check-specific reasoning.
 - Rust `xslang` optimizer exposes `optimize_verified_function`, which validates MIR before optimization and verifies the
   optimized MIR before returning it.
+- Rust `xslang` XMIR text support can write and parse optimizer analysis records for optimization pass reports.
 
 This stage does not yet produce statement/expression lowering, the full instruction set, exception edges, async state
 machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.

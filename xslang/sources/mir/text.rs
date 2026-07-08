@@ -5,6 +5,7 @@
 
 use std::fmt::Write;
 
+use super::optimizer::{OptimizationPass, OptimizationReport};
 use super::{BasicBlock, Function, LocalId, Statement, Terminator};
 
 pub mod parser;
@@ -65,6 +66,65 @@ pub fn function_to_xmir(function: &Function) -> String
   output
 }
 
+#[must_use]
+pub fn optimizer_analysis_to_xmir(reports: &[OptimizationReport]) -> String
+{
+  let mut output = String::new();
+  let _ = writeln!(output, "analysis optimizer");
+  for report in reports
+  {
+    let _ = writeln!(output, "  pass {}", optimization_pass_name(report.pass));
+    let _ = writeln!(output, "    removed_items {}", report.removed_items);
+  }
+  output
+}
+
+pub fn parse_xmir_optimizer_analysis(text: &str) -> Result<Vec<OptimizationReport>, Vec<XmirParseDiagnostic>>
+{
+  let mut lines = text.lines().enumerate();
+  let Some((_, "analysis optimizer")) = lines.next()
+  else
+  {
+    let message = "expected optimizer analysis section".to_string();
+    return Err(vec![XmirParseDiagnostic { line: 1,
+                                          message }]);
+  };
+  let mut reports = Vec::new();
+  let mut diagnostics = Vec::new();
+  while let Some((line_index, line)) = lines.next()
+  {
+    let Some(pass_name) = line.strip_prefix("  pass ")
+    else
+    {
+      diagnostics.push(XmirParseDiagnostic { line: line_index + 1,
+                                             message: format!("expected optimizer pass record, found '{line}'") });
+      continue;
+    };
+    let pass = parse_optimization_pass(pass_name, line_index + 1, &mut diagnostics);
+    let Some((removed_line_index, removed_line)) = lines.next()
+    else
+    {
+      diagnostics.push(XmirParseDiagnostic { line: line_index + 1,
+                                             message: "missing removed_items record".to_string() });
+      break;
+    };
+    let removed_items = parse_removed_items(removed_line, removed_line_index + 1, &mut diagnostics);
+    if let (Some(pass), Some(removed_items)) = (pass, removed_items)
+    {
+      reports.push(OptimizationReport { pass,
+                                        removed_items });
+    }
+  }
+  if diagnostics.is_empty()
+  {
+    Ok(reports)
+  }
+  else
+  {
+    Err(diagnostics)
+  }
+}
+
 fn write_block(output: &mut String, block: &BasicBlock)
 {
   let _ = writeln!(output, "  block {}", block.id.0);
@@ -82,6 +142,54 @@ fn write_block(output: &mut String, block: &BasicBlock)
     None =>
     {
       let _ = writeln!(output, "    terminator missing");
+    }
+  }
+}
+
+const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
+{
+  match pass
+  {
+    OptimizationPass::RemoveUnreachableBlocks => "remove_unreachable_blocks",
+    OptimizationPass::RemoveRedundantEndBorrow => "remove_redundant_end_borrow",
+  }
+}
+
+fn parse_optimization_pass(name: &str,
+                           line: usize,
+                           diagnostics: &mut Vec<XmirParseDiagnostic>)
+                           -> Option<OptimizationPass>
+{
+  match name
+  {
+    "remove_unreachable_blocks" => Some(OptimizationPass::RemoveUnreachableBlocks),
+    "remove_redundant_end_borrow" => Some(OptimizationPass::RemoveRedundantEndBorrow),
+    _ =>
+    {
+      diagnostics.push(XmirParseDiagnostic { line,
+                                             message: format!("unknown optimizer pass '{name}'") });
+      None
+    }
+  }
+}
+
+fn parse_removed_items(line: &str, line_number: usize, diagnostics: &mut Vec<XmirParseDiagnostic>) -> Option<usize>
+{
+  let Some(value) = line.strip_prefix("    removed_items ")
+  else
+  {
+    diagnostics.push(XmirParseDiagnostic { line: line_number,
+                                           message: "expected removed_items record".to_string() });
+    return None;
+  };
+  match value.parse()
+  {
+    Ok(value) => Some(value),
+    Err(_) =>
+    {
+      diagnostics.push(XmirParseDiagnostic { line: line_number,
+                                             message: format!("invalid removed_items value '{value}'") });
+      None
     }
   }
 }
@@ -259,5 +367,30 @@ mod tests
     let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
 
     assert!(crate::mir::verify::verify_function(&parsed).is_empty());
+  }
+
+  #[test]
+  fn roundtrips_optimizer_analysis()
+  {
+    let reports = vec![OptimizationReport { pass: OptimizationPass::RemoveUnreachableBlocks,
+                                            removed_items: 2 },
+                       OptimizationReport { pass: OptimizationPass::RemoveRedundantEndBorrow,
+                                            removed_items: 1 }];
+
+    let text = optimizer_analysis_to_xmir(&reports);
+    let parsed = parse_xmir_optimizer_analysis(&text).expect("optimizer analysis should parse");
+
+    assert_eq!(parsed, reports);
+    assert!(text.contains("analysis optimizer"));
+    assert!(!text.contains(".pass"));
+  }
+
+  #[test]
+  fn rejects_invalid_optimizer_analysis()
+  {
+    let diagnostics = parse_xmir_optimizer_analysis("analysis optimizer\n  pass nope\n    removed_items many\n")
+      .expect_err("invalid optimizer analysis must fail");
+
+    assert_eq!(diagnostics.len(), 2);
   }
 }
