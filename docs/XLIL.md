@@ -44,11 +44,12 @@ Current text records intentionally look closer to assembly than to C-like declar
 ```text
 .xlil version 0
 .xlil module App
-.extern Check : (u8, i8, bool) -> bool
+.extern Next : (i64) -> i64
 .func Answer : () -> i64
 bb0.entry:
   %0:i64 = const 42
-  ret %0
+  %1:i64 = call Next(%0)
+  ret %1
 .end
 ```
 
@@ -60,6 +61,8 @@ Format notes:
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
 - `bbN.<label>:` starts a basic block.
 - `%N:type` names a typed SSA value.
+- `%N:type = call <symbol>(%A, %B)` calls another function and stores a typed result.
+- `call <symbol>(%A, %B)` calls a void function and discards the result.
 - `br bbN` transfers control to another basic block.
 - `ret` and `ret %N` are the current return terminators.
 - `.end` closes a function body.

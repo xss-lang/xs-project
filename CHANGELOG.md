@@ -35,8 +35,10 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - XHIR parsing now covers the checked-function subset emitted by the Rust writer.
 - XMIR tests now cover goto, local return values, unreachable terminators, and the current local statement records.
 - XLIL text now starts with `.xlil version 0` before module records.
-- MIR/XMIR can now carry explicit function return types, optional XLIL local value types, and `const.i64` statements; Rust
-  MIR → XLIL lowering can emit `const` plus `ret %N` for typed i64 local returns.
+- MIR/XMIR can now carry explicit function parameter/return types, optional XLIL local value types, and `const.i64`
+  statements; Rust MIR → XLIL lowering can emit signatures, `const`, and `ret %N` for typed i64 local returns.
+- Rust `xslang` XLIL gained typed `call` instructions plus writer/parser/verifier coverage; MIR/XMIR can carry typed call
+  statements that lower when their arguments already have XLIL values.
 - Rust `xslang` gained a MIR structural verifier for duplicate ids, missing terminators, and unknown local/block references.
 - Rust `xslang` optimizer gained a verified entry point that checks MIR before and after optimization.
 - XMIR text support gained optimizer analysis writer/parser coverage for optimization pass reports.

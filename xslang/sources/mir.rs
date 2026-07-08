@@ -29,6 +29,14 @@ pub struct Local
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Parameter
+{
+  pub name: String,
+  pub value_type: Type,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Statement
 {
   Use
@@ -54,6 +62,14 @@ pub enum Statement
   ConstI64
   {
     local: LocalId, value: i64, span: Span
+  },
+  Call
+  {
+    result: Option<LocalId>,
+    function: String,
+    arguments: Vec<LocalId>,
+    return_type: Type,
+    span: Span,
   },
   Drop
   {
@@ -82,6 +98,7 @@ pub struct BasicBlock
 pub struct Function
 {
   pub name: String,
+  pub parameters: Vec<Parameter>,
   pub return_type: Type,
   pub locals: Vec<Local>,
   pub blocks: Vec<BasicBlock>,
@@ -170,6 +187,10 @@ impl BorrowChecker
                             .. } |
       Statement::Drop { local,
                         span, } => self.require_live(local, span),
+      Statement::Call { result,
+                        ref arguments,
+                        span,
+                        .. } => self.call(result, arguments, span),
       Statement::Move { local,
                         span, } => self.move_local(local, span),
       Statement::BorrowShared { local,
@@ -190,6 +211,18 @@ impl BorrowChecker
     if state.moved
     {
       self.report(DiagnosticCode::UseAfterMove, "local is used after it was moved", span);
+    }
+  }
+
+  fn call(&mut self, result: Option<LocalId>, arguments: &[LocalId], span: Span)
+  {
+    for argument in arguments
+    {
+      self.require_live(*argument, span);
+    }
+    if let Some(result) = result
+    {
+      let _ = self.state(result, span);
     }
   }
 
@@ -355,6 +388,7 @@ mod tests
   fn function(statements: Vec<Statement>, terminator: Option<Terminator>) -> Function
   {
     Function { name: "main".to_string(),
+               parameters: vec![],
                return_type: Type::VOID,
                locals: vec![local(0, true), local(1, false)],
                blocks: vec![BasicBlock { id: BlockId(0),
@@ -448,6 +482,7 @@ mod tests
   fn computes_reachable_blocks_through_goto()
   {
     let function = Function { name: "main".to_string(),
+                              parameters: vec![],
                               return_type: Type::VOID,
                               locals: vec![],
                               blocks: vec![BasicBlock { id: BlockId(0),

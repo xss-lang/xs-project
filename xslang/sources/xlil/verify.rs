@@ -116,6 +116,30 @@ impl Verifier
                       "XLIL instruction result must reference a declared value");
         }
       }
+      Instruction::Call { result,
+                          ref arguments,
+                          return_type,
+                          .. } =>
+      {
+        if let Some(result) = result
+        {
+          match value_type(function, result)
+          {
+            Some(value_type) if value_type == return_type =>
+            {}
+            _ => self.report(DiagnosticCode::InstructionResultUnknown,
+                             "XLIL call result must reference a declared value with matching type"),
+          }
+        }
+        for argument in arguments
+        {
+          if value_type(function, *argument).is_none()
+          {
+            self.report(DiagnosticCode::InstructionResultUnknown,
+                        "XLIL call argument must reference a declared value");
+          }
+        }
+      }
     }
   }
 

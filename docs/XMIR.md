@@ -29,33 +29,30 @@ The exact grammar will be tightened as MIR stabilizes, but the intended shape is
 
 ```text
 .xmir version 0
-module App
-
 function Main
-  signature
-    parameters []
-    returns void
-    throws []
+returns void
 
-  locals
-    local message: str
+parameters
+  parameter value
+    type i64
 
-  control_flow
-    block entry
-      statements
-        assign
-          target message
-          value string "Hello from X#"
-        call
-          function std.io.println
-          arguments [message]
-          result discard
-      terminator return
+locals
+  local 0
+    name value
+    type i64
+    mutability immutable
 
-  analysis borrow
-    loans []
-    moves []
-    drops [message]
+control_flow
+  block 0
+    statements
+      statement use
+        local 0
+    terminator return
+
+analysis verify
+  diagnostic missing_terminator
+    span 1:0..1
+    message MIR block is missing a terminator
 ```
 
 XMIR can expose control-flow because that is MIR's job, but it should do so with named records and analysis sections. XLIL is
@@ -68,10 +65,11 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `.xmir version 0`
 - `function <name>`
 - `returns <xlil-type>`
+- `parameters` with `parameter <name>` and `type <xlil-type>` records
 - `locals`, including optional `type <xlil-type>` records for values that can lower into XLIL
 - `control_flow`
 - `block`
-- local-use, move, borrow, end-borrow, `const.i64`, and drop statements
+- local-use, move, borrow, end-borrow, `const.i64`, `call`, and drop statements
 - `return`, `goto`, `unreachable`, and `missing` terminators
 - optional local return values and goto targets
 - `analysis optimizer` records for optimization pass reports and removed item counts

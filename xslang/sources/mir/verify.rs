@@ -12,6 +12,8 @@ use super::{BasicBlock, BlockId, Function, LocalId, Statement, Terminator};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
 {
+  EmptyParameterName,
+  DuplicateParameter,
   DuplicateLocal,
   DuplicateBlock,
   MissingTerminator,
@@ -41,6 +43,7 @@ pub fn verify_function(function: &Function) -> Vec<Diagnostic>
 struct Verifier<'a>
 {
   function: &'a Function,
+  parameters: HashSet<String>,
   locals: HashSet<LocalId>,
   blocks: HashSet<BlockId>,
   diagnostics: Vec<Diagnostic>,
@@ -51,6 +54,7 @@ impl<'a> Verifier<'a>
   fn new(function: &'a Function) -> Self
   {
     Self { function,
+           parameters: HashSet::new(),
            locals: HashSet::new(),
            blocks: HashSet::new(),
            diagnostics: Vec::new() }
@@ -58,11 +62,31 @@ impl<'a> Verifier<'a>
 
   fn verify(&mut self)
   {
+    self.index_parameters();
     self.index_locals();
     self.index_blocks();
     for block in &self.function.blocks
     {
       self.verify_block(block);
+    }
+  }
+
+  fn index_parameters(&mut self)
+  {
+    for parameter in &self.function.parameters
+    {
+      if parameter.name.is_empty()
+      {
+        self.report(DiagnosticCode::EmptyParameterName,
+                    "MIR parameter name must not be empty".to_string(),
+                    parameter.span);
+      }
+      if !self.parameters.insert(parameter.name.clone())
+      {
+        self.report(DiagnosticCode::DuplicateParameter,
+                    format!("parameter '{}' is declared more than once", parameter.name),
+                    parameter.span);
+      }
     }
   }
 
@@ -126,6 +150,11 @@ impl<'a> Verifier<'a>
       Statement::ConstI64 { local,
                             span,
                             .. } => self.verify_const_i64(local, span),
+      Statement::Call { result,
+                        ref arguments,
+                        return_type,
+                        span,
+                        .. } => self.verify_call(result, arguments, return_type, span),
     }
   }
 
@@ -211,6 +240,52 @@ impl<'a> Verifier<'a>
     }
   }
 
+  fn verify_call(&mut self, result: Option<LocalId>, arguments: &[LocalId], return_type: crate::xlil::Type, span: Span)
+  {
+    for argument in arguments
+    {
+      self.verify_local(*argument, span);
+    }
+    match (result, return_type)
+    {
+      (Some(result), crate::xlil::Type::VOID) =>
+      {
+        self.verify_local(result, span);
+        self.report(DiagnosticCode::ReturnTypeMismatch,
+                    "void MIR call cannot write a result local".to_string(),
+                    span);
+      }
+      (Some(result), return_type) =>
+      {
+        self.verify_local(result, span);
+        let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == result)
+        else
+        {
+          return;
+        };
+        match local.value_type
+        {
+          Some(value_type) if value_type == return_type =>
+          {}
+          Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                                 "MIR call result local type must match call return type".to_string(),
+                                 span),
+          None => self.report(DiagnosticCode::MissingLocalType,
+                              "MIR call result local has no XLIL value type".to_string(),
+                              span),
+        }
+      }
+      (None, return_type) if return_type != crate::xlil::Type::VOID =>
+      {
+        self.report(DiagnosticCode::ReturnTypeMismatch,
+                    "non-void MIR call must write a result local".to_string(),
+                    span);
+      }
+      (None, _) =>
+      {}
+    }
+  }
+
   fn report(&mut self, code: DiagnosticCode, message: String, span: Span)
   {
     self.diagnostics.push(Diagnostic { code,
@@ -223,7 +298,7 @@ impl<'a> Verifier<'a>
 mod tests
 {
   use super::*;
-  use crate::mir::{Local, LocalId};
+  use crate::mir::{Local, LocalId, Parameter};
   use crate::xlil::Type;
 
   fn span(start: u32, end: u32) -> Span
@@ -261,6 +336,9 @@ mod tests
   fn accepts_valid_function()
   {
     let function = Function { name: "main".to_string(),
+                              parameters: vec![Parameter { name: "input".to_string(),
+                                                           value_type: Type::I64,
+                                                           span: span(0, 1) }],
                               return_type: Type::I64,
                               locals: vec![typed_local(0, Type::I64)],
                               blocks: vec![block(0, Some(Terminator::Return(Some(LocalId(0)))))] };
@@ -272,6 +350,7 @@ mod tests
   fn reports_duplicate_ids_and_missing_terminator()
   {
     let function = Function { name: "bad".to_string(),
+                              parameters: vec![],
                               return_type: Type::VOID,
                               locals: vec![local(0), local(0)],
                               blocks: vec![block(0, None), block(0, Some(Terminator::Return(None)))] };
@@ -287,6 +366,7 @@ mod tests
   fn reports_unknown_references()
   {
     let function = Function { name: "bad".to_string(),
+                              parameters: vec![],
                               return_type: Type::VOID,
                               locals: vec![local(0)],
                               blocks: vec![BasicBlock { id: BlockId(0),
@@ -305,6 +385,7 @@ mod tests
   fn reports_return_type_mismatch()
   {
     let function = Function { name: "bad_return".to_string(),
+                              parameters: vec![],
                               return_type: Type::I64,
                               locals: vec![],
                               blocks: vec![block(0, Some(Terminator::Return(None)))] };
@@ -319,6 +400,7 @@ mod tests
   {
     let function =
       Function { name: "bad_const".to_string(),
+                 parameters: vec![],
                  return_type: Type::VOID,
                  locals: vec![local(0)],
                  blocks: vec![BasicBlock { id: BlockId(0),
@@ -331,5 +413,22 @@ mod tests
     let diagnostics = verify_function(&function);
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::MissingLocalType);
+  }
+
+  #[test]
+  fn reports_duplicate_parameters()
+  {
+    let parameter = Parameter { name: "value".to_string(),
+                                value_type: Type::I64,
+                                span: span(0, 1) };
+    let function = Function { name: "bad_parameters".to_string(),
+                              parameters: vec![parameter.clone(), parameter],
+                              return_type: Type::VOID,
+                              locals: vec![],
+                              blocks: vec![block(0, Some(Terminator::Return(None)))] };
+
+    let diagnostics = verify_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::DuplicateParameter);
   }
 }

@@ -83,6 +83,30 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
   {
     Instruction::ConstI64 { result,
                             value, } => writeln!(output, "  %{}:i64 = const {}", result.0, value),
+    Instruction::Call { result,
+                        ref function,
+                        ref arguments,
+                        return_type, } =>
+    {
+      if let Some(result) = result
+      {
+        write!(output, "  %{}:{} = ", result.0, type_name(return_type))?;
+      }
+      else
+      {
+        write!(output, "  ")?;
+      }
+      write!(output, "call {function}(")?;
+      for (index, argument) in arguments.iter().enumerate()
+      {
+        if index != 0
+        {
+          write!(output, ", ")?;
+        }
+        write!(output, "%{}", argument.0)?;
+      }
+      writeln!(output, ")")
+    }
   }
 }
 
@@ -152,5 +176,22 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br \
                 bb1\nbb1.exit:\n  ret\n.end\n");
+  }
+
+  #[test]
+  fn writes_call_instruction()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$Call", Type::I64, vec![]);
+    let entry = function.append_block("entry");
+    let argument = function.add_const_i64(entry, 7).expect("const should be added");
+    let result = function.add_call(entry, "xs$App$Callee", vec![argument], Type::I64)
+                         .expect("call should be added");
+    assert!(function.set_return(entry, result));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %0:i64 = const 7\n  \
+                %1:i64 = call xs$App$Callee(%0)\n  ret %1\n.end\n");
   }
 }

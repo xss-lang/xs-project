@@ -150,6 +150,7 @@ mod tests
   fn removes_unreachable_blocks()
   {
     let function = Function { name: "main".to_string(),
+                              parameters: vec![],
                               return_type: Type::VOID,
                               locals: vec![],
                               blocks: vec![BasicBlock { id: BlockId(0),
@@ -177,6 +178,7 @@ mod tests
   {
     let function =
       Function { name: "main".to_string(),
+                 parameters: vec![],
                  return_type: Type::VOID,
                  locals: vec![local(0)],
                  blocks: vec![BasicBlock { id: BlockId(0),
@@ -200,6 +202,7 @@ mod tests
   fn verified_optimizer_rejects_invalid_input()
   {
     let function = Function { name: "bad".to_string(),
+                              parameters: vec![],
                               return_type: Type::VOID,
                               locals: vec![],
                               blocks: vec![BasicBlock { id: BlockId(0),
@@ -218,6 +221,7 @@ mod tests
   {
     let function =
       Function { name: "main".to_string(),
+                 parameters: vec![],
                  return_type: Type::VOID,
                  locals: vec![local(0)],
                  blocks: vec![BasicBlock { id: BlockId(0),

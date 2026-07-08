@@ -61,6 +61,13 @@ pub enum Instruction
   {
     result: ValueId, value: i64
   },
+  Call
+  {
+    result: Option<ValueId>,
+    function: String,
+    arguments: Vec<ValueId>,
+    return_type: Type,
+  },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -134,6 +141,36 @@ impl Function
     Some(result)
   }
 
+  pub fn add_call(&mut self,
+                  block: BlockId,
+                  function: impl Into<String>,
+                  arguments: Vec<ValueId>,
+                  return_type: Type)
+                  -> Option<Option<ValueId>>
+  {
+    self.block(block)?;
+    if arguments.iter().any(|argument| self.value(*argument).is_none())
+    {
+      return None;
+    }
+    let result = if return_type == Type::VOID
+    {
+      None
+    }
+    else
+    {
+      let result = ValueId(self.values.len() as u32);
+      self.values.push(Value { id: result,
+                               value_type: return_type });
+      Some(result)
+    };
+    self.block_mut(block)?.instructions.push(Instruction::Call { result,
+                                                                 function: function.into(),
+                                                                 arguments,
+                                                                 return_type });
+    Some(result)
+  }
+
   pub fn set_return(&mut self, block: BlockId, value: Option<ValueId>) -> bool
   {
     let return_type_matches = match value
@@ -191,6 +228,13 @@ impl Function
     self.blocks
         .get_mut(block.0 as usize)
         .filter(|candidate| candidate.id == block)
+  }
+
+  fn value(&self, value: ValueId) -> Option<&Value>
+  {
+    self.values
+        .get(value.0 as usize)
+        .filter(|candidate| candidate.id == value)
   }
 }
 
@@ -289,6 +333,19 @@ mod tests
     let value = function.add_const_i64(block, 42);
 
     assert!(function.set_return(block, value));
+  }
+
+  #[test]
+  fn adds_call_instruction_with_result()
+  {
+    let mut function = Function::definition("Call", Type::I64, vec![]);
+    let block = function.append_block("entry");
+    let argument = function.add_const_i64(block, 7).expect("const should be added");
+    let result = function.add_call(block, "callee", vec![argument], Type::I64)
+                         .expect("call should be added");
+
+    assert_eq!(result, Some(ValueId(1)));
+    assert!(function.set_return(block, result));
   }
 
   #[test]

@@ -228,6 +228,13 @@ impl Parser<'_>
           block.instructions.push(instruction);
         }
       }
+      else if let Some(call) = line.strip_prefix("  call ")
+      {
+        if let Some(instruction) = self.void_call(function, call, line_number)
+        {
+          block.instructions.push(instruction);
+        }
+      }
       else if let Some(terminator) = line.strip_prefix("  ret")
       {
         block.terminator = self.return_terminator(terminator, line_number);
@@ -265,7 +272,16 @@ impl Parser<'_>
 
   fn instruction(&mut self, function: &mut Function, text: &str, line: usize) -> Option<Instruction>
   {
-    let (result, rest) = text.split_once(" = const ")?;
+    if let Some((result, call)) = text.split_once(" = call ")
+    {
+      return self.value_call(function, result, call, line);
+    }
+    let Some((result, rest)) = text.split_once(" = const ")
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction, line, "XLIL instruction is invalid");
+      return None;
+    };
     let Some(result) = result.strip_suffix(":i64")
     else
     {
@@ -286,6 +302,78 @@ impl Parser<'_>
                                  value_type: Type::I64 });
     Some(Instruction::ConstI64 { result,
                                  value })
+  }
+
+  fn value_call(&mut self, function: &mut Function, result: &str, call: &str, line: usize) -> Option<Instruction>
+  {
+    let Some((result, return_type)) = result.split_once(':')
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction, line, "XLIL call result is invalid");
+      return None;
+    };
+    let result = self.value_id(result, line)?;
+    let return_type = self.type_name(return_type, line)?;
+    if return_type == Type::VOID
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL value call result cannot have void type");
+      return None;
+    }
+    let (function_name, arguments) = self.call_operands(call, line)?;
+    function.values.push(Value { id: result,
+                                 value_type: return_type });
+    Some(Instruction::Call { result: Some(result),
+                             function: function_name,
+                             arguments,
+                             return_type })
+  }
+
+  fn void_call(&mut self, _function: &mut Function, call: &str, line: usize) -> Option<Instruction>
+  {
+    let (function_name, arguments) = self.call_operands(call, line)?;
+    Some(Instruction::Call { result: None,
+                             function: function_name,
+                             arguments,
+                             return_type: Type::VOID })
+  }
+
+  fn call_operands(&mut self, call: &str, line: usize) -> Option<(String, Vec<ValueId>)>
+  {
+    let Some((function, arguments)) = call.split_once('(')
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL call operands are invalid");
+      return None;
+    };
+    let Some(arguments) = arguments.strip_suffix(')')
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL call arguments are invalid");
+      return None;
+    };
+    let mut parsed = Vec::new();
+    if !arguments.is_empty()
+    {
+      for argument in arguments.split(", ")
+      {
+        let Some(argument) = argument.strip_prefix('%')
+        else
+        {
+          self.report(DiagnosticCode::InvalidInstruction,
+                      line,
+                      "XLIL call argument is invalid");
+          return None;
+        };
+        parsed.push(self.value_id(argument, line)?);
+      }
+    }
+    Some((function.to_string(), parsed))
   }
 
   fn return_terminator(&mut self, text: &str, line: usize) -> Option<Terminator>
@@ -392,6 +480,17 @@ mod tests
   {
     let text = ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  \
                 ret %0\n.end\n";
+
+    let module = parse_module(text).expect("parse should succeed");
+
+    assert_eq!(module_to_string(&module), text);
+  }
+
+  #[test]
+  fn roundtrips_call_function()
+  {
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %0:i64 = const 7\n  \
+                %1:i64 = call xs$App$Callee(%0)\n  ret %1\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 

@@ -4,7 +4,7 @@
  */
 
 use crate::hir::async_check::Span;
-use crate::mir::{BasicBlock, BlockId, Function, Local, LocalId, Statement, Terminator};
+use crate::mir::{BasicBlock, BlockId, Function, Local, LocalId, Parameter, Statement, Terminator};
 use crate::xlil::{Type, type_from_name};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -46,6 +46,7 @@ impl Parser<'_>
     let name = self.function_name();
     let return_type = self.return_type();
     let mut function = Function { name,
+                                  parameters: Vec::new(),
                                   return_type,
                                   locals: Vec::new(),
                                   blocks: Vec::new() };
@@ -53,6 +54,7 @@ impl Parser<'_>
     {
       match line.as_str()
       {
+        "parameters" => self.parameters(&mut function),
         "locals" => self.locals(&mut function),
         "control_flow" => self.control_flow(&mut function),
         other =>
@@ -102,6 +104,52 @@ impl Parser<'_>
       self.report(format!("unknown return type '{type_name}'"));
     }
     return_type.unwrap_or(Type::VOID)
+  }
+
+  fn parameters(&mut self, function: &mut Function)
+  {
+    self.index += 1;
+    while let Some(line) = self.current()
+    {
+      if line.is_empty()
+      {
+        self.index += 1;
+        continue;
+      }
+      let Some(name) = line.strip_prefix("  parameter ")
+      else
+      {
+        break;
+      };
+      self.index += 1;
+      let value_type = self.required_parameter_type();
+      function.parameters.push(Parameter { name: name.to_string(),
+                                           value_type,
+                                           span: span() });
+    }
+  }
+
+  fn required_parameter_type(&mut self) -> Type
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing parameter type".to_string());
+      return Type::VOID;
+    };
+    self.index += 1;
+    let Some(type_name) = line.strip_prefix("    type ")
+    else
+    {
+      self.report("expected parameter type".to_string());
+      return Type::VOID;
+    };
+    let value_type = type_from_name(type_name);
+    if value_type.is_none()
+    {
+      self.report(format!("unknown parameter type '{type_name}'"));
+    }
+    value_type.unwrap_or(Type::VOID)
   }
 
   fn locals(&mut self, function: &mut Function)
@@ -181,6 +229,7 @@ impl Parser<'_>
       match kind
       {
         "const.i64" => block.statements.push(self.const_i64_statement()),
+        "call" => block.statements.push(self.call_statement()),
         "use" | "move" | "borrow shared" | "borrow mutable" | "borrow end" | "drop" =>
         {
           self.local_statement(block, kind);
@@ -406,6 +455,100 @@ impl Parser<'_>
         0
       }
     }
+  }
+
+  fn call_statement(&mut self) -> Statement
+  {
+    let function = self.call_function();
+    let return_type = self.call_return_type();
+    let result = self.call_result();
+    let arguments = self.call_arguments();
+    Statement::Call { result,
+                      function,
+                      arguments,
+                      return_type,
+                      span: span() }
+  }
+
+  fn call_function(&mut self) -> String
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing call function".to_string());
+      return String::new();
+    };
+    self.index += 1;
+    match line.strip_prefix("        function ")
+    {
+      Some(function) => function.to_string(),
+      None =>
+      {
+        self.report("expected call function".to_string());
+        String::new()
+      }
+    }
+  }
+
+  fn call_return_type(&mut self) -> Type
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing call return type".to_string());
+      return Type::VOID;
+    };
+    self.index += 1;
+    let Some(type_name) = line.strip_prefix("        returns ")
+    else
+    {
+      self.report("expected call return type".to_string());
+      return Type::VOID;
+    };
+    let value_type = type_from_name(type_name);
+    if value_type.is_none()
+    {
+      self.report(format!("unknown call return type '{type_name}'"));
+    }
+    value_type.unwrap_or(Type::VOID)
+  }
+
+  fn call_result(&mut self) -> Option<LocalId>
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing call result".to_string());
+      return None;
+    };
+    self.index += 1;
+    if line == "        result discard"
+    {
+      return None;
+    }
+    let Some(local) = line.strip_prefix("        result local ")
+    else
+    {
+      self.report("expected call result".to_string());
+      return None;
+    };
+    Some(self.local_id(local))
+  }
+
+  fn call_arguments(&mut self) -> Vec<LocalId>
+  {
+    let mut arguments = Vec::new();
+    while let Some(line) = self.current()
+    {
+      let Some(local) = line.strip_prefix("        argument local ")
+      else
+      {
+        break;
+      };
+      self.index += 1;
+      arguments.push(self.local_id(local));
+    }
+    arguments
   }
 
   fn local_id(&mut self, text: &str) -> LocalId

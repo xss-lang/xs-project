@@ -45,7 +45,11 @@ impl MirToXlilLowerer
   pub fn lower_function(mut self, function: &mir::Function) -> Result<Function, Vec<Diagnostic>>
   {
     let local_types = local_types(function);
-    let mut lowered = Function::definition(function.name.clone(), function.return_type, vec![]);
+    let parameters = function.parameters
+                             .iter()
+                             .map(|parameter| parameter.value_type)
+                             .collect();
+    let mut lowered = Function::definition(function.name.clone(), function.return_type, parameters);
     let mut blocks = HashMap::new();
     let mut values = HashMap::new();
     for block in &function.blocks
@@ -84,6 +88,21 @@ impl MirToXlilLowerer
       {
         self.lower_const_i64(local, value, span, xlil_block, local_types, values, lowered);
       }
+      if let mir::Statement::Call { result,
+                                    ref function,
+                                    ref arguments,
+                                    return_type,
+                                    span, } = *statement
+      {
+        self.lower_call(result,
+                        function,
+                        arguments,
+                        return_type,
+                        span,
+                        xlil_block,
+                        values,
+                        lowered);
+      }
     }
   }
 
@@ -111,6 +130,51 @@ impl MirToXlilLowerer
       None => self.report(DiagnosticCode::MissingLocalType,
                           "MIR const.i64 target local has no XLIL value type",
                           span),
+    }
+  }
+
+  fn lower_call(&mut self,
+                result: Option<mir::LocalId>,
+                function: &str,
+                arguments: &[mir::LocalId],
+                return_type: Type,
+                span: Span,
+                xlil_block: BlockId,
+                values: &mut HashMap<mir::LocalId, ValueId>,
+                lowered: &mut Function)
+  {
+    let mut lowered_arguments = Vec::new();
+    for argument in arguments
+    {
+      let Some(value) = values.get(argument).copied()
+      else
+      {
+        self.report(DiagnosticCode::MissingLocalValue,
+                    "MIR call argument does not have a lowered XLIL value",
+                    span);
+        return;
+      };
+      lowered_arguments.push(value);
+    }
+    let Some(call_result) = lowered.add_call(xlil_block, function, lowered_arguments, return_type)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedReturnValue,
+                  "MIR call could not be lowered to XLIL",
+                  span);
+      return;
+    };
+    if let Some(result) = result
+    {
+      let Some(call_result) = call_result
+      else
+      {
+        self.report(DiagnosticCode::UnsupportedReturnValue,
+                    "void MIR call cannot produce a result local",
+                    span);
+        return;
+      };
+      values.insert(result, call_result);
     }
   }
 
@@ -199,7 +263,7 @@ fn local_types(function: &mir::Function) -> HashMap<mir::LocalId, Option<Type>>
 mod tests
 {
   use super::*;
-  use crate::mir::{BasicBlock, BlockId as MirBlockId, Function as MirFunction, Local, LocalId};
+  use crate::mir::{BasicBlock, BlockId as MirBlockId, Function as MirFunction, Local, LocalId, Parameter};
   use crate::xlil::{Instruction, Terminator};
 
   fn span(start: u32, end: u32) -> Span
@@ -211,6 +275,7 @@ mod tests
   fn lowers_void_return_function_skeleton()
   {
     let function = MirFunction { name: "Main".to_string(),
+                                 parameters: vec![],
                                  return_type: Type::VOID,
                                  locals: vec![],
                                  blocks: vec![BasicBlock { id: MirBlockId(0),
@@ -230,6 +295,7 @@ mod tests
   fn rejects_return_value_without_type_and_value_mapping()
   {
     let function = MirFunction { name: "Value".to_string(),
+                                 parameters: vec![],
                                  return_type: Type::I64,
                                  locals: vec![],
                                  blocks: vec![BasicBlock { id: MirBlockId(0),
@@ -252,6 +318,7 @@ mod tests
   {
     let function =
       MirFunction { name: "Value".to_string(),
+                    parameters: vec![],
                     return_type: Type::I64,
                     locals: vec![Local { id: LocalId(0),
                                          name: "answer".to_string(),
@@ -277,9 +344,69 @@ mod tests
   }
 
   #[test]
+  fn lowers_call_statement()
+  {
+    let function = MirFunction { name: "CallValue".to_string(),
+                                 parameters: vec![],
+                                 return_type: Type::I64,
+                                 locals: vec![Local { id: LocalId(0),
+                                                      name: "argument".to_string(),
+                                                      value_type: Some(Type::I64),
+                                                      mutable: false,
+                                                      span: span(0, 1) },
+                                              Local { id: LocalId(1),
+                                                      name: "result".to_string(),
+                                                      value_type: Some(Type::I64),
+                                                      mutable: false,
+                                                      span: span(0, 1) }],
+                                 blocks: vec![BasicBlock { id: MirBlockId(0),
+                                                           statements:
+                                                             vec![mir::Statement::ConstI64 { local: LocalId(0),
+                                                                                             value: 7,
+                                                                                             span: span(1, 2) },
+                                                                  mir::Statement::Call { result: Some(LocalId(1)),
+                                                                                         function:
+                                                                                           "xs$App$Callee".to_string(),
+                                                                                         arguments: vec![LocalId(0)],
+                                                                                         return_type: Type::I64,
+                                                                                         span: span(2, 3) }],
+                                                           terminator:
+                                                             Some(mir::Terminator::Return(Some(LocalId(1)))),
+                                                           span: span(0, 4) }] };
+
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
+
+    assert_eq!(lowered.blocks[0].instructions.len(), 2);
+    assert_eq!(lowered.blocks[0].terminator,
+               Some(Terminator::Return(Some(crate::xlil::ValueId(1)))));
+  }
+
+  #[test]
+  fn lowers_signature_parameters()
+  {
+    let function = MirFunction { name: "WithParameter".to_string(),
+                                 parameters: vec![Parameter { name: "value".to_string(),
+                                                              value_type: Type::I64,
+                                                              span: span(0, 1) }],
+                                 return_type: Type::VOID,
+                                 locals: vec![],
+                                 blocks: vec![BasicBlock { id: MirBlockId(0),
+                                                           statements: vec![],
+                                                           terminator: Some(mir::Terminator::Return(None)),
+                                                           span: span(0, 1) }] };
+
+    let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                         .expect("lowering should succeed");
+
+    assert_eq!(lowered.parameters, vec![Type::I64]);
+  }
+
+  #[test]
   fn lowers_goto_to_branch_terminator()
   {
     let function = MirFunction { name: "Branch".to_string(),
+                                 parameters: vec![],
                                  return_type: Type::VOID,
                                  locals: vec![],
                                  blocks: vec![BasicBlock { id: MirBlockId(0),

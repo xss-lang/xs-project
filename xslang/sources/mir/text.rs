@@ -7,7 +7,7 @@ use std::fmt::Write;
 
 use super::optimizer::{OptimizationPass, OptimizationReport};
 use super::verify::{Diagnostic as VerifyDiagnostic, DiagnosticCode as VerifyDiagnosticCode};
-use super::{BasicBlock, Function, LocalId, Statement, Terminator};
+use super::{BasicBlock, Function, LocalId, Parameter, Statement, Terminator};
 use crate::xlil::type_name;
 
 pub mod parser;
@@ -38,6 +38,15 @@ pub fn function_to_xmir(function: &Function) -> String
   let _ = writeln!(output, ".xmir version 0");
   let _ = writeln!(output, "function {}", function.name);
   let _ = writeln!(output, "returns {}", type_name(function.return_type));
+  if !function.parameters.is_empty()
+  {
+    let _ = writeln!(output);
+    let _ = writeln!(output, "parameters");
+    for parameter in &function.parameters
+    {
+      write_parameter(&mut output, parameter);
+    }
+  }
   if !function.locals.is_empty()
   {
     let _ = writeln!(output);
@@ -71,6 +80,12 @@ pub fn function_to_xmir(function: &Function) -> String
     }
   }
   output
+}
+
+fn write_parameter(output: &mut String, parameter: &Parameter)
+{
+  let _ = writeln!(output, "  parameter {}", parameter.name);
+  let _ = writeln!(output, "    type {}", type_name(parameter.value_type));
 }
 
 #[must_use]
@@ -189,6 +204,8 @@ fn verify_diagnostic_code_name(code: &VerifyDiagnosticCode) -> &'static str
 {
   match code
   {
+    VerifyDiagnosticCode::EmptyParameterName => "empty_parameter_name",
+    VerifyDiagnosticCode::DuplicateParameter => "duplicate_parameter",
     VerifyDiagnosticCode::DuplicateLocal => "duplicate_local",
     VerifyDiagnosticCode::DuplicateBlock => "duplicate_block",
     VerifyDiagnosticCode::MissingTerminator => "missing_terminator",
@@ -204,6 +221,8 @@ fn parse_verify_diagnostic_code(name: &str) -> Option<VerifyDiagnosticCode>
 {
   match name
   {
+    "empty_parameter_name" => Some(VerifyDiagnosticCode::EmptyParameterName),
+    "duplicate_parameter" => Some(VerifyDiagnosticCode::DuplicateParameter),
     "duplicate_local" => Some(VerifyDiagnosticCode::DuplicateLocal),
     "duplicate_block" => Some(VerifyDiagnosticCode::DuplicateBlock),
     "missing_terminator" => Some(VerifyDiagnosticCode::MissingTerminator),
@@ -390,6 +409,28 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        target local {}", local.0);
       let _ = writeln!(output, "        value {value}");
     }
+    Statement::Call { result,
+                      function,
+                      arguments,
+                      return_type,
+                      .. } =>
+    {
+      let _ = writeln!(output, "      statement call");
+      let _ = writeln!(output, "        function {function}");
+      let _ = writeln!(output, "        returns {}", type_name(*return_type));
+      if let Some(result) = result
+      {
+        let _ = writeln!(output, "        result local {}", result.0);
+      }
+      else
+      {
+        let _ = writeln!(output, "        result discard");
+      }
+      for argument in arguments
+      {
+        let _ = writeln!(output, "        argument local {}", argument.0);
+      }
+    }
     Statement::Drop { local, .. } => write_local_statement(output, "drop", *local),
   }
 }
@@ -430,7 +471,7 @@ mod tests
 {
   use super::*;
   use crate::hir::async_check::Span;
-  use crate::mir::{BasicBlock, BlockId, Local, LocalId};
+  use crate::mir::{BasicBlock, BlockId, Local, LocalId, Parameter};
 
   fn span() -> Span
   {
@@ -442,6 +483,9 @@ mod tests
   {
     let function =
       Function { name: "Main".to_string(),
+                 parameters: vec![Parameter { name: "argc".to_string(),
+                                              value_type: crate::xlil::Type::I64,
+                                              span: span() }],
                  return_type: crate::xlil::Type::VOID,
                  locals: vec![Local { id: LocalId(0),
                                       name: "message".to_string(),
@@ -460,6 +504,9 @@ mod tests
 
     assert!(text.contains(".xmir version 0\nfunction Main"));
     assert!(text.contains("returns void"));
+    assert!(text.contains("parameters"));
+    assert!(text.contains("parameter argc"));
+    assert!(text.contains("type i64"));
     assert!(text.contains("control_flow"));
     assert!(text.contains("statement borrow shared"));
     assert!(text.contains("terminator return"));
@@ -471,6 +518,9 @@ mod tests
 
     let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
     assert_eq!(parsed.name, "Main");
+    assert_eq!(parsed.parameters.len(), 1);
+    assert_eq!(parsed.parameters[0].name, "argc");
+    assert_eq!(parsed.parameters[0].value_type, crate::xlil::Type::I64);
     assert_eq!(parsed.locals.len(), 1);
     assert_eq!(parsed.blocks.len(), 1);
     assert_eq!(parsed.blocks[0].statements.len(), 2);
@@ -482,6 +532,7 @@ mod tests
   {
     let function =
       Function { name: "Flow".to_string(),
+                 parameters: vec![],
                  return_type: crate::xlil::Type::I64,
                  locals: vec![Local { id: LocalId(0),
                                       name: "result".to_string(),
@@ -537,6 +588,51 @@ mod tests
   }
 
   #[test]
+  fn roundtrips_call_statement()
+  {
+    let function =
+      Function { name: "CallFlow".to_string(),
+                 parameters: vec![],
+                 return_type: crate::xlil::Type::I64,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "argument".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(1),
+                                      name: "result".to_string(),
+                                      value_type: Some(crate::xlil::Type::I64),
+                                      mutable: false,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                  value: 7,
+                                                                                  span: span() },
+                                                            Statement::Call { result: Some(LocalId(1)),
+                                                                              function:
+                                                                                "xs$App$Callee".to_string(),
+                                                                              arguments: vec![LocalId(0)],
+                                                                              return_type:
+                                                                                crate::xlil::Type::I64,
+                                                                              span: span() }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(1)))),
+                                           span: span() }] };
+
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
+
+    assert!(matches!(&parsed.blocks[0].statements[1],
+                     Statement::Call { result: Some(LocalId(1)),
+                                       function,
+                                       arguments,
+                                       return_type,
+                                       .. }
+                     if function == "xs$App$Callee" &&
+                        arguments == &vec![LocalId(0)] &&
+                        *return_type == crate::xlil::Type::I64));
+  }
+
+  #[test]
   fn rejects_non_xmir_header()
   {
     assert_eq!(parse_xmir_header(".func Main : () -> void\n"), None);
@@ -555,6 +651,7 @@ mod tests
   fn parsed_xmir_can_be_structurally_verified()
   {
     let function = Function { name: "Verified".to_string(),
+                              parameters: vec![],
                               return_type: crate::xlil::Type::I64,
                               locals: vec![Local { id: LocalId(0),
                                                    name: "value".to_string(),
