@@ -9,6 +9,7 @@ use crate::hir::async_check::Span;
 
 pub mod optimizer;
 pub mod text;
+pub mod verify;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LocalId(pub u32);

@@ -241,4 +241,23 @@ mod tests
 
     assert_eq!(diagnostics.len(), 1);
   }
+
+  #[test]
+  fn parsed_xmir_can_be_structurally_verified()
+  {
+    let function = Function { name: "Verified".to_string(),
+                              locals: vec![Local { id: LocalId(0),
+                                                   name: "value".to_string(),
+                                                   mutable: false,
+                                                   span: span() }],
+                              blocks: vec![BasicBlock { id: BlockId(0),
+                                                        statements: vec![Statement::Use { local: LocalId(0),
+                                                                                          span: span() }],
+                                                        terminator: Some(Terminator::Return(Some(LocalId(0)))),
+                                                        span: span() }] };
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
+
+    assert!(crate::mir::verify::verify_function(&parsed).is_empty());
+  }
 }

@@ -320,6 +320,9 @@ semantics.
 - The CFG cleanup pass removes blocks unreachable from the entry block and rewrites remaining block ids plus `goto`/`branch`
   targets.
 - Constant folding lowers `add.i64` instructions with two `const.i64` operands to a `const.i64` result.
+- Rust `xslang` also contains a target-independent MIR structural verifier for duplicate local/block ids, missing
+  terminators, unknown local references, and unknown block targets. This verifier is separate from LLVM and runs before
+  borrow-check-specific reasoning.
 
 This stage does not yet produce statement/expression lowering, the full instruction set, exception edges, async state
 machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.

@@ -74,6 +74,9 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `return`, `goto`, `unreachable`, and `missing` terminators
 - optional local return values and goto targets
 
+Parsed XMIR can be passed to the Rust MIR structural verifier. The current verifier checks duplicate local/block ids,
+missing terminators, unknown local references, and unknown block targets before borrow checking.
+
 Place projections, exception edges, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
 
 ## Non-goals

@@ -94,7 +94,7 @@ the backend. HIR and MIR do not depend on the LLVM API; the backend entry langua
 - HIR symbol table plus import/name/type resolution bootstrap
 - Primitive type metadata and nominal user-defined type resolution
 - Literal initializer/assignment/return checks
-- MIR model API, text writer, borrow-check skeleton, and a few MIR optimization passes
+- MIR model API, text writer, structural verifier, borrow-check skeleton, and a few MIR optimization passes
 - XHIR/XMIR structured text writer and header parser bootstrap in Rust `xslang`
 - XLIL model, assembly-like text writer/parser/verifier, and limited MIR → XLIL lowering core
 - LLVM context/module/target/object/link infrastructure
