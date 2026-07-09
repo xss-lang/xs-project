@@ -107,6 +107,24 @@ static void test_literal_initializer_expression_types(void)
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Float = true; }\n"));
 }
 
+static void test_control_flow_initializer_expression_types(void)
+{
+  const char *valid_if = "module App;\n"
+                         "fn Main() {\n"
+                         "  value: Int = if (true) { 1; } else { 2; };\n"
+                         "}\n";
+  const char *valid_match = "module App;\n"
+                            "fn Main() {\n"
+                            "  value: Str = match (1) { 0 -> { \"zero\"; }, else -> { \"many\"; }, };\n"
+                            "}\n";
+  CHECK(check_single_source_expressions(valid_if));
+  CHECK(check_single_source_expressions(valid_match));
+  CHECK(!check_single_source_expressions(
+      "module App;\nfn Main() { value: Int = if (true) { \"bad\"; } else { 1; }; }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nfn Main() { value: Bool = match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
+}
+
 static void test_immutable_local_assignment_errors(void)
 {
   const char *valid = "module App;\n"
@@ -134,6 +152,18 @@ static void test_assignment_literal_expression_types(void)
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Str = \"ok\"; value = 'x'; }\n"));
 }
 
+static void test_control_flow_assignment_expression_types(void)
+{
+  const char *valid = "module App;\n"
+                      "fn Main() {\n"
+                      "  value: Int = 0;\n"
+                      "  value = if (true) { 1; } else { 2; };\n"
+                      "}\n";
+  CHECK(check_single_source_expressions(valid));
+  CHECK(!check_single_source_expressions(
+      "module App;\nfn Main() { value: Int = 0; value = if (true) { 1; } else { \"bad\"; }; }\n"));
+}
+
 static void test_return_literal_expression_types(void)
 {
   CHECK(check_single_source_expressions("module App;\nfn Count() => Int { return 1; }\n"));
@@ -143,6 +173,17 @@ static void test_return_literal_expression_types(void)
   CHECK(!check_single_source_expressions("module App;\nfn Count() => Int { return \"bad\"; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Flag() => Bool { return 1; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Name() => Str { return 'x'; }\n"));
+}
+
+static void test_control_flow_return_expression_types(void)
+{
+  CHECK(check_single_source_expressions("module App;\nfn Count() => Int { return if (true) { 1; } else { 2; }; }\n"));
+  CHECK(check_single_source_expressions(
+      "module App;\nfn Name() => Str { return match (1) { 0 -> { \"zero\"; }, else -> { \"many\"; }, }; }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nfn Count() => Int { return if (true) { 1; } else { \"bad\"; }; }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nfn Flag() => Bool { return match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
 }
 
 static void test_macro_literal_initializer_expression_errors(void)
@@ -180,9 +221,12 @@ static void test_macro_return_literal_expression_errors(void)
 int main(void)
 {
   test_literal_initializer_expression_types();
+  test_control_flow_initializer_expression_types();
   test_immutable_local_assignment_errors();
   test_assignment_literal_expression_types();
+  test_control_flow_assignment_expression_types();
   test_return_literal_expression_types();
+  test_control_flow_return_expression_types();
   test_macro_literal_initializer_expression_errors();
   test_macro_immutable_assignment_errors();
   test_macro_assignment_literal_expression_errors();

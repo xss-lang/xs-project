@@ -21,6 +21,13 @@ typedef struct
 typedef struct LocalScope LocalScope;
 typedef struct CheckContext CheckContext;
 
+typedef enum
+{
+  LITERAL_CONTEXT_INITIALIZER,
+  LITERAL_CONTEXT_ASSIGNMENT,
+  LITERAL_CONTEXT_RETURN,
+} LiteralContext;
+
 struct LocalScope
 {
   LocalScope *parent;
@@ -151,17 +158,90 @@ static bool report_return_literal_type_error(XsDiagnostics *diagnostics, const X
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(literal), message);
 }
 
+static bool report_context_literal_type_error(XsDiagnostics *diagnostics, const XsSyntaxNode *literal,
+                                              const XsHirPrimitiveInfo *primitive, LiteralContext context,
+                                              const LocalBinding *binding)
+{
+  if (context == LITERAL_CONTEXT_RETURN)
+    return report_return_literal_type_error(diagnostics, literal, primitive);
+  if (context == LITERAL_CONTEXT_ASSIGNMENT && binding != nullptr)
+    return report_assignment_literal_type_error(diagnostics, literal, primitive, binding);
+  return report_literal_type_error(diagnostics, literal, primitive);
+}
+
+static const XsSyntaxNode *block_tail_expression(const XsSyntaxNode *block)
+{
+  if (block == nullptr || block->kind != XS_SYNTAX_STMT_BLOCK || block->child_count == 0)
+    return nullptr;
+  const XsSyntaxNode *tail = block->children[block->child_count - 1];
+  if (tail->kind != XS_SYNTAX_STMT_EXPRESSION || tail->child_count == 0)
+    return nullptr;
+  return tail->children[0];
+}
+
+static bool check_expression_value_against_primitive(const XsSyntaxNode *expression,
+                                                     const XsHirPrimitiveInfo *primitive, LiteralContext context,
+                                                     const LocalBinding *binding, XsDiagnostics *diagnostics);
+
+static bool check_block_value_against_primitive(const XsSyntaxNode *block, const XsHirPrimitiveInfo *primitive,
+                                                LiteralContext context, const LocalBinding *binding,
+                                                XsDiagnostics *diagnostics)
+{
+  return check_expression_value_against_primitive(block_tail_expression(block), primitive, context, binding,
+                                                  diagnostics);
+}
+
+static bool check_match_arm_value_against_primitive(const XsSyntaxNode *arm, const XsHirPrimitiveInfo *primitive,
+                                                    LiteralContext context, const LocalBinding *binding,
+                                                    XsDiagnostics *diagnostics)
+{
+  if (arm == nullptr || arm->kind != XS_SYNTAX_MATCH_ARM || arm->child_count < 2)
+    return true;
+  return check_block_value_against_primitive(arm->children[1], primitive, context, binding, diagnostics);
+}
+
+static bool check_expression_value_against_primitive(const XsSyntaxNode *expression,
+                                                     const XsHirPrimitiveInfo *primitive, LiteralContext context,
+                                                     const LocalBinding *binding, XsDiagnostics *diagnostics)
+{
+  if (expression == nullptr || primitive == nullptr)
+    return true;
+  if (expression->kind == XS_SYNTAX_EXPR_LITERAL)
+  {
+    if (literal_matches_primitive(expression->token_kind, primitive))
+      return true;
+    return report_context_literal_type_error(diagnostics, expression, primitive, context, binding);
+  }
+  if (expression->kind == XS_SYNTAX_EXPR_IF && expression->child_count >= 3)
+  {
+    bool then_ok =
+        check_block_value_against_primitive(expression->children[1], primitive, context, binding, diagnostics);
+    bool else_ok =
+        check_block_value_against_primitive(expression->children[2], primitive, context, binding, diagnostics);
+    return then_ok && else_ok;
+  }
+  if (expression->kind == XS_SYNTAX_EXPR_MATCH)
+  {
+    bool success = true;
+    for (size_t i = 1; i < expression->child_count; ++i)
+    {
+      success =
+          check_match_arm_value_against_primitive(expression->children[i], primitive, context, binding, diagnostics) &&
+          success;
+    }
+    return success;
+  }
+  return true;
+}
+
 static bool check_variable_initializer(const XsSyntaxNode *declaration, XsDiagnostics *diagnostics)
 {
   if (declaration->child_count < 3)
     return true;
   const XsHirPrimitiveInfo *primitive = primitive_from_type(declaration->children[1]);
   const XsSyntaxNode *initializer = declaration->children[2];
-  if (primitive == nullptr || initializer->kind != XS_SYNTAX_EXPR_LITERAL)
-    return true;
-  if (literal_matches_primitive(initializer->token_kind, primitive))
-    return true;
-  return report_literal_type_error(diagnostics, initializer, primitive);
+  return check_expression_value_against_primitive(initializer, primitive, LITERAL_CONTEXT_INITIALIZER, nullptr,
+                                                  diagnostics);
 }
 
 static const XsSyntaxNode *declaration_identifier(const XsSyntaxNode *declaration)
@@ -262,9 +342,8 @@ static bool check_return_statement(const XsSyntaxNode *node, const CheckContext 
       context->return_type == nullptr)
     return true;
   const XsSyntaxNode *value = node->children[0];
-  if (value->kind != XS_SYNTAX_EXPR_LITERAL || literal_matches_primitive(value->token_kind, context->return_type))
-    return true;
-  return report_return_literal_type_error(diagnostics, value, context->return_type);
+  return check_expression_value_against_primitive(value, context->return_type, LITERAL_CONTEXT_RETURN, nullptr,
+                                                  diagnostics);
 }
 
 static bool check_assignment(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
@@ -279,9 +358,9 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
   const XsHirPrimitiveInfo *primitive =
       binding->declaration->child_count >= 2 ? primitive_from_type(binding->declaration->children[1]) : nullptr;
   const XsSyntaxNode *value = assignment_value(node);
-  if (primitive != nullptr && value != nullptr && value->kind == XS_SYNTAX_EXPR_LITERAL &&
-      !literal_matches_primitive(value->token_kind, primitive))
-    success = report_assignment_literal_type_error(diagnostics, value, primitive, binding) && success;
+  success =
+      check_expression_value_against_primitive(value, primitive, LITERAL_CONTEXT_ASSIGNMENT, binding, diagnostics) &&
+      success;
   if (binding->immutable)
     success = report_immutable_assignment(diagnostics, identifier, binding) && success;
   return success;
