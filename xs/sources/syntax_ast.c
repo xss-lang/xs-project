@@ -245,6 +245,8 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "field set expression",
       "io target expression",
       "tuple expression",
+      "if expression",
+      "match expression",
       "macro-call expression",
       "identifier pattern",
       "literal pattern",

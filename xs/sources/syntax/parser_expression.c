@@ -5,7 +5,60 @@
 
 #include "parser_internal.h"
 
+#include <stdio.h>
+
 static XsSyntaxNode *parse_literal(SyntaxParser *parser);
+
+static void parse_parenthesized_condition(SyntaxParser *parser, XsSyntaxNode *parent, const char *owner)
+{
+  char open_message[64];
+  char close_message[64];
+  snprintf(open_message, sizeof(open_message), "expected '(' after %s", owner);
+  snprintf(close_message, sizeof(close_message), "expected ')' after %s condition", owner);
+  expect(parser, XS_TOKEN_LEFT_PAREN, open_message);
+  xs_syntax_node_add(parser->tree, parent, parse_expression(parser, 1));
+  expect(parser, XS_TOKEN_RIGHT_PAREN, close_message);
+}
+
+static XsSyntaxNode *parse_if_expression(SyntaxParser *parser, size_t start)
+{
+  expect(parser, XS_TOKEN_KW_IF, "expected 'if'");
+  XsSyntaxNode *expression = node(parser, XS_SYNTAX_EXPR_IF, (XsSpan){start, parser->previous.span.end});
+  parse_parenthesized_condition(parser, expression, "if");
+  xs_syntax_node_add(parser->tree, expression, parse_block(parser));
+  if (!expect(parser, XS_TOKEN_KW_ELSE, "if expression requires else"))
+  {
+    finish_node(parser, expression, parser->previous.span.end);
+    return expression;
+  }
+  xs_syntax_node_add(parser->tree, expression, parse_block(parser));
+  finish_node(parser, expression, parser->previous.span.end);
+  return expression;
+}
+
+static XsSyntaxNode *parse_match_expression(SyntaxParser *parser, size_t start)
+{
+  expect(parser, XS_TOKEN_KW_MATCH, "expected 'match'");
+  XsSyntaxNode *expression = node(parser, XS_SYNTAX_EXPR_MATCH, (XsSpan){start, parser->previous.span.end});
+  expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after match");
+  xs_syntax_node_add(parser->tree, expression, parse_expression(parser, 1));
+  expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after match value");
+  expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before match arms");
+  while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
+    size_t arm_start = parser->current.span.start;
+    XsSyntaxNode *arm = node(parser, XS_SYNTAX_MATCH_ARM, (XsSpan){arm_start, arm_start});
+    xs_syntax_node_add(parser->tree, arm, parse_pattern(parser));
+    expect(parser, XS_TOKEN_ARROW, "expected '->' after match pattern");
+    xs_syntax_node_add(parser->tree, arm, parse_block(parser));
+    accept(parser, XS_TOKEN_COMMA);
+    finish_node(parser, arm, parser->previous.span.end);
+    xs_syntax_node_add(parser->tree, expression, arm);
+  }
+  expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after match arms");
+  finish_node(parser, expression, parser->previous.span.end);
+  return expression;
+}
 
 static XsSyntaxNode *parse_field_set_expression(SyntaxParser *parser, size_t start)
 {
@@ -262,6 +315,10 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
   }
   case XS_TOKEN_KW_FN:
     return parse_function_expression(parser, start, false);
+  case XS_TOKEN_KW_IF:
+    return parse_if_expression(parser, start);
+  case XS_TOKEN_KW_MATCH:
+    return parse_match_expression(parser, start);
   case XS_TOKEN_KW_SET:
     return parse_field_set_expression(parser, start);
   default:

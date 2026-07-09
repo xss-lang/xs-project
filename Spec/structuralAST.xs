@@ -798,6 +798,8 @@ enum data Expression {
     FieldSet: FieldSetExpression,
     IoTarget: IoTargetExpression,
     Tuple: TupleExpression,
+    If: IfExpression,
+    Match: MatchExpression,
     MacroCall: MacroCallExpression,
 }
 
@@ -1140,6 +1142,43 @@ data TupleExpression {
     elements: Expression[]
     span: SourceSpan
 }
+
+
+// ============================================================
+// If expressions
+// ============================================================
+
+data IfExpression {
+    condition: Expression
+    thenBlock: BlockStatement
+    elseBlock: BlockStatement
+    span: SourceSpan
+}
+
+
+// If expression requires else.
+// Branch blocks must produce compatible values unless a branch diverges.
+
+
+// ============================================================
+// Match expressions
+// ============================================================
+
+data MatchExpression {
+    value: Expression
+    arms: MatchExpressionArm[]
+    span: SourceSpan
+}
+
+
+data MatchExpressionArm {
+    pattern: PatternNode
+    body: BlockStatement
+    span: SourceSpan
+}
+
+
+// Match expression arms must produce compatible values unless an arm diverges.
 
 
 // ============================================================

@@ -152,7 +152,9 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
 static XsSyntaxNode *parse_match(SyntaxParser *parser, size_t start)
 {
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_MATCH, (XsSpan){start, parser->previous.span.end});
+  expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after match");
   xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
+  expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after match value");
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before match arms");
   while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
   {
@@ -166,7 +168,6 @@ static XsSyntaxNode *parse_match(SyntaxParser *parser, size_t start)
     xs_syntax_node_add(parser->tree, statement, arm);
   }
   expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after match arms");
-  accept(parser, XS_TOKEN_SEMICOLON);
   finish_node(parser, statement, parser->previous.span.end);
   return statement;
 }

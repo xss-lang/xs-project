@@ -130,6 +130,38 @@ static void test_control_flow_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_control_flow_expression_structure(void)
+{
+  const char *text = "fn Choose(value: Int) => Int {\n"
+                     "  selected: Int = if (value > 0) { 1; } else { 0; };\n"
+                     "  return match (selected) { 0 -> { 10; }, else -> { 20; }, };\n"
+                     "}\n";
+  XsSource source = {.path = "ControlFlowExpressions.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 28, &diagnostics, &tree));
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_IF) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_MATCH) != nullptr);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_if_expression_requires_else(void)
+{
+  const char *text = "fn Choose(value: Int) => Int {\n"
+                     "  return if (value > 0) { 1; };\n"
+                     "}\n";
+  XsSource source = {.path = "InvalidIfExpression.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 29, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_function_expression_structure(void)
 {
   const char *text = "fn Spawn() {\n"
@@ -312,6 +344,8 @@ int main(void)
   test_module_import_and_macro();
   test_macro_call_declaration_structure();
   test_control_flow_structure();
+  test_control_flow_expression_structure();
+  test_if_expression_requires_else();
   test_function_expression_structure();
   test_new_expression_structure();
   test_top_level_execution_stays_invalid();
