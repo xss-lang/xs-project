@@ -18,6 +18,8 @@ instruction stream.
 - Source-order is preserved unless a section explicitly says it is sorted.
 - The top level is a named document with nested records.
 - Records use stable field names instead of positional operands.
+- Indentation is for readability only; parsers must use explicit records such as `.end` and `.program end`, not leading
+  spaces, to determine structure.
 - Identifiers, paths, and types are printed in their X# spelling where that spelling is still meaningful.
 - Compiler-generated ids are allowed only when they help diagnostics or cross-reference repeated records.
 - XHIR must remain suitable for code review and text fixtures.
@@ -33,6 +35,7 @@ module App
 
 imports
   import std.io
+.end
 
 declarations
   function Main
@@ -48,6 +51,8 @@ declarations
           value string "Hello from X#"
         call std.io.println
           arguments [message]
+.end
+.program end
 ```
 
 This is intentionally closer to a semantic document than to assembly. A formatter should be able to align indentation, and a
@@ -60,6 +65,7 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - `.xhir version 0`
 - `module <name>` with `imports`, `declarations`, and `symbol` records
 - `function <name>` with `signature`, `locals`, and `body`
+- explicit `.end` section markers and `.program end` document marker
 - primitive and named type records
 - literal, local, assignment, let, expression, and return records
 - `analysis typecheck` records for type-check diagnostics, spans, and messages

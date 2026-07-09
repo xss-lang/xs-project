@@ -207,6 +207,30 @@ bool xs_lil_function_is_definition(const XsLilFunction *function)
   return function != NULL && function->is_definition;
 }
 
+size_t xs_lil_function_value_count(const XsLilFunction *function)
+{
+  return function == NULL ? 0 : function->value_count;
+}
+
+XsLilType xs_lil_function_value_type(const XsLilFunction *function, XsLilValueId value)
+{
+  if (function == NULL || (size_t)value >= function->value_count)
+    return (XsLilType){.kind = XS_LIL_TYPE_VOID};
+  return function->values[value].type;
+}
+
+size_t xs_lil_function_block_count(const XsLilFunction *function)
+{
+  return function == NULL ? 0 : function->block_count;
+}
+
+const XsLilBlock *xs_lil_function_block_at(const XsLilFunction *function, size_t index)
+{
+  if (function == NULL || index >= function->block_count)
+    return NULL;
+  return function->blocks[index];
+}
+
 static XsLilStatus add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error)
 {
   if (function->value_count == function->value_capacity)
@@ -343,6 +367,62 @@ XsLilStatus xs_lil_block_set_return_value(XsLilBlock *block, XsLilValueId value,
 XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLilError *error)
 {
   return set_terminator(block, (XsLilTerminator){.kind = XS_LIL_TERMINATOR_BRANCH, .target = target}, error);
+}
+
+XsLilBlockId xs_lil_block_id(const XsLilBlock *block)
+{
+  return block == NULL ? UINT32_MAX : block->id;
+}
+
+const char *xs_lil_block_label(const XsLilBlock *block)
+{
+  return block == NULL ? NULL : block->label;
+}
+
+size_t xs_lil_block_instruction_count(const XsLilBlock *block)
+{
+  return block == NULL ? 0 : block->instruction_count;
+}
+
+XsLilInstructionKind xs_lil_block_instruction_kind(const XsLilBlock *block, size_t index)
+{
+  if (block == NULL || index >= block->instruction_count)
+    return XS_LIL_INSTRUCTION_CONST_I64;
+  return block->instructions[index].kind;
+}
+
+XsLilValueId xs_lil_block_instruction_result(const XsLilBlock *block, size_t index)
+{
+  if (block == NULL || index >= block->instruction_count)
+    return UINT32_MAX;
+  return block->instructions[index].result;
+}
+
+int64_t xs_lil_block_instruction_i64(const XsLilBlock *block, size_t index)
+{
+  if (block == NULL || index >= block->instruction_count)
+    return 0;
+  return block->instructions[index].immediate_i64;
+}
+
+XsLilTerminatorKind xs_lil_block_terminator_kind(const XsLilBlock *block)
+{
+  return block == NULL ? XS_LIL_TERMINATOR_NONE : block->terminator.kind;
+}
+
+bool xs_lil_block_terminator_has_value(const XsLilBlock *block)
+{
+  return block != NULL && block->terminator.has_value;
+}
+
+XsLilValueId xs_lil_block_terminator_value(const XsLilBlock *block)
+{
+  return block == NULL ? UINT32_MAX : block->terminator.value;
+}
+
+XsLilBlockId xs_lil_block_terminator_target(const XsLilBlock *block)
+{
+  return block == NULL ? UINT32_MAX : block->terminator.target;
 }
 
 const char *xs_lil_type_name(XsLilType type)

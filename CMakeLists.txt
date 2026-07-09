@@ -144,15 +144,21 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/syntax/parser_statement.c
     xs/sources/syntax/parser_type.c
     xs/sources/token.c
+  )
+
+  add_library(xs_lil
     xs/sources/xlil/model.c
     xs/sources/xlil/parser.c
     xs/sources/xlil/writer.c
   )
 
   target_include_directories(xs_compiler PUBLIC include xs/include xsproj/include)
-  target_link_libraries(xs_compiler PUBLIC xsproj)
+  target_include_directories(xs_lil PUBLIC include xs/include)
+  target_link_libraries(xs_compiler PUBLIC xsproj xs_lil)
   target_compile_options(xs_compiler PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+  target_compile_options(xs_lil PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
   target_compile_options(xs_compiler PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
+  target_compile_options(xs_lil PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
 
   add_executable(xs xs/sources/main.c)
   target_link_libraries(xs PRIVATE xs_compiler)
@@ -162,7 +168,7 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/backend/llvm_backend.c
   )
   target_include_directories(xs_backend_llvm PUBLIC include xs/include PRIVATE ${LLVM_INCLUDE_DIRS})
-  target_link_libraries(xs_backend_llvm PRIVATE ${XS_LLVM_LIBRARY})
+  target_link_libraries(xs_backend_llvm PUBLIC xs_lil PRIVATE ${XS_LLVM_LIBRARY})
   target_compile_options(xs_backend_llvm PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
   target_compile_options(xs_backend_llvm PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
   target_link_libraries(xs PRIVATE xs_backend_llvm)

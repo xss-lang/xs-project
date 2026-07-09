@@ -101,6 +101,19 @@ int main(int argc, char **argv)
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(function != nullptr);
   CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 1);
+  XsLilModule *lil_module = nullptr;
+  CHECK(xs_lil_module_create("Lowering", &lil_module, nullptr) == XS_LIL_OK);
+  XsLilFunction *lil_function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Answer", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0,
+                                              &lil_function, nullptr) == XS_LIL_OK);
+  XsLilBlock *lil_entry = nullptr;
+  CHECK(xs_lil_function_append_block(lil_function, "entry", &lil_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId answer = 0;
+  CHECK(xs_lil_block_add_const_i64(lil_entry, 42, &answer, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(lil_entry, answer, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Answer", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0, &function,
+                                     &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, xs_lil_module_function_at(lil_module, 0), &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);
   char ir_path[4096] = {0};
   CHECK(snprintf(ir_path, sizeof(ir_path), "%s.ll", argv[1]) > 0);
@@ -108,6 +121,8 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "target triple"));
   CHECK(file_contains(ir_path, "declare i64 @Add(i64, i64)"));
   CHECK(file_contains(ir_path, "declare i64 @Import(i64)"));
+  CHECK(file_contains(ir_path, "define i64 @Answer()"));
+  CHECK(file_contains(ir_path, "ret i64 42"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
 
   const char *linker_arguments[] = {"--version"};
@@ -123,6 +138,7 @@ int main(int argc, char **argv)
   xs_llvm_codegen_unit_destroy(second);
   xs_llvm_codegen_unit_destroy(first);
   xs_llvm_backend_destroy(backend);
+  xs_lil_module_destroy(lil_module);
   remove(ir_path);
   remove(argv[1]);
   return failures == 0 ? 0 : 1;

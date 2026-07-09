@@ -1,3 +1,8 @@
 .xlil version 0
 .xlil module App
 .extern Import : (i64) -> i64
+.func Answer : () -> i64
+bb0.entry:
+  %0:i64 = const 42
+  ret %0
+.end

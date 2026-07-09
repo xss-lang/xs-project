@@ -18,6 +18,7 @@ pub fn function_to_xmir(function: &Function) -> String
   write_parameters(&mut output, function);
   write_locals(&mut output, function);
   write_blocks(&mut output, function);
+  let _ = writeln!(output, ".program end");
   output
 }
 
@@ -33,6 +34,7 @@ fn write_parameters(output: &mut String, function: &Function)
   {
     write_parameter(output, parameter);
   }
+  let _ = writeln!(output, ".end");
 }
 
 fn write_parameter(output: &mut String, parameter: &Parameter)
@@ -67,6 +69,7 @@ fn write_locals(output: &mut String, function: &Function)
     }
     let _ = writeln!(output, "    mutability {mutability}");
   }
+  let _ = writeln!(output, ".end");
 }
 
 fn write_blocks(output: &mut String, function: &Function)
@@ -81,6 +84,7 @@ fn write_blocks(output: &mut String, function: &Function)
   {
     write_block(output, block);
   }
+  let _ = writeln!(output, ".end");
 }
 
 fn write_block(output: &mut String, block: &BasicBlock)

@@ -8,18 +8,6 @@
 
 #include "xs/lil.h"
 
-typedef enum
-{
-  XS_LIL_INSTRUCTION_CONST_I64,
-} XsLilInstructionKind;
-
-typedef enum
-{
-  XS_LIL_TERMINATOR_NONE,
-  XS_LIL_TERMINATOR_RETURN,
-  XS_LIL_TERMINATOR_BRANCH,
-} XsLilTerminatorKind;
-
 typedef struct
 {
   XsLilTerminatorKind kind;

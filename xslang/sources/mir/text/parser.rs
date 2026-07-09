@@ -59,6 +59,7 @@ impl Parser<'_>
         "parameters" => self.parameters(&mut function),
         "locals" => self.locals(&mut function),
         "control_flow" => self.control_flow(&mut function),
+        ".program end" => break,
         other =>
         {
           self.report(format!("unexpected XMIR section '{other}'"));
@@ -118,7 +119,12 @@ impl Parser<'_>
         self.index += 1;
         continue;
       }
-      let Some(name) = line.strip_prefix("  parameter ")
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      let Some(name) = line.strip_prefix("parameter ")
       else
       {
         break;
@@ -140,7 +146,7 @@ impl Parser<'_>
       return Type::VOID;
     };
     self.index += 1;
-    let Some(type_name) = line.strip_prefix("    type ")
+    let Some(type_name) = line.strip_prefix("type ")
     else
     {
       self.report("expected parameter type".to_string());
@@ -164,7 +170,12 @@ impl Parser<'_>
         self.index += 1;
         continue;
       }
-      let Some(id_text) = line.strip_prefix("  local ")
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      let Some(id_text) = line.strip_prefix("local ")
       else
       {
         break;
@@ -192,7 +203,12 @@ impl Parser<'_>
         self.index += 1;
         continue;
       }
-      let Some(id_text) = line.strip_prefix("  block ")
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      let Some(id_text) = line.strip_prefix("block ")
       else
       {
         break;
@@ -209,7 +225,7 @@ impl Parser<'_>
                                  statements: Vec::new(),
                                  terminator: None,
                                  span: span() };
-    if self.current().as_deref() == Some("    statements")
+    if self.current().as_deref() == Some("statements")
     {
       self.index += 1;
       self.statements(&mut block);
@@ -222,7 +238,7 @@ impl Parser<'_>
   {
     while let Some(line) = self.current()
     {
-      let Some(kind) = line.strip_prefix("      statement ")
+      let Some(kind) = line.strip_prefix("statement ")
       else
       {
         break;
@@ -276,7 +292,7 @@ impl Parser<'_>
       self.report("missing block terminator".to_string());
       return None;
     };
-    let Some(kind) = line.strip_prefix("    terminator ")
+    let Some(kind) = line.strip_prefix("terminator ")
     else
     {
       self.report("expected block terminator".to_string());
@@ -301,7 +317,7 @@ impl Parser<'_>
   fn return_terminator(&mut self) -> Terminator
   {
     if let Some(line) = self.current() &&
-       let Some(local) = line.strip_prefix("      value local ")
+       let Some(local) = line.strip_prefix("value local ")
     {
       self.index += 1;
       return Terminator::Return(Some(self.local_id(local)));
@@ -318,7 +334,7 @@ impl Parser<'_>
       return BlockId(0);
     };
     self.index += 1;
-    let Some(target) = line.strip_prefix("      target block ")
+    let Some(target) = line.strip_prefix("target block ")
     else
     {
       self.report("expected goto target".to_string());
@@ -346,7 +362,7 @@ impl Parser<'_>
       return LocalId(0);
     };
     self.index += 1;
-    let Some(local) = line.strip_prefix("      condition local ")
+    let Some(local) = line.strip_prefix("condition local ")
     else
     {
       self.report("expected branch_if condition".to_string());
@@ -364,7 +380,7 @@ impl Parser<'_>
       return BlockId(0);
     };
     self.index += 1;
-    let expected = format!("      {field} block ");
+    let expected = format!("{field} block ");
     let Some(block) = line.strip_prefix(&expected)
     else
     {
@@ -383,7 +399,7 @@ impl Parser<'_>
       return String::new();
     };
     self.index += 1;
-    match line.strip_prefix("    name ")
+    match line.strip_prefix("name ")
     {
       Some(name) => name.to_string(),
       None =>
@@ -403,7 +419,7 @@ impl Parser<'_>
       return false;
     };
     self.index += 1;
-    match line.strip_prefix("    mutability ")
+    match line.strip_prefix("mutability ")
     {
       Some("mutable") => true,
       Some("immutable") => false,
@@ -427,7 +443,7 @@ impl Parser<'_>
     {
       return None;
     };
-    let Some(type_name) = line.strip_prefix("    type ")
+    let Some(type_name) = line.strip_prefix("type ")
     else
     {
       return None;
@@ -450,7 +466,7 @@ impl Parser<'_>
       return LocalId(0);
     };
     self.index += 1;
-    let Some(local) = line.strip_prefix("        local ")
+    let Some(local) = line.strip_prefix("local ")
     else
     {
       self.report("expected statement local".to_string());
@@ -477,7 +493,7 @@ impl Parser<'_>
       return LocalId(0);
     };
     self.index += 1;
-    let Some(local) = line.strip_prefix("        target local ")
+    let Some(local) = line.strip_prefix("target local ")
     else
     {
       self.report("expected const.i64 target".to_string());
@@ -495,7 +511,7 @@ impl Parser<'_>
       return 0;
     };
     self.index += 1;
-    let Some(value) = line.strip_prefix("        value ")
+    let Some(value) = line.strip_prefix("value ")
     else
     {
       self.report("expected const.i64 value".to_string());
@@ -530,7 +546,7 @@ impl Parser<'_>
       return LocalId(0);
     };
     self.index += 1;
-    let Some(local) = line.strip_prefix("        target local ")
+    let Some(local) = line.strip_prefix("target local ")
     else
     {
       self.report("expected const.bool target".to_string());
@@ -548,7 +564,7 @@ impl Parser<'_>
       return false;
     };
     self.index += 1;
-    let Some(value) = line.strip_prefix("        value ")
+    let Some(value) = line.strip_prefix("value ")
     else
     {
       self.report("expected const.bool value".to_string());
@@ -619,7 +635,7 @@ impl Parser<'_>
       return LocalId(0);
     };
     self.index += 1;
-    let expected = format!("        {field} local ");
+    let expected = format!("{field} local ");
     let Some(local) = line.strip_prefix(&expected)
     else
     {
@@ -651,7 +667,7 @@ impl Parser<'_>
       return String::new();
     };
     self.index += 1;
-    match line.strip_prefix("        function ")
+    match line.strip_prefix("function ")
     {
       Some(function) => function.to_string(),
       None =>
@@ -671,7 +687,7 @@ impl Parser<'_>
       return Type::VOID;
     };
     self.index += 1;
-    let Some(type_name) = line.strip_prefix("        returns ")
+    let Some(type_name) = line.strip_prefix("returns ")
     else
     {
       self.report("expected call return type".to_string());
@@ -694,11 +710,11 @@ impl Parser<'_>
       return None;
     };
     self.index += 1;
-    if line == "        result discard"
+    if line == "result discard"
     {
       return None;
     }
-    let Some(local) = line.strip_prefix("        result local ")
+    let Some(local) = line.strip_prefix("result local ")
     else
     {
       self.report("expected call result".to_string());
@@ -712,7 +728,7 @@ impl Parser<'_>
     let mut arguments = Vec::new();
     while let Some(line) = self.current()
     {
-      let Some(local) = line.strip_prefix("        argument local ")
+      let Some(local) = line.strip_prefix("argument local ")
       else
       {
         break;
@@ -788,7 +804,7 @@ impl Parser<'_>
 
   fn current(&self) -> Option<String>
   {
-    self.lines.get(self.index).map(|line| (*line).to_string())
+    self.lines.get(self.index).map(|line| line.trim_start().to_string())
   }
 
   fn report(&mut self, message: String)

@@ -72,6 +72,7 @@ impl Parser<'_>
       {
         "imports" => self.imports(&mut module),
         "declarations" => self.declarations(&mut module),
+        ".program end" => break,
         other =>
         {
           self.report(format!("unexpected XHIR section '{other}'"));
@@ -94,9 +95,10 @@ impl Parser<'_>
     {
       match line.as_str()
       {
-        "  signature" => self.signature(&mut function),
-        "  locals" => self.locals(&mut function),
-        "  body" => self.body(&mut function),
+        "signature" => self.signature(&mut function),
+        "locals" => self.locals(&mut function),
+        "body" => self.body(&mut function),
+        ".program end" => break,
         other =>
         {
           self.report(format!("unexpected XHIR function section '{other}'"));
@@ -152,7 +154,7 @@ impl Parser<'_>
       self.report("missing function return type".to_string());
       return;
     };
-    let Some(name) = line.strip_prefix("    returns ")
+    let Some(name) = line.strip_prefix("returns ")
     else
     {
       self.report("expected function return type".to_string());
@@ -167,6 +169,10 @@ impl Parser<'_>
     {
       self.parse_type(&name)
     };
+    if self.current().as_deref() == Some(".end")
+    {
+      self.index += 1;
+    }
   }
 
   fn locals(&mut self, function: &mut Function)
@@ -174,7 +180,12 @@ impl Parser<'_>
     self.index += 1;
     while let Some(line) = self.current()
     {
-      let Some(rest) = line.strip_prefix("    local ")
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      let Some(rest) = line.strip_prefix("local ")
       else
       {
         break;
@@ -195,9 +206,14 @@ impl Parser<'_>
     {
       match line.as_str()
       {
-        line if line.starts_with("    let ") => function.body.push(self.let_statement()),
-        "    expression" => function.body.push(self.expression_statement()),
-        "    return" => function.body.push(self.return_statement()),
+        ".end" =>
+        {
+          self.index += 1;
+          break;
+        }
+        line if line.starts_with("let ") => function.body.push(self.let_statement()),
+        "expression" => function.body.push(self.expression_statement()),
+        "return" => function.body.push(self.return_statement()),
         _ => break,
       }
     }
@@ -206,15 +222,15 @@ impl Parser<'_>
   fn let_statement(&mut self) -> Statement
   {
     let name = self.current()
-                   .and_then(|line| line.strip_prefix("    let ").map(ToString::to_string))
+                   .and_then(|line| line.strip_prefix("let ").map(ToString::to_string))
                    .unwrap_or_default();
     self.index += 1;
     let ty = self.local_type();
     let mutable = self.local_mutability();
-    let initializer = if self.current().as_deref() == Some("      initializer")
+    let initializer = if self.current().as_deref() == Some("initializer")
     {
       self.index += 1;
-      self.expression_with_indent("        ")
+      self.expression()
     }
     else
     {
@@ -230,7 +246,7 @@ impl Parser<'_>
   fn expression_statement(&mut self) -> Statement
   {
     self.index += 1;
-    Statement::Expr(self.expression_with_indent("      ")
+    Statement::Expr(self.expression()
                         .unwrap_or(Expression::Literal { literal: Literal::None,
                                                          span: span() }))
   }
@@ -238,15 +254,15 @@ impl Parser<'_>
   fn return_statement(&mut self) -> Statement
   {
     self.index += 1;
-    let value = self.expression_with_indent("      ");
+    let value = self.expression();
     Statement::Return { value,
                         span: span() }
   }
 
-  fn expression_with_indent(&mut self, indent: &str) -> Option<Expression>
+  fn expression(&mut self) -> Option<Expression>
   {
     let line = self.current()?;
-    let rest = line.strip_prefix(indent)?;
+    let rest = line.as_str();
     if let Some(value) = rest.strip_prefix("literal ")
     {
       self.index += 1;
@@ -262,8 +278,7 @@ impl Parser<'_>
     if let Some(target) = rest.strip_prefix("assign ")
     {
       self.index += 1;
-      let nested_indent = format!("{indent}  ");
-      let value = self.expression_with_indent(&nested_indent)
+      let value = self.expression()
                       .unwrap_or(Expression::Literal { literal: Literal::None,
                                                        span: span() });
       return Some(Expression::Assign { target: target.to_string(),
@@ -282,7 +297,7 @@ impl Parser<'_>
       return Type::Named(String::new());
     };
     self.index += 1;
-    let Some(name) = line.strip_prefix("      type ")
+    let Some(name) = line.strip_prefix("type ")
     else
     {
       self.report("expected local type".to_string());
@@ -300,7 +315,7 @@ impl Parser<'_>
       return false;
     };
     self.index += 1;
-    match line.strip_prefix("      mutability ")
+    match line.strip_prefix("mutability ")
     {
       Some("mutable") => true,
       Some("immutable") => false,
@@ -366,7 +381,12 @@ impl Parser<'_>
         self.index += 1;
         continue;
       }
-      if !line.starts_with("  import ")
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      if !line.starts_with("import ")
       {
         break;
       }
@@ -392,7 +412,12 @@ impl Parser<'_>
         self.index += 1;
         continue;
       }
-      let Some(name) = line.strip_prefix("  symbol ")
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      let Some(name) = line.strip_prefix("symbol ")
       else
       {
         break;
@@ -416,7 +441,7 @@ impl Parser<'_>
       return SymbolKind::Function;
     };
     self.index += 1;
-    let Some(name) = line.strip_prefix("    kind ")
+    let Some(name) = line.strip_prefix("kind ")
     else
     {
       self.report("expected symbol kind".to_string());
@@ -447,7 +472,7 @@ impl Parser<'_>
       return Visibility::Private;
     };
     self.index += 1;
-    let Some(name) = line.strip_prefix("    visibility ")
+    let Some(name) = line.strip_prefix("visibility ")
     else
     {
       self.report("expected symbol visibility".to_string());
@@ -505,7 +530,7 @@ impl Parser<'_>
 
   fn current(&self) -> Option<String>
   {
-    self.lines.get(self.index).map(|line| (*line).to_string())
+    self.lines.get(self.index).map(|line| line.trim_start().to_string())
   }
 
   fn report(&mut self, message: String)
@@ -517,7 +542,7 @@ impl Parser<'_>
 
 fn parse_import_line(line: &str) -> Option<Import>
 {
-  let rest = line.strip_prefix("  import ")?;
+  let rest = line.strip_prefix("import ")?;
   if let Some(module) = rest.strip_prefix("module ")
   {
     return Some(Import::Module { module: module.to_string(),

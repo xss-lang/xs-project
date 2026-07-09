@@ -88,6 +88,6 @@ The API is intended to let:
 - alternative frontends exist,
 - every XLIL-producing compiler reuse the same backend infrastructure.
 
-The C23 API currently includes module construction, text writing, v0 text parsing, and read-only function signature
-inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting LLVM declarations. LLVM function
-body lowering is intentionally not connected yet.
+The C23 API currently includes module construction, text writing, v0 text parsing, and read-only function/body inspection.
+Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting temporary LLVM IR. The command is intended
+to produce a native executable later, after object emission and linking are connected.

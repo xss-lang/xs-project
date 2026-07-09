@@ -63,6 +63,24 @@ static bool declare_module_functions(XsLlvmCodegenUnit *unit, const XsLilModule 
   return true;
 }
 
+static bool lower_module_function_bodies(XsLlvmCodegenUnit *unit, const XsLilModule *module, size_t *lowered,
+                                         XsBackendError *error)
+{
+  *lowered = 0;
+  size_t function_count = xs_lil_module_function_count(module);
+  for (size_t i = 0; i < function_count; ++i)
+  {
+    const XsLilFunction *function = xs_lil_module_function_at(module, i);
+    if (!xs_lil_function_is_definition(function))
+      continue;
+    XsBackendStatus status = xs_llvm_lower_lil_function_body(unit, function, error);
+    if (status != XS_BACKEND_OK)
+      return false;
+    ++*lowered;
+  }
+  return true;
+}
+
 bool xs_driver_emit_direct_xlil_llvm_ir(const char *input_path, const char *text, size_t length)
 {
   XsLilError lil_error = {0};
@@ -89,11 +107,14 @@ bool xs_driver_emit_direct_xlil_llvm_ir(const char *input_path, const char *text
   size_t declared = 0;
   if (success)
     success = declare_module_functions(unit, module, &declared, &error);
+  size_t lowered = 0;
+  if (success)
+    success = lower_module_function_bodies(unit, module, &lowered, &error);
   if (success)
     success = xs_llvm_write_ir_file(unit, output_path, &error) == XS_BACKEND_OK;
   if (success)
-    fprintf(stderr, "xs: wrote LLVM IR '%s' from XLIL module '%s' with %zu declaration(s)\n", output_path,
-            xs_lil_module_name(module), declared);
+    fprintf(stderr, "xs: wrote LLVM IR '%s' from XLIL module '%s' with %zu declaration(s), %zu body/bodies\n",
+            output_path, xs_lil_module_name(module), declared, lowered);
   else
     fprintf(stderr, "xs: LLVM IR emission failed: %s\n", error.message);
   xs_llvm_codegen_unit_destroy(unit);

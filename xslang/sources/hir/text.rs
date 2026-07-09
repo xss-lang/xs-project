@@ -71,6 +71,7 @@ pub fn module_symbols_to_xhir(module: &Module) -> String
     {
       write_import(&mut output, import);
     }
+    let _ = writeln!(output, ".end");
   }
   if !module.symbols.is_empty()
   {
@@ -82,7 +83,9 @@ pub fn module_symbols_to_xhir(module: &Module) -> String
       let _ = writeln!(output, "    kind {}", symbol_kind_name(symbol.kind));
       let _ = writeln!(output, "    visibility {}", visibility_name(symbol.visibility));
     }
+    let _ = writeln!(output, ".end");
   }
+  let _ = writeln!(output, ".program end");
   output
 }
 
@@ -104,6 +107,7 @@ pub fn function_to_xhir(function: &Function) -> String
       let _ = writeln!(output, "    returns void");
     }
   }
+  let _ = writeln!(output, "  .end");
   if !function.locals.is_empty()
   {
     let _ = writeln!(output, "  locals");
@@ -123,6 +127,7 @@ pub fn function_to_xhir(function: &Function) -> String
                        type_name(&local.ty),
                        mutability);
     }
+    let _ = writeln!(output, "  .end");
   }
   if !function.body.is_empty()
   {
@@ -131,7 +136,9 @@ pub fn function_to_xhir(function: &Function) -> String
     {
       write_statement(&mut output, statement, 2);
     }
+    let _ = writeln!(output, "  .end");
   }
+  let _ = writeln!(output, ".program end");
   output
 }
 
@@ -466,6 +473,7 @@ mod tests
     assert!(text.contains(".xhir version 0\nmodule App"));
     assert!(text.contains("import println from std.io"));
     assert!(text.contains("symbol Main\n    kind function\n    visibility public"));
+    assert!(text.contains(".end\n.program end\n"));
     assert!(!text.contains(".func"));
     assert!(!text.contains("%0"));
 
@@ -500,6 +508,7 @@ mod tests
     assert!(text.contains("returns Int"));
     assert!(text.contains("local answer: Int immutable"));
     assert!(text.contains("literal integer 42"));
+    assert!(text.contains(".end\n.program end\n"));
     assert!(!text.contains("bb0"));
 
     let header = parse_xhir_header(&text).expect("header should parse");
@@ -528,6 +537,20 @@ mod tests
                                                                                                          must fail");
 
     assert!(diagnostics[0].message.contains("unsupported XHIR version 1"));
+  }
+
+  #[test]
+  fn parses_explicit_end_markers_without_indentation()
+  {
+    let text = ".xhir version 0\nfunction Main\nsignature\nreturns Int\n.end\nlocals\nlocal answer: Int \
+                immutable\n.end\nbody\nreturn\nliteral integer 42\n.end\n.program end\n";
+
+    let parsed = parse_xhir_function(text).expect("XHIR should not be indentation based");
+
+    assert_eq!(parsed.name, "Main");
+    assert_eq!(parsed.return_type, Some(Type::Primitive(PrimitiveType::Int)));
+    assert_eq!(parsed.locals.len(), 1);
+    assert_eq!(parsed.body.len(), 1);
   }
 
   #[test]

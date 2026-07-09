@@ -52,6 +52,18 @@ typedef struct
 typedef uint32_t XsLilValueId;
 typedef uint32_t XsLilBlockId;
 
+typedef enum
+{
+  XS_LIL_INSTRUCTION_CONST_I64,
+} XsLilInstructionKind;
+
+typedef enum
+{
+  XS_LIL_TERMINATOR_NONE,
+  XS_LIL_TERMINATOR_RETURN,
+  XS_LIL_TERMINATOR_BRANCH,
+} XsLilTerminatorKind;
+
 typedef struct XsLilBlock XsLilBlock;
 typedef struct XsLilFunction XsLilFunction;
 typedef struct XsLilModule XsLilModule;
@@ -74,6 +86,10 @@ XsLilType xs_lil_function_return_type(const XsLilFunction *function);
 size_t xs_lil_function_parameter_count(const XsLilFunction *function);
 XsLilType xs_lil_function_parameter_type(const XsLilFunction *function, size_t index);
 bool xs_lil_function_is_definition(const XsLilFunction *function);
+size_t xs_lil_function_value_count(const XsLilFunction *function);
+XsLilType xs_lil_function_value_type(const XsLilFunction *function, XsLilValueId value);
+size_t xs_lil_function_block_count(const XsLilFunction *function);
+const XsLilBlock *xs_lil_function_block_at(const XsLilFunction *function, size_t index);
 
 XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *label, XsLilBlock **block,
                                          XsLilError *error);
@@ -81,6 +97,16 @@ XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilVa
 XsLilStatus xs_lil_block_set_return(XsLilBlock *block, XsLilError *error);
 XsLilStatus xs_lil_block_set_return_value(XsLilBlock *block, XsLilValueId value, XsLilError *error);
 XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLilError *error);
+XsLilBlockId xs_lil_block_id(const XsLilBlock *block);
+const char *xs_lil_block_label(const XsLilBlock *block);
+size_t xs_lil_block_instruction_count(const XsLilBlock *block);
+XsLilInstructionKind xs_lil_block_instruction_kind(const XsLilBlock *block, size_t index);
+XsLilValueId xs_lil_block_instruction_result(const XsLilBlock *block, size_t index);
+int64_t xs_lil_block_instruction_i64(const XsLilBlock *block, size_t index);
+XsLilTerminatorKind xs_lil_block_terminator_kind(const XsLilBlock *block);
+bool xs_lil_block_terminator_has_value(const XsLilBlock *block);
+XsLilValueId xs_lil_block_terminator_value(const XsLilBlock *block);
+XsLilBlockId xs_lil_block_terminator_target(const XsLilBlock *block);
 
 const char *xs_lil_type_name(XsLilType type);
 XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, XsLilError *error);

@@ -376,6 +376,7 @@ mod tests
     assert!(text.contains("control_flow"));
     assert!(text.contains("statement borrow shared"));
     assert!(text.contains("terminator return"));
+    assert!(text.contains(".end\n.program end\n"));
     assert!(!text.contains(".func"));
     assert!(!text.contains("%0"));
 
@@ -734,6 +735,22 @@ mod tests
                                                                                                         must fail");
 
     assert!(diagnostics[0].message.contains("unsupported XMIR version 1"));
+  }
+
+  #[test]
+  fn parses_explicit_end_markers_without_indentation()
+  {
+    let text = ".xmir version 0\nfunction Main\nreturns void\n\nparameters\nparameter value\ntype \
+                i64\n.end\nlocals\nlocal 0\nname value\ntype i64\nmutability immutable\n.end\ncontrol_flow\nblock \
+                0\nstatements\nstatement use\nlocal 0\nterminator return\n.end\n.program end\n";
+
+    let parsed = parse_xmir_function(text).expect("XMIR should not be indentation based");
+
+    assert_eq!(parsed.parameters.len(), 1);
+    assert_eq!(parsed.locals.len(), 1);
+    assert_eq!(parsed.blocks.len(), 1);
+    assert_eq!(parsed.blocks[0].statements.len(), 1);
+    assert_eq!(parsed.blocks[0].terminator, Some(Terminator::Return(None)));
   }
 
   #[test]

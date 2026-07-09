@@ -412,6 +412,128 @@ XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char
   return status;
 }
 
+static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, const XsLilBlock *block, size_t index,
+                                             LLVMValueRef *values, size_t value_count, XsBackendError *error)
+{
+  XsLilInstructionKind kind = xs_lil_block_instruction_kind(block, index);
+  if (kind != XS_LIL_INSTRUCTION_CONST_I64)
+    return set_error(error, XS_BACKEND_DEFERRED, "XLIL instruction lowering is not supported yet");
+  XsLilValueId result = xs_lil_block_instruction_result(block, index);
+  if ((size_t)result >= value_count)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL instruction result references an unknown value");
+  LLVMTypeRef type = nullptr;
+  XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_I64}, &type, error);
+  if (status != XS_BACKEND_OK)
+    return status;
+  values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
+  return XS_BACKEND_OK;
+}
+
+static XsBackendStatus lower_lil_terminator(LLVMBuilderRef builder, const XsLilBlock *block, LLVMValueRef *values,
+                                            size_t value_count, LLVMBasicBlockRef *blocks, size_t block_count,
+                                            XsBackendError *error)
+{
+  switch (xs_lil_block_terminator_kind(block))
+  {
+  case XS_LIL_TERMINATOR_RETURN:
+    if (xs_lil_block_terminator_has_value(block))
+    {
+      XsLilValueId value = xs_lil_block_terminator_value(block);
+      if ((size_t)value >= value_count || values[value] == nullptr)
+        return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL return references an unavailable value");
+      LLVMBuildRet(builder, values[value]);
+    }
+    else
+    {
+      LLVMBuildRetVoid(builder);
+    }
+    return XS_BACKEND_OK;
+  case XS_LIL_TERMINATOR_BRANCH:
+  {
+    XsLilBlockId target = xs_lil_block_terminator_target(block);
+    if ((size_t)target >= block_count || blocks[target] == nullptr)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL branch target references an unknown block");
+    LLVMBuildBr(builder, blocks[target]);
+    return XS_BACKEND_OK;
+  }
+  case XS_LIL_TERMINATOR_NONE:
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL block is missing a terminator");
+  }
+  return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "unknown XLIL terminator");
+}
+
+XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const XsLilFunction *function,
+                                                XsBackendError *error)
+{
+  clear_error(error);
+  if (unit == nullptr || function == nullptr)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and XLIL function are required");
+  if (!xs_lil_function_is_definition(function))
+    return XS_BACKEND_OK;
+  if (xs_lil_function_parameter_count(function) != 0)
+    return set_error(error, XS_BACKEND_DEFERRED, "XLIL function body lowering with parameters is deferred");
+  const char *name = xs_lil_function_name(function);
+  LLVMValueRef llvm_function = LLVMGetNamedFunction(unit->module, name);
+  if (llvm_function == nullptr)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function must be declared before body lowering");
+  if (LLVMCountBasicBlocks(llvm_function) != 0)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "LLVM function body already exists");
+
+  size_t block_count = xs_lil_function_block_count(function);
+  size_t value_count = xs_lil_function_value_count(function);
+  if (block_count > (size_t)UINT_MAX || value_count > (size_t)UINT_MAX)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function body is too large for LLVM C API");
+  LLVMBasicBlockRef *blocks = calloc(block_count == 0 ? 1 : block_count, sizeof(*blocks));
+  LLVMValueRef *values = calloc(value_count == 0 ? 1 : value_count, sizeof(*values));
+  LLVMBuilderRef builder = LLVMCreateBuilderInContext(unit->backend->context);
+  if (blocks == nullptr || values == nullptr || builder == nullptr)
+  {
+    free(blocks);
+    free(values);
+    if (builder != nullptr)
+      LLVMDisposeBuilder(builder);
+    return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering XLIL function body");
+  }
+
+  XsBackendStatus status = XS_BACKEND_OK;
+  for (size_t i = 0; i < block_count; ++i)
+  {
+    const XsLilBlock *block = xs_lil_function_block_at(function, i);
+    if (xs_lil_block_id(block) != (XsLilBlockId)i)
+    {
+      status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL block ids must be sequential");
+      goto cleanup;
+    }
+    blocks[i] = LLVMAppendBasicBlockInContext(unit->backend->context, llvm_function, xs_lil_block_label(block));
+    if (blocks[i] == nullptr)
+    {
+      status = set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not create a basic block");
+      goto cleanup;
+    }
+  }
+  for (size_t i = 0; i < block_count; ++i)
+  {
+    const XsLilBlock *block = xs_lil_function_block_at(function, i);
+    LLVMPositionBuilderAtEnd(builder, blocks[i]);
+    size_t instruction_count = xs_lil_block_instruction_count(block);
+    for (size_t instruction = 0; instruction < instruction_count; ++instruction)
+    {
+      status = lower_lil_instruction(unit, block, instruction, values, value_count, error);
+      if (status != XS_BACKEND_OK)
+        goto cleanup;
+    }
+    status = lower_lil_terminator(builder, block, values, value_count, blocks, block_count, error);
+    if (status != XS_BACKEND_OK)
+      goto cleanup;
+  }
+
+cleanup:
+  LLVMDisposeBuilder(builder);
+  free(blocks);
+  free(values);
+  return status;
+}
+
 static XsBackendStatus verify_module(XsLlvmCodegenUnit *unit, XsBackendError *error)
 {
   char *llvm_error = nullptr;
