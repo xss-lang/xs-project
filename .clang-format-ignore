@@ -1,19 +1,20 @@
 # SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 # SPDX-License-Identifier: Apache-2.0
 
-CMakeLists.txt
 **/CMakeLists.txt
-*.cmake
-**/*.cmake
 
+**/*.cmake
 **/*.toml
 **/*.md
 **/*.json
+**/*.jsonc
 **/*.txt
-
-/xstidy/**
-/xsfmt/**
-/xs-backend/**/.rs
-/xs-backend/**/.ts
-/xs-backend/**/.js
-/Spec/**
+**/*.rs
+**/*.java
+**/*.js
+**/*.ts
+**/*.xs
+**/*.xsproj
+**/*.xhir
+**/*.xmir
+**/*.xlil
