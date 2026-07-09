@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 appName: "MyApp"
-appVersion: "0.1.0"
+appVersion: "0.0.1"
 appRelease: "BETA"
 appLicense: "MIT"
 

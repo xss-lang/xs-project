@@ -13,7 +13,9 @@ typedef struct
   XsLilTerminatorKind kind;
   bool has_value;
   XsLilValueId value;
+  XsLilValueId condition;
   XsLilBlockId target;
+  XsLilBlockId else_target;
 } XsLilTerminator;
 
 typedef struct
@@ -26,6 +28,7 @@ typedef struct
   XsLilInstructionKind kind;
   XsLilValueId result;
   int64_t immediate_i64;
+  bool immediate_bool;
 } XsLilInstruction;
 
 struct XsLilBlock

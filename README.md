@@ -103,8 +103,8 @@ For the detailed current status, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATIO
 
 ## Release policy
 
-Numbered X# releases will begin after LLVM IR generation is working. Until then, the root [CHANGELOG.md](CHANGELOG.md) file is
-kept as an `Unreleased` development log.
+The project is now in the `0.0.1` pre-1.0 development period. Numbered `0.0.x` entries are compiler infrastructure
+snapshots; they do not imply that end-to-end native executable generation is complete.
 
 ## CLI summary
 

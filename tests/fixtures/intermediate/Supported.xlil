@@ -6,3 +6,12 @@ bb0.entry:
   %r0:i64 = const 42
   ret %r0
 .end
+.func Choose : () -> void
+bb0.entry:
+  %r0:bool = const.bool true
+  br_if %r0, bb1, bb2
+bb1.then:
+  ret
+bb2.else:
+  ret
+.end

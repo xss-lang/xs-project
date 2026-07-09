@@ -22,7 +22,7 @@ Recommended order for newcomers:
 7. [XMIR.md](XMIR.md): human-readable MIR text format direction
 8. [XLIL.md](XLIL.md): backend input text registry direction
 9. [TODO.md](TODO.md): public roadmap
-10. [RELEASES.md](RELEASES.md): release policy tied to the LLVM IR milestone
+10. [RELEASES.md](RELEASES.md): pre-1.0 release policy
 11. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
 12. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
 
@@ -35,11 +35,12 @@ Recommended order for newcomers:
 - For implementation order, [IMPLEMENTATION.md](IMPLEMENTATION.md) is authoritative.
 - Public remaining work is summarized in [TODO.md](TODO.md).
 
-If you find a conflict, do not silently add new behavior. Update the documentation and implementation in the same patch.
+If you find a conflict, do not silently add new behavior. Update the relevant public documentation and implementation in the
+same patch when the behavior is user-visible.
 
 ## Update rule
 
-When code behavior changes, at least one document should change too:
+When user-visible code behavior changes, at least one public document should change too:
 
 - CLI changes go in `CLI.md`.
 - Build/toolchain changes go in `BUILDING.md`.

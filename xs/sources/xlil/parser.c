@@ -22,7 +22,10 @@ typedef struct
 typedef struct
 {
   XsLilBlock *block;
+  bool is_conditional;
+  XsLilValueId condition;
   XsLilBlockId target;
+  XsLilBlockId else_target;
 } PendingBranch;
 
 static XsLilStatus parse_error(Parser *parser, XsLilError *error, const char *message)
@@ -188,13 +191,13 @@ static bool parse_i64_tail(const char *start, const char *end, int64_t *value)
   return true;
 }
 
-static bool append_branch(PendingBranch **branches, size_t *count, XsLilBlock *block, XsLilBlockId target)
+static bool append_branch(PendingBranch **branches, size_t *count, PendingBranch branch)
 {
   PendingBranch *grown = realloc(*branches, (*count + 1U) * sizeof(*grown));
   if (grown == nullptr)
     return false;
   *branches = grown;
-  (*branches)[(*count)++] = (PendingBranch){.block = block, .target = target};
+  (*branches)[(*count)++] = branch;
   return true;
 }
 
@@ -207,6 +210,28 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
     ++colon;
   if (colon == line + length || !parse_u32_after_prefix(line, (size_t)(colon - line), "%r", &result))
     return parse_error(parser, error, "unsupported XLIL instruction");
+  if ((size_t)(line + length - colon) >= 7U && span_equals(colon, 7, ":bool ="))
+  {
+    const char *operation = skip_space(colon + 7, line + length);
+    const char *true_text = "const.bool true";
+    const char *false_text = "const.bool false";
+    bool value = false;
+    if ((size_t)(line + length - operation) == strlen(true_text) &&
+        strncmp(operation, true_text, strlen(true_text)) == 0)
+      value = true;
+    else if ((size_t)(line + length - operation) == strlen(false_text) &&
+             strncmp(operation, false_text, strlen(false_text)) == 0)
+      value = false;
+    else
+      return parse_error(parser, error, "unsupported XLIL instruction");
+    XsLilValueId actual = 0;
+    XsLilStatus status = xs_lil_block_add_const_bool(block, value, &actual, error);
+    if (status != XS_LIL_OK)
+      return status;
+    if (actual != result)
+      return parse_error(parser, error, "XLIL value ids must be sequential");
+    return XS_LIL_OK;
+  }
   if ((size_t)(line + length - colon) < 6U || !span_equals(colon, 6, ":i64 ="))
     return parse_error(parser, error, "unsupported XLIL instruction");
   const char *operation = skip_space(colon + 6, line + length);
@@ -242,8 +267,39 @@ static XsLilStatus parse_terminator(Parser *parser, XsLilBlock *block, const cha
   uint32_t target = 0;
   if (parse_u32_after_prefix(line, length, "br bb", &target))
   {
-    if (!append_branch(branches, branch_count, block, target))
+    if (!append_branch(branches, branch_count, (PendingBranch){.block = block, .target = target}))
       return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while parsing XLIL branch");
+    return XS_LIL_OK;
+  }
+  const char *branch_if_prefix = "br_if %r";
+  size_t prefix_length = strlen(branch_if_prefix);
+  if (length > prefix_length && strncmp(line, branch_if_prefix, prefix_length) == 0)
+  {
+    const char *cursor = line + prefix_length;
+    const char *comma = cursor;
+    while (comma < line + length && *comma != ',')
+      ++comma;
+    uint32_t condition = 0;
+    if (comma == line + length || !parse_u32_after_prefix(cursor, (size_t)(comma - cursor), "", &condition))
+      return parse_error(parser, error, "unsupported XLIL terminator");
+    cursor = skip_space(comma + 1, line + length);
+    comma = cursor;
+    while (comma < line + length && *comma != ',')
+      ++comma;
+    uint32_t then_block = 0;
+    uint32_t else_block = 0;
+    if (comma == line + length || !parse_u32_after_prefix(cursor, (size_t)(comma - cursor), "bb", &then_block))
+      return parse_error(parser, error, "unsupported XLIL terminator");
+    cursor = skip_space(comma + 1, line + length);
+    if (!parse_u32_after_prefix(cursor, (size_t)(line + length - cursor), "bb", &else_block))
+      return parse_error(parser, error, "unsupported XLIL terminator");
+    PendingBranch branch = {.block = block,
+                            .is_conditional = true,
+                            .condition = condition,
+                            .target = then_block,
+                            .else_target = else_block};
+    if (!append_branch(branches, branch_count, branch))
+      return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while parsing XLIL branch_if");
     return XS_LIL_OK;
   }
   return parse_error(parser, error, "unsupported XLIL terminator");
@@ -316,7 +372,10 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
   }
   for (size_t i = 0; i < branch_count; ++i)
   {
-    XsLilStatus status = xs_lil_block_set_branch(branches[i].block, branches[i].target, error);
+    XsLilStatus status = branches[i].is_conditional
+                              ? xs_lil_block_set_branch_if(branches[i].block, branches[i].condition, branches[i].target,
+                                                           branches[i].else_target, error)
+                              : xs_lil_block_set_branch(branches[i].block, branches[i].target, error);
     if (status != XS_LIL_OK)
     {
       free(branches);

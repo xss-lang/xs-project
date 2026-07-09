@@ -32,7 +32,7 @@ static bool parse_project(const char *text, XsProject *project, XsDiagnostics *d
 static void test_complete_project(void)
 {
   const char *text = "appName: \"MyApp\"\n"
-                     "appVersion: \"0.1.0\"\n"
+                     "appVersion: \"0.0.1\"\n"
                      "appRelease: \"BETA\"\n"
                      "appLicense: \"MIT\"\n"
                      "appAuthors {\n[\"Alfa\", \"alfa@example.me\"]\n[\"Foo\", None]\n}\n"

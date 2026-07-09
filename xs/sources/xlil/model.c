@@ -324,6 +324,31 @@ XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilVa
   return XS_LIL_OK;
 }
 
+XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error)
+{
+  xs_lil_clear_error(error);
+  if (result != NULL)
+    *result = 0;
+  if (block == NULL || block->owner == NULL)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
+  XsLilValueId value_id = 0;
+  XsLilStatus status = add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &value_id, error);
+  if (status != XS_LIL_OK)
+    return status;
+  status = append_instruction(block,
+                              (XsLilInstruction){
+                                  .kind = XS_LIL_INSTRUCTION_CONST_BOOL,
+                                  .result = value_id,
+                                  .immediate_bool = value,
+                              },
+                              error);
+  if (status != XS_LIL_OK)
+    return status;
+  if (result != NULL)
+    *result = value_id;
+  return XS_LIL_OK;
+}
+
 static XsLilStatus set_terminator(XsLilBlock *block, XsLilTerminator terminator, XsLilError *error)
 {
   xs_lil_clear_error(error);
@@ -349,6 +374,18 @@ static XsLilStatus set_terminator(XsLilBlock *block, XsLilTerminator terminator,
         block->owner->blocks[terminator.target]->id != terminator.target)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL branch target is unknown");
   }
+  else if (terminator.kind == XS_LIL_TERMINATOR_BRANCH_IF)
+  {
+    if ((size_t)terminator.condition >= block->owner->value_count)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL branch_if condition is unknown");
+    if (block->owner->values[terminator.condition].type.kind != XS_LIL_TYPE_BOOL)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL branch_if condition must be bool");
+    if ((size_t)terminator.target >= block->owner->block_count ||
+        block->owner->blocks[terminator.target]->id != terminator.target ||
+        (size_t)terminator.else_target >= block->owner->block_count ||
+        block->owner->blocks[terminator.else_target]->id != terminator.else_target)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL branch_if target is unknown");
+  }
   block->terminator = terminator;
   return XS_LIL_OK;
 }
@@ -367,6 +404,17 @@ XsLilStatus xs_lil_block_set_return_value(XsLilBlock *block, XsLilValueId value,
 XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLilError *error)
 {
   return set_terminator(block, (XsLilTerminator){.kind = XS_LIL_TERMINATOR_BRANCH, .target = target}, error);
+}
+
+XsLilStatus xs_lil_block_set_branch_if(XsLilBlock *block, XsLilValueId condition, XsLilBlockId then_block,
+                                       XsLilBlockId else_block, XsLilError *error)
+{
+  return set_terminator(block,
+                        (XsLilTerminator){.kind = XS_LIL_TERMINATOR_BRANCH_IF,
+                                          .condition = condition,
+                                          .target = then_block,
+                                          .else_target = else_block},
+                        error);
 }
 
 XsLilBlockId xs_lil_block_id(const XsLilBlock *block)
@@ -405,6 +453,13 @@ int64_t xs_lil_block_instruction_i64(const XsLilBlock *block, size_t index)
   return block->instructions[index].immediate_i64;
 }
 
+bool xs_lil_block_instruction_bool(const XsLilBlock *block, size_t index)
+{
+  if (block == NULL || index >= block->instruction_count)
+    return false;
+  return block->instructions[index].immediate_bool;
+}
+
 XsLilTerminatorKind xs_lil_block_terminator_kind(const XsLilBlock *block)
 {
   return block == NULL ? XS_LIL_TERMINATOR_NONE : block->terminator.kind;
@@ -423,6 +478,21 @@ XsLilValueId xs_lil_block_terminator_value(const XsLilBlock *block)
 XsLilBlockId xs_lil_block_terminator_target(const XsLilBlock *block)
 {
   return block == NULL ? UINT32_MAX : block->terminator.target;
+}
+
+XsLilValueId xs_lil_block_terminator_condition(const XsLilBlock *block)
+{
+  return block == NULL ? UINT32_MAX : block->terminator.condition;
+}
+
+XsLilBlockId xs_lil_block_terminator_then_block(const XsLilBlock *block)
+{
+  return block == NULL ? UINT32_MAX : block->terminator.target;
+}
+
+XsLilBlockId xs_lil_block_terminator_else_block(const XsLilBlock *block)
+{
+  return block == NULL ? UINT32_MAX : block->terminator.else_target;
 }
 
 const char *xs_lil_type_name(XsLilType type)

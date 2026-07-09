@@ -25,6 +25,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef XS_PROJECT_VERSION
+#define XS_PROJECT_VERSION "0.0.1"
+#endif
+
 static char *copy_text(const char *text)
 {
   size_t length = strlen(text);
@@ -528,6 +532,11 @@ static int run_file_command(const XsCliOptions *options)
 
 int xs_driver_main(int argc, char **argv)
 {
+  if (argc == 2 && strcmp(argv[1], "--version") == 0)
+  {
+    printf("xs %s\n", XS_PROJECT_VERSION);
+    return 0;
+  }
   XsCliOptions options = {0};
   if (!xs_cli_parse(argc, argv, &options))
   {

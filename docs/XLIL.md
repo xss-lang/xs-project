@@ -61,6 +61,7 @@ Format notes:
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
 - `bbN.<label>:` starts a basic block.
 - `%rN:type` names a typed SSA value.
+- `%rN:bool = const.bool true|false` creates a boolean SSA value.
 - `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.
 - `call <symbol>(%rA, %rB)` calls a void function and discards the result.
 - `br bbN` transfers control to another basic block.

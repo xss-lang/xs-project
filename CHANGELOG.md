@@ -7,10 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 
 This file summarizes user-visible and developer-visible changes in the xs-project repository.
 
-Versioned releases will begin after LLVM IR generation becomes available. Until then, changes are tracked under
-`Unreleased`; this heading is a development log, not a release promise.
+The 0.0.1 development period is the first numbered xs-project line. It is a pre-1.0 compiler line and does not imply a
+complete native executable pipeline.
 
 ## Unreleased
+
+### Added
+
+### Changed
+
+### Known gaps
+
+## 0.0.1 - 2026-07-09
 
 ### Added
 
@@ -31,7 +39,8 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - Direct `.xlil` inputs with supported version/module headers and top-level `.extern`/`.func` signatures can produce LLVM IR
   declarations.
 - Public XLIL C23 API can parse v0 text registry files and expose read-only function signature metadata.
-- LLVM backend can lower the first XLIL body subset: parameterless `const i64`, `br`, `ret`, and `ret %N` functions.
+- LLVM backend can lower the first XLIL body subset: parameterless `const i64`, `const.bool`, `br`, `br_if`, `ret`, and
+  `ret %rN` functions.
 - Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats, not binary or opaque
   serialized compiler state.
 - XHIR and XMIR documentation now separates their structured text design from XLIL's assembly-like registry format.
@@ -40,7 +49,7 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - XMIR tests now cover goto, local return values, unreachable terminators, and the current local statement records.
 - XLIL text now starts with `.xlil version 0` before module records.
 - MIR/XMIR can now carry explicit function parameter/return types, optional XLIL local value types, and `const.i64`
-  statements; Rust MIR → XLIL lowering can emit signatures, `const`, and `ret %N` for typed i64 local returns.
+  statements; Rust MIR → XLIL lowering can emit signatures, `const`, and `ret %rN` for typed i64 local returns.
 - Rust `xslang` XLIL gained typed `call` instructions plus writer/parser/verifier coverage; MIR/XMIR can carry typed call
   statements that lower when their arguments already have XLIL values.
 - Rust `xslang` gained a MIR structural verifier for duplicate ids, missing terminators, and unknown local/block references.
@@ -49,6 +58,8 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - XMIR text support gained structural verifier analysis writer/parser coverage.
 - XHIR text support gained type-check analysis writer/parser coverage.
 - Root README and strengthened documentation set under `docs/`.
+- `xs --version` reports the current compiler version.
+- XLIL text uses register-style value names such as `%r0`.
 
 ### Changed
 
@@ -70,4 +81,4 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
 - MIR statement/expression lowering, exception edges, and async state machine generation are incomplete.
 - Borrow checker is not yet a full region/loan/move/drop model.
 - End-to-end `xs build`/`xs run` object/link/native executable flow is incomplete.
-- Direct XLIL build mode does not lower function bodies yet.
+- Direct XLIL build mode currently lowers only the supported initial body subset.

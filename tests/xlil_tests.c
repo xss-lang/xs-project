@@ -139,6 +139,63 @@ static void test_function_body_branch_text_writer(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_function_body_branch_if_text_writer(void)
+{
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_create("App.BranchIf", &module, &error) == XS_LIL_OK);
+  XsLilFunction *function = NULL;
+  CHECK(xs_lil_module_add_function_definition(module, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID}, NULL, 0,
+                                              &function, &error) == XS_LIL_OK);
+  XsLilBlock *entry = NULL;
+  XsLilBlock *then_block = NULL;
+  XsLilBlock *else_block = NULL;
+  CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
+  CHECK(xs_lil_function_append_block(function, "then", &then_block, &error) == XS_LIL_OK);
+  CHECK(xs_lil_function_append_block(function, "else", &else_block, &error) == XS_LIL_OK);
+  XsLilValueId condition = 0;
+  CHECK(xs_lil_block_add_const_bool(entry, true, &condition, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_branch_if(entry, condition, 1, 2, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return(then_block, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return(else_block, &error) == XS_LIL_OK);
+
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "bb0.entry:\n  %r0:bool = const.bool true\n  br_if %r0, bb1, bb2\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
+static void test_function_body_rejects_non_bool_branch_if(void)
+{
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_create("App.BadBranchIf", &module, &error) == XS_LIL_OK);
+  XsLilFunction *function = NULL;
+  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_VOID}, NULL, 0, &function,
+                                              &error) == XS_LIL_OK);
+  XsLilBlock *entry = NULL;
+  XsLilBlock *then_block = NULL;
+  XsLilBlock *else_block = NULL;
+  CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
+  CHECK(xs_lil_function_append_block(function, "then", &then_block, &error) == XS_LIL_OK);
+  CHECK(xs_lil_function_append_block(function, "else", &else_block, &error) == XS_LIL_OK);
+  XsLilValueId condition = 0;
+  CHECK(xs_lil_block_add_const_i64(entry, 1, &condition, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_branch_if(entry, condition, 1, 2, &error) == XS_LIL_INVALID_ARGUMENT);
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_reads_external_signature(void)
 {
   const char text[] = ".xlil version 0\n.xlil module App\n.extern Import : (i64) -> i64\n";
@@ -221,6 +278,30 @@ static void test_text_parser_round_trips_branch_subset(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_branch_if_subset(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Choose : () -> void\nbb0.entry:\n  %r0:bool = "
+                      "const.bool true\n  br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_parse_text("branch_if.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_rejects_invalid_inputs(void)
 {
   static const char *const invalid_inputs[] = {
@@ -248,10 +329,13 @@ int main(void)
   test_function_body_text_writer();
   test_function_body_rejects_missing_return_value();
   test_function_body_branch_text_writer();
+  test_function_body_branch_if_text_writer();
+  test_function_body_rejects_non_bool_branch_if();
   test_text_parser_reads_external_signature();
   test_text_parser_reads_function_definition();
   test_text_parser_round_trips_supported_body_subset();
   test_text_parser_round_trips_branch_subset();
+  test_text_parser_round_trips_branch_if_subset();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

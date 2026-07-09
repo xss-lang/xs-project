@@ -23,6 +23,7 @@ xs build --output xlil -file Main.xs
 xs build --hir -file Main.xs
 xs build --mir -file Main.xs
 xs build --xlil -file Main.xs
+xs --version
 ```
 
 On usage errors, the CLI prints:
@@ -32,7 +33,12 @@ usage: xs <check|run> -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -file <input>
 usage: xs build [--hir|--mir|--xlil] -file <input>
+usage: xs --version
 ```
+
+## `xs --version`
+
+`xs --version` prints the compiler version, such as `xs 0.0.1`.
 
 ## `xs check`
 

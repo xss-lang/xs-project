@@ -416,17 +416,27 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, const XsLi
                                              LLVMValueRef *values, size_t value_count, XsBackendError *error)
 {
   XsLilInstructionKind kind = xs_lil_block_instruction_kind(block, index);
-  if (kind != XS_LIL_INSTRUCTION_CONST_I64)
-    return set_error(error, XS_BACKEND_DEFERRED, "XLIL instruction lowering is not supported yet");
   XsLilValueId result = xs_lil_block_instruction_result(block, index);
   if ((size_t)result >= value_count)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL instruction result references an unknown value");
   LLVMTypeRef type = nullptr;
-  XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_I64}, &type, error);
-  if (status != XS_BACKEND_OK)
-    return status;
-  values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
-  return XS_BACKEND_OK;
+  if (kind == XS_LIL_INSTRUCTION_CONST_I64)
+  {
+    XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_I64}, &type, error);
+    if (status != XS_BACKEND_OK)
+      return status;
+    values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
+    return XS_BACKEND_OK;
+  }
+  if (kind == XS_LIL_INSTRUCTION_CONST_BOOL)
+  {
+    XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &type, error);
+    if (status != XS_BACKEND_OK)
+      return status;
+    values[result] = LLVMConstInt(type, xs_lil_block_instruction_bool(block, index) ? 1 : 0, false);
+    return XS_BACKEND_OK;
+  }
+  return set_error(error, XS_BACKEND_DEFERRED, "XLIL instruction lowering is not supported yet");
 }
 
 static XsBackendStatus lower_lil_terminator(LLVMBuilderRef builder, const XsLilBlock *block, LLVMValueRef *values,
@@ -454,6 +464,19 @@ static XsBackendStatus lower_lil_terminator(LLVMBuilderRef builder, const XsLilB
     if ((size_t)target >= block_count || blocks[target] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL branch target references an unknown block");
     LLVMBuildBr(builder, blocks[target]);
+    return XS_BACKEND_OK;
+  }
+  case XS_LIL_TERMINATOR_BRANCH_IF:
+  {
+    XsLilValueId condition = xs_lil_block_terminator_condition(block);
+    XsLilBlockId then_block = xs_lil_block_terminator_then_block(block);
+    XsLilBlockId else_block = xs_lil_block_terminator_else_block(block);
+    if ((size_t)condition >= value_count || values[condition] == nullptr)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL branch_if condition references an unavailable value");
+    if ((size_t)then_block >= block_count || blocks[then_block] == nullptr || (size_t)else_block >= block_count ||
+        blocks[else_block] == nullptr)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL branch_if target references an unknown block");
+    LLVMBuildCondBr(builder, values[condition], blocks[then_block], blocks[else_block]);
     return XS_BACKEND_OK;
   }
   case XS_LIL_TERMINATOR_NONE:
