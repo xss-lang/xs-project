@@ -343,7 +343,7 @@ semantics.
   `const.i64` values.
 - Rust `xslang` MIR and XLIL models also carry the first conditional control-flow primitive. MIR writes/parses
   `branch_if` records with `condition local N`, `then block A`, and `else block B`; XLIL writes/parses assembly-like
-  `br_if %N, bbA, bbB` terminators. Verifiers require a `bool` condition and existing target blocks. HIR lowering does not
+  `br_if %rN, bbA, bbB` terminators. Verifiers require a `bool` condition and existing target blocks. HIR lowering does not
   emit conditional control-flow yet. The MIR optimizer can fold same-block constant `branch_if` conditions to `goto`.
 - Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Int` locals, `Int`
   literals, and local returns into a single-entry MIR block with typed XLIL-vocabulary local records. Unsupported HIR
@@ -365,7 +365,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - LLVM module verification, LLVM IR text emission, and object file emission work.
 - `xs build --xlil -file <input.xlil>` parses XLIL v0 text through `xs_lil_module_parse_text` and emits LLVM IR declarations
   from top-level `.extern` and `.func` signatures plus the initial supported body subset: `const i64`, `br`, `ret`, and
-  `ret %N`. This LLVM IR file is a temporary checkpoint; the command's final output is intended to become a native
+  `ret %rN`. This LLVM IR file is a temporary checkpoint; the command's final output is intended to become a native
   executable once object emission and linking are wired in.
 - The linker can be invoked without a shell, with argument policy left to the upper layer.
 
@@ -401,12 +401,12 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, primitive types, text parsing/writing, read-only
   function/body inspection, function bodies, basic blocks, `const.i64`, `br`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
-  `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %N, bbA, bbB`, `ret`, and `.end`.
+  `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `ret`, and `.end`.
 - MIR functions carry explicit XLIL-vocabulary parameter and return types. The first MIR → XLIL body bridge lowers MIR
   parameter signatures, typed MIR `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, and `eq.i64` local statements,
   typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,
-  compare, `call`, `br`, `br_if`, and `ret %N` records.
+  compare, `call`, `br`, `br_if`, and `ret %rN` records.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
   stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path

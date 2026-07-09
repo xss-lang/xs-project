@@ -614,7 +614,9 @@ impl Parser<'_>
 
   fn value_id(&mut self, text: &str, line: usize) -> Option<ValueId>
   {
-    let parsed = text.parse::<u32>().ok().map(ValueId);
+    let parsed = text.strip_prefix('r')
+                     .and_then(|text| text.parse::<u32>().ok())
+                     .map(ValueId);
     if parsed.is_none()
     {
       self.report(DiagnosticCode::InvalidValueId, line, "XLIL value id is invalid");
@@ -704,8 +706,9 @@ mod tests
   #[test]
   fn roundtrips_const_i64_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  \
-                ret %0\n.end\n";
+    let text =
+      ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %r0:i64 = const 42\n  ret \
+       %r0\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -715,8 +718,8 @@ mod tests
   #[test]
   fn roundtrips_call_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %0:i64 = const 7\n  \
-                %1:i64 = call xs$App$Callee(%0)\n  ret %1\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %r0:i64 = const 7\n  \
+                %r1:i64 = call xs$App$Callee(%r0)\n  ret %r1\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -726,8 +729,8 @@ mod tests
   #[test]
   fn roundtrips_add_i64_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %0:i64 = const 2\n  \
-                %1:i64 = const 3\n  %2:i64 = add.i64 %0, %1\n  ret %2\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %r0:i64 = const 2\n  \
+                %r1:i64 = const 3\n  %r2:i64 = add.i64 %r0, %r1\n  ret %r2\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -737,8 +740,8 @@ mod tests
   #[test]
   fn roundtrips_sub_i64_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %0:i64 = const 8\n  \
-                %1:i64 = const 3\n  %2:i64 = sub.i64 %0, %1\n  ret %2\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %r0:i64 = const 8\n  \
+                %r1:i64 = const 3\n  %r2:i64 = sub.i64 %r0, %r1\n  ret %r2\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -748,8 +751,8 @@ mod tests
   #[test]
   fn roundtrips_mul_i64_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %0:i64 = const 6\n  \
-                %1:i64 = const 7\n  %2:i64 = mul.i64 %0, %1\n  ret %2\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %r0:i64 = const 6\n  \
+                %r1:i64 = const 7\n  %r2:i64 = mul.i64 %r0, %r1\n  ret %r2\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -759,8 +762,8 @@ mod tests
   #[test]
   fn roundtrips_eq_i64_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Eq : () -> bool\nbb0.entry:\n  %0:i64 = const 7\n  \
-                %1:i64 = const 7\n  %2:bool = eq.i64 %0, %1\n  ret %2\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Eq : () -> bool\nbb0.entry:\n  %r0:i64 = const 7\n  \
+                %r1:i64 = const 7\n  %r2:bool = eq.i64 %r0, %r1\n  ret %r2\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -770,8 +773,8 @@ mod tests
   #[test]
   fn roundtrips_const_bool_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Truth : () -> bool\nbb0.entry:\n  %0:bool = \
-                const.bool true\n  ret %0\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Truth : () -> bool\nbb0.entry:\n  %r0:bool = \
+                const.bool true\n  ret %r0\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
@@ -781,12 +784,24 @@ mod tests
   #[test]
   fn roundtrips_branch_if_function()
   {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %0:bool = \
-                const.bool true\n  br_if %0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n";
+    let text = ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %r0:bool = \
+                const.bool true\n  br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n";
 
     let module = parse_module(text).expect("parse should succeed");
 
     assert_eq!(module_to_string(&module), text);
+  }
+
+  #[test]
+  fn rejects_legacy_plain_value_ids()
+  {
+    let text =
+      ".xlil version 0\n.xlil module App\n.func xs$App$Legacy : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret \
+       %0\n.end\n";
+
+    let diagnostics = parse_module(text).expect_err("legacy plain value ids must fail");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidValueId);
   }
 
   #[test]

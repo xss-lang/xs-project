@@ -23,7 +23,7 @@ instruction stream.
 - Identifiers, paths, and types are printed in their X# spelling where that spelling is still meaningful.
 - Compiler-generated ids are allowed only when they help diagnostics or cross-reference repeated records.
 - XHIR must remain suitable for code review and text fixtures.
-- XHIR must not use XLIL-style directives such as `.func`, `.extern`, or `%0:type = op`.
+- XHIR must not use XLIL-style directives such as `.func`, `.extern`, or `%r0:type = op`.
 
 ## Shape
 

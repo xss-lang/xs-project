@@ -3,6 +3,6 @@
 .extern Import : (i64) -> i64
 .func Answer : () -> i64
 bb0.entry:
-  %0:i64 = const 42
-  ret %0
+  %r0:i64 = const 42
+  ret %r0
 .end

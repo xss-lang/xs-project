@@ -106,7 +106,7 @@ C23, and target assembly conventions as long as the result fits X#.
   mid/low-level registry language.
 - An XLIL registry file starts with `.xlil version 0`, followed by `.xlil module <name>`, and contains directive-style
   declaration/definition records.
-- Current XLIL text uses assembly-like records: `.extern`, `.func`, `bbN.label:`, `%N:type = ...`, `br bbN`, `ret`, and
+- Current XLIL text uses assembly-like records: `.extern`, `.func`, `bbN.label:`, `%rN:type = ...`, `br bbN`, `ret`, and
   `.end`.
 - The function body model uses typed SSA, explicit basic blocks, and terminators.
 - XLIL instruction set v0: constants, arithmetic, compare, load/store, address projection, call, branch, switch, return,

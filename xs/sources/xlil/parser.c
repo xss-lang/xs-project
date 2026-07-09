@@ -205,7 +205,7 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
   const char *colon = line;
   while (colon < line + length && *colon != ':')
     ++colon;
-  if (colon == line + length || !parse_u32_after_prefix(line, (size_t)(colon - line), "%", &result))
+  if (colon == line + length || !parse_u32_after_prefix(line, (size_t)(colon - line), "%r", &result))
     return parse_error(parser, error, "unsupported XLIL instruction");
   if ((size_t)(line + length - colon) < 6U || !span_equals(colon, 6, ":i64 ="))
     return parse_error(parser, error, "unsupported XLIL instruction");
@@ -237,7 +237,7 @@ static XsLilStatus parse_terminator(Parser *parser, XsLilBlock *block, const cha
   if (span_equals(line, length, "ret"))
     return xs_lil_block_set_return(block, error);
   uint32_t value = 0;
-  if (parse_u32_after_prefix(line, length, "ret %", &value))
+  if (parse_u32_after_prefix(line, length, "ret %r", &value))
     return xs_lil_block_set_return_value(block, value, error);
   uint32_t target = 0;
   if (parse_u32_after_prefix(line, length, "br bb", &target))

@@ -76,7 +76,7 @@ fn write_block(block: &Block, output: &mut impl Write) -> fmt::Result
     Some(Terminator::BranchIf { condition,
                                 then_block,
                                 else_block, }) => writeln!(output,
-                                                           "  br_if %{}, bb{}, bb{}",
+                                                           "  br_if %r{}, bb{}, bb{}",
                                                            condition.0, then_block.0, else_block.0),
     None => writeln!(output, "  .missing_terminator"),
   }
@@ -87,21 +87,21 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
   match *instruction
   {
     Instruction::ConstI64 { result,
-                            value, } => writeln!(output, "  %{}:i64 = const {}", result.0, value),
+                            value, } => writeln!(output, "  %r{}:i64 = const {}", result.0, value),
     Instruction::ConstBool { result,
-                             value, } => writeln!(output, "  %{}:bool = const.bool {}", result.0, value),
+                             value, } => writeln!(output, "  %r{}:bool = const.bool {}", result.0, value),
     Instruction::AddI64 { result,
                           left,
-                          right, } => writeln!(output, "  %{}:i64 = add.i64 %{}, %{}", result.0, left.0, right.0),
+                          right, } => writeln!(output, "  %r{}:i64 = add.i64 %r{}, %r{}", result.0, left.0, right.0),
     Instruction::SubI64 { result,
                           left,
-                          right, } => writeln!(output, "  %{}:i64 = sub.i64 %{}, %{}", result.0, left.0, right.0),
+                          right, } => writeln!(output, "  %r{}:i64 = sub.i64 %r{}, %r{}", result.0, left.0, right.0),
     Instruction::MulI64 { result,
                           left,
-                          right, } => writeln!(output, "  %{}:i64 = mul.i64 %{}, %{}", result.0, left.0, right.0),
+                          right, } => writeln!(output, "  %r{}:i64 = mul.i64 %r{}, %r{}", result.0, left.0, right.0),
     Instruction::EqI64 { result,
                          left,
-                         right, } => writeln!(output, "  %{}:bool = eq.i64 %{}, %{}", result.0, left.0, right.0),
+                         right, } => writeln!(output, "  %r{}:bool = eq.i64 %r{}, %r{}", result.0, left.0, right.0),
     Instruction::Call { result,
                         ref function,
                         ref arguments,
@@ -109,7 +109,7 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
     {
       if let Some(result) = result
       {
-        write!(output, "  %{}:{} = ", result.0, type_name(return_type))?;
+        write!(output, "  %r{}:{} = ", result.0, type_name(return_type))?;
       }
       else
       {
@@ -122,7 +122,7 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
         {
           write!(output, ", ")?;
         }
-        write!(output, "%{}", argument.0)?;
+        write!(output, "%r{}", argument.0)?;
       }
       writeln!(output, ")")
     }
@@ -133,7 +133,7 @@ fn write_return(value: Option<ValueId>, output: &mut impl Write) -> fmt::Result
 {
   match value
   {
-    Some(value) => writeln!(output, "  ret %{}", value.0),
+    Some(value) => writeln!(output, "  ret %r{}", value.0),
     None => writeln!(output, "  ret"),
   }
 }
@@ -178,7 +178,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %r0:i64 = const \
+                42\n  ret %r0\n.end\n");
   }
 
   #[test]
@@ -213,8 +214,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %0:bool = \
-                const.bool true\n  br_if %0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %r0:bool = \
+                const.bool true\n  br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n");
   }
 
   #[test]
@@ -230,8 +231,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %0:i64 = const 7\n  \
-                %1:i64 = call xs$App$Callee(%0)\n  ret %1\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %r0:i64 = const 7\n  \
+                %r1:i64 = call xs$App$Callee(%r0)\n  ret %r1\n.end\n");
   }
 
   #[test]
@@ -247,8 +248,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %0:i64 = const 2\n  \
-                %1:i64 = const 3\n  %2:i64 = add.i64 %0, %1\n  ret %2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %r0:i64 = const 2\n  \
+                %r1:i64 = const 3\n  %r2:i64 = add.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
@@ -264,8 +265,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %0:i64 = const 8\n  \
-                %1:i64 = const 3\n  %2:i64 = sub.i64 %0, %1\n  ret %2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %r0:i64 = const 8\n  \
+                %r1:i64 = const 3\n  %r2:i64 = sub.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
@@ -281,8 +282,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %0:i64 = const 6\n  \
-                %1:i64 = const 7\n  %2:i64 = mul.i64 %0, %1\n  ret %2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %r0:i64 = const 6\n  \
+                %r1:i64 = const 7\n  %r2:i64 = mul.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
@@ -298,8 +299,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Eq : () -> bool\nbb0.entry:\n  %0:i64 = const 7\n  \
-                %1:i64 = const 7\n  %2:bool = eq.i64 %0, %1\n  ret %2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Eq : () -> bool\nbb0.entry:\n  %r0:i64 = const 7\n  \
+                %r1:i64 = const 7\n  %r2:bool = eq.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
@@ -314,7 +315,7 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Truth : () -> bool\nbb0.entry:\n  %0:bool = \
-                const.bool true\n  ret %0\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Truth : () -> bool\nbb0.entry:\n  %r0:bool = \
+                const.bool true\n  ret %r0\n.end\n");
   }
 }

@@ -24,7 +24,7 @@ design to x86-64; ARM64 compatibility must be preserved.
 - Body-less function declaration and signature lowering
 - XLIL type mapping for function declarations
 - Direct `.xlil` parser/model-driven `.extern`/`.func` signature lowering to LLVM declarations
-- Initial XLIL body lowering for `const i64`, `br`, `ret`, and `ret %N`
+- Initial XLIL body lowering for `const i64`, `br`, `ret`, and `ret %rN`
 - LLVM optimization pipeline selection from `default<O0>` through `default<O3>`
 - LLVM module verification
 - Object file emission per codegen unit
@@ -66,7 +66,7 @@ Borrow-checked and optimized MIR
 ```
 
 XLIL function body lowering currently covers only the first C model subset: `const i64`, unconditional `br`, `ret`, and
-`ret %N` in parameterless functions. The backend emits declarations from the public C API and direct `.xlil` files after
+`ret %rN` in parameterless functions. The backend emits declarations from the public C API and direct `.xlil` files after
 they are parsed into the XLIL C model, can write verified LLVM IR text for the current codegen unit, and rejects unsupported
 body forms instead of inventing semantics. This prevents AST or unfinished HIR behavior from being lowered directly to LLVM
 IR.

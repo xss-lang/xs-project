@@ -33,14 +33,14 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
   {
     const XsLilInstruction *instruction = &block->instructions[i];
     if (instruction->kind == XS_LIL_INSTRUCTION_CONST_I64 &&
-        fprintf(stream, "  %%%u:i64 = const %lld\n", instruction->result, (long long)instruction->immediate_i64) < 0)
+        fprintf(stream, "  %%r%u:i64 = const %lld\n", instruction->result, (long long)instruction->immediate_i64) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.i64 instruction");
   }
   if (block->terminator.kind == XS_LIL_TERMINATOR_RETURN)
   {
     if (block->terminator.has_value)
     {
-      if (fprintf(stream, "  ret %%%u\n", block->terminator.value) < 0)
+      if (fprintf(stream, "  ret %%r%u\n", block->terminator.value) < 0)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL return terminator");
     }
     else if (xs_lil_write_checked(stream, error, "  ret\n") != XS_LIL_OK)

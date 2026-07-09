@@ -8,5 +8,6 @@
     "CmakeLists.txt": "cmake",
     "CMakeCache.txt": "cmake"
   },
-  "FSharp.suggestGitignore": false
+  "FSharp.suggestGitignore": false,
+  "r.lsp.promptToInstall": false
 }

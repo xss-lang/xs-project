@@ -47,9 +47,9 @@ Current text records intentionally look closer to assembly than to C-like declar
 .extern Next : (i64) -> i64
 .func Answer : () -> i64
 bb0.entry:
-  %0:i64 = const 42
-  %1:i64 = call Next(%0)
-  ret %1
+  %r0:i64 = const 42
+  %r1:i64 = call Next(%r0)
+  ret %r1
 .end
 ```
 
@@ -60,12 +60,12 @@ Format notes:
 - `.extern <symbol> : (<params>) -> <return>` declares an external function.
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
 - `bbN.<label>:` starts a basic block.
-- `%N:type` names a typed SSA value.
-- `%N:type = call <symbol>(%A, %B)` calls another function and stores a typed result.
-- `call <symbol>(%A, %B)` calls a void function and discards the result.
+- `%rN:type` names a typed SSA value.
+- `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.
+- `call <symbol>(%rA, %rB)` calls a void function and discards the result.
 - `br bbN` transfers control to another basic block.
-- `br_if %N, bbA, bbB` branches to `bbA` when the `bool` condition `%N` is true, otherwise to `bbB`.
-- `ret` and `ret %N` are the current return terminators.
+- `br_if %rN, bbA, bbB` branches to `bbA` when the `bool` condition `%rN` is true, otherwise to `bbB`.
+- `ret` and `ret %rN` are the current return terminators.
 - `.end` closes a function body.
 
 Version `0` is the only supported XLIL version today. The header exists so `xs build --xlil -file <input.xlil>` can select

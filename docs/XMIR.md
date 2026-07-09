@@ -23,7 +23,7 @@ control-flow document rather than an assembly listing.
 - Places, projections, moves, borrows, drops, and regions are printed in stable symbolic form.
 - Borrow-checker and optimizer annotations are allowed when they are explicitly marked as analysis output.
 - XMIR must remain suitable for code review and text fixtures.
-- XMIR must not use XLIL-style directives such as `.func`, `.extern`, or `%0:type = op`.
+- XMIR must not use XLIL-style directives such as `.func`, `.extern`, or `%r0:type = op`.
 
 ## Shape
 
