@@ -254,6 +254,7 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
   PendingBranch *branches = nullptr;
   size_t branch_count = 0;
   XsLilBlock *current = nullptr;
+  bool current_terminated = false;
   const char *line = nullptr;
   size_t length = 0;
   while (next_line(parser, &line, &length))
@@ -283,15 +284,24 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
         return status;
       if (current->id != id)
         return parse_error(parser, error, "XLIL block ids must be sequential");
+      current_terminated = false;
       continue;
     }
     if (current == nullptr)
       return parse_error(parser, error, "XLIL instruction appears before a block");
+    if (current_terminated)
+      return parse_error(parser, error, "XLIL instruction appears after a terminator");
     XsLilStatus status = XS_LIL_OK;
     if (trimmed[0] == '%')
+    {
       status = parse_instruction(parser, current, trimmed, trimmed_length, error);
+    }
     else
+    {
       status = parse_terminator(parser, current, trimmed, trimmed_length, &branches, &branch_count, error);
+      if (status == XS_LIL_OK)
+        current_terminated = true;
+    }
     if (status != XS_LIL_OK)
     {
       free(branches);

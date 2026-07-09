@@ -172,6 +172,55 @@ static void test_text_parser_reads_function_definition(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_supported_body_subset(void)
+{
+  const char text[] =
+      ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_parse_text("body.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[256] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, ".func Answer : () -> i64\n") != NULL);
+  CHECK(strstr(buffer, "bb0.entry:\n  %0:i64 = const 42\n  ret %0\n.end\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
+static void test_text_parser_round_trips_branch_subset(void)
+{
+  const char text[] =
+      ".xlil version 0\n.xlil module App\n.func Jump : () -> void\nbb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_parse_text("branch.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[256] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "bb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_rejects_invalid_inputs(void)
 {
   static const char *const invalid_inputs[] = {
@@ -179,6 +228,7 @@ static void test_text_parser_rejects_invalid_inputs(void)
       ".xlil version 0\n.extern Import : () -> void\n",
       ".xlil version 0\n.xlil module App\n.extern Import : (bad) -> void\n",
       ".xlil version 0\n.xlil module App\n.extern Import (i64) -> i64\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> void\nbb0.entry:\n  ret\n  %0:i64 = const 1\n.end\n",
   };
   for (size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
@@ -198,6 +248,8 @@ int main(void)
   test_function_body_branch_text_writer();
   test_text_parser_reads_external_signature();
   test_text_parser_reads_function_definition();
+  test_text_parser_round_trips_supported_body_subset();
+  test_text_parser_round_trips_branch_subset();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }
