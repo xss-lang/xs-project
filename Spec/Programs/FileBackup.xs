@@ -6,7 +6,7 @@
 
 module Programs.FileBackup;
 
-imports Collections, Stdio, Process;
+imports Collections, Stdio, Fs, Process;
 
 enum data BackupError {
     Io: IOException,
@@ -32,49 +32,49 @@ class BackupPlan {
     }
 
     fn Discover() throws BackupError {
-        if (!std.isDirectory(this.sourceRoot)) {
+        if (!Fs.IsDir(this.sourceRoot)) {
             throw BackupError.InvalidSource(this.sourceRoot);
         }
 
-        for (path: Str in std.walk(this.sourceRoot)) {
-            if (std.isDirectory(path)) {
+        for (path: Str in Fs.WalkDir(this.sourceRoot)) {
+            if (Fs.IsDir(path)) {
                 continue;
             }
 
-            relative: Str = std.relativePath(this.sourceRoot, path);
+            relative: Str = Fs.RelativePath(this.sourceRoot, path);
             this.files.push(FileEntry {
                 path: path,
                 relative: relative,
-                bytes: std.size(path),
-                modifiedTicks: std.modifiedTicks(path),
+                bytes: Fs.Size(path),
+                modifiedTicks: Fs.ModifiedTicks(path),
             });
         }
     }
 
     fn Execute() throws IOException {
         for (entry: FileEntry in this.files) {
-            destination: Str = std.joinPath(this.targetRoot, entry.relative);
+            destination: Str = Fs.JoinPath(this.targetRoot, entry.relative);
 
             if (this.ShouldCopy(entry, destination)) {
-                std.createDirectory(std.parentDirectory(destination));
-                std.copyFile(entry.path, destination);
-                std.cout << "copied " << entry.relative << "\n";
+                Fs.CreateDir(Fs.ParentDir(destination));
+                Fs.CopyFile(entry.path, destination);
+                println!("copied {}", entry.relative);
             }
         }
     }
 
     fn ShouldCopy(entry: FileEntry, destination: Str) => Bool {
-        if (!std.exists(destination)) {
+        if (!Fs.Exists(destination)) {
             return true;
         }
 
-        return std.size(destination) != entry.bytes || std.modifiedTicks(destination) < entry.modifiedTicks;
+        return Fs.Size(destination) != entry.bytes || Fs.ModifiedTicks(destination) < entry.modifiedTicks;
     }
 }
 
 fn Main(args: Collections.vector<Str>) => Int throws BackupError, IOException {
     if (args.length() != 3) {
-        std.cerr << "usage: backup <source> <target>\n";
+        eprintln!("usage: backup <source> <target>");
         return 2;
     }
 

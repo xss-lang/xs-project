@@ -48,9 +48,9 @@ user: User = {
 
 // field access
 
-std.cout << user get.name << "\n";
+println!("{}", user get.name);
 
-std.cout << user get.age << "\n";
+println!("{}", user get.age);
 
 
 // nested data
@@ -83,9 +83,9 @@ pair: Pair<Str, Int> = {
 
 // generic data access
 
-std.cout << pair get.first << "\n";
+println!("{}", pair get.first);
 
-std.cout << pair get.second << "\n";
+println!("{}", pair get.second);
 
 
 // multiple fields
@@ -102,9 +102,9 @@ point: Point = {
 };
 
 
-std.cout << point get.x << "\n";
+println!("{}", point get.x);
 
-std.cout << point get.y << "\n";
+println!("{}", point get.y);
 
 
 // VALID

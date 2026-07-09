@@ -54,7 +54,7 @@ imports Stdio;
 
 macroRules! say {
     ($x:expr): {
-        std.cout << $x << "\n";
+        println!("{}", $x);
     };
 }
 
@@ -66,7 +66,7 @@ fn Main() {
 // Equivalent expansion:
 
 fn ExpandedMain() {
-    std.cout << "Alfa" << "\n";
+    println!("{}", "Alfa");
 }
 
 
@@ -138,11 +138,11 @@ say!{"Alfa"};
 
 macroRules! output {
     (): {
-        std.cout << "\n";
+        println!("");
     };
 
     ($value:expr): {
-        std.cout << $value << "\n";
+        println!("{}", $value);
     };
 }
 
@@ -164,11 +164,11 @@ macroRules! output {
 
 macroRules! describe {
     ($expression:expr): {
-        std.cout << "expression\n";
+        println!("expression");
     };
 
     ($identifier:ident): {
-        std.cout << "identifier\n";
+        println!("identifier");
     };
 }
 
@@ -180,8 +180,8 @@ fn MultipleMatchingRules() {
 // If value matches both expr and ident, expansion order is:
 
 fn ExpandedMultipleMatchingRules() {
-    std.cout << "expression\n";
-    std.cout << "identifier\n";
+    println!("expression");
+    println!("identifier");
 }
 
 
@@ -210,7 +210,7 @@ fn ExpandedMultipleMatchingRules() {
 
 macroRules! expressionMacro {
     ($value:expr): {
-        std.cout << $value;
+        print!("{}", $value);
     };
 }
 
@@ -249,7 +249,7 @@ macroRules! patternMacro {
         match (value) {
             $patternValue -> {
             },
-        };
+        }
     };
 }
 
@@ -285,7 +285,7 @@ macroRules! itemMacro {
 
 macroRules! literalMacro {
     ($literalValue:literal): {
-        std.cout << $literalValue;
+        print!("{}", $literalValue);
     };
 }
 
@@ -355,7 +355,7 @@ macroRules! printMany {
         $value:expr
     )*): {
         $(
-            std.cout << $value << "\n";
+            println!("{}", $value);
         )*
     };
 }
@@ -368,7 +368,7 @@ macroRules! printAtLeastOne {
         $value:expr
     )+): {
         $(
-            std.cout << $value << "\n";
+            println!("{}", $value);
         )*
     };
 }
@@ -388,7 +388,7 @@ macroRules! commaSeparated {
         $value:expr
     ),*): {
         $(
-            std.cout << $value << "\n";
+            println!("{}", $value);
         )*
     };
 }
@@ -401,7 +401,7 @@ macroRules! commaSeparatedRequired {
         $value:expr
     ),+): {
         $(
-            std.cout << $value << "\n";
+            println!("{}", $value);
         )*
     };
 }
@@ -435,7 +435,7 @@ fn RepetitionCalls() {
 
 macroRules! duplicateOutput {
     ($value:expr): {
-        std.cout << $value << $value;
+        print!("{}{}", $value, $value);
     };
 }
 
@@ -499,7 +499,7 @@ macroRules! uniqueVariables {
 
 macroRules! globalMacro {
     (): {
-        std.cout << "global\n";
+        println!("global");
     };
 }
 
@@ -512,7 +512,7 @@ macroRules! globalMacro {
 fn LocalMacroScope() {
     macroRules! localMacro {
         (): {
-            std.cout << "local\n";
+            println!("local");
         };
     }
 
@@ -528,7 +528,7 @@ fn LocalMacroScope() {
 fn OuterScope() {
     macroRules! outerMacro {
         (): {
-            std.cout << "outer\n";
+            println!("outer");
         };
     }
 
@@ -554,7 +554,7 @@ fn CallBeforeDefinition() {
 
     macroRules! localMacro {
         (): {
-            std.cout << "local\n";
+            println!("local");
         };
     }
 }
@@ -580,7 +580,7 @@ macroRules! createValue {
 fn GeneratedVariable() {
     createValue!();
 
-    std.cout << generatedValue;
+    print!("{}", generatedValue);
 }
 
 
@@ -648,7 +648,7 @@ fn InvalidGeneratedNameConflict() {
 
 macroRules! innerMacro {
     ($value:expr): {
-        std.cout << $value << "\n";
+        println!("{}", $value);
     };
 }
 
@@ -791,7 +791,7 @@ macroRules! invalidSecond {
 
 macroRules! onlyLiteral {
     ($value:literal): {
-        std.cout << $value;
+        print!("{}", $value);
     };
 }
 

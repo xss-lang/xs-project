@@ -183,7 +183,7 @@ fn GetUser() => &User {
 
 class File {
     File.Drop() {
-        std.cout << "File closed\n";
+        println!("File closed");
     }
 }
 

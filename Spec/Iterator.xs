@@ -44,7 +44,7 @@ nums: Int[] = {1, 2, 3};
 
 for (num in nums.iter()) {
 
-    std.cout << num << "\n";
+    println!("{}", num);
 }
 
 
@@ -57,7 +57,7 @@ users: Collections.vector<Str> = {
 
 for (user in users.iter()) {
 
-    std.cout << user << "\n";
+    println!("{}", user);
 }
 
 
@@ -68,7 +68,7 @@ users: Collections.vector<Str> =
 
 for (user in users.iter()) {
 
-    std.cout << user << "\n";
+    println!("{}", user);
 }
 
 // loop body is never executed
@@ -83,11 +83,7 @@ users: Collections.vector<Str> = {
 
 for ((index, user) in users.iter()) {
 
-    std.cout
-        << index
-        << ": "
-        << user
-        << "\n";
+    println!("{}: {}", index, user);
 }
 
 
@@ -109,7 +105,7 @@ for (user in users.iter()) {
         continue;
     }
 
-    std.cout << user << "\n";
+    println!("{}", user);
 }
 
 

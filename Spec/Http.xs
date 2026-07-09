@@ -52,7 +52,7 @@ fn Main() throws NetworkException {
             HttpResponse.BodyHandlers.ofstr()
         );
 
-    std.cout << response.body();
+    print!("{}", response.body());
 }
 
 
@@ -150,7 +150,7 @@ async fn SendRequestAsync() => Task<()> {
             Http.Response.BodyHandlers.ofstr()
         );
 
-    std.cout << response.body();
+    print!("{}", response.body());
 }
 
 
@@ -216,7 +216,7 @@ fn CatchNetworkException() {
             );
     }
     catch (error: NetworkException) {
-        std.cerr << "Network request failed\n";
+        eprintln!("Network request failed");
     }
 }
 

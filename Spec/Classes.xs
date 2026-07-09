@@ -13,16 +13,16 @@ Field initializers are optional.
 Constructors are supported.
 Constructor name must match the class name.
 
-A class may contain at most one constructor.
-Constructor overload is not supported.
-Constructor merging is not supported.
+A class may contain overloaded constructors.
+Constructor overload resolution follows the same arity/type selection model as function overload resolution.
 
 Methods are supported.
 Static methods are supported.
 Static fields are supported.
 
-Methods with the same name are merged.
-The last method declaration determines the final parameter list and return type.
+Methods with the same name are overloaded.
+Method merging is not supported.
+Two methods with the same name and the same parameter type list are a duplicate declaration error.
 
 Single inheritance is supported through extends.
 Interfaces are supported through implements.

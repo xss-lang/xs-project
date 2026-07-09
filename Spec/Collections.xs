@@ -216,14 +216,12 @@ Collections.hashmap.insert(
     50
 );
 
-std.cout
-    << Collections.hashmap.get(scores, "Alfa")
-    << "\n";
+println!("{}", Collections.hashmap.get(scores, "Alfa"));
 
-std.cout
-    << std.format(
-        "Hasan's score: ${Collections.hashmap.get(scores, \"Hasan\")}\n"
-    );
+println!(
+    "Hasan's score: {}",
+    Collections.hashmap.get(scores, "Hasan")
+);
 
 
 // VALID

@@ -1129,7 +1129,7 @@ data IoTargetExpression {
 
 // Example:
 //
-// std.fout << [stdout] << "Hello\n"
+// println!("Hello")
 
 
 // ============================================================

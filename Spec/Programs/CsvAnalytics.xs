@@ -6,7 +6,7 @@
 
 module Programs.CsvAnalytics;
 
-imports Collections, Stdio, Process;
+imports Collections, Stdio, Fs, Process;
 
 enum data CsvError {
     Io: IOException,
@@ -64,22 +64,19 @@ class Analytics {
 
     fn Print() throws IOException {
         for ((_, total): (Str, RegionTotal) in this.totals) {
-            std.cout
-                << total.region
-                << ": units="
-                << total.quantity
-                << " revenue="
-                << total.revenue
-                << "\n";
+            println!(
+                "{}: units={} revenue={}",
+                total.region,
+                total.quantity,
+                total.revenue
+            );
         }
     }
 }
 
 fn LoadSales(path: Str) => Collections.vector<Sale> throws CsvError, IOException {
     rows: Collections.vector<Sale> = Collections.vector<Sale>.new();
-    file: file = std.fopen(path);
-    content: Str;
-    std.fin >> [file] >> content;
+    content: Str = Fs.ReadToStr(path);
 
     for (line: Str in content.lines().skip(1)) {
         if (line.length() == 0) {
@@ -92,7 +89,12 @@ fn LoadSales(path: Str) => Collections.vector<Sale> throws CsvError, IOException
 }
 
 fn Main(args: Collections.vector<Str>) => Int throws CsvError, IOException {
-    path: Str = args.length() > 1 ? args[1] : "sales.csv";
+    path: Str = if (args.length() > 1) {
+        args[1];
+    }
+    else {
+        "sales.csv";
+    };
     analytics: Analytics = new();
 
     for (sale: Sale in LoadSales(path)) {

@@ -29,18 +29,23 @@ interface HealthReporter {
     fn Report(result: HealthResult) throws IOException;
 }
 
-class ConsoleReporter implements HealthReporter {
+class ConsoleReporter {
+    implements HealthReporter;
+
     fn Report(result: HealthResult) throws IOException {
-        state: Str = result.ok ? "OK" : "FAIL";
-        std.cout
-            << state
-            << " "
-            << result.endpoint.name
-            << " status="
-            << result.statusCode
-            << " preview=\""
-            << result.bodyPreview
-            << "\"\n";
+        state: Str = if (result.ok) {
+            "OK";
+        }
+        else {
+            "FAIL";
+        };
+        println!(
+            "{} {} status={} preview=\"{}\"",
+            state,
+            result.endpoint.name,
+            result.statusCode,
+            result.bodyPreview
+        );
     }
 }
 
@@ -64,7 +69,12 @@ class HealthClient {
             );
 
         body: Str = response.body();
-        preview: Str = body.length() > 80 ? body.substring(0, 80) : body;
+        preview: Str = if (body.length() > 80) {
+            body.substring(0, 80);
+        }
+        else {
+            body;
+        };
 
         return HealthResult {
             endpoint: endpoint,
@@ -126,14 +136,14 @@ async fn Main() => Task<Int> {
     try {
         failures: Int = await CheckAll(DefaultEndpoints(), reporter);
         if (failures == 0) {
-            std.cout << "All endpoints are healthy.\n";
+            println!("All endpoints are healthy.");
         } else {
-            std.cerr << failures << " endpoint(s) failed.\n";
+            eprintln!("{} endpoint(s) failed.", failures);
         }
         return failures;
     }
     catch (error: HealthError) {
-        std.cerr << "Health check failed: " << error.ToString() << "\n";
+        eprintln!("Health check failed: {}", error.ToString());
         return 1;
     }
 }

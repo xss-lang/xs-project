@@ -184,7 +184,7 @@ throw OutOfRangeException("Index out of range");
 
 class File {
     File.Drop() {
-        std.cout << "File closed\n";
+        println!("File closed");
     }
 }
 

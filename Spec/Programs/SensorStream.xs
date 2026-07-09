@@ -94,7 +94,7 @@ async fn Main() => Task<Int> throws SensorError, IOException {
     }
 
     for (average: Average in aggregator.Averages()) {
-        std.cout << average.sensorId << " average=" << average.value << "\n";
+        println!("{} average={}", average.sensorId, average.value);
     }
 
     return 0;

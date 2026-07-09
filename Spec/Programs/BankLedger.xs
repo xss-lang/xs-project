@@ -75,7 +75,7 @@ class Ledger {
 
     fn Print() throws IOException {
         for ((id, account): (Str, Account) in this.accounts) {
-            std.cout << id << " " << account.owner << " " << account.balance.cents << "\n";
+            println!("{} {} {}", id, account.owner, account.balance.cents);
         }
     }
 }

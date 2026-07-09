@@ -92,7 +92,7 @@ fn Main() => Int throws ResolveError, IOException {
     graph.Add(PackageOf("runtime", "1.4.0", Collections.vector<Str>.new()));
 
     for (package: Package in graph.Resolve("app")) {
-        std.cout << package.name << "@" << package.version << "\n";
+        println!("{}@{}", package.name, package.version);
     }
 
     return 0;

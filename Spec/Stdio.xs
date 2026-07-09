@@ -1,527 +1,106 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-// Stdio system:
+// Stdio module:
 
 //{
-The Stdio module provides:
+Stdio provides formatted text output macros and standard stream handles.
 
-- Standard input
-- Standard output
-- Standard error
-- File creation
-- Directory creation
-- File opening
-- File reading
-- File writing
-- File and directory checks
-- Basic file information
+Stdio does not provide filesystem operations.
+Filesystem operations belong to the Fs module.
 
-std.format is not provided by Stdio.
-It belongs to the separate Format module.
+Stdio does not provide string interpolation.
+Formatted output uses placeholder-based formatting.
 }//
 
-imports Stdio;
+imports Stdio, Fs;
 
 
-// standard output
+// standard output macros
 
-fn StandardOutput() throws IOException {
-    std.cout << "Hello\n";
+fn PrintWithoutNewline() throws IOException {
+    print!("Hello");
+}
 
-    value: Int = 42;
-
-    std.cout
-        << "Value: "
-        << value
-        << "\n";
+fn PrintWithNewline() throws IOException {
+    println!("Hello");
 }
 
 
-// standard input
+// standard error macros
 
-fn StandardInput() throws IOException {
-    number: Int;
+fn ErrorWithoutNewline() throws IOException {
+    eprint!("error");
+}
 
-    std.cout << "Enter a number: ";
-    std.cin >> number;
-
-    std.cout
-        << "Entered number: "
-        << number
-        << "\n";
+fn ErrorWithNewline() throws IOException {
+    eprintln!("error");
 }
 
 
-// standard error
+// formatting
 
-fn StandardError() throws IOException {
-    std.cerr << "An error occurred\n";
-}
-
-
-// standard streams through fout and fin
-
-fn StandardStreamEquivalents() throws IOException {
-    value: Int;
-
-    // Equivalent to std.cout
-    std.fout << [stdout] << "Hello\n";
-
-    // Equivalent to std.cerr
-    std.fout << [stderr] << "Error\n";
-
-    // Equivalent to std.cin
-    std.fin >> [stdin] >> value;
-}
-
-
-// file creation
-
-fn CreateFile() throws IOException {
-    std.fcreate("file.txt");
-}
-
-// std.fcreate():
-//
-// - Creates a new file.
-// - Does not open the file.
-// - Does not return a value.
-// - Throws IOException if the file already exists.
-// - Throws IOException if the parent directory does not exist.
-
-
-// directory creation
-
-fn CreateDirectory() throws IOException {
-    std.dcreate("folder");
-}
-
-// std.dcreate():
-//
-// - Creates a new directory.
-// - Does not return a value.
-// - Throws IOException if the directory already exists.
-// - Does not automatically create missing parent directories.
-
-
-// file opening
-
-fn OpenFile() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-}
-
-// std.fopen():
-//
-// - Opens an existing file.
-// - Always opens the file for reading and writing.
-// - Does not support an explicit mode argument.
-// - Throws IOException if the file does not exist.
-// - Throws IOException if the path points to a directory.
-
-
-// file lifetime
-
-// Open file handles are closed automatically by their destructor.
-//
-// Manual Close() is not required.
-//
-// Destruction follows the ownership, RAII and LIFO rules.
-
-
-// file output
-
-fn WriteFile() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    std.fout << [openedFile] << "Written";
-}
-
-// std.fout always appends to the end of the file.
-// It does not truncate or overwrite existing contents.
-
-
-// chained file output
-
-fn ChainedFileOutput() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
+fn FormatValues() throws IOException {
+    user: Str = "Alfa";
     age: Int = 26;
 
-    std.fout
-        << [openedFile]
-        << "Age: "
-        << age
-        << "\n";
+    println!("{} is {}", user, age);
 }
 
-
-// output target position
-
-// The [target] expression may appear at any position in the chain.
-
-fn OutputTargetPosition() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    std.fout << [openedFile] << "A";
-    std.fout << "B" << [openedFile];
-}
-
-
-// multiple output targets
-
-// <<< changes the output target.
-
-fn MultipleOutputTargets() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    std.fout
-        << [stdout]
-        << "Normal output\n"
-        <<< [stderr]
-        << "Error output\n"
-        <<< [openedFile]
-        << "File output\n";
-}
-
-// Equivalent to:
+// The first argument to print!, println!, eprint!, eprintln! and format!
+// must be a Str format template.
 //
-// std.fout << [stdout] << "Normal output\n";
-// std.fout << [stderr] << "Error output\n";
-// std.fout << [openedFile] << "File output\n";
-
-
-// file input
-
-fn ReadFile() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    text: Str;
-
-    std.fin >> [openedFile] >> text;
-}
-
-// std.fin reads the entire file contents.
-// After reading, the file cursor remains at the end.
-
-
-// read and return cursor to the beginning
-
-fn ReadAndReset() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    text: Str;
-
-    std.fin
-        >> [openedFile]
-        >> text
-        >> "\r";
-}
-
-// "\r" moves the file cursor back to the beginning
-// when used at the end of a std.fin chain.
+// "{}" formats one value with the Display formatter.
+// "{:?}" formats one value with the Debug formatter.
+// "{{" emits "{".
+// "}}" emits "}".
 //
-// "\r" remains the carriage-return escape sequence
-// and may also be used elsewhere.
+// Placeholder count must match the number of following arguments.
 
 
-// chained input
+// format! returns Str and does not write to a stream.
 
-fn ChainedInput() throws IOException {
-    openedFile: file = std.fopen("file.txt");
+fn BuildMessage() {
+    user1: Str = "Alfa";
+    user2: Str = "Leitwolf";
 
-    name: Str;
-    age: Int;
-
-    std.fin
-        >> [openedFile]
-        >> name
-        >> age;
+    users: Str = format!("{} {}", user1, user2);
 }
 
 
-// input target position
+// standard stream handles
 
-// The [target] expression may appear at any position in the chain.
+fn StandardHandles() throws IOException {
+    Fs.Write(std.Stdout, "stdout text\n");
+    Fs.Write(std.Stderr, "stderr text\n");
 
-fn InputTargetPosition() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    name: Str;
-    age: Int;
-
-    std.fin >> [openedFile] >> name >> age;
-    std.fin >> name >> [openedFile] >> age;
-    std.fin >> name >> age >> [openedFile];
+    text: Str = Fs.ReadToStr(std.Stdin);
+    println!("{}", text);
 }
 
+// std.Stdout, std.Stderr and std.Stdin are stream handles.
+// Raw reading and writing through these handles is provided by Fs.
+// Stdio macros use std.Stdout and std.Stderr internally.
 
-// multiple input targets
 
-// >>> changes the input target.
+// invalid examples
 
-fn MultipleInputTargets() throws IOException {
-    firstFile: file = std.fopen("first.txt");
-    secondFile: file = std.fopen("second.txt");
-
-    name: Str;
-    age: Int;
-
-    std.fin
-        >> [firstFile]
-        >> name
-        >>> [secondFile]
-        >> age;
+fn InvalidNonStringTemplate() throws IOException {
+    println!(10);
 }
 
-// Equivalent to:
-//
-// std.fin >> [firstFile] >> name;
-// std.fin >> [secondFile] >> age;
+// INVALID: println! expects a Str format template as its first argument.
 
 
-// stdin and file input in one chain
-
-fn MixedInputTargets() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    name: Str;
-    content: Str;
-
-    std.fin
-        >> [stdin]
-        >> name
-        >>> [openedFile]
-        >> content;
+fn InvalidMissingPlaceholder() throws IOException {
+    println!("value", 10);
 }
 
+// INVALID: one argument is supplied but the template has no placeholder.
 
-// file and directory checks
 
-fn PathChecks() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    fileCheck: Bool = std.isFile(openedFile);
-    filePathCheck: Bool = std.isFile("file.txt");
-
-    directoryCheck: Bool = std.isDir("folder");
-    openedFileDirectoryCheck: Bool = std.isDir(openedFile);
-
-    pathExists: Bool = std.exists("file.txt");
-    openedFileExists: Bool = std.exists(openedFile);
+fn InvalidMissingArgument() throws IOException {
+    println!("{}",);
 }
 
-// std.isFile(), std.isDir() and std.exists():
-//
-// - Accept a path string or an opened file value.
-// - Return true when the check succeeds positively.
-// - Return false when the check succeeds negatively.
-// - Return None when an error occurs.
-//
-// std.exists() works with both files and directories.
-
-
-// open-state check
-
-fn OpenState() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    state: Bool = std.isOpen(openedFile);
-}
-
-// std.isOpen():
-//
-// - Returns true if the file is open.
-// - Returns false if the file is not open.
-// - Returns None if the check fails.
-
-
-// file name
-
-fn FileName() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    name: Str = std.fname(openedFile);
-}
-
-// std.fname():
-//
-// - Returns only the file name.
-//
-// Example result:
-//
-// "file.txt"
-//
-// - Does not return the full path.
-// - Does not throw when the operation fails.
-// - Returns "" when the operation fails.
-
-
-// file size
-
-fn FileSize() throws IOException, OutOfRangeException {
-    openedFile: file = std.fopen("file.txt");
-
-    size: Byte = std.fsize(openedFile);
-}
-
-// std.fsize():
-//
-// - Returns the file size as Byte.
-// - The size is measured in bytes.
-// - Returns None when the operation fails.
-// - Throws OutOfRangeException if the size exceeds
-//   the range supported by Byte.
-
-
-// escape sequences
-
-//{
-\'          -> Single quote
-\"          -> Double quote
-\\          -> Backslash
-\0          -> Null character
-\a          -> Alert
-\b          -> Backspace
-\f          -> Form feed
-\n          -> New line
-\r          -> Carriage return
-\t          -> Horizontal tab
-\v          -> Vertical tab
-\uXXXX      -> Four-digit Unicode escape
-\UXXXXXXXX  -> Eight-digit Unicode escape
-\xXX        -> Hexadecimal character escape
-}//
-
-
-// escape-sequence examples
-
-fn EscapeSequences() throws IOException {
-    std.cout << "First line\nSecond line\n";
-    std.cout << "Name:\tAlfa\n";
-    std.cout << "\"Quoted text\"\n";
-    std.cout << "Backslash: \\\n";
-    std.cout << "\u0041\n";
-}
-
-
-// VALID
-
-fn ValidConsoleIO() throws IOException {
-    value: Int;
-
-    std.cout << "Value: ";
-    std.cin >> value;
-}
-
-
-// VALID
-
-fn ValidFileIO() throws IOException {
-    openedFile: file = std.fopen("file.txt");
-
-    text: Str;
-
-    std.fin >> [openedFile] >> text >> "\r";
-
-    std.fout
-        << [openedFile]
-        << "Read content: "
-        << text
-        << "\n";
-}
-
-
-// VALID
-
-fn ValidTargetSwitching() throws IOException {
-    firstFile: file = std.fopen("first.txt");
-    secondFile: file = std.fopen("second.txt");
-
-    std.fout
-        << [firstFile]
-        << "First"
-        <<< [secondFile]
-        << "Second";
-}
-
-
-// INVALID
-
-fn InvalidOpenMode() {
-    openedFile: file =
-        std.fopen("file.txt", "read");
-}
-
-// std.fopen() does not accept a mode argument.
-
-
-// INVALID
-
-fn InvalidCreateResult() {
-    createdFile: file =
-        std.fcreate("file.txt");
-}
-
-// std.fcreate() does not return a value.
-
-
-// INVALID
-
-fn InvalidDirectoryResult() {
-    createdDirectory: file =
-        std.dcreate("folder");
-}
-
-// std.dcreate() does not return a value.
-
-
-// INVALID
-
-fn InvalidSecondInputTarget() throws IOException {
-    firstFile: file = std.fopen("first.txt");
-    secondFile: file = std.fopen("second.txt");
-
-    name: Str;
-    age: Int;
-
-    std.fin
-        >> [firstFile]
-        >> name
-        >> [secondFile]
-        >> age;
-}
-
-// A new input target requires >>>.
-
-
-// INVALID
-
-fn InvalidSecondOutputTarget() throws IOException {
-    firstFile: file = std.fopen("first.txt");
-    secondFile: file = std.fopen("second.txt");
-
-    std.fout
-        << [firstFile]
-        << "First"
-        << [secondFile]
-        << "Second";
-}
-
-// A new output target requires <<<.
-
-
-// Stdio does not provide:
-//
-// - File deletion
-// - Directory deletion
-// - File renaming
-// - File moving
-// - Full-path retrieval
-// - File-position retrieval
-// - File-modification-time retrieval
-// - Direct file truncation
-// - Direct overwrite mode
-//
-// File deletion, directory deletion, renaming,
-// moving and overwrite workflows use the Process API.
+// INVALID: the template has one placeholder but no value argument.

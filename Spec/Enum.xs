@@ -116,7 +116,7 @@ fn Parse(token: Token) {
         },
         else -> {
         },
-    };
+    }
 }
 
 

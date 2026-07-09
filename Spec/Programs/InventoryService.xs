@@ -41,7 +41,9 @@ interface Repository<K, V> {
     fn Put(key: K, value: V);
 }
 
-class InventoryRepository implements Repository<Str, Product> {
+class InventoryRepository {
+    implements Repository<Str, Product>;
+
     products: Collections.hashmap<Str, Product>;
 
     InventoryRepository() {
@@ -162,14 +164,12 @@ fn Main() throws IOException {
     while (true) {
         try {
             receipt: Receipt = resultReader.recv();
-            std.cout
-                << "order #"
-                << receipt.orderId
-                << " accepted="
-                << receipt.accepted
-                << " message="
-                << receipt.message
-                << "\n";
+            println!(
+                "order #{} accepted={} message={}",
+                receipt.orderId,
+                receipt.accepted,
+                receipt.message
+            );
         }
         catch (error: SyncException) {
             break;

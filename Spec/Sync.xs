@@ -1010,7 +1010,7 @@ fn ChannelExample() {
 
     value: Int = rx.recv();
 
-    std.cout << value << "\n";
+    println!("{}", value);
 }
 
 // Thread.channel<T>:

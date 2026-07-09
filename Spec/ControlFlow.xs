@@ -4,8 +4,8 @@
 // control flow system:
 
 //{
-match is not an expression.
-match is a statement.
+if/else may be used as a statement or as an expression.
+match may be used as a statement or as an expression.
 
 Supported statements:
 - if
@@ -16,6 +16,14 @@ Supported statements:
 - break
 - continue
 - match
+
+if statement syntax may omit `else`.
+if expression syntax requires `else` and ends with `};` when used
+as a full statement.
+
+match statement syntax ends with `}`.
+match expression syntax ends with `};` when used as a full statement,
+for example in `return match (...) { ... };`.
 }//
 
 fn Main() {
@@ -95,6 +103,19 @@ fn TestElseIf(x: Int) {
 
 
 // VALID
+fn TestIfExpression(x: Int) => Int {
+    return if (x > 0) {
+        1;
+    }
+    else {
+        0;
+    };
+}
+// if expression branches must produce a value compatible with the
+// surrounding expression type unless the branch diverges.
+
+
+// VALID
 fn TestFor() {
     for (i: Int = 0; i < 10; i++) {
         continue;
@@ -128,9 +149,9 @@ fn TestMatch(x: Int) {
 }
 
 
-// INVALID
-fn InvalidMatchExpression(x: Int) {
-    y: Int = match (x) {
+// VALID
+fn TestMatchExpression(x: Int) => Int {
+    return match (x) {
         0 -> {
             10;
         },
@@ -139,7 +160,8 @@ fn InvalidMatchExpression(x: Int) {
         },
     };
 }
-// match is a statement, not an expression.
+// match expression arms must produce a value compatible with the
+// surrounding expression type unless the arm diverges.
 
 
 // INVALID
@@ -154,3 +176,12 @@ fn InvalidContinue() {
     continue;
 }
 // continue can only be used inside loops.
+
+
+// INVALID
+fn InvalidIfExpression(x: Int) => Int {
+    return if (x > 0) {
+        1;
+    };
+}
+// if expression requires else.

@@ -18,7 +18,9 @@ interface TextPlugin {
     fn Run(input: Str) => Str throws PipelineError;
 }
 
-class TrimPlugin implements TextPlugin {
+class TrimPlugin {
+    implements TextPlugin;
+
     fn Name() => Str {
         return "trim";
     }
@@ -28,7 +30,9 @@ class TrimPlugin implements TextPlugin {
     }
 }
 
-class UppercasePlugin implements TextPlugin {
+class UppercasePlugin {
+    implements TextPlugin;
+
     fn Name() => Str {
         return "upper";
     }
@@ -38,7 +42,9 @@ class UppercasePlugin implements TextPlugin {
     }
 }
 
-class ReplacePlugin implements TextPlugin {
+class ReplacePlugin {
+    implements TextPlugin;
+
     fromText: Str;
     toText: Str;
 
@@ -79,13 +85,18 @@ class Pipeline {
 }
 
 fn Main(args: Collections.vector<Str>) => Int throws PipelineError, IOException {
-    input: Str = args.length() > 1 ? args[1] : "  hello x#  ";
+    input: Str = if (args.length() > 1) {
+        args[1];
+    }
+    else {
+        "  hello x#  ";
+    };
     pipeline: Pipeline = new();
 
     pipeline.Add(TrimPlugin.new());
     pipeline.Add(ReplacePlugin.new("x#", "X#"));
     pipeline.Add(UppercasePlugin.new());
 
-    std.cout << pipeline.Run(input) << "\n";
+    println!("{}", pipeline.Run(input));
     return 0;
 }
