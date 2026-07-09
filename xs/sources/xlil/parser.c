@@ -1,0 +1,407 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "model_internal.h"
+
+#include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct
+{
+  const char *path;
+  const char *text;
+  size_t length;
+  size_t cursor;
+  size_t line;
+} Parser;
+
+typedef struct
+{
+  XsLilBlock *block;
+  XsLilBlockId target;
+} PendingBranch;
+
+static XsLilStatus parse_error(Parser *parser, XsLilError *error, const char *message)
+{
+  char buffer[256];
+  snprintf(buffer, sizeof(buffer), "%s:%zu: %s", parser->path == nullptr ? "<xlil>" : parser->path, parser->line,
+           message);
+  return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, buffer);
+}
+
+static const char *skip_space(const char *cursor, const char *end)
+{
+  while (cursor < end && (*cursor == ' ' || *cursor == '\t'))
+    ++cursor;
+  return cursor;
+}
+
+static bool next_line(Parser *parser, const char **line, size_t *length)
+{
+  if (parser->cursor >= parser->length)
+    return false;
+  size_t start = parser->cursor;
+  while (parser->cursor < parser->length && parser->text[parser->cursor] != '\n' &&
+         parser->text[parser->cursor] != '\r')
+    ++parser->cursor;
+  *line = parser->text + start;
+  *length = parser->cursor - start;
+  if (parser->cursor < parser->length && parser->text[parser->cursor] == '\r')
+    ++parser->cursor;
+  if (parser->cursor < parser->length && parser->text[parser->cursor] == '\n')
+    ++parser->cursor;
+  ++parser->line;
+  return true;
+}
+
+static bool span_equals(const char *text, size_t length, const char *expected)
+{
+  return strlen(expected) == length && strncmp(text, expected, length) == 0;
+}
+
+static bool parse_type(const char *start, size_t length, XsLilType *type)
+{
+  static const struct
+  {
+    const char *name;
+    XsLilTypeKind kind;
+  } types[] = {
+      {"void", XS_LIL_TYPE_VOID}, {"bool", XS_LIL_TYPE_BOOL}, {"u8", XS_LIL_TYPE_U8},     {"i8", XS_LIL_TYPE_I8},
+      {"u16", XS_LIL_TYPE_U16},   {"i16", XS_LIL_TYPE_I16},   {"u32", XS_LIL_TYPE_U32},   {"i32", XS_LIL_TYPE_I32},
+      {"u64", XS_LIL_TYPE_U64},   {"i64", XS_LIL_TYPE_I64},   {"u128", XS_LIL_TYPE_U128}, {"i128", XS_LIL_TYPE_I128},
+      {"f16", XS_LIL_TYPE_F16},   {"f32", XS_LIL_TYPE_F32},   {"f64", XS_LIL_TYPE_F64},   {"f128", XS_LIL_TYPE_F128},
+  };
+  for (size_t i = 0; i < sizeof(types) / sizeof(types[0]); ++i)
+  {
+    if (span_equals(start, length, types[i].name))
+    {
+      *type = (XsLilType){.kind = types[i].kind};
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool parse_type_cursor(const char **cursor, const char *end, XsLilType *type)
+{
+  const char *start = skip_space(*cursor, end);
+  const char *type_end = start;
+  while (type_end < end && *type_end != ' ' && *type_end != '\t' && *type_end != ',' && *type_end != ')')
+    ++type_end;
+  if (type_end == start || !parse_type(start, (size_t)(type_end - start), type))
+    return false;
+  *cursor = skip_space(type_end, end);
+  return true;
+}
+
+static bool append_type(XsLilType **items, size_t *count, XsLilType type)
+{
+  XsLilType *grown = realloc(*items, (*count + 1U) * sizeof(*grown));
+  if (grown == nullptr)
+    return false;
+  *items = grown;
+  (*items)[(*count)++] = type;
+  return true;
+}
+
+static bool parse_signature(const char *line, size_t length, const char *prefix, char **name, XsLilType *return_type,
+                            XsLilType **parameters, size_t *parameter_count)
+{
+  const char *end = line + length;
+  const char *cursor = line + strlen(prefix);
+  const char *colon = cursor;
+  while (colon < end && *colon != ':')
+    ++colon;
+  if (colon == end)
+    return false;
+  const char *name_end = colon;
+  while (name_end > cursor && (name_end[-1] == ' ' || name_end[-1] == '\t'))
+    --name_end;
+  if (name_end == cursor)
+    return false;
+  *name = xs_lil_copy_span(cursor, (size_t)(name_end - cursor));
+  if (*name == nullptr)
+    return false;
+  cursor = skip_space(colon + 1, end);
+  if (cursor == end || *cursor++ != '(')
+    return false;
+  cursor = skip_space(cursor, end);
+  while (cursor < end && *cursor != ')')
+  {
+    XsLilType parameter = {0};
+    if (!parse_type_cursor(&cursor, end, &parameter) || parameter.kind == XS_LIL_TYPE_VOID)
+      return false;
+    if (!append_type(parameters, parameter_count, parameter))
+      return false;
+    if (cursor < end && *cursor == ',')
+      cursor = skip_space(cursor + 1, end);
+    else if (cursor < end && *cursor != ')')
+      return false;
+  }
+  if (cursor == end || *cursor++ != ')')
+    return false;
+  cursor = skip_space(cursor, end);
+  if ((size_t)(end - cursor) < 2U || cursor[0] != '-' || cursor[1] != '>')
+    return false;
+  cursor = skip_space(cursor + 2, end);
+  if (!parse_type_cursor(&cursor, end, return_type))
+    return false;
+  return skip_space(cursor, end) == end;
+}
+
+static bool parse_u32_after_prefix(const char *line, size_t length, const char *prefix, uint32_t *value)
+{
+  size_t prefix_length = strlen(prefix);
+  if (length <= prefix_length || strncmp(line, prefix, prefix_length) != 0)
+    return false;
+  uint32_t result = 0;
+  for (size_t i = prefix_length; i < length; ++i)
+  {
+    if (line[i] < '0' || line[i] > '9')
+      return false;
+    uint32_t digit = (uint32_t)(line[i] - '0');
+    if (result > (UINT32_MAX - digit) / 10U)
+      return false;
+    result = result * 10U + digit;
+  }
+  *value = result;
+  return true;
+}
+
+static bool parse_i64_tail(const char *start, const char *end, int64_t *value)
+{
+  char *copy = xs_lil_copy_span(start, (size_t)(end - start));
+  if (copy == nullptr)
+    return false;
+  char *tail = nullptr;
+  errno = 0;
+  long long parsed = strtoll(copy, &tail, 10);
+  bool ok = errno == 0 && tail != copy && *skip_space(tail, copy + strlen(copy)) == '\0';
+  free(copy);
+  if (!ok)
+    return false;
+  *value = (int64_t)parsed;
+  return true;
+}
+
+static bool append_branch(PendingBranch **branches, size_t *count, XsLilBlock *block, XsLilBlockId target)
+{
+  PendingBranch *grown = realloc(*branches, (*count + 1U) * sizeof(*grown));
+  if (grown == nullptr)
+    return false;
+  *branches = grown;
+  (*branches)[(*count)++] = (PendingBranch){.block = block, .target = target};
+  return true;
+}
+
+static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const char *line, size_t length,
+                                     XsLilError *error)
+{
+  uint32_t result = 0;
+  const char *colon = line;
+  while (colon < line + length && *colon != ':')
+    ++colon;
+  if (colon == line + length || !parse_u32_after_prefix(line, (size_t)(colon - line), "%", &result))
+    return parse_error(parser, error, "unsupported XLIL instruction");
+  if ((size_t)(line + length - colon) < 6U || !span_equals(colon, 6, ":i64 ="))
+    return parse_error(parser, error, "unsupported XLIL instruction");
+  const char *operation = skip_space(colon + 6, line + length);
+  const char *const_prefix = "const ";
+  const char *const_i64_prefix = "const.i64 ";
+  int64_t value = 0;
+  bool parsed = false;
+  if ((size_t)(line + length - operation) >= strlen(const_prefix) &&
+      strncmp(operation, const_prefix, strlen(const_prefix)) == 0)
+    parsed = parse_i64_tail(operation + strlen(const_prefix), line + length, &value);
+  else if ((size_t)(line + length - operation) >= strlen(const_i64_prefix) &&
+           strncmp(operation, const_i64_prefix, strlen(const_i64_prefix)) == 0)
+    parsed = parse_i64_tail(operation + strlen(const_i64_prefix), line + length, &value);
+  if (!parsed)
+    return parse_error(parser, error, "unsupported XLIL instruction");
+  XsLilValueId actual = 0;
+  XsLilStatus status = xs_lil_block_add_const_i64(block, value, &actual, error);
+  if (status != XS_LIL_OK)
+    return status;
+  if (actual != result)
+    return parse_error(parser, error, "XLIL value ids must be sequential");
+  return XS_LIL_OK;
+}
+
+static XsLilStatus parse_terminator(Parser *parser, XsLilBlock *block, const char *line, size_t length,
+                                    PendingBranch **branches, size_t *branch_count, XsLilError *error)
+{
+  if (span_equals(line, length, "ret"))
+    return xs_lil_block_set_return(block, error);
+  uint32_t value = 0;
+  if (parse_u32_after_prefix(line, length, "ret %", &value))
+    return xs_lil_block_set_return_value(block, value, error);
+  uint32_t target = 0;
+  if (parse_u32_after_prefix(line, length, "br bb", &target))
+  {
+    if (!append_branch(branches, branch_count, block, target))
+      return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while parsing XLIL branch");
+    return XS_LIL_OK;
+  }
+  return parse_error(parser, error, "unsupported XLIL terminator");
+}
+
+static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, XsLilError *error)
+{
+  PendingBranch *branches = nullptr;
+  size_t branch_count = 0;
+  XsLilBlock *current = nullptr;
+  const char *line = nullptr;
+  size_t length = 0;
+  while (next_line(parser, &line, &length))
+  {
+    const char *trimmed = skip_space(line, line + length);
+    size_t trimmed_length = (size_t)(line + length - trimmed);
+    if (trimmed_length == 0)
+      continue;
+    if (span_equals(trimmed, trimmed_length, ".end"))
+      break;
+    if (trimmed_length > 4 && trimmed[0] == 'b' && trimmed[1] == 'b')
+    {
+      const char *dot = trimmed;
+      while (dot < trimmed + trimmed_length && *dot != '.')
+        ++dot;
+      if (dot == trimmed + trimmed_length || trimmed[trimmed_length - 1] != ':')
+        return parse_error(parser, error, "XLIL block header is invalid");
+      uint32_t id = 0;
+      if (!parse_u32_after_prefix(trimmed, (size_t)(dot - trimmed), "bb", &id))
+        return parse_error(parser, error, "XLIL block id is invalid");
+      char *label = xs_lil_copy_span(dot + 1, (size_t)(trimmed + trimmed_length - 1 - (dot + 1)));
+      if (label == nullptr)
+        return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while parsing XLIL block label");
+      XsLilStatus status = xs_lil_function_append_block(function, label, &current, error);
+      free(label);
+      if (status != XS_LIL_OK)
+        return status;
+      if (current->id != id)
+        return parse_error(parser, error, "XLIL block ids must be sequential");
+      continue;
+    }
+    if (current == nullptr)
+      return parse_error(parser, error, "XLIL instruction appears before a block");
+    XsLilStatus status = XS_LIL_OK;
+    if (trimmed[0] == '%')
+      status = parse_instruction(parser, current, trimmed, trimmed_length, error);
+    else
+      status = parse_terminator(parser, current, trimmed, trimmed_length, &branches, &branch_count, error);
+    if (status != XS_LIL_OK)
+    {
+      free(branches);
+      return status;
+    }
+  }
+  if (line == nullptr ||
+      !span_equals(skip_space(line, line + length), (size_t)(line + length - skip_space(line, line + length)), ".end"))
+  {
+    free(branches);
+    return parse_error(parser, error, "XLIL function body is not closed");
+  }
+  for (size_t i = 0; i < branch_count; ++i)
+  {
+    XsLilStatus status = xs_lil_block_set_branch(branches[i].block, branches[i].target, error);
+    if (status != XS_LIL_OK)
+    {
+      free(branches);
+      return status;
+    }
+  }
+  free(branches);
+  for (size_t i = 0; i < function->block_count; ++i)
+  {
+    if (function->blocks[i]->terminator.kind == XS_LIL_TERMINATOR_NONE)
+      return parse_error(parser, error, "XLIL block is missing a terminator");
+  }
+  return XS_LIL_OK;
+}
+
+XsLilStatus xs_lil_module_parse_text(const char *path, const char *text, size_t length, XsLilModule **module,
+                                     XsLilError *error)
+{
+  xs_lil_clear_error(error);
+  if (text == nullptr || module == nullptr)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL text and output module are required");
+  *module = nullptr;
+  Parser parser = {.path = path, .text = text, .length = length};
+  const char *line = nullptr;
+  size_t line_length = 0;
+  if (!next_line(&parser, &line, &line_length) || !span_equals(line, line_length, ".xlil version 0"))
+    return parse_error(&parser, error, "XLIL version header is invalid or unsupported");
+  if (!next_line(&parser, &line, &line_length))
+    return parse_error(&parser, error, "XLIL module header is missing");
+  const char *module_prefix = ".xlil module ";
+  size_t module_prefix_length = strlen(module_prefix);
+  if (line_length <= module_prefix_length || strncmp(line, module_prefix, module_prefix_length) != 0)
+    return parse_error(&parser, error, "XLIL module header is invalid");
+  char *module_name = xs_lil_copy_span(line + module_prefix_length, line_length - module_prefix_length);
+  if (module_name == nullptr)
+    return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while parsing XLIL module name");
+  XsLilModule *result = nullptr;
+  XsLilStatus status = xs_lil_module_create(module_name, &result, error);
+  free(module_name);
+  if (status != XS_LIL_OK)
+    return status;
+  while (next_line(&parser, &line, &line_length))
+  {
+    const char *trimmed = skip_space(line, line + line_length);
+    size_t trimmed_length = (size_t)(line + line_length - trimmed);
+    if (trimmed_length == 0)
+      continue;
+    const char *prefix = nullptr;
+    bool is_definition = false;
+    if (trimmed_length > 8 && strncmp(trimmed, ".extern ", 8) == 0)
+      prefix = ".extern ";
+    else if (trimmed_length > 6 && strncmp(trimmed, ".func ", 6) == 0)
+    {
+      prefix = ".func ";
+      is_definition = true;
+    }
+    else
+    {
+      xs_lil_module_destroy(result);
+      return parse_error(&parser, error, "XLIL function record is invalid");
+    }
+    char *name = nullptr;
+    XsLilType return_type = {0};
+    XsLilType *parameters = nullptr;
+    size_t parameter_count = 0;
+    bool signature_ok =
+        parse_signature(trimmed, trimmed_length, prefix, &name, &return_type, &parameters, &parameter_count);
+    if (!signature_ok)
+    {
+      free(name);
+      free(parameters);
+      xs_lil_module_destroy(result);
+      return parse_error(&parser, error, "XLIL signature is invalid");
+    }
+    XsLilFunction *function = nullptr;
+    status = is_definition ? xs_lil_module_add_function_definition(result, name, return_type, parameters,
+                                                                   parameter_count, &function, error)
+                           : xs_lil_module_add_function(result, name, return_type, parameters, parameter_count, error);
+    free(name);
+    free(parameters);
+    if (status != XS_LIL_OK)
+    {
+      xs_lil_module_destroy(result);
+      return status;
+    }
+    if (is_definition)
+    {
+      status = parse_function_body(&parser, function, error);
+      if (status != XS_LIL_OK)
+      {
+        xs_lil_module_destroy(result);
+        return status;
+      }
+    }
+  }
+  *module = result;
+  return XS_LIL_OK;
+}

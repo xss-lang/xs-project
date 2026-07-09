@@ -139,11 +139,65 @@ static void test_function_body_branch_text_writer(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_reads_external_signature(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.extern Import : (i64) -> i64\n";
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_parse_text("extern.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != NULL);
+  CHECK(strcmp(xs_lil_module_name(module), "App") == 0);
+  CHECK(xs_lil_module_function_count(module) == 1);
+  const XsLilFunction *function = xs_lil_module_function_at(module, 0);
+  CHECK(function != NULL);
+  CHECK(strcmp(xs_lil_function_name(function), "Import") == 0);
+  CHECK(!xs_lil_function_is_definition(function));
+  CHECK(xs_lil_function_return_type(function).kind == XS_LIL_TYPE_I64);
+  CHECK(xs_lil_function_parameter_count(function) == 1);
+  CHECK(xs_lil_function_parameter_type(function, 0).kind == XS_LIL_TYPE_I64);
+  xs_lil_module_destroy(module);
+}
+
+static void test_text_parser_reads_function_definition(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Main : () -> void\nbb0.entry:\n  ret\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_parse_text("func.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  const XsLilFunction *function = xs_lil_module_function_at(module, 0);
+  CHECK(function != NULL);
+  CHECK(strcmp(xs_lil_function_name(function), "Main") == 0);
+  CHECK(xs_lil_function_is_definition(function));
+  CHECK(xs_lil_function_return_type(function).kind == XS_LIL_TYPE_VOID);
+  xs_lil_module_destroy(module);
+}
+
+static void test_text_parser_rejects_invalid_inputs(void)
+{
+  static const char *const invalid_inputs[] = {
+      ".xlil version 1\n.xlil module App\n",
+      ".xlil version 0\n.extern Import : () -> void\n",
+      ".xlil version 0\n.xlil module App\n.extern Import : (bad) -> void\n",
+      ".xlil version 0\n.xlil module App\n.extern Import (i64) -> i64\n",
+  };
+  for (size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
+  {
+    XsLilError error = {0};
+    XsLilModule *module = NULL;
+    CHECK(xs_lil_module_parse_text("bad.xlil", invalid_inputs[i], strlen(invalid_inputs[i]), &module, &error) ==
+          XS_LIL_INVALID_ARGUMENT);
+    CHECK(module == NULL);
+  }
+}
+
 int main(void)
 {
   test_module_and_text_writer();
   test_function_body_text_writer();
   test_function_body_rejects_missing_return_value();
   test_function_body_branch_text_writer();
+  test_text_parser_reads_external_signature();
+  test_text_parser_reads_function_definition();
+  test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

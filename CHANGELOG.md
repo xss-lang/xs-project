@@ -30,6 +30,7 @@ Versioned releases will begin after LLVM IR generation becomes available. Until 
   `xs build --hir|--mir|--xlil -file ...`.
 - Direct `.xlil` inputs with supported version/module headers and top-level `.extern`/`.func` signatures can produce LLVM IR
   declarations.
+- Public XLIL C23 API can parse v0 text registry files and expose read-only function signature metadata.
 - Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats, not binary or opaque
   serialized compiler state.
 - XHIR and XMIR documentation now separates their structured text design from XLIL's assembly-like registry format.

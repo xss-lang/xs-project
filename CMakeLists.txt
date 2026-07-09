@@ -122,7 +122,6 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/mir/optimizer.c
     xs/sources/mir/xlil_lowering.c
     xs/sources/mono/plan.c
-    xs/sources/xlil/writer.c
     xs/sources/hir/dump.c
     xs/sources/hir/expression_check.c
     xs/sources/hir/module_graph.c
@@ -146,6 +145,8 @@ if(XS_BUILD_PROJECT_XS)
     xs/sources/syntax/parser_type.c
     xs/sources/token.c
     xs/sources/xlil/model.c
+    xs/sources/xlil/parser.c
+    xs/sources/xlil/writer.c
   )
 
   target_include_directories(xs_compiler PUBLIC include xs/include xsproj/include)

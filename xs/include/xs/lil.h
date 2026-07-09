@@ -57,6 +57,8 @@ typedef struct XsLilFunction XsLilFunction;
 typedef struct XsLilModule XsLilModule;
 
 XsLilStatus xs_lil_module_create(const char *name, XsLilModule **module, XsLilError *error);
+XsLilStatus xs_lil_module_parse_text(const char *path, const char *text, size_t length, XsLilModule **module,
+                                     XsLilError *error);
 void xs_lil_module_destroy(XsLilModule *module);
 const char *xs_lil_module_name(const XsLilModule *module);
 
@@ -66,6 +68,12 @@ XsLilStatus xs_lil_module_add_function_definition(XsLilModule *module, const cha
                                                   const XsLilType *parameters, size_t parameter_count,
                                                   XsLilFunction **function, XsLilError *error);
 size_t xs_lil_module_function_count(const XsLilModule *module);
+const XsLilFunction *xs_lil_module_function_at(const XsLilModule *module, size_t index);
+const char *xs_lil_function_name(const XsLilFunction *function);
+XsLilType xs_lil_function_return_type(const XsLilFunction *function);
+size_t xs_lil_function_parameter_count(const XsLilFunction *function);
+XsLilType xs_lil_function_parameter_type(const XsLilFunction *function, size_t index);
+bool xs_lil_function_is_definition(const XsLilFunction *function);
 
 XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *label, XsLilBlock **block,
                                          XsLilError *error);

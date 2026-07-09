@@ -94,6 +94,6 @@ The direct file paths skip project manifests. Their final semantics depend on th
 
 The CLI recognizes the forms now; full production semantics are still being connected.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
-unsupported grammar versions. A supported direct `.xlil` input with a module header and top-level `.extern`/`.func`
-signatures can currently produce an LLVM IR file containing matching declarations. XLIL function body lowering is still
-being connected.
+unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API and can
+currently produce an LLVM IR file containing matching declarations for `.extern` and `.func` signatures. XLIL function body
+lowering is still being connected.

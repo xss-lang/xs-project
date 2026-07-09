@@ -77,6 +77,7 @@ struct XsLilModule
 void xs_lil_clear_error(XsLilError *error);
 XsLilStatus xs_lil_set_error(XsLilError *error, XsLilStatus status, const char *message);
 char *xs_lil_copy_text(const char *text);
+char *xs_lil_copy_span(const char *text, size_t length);
 XsLilStatus xs_lil_write_checked(FILE *stream, XsLilError *error, const char *text);
 
 #endif

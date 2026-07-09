@@ -34,6 +34,17 @@ char *xs_lil_copy_text(const char *text)
   return copy;
 }
 
+char *xs_lil_copy_span(const char *text, size_t length)
+{
+  char *copy = malloc(length + 1);
+  if (copy != NULL)
+  {
+    memcpy(copy, text, length);
+    copy[length] = '\0';
+  }
+  return copy;
+}
+
 XsLilStatus xs_lil_write_checked(FILE *stream, XsLilError *error, const char *text)
 {
   if (fputs(text, stream) == EOF)
@@ -160,6 +171,40 @@ XsLilStatus xs_lil_module_add_function_definition(XsLilModule *module, const cha
 size_t xs_lil_module_function_count(const XsLilModule *module)
 {
   return module == NULL ? 0 : module->function_count;
+}
+
+const XsLilFunction *xs_lil_module_function_at(const XsLilModule *module, size_t index)
+{
+  if (module == NULL || index >= module->function_count)
+    return NULL;
+  return &module->functions[index];
+}
+
+const char *xs_lil_function_name(const XsLilFunction *function)
+{
+  return function == NULL ? NULL : function->name;
+}
+
+XsLilType xs_lil_function_return_type(const XsLilFunction *function)
+{
+  return function == NULL ? (XsLilType){.kind = XS_LIL_TYPE_VOID} : function->return_type;
+}
+
+size_t xs_lil_function_parameter_count(const XsLilFunction *function)
+{
+  return function == NULL ? 0 : function->parameter_count;
+}
+
+XsLilType xs_lil_function_parameter_type(const XsLilFunction *function, size_t index)
+{
+  if (function == NULL || index >= function->parameter_count)
+    return (XsLilType){.kind = XS_LIL_TYPE_VOID};
+  return function->parameters[index];
+}
+
+bool xs_lil_function_is_definition(const XsLilFunction *function)
+{
+  return function != NULL && function->is_definition;
 }
 
 static XsLilStatus add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error)

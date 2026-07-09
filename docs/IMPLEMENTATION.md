@@ -85,7 +85,8 @@ The documented compilation order is preserved:
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
 - `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized.
 - Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
-- Direct `.xlil` inputs can validate the version/module headers and emit LLVM IR declarations for top-level signatures.
+- Direct `.xlil` inputs are parsed through the public XLIL C23 parser API and can emit LLVM IR declarations for top-level
+  signatures.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -362,8 +363,8 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - XLIL function declaration signatures lower through the XLIL type vocabulary rather than through HIR primitive types.
 - LLVM optimization pipelines from `default<O0>` through `default<O3>` can be configured.
 - LLVM module verification, LLVM IR text emission, and object file emission work.
-- `xs build --xlil -file <input.xlil>` can validate the XLIL version/module header and emit LLVM IR declarations from
-  top-level `.extern` and `.func` signatures. XLIL function body lowering is not connected to that CLI path yet.
+- `xs build --xlil -file <input.xlil>` parses XLIL v0 text through `xs_lil_module_parse_text` and emits LLVM IR declarations
+  from top-level `.extern` and `.func` signatures. XLIL function body lowering is not connected to that CLI path yet.
 - The linker can be invoked without a shell, with argument policy left to the upper layer.
 
 Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
@@ -395,8 +396,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   as separate public headers: `xs/lil/aot.h`, `xs/hir/jit.h`, and `xs/mir/jit.h`.
 - Direct file compilation entries are recognized as `xs build --output hir|mir|xlil -file <input>` and
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
-- `xs/lil.h` contains target-independent core APIs for XLIL modules, primitive types, function declarations, function bodies,
-  basic blocks, `const.i64`, and `return`.
+- `xs/lil.h` contains target-independent core APIs for XLIL modules, primitive types, text parsing/writing, function
+  declaration inspection, function bodies, basic blocks, `const.i64`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
   `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %N, bbA, bbB`, `ret`, and `.end`.
 - MIR functions carry explicit XLIL-vocabulary parameter and return types. The first MIR → XLIL body bridge lowers MIR
