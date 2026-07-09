@@ -21,7 +21,7 @@ Recommended order for newcomers:
 6. [XHIR.md](XHIR.md): human-readable HIR text format direction
 7. [XMIR.md](XMIR.md): human-readable MIR text format direction
 8. [XLIL.md](XLIL.md): backend input text registry direction
-9. [TODO.md](TODO.md): X# v0 decisions and remaining implementation work
+9. [TODO.md](TODO.md): public roadmap
 10. [RELEASES.md](RELEASES.md): release policy tied to the LLVM IR milestone
 11. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
 12. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
@@ -30,10 +30,10 @@ Recommended order for newcomers:
 
 - For documented X# syntax, `Spec/` has priority.
 - For the `.xsproj` format, `Spec/ProjectSystem.xs` and the public C API headers have priority.
-- For XHIR/XMIR text-output decisions, read `docs/XHIR.md`, `docs/XMIR.md`, and `docs/TODO.md` together.
-- For XLIL decisions, read `docs/XLIL.md`, `docs/TODO.md`, and `xs/include/xs/lil.h` together.
+- For XHIR/XMIR text-output behavior, read `docs/XHIR.md` and `docs/XMIR.md`.
+- For XLIL behavior, read `docs/XLIL.md` and `xs/include/xs/lil.h` together.
 - For implementation order, [IMPLEMENTATION.md](IMPLEMENTATION.md) is authoritative.
-- Major semantic and ABI decisions are tracked as the X# v0 contract in [TODO.md](TODO.md).
+- Public remaining work is summarized in [TODO.md](TODO.md).
 
 If you find a conflict, do not silently add new behavior. Update the documentation and implementation in the same patch.
 
@@ -44,5 +44,5 @@ When code behavior changes, at least one document should change too:
 - CLI changes go in `CLI.md`.
 - Build/toolchain changes go in `BUILDING.md`.
 - Pipeline or layer-boundary changes go in `ARCHITECTURE.md` and `IMPLEMENTATION.md`.
-- Major language/ABI decisions go in `TODO.md`.
+- Public roadmap changes go in `TODO.md`.
 - User-visible changes are summarized in the root `CHANGELOG.md`.

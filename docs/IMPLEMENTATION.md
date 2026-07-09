@@ -416,14 +416,13 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   intentionally separate from XLIL's assembly-like registry records.
 - Rust `xslang` XHIR text support can write and parse type-check diagnostic analysis records.
 
-XLIL instruction set, function body model, runtime/ABI layout, and MIR → XLIL body lowering decisions are fixed as the X# v0
-contract in [TODO.md](TODO.md); implementation will complete them incrementally.
+XLIL instruction set, function body model, runtime/ABI layout, and MIR → XLIL body lowering are implemented incrementally.
+Public XLIL behavior is documented in [XLIL.md](XLIL.md).
 
 ## Unfinished stages
 
-Large language, runtime, ABI, MIR, XLIL, backend, and tooling decisions for X# v0 are fixed in [TODO.md](TODO.md). Remaining
-work does not wait for decisions; it requires incremental implementation according to that contract. Small implementation
-decisions are made during development as long as they remain compatible with documented syntax and the current architecture.
+The public roadmap is summarized in [TODO.md](TODO.md). Remaining work is implemented incrementally while keeping documented
+syntax, public APIs, and the current architecture stable.
 
 - Macro fragment matcher engine and AST macro expansion
 - HIR method and operator resolution

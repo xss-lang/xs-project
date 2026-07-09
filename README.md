@@ -137,7 +137,7 @@ Intermediate output extensions:
 must remain human-readable even when their official record grammar becomes stricter. They are not assembly-like: XHIR is a
 structured semantic tree/record dump, and XMIR is a structured control-flow/analysis dump. `.xlil` will never be a binary
 format. Current XLIL text is assembly-like and starts with `.xlil version 0`, then uses directive/label/value records such
-as `.xlil module`, `.extern`, `.func`, `bb0.entry:`, `%0:i64 = const 42`, `br bb1`, `ret %0`, and `.end`.
+as `.xlil module`, `.extern`, `.func`, `bb0.entry:`, `%r0:i64 = const 42`, `br bb1`, `ret %r0`, and `.end`.
 
 ## Development rules
 
@@ -160,7 +160,7 @@ For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CON
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): compiler architecture and stage boundaries
 - [docs/CLI.md](docs/CLI.md): CLI contract and current status
 - [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md): detailed implementation status
-- [docs/TODO.md](docs/TODO.md): X# v0 decisions and tracking list
+- [docs/TODO.md](docs/TODO.md): public roadmap
 - [docs/MONOREPO.md](docs/MONOREPO.md): monorepo selection model
 - [docs/LLVM_BACKEND.md](docs/LLVM_BACKEND.md): LLVM backend infrastructure
 - [docs/XLIL.md](docs/XLIL.md): XLIL text registry and public API direction

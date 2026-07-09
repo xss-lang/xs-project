@@ -83,4 +83,4 @@ API concepts.
 - XLIL → LLVM function body lowering
 - End-to-end `xs build` / `xs run` executable generation
 
-These gaps are tracked in [IMPLEMENTATION.md](IMPLEMENTATION.md) and [TODO.md](TODO.md).
+These gaps are summarized in [IMPLEMENTATION.md](IMPLEMENTATION.md) and [TODO.md](TODO.md).
