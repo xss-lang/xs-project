@@ -209,12 +209,35 @@ impl Parser<'_>
 
   fn body(&mut self, function: &mut Function)
   {
+    let mut parameter = 0;
     while self.cursor < self.lines.len()
     {
       let line = self.current_line().unwrap_or_default();
       if line == ".end"
       {
         self.cursor += 1;
+        if parameter != function.parameters.len()
+        {
+          self.report(DiagnosticCode::InvalidInstruction,
+                      self.line_number() - 1,
+                      "XLIL function parameter records are incomplete");
+        }
+        return;
+      }
+      if let Some(record) = line.strip_prefix(".param ")
+      {
+        let line = self.line_number();
+        let record = record.to_string();
+        self.cursor += 1;
+        self.parameter_record(function, parameter, &record, line);
+        parameter += 1;
+        continue;
+      }
+      if parameter != function.parameters.len()
+      {
+        self.report(DiagnosticCode::InvalidInstruction,
+                    self.line_number(),
+                    "XLIL function parameter records are incomplete");
         return;
       }
       if !line.starts_with("bb")
@@ -230,6 +253,36 @@ impl Parser<'_>
     self.report(DiagnosticCode::UnexpectedEndOfInput,
                 self.line_number(),
                 "XLIL function body is not closed");
+  }
+
+  fn parameter_record(&mut self, function: &Function, parameter: usize, record: &str, line: usize)
+  {
+    let Some((value, type_name)) = record.split_once(':')
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL parameter record is invalid");
+      return;
+    };
+    let Some(value) = value.strip_prefix('%').and_then(|value| self.value_id(value, line))
+    else
+    {
+      return;
+    };
+    let Some(value_type) = self.type_name(type_name, line)
+    else
+    {
+      return;
+    };
+    if parameter >= function.parameters.len() ||
+       value != ValueId(parameter as u32) ||
+       value_type != function.parameters[parameter]
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL parameter record does not match function signature");
+    }
   }
 
   fn block(&mut self, function: &mut Function) -> Block
@@ -666,6 +719,17 @@ mod tests
     assert_eq!(module.functions.len(), 1);
     assert!(!module.functions[0].is_definition);
     assert_eq!(module.functions[0].parameters, vec![Type::I64]);
+  }
+
+  #[test]
+  fn parses_explicit_parameter_records()
+  {
+    let text =
+      ".xlil version 0\n.xlil module App\n.func Identity : (i64) -> i64\n.param %r0:i64\nbb0.entry:\n  ret %r0\n.end\n";
+    let module = parse_module(text).expect("parameterized function should parse");
+
+    assert_eq!(module.functions[0].parameter_value(0), Some(ValueId(0)));
+    assert_eq!(module.functions[0].values.len(), 1);
   }
 
   #[test]

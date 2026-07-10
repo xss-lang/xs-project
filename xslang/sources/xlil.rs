@@ -156,12 +156,24 @@ impl Function
   #[must_use]
   pub fn definition(name: impl Into<String>, return_type: Type, parameters: Vec<Type>) -> Self
   {
+    let values = parameters.iter()
+                           .enumerate()
+                           .map(|(index, value_type)| Value { id: ValueId(index as u32),
+                                                              value_type: *value_type })
+                           .collect();
     Self { name: name.into(),
            return_type,
            parameters,
-           values: vec![],
+           values,
            blocks: vec![],
            is_definition: true }
+  }
+
+  #[must_use]
+  pub fn parameter_value(&self, parameter: usize) -> Option<ValueId>
+  {
+    self.parameters.get(parameter)?;
+    Some(ValueId(parameter as u32))
   }
 
   pub fn append_block(&mut self, label: impl Into<String>) -> BlockId
@@ -473,6 +485,16 @@ mod tests
     assert!(!function.is_definition);
     assert_eq!(function.name, "xs$App$Main");
     assert_eq!(function.parameters, vec![Type::I64]);
+  }
+
+  #[test]
+  fn definitions_allocate_parameter_values_before_instruction_results()
+  {
+    let mut function = Function::definition("Identity", Type::I64, vec![Type::I64]);
+    let block = function.append_block("entry");
+
+    assert_eq!(function.parameter_value(0), Some(ValueId(0)));
+    assert_eq!(function.add_const_i64(block, 42), Some(ValueId(1)));
   }
 
   #[test]

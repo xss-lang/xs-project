@@ -41,6 +41,10 @@ fn write_function(function: &Function, output: &mut impl Write) -> fmt::Result
   {
     return Ok(());
   }
+  for (index, parameter) in function.parameters.iter().enumerate()
+  {
+    writeln!(output, ".param %r{}:{}", index, type_name(*parameter))?;
+  }
   for block in &function.blocks
   {
     write_block(block, output)?;
@@ -233,6 +237,20 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %r0:i64 = const 7\n  \
                 %r1:i64 = call xs$App$Callee(%r0)\n  ret %r1\n.end\n");
+  }
+
+  #[test]
+  fn writes_explicit_parameter_records()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("Identity", Type::I64, vec![Type::I64]);
+    let entry = function.append_block("entry");
+    assert!(function.set_return(entry, function.parameter_value(0)));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func Identity : (i64) -> i64\n.param %r0:i64\nbb0.entry:\n  ret \
+                %r0\n.end\n");
   }
 
   #[test]
