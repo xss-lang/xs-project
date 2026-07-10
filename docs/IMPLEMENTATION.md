@@ -354,10 +354,11 @@ semantics.
   `branch_if` records with `condition local N`, `then block A`, and `else block B`; XLIL writes/parses assembly-like
   `br_if %rN, bbA, bbB` terminators. Verifiers require a `bool` condition and existing target blocks. HIR lowering does not
   emit conditional control-flow yet. The MIR optimizer can fold same-block constant `branch_if` conditions to `goto`.
-- Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Int` locals, `Int`
-  literals, and local returns into a single-entry MIR block with typed XLIL-vocabulary local records. Unsupported HIR
-  expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering diagnostics instead of
-  inventing temporary backend semantics.
+- Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Long`/`Int` locals,
+  non-negative `Long` i32 and `Int` i64 literals, and local returns into a single-entry MIR block with typed
+  XLIL-vocabulary local records. Negative literal/unary-expression lowering and other integer widths remain deferred.
+  Unsupported HIR expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering
+  diagnostics instead of inventing temporary backend semantics.
 
 This stage does not yet produce complete statement/expression lowering, the full instruction set, exception edges, async
 state machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.

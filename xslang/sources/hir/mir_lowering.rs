@@ -197,8 +197,23 @@ impl HirToMirLowerer
                                                           value,
                                                           span });
       }
+      (Literal::Integer(value), Some(XlilType { kind: TypeKind::I32 })) =>
+      {
+        let Ok(value) = value.replace('\'', "").parse::<i32>()
+        else
+        {
+          self.report(DiagnosticCode::InvalidIntegerLiteral,
+                      "HIR integer literal does not fit MIR const.i32",
+                      span);
+          return;
+        };
+        lowered.blocks[0].statements
+                         .push(mir::Statement::ConstI32 { local: target,
+                                                          value,
+                                                          span });
+      }
       (Literal::Integer(_), Some(_)) => self.report(DiagnosticCode::UnsupportedType,
-                                                    "only Int literals can lower to MIR const.i64 today",
+                                                    "only Long and Int literals can lower to MIR constants today",
                                                     span),
       (Literal::None, _) => self.report(DiagnosticCode::UnsupportedExpression,
                                         "Optional None lowering is not implemented in MIR yet",
@@ -351,6 +366,7 @@ mod tests
   {
     assert_eq!(primitive_to_xlil(PrimitiveType::Bool),
                Some(XlilType { kind: TypeKind::Bool }));
+    assert_eq!(primitive_to_xlil(PrimitiveType::Long), Some(XlilType::I32));
     assert_eq!(primitive_to_xlil(PrimitiveType::Int), Some(XlilType::I64));
     assert_eq!(primitive_to_xlil(PrimitiveType::Str), None);
   }
@@ -392,6 +408,58 @@ mod tests
     assert_eq!(mir.blocks[0].terminator,
                Some(mir::Terminator::Return(Some(mir::LocalId(0)))));
     assert!(verify_function(&mir).is_empty());
+  }
+
+  #[test]
+  fn lowers_long_literal_to_const_i32_and_xlil()
+  {
+    let function =
+      Function { name: "LongAnswer".to_string(),
+                 return_type: Some(primitive(PrimitiveType::Long)),
+                 locals: vec![],
+                 body:
+                   vec![Statement::Return { value:
+                                              Some(Expression::Literal { literal:
+                                                                           Literal::Integer("2'000'000'000".to_string()),
+                                                                         span: span(10, 23) }),
+                                            span: span(3, 23) }] };
+
+    let mir = HirToMirLowerer::new().lower_function(&function)
+                                    .expect("Long literal return should lower");
+
+    assert_eq!(mir.return_type, XlilType::I32);
+    assert!(matches!(mir.blocks[0].statements[0], mir::Statement::ConstI32 { value:
+                                                                               2_000_000_000,
+                                                                             .. }));
+    assert!(verify_function(&mir).is_empty());
+
+    let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                             .expect("Long MIR should lower to XLIL");
+    assert!(matches!(xlil.blocks[0].instructions[0],
+                     crate::xlil::Instruction::ConstI32 { value: 2_000_000_000,
+                                                          .. }));
+  }
+
+  #[test]
+  fn rejects_long_literal_outside_i32_range()
+  {
+    let function =
+      Function { name: "TooLarge".to_string(),
+                 return_type: Some(primitive(PrimitiveType::Long)),
+                 locals: vec![],
+                 body:
+                   vec![Statement::Return { value:
+                                              Some(Expression::Literal { literal:
+                                                                           Literal::Integer("2'147'483'648".to_string()),
+                                                                         span: span(10, 23) }),
+                                            span: span(3, 23) }] };
+
+    let diagnostics = HirToMirLowerer::new().lower_function(&function)
+                                            .expect_err("out-of-range Long literal must fail");
+
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::InvalidIntegerLiteral &&
+                                         diagnostic.message.contains("const.i32")));
   }
 
   #[test]
