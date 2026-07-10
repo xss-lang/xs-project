@@ -201,6 +201,24 @@ static void test_new_expression_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_else_discard_statement_structure(void)
+{
+  const char *text = "fn Main() { else: a = new(); if (true) {} else: b = new(); }\n";
+  XsSource source = {.path = "Discard.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 30, &diagnostics, &tree));
+  const XsSyntaxNode *discard = xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_DISCARD);
+  CHECK(discard != nullptr);
+  CHECK(discard == nullptr || discard->child_count == 1);
+  CHECK(discard == nullptr || discard->children[0]->kind == XS_SYNTAX_EXPR_ASSIGNMENT);
+  CHECK(count_kind(tree.root, XS_SYNTAX_STMT_DISCARD) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_NEW) == 2);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_top_level_execution_stays_invalid(void)
 {
   const char *text = "Run();\n";
@@ -348,6 +366,7 @@ int main(void)
   test_if_expression_requires_else();
   test_function_expression_structure();
   test_new_expression_structure();
+  test_else_discard_statement_structure();
   test_top_level_execution_stays_invalid();
   test_data_field_set_and_get_structure();
   test_function_type_structure();

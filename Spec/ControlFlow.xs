@@ -16,10 +16,14 @@
 // - break
 // - continue
 // - match
+// - else discard
 //
 // if statement syntax may omit `else`.
 // if expression syntax requires `else` and ends with `};` when used
 // as a full statement.
+//
+// `else: expression;` evaluates and explicitly discards an expression value.
+// It is equivalent in intent to Rust's `let _ = expression;`.
 //
 // match statement syntax ends with `}`.
 // match expression syntax ends with `};` when used as a full statement,
@@ -77,6 +81,13 @@ fn Main() {
             x = 0;
         },
     }
+}
+
+
+// explicit discard
+
+fn Initialize() {
+    else: a = new();
 }
 
 

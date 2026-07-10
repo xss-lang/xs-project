@@ -608,6 +608,7 @@ enum data Statement {
     Try: TryStatement,
     Throw: ThrowStatement,
     MacroCall: MacroCallStatement,
+    Discard: DiscardStatement,
 }
 
 
@@ -629,6 +630,19 @@ data ExpressionStatement {
     expression: Expression
     span: SourceSpan
 }
+
+
+// ============================================================
+// Discard statements
+// ============================================================
+
+data DiscardStatement {
+    expression: Expression
+    span: SourceSpan
+}
+
+
+// `else: expression;` explicitly discards the expression value.
 
 
 // ============================================================

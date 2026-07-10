@@ -220,6 +220,7 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "catch clause",
       "throw statement",
       "macro-call statement",
+      "discard statement",
       "identifier expression",
       "literal expression",
       "binary expression",

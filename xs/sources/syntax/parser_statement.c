@@ -69,8 +69,9 @@ static XsSyntaxNode *parse_if(SyntaxParser *parser)
   xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
   expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after if condition");
   xs_syntax_node_add(parser->tree, statement, parse_block(parser));
-  while (accept(parser, XS_TOKEN_KW_ELSE))
+  while (parser->current.kind == XS_TOKEN_KW_ELSE && parser->next.kind != XS_TOKEN_COLON)
   {
+    advance(parser);
     if (accept(parser, XS_TOKEN_KW_IF))
     {
       XsSyntaxNode *branch =
@@ -88,6 +89,16 @@ static XsSyntaxNode *parse_if(SyntaxParser *parser)
       break;
     }
   }
+  finish_node(parser, statement, parser->previous.span.end);
+  return statement;
+}
+
+static XsSyntaxNode *parse_discard(SyntaxParser *parser, size_t start)
+{
+  XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_DISCARD, (XsSpan){start, parser->previous.span.end});
+  expect(parser, XS_TOKEN_COLON, "expected ':' after else discard marker");
+  xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
+  expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after else discard statement");
   finish_node(parser, statement, parser->previous.span.end);
   return statement;
 }
@@ -219,6 +230,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     finish_node(parser, statement, parser->previous.span.end);
     return statement;
   }
+  if (accept(parser, XS_TOKEN_KW_ELSE))
+    return parse_discard(parser, start);
   if (accept(parser, XS_TOKEN_KW_IF))
     return parse_if(parser);
   if (accept(parser, XS_TOKEN_KW_FOR))
