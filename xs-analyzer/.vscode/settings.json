@@ -10,7 +10,7 @@
   },
 
   // xs-analyzer: baseline LSP behavior.
-  "rust-analyzer.checkOnSave": true, // defaults to true if omitted
+  "xs-analyzer.checkOnSave": true, // defaults to true if omitted
 
   // CodeLens / hover.
   "xs-analyzer.lens.enable": true, // defaults to false if omitted

@@ -108,8 +108,8 @@ The API is intended to let:
 - every XLIL-producing compiler reuse the same backend infrastructure.
 
 The C23 API currently includes module construction, verification, text writing, v0 text parsing, and read-only
-function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting LLVM IR, an
-object file, and a native executable for the supported local-target subset.
+function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting verified and
+optimized LLVM IR, an object file, and a native executable for the supported local-target subset.
 
 ## Direct native entry point
 
@@ -124,5 +124,6 @@ bb0.entry:
 ```
 
 The direct driver uses this function as the operating-system process entry point without generating an X# runtime wrapper.
-It writes `.ll`, `.o`, and executable artifacts next to the input registry. Linking is currently limited to the local Linux
-ELF host and does not provide runtime or external-library resolution.
+It runs the configured LLVM verification/optimization pipeline, then writes `.ll`, `.o`, and executable artifacts next to the
+input registry. The current direct XLIL path uses the backend O0 pipeline. Linking is limited to the local Linux ELF host and
+does not provide runtime or external-library resolution.

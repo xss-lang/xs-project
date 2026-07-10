@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Direct XLIL native builds now run the LLVM verification and optimization pipeline before writing LLVM IR and object
+  artifacts.
+
 ### Changed
 
 ### Known gaps

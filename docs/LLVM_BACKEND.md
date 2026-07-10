@@ -23,8 +23,8 @@ design to x86-64; ARM64 compatibility must be preserved.
 - Numeric X# primitive type mapping to LLVM types
 - Body-less function declaration and signature lowering
 - XLIL type mapping for function declarations
-- Direct `.xlil` parser/model-driven `.extern`/`.func` signature lowering to LLVM declarations, objects, and local native
-  executable artifacts for `.func main : () -> i32`
+- Direct `.xlil` parser/model-driven `.extern`/`.func` lowering to verified and optimized LLVM IR, objects, and local
+  native executable artifacts for `.func main : () -> i32`
 - Initial XLIL body lowering for parameters, constants, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`,
   `ret`, and `ret %rN`
 - LLVM optimization pipeline selection from `default<O0>` through `default<O3>`
@@ -32,7 +32,8 @@ design to x86-64; ARM64 compatibility must be preserved.
 - Object file emission per codegen unit
 - Linker invocation layer that does not use a shell and receives arguments from the caller
 
-Object file emission and linker invocation work as infrastructure, but are not wired into `xs build` yet.
+Object file emission and linker invocation are wired into direct `.xlil` native builds. Project-based `xs build` still
+waits for the full frontend/HIR/MIR path to produce complete XLIL.
 
 ## Intentionally deferred type mappings
 
@@ -72,7 +73,8 @@ add/subtract/multiply/equality,
 direct calls, unconditional `br`, conditional `br_if`, `ret`, and `ret %rN`. Parameter values are read from the declared
 LLVM function; calls use declarations emitted for the same XLIL registry module. The backend emits declarations from the
 public C API and direct `.xlil` files after they are parsed into the XLIL C model, can write verified LLVM IR text for the
-current codegen unit, emits an object through LLVM, and invokes the configured Clang driver with LLD for a native-host
-direct XLIL executable. It rejects unsupported body forms instead of inventing semantics. This prevents AST or unfinished
-HIR behavior from being lowered directly to LLVM IR. Cross-target direct builds stop after object emission, and runtime or
-external library resolution is not configured yet.
+current codegen unit, runs the configured LLVM verification/optimization pipeline, emits an object through LLVM, and invokes
+the configured Clang driver with LLD for a native-host direct XLIL executable. Direct XLIL currently uses the O0 pipeline;
+no CLI optimization flag is exposed yet. It rejects unsupported body forms instead of inventing semantics. This prevents AST
+or unfinished HIR behavior from being lowered directly to LLVM IR. Cross-target direct builds stop after object emission, and
+runtime or external library resolution is not configured yet.

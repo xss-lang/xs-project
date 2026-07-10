@@ -177,37 +177,65 @@ bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_
       .optimization = XS_LLVM_OPT_NONE,
       .verify_modules = true,
   };
+  const char *stage = "create LLVM backend";
   bool success = xs_llvm_backend_create(&config, &backend, &error) == XS_BACKEND_OK;
   if (success)
+  {
+    stage = "validate direct XLIL entry";
     success = validate_native_entry(module, &error);
+  }
   if (success)
+  {
+    stage = "create LLVM codegen unit";
     success = xs_llvm_codegen_unit_create(backend, xs_lil_module_name(module), &unit, &error) == XS_BACKEND_OK;
+  }
   size_t declared = 0;
   if (success)
+  {
+    stage = "lower XLIL declarations to LLVM";
     success = declare_module_functions(unit, module, &declared, &error);
+  }
   size_t lowered = 0;
   if (success)
+  {
+    stage = "lower XLIL function bodies to LLVM";
     success = lower_module_function_bodies(unit, module, &lowered, &error);
+  }
   if (success)
+  {
+    stage = "verify and optimize LLVM module";
+    success = xs_llvm_optimize_codegen_unit(unit, &error) == XS_BACKEND_OK;
+  }
+  if (success)
+  {
+    stage = "write LLVM IR";
     success = xs_llvm_write_ir_file(unit, ir_path, &error) == XS_BACKEND_OK;
+  }
   if (success)
+  {
+    stage = "emit object file";
     success = xs_llvm_emit_object_file(unit, object_path, &error) == XS_BACKEND_OK;
+  }
   if (success && !target_is_native_host(backend))
   {
+    stage = "link native executable";
     error.status = XS_BACKEND_DEFERRED;
     snprintf(error.message, sizeof(error.message), "%s",
              "object file was emitted, but direct XLIL executable linking supports only the native host target");
     success = false;
   }
   if (success)
+  {
+    stage = "link native executable";
     success = link_native_executable(object_path, executable_path, &error);
+  }
   if (success)
     fprintf(stderr,
-            "xs: wrote LLVM IR '%s', object '%s', and executable '%s' from XLIL module '%s' with %zu declaration(s), "
-            "%zu body/bodies\n",
+            "xs: wrote optimized LLVM IR '%s', object '%s', and executable '%s' from XLIL module '%s' with %zu "
+            "declaration(s), %zu body/bodies\n",
             ir_path, object_path, executable_path, xs_lil_module_name(module), declared, lowered);
   else
-    fprintf(stderr, "xs: direct XLIL native build failed: %s\n", error.message);
+    fprintf(stderr, "xs: direct XLIL native build failed during %s: %s\n", stage, error.message);
   xs_llvm_codegen_unit_destroy(unit);
   xs_llvm_backend_destroy(backend);
   free(ir_path);

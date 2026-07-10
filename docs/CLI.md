@@ -96,14 +96,16 @@ The direct file paths skip project manifests. Their final semantics depend on th
 - `mir` with `.xs`: parse/check/lower a single `.xs` input and emit `.xmir`.
 - `mir` with `.xmir`: parse the `.xmir version N` header and accept only supported XMIR grammar versions.
 - `xlil` with `.xs`: lower a single X# source file to `.xlil`.
-- `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, lower the supported subset to LLVM IR, emit an
-  object file, and link a native executable when the target is the local host.
+- `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, lower the supported subset to LLVM IR, run the
+  configured LLVM verification/optimization pipeline, emit an object file, and link a native executable when the target is
+  the local host.
 
 The CLI recognizes the forms now; full production semantics are still being connected.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
 unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API, verified,
-and lowered through the LLVM backend. It writes `<input-stem>.ll`, `<input-stem>.o`, and a native executable named
-`<input-stem>` alongside the input file.
+lowered through the LLVM backend, verified by LLVM, and passed through the configured optimization pipeline. It writes
+`<input-stem>.ll`, `<input-stem>.o`, and a native executable named `<input-stem>` alongside the input file. The direct XLIL
+path currently uses the backend default `O0` pipeline; no CLI optimization flag is exposed yet.
 
 Direct native XLIL builds require exactly one function definition with this platform entry signature:
 
