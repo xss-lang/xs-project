@@ -24,6 +24,11 @@ pub enum DiagnosticCode
   VoidReturnValue,
   NonVoidReturnMissingValue,
   BranchTargetUnknown,
+  CallTargetUnknown,
+  CallArgumentCountMismatch,
+  CallArgumentTypeMismatch,
+  CallResultTypeMismatch,
+  CallVoidResultMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -63,11 +68,11 @@ impl Verifier
         self.report(DiagnosticCode::DuplicateFunctionName,
                     "XLIL function names must be unique");
       }
-      self.function(function);
+      self.function(function, &module.functions);
     }
   }
 
-  fn function(&mut self, function: &Function)
+  fn function(&mut self, function: &Function, functions: &[Function])
   {
     if function.name.is_empty()
     {
@@ -99,13 +104,13 @@ impl Verifier
       }
       for instruction in &block.instructions
       {
-        self.instruction(function, instruction);
+        self.instruction(function, instruction, functions);
       }
       self.terminator(function, block.terminator.as_ref(), &blocks);
     }
   }
 
-  fn instruction(&mut self, function: &Function, instruction: &Instruction)
+  fn instruction(&mut self, function: &Function, instruction: &Instruction, functions: &[Function])
   {
     match *instruction
     {
@@ -150,12 +155,43 @@ impl Verifier
         self.i64_value(function, right, "XLIL eq.i64 right operand");
       }
       Instruction::Call { result,
+                          function: ref callee_name,
                           ref arguments,
                           return_type,
                           .. } =>
       {
+        let Some(callee) = functions.iter().find(|candidate| candidate.name == *callee_name)
+        else
+        {
+          self.report(DiagnosticCode::CallTargetUnknown,
+                      "XLIL call target must be declared in the module");
+          return;
+        };
+        if arguments.len() != callee.parameters.len()
+        {
+          self.report(DiagnosticCode::CallArgumentCountMismatch,
+                      "XLIL call argument count must match the target signature");
+        }
+        for (argument, parameter) in arguments.iter().zip(&callee.parameters)
+        {
+          if value_type(function, *argument) != Some(*parameter)
+          {
+            self.report(DiagnosticCode::CallArgumentTypeMismatch,
+                        "XLIL call argument type must match the target signature");
+          }
+        }
         if let Some(result) = result
         {
+          if callee.return_type == crate::xlil::Type::VOID
+          {
+            self.report(DiagnosticCode::CallVoidResultMismatch,
+                        "void XLIL call cannot produce a result value");
+          }
+          if return_type != callee.return_type
+          {
+            self.report(DiagnosticCode::CallResultTypeMismatch,
+                        "XLIL call result type must match the target signature");
+          }
           match value_type(function, result)
           {
             Some(value_type) if value_type == return_type =>
@@ -163,6 +199,11 @@ impl Verifier
             _ => self.report(DiagnosticCode::InstructionResultUnknown,
                              "XLIL call result must reference a declared value with matching type"),
           }
+        }
+        else if callee.return_type != crate::xlil::Type::VOID
+        {
+          self.report(DiagnosticCode::CallVoidResultMismatch,
+                      "non-void XLIL call must produce a result value");
         }
         for argument in arguments
         {
@@ -431,6 +472,76 @@ mod tests
     module.add_function(function);
 
     assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn accepts_forward_call_with_matching_signature()
+  {
+    let mut module = Module::new("App");
+    let mut caller = Function::definition("Caller", Type::I64, vec![]);
+    let block = caller.append_block("entry");
+    let argument = caller.add_const_i64(block, 7).expect("argument should be created");
+    let result = caller.add_call(block, "Callee", vec![argument], Type::I64)
+                       .expect("call should be created");
+    assert!(caller.set_return(block, result));
+    module.add_function(caller);
+    module.add_function(Function::declaration("Callee", Type::I64, vec![Type::I64]));
+
+    assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn rejects_unknown_call_target()
+  {
+    let mut module = Module::new("App");
+    let mut caller = Function::definition("Caller", Type::VOID, vec![]);
+    let block = caller.append_block("entry");
+    assert!(caller.add_call(block, "Missing", vec![], Type::VOID).is_some());
+    assert!(caller.set_return(block, None));
+    module.add_function(caller);
+
+    let diagnostics = verify_module(&module);
+
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::CallTargetUnknown));
+  }
+
+  #[test]
+  fn rejects_call_argument_and_return_type_mismatches()
+  {
+    let mut module = Module::new("App");
+    let mut caller = Function::definition("Caller", Type::VOID, vec![]);
+    let block = caller.append_block("entry");
+    let argument = caller.add_const_bool(block, true).expect("argument should be created");
+    assert!(caller.add_call(block, "Callee", vec![argument], Type::BOOL).is_some());
+    assert!(caller.set_return(block, None));
+    module.add_function(caller);
+    module.add_function(Function::declaration("Callee", Type::I64, vec![Type::I64]));
+
+    let diagnostics = verify_module(&module);
+
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::CallArgumentTypeMismatch));
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::CallResultTypeMismatch));
+  }
+
+  #[test]
+  fn rejects_void_call_with_result()
+  {
+    let mut module = Module::new("App");
+    let mut caller = Function::definition("Caller", Type::I64, vec![]);
+    let block = caller.append_block("entry");
+    let result = caller.add_call(block, "Sink", vec![], Type::I64)
+                       .expect("call should be created");
+    assert!(caller.set_return(block, result));
+    module.add_function(caller);
+    module.add_function(Function::declaration("Sink", Type::VOID, vec![]));
+
+    let diagnostics = verify_module(&module);
+
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::CallVoidResultMismatch));
   }
 
   #[test]
