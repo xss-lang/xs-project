@@ -20,6 +20,15 @@ XsSyntaxNode *parse_variable(SyntaxParser *parser, bool require_semicolon)
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_VARIABLE, (XsSpan){start, start});
   declaration->flags = flags;
   xs_syntax_node_add(parser->tree, declaration, identifier(parser));
+  if (accept(parser, XS_TOKEN_INFER_ASSIGN))
+  {
+    declaration->flags |= XS_SYNTAX_FLAG_INFERRED_TYPE;
+    xs_syntax_node_add(parser->tree, declaration, parse_expression(parser, 1));
+    if (require_semicolon)
+      expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after inferred variable declaration");
+    finish_node(parser, declaration, parser->previous.span.end);
+    return declaration;
+  }
   expect(parser, XS_TOKEN_COLON, "type annotation is required after variable name");
   xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
   if (accept(parser, XS_TOKEN_ASSIGN))
@@ -129,7 +138,8 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
     {
       if (parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
           parser->current.kind == XS_TOKEN_KW_STATIC || parser->current.kind == XS_TOKEN_KW_ATOMIC ||
-          (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON))
+          (parser->current.kind == XS_TOKEN_IDENTIFIER &&
+           (parser->next.kind == XS_TOKEN_COLON || parser->next.kind == XS_TOKEN_INFER_ASSIGN)))
         xs_syntax_node_add(parser->tree, statement, parse_variable(parser, false));
       else
         xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
@@ -253,7 +263,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   }
   if (parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
       parser->current.kind == XS_TOKEN_KW_STATIC || parser->current.kind == XS_TOKEN_KW_ATOMIC ||
-      (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON))
+      (parser->current.kind == XS_TOKEN_IDENTIFIER &&
+       (parser->next.kind == XS_TOKEN_COLON || parser->next.kind == XS_TOKEN_INFER_ASSIGN)))
   {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_VARIABLE, (XsSpan){start, start});
     xs_syntax_node_add(parser->tree, statement, parse_variable(parser, true));

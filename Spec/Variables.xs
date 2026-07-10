@@ -4,7 +4,7 @@
 // variable system:
 
 //{
-Type annotations are required.
+Type annotations are required unless the declaration uses `:=`.
 Normal variables are mutable.
 Top-level variables are not supported.
 }//
@@ -30,6 +30,13 @@ fn Main() {
     single: SFloat = 2.5;
     floating: Float = 3.5;
 
+    // Type-inferred bindings use := and always have an initializer.
+    inferredAge := 26;
+    inferredPi := 3.14;
+    inferredLetter := 'A';
+    inferredName := "Alfa";
+    maybe: Optional<Int> = None;
+
     // reassignment
     x = 10;
     name = "Hasan";
@@ -39,11 +46,13 @@ fn Main() {
     val version: Str = "1.0";
     val maxPlayers: Int = 100;
     val isReady: Bool = true;
+    val inferredVersion := "1.0";
 
     // compile-time constant
     const BuildNumber: Int = 42;
     const AppName: Str = "Example";
     const DebugMode: Bool = false;
+    const inferredBuildNumber := 42;
 
     // compile-time constant + static lifetime
     static CacheSize: Int = 1024;
@@ -62,7 +71,14 @@ fn Main() {
 fn Main() {
     x = 5;
 }
-// Type annotation is required.
+// = is assignment, not a type-inferred declaration.
+
+
+// INVALID
+fn Main() {
+    missing := None;
+}
+// Optional<T> is never inferred. Write the Optional<T> annotation explicitly.
 
 
 // VALID

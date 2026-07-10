@@ -94,6 +94,7 @@ const char *xs_token_kind_name(XsTokenKind kind)
       ",",
       ";",
       ":",
+      ":=",
       ".",
       "...",
       "->",

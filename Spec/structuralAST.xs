@@ -454,9 +454,10 @@ enum VariableBindingKind {
 
 data VariableDeclaration {
     name: IdentifierNode
-    variableType: TypeNode
+    variableType: TypeNode?
     initializer: Expression
     bindingKind: VariableBindingKind
+    isTypeInferred: Bool
     span: SourceSpan
 }
 

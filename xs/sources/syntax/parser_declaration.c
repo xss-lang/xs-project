@@ -438,7 +438,8 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
     return parse_declaration_macro_call(parser, start);
   if (parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
       parser->current.kind == XS_TOKEN_KW_ATOMIC ||
-      (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON))
+      (parser->current.kind == XS_TOKEN_IDENTIFIER &&
+       (parser->next.kind == XS_TOKEN_COLON || parser->next.kind == XS_TOKEN_INFER_ASSIGN)))
   {
     XsSyntaxNode *variable = parse_variable(parser, true);
     attach_modifiers(parser, variable, modifiers);

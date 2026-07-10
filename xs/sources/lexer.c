@@ -378,6 +378,11 @@ XsToken xs_lexer_next(XsLexer *lexer)
   case ';':
     return token(XS_TOKEN_SEMICOLON, start, lexer->cursor);
   case ':':
+    if (peek(lexer, 0) == '=')
+    {
+      ++lexer->cursor;
+      return token(XS_TOKEN_INFER_ASSIGN, start, lexer->cursor);
+    }
     return token(XS_TOKEN_COLON, start, lexer->cursor);
   case '.':
     if (starts_with(lexer, "..", 2))

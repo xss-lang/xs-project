@@ -75,6 +75,7 @@ static void test_documented_operators(void)
       XS_TOKEN_LESS_EQUAL,
       XS_TOKEN_LOGICAL_AND,
       XS_TOKEN_LOGICAL_OR,
+      XS_TOKEN_INFER_ASSIGN,
       XS_TOKEN_BANG,
       XS_TOKEN_AMPERSAND,
       XS_TOKEN_PIPE,
@@ -90,7 +91,7 @@ static void test_documented_operators(void)
       XS_TOKEN_QUESTION_QUESTION_ASSIGN,
       XS_TOKEN_EOF,
   };
-  expect_tokens("== != > < >= <= && || ! & | << <<< >> >>> -> => ? ?. ?? ?"
+  expect_tokens("== != > < >= <= && || := ! & | << <<< >> >>> -> => ? ?. ?? ?"
                 "?=",
                 expected, sizeof(expected) / sizeof(expected[0]));
 }

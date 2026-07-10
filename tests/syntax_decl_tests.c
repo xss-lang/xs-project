@@ -49,6 +49,23 @@ static void test_top_level_variable_declaration_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_inferred_variable_declaration_structure(void)
+{
+  const char *text = "fn Main() { age := 26; val name := \"XS\"; const enabled := true; }\n";
+  XsSource source = {.path = "InferredVariables.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 20, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_VARIABLE) == 3);
+  const XsSyntaxNode *declaration = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_VARIABLE);
+  CHECK(declaration != NULL);
+  CHECK((declaration->flags & XS_SYNTAX_FLAG_INFERRED_TYPE) != 0);
+  CHECK(declaration->child_count == 2);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_data_rejects_non_field_members(void)
 {
   const char *texts[] = {
@@ -260,6 +277,7 @@ static void test_generic_constraint_structure(void)
 int main(void)
 {
   test_top_level_variable_declaration_structure();
+  test_inferred_variable_declaration_structure();
   test_data_rejects_non_field_members();
   test_class_constructor_rules();
   test_interface_member_rules();
