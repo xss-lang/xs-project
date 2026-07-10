@@ -149,6 +149,50 @@ impl Verifier
         self.i64_value(function, left, "XLIL eq.i64 left operand");
         self.i64_value(function, right, "XLIL eq.i64 right operand");
       }
+      Instruction::AddI32 { result,
+                            left,
+                            right, } =>
+      {
+        self.i32_value(function, result, "XLIL add.i32 result");
+        self.i32_value(function, left, "XLIL add.i32 left operand");
+        self.i32_value(function, right, "XLIL add.i32 right operand");
+      }
+      Instruction::SubI32 { result,
+                            left,
+                            right, } =>
+      {
+        self.i32_value(function, result, "XLIL sub.i32 result");
+        self.i32_value(function, left, "XLIL sub.i32 left operand");
+        self.i32_value(function, right, "XLIL sub.i32 right operand");
+      }
+      Instruction::MulI32 { result,
+                            left,
+                            right, } =>
+      {
+        self.i32_value(function, result, "XLIL mul.i32 result");
+        self.i32_value(function, left, "XLIL mul.i32 left operand");
+        self.i32_value(function, right, "XLIL mul.i32 right operand");
+      }
+      Instruction::EqI32 { result,
+                           left,
+                           right, } |
+      Instruction::LtI32 { result,
+                           left,
+                           right, } |
+      Instruction::LeI32 { result,
+                           left,
+                           right, } |
+      Instruction::GtI32 { result,
+                           left,
+                           right, } |
+      Instruction::GeI32 { result,
+                           left,
+                           right, } =>
+      {
+        self.bool_value(function, result, "XLIL i32 comparison result");
+        self.i32_value(function, left, "XLIL i32 comparison left operand");
+        self.i32_value(function, right, "XLIL i32 comparison right operand");
+      }
       Instruction::Call { result,
                           function: ref callee_name,
                           ref arguments,
@@ -475,6 +519,28 @@ mod tests
     let right = function.add_const_i64(block, 7).expect("right const should be added");
     let result = function.eq_i64(block, left, right).expect("eq should be added");
     assert!(function.set_return(block, Some(result)));
+    module.add_function(function);
+
+    assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn accepts_i32_instruction_family()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("i32_ops", crate::xlil::Type::BOOL, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i32(block, 2).expect("left const should be added");
+    let right = function.add_const_i32(block, 3).expect("right const should be added");
+    assert!(function.add_i32(block, left, right).is_some());
+    assert!(function.sub_i32(block, left, right).is_some());
+    assert!(function.mul_i32(block, left, right).is_some());
+    assert!(function.eq_i32(block, left, right).is_some());
+    assert!(function.lt_i32(block, left, right).is_some());
+    assert!(function.le_i32(block, left, right).is_some());
+    assert!(function.gt_i32(block, left, right).is_some());
+    let result = function.ge_i32(block, left, right);
+    assert!(function.set_return(block, result));
     module.add_function(function);
 
     assert!(verify_module(&module).is_empty());

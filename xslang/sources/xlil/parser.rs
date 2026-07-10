@@ -379,6 +379,14 @@ impl Parser<'_>
     {
       return self.eq_i64(function, result, operands, line);
     }
+    for instruction in ["add.i32", "sub.i32", "mul.i32", "eq.i32", "lt.i32", "le.i32", "gt.i32", "ge.i32"]
+    {
+      let pattern = format!(" = {instruction} ");
+      if let Some((result, operands)) = text.split_once(&pattern)
+      {
+        return self.binary_i32(function, result, operands, instruction, line);
+      }
+    }
     if let Some((result, rest)) = text.split_once(" = const.bool ")
     {
       return self.const_bool(function, result, rest, line);
@@ -510,6 +518,79 @@ impl Parser<'_>
     Some(Instruction::EqI64 { result,
                               left,
                               right })
+  }
+
+  fn binary_i32(&mut self,
+                function: &mut Function,
+                result: &str,
+                operands: &str,
+                instruction: &str,
+                line: usize)
+                -> Option<Instruction>
+  {
+    let result_type = match instruction
+    {
+      "add.i32" | "sub.i32" | "mul.i32" => Type::I32,
+      "eq.i32" | "lt.i32" | "le.i32" | "gt.i32" | "ge.i32" => Type::BOOL,
+      _ => return None,
+    };
+    let expected_suffix = if result_type == Type::I32
+    {
+      ":i32"
+    }
+    else
+    {
+      ":bool"
+    };
+    let Some(result) = result.strip_suffix(expected_suffix)
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  &format!("XLIL {instruction} result type is invalid"));
+      return None;
+    };
+    let result = self.value_id(result, line)?;
+    let Some((left, right)) = operands.split_once(", ")
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  &format!("XLIL {instruction} operands are invalid"));
+      return None;
+    };
+    let left = self.value_operand(left, line)?;
+    let right = self.value_operand(right, line)?;
+    function.values.push(Value { id: result,
+                                 value_type: result_type });
+    Some(match instruction
+    {
+      "add.i32" => Instruction::AddI32 { result,
+                                         left,
+                                         right },
+      "sub.i32" => Instruction::SubI32 { result,
+                                         left,
+                                         right },
+      "mul.i32" => Instruction::MulI32 { result,
+                                         left,
+                                         right },
+      "eq.i32" => Instruction::EqI32 { result,
+                                       left,
+                                       right },
+      "lt.i32" => Instruction::LtI32 { result,
+                                       left,
+                                       right },
+      "le.i32" => Instruction::LeI32 { result,
+                                       left,
+                                       right },
+      "gt.i32" => Instruction::GtI32 { result,
+                                       left,
+                                       right },
+      "ge.i32" => Instruction::GeI32 { result,
+                                       left,
+                                       right },
+      _ => return None,
+    })
   }
 
   fn const_bool(&mut self, function: &mut Function, result: &str, value: &str, line: usize) -> Option<Instruction>
@@ -732,208 +813,4 @@ impl Parser<'_>
 }
 
 #[cfg(test)]
-mod tests
-{
-  use super::*;
-  use crate::xlil::writer::module_to_string;
-
-  #[test]
-  fn parses_function_declaration()
-  {
-    let module =
-      parse_module(".xlil version 0\n.xlil module App\n.extern xs$App$External : (i64) -> i64\n")
-        .expect("parse should succeed");
-
-    assert_eq!(module.name, "App");
-    assert_eq!(module.functions.len(), 1);
-    assert!(!module.functions[0].is_definition);
-    assert_eq!(module.functions[0].parameters, vec![Type::I64]);
-  }
-
-  #[test]
-  fn parses_explicit_parameter_records()
-  {
-    let text =
-      ".xlil version 0\n.xlil module App\n.func Identity : (i64) -> i64\n.param %r0:i64\nbb0.entry:\n  ret %r0\n.end\n";
-    let module = parse_module(text).expect("parameterized function should parse");
-
-    assert_eq!(module.functions[0].parameter_value(0), Some(ValueId(0)));
-    assert_eq!(module.functions[0].values.len(), 1);
-  }
-
-  #[test]
-  fn rejects_missing_version_header()
-  {
-    let diagnostics =
-      parse_module(".xlil module App\n.extern xs$App$External : (i64) -> i64\n").expect_err("parse must fail");
-
-    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidVersionHeader);
-  }
-
-  #[test]
-  fn rejects_empty_input()
-  {
-    let diagnostics = parse_module("").expect_err("empty input must fail");
-
-    assert_eq!(diagnostics[0].code, DiagnosticCode::EmptyInput);
-  }
-
-  #[test]
-  fn rejects_unsupported_version()
-  {
-    let diagnostics = parse_module(".xlil version 1\n.xlil module App\n").expect_err("unsupported version must fail");
-
-    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidVersionHeader);
-    assert!(diagnostics[0].message.contains("version 1 is not supported"));
-  }
-
-  #[test]
-  fn rejects_invalid_version_number()
-  {
-    let diagnostics = parse_module(".xlil version current\n.xlil module App\n").expect_err("invalid version must fail");
-
-    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidVersionHeader);
-    assert!(diagnostics[0].message.contains("version number is invalid"));
-  }
-
-  #[test]
-  fn roundtrips_const_i64_function()
-  {
-    let text =
-      ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %r0:i64 = const 42\n  ret \
-       %r0\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn roundtrips_const_i32_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func main : () -> i32\nbb0.entry:\n  %r0:i32 = const.i32 0\n  ret \
-                %r0\n.end\n";
-    let parsed = parse_module(text).expect("XLIL must parse");
-    assert_eq!(crate::xlil::writer::module_to_string(&parsed), text);
-  }
-
-  #[test]
-  fn roundtrips_call_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %r0:i64 = const 7\n  \
-                %r1:i64 = call xs$App$Callee(%r0)\n  ret %r1\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn roundtrips_add_i64_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %r0:i64 = const 2\n  \
-                %r1:i64 = const 3\n  %r2:i64 = add.i64 %r0, %r1\n  ret %r2\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn roundtrips_sub_i64_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %r0:i64 = const 8\n  \
-                %r1:i64 = const 3\n  %r2:i64 = sub.i64 %r0, %r1\n  ret %r2\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn roundtrips_mul_i64_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %r0:i64 = const 6\n  \
-                %r1:i64 = const 7\n  %r2:i64 = mul.i64 %r0, %r1\n  ret %r2\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn roundtrips_eq_i64_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Eq : () -> bool\nbb0.entry:\n  %r0:i64 = const 7\n  \
-                %r1:i64 = const 7\n  %r2:bool = eq.i64 %r0, %r1\n  ret %r2\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn roundtrips_const_bool_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Truth : () -> bool\nbb0.entry:\n  %r0:bool = \
-                const.bool true\n  ret %r0\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn roundtrips_branch_if_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %r0:bool = \
-                const.bool true\n  br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-
-  #[test]
-  fn rejects_legacy_plain_value_ids()
-  {
-    let text =
-      ".xlil version 0\n.xlil module App\n.func xs$App$Legacy : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  ret \
-       %0\n.end\n";
-
-    let diagnostics = parse_module(text).expect_err("legacy plain value ids must fail");
-
-    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidValueId);
-  }
-
-  #[test]
-  fn parses_missing_terminator_marker()
-  {
-    let text =
-      ".xlil version 0\n.xlil module App\n.func xs$App$Broken : () -> void\nbb0.entry:\n  .missing_terminator\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module.functions[0].blocks[0].terminator, None);
-  }
-
-  #[test]
-  fn rejects_unknown_type()
-  {
-    let diagnostics =
-      parse_module(".xlil version 0\n.xlil module App\n.extern bad : () -> nope\n").expect_err("parse must fail");
-
-    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidType);
-  }
-
-  #[test]
-  fn roundtrips_branch_function()
-  {
-    let text = ".xlil version 0\n.xlil module App\n.func xs$App$Branch : () -> void\nbb0.entry:\n  br \
-                bb1\nbb1.exit:\n  ret\n.end\n";
-
-    let module = parse_module(text).expect("parse should succeed");
-
-    assert_eq!(module_to_string(&module), text);
-  }
-}
+mod tests;

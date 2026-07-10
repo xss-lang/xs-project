@@ -103,6 +103,54 @@ pub enum Instruction
     left: ValueId,
     right: ValueId,
   },
+  AddI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  SubI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  MulI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  EqI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  LtI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  LeI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  GtI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  GeI32
+  {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
   Call
   {
     result: Option<ValueId>,
@@ -291,6 +339,69 @@ impl Function
     Some(result)
   }
 
+  pub fn add_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::I32, I32Op::Add)
+  }
+
+  pub fn sub_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::I32, I32Op::Sub)
+  }
+
+  pub fn mul_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::I32, I32Op::Mul)
+  }
+
+  pub fn eq_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::BOOL, I32Op::Eq)
+  }
+
+  pub fn lt_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::BOOL, I32Op::Lt)
+  }
+
+  pub fn le_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::BOOL, I32Op::Le)
+  }
+
+  pub fn gt_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::BOOL, I32Op::Gt)
+  }
+
+  pub fn ge_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
+  {
+    self.add_i32_like(block, left, right, Type::BOOL, I32Op::Ge)
+  }
+
+  fn add_i32_like(&mut self,
+                  block: BlockId,
+                  left: ValueId,
+                  right: ValueId,
+                  result_type: Type,
+                  op: I32Op)
+                  -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !self.value(left).is_some_and(|value| value.value_type == Type::I32) ||
+       !self.value(right).is_some_and(|value| value.value_type == Type::I32)
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: result_type });
+    self.block_mut(block)?
+        .instructions
+        .push(i32_instruction(op, result, left, right));
+    Some(result)
+  }
+
   pub fn add_call(&mut self,
                   block: BlockId,
                   function: impl Into<String>,
@@ -412,6 +523,50 @@ impl Function
     self.values
         .get(value.0 as usize)
         .filter(|candidate| candidate.id == value)
+  }
+}
+
+#[derive(Clone, Copy)]
+enum I32Op
+{
+  Add,
+  Sub,
+  Mul,
+  Eq,
+  Lt,
+  Le,
+  Gt,
+  Ge,
+}
+
+fn i32_instruction(op: I32Op, result: ValueId, left: ValueId, right: ValueId) -> Instruction
+{
+  match op
+  {
+    I32Op::Add => Instruction::AddI32 { result,
+                                        left,
+                                        right },
+    I32Op::Sub => Instruction::SubI32 { result,
+                                        left,
+                                        right },
+    I32Op::Mul => Instruction::MulI32 { result,
+                                        left,
+                                        right },
+    I32Op::Eq => Instruction::EqI32 { result,
+                                      left,
+                                      right },
+    I32Op::Lt => Instruction::LtI32 { result,
+                                      left,
+                                      right },
+    I32Op::Le => Instruction::LeI32 { result,
+                                      left,
+                                      right },
+    I32Op::Gt => Instruction::GtI32 { result,
+                                      left,
+                                      right },
+    I32Op::Ge => Instruction::GeI32 { result,
+                                      left,
+                                      right },
   }
 }
 
@@ -608,6 +763,26 @@ mod tests
 
     assert_eq!(result, ValueId(0));
     assert!(function.set_return(block, Some(result)));
+  }
+
+  #[test]
+  fn adds_i32_instruction_family()
+  {
+    let mut function = Function::definition("Compare", Type::BOOL, vec![]);
+    let block = function.append_block("entry");
+    let left = function.add_const_i32(block, 2).expect("left const should be added");
+    let right = function.add_const_i32(block, 3).expect("right const should be added");
+    assert_eq!(function.add_i32(block, left, right), Some(ValueId(2)));
+    assert_eq!(function.sub_i32(block, left, right), Some(ValueId(3)));
+    assert_eq!(function.mul_i32(block, left, right), Some(ValueId(4)));
+    assert_eq!(function.eq_i32(block, left, right), Some(ValueId(5)));
+    assert_eq!(function.lt_i32(block, left, right), Some(ValueId(6)));
+    assert_eq!(function.le_i32(block, left, right), Some(ValueId(7)));
+    assert_eq!(function.gt_i32(block, left, right), Some(ValueId(8)));
+    let result = function.ge_i32(block, left, right);
+
+    assert_eq!(result, Some(ValueId(9)));
+    assert!(function.set_return(block, result));
   }
 
   #[test]

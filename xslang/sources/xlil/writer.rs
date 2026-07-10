@@ -108,6 +108,30 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
     Instruction::EqI64 { result,
                          left,
                          right, } => writeln!(output, "  %r{}:bool = eq.i64 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::AddI32 { result,
+                          left,
+                          right, } => writeln!(output, "  %r{}:i32 = add.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::SubI32 { result,
+                          left,
+                          right, } => writeln!(output, "  %r{}:i32 = sub.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::MulI32 { result,
+                          left,
+                          right, } => writeln!(output, "  %r{}:i32 = mul.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::EqI32 { result,
+                         left,
+                         right, } => writeln!(output, "  %r{}:bool = eq.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::LtI32 { result,
+                         left,
+                         right, } => writeln!(output, "  %r{}:bool = lt.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::LeI32 { result,
+                         left,
+                         right, } => writeln!(output, "  %r{}:bool = le.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::GtI32 { result,
+                         left,
+                         right, } => writeln!(output, "  %r{}:bool = gt.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::GeI32 { result,
+                         left,
+                         right, } => writeln!(output, "  %r{}:bool = ge.i32 %r{}, %r{}", result.0, left.0, right.0),
     Instruction::Call { result,
                         ref function,
                         ref arguments,
@@ -352,5 +376,28 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$Truth : () -> bool\nbb0.entry:\n  %r0:bool = \
                 const.bool true\n  ret %r0\n.end\n");
+  }
+
+  #[test]
+  fn writes_i32_instruction_family()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$I32", Type::BOOL, vec![]);
+    let entry = function.append_block("entry");
+    let left = function.add_const_i32(entry, 2).expect("left const should be added");
+    let right = function.add_const_i32(entry, 3).expect("right const should be added");
+    assert_eq!(function.add_i32(entry, left, right), Some(ValueId(2)));
+    assert_eq!(function.sub_i32(entry, left, right), Some(ValueId(3)));
+    assert_eq!(function.mul_i32(entry, left, right), Some(ValueId(4)));
+    assert_eq!(function.eq_i32(entry, left, right), Some(ValueId(5)));
+    assert_eq!(function.lt_i32(entry, left, right), Some(ValueId(6)));
+    assert_eq!(function.le_i32(entry, left, right), Some(ValueId(7)));
+    assert_eq!(function.gt_i32(entry, left, right), Some(ValueId(8)));
+    let result = function.ge_i32(entry, left, right);
+    assert!(function.set_return(entry, result));
+    module.add_function(function);
+
+    assert!(module_to_string(&module).contains("  %r2:i32 = add.i32 %r0, %r1\n"));
+    assert!(module_to_string(&module).contains("  %r9:bool = ge.i32 %r0, %r1\n"));
   }
 }
