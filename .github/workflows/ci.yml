@@ -12,8 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: lukka/get-cmake@v3.31.7
-      - uses: dtolnay/rust-toolchain@nightly-2026-07-10
+      - name: Install CMake
+        run: python3 -m pip install --user "cmake>=3.31,<5"
+      - name: Add user tools to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Check CMake version
+        run: cmake --version
+      - name: Install Rust nightly
+        run: rustup toolchain install nightly-2026-07-10 --profile default
       - name: Install native toolchain
         run: sudo apt-get update && sudo apt-get install --yes clang lld llvm ninja-build
       - name: Configure C23 debug build
@@ -25,8 +31,8 @@ jobs:
       - name: Test sanitizer build
         run: cmake --build --preset clang-sanitize && ctest --preset clang-sanitize --output-on-failure
       - name: Check Rust formatting
-        run: cargo +nightly fmt --manifest-path xslang/Cargo.toml --check
+        run: cargo +nightly-2026-07-10 fmt --manifest-path xslang/Cargo.toml --check
       - name: Test Rust compiler core
-        run: ulimit -v 2097152; cargo +nightly test --manifest-path xslang/Cargo.toml
+        run: ulimit -v 2097152; cargo +nightly-2026-07-10 test --manifest-path xslang/Cargo.toml
       - name: Check patch hygiene
         run: git diff --check
