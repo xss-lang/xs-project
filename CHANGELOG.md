@@ -7,10 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 
 This file summarizes user-visible and developer-visible changes in the xs-project repository.
 
-The 0.0.1 development period is the first numbered xs-project line. It is a pre-1.0 compiler line and does not imply a
-complete native executable pipeline.
+The 0.0.x development period is the pre-1.0 xs-project compiler infrastructure line. It does not imply a complete X#
+source-to-native executable pipeline.
 
 ## Unreleased
+
+### Added
+
+### Changed
+
+### Known gaps
+
+## 0.0.2 - 2026-07-10
 
 ### Added
 

@@ -103,8 +103,8 @@ For the detailed current status, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATIO
 
 ## Release policy
 
-The project is now in the `0.0.1` pre-1.0 development period. Numbered `0.0.x` entries are compiler infrastructure
-snapshots; they do not imply that end-to-end native executable generation is complete.
+The project is now in the `0.0.2` pre-1.0 development period. Numbered `0.0.x` entries are compiler infrastructure
+snapshots; they do not imply that the full X# source-to-native pipeline is complete.
 
 ## CLI summary
 
