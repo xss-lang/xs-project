@@ -114,14 +114,9 @@ impl Verifier
   {
     match *instruction
     {
-      Instruction::ConstI64 { result, .. } | Instruction::ConstBool { result, .. } =>
-      {
-        if value_type(function, result).is_none()
-        {
-          self.report(DiagnosticCode::InstructionResultUnknown,
-                      "XLIL instruction result must reference a declared value");
-        }
-      }
+      Instruction::ConstI64 { result, .. } => self.i64_value(function, result, "XLIL const result"),
+      Instruction::ConstI32 { result, .. } => self.i32_value(function, result, "XLIL const.i32 result"),
+      Instruction::ConstBool { result, .. } => self.bool_value(function, result, "XLIL const.bool result"),
       Instruction::AddI64 { result,
                             left,
                             right, } =>
@@ -293,6 +288,17 @@ impl Verifier
       {}
       Some(_) | None => self.report(DiagnosticCode::InstructionResultUnknown,
                                     &format!("{label} must reference an i64 value")),
+    }
+  }
+
+  fn i32_value(&mut self, function: &Function, value: ValueId, label: &str)
+  {
+    match value_type(function, value)
+    {
+      Some(crate::xlil::Type::I32) =>
+      {}
+      Some(_) | None => self.report(DiagnosticCode::InstructionResultUnknown,
+                                    &format!("{label} must reference an i32 value")),
     }
   }
 

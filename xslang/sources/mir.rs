@@ -64,6 +64,10 @@ pub enum Statement
   {
     local: LocalId, value: i64, span: Span
   },
+  ConstI32
+  {
+    local: LocalId, value: i32, span: Span
+  },
   ConstBool
   {
     local: LocalId, value: bool, span: Span
@@ -236,6 +240,9 @@ impl BorrowChecker
       Statement::Use { local,
                        span, } |
       Statement::ConstI64 { local,
+                            span,
+                            .. } |
+      Statement::ConstI32 { local,
                             span,
                             .. } |
       Statement::ConstBool { local,

@@ -78,7 +78,7 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `control_flow`
 - explicit `.end` section markers and `.program end` document marker
 - `block`
-- local-use, move, borrow, end-borrow, `const.i64`, `const.bool`, arithmetic, compare, `call`, and drop statements
+- local-use, move, borrow, end-borrow, `const.i64`, `const.i32`, `const.bool`, arithmetic, compare, `call`, and drop statements
 - `return`, `goto`, `branch_if`, `unreachable`, and `missing` terminators
 - optional local return values, goto targets, and named `branch_if` condition/then/else fields
 - `analysis optimizer` records for optimization pass reports and removed item counts

@@ -383,6 +383,10 @@ impl Parser<'_>
     {
       return self.const_bool(function, result, rest, line);
     }
+    if let Some((result, rest)) = text.split_once(" = const.i32 ")
+    {
+      return self.const_i32(function, result, rest, line);
+    }
     let Some((result, rest)) = text.split_once(" = const ")
     else
     {
@@ -408,6 +412,31 @@ impl Parser<'_>
     function.values.push(Value { id: result,
                                  value_type: Type::I64 });
     Some(Instruction::ConstI64 { result,
+                                 value })
+  }
+
+  fn const_i32(&mut self, function: &mut Function, result: &str, value: &str, line: usize) -> Option<Instruction>
+  {
+    let Some(result) = result.strip_suffix(":i32")
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL const.i32 result type is invalid");
+      return None;
+    };
+    let result = self.value_id(result, line)?;
+    let Some(value) = value.parse::<i32>().ok()
+    else
+    {
+      self.report(DiagnosticCode::InvalidInteger,
+                  line,
+                  "XLIL const.i32 immediate is invalid");
+      return None;
+    };
+    function.values.push(Value { id: result,
+                                 value_type: Type::I32 });
+    Some(Instruction::ConstI32 { result,
                                  value })
   }
 
@@ -777,6 +806,15 @@ mod tests
     let module = parse_module(text).expect("parse should succeed");
 
     assert_eq!(module_to_string(&module), text);
+  }
+
+  #[test]
+  fn roundtrips_const_i32_function()
+  {
+    let text = ".xlil version 0\n.xlil module App\n.func main : () -> i32\nbb0.entry:\n  %r0:i32 = const.i32 0\n  ret \
+                %r0\n.end\n";
+    let parsed = parse_module(text).expect("XLIL must parse");
+    assert_eq!(crate::xlil::writer::module_to_string(&parsed), text);
   }
 
   #[test]

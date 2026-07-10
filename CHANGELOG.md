@@ -20,6 +20,7 @@ complete native executable pipeline.
 - Direct `xs build --xlil -file` now emits LLVM IR, an object file, and a local native executable for a defined
   `.func main : () -> i32` XLIL entry point.
 - XLIL v0 now supports `%rN:i32 = const.i32 N` for direct native process exit values.
+- Rust `xslang` now carries `const.i32` through XMIR text, MIR verification, MIR → XLIL lowering, and XLIL v0 text.
 
 ### Changed
 

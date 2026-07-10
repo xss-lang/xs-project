@@ -126,6 +126,14 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        target local {}", local.0);
       let _ = writeln!(output, "        value {value}");
     }
+    Statement::ConstI32 { local,
+                          value,
+                          .. } =>
+    {
+      let _ = writeln!(output, "      statement const.i32");
+      let _ = writeln!(output, "        target local {}", local.0);
+      let _ = writeln!(output, "        value {value}");
+    }
     Statement::ConstBool { local,
                            value,
                            .. } =>

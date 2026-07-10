@@ -47,6 +47,7 @@ impl Type
 {
   pub const VOID: Self = Self { kind: TypeKind::Void };
   pub const BOOL: Self = Self { kind: TypeKind::Bool };
+  pub const I32: Self = Self { kind: TypeKind::I32 };
   pub const I64: Self = Self { kind: TypeKind::I64 };
 }
 
@@ -69,6 +70,10 @@ pub enum Instruction
   ConstI64
   {
     result: ValueId, value: i64
+  },
+  ConstI32
+  {
+    result: ValueId, value: i32
   },
   ConstBool
   {
@@ -192,6 +197,16 @@ impl Function
     self.values.push(Value { id: result,
                              value_type: Type::I64 });
     self.block_mut(block)?.instructions.push(Instruction::ConstI64 { result,
+                                                                     value });
+    Some(result)
+  }
+
+  pub fn add_const_i32(&mut self, block: BlockId, value: i32) -> Option<ValueId>
+  {
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::I32 });
+    self.block_mut(block)?.instructions.push(Instruction::ConstI32 { result,
                                                                      value });
     Some(result)
   }
@@ -585,6 +600,17 @@ mod tests
   }
 
   #[test]
+  fn adds_i32_const_instruction()
+  {
+    let mut function = Function::definition("main", Type::I32, vec![]);
+    let block = function.append_block("entry");
+    let result = function.add_const_i32(block, 0).expect("i32 const should be added");
+
+    assert_eq!(result, ValueId(0));
+    assert!(function.set_return(block, Some(result)));
+  }
+
+  #[test]
   fn sets_conditional_branch_with_bool_condition()
   {
     let mut function = Function::definition("BranchIf", Type::VOID, vec![]);
@@ -625,6 +651,7 @@ mod tests
   fn reports_primitive_type_names()
   {
     assert_eq!(type_name(Type::VOID), "void");
+    assert_eq!(type_name(Type::I32), "i32");
     assert_eq!(type_name(Type::I64), "i64");
   }
 
@@ -633,6 +660,7 @@ mod tests
   {
     assert_eq!(type_from_name("void"), Some(Type::VOID));
     assert_eq!(type_from_name("i64"), Some(Type::I64));
+    assert_eq!(type_from_name("i32"), Some(Type::I32));
     assert_eq!(type_from_name("unknown"), None);
   }
 }

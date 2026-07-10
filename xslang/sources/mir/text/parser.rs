@@ -267,6 +267,7 @@ impl Parser<'_>
       match kind
       {
         "const.i64" => block.statements.push(self.const_i64_statement()),
+        "const.i32" => block.statements.push(self.const_i32_statement()),
         "const.bool" => block.statements.push(self.const_bool_statement()),
         "add.i64" => block.statements.push(self.add_i64_statement()),
         "sub.i64" => block.statements.push(self.sub_i64_statement()),
@@ -502,6 +503,41 @@ impl Parser<'_>
     Statement::ConstI64 { local,
                           value,
                           span: span() }
+  }
+
+  fn const_i32_statement(&mut self) -> Statement
+  {
+    let local = self.const_i64_target();
+    let value = self.const_i32_value();
+    Statement::ConstI32 { local,
+                          value,
+                          span: span() }
+  }
+
+  fn const_i32_value(&mut self) -> i32
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing const.i32 value".to_string());
+      return 0;
+    };
+    self.index += 1;
+    let Some(value) = line.strip_prefix("value ")
+    else
+    {
+      self.report("expected const.i32 value".to_string());
+      return 0;
+    };
+    match value.parse()
+    {
+      Ok(value) => value,
+      Err(_) =>
+      {
+        self.report(format!("invalid const.i32 value '{value}'"));
+        0
+      }
+    }
   }
 
   fn const_i64_target(&mut self) -> LocalId

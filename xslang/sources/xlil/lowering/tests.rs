@@ -87,6 +87,33 @@ fn lowers_i64_const_and_return_value()
 }
 
 #[test]
+fn lowers_i32_const_and_return_value()
+{
+  let function =
+    MirFunction { name: "main".to_string(),
+                  parameters: vec![],
+                  return_type: Type::I32,
+                  locals: vec![Local { id: LocalId(0),
+                                       name: "exit_code".to_string(),
+                                       value_type: Some(Type::I32),
+                                       mutable: false,
+                                       span: span(0, 1) }],
+                  blocks: vec![BasicBlock { id: MirBlockId(0),
+                                            statements: vec![mir::Statement::ConstI32 { local: LocalId(0),
+                                                                                        value: 0,
+                                                                                        span: span(1, 2) }],
+                                            terminator: Some(mir::Terminator::Return(Some(LocalId(0)))),
+                                            span: span(0, 3) }] };
+
+  let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                       .expect("lowering should succeed");
+
+  assert_eq!(lowered.blocks[0].instructions,
+             vec![Instruction::ConstI32 { result: crate::xlil::ValueId(0),
+                                          value: 0 }]);
+}
+
+#[test]
 fn lowers_call_statement()
 {
   let function = MirFunction { name: "CallValue".to_string(),

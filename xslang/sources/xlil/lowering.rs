@@ -96,6 +96,12 @@ impl MirToXlilLowerer
       {
         self.lower_const_i64(local, value, span, xlil_block, local_types, values, lowered);
       }
+      if let mir::Statement::ConstI32 { local,
+                                        value,
+                                        span, } = *statement
+      {
+        self.lower_const_i32(local, value, span, xlil_block, local_types, values, lowered);
+      }
       if let mir::Statement::ConstBool { local,
                                          value,
                                          span, } = *statement
@@ -198,6 +204,33 @@ impl MirToXlilLowerer
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           "MIR const.bool target local has no XLIL value type",
+                          span),
+    }
+  }
+
+  fn lower_const_i32(&mut self,
+                     local: mir::LocalId,
+                     value: i32,
+                     span: Span,
+                     xlil_block: BlockId,
+                     local_types: &HashMap<mir::LocalId, Option<Type>>,
+                     values: &mut HashMap<mir::LocalId, ValueId>,
+                     lowered: &mut Function)
+  {
+    match local_types.get(&local).copied().flatten()
+    {
+      Some(Type::I32) =>
+      {
+        if let Some(value_id) = lowered.add_const_i32(xlil_block, value)
+        {
+          values.insert(local, value_id);
+        }
+      }
+      Some(_) => self.report(DiagnosticCode::UnsupportedLocalType,
+                             "MIR const.i32 target local must have XLIL i32 type",
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          "MIR const.i32 target local has no XLIL value type",
                           span),
     }
   }

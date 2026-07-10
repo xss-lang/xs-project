@@ -156,6 +156,9 @@ impl<'a> Verifier<'a>
       Statement::ConstI64 { local,
                             span,
                             .. } => self.verify_const_i64(local, span),
+      Statement::ConstI32 { local,
+                            span,
+                            .. } => self.verify_const_i32(local, span),
       Statement::ConstBool { local,
                              span,
                              .. } => self.verify_const_bool(local, span),
@@ -269,6 +272,27 @@ impl<'a> Verifier<'a>
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           "const.bool target local has no XLIL value type".to_string(),
+                          span),
+    }
+  }
+
+  fn verify_const_i32(&mut self, local: LocalId, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(crate::xlil::Type::I32) =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             "const.i32 target local must have XLIL i32 type".to_string(),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          "const.i32 target local has no XLIL value type".to_string(),
                           span),
     }
   }
@@ -542,6 +566,24 @@ mod tests
                                                                                 right: LocalId(1),
                                                                                 span: span(1, 2) }],
                                            terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span(0, 3) }] };
+
+    assert!(verify_function(&function).is_empty());
+  }
+
+  #[test]
+  fn accepts_i32_const_statement()
+  {
+    let function =
+      Function { name: "main".to_string(),
+                 parameters: vec![],
+                 return_type: Type::I32,
+                 locals: vec![typed_local(0, Type::I32)],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI32 { local: LocalId(0),
+                                                                                  value: 0,
+                                                                                  span: span(1, 2) }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(0)))),
                                            span: span(0, 3) }] };
 
     assert!(verify_function(&function).is_empty());

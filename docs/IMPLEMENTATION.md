@@ -402,13 +402,13 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - Direct file compilation entries are recognized as `xs build --output hir|mir|xlil -file <input>` and
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, verification, primitive types, text parsing/writing,
-  read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.bool`, `add.i64`,
+  read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.bool`, `add.i64`,
   `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
   `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
   to bind them to XLIL `.param` values. The bridge lowers MIR
-  parameter signatures, typed MIR `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, and `eq.i64` local statements,
+  parameter signatures, typed MIR `const.i64`, `const.i32`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, and `eq.i64` local statements,
   typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,
   compare, `call`, `br`, `br_if`, and `ret %rN` records.

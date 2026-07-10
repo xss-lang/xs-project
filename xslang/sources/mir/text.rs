@@ -787,6 +787,36 @@ mod tests
   }
 
   #[test]
+  fn roundtrips_const_i32_statement()
+  {
+    let function = Function { name: "main".to_string(),
+                              parameters: vec![],
+                              return_type: crate::xlil::Type::I32,
+                              locals: vec![Local { id: LocalId(0),
+                                                   name: "exit_code".to_string(),
+                                                   value_type: Some(crate::xlil::Type::I32),
+                                                   mutable: false,
+                                                   span: span() }],
+                              blocks: vec![BasicBlock { id: BlockId(0),
+                                                        statements: vec![Statement::ConstI32 { local:
+                                                                                                 LocalId(0),
+                                                                                               value: 0,
+                                                                                               span: span() }],
+                                                        terminator: Some(Terminator::Return(Some(LocalId(0)))),
+                                                        span: span() }] };
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR i32 const should parse");
+
+    assert_eq!(parsed.name, function.name);
+    assert_eq!(parsed.return_type, crate::xlil::Type::I32);
+    assert!(matches!(parsed.blocks[0].statements[0], Statement::ConstI32 { local:
+                                                                             LocalId(0),
+                                                                           value: 0,
+                                                                           .. }));
+    assert_eq!(parsed.blocks[0].terminator, Some(Terminator::Return(Some(LocalId(0)))));
+  }
+
+  #[test]
   fn roundtrips_optimizer_analysis()
   {
     let reports = vec![OptimizationReport { pass: OptimizationPass::RemoveUnreachableBlocks,

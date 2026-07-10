@@ -92,6 +92,8 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
   {
     Instruction::ConstI64 { result,
                             value, } => writeln!(output, "  %r{}:i64 = const {}", result.0, value),
+    Instruction::ConstI32 { result,
+                            value, } => writeln!(output, "  %r{}:i32 = const.i32 {}", result.0, value),
     Instruction::ConstBool { result,
                              value, } => writeln!(output, "  %r{}:bool = const.bool {}", result.0, value),
     Instruction::AddI64 { result,
@@ -184,6 +186,21 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %r0:i64 = const \
                 42\n  ret %r0\n.end\n");
+  }
+
+  #[test]
+  fn writes_const_i32_and_return_value()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("main", Type::I32, vec![]);
+    let entry = function.append_block("entry");
+    let value = function.add_const_i32(entry, 0);
+    assert!(function.set_return(entry, value));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func main : () -> i32\nbb0.entry:\n  %r0:i32 = const.i32 0\n  \
+                ret %r0\n.end\n");
   }
 
   #[test]
