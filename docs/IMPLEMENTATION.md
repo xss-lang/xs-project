@@ -118,16 +118,18 @@ The documented compilation order is preserved:
 - Function parameters, return type, `throws` types, and function bodies are structural nodes; bodies are not stored as raw
   ranges. The `=>` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not interpreted as return
   types.
-- `data` declaration bodies are parsed as field-only. Methods, constructors, destructors, inheritance, and interface members
-  in data bodies emit diagnostics without producing AST members.
+- `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
+  constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
+  diagnostic. Data destructors, inheritance, and interface members remain invalid.
 - Class constructor names must match the class name. At most one constructor per class is validated with parser diagnostics.
 - Interface declaration bodies accept only body-less function declaration signatures.
 - Class `extends` may be used at most once and with one base class; class `implements` accepts a list of interfaces.
   `extends` or `implements` inside an interface body produces a diagnostic.
 - Body-less function declarations outside interfaces require `incomplete fn ...;`. An `incomplete fn` with a body produces a
   parser diagnostic.
-- Regular enum variants cannot contain payload types. `enum data` requires at least one typed variant, and tuple payloads are
-  rejected with parser diagnostics.
+- Regular enum variants cannot contain payload types and must have unique names. `enum data` requires at least one typed
+  variant, rejects tuple payloads, and permits same-name typed variants only when their payload types differ. Constructor
+  overload selection remains a later HIR type-checking responsibility.
 - `fn(...) { ... }`, `fn(...) => T { ... }`, and `move fn(...) { ... }` function expression/closure forms are represented as
   `XS_SYNTAX_EXPR_FUNCTION` nodes. `move` capture is a separate AST flag.
 - `new()` object creation is represented as `XS_SYNTAX_EXPR_NEW`; when the constructed type is not written in source, HIR will

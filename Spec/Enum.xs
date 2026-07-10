@@ -15,6 +15,9 @@
 // - May contain both typed and non-typed variants.
 // - Each variant may contain at most one value.
 // - Payload type may be any valid type.
+// - Typed variants with the same name may be overloaded when their payload types differ.
+// - Non-typed variants cannot be overloaded.
+// - Regular enum variant names must be unique.
 //
 // Visibility modifiers:
 // - public
@@ -60,9 +63,19 @@ class User {
 enum data Value {
     Text: Str,
     Number: Int,
+    Number: Long,
     User: User,
     Color: Color,
 }
+
+
+// data enum overload selection
+//
+// A typed variant constructor is selected by its single argument type.
+// The argument type must identify exactly one variant in the overload set.
+
+value: Value = Value.Number(42);
+largeValue: Value = Value.Number(2'000'000'000);
 
 
 // visibility
@@ -193,6 +206,31 @@ enum data Token {
     Position: (Int, Int),
 }
 // tuple payloads are not supported.
+
+
+// INVALID
+enum Color {
+    Red,
+    Red,
+}
+// regular enum variant names must be unique.
+
+
+// INVALID
+enum data Value {
+    Number: Int,
+    Number: Int,
+}
+// data enum overload payload types must differ.
+
+
+// INVALID
+enum data Value {
+    None,
+    None,
+    Number: Int,
+}
+// non-typed data enum variants cannot be overloaded.
 
 
 // INVALID

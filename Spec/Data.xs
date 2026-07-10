@@ -4,20 +4,21 @@
 // data system:
 
 //
-// Data types are lightweight field-only containers.
+// Data types are lightweight nominal containers.
 //
 // Data declarations may appear:
 //
 // - At top-level
 // - Inside classes
 //
-// Data types cannot contain:
+// Data types may contain fields, constructors, and methods.
+// Constructors and methods may be overloaded by parameter type list.
+// Operator overload declarations use the method form:
 //
-// - Methods
-// - Constructors
-// - Destructors
-// - Inheritance
-// - Interfaces
+// fn operator +(right: Type) => Type { }
+//
+// A duplicate constructor or method parameter type list is an error.
+// Data types do not support destructors, inheritance, or interfaces.
 //
 // Data types support generics.
 //
@@ -35,6 +36,31 @@
 data User {
     name: Str
     age: Int
+}
+
+
+// overloaded constructors and methods
+
+data Point {
+    x: Int
+    y: Int
+
+    Point(x: Int, y: Int) {
+        this.x = x;
+        this.y = y;
+    }
+
+    Point(value: Int) {
+        this.x = value;
+        this.y = value;
+    }
+
+    fn Translate(dx: Int, dy: Int) { }
+    fn Translate(offset: Point) { }
+
+    fn operator +(right: Point) => Point {
+        return right;
+    }
 }
 
 
@@ -153,32 +179,6 @@ user get.age
 
 data User {
 
-    fn GetName() {
-    }
-
-}
-
-
-// Methods are not allowed.
-
-
-// INVALID
-
-data User {
-
-    User(name: Str) {
-    }
-
-}
-
-
-// Constructors are not allowed.
-
-
-// INVALID
-
-data User {
-
     User.Drop() {
     }
 
@@ -215,7 +215,9 @@ data User {
 // summary
 
 //
-// Data types are field-only containers.
+// Data types are nominal containers with fields, constructors, and methods.
+// Constructors, methods, and operators may be overloaded by parameter type list.
+// Data does not support destructors, inheritance, or interfaces.
 //
 // Data supports generics.
 //

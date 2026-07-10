@@ -12,6 +12,68 @@ static bool syntax_text_equal(XsText left, XsText right)
   return left.length == right.length && memcmp(left.data, right.data, left.length) == 0;
 }
 
+static bool syntax_nodes_equal(const XsSyntaxNode *left, const XsSyntaxNode *right)
+{
+  if (left == right)
+    return true;
+  if (left == nullptr || right == nullptr || left->kind != right->kind || left->token_kind != right->token_kind ||
+      left->flags != right->flags || left->child_count != right->child_count)
+    return false;
+  if (left->child_count == 0 && !syntax_text_equal(left->text, right->text))
+    return false;
+  for (size_t index = 0; index < left->child_count; ++index)
+  {
+    if (!syntax_nodes_equal(left->children[index], right->children[index]))
+      return false;
+  }
+  return true;
+}
+
+static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
+{
+  for (size_t index = 0; index < node->child_count; ++index)
+  {
+    if (node->children[index]->kind == kind)
+      return node->children[index];
+  }
+  return nullptr;
+}
+
+static const XsSyntaxNode *enum_variant_payload(const XsSyntaxNode *variant)
+{
+  return variant->child_count == 2 ? variant->children[1] : nullptr;
+}
+
+static void validate_enum_variant_names(SyntaxParser *parser, XsSyntaxNode *declaration, bool data_enum)
+{
+  for (size_t index = 0; index < declaration->child_count; ++index)
+  {
+    XsSyntaxNode *variant = declaration->children[index];
+    if (variant->kind != XS_SYNTAX_ENUM_VARIANT)
+      continue;
+    const XsSyntaxNode *name = variant->children[0];
+    const XsSyntaxNode *payload = enum_variant_payload(variant);
+    for (size_t previous_index = 0; previous_index < index; ++previous_index)
+    {
+      const XsSyntaxNode *previous = declaration->children[previous_index];
+      if (previous->kind != XS_SYNTAX_ENUM_VARIANT || !syntax_text_equal(name->text, previous->children[0]->text))
+        continue;
+      const XsSyntaxNode *previous_payload = enum_variant_payload(previous);
+      if (!data_enum)
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){name->span.start_offset, name->span.end_offset},
+                           "regular enum variants must have unique names");
+      else if (payload == nullptr || previous_payload == nullptr || syntax_nodes_equal(payload, previous_payload))
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){name->span.start_offset, name->span.end_offset},
+                           "data enum variant overloads require distinct payload types");
+      else
+        variant->flags |= XS_SYNTAX_FLAG_ENUM_VARIANT_OVERLOAD;
+      break;
+    }
+  }
+}
+
 static bool generic_constraint_comma_starts_parameter(SyntaxParser *parser)
 {
   if (parser->current.kind != XS_TOKEN_COMMA || parser->next.kind != XS_TOKEN_IDENTIFIER)
@@ -68,11 +130,51 @@ static void parse_parameters(SyntaxParser *parser, XsSyntaxNode *function)
   expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after parameters");
 }
 
+static bool token_is_overloadable_operator(XsTokenKind kind)
+{
+  switch (kind)
+  {
+  case XS_TOKEN_PLUS:
+  case XS_TOKEN_MINUS:
+  case XS_TOKEN_STAR:
+  case XS_TOKEN_SLASH:
+  case XS_TOKEN_PERCENT:
+  case XS_TOKEN_EQUAL:
+  case XS_TOKEN_NOT_EQUAL:
+  case XS_TOKEN_LESS:
+  case XS_TOKEN_LESS_EQUAL:
+  case XS_TOKEN_GREATER:
+  case XS_TOKEN_GREATER_EQUAL:
+  case XS_TOKEN_AMPERSAND:
+  case XS_TOKEN_PIPE:
+  case XS_TOKEN_SHIFT_LEFT:
+  case XS_TOKEN_SHIFT_RIGHT:
+    return true;
+  default:
+    return false;
+  }
+}
+
 static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, size_t start, bool signature_allowed)
 {
   XsSyntaxNode *function = node(parser, XS_SYNTAX_DECL_FUNCTION, (XsSpan){start, parser->previous.span.end});
   attach_modifiers(parser, function, modifiers);
-  xs_syntax_node_add(parser->tree, function, identifier(parser));
+  XsSyntaxNode *name = identifier(parser);
+  xs_syntax_node_add(parser->tree, function, name);
+  if (name != nullptr && syntax_text_equal(name->text, (XsText){.data = "operator", .length = 8}))
+  {
+    if (!token_is_overloadable_operator(parser->current.kind))
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "expected overloadable operator after 'operator'");
+    else
+    {
+      XsSyntaxNode *operator_token = node(parser, XS_SYNTAX_TOKEN, parser->current.span);
+      operator_token->token_kind = parser->current.kind;
+      xs_syntax_node_add(parser->tree, function, operator_token);
+      function->flags |= XS_SYNTAX_FLAG_OPERATOR;
+      advance(parser);
+    }
+  }
   parse_generics(parser, function);
   parse_parameters(parser, function);
   if (accept(parser, XS_TOKEN_FAT_ARROW))
@@ -192,16 +294,9 @@ static XsSyntaxNode *parse_enum(SyntaxParser *parser, Modifiers modifiers, size_
   if (data_enum && !has_payload_variant)
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){start, parser->previous.span.end},
                        "enum data declarations require at least one typed variant");
+  validate_enum_variant_names(parser, declaration, data_enum);
   finish_node(parser, declaration, parser->previous.span.end);
   return declaration;
-}
-
-static bool data_member_is_forbidden(const SyntaxParser *parser)
-{
-  return parser->current.kind == XS_TOKEN_KW_FN || parser->current.kind == XS_TOKEN_KW_EXTENDS ||
-         parser->current.kind == XS_TOKEN_KW_IMPLEMENTS ||
-         (parser->current.kind == XS_TOKEN_IDENTIFIER &&
-          (parser->next.kind == XS_TOKEN_LEFT_PAREN || parser->next.kind == XS_TOKEN_DOT));
 }
 
 static void skip_forbidden_data_member(SyntaxParser *parser)
@@ -225,32 +320,150 @@ static void skip_forbidden_data_member(SyntaxParser *parser)
   } while (parser->current.kind != XS_TOKEN_EOF && parser->current.kind != XS_TOKEN_RIGHT_BRACE);
 }
 
+static size_t callable_parameter_count(const XsSyntaxNode *callable)
+{
+  size_t count = 0;
+  for (size_t index = 0; index < callable->child_count; ++index)
+    count += callable->children[index]->kind == XS_SYNTAX_PARAMETER;
+  return count;
+}
+
+static const XsSyntaxNode *callable_parameter_at(const XsSyntaxNode *callable, size_t wanted)
+{
+  for (size_t index = 0; index < callable->child_count; ++index)
+  {
+    if (callable->children[index]->kind != XS_SYNTAX_PARAMETER)
+      continue;
+    if (wanted == 0)
+      return callable->children[index];
+    --wanted;
+  }
+  return nullptr;
+}
+
+static bool callable_parameter_types_equal(const XsSyntaxNode *left, const XsSyntaxNode *right)
+{
+  const size_t count = callable_parameter_count(left);
+  if (count != callable_parameter_count(right))
+    return false;
+  for (size_t index = 0; index < count; ++index)
+  {
+    const XsSyntaxNode *left_parameter = callable_parameter_at(left, index);
+    const XsSyntaxNode *right_parameter = callable_parameter_at(right, index);
+    if (left_parameter == nullptr || right_parameter == nullptr || left_parameter->child_count < 2 ||
+        right_parameter->child_count < 2 ||
+        !syntax_nodes_equal(left_parameter->children[1], right_parameter->children[1]))
+      return false;
+  }
+  return true;
+}
+
+static bool callable_operator_equal(const XsSyntaxNode *left, const XsSyntaxNode *right)
+{
+  if ((left->flags & XS_SYNTAX_FLAG_OPERATOR) != (right->flags & XS_SYNTAX_FLAG_OPERATOR))
+    return false;
+  if ((left->flags & XS_SYNTAX_FLAG_OPERATOR) == 0)
+    return true;
+  for (size_t index = 0; index < left->child_count; ++index)
+  {
+    if (left->children[index]->kind != XS_SYNTAX_TOKEN)
+      continue;
+    for (size_t other = 0; other < right->child_count; ++other)
+    {
+      if (right->children[other]->kind == XS_SYNTAX_TOKEN)
+        return left->children[index]->token_kind == right->children[other]->token_kind;
+    }
+  }
+  return false;
+}
+
+static void validate_data_callables(SyntaxParser *parser, XsSyntaxNode *declaration)
+{
+  for (size_t index = 0; index < declaration->child_count; ++index)
+  {
+    XsSyntaxNode *callable = declaration->children[index];
+    if (callable->kind != XS_SYNTAX_DECL_FUNCTION && callable->kind != XS_SYNTAX_CLASS_CONSTRUCTOR)
+      continue;
+    const XsSyntaxNode *name = first_child_kind(callable, XS_SYNTAX_IDENTIFIER);
+    if (name == nullptr)
+      continue;
+    for (size_t previous_index = 0; previous_index < index; ++previous_index)
+    {
+      const XsSyntaxNode *previous = declaration->children[previous_index];
+      const XsSyntaxNode *previous_name = first_child_kind(previous, XS_SYNTAX_IDENTIFIER);
+      if (previous->kind != callable->kind || previous_name == nullptr ||
+          !syntax_text_equal(name->text, previous_name->text) || !callable_operator_equal(callable, previous))
+        continue;
+      if (callable_parameter_types_equal(callable, previous))
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){name->span.start_offset, name->span.end_offset},
+                           "data callable conflicts with an identical parameter type list");
+      else
+        callable->flags |= XS_SYNTAX_FLAG_OVERLOAD;
+      break;
+    }
+  }
+}
+
 static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_t start)
 {
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_DATA, (XsSpan){start, parser->previous.span.end});
   attach_modifiers(parser, declaration, modifiers);
   xs_syntax_node_add(parser->tree, declaration, identifier(parser));
   parse_generics(parser, declaration);
-  expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before data fields");
+  const XsSyntaxNode *data_name = first_child_kind(declaration, XS_SYNTAX_IDENTIFIER);
+  expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before data members");
   while (parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
   {
-    if (data_member_is_forbidden(parser))
+    size_t before = parser->current.span.start;
+    Modifiers member = parse_modifiers(parser);
+    if (accept(parser, XS_TOKEN_KW_FN))
+    {
+      xs_syntax_node_add(parser->tree, declaration, parse_function(parser, member, before, false));
+    }
+    else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN)
+    {
+      XsSyntaxNode *constructor = node(parser, XS_SYNTAX_CLASS_CONSTRUCTOR, (XsSpan){before, parser->current.span.end});
+      XsSyntaxNode *constructor_name = identifier(parser);
+      if (constructor_name != nullptr && data_name != nullptr &&
+          !syntax_text_equal(data_name->text, constructor_name->text))
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){constructor_name->span.start_offset, constructor_name->span.end_offset},
+                           "constructor name must match the data name");
+      attach_modifiers(parser, constructor, member);
+      xs_syntax_node_add(parser->tree, constructor, constructor_name);
+      parse_parameters(parser, constructor);
+      xs_syntax_node_add(parser->tree, constructor, parse_block(parser));
+      finish_node(parser, constructor, parser->previous.span.end);
+      xs_syntax_node_add(parser->tree, declaration, constructor);
+    }
+    else if (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON)
+    {
+      size_t start_field = parser->current.span.start;
+      XsSyntaxNode *field = node(parser, XS_SYNTAX_DATA_FIELD, (XsSpan){start_field, start_field});
+      attach_modifiers(parser, field, member);
+      xs_syntax_node_add(parser->tree, field, identifier(parser));
+      expect(parser, XS_TOKEN_COLON, "expected ':' after data field name");
+      xs_syntax_node_add(parser->tree, field, parse_type(parser));
+      accept(parser, XS_TOKEN_SEMICOLON);
+      finish_node(parser, field, parser->previous.span.end);
+      xs_syntax_node_add(parser->tree, declaration, field);
+    }
+    else
     {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
-                         "data declarations may only contain fields");
+                         "expected data field, constructor, or method");
       skip_forbidden_data_member(parser);
-      continue;
     }
-    size_t start_field = parser->current.span.start;
-    XsSyntaxNode *field = node(parser, XS_SYNTAX_DATA_FIELD, (XsSpan){start_field, start_field});
-    xs_syntax_node_add(parser->tree, field, identifier(parser));
-    expect(parser, XS_TOKEN_COLON, "expected ':' after data field name");
-    xs_syntax_node_add(parser->tree, field, parse_type(parser));
-    accept(parser, XS_TOKEN_SEMICOLON);
-    finish_node(parser, field, parser->previous.span.end);
-    xs_syntax_node_add(parser->tree, declaration, field);
+    if (parser->current.span.start == before)
+    {
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "parser made no progress in data members");
+      advance(parser);
+    }
   }
   expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after data declaration");
+  validate_data_callables(parser, declaration);
   finish_node(parser, declaration, parser->previous.span.end);
   return declaration;
 }

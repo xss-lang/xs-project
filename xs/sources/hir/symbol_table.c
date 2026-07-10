@@ -193,6 +193,7 @@ static bool member_kind_for_node(XsSyntaxKind syntax, XsHirMemberKind *kind)
   switch (syntax)
   {
   case XS_SYNTAX_CLASS_FIELD:
+  case XS_SYNTAX_DATA_FIELD:
   case XS_SYNTAX_DECL_VARIABLE:
     *kind = XS_HIR_MEMBER_FIELD;
     return true;
@@ -230,7 +231,8 @@ static const XsSyntaxNode *member_name_node(const XsSyntaxNode *node, XsHirMembe
 
 static bool member_can_merge(const XsHirMemberSymbol *previous, XsHirMemberKind kind)
 {
-  return previous != nullptr && previous->kind == XS_HIR_MEMBER_METHOD && kind == XS_HIR_MEMBER_METHOD;
+  return previous != nullptr && ((previous->kind == XS_HIR_MEMBER_METHOD && kind == XS_HIR_MEMBER_METHOD) ||
+                                 (previous->kind == XS_HIR_MEMBER_CONSTRUCTOR && kind == XS_HIR_MEMBER_CONSTRUCTOR));
 }
 
 static bool collect_member_declaration(const XsSyntaxNode *node, const XsHirSymbol *owner,
@@ -448,7 +450,7 @@ bool xs_hir_collect_member_symbols(const XsHirSymbol *owner, const XsMacroDeclar
 {
   if (owner == nullptr || owner->syntax == nullptr || table == nullptr || diagnostics == nullptr)
     return false;
-  if (owner->kind != XS_HIR_SYMBOL_CLASS && owner->kind != XS_HIR_SYMBOL_INTERFACE)
+  if (owner->kind != XS_HIR_SYMBOL_CLASS && owner->kind != XS_HIR_SYMBOL_INTERFACE && owner->kind != XS_HIR_SYMBOL_DATA)
     return true;
   XsMacroExpandedDeclarationSet expanded = {0};
   if (!xs_macro_expand_child_declarations(owner->syntax, macro_declarations, diagnostics, &expanded))

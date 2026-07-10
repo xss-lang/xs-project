@@ -32,6 +32,16 @@ static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
   return count;
 }
 
+static size_t count_kind_with_flag(const XsSyntaxNode *node, XsSyntaxKind kind, uint32_t flag)
+{
+  if (node == NULL)
+    return 0;
+  size_t count = node->kind == kind && (node->flags & flag) != 0;
+  for (size_t index = 0; index < node->child_count; ++index)
+    count += count_kind_with_flag(node->children[index], kind, flag);
+  return count;
+}
+
 static void test_top_level_variable_declaration_structure(void)
 {
   const char *text = "data User { name: Str }\n"
@@ -66,23 +76,49 @@ static void test_inferred_variable_declaration_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_data_rejects_non_field_members(void)
+static void test_data_callables_and_overloads(void)
 {
-  const char *texts[] = {
-      "data User { fn GetName() {} }\n",      "data User { User(name: Str) {} }\n", "data User { User.Drop() {} }\n",
-      "data User { implements Runnable; }\n", "data User { extends Person; }\n",
-  };
-  for (size_t index = 0; index < sizeof(texts) / sizeof(texts[0]); ++index)
-  {
-    XsSource source = {.path = "InvalidData.xs", .text = texts[index], .length = strlen(texts[index])};
-    XsDiagnostics diagnostics;
-    XsSyntaxTree tree;
-    xs_diagnostics_init(&diagnostics);
-    CHECK(!xs_syntax_parse(&source, 26 + index, &diagnostics, &tree));
-    CHECK(xs_diagnostics_has_error(&diagnostics));
-    xs_syntax_tree_free(&tree);
-    xs_diagnostics_free(&diagnostics);
-  }
+  const char *valid = "data User { name: Str; User(name: Str) {} User(name: Str, age: Int) {} "
+                      "fn Get(value: Int) {} fn Get(value: Str) {} fn operator +(right: User) => User {} }\n";
+  XsSource source = {.path = "DataOverloads.xs", .text = valid, .length = strlen(valid)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 26, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_DATA_FIELD) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_CLASS_CONSTRUCTOR) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_FUNCTION) == 3);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_CLASS_CONSTRUCTOR, XS_SYNTAX_FLAG_OVERLOAD) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_FUNCTION, XS_SYNTAX_FLAG_OVERLOAD) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_FUNCTION, XS_SYNTAX_FLAG_OPERATOR) == 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *duplicate_constructor = "data User { User(name: Str) {} User(value: Str) {} }\n";
+  source = (XsSource){
+      .path = "DataConstructorDuplicate.xs", .text = duplicate_constructor, .length = strlen(duplicate_constructor)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 27, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *duplicate_method = "data User { fn Get(value: Int) {} fn Get(other: Int) {} }\n";
+  source = (XsSource){.path = "DataMethodDuplicate.xs", .text = duplicate_method, .length = strlen(duplicate_method)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 28, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *invalid_inheritance = "data User { extends Person; }\n";
+  source = (XsSource){
+      .path = "DataInheritanceInvalid.xs", .text = invalid_inheritance, .length = strlen(invalid_inheritance)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 29, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
 }
 
 static void test_class_constructor_rules(void)
@@ -256,6 +292,32 @@ static void test_enum_payload_rules(void)
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
+
+  const char *overloaded = "enum data Value { Number: Int, Number: Long, Text: Str, }\n";
+  source = (XsSource){.path = "DataEnumOverload.xs", .text = overloaded, .length = strlen(overloaded)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 44, &diagnostics, &tree));
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_ENUM_VARIANT, XS_SYNTAX_FLAG_ENUM_VARIANT_OVERLOAD) == 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *duplicate_regular = "enum Color { Red, Red, }\n";
+  source =
+      (XsSource){.path = "RegularEnumDuplicate.xs", .text = duplicate_regular, .length = strlen(duplicate_regular)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 45, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *duplicate_payload = "enum data Value { Number: Int, Number: Int, }\n";
+  source =
+      (XsSource){.path = "DataEnumDuplicatePayload.xs", .text = duplicate_payload, .length = strlen(duplicate_payload)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 46, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
 }
 
 static void test_generic_constraint_structure(void)
@@ -278,7 +340,7 @@ int main(void)
 {
   test_top_level_variable_declaration_structure();
   test_inferred_variable_declaration_structure();
-  test_data_rejects_non_field_members();
+  test_data_callables_and_overloads();
   test_class_constructor_rules();
   test_interface_member_rules();
   test_class_inheritance_rules();

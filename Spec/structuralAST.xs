@@ -248,6 +248,8 @@ data FunctionDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
 
+    operatorToken: TokenNode
+
     isAsync: Bool
     isStatic: Bool
     isIncomplete: Bool
@@ -265,6 +267,8 @@ data FunctionDeclaration {
 
 // returnType may be None when the function has no explicit
 // `=> Type` declaration.
+// operatorToken may be None. When present, name is operator and the token
+// identifies the overloaded operator.
 //
 // A function without an explicit return type returns no value.
 
@@ -392,6 +396,7 @@ data EnumDeclaration {
 data EnumVariant {
     name: IdentifierNode
     payloadType: TypeNode
+    isOverload: Bool
     span: SourceSpan
 }
 
@@ -401,6 +406,9 @@ data EnumVariant {
 // Regular enum variants do not carry values.
 //
 // enum data variants may carry at most one payload.
+// Typed variants with distinct payload types may share a name.
+// isOverload is false for the first variant in that overload set and true for later variants.
+// Regular enum variants and non-typed enum data variants have unique names.
 
 
 // Example:
@@ -426,6 +434,8 @@ data DataDeclaration {
     visibility: VisibilityNode
     genericParameters: GenericParameter[]
     fields: DataField[]
+    constructors: ConstructorDeclaration[]
+    methods: FunctionDeclaration[]
     span: SourceSpan
 }
 
@@ -437,7 +447,10 @@ data DataField {
 }
 
 
-// data declarations contain fields only.
+// data declarations may contain fields, constructors, and methods.
+// Constructors and methods may be overloaded by parameter type list.
+// Operator overloads are FunctionDeclaration nodes whose name is operator
+// and whose operator token identifies the overload target.
 
 
 // ============================================================

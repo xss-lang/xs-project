@@ -132,7 +132,8 @@ static const XsHirSymbol *resolve_type_symbol(const XsSyntaxNode *type, const ch
     return nullptr;
   const XsHirSymbol *symbol = resolve_name_use(path, current_namespace, project_symbols, imports);
   free(path);
-  if (symbol == nullptr || (symbol->kind != XS_HIR_SYMBOL_CLASS && symbol->kind != XS_HIR_SYMBOL_INTERFACE))
+  if (symbol == nullptr || (symbol->kind != XS_HIR_SYMBOL_CLASS && symbol->kind != XS_HIR_SYMBOL_INTERFACE &&
+                            symbol->kind != XS_HIR_SYMBOL_DATA))
     return nullptr;
   return symbol;
 }

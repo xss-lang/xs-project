@@ -61,6 +61,41 @@ static void test_class_member_symbols(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_data_member_symbols_and_method_resolution(void)
+{
+  const char *text = "module App;\n"
+                     "data User {\n"
+                     "  name: Str;\n"
+                     "  User(name: Str) {}\n"
+                     "  User(name: Str, age: Int) {}\n"
+                     "  fn GetName() => Str { return name; }\n"
+                     "}\n"
+                     "fn Main() { user: User = new(); user.GetName(); }\n";
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirMemberSymbolTable members;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  CHECK(parse_symbols(text, &tree, &symbols, &diagnostics));
+  xs_hir_member_symbol_table_init(&members);
+  const XsHirSymbol *user = xs_hir_symbol_table_find(&symbols, "App.User");
+  CHECK(user != nullptr);
+  CHECK(xs_hir_collect_member_symbols(user, nullptr, &members, &diagnostics));
+  CHECK(xs_hir_member_symbol_table_find(&members, "App.User", "name") != nullptr);
+  const XsHirMemberSymbol *constructor = xs_hir_member_symbol_table_find(&members, "App.User", "User");
+  CHECK(constructor != nullptr && constructor->kind == XS_HIR_MEMBER_CONSTRUCTOR);
+  const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "GetName");
+  CHECK(method != nullptr && method->kind == XS_HIR_MEMBER_METHOD);
+  xs_hir_import_scope_init(&imports);
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_member_symbol_table_free(&members);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_method_merge_uses_last_member_symbol(void)
 {
   const char *text = "module App;\n"
@@ -273,6 +308,7 @@ static void test_macro_generated_method_call_resolution(void)
 int main(void)
 {
   test_class_member_symbols();
+  test_data_member_symbols_and_method_resolution();
   test_method_merge_uses_last_member_symbol();
   test_duplicate_field_member_errors();
   test_macro_generated_field_like_member_symbol();
