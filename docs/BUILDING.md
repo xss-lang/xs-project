@@ -10,7 +10,7 @@ fallbacks, GNU C dialects, and `_GNU_SOURCE` are not supported.
 
 ## Required tools
 
-- `cmake`
+- `cmake` 3.31 or newer
 - `ninja`
 - `clang`
 - LLVM tools:

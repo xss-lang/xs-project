@@ -15,7 +15,7 @@ testable, the HIR/MIR layers must not depend on LLVM, and the documented compila
 
 Required core tools:
 
-- CMake
+- CMake 3.31 or newer
 - Ninja
 - Clang / LLVM tools
 - LLD
