@@ -201,6 +201,78 @@ static bool append_branch(PendingBranch **branches, size_t *count, PendingBranch
   return true;
 }
 
+static bool append_argument(XsLilValueId **arguments, size_t *count, XsLilValueId argument)
+{
+  XsLilValueId *grown = realloc(*arguments, (*count + 1U) * sizeof(*grown));
+  if (grown == nullptr)
+    return false;
+  *arguments = grown;
+  (*arguments)[(*count)++] = argument;
+  return true;
+}
+
+static XsLilStatus parse_call(Parser *parser, XsLilBlock *block, const char *operation, size_t length,
+                              const XsLilType *return_type, uint32_t expected_result, XsLilError *error)
+{
+  static const char prefix[] = "call ";
+  if (length <= sizeof(prefix) - 1U || strncmp(operation, prefix, sizeof(prefix) - 1U) != 0)
+    return parse_error(parser, error, "unsupported XLIL call instruction");
+  const char *end = operation + length;
+  const char *callee = operation + sizeof(prefix) - 1U;
+  const char *open = callee;
+  while (open < end && *open != '(')
+    ++open;
+  if (open == callee || open == end || end[-1] != ')')
+    return parse_error(parser, error, "XLIL call instruction is invalid");
+  const char *callee_end = open;
+  while (callee_end > callee && (callee_end[-1] == ' ' || callee_end[-1] == '\t'))
+    --callee_end;
+  char *name = xs_lil_copy_span(callee, (size_t)(callee_end - callee));
+  if (name == nullptr)
+    return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while parsing XLIL call target");
+  XsLilValueId *arguments = nullptr;
+  size_t argument_count = 0;
+  const char *cursor = skip_space(open + 1, end - 1);
+  while (cursor < end - 1)
+  {
+    const char *comma = cursor;
+    while (comma < end - 1 && *comma != ',')
+      ++comma;
+    uint32_t argument = 0;
+    if (!parse_u32_after_prefix(cursor, (size_t)(comma - cursor), "%r", &argument) ||
+        !append_argument(&arguments, &argument_count, argument))
+    {
+      free(arguments);
+      free(name);
+      return parse_error(parser, error, "XLIL call argument is invalid");
+    }
+    if (comma == end - 1)
+      break;
+    cursor = skip_space(comma + 1, end - 1);
+    if (cursor == end - 1)
+    {
+      free(arguments);
+      free(name);
+      return parse_error(parser, error, "XLIL call argument is invalid");
+    }
+  }
+  XsLilStatus status = XS_LIL_OK;
+  if (return_type == nullptr)
+  {
+    status = xs_lil_block_add_void_call(block, name, arguments, argument_count, error);
+  }
+  else
+  {
+    XsLilValueId result = 0;
+    status = xs_lil_block_add_call(block, name, *return_type, arguments, argument_count, &result, error);
+    if (status == XS_LIL_OK && result != expected_result)
+      status = parse_error(parser, error, "XLIL value ids must be sequential");
+  }
+  free(arguments);
+  free(name);
+  return status;
+}
+
 static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const char *line, size_t length,
                                      XsLilError *error)
 {
@@ -210,6 +282,19 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
     ++colon;
   if (colon == line + length || !parse_u32_after_prefix(line, (size_t)(colon - line), "%r", &result))
     return parse_error(parser, error, "unsupported XLIL instruction");
+  const char *type_start = colon + 1;
+  const char *type_end = type_start;
+  while (type_end < line + length && *type_end != ' ' && *type_end != '\t')
+    ++type_end;
+  XsLilType result_type = {0};
+  const char *equals = skip_space(type_end, line + length);
+  if (type_end > type_start && parse_type(type_start, (size_t)(type_end - type_start), &result_type) &&
+      equals < line + length && *equals == '=')
+  {
+    const char *operation = skip_space(equals + 1, line + length);
+    if ((size_t)(line + length - operation) >= 5U && strncmp(operation, "call ", 5) == 0)
+      return parse_call(parser, block, operation, (size_t)(line + length - operation), &result_type, result, error);
+  }
   if ((size_t)(line + length - colon) >= 7U && span_equals(colon, 7, ":bool ="))
   {
     const char *operation = skip_space(colon + 7, line + length);
@@ -311,6 +396,7 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
   size_t branch_count = 0;
   XsLilBlock *current = nullptr;
   bool current_terminated = false;
+  size_t parameter = 0;
   const char *line = nullptr;
   size_t length = 0;
   while (next_line(parser, &line, &length))
@@ -321,8 +407,28 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
       continue;
     if (span_equals(trimmed, trimmed_length, ".end"))
       break;
+    if (trimmed_length > 7 && strncmp(trimmed, ".param ", 7) == 0)
+    {
+      if (current != nullptr || parameter >= function->parameter_count)
+        return parse_error(parser, error, "XLIL parameter record is misplaced or duplicated");
+      const char *record = trimmed + 7;
+      const char *colon = record;
+      while (colon < trimmed + trimmed_length && *colon != ':')
+        ++colon;
+      uint32_t value = 0;
+      XsLilType type = {0};
+      if (colon == trimmed + trimmed_length ||
+          !parse_u32_after_prefix(record, (size_t)(colon - record), "%r", &value) || value != parameter ||
+          !parse_type(colon + 1, (size_t)(trimmed + trimmed_length - (colon + 1)), &type) ||
+          type.kind != function->parameters[parameter].kind)
+        return parse_error(parser, error, "XLIL parameter record does not match function signature");
+      ++parameter;
+      continue;
+    }
     if (trimmed_length > 4 && trimmed[0] == 'b' && trimmed[1] == 'b')
     {
+      if (parameter != function->parameter_count)
+        return parse_error(parser, error, "XLIL function parameter records are incomplete");
       const char *dot = trimmed;
       while (dot < trimmed + trimmed_length && *dot != '.')
         ++dot;
@@ -348,9 +454,10 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
     if (current_terminated)
       return parse_error(parser, error, "XLIL instruction appears after a terminator");
     XsLilStatus status = XS_LIL_OK;
-    if (trimmed[0] == '%')
+    if (trimmed[0] == '%' || (trimmed_length >= 5 && strncmp(trimmed, "call ", 5) == 0))
     {
-      status = parse_instruction(parser, current, trimmed, trimmed_length, error);
+      status = trimmed[0] == '%' ? parse_instruction(parser, current, trimmed, trimmed_length, error)
+                                 : parse_call(parser, current, trimmed, trimmed_length, nullptr, 0, error);
     }
     else
     {
@@ -370,12 +477,17 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
     free(branches);
     return parse_error(parser, error, "XLIL function body is not closed");
   }
+  if (parameter != function->parameter_count)
+  {
+    free(branches);
+    return parse_error(parser, error, "XLIL function parameter records are incomplete");
+  }
   for (size_t i = 0; i < branch_count; ++i)
   {
     XsLilStatus status = branches[i].is_conditional
-                              ? xs_lil_block_set_branch_if(branches[i].block, branches[i].condition, branches[i].target,
-                                                           branches[i].else_target, error)
-                              : xs_lil_block_set_branch(branches[i].block, branches[i].target, error);
+                             ? xs_lil_block_set_branch_if(branches[i].block, branches[i].condition, branches[i].target,
+                                                          branches[i].else_target, error)
+                             : xs_lil_block_set_branch(branches[i].block, branches[i].target, error);
     if (status != XS_LIL_OK)
     {
       free(branches);
@@ -470,6 +582,12 @@ XsLilStatus xs_lil_module_parse_text(const char *path, const char *text, size_t 
         return status;
       }
     }
+  }
+  status = xs_lil_module_verify(result, error);
+  if (status != XS_LIL_OK)
+  {
+    xs_lil_module_destroy(result);
+    return status;
   }
   *module = result;
   return XS_LIL_OK;

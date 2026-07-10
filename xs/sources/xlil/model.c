@@ -58,6 +58,11 @@ static void function_free(XsLilFunction *function)
   {
     XsLilBlock *block = function->blocks[i];
     free(block->label);
+    for (size_t instruction = 0; instruction < block->instruction_count; ++instruction)
+    {
+      free(block->instructions[instruction].callee);
+      free(block->instructions[instruction].arguments);
+    }
     free(block->instructions);
     free(block);
   }
@@ -117,6 +122,22 @@ static XsLilStatus append_function(XsLilModule *module, XsLilFunction function, 
   return XS_LIL_OK;
 }
 
+static XsLilStatus add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error)
+{
+  if (function->value_count == function->value_capacity)
+  {
+    size_t capacity = function->value_capacity == 0 ? 8 : function->value_capacity * 2;
+    XsLilValue *values = realloc(function->values, capacity * sizeof(*values));
+    if (values == nullptr)
+      return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while adding XLIL value");
+    function->values = values;
+    function->value_capacity = capacity;
+  }
+  *value = (XsLilValueId)function->value_count;
+  function->values[function->value_count++] = (XsLilValue){.type = type};
+  return XS_LIL_OK;
+}
+
 static XsLilStatus add_function(XsLilModule *module, const char *name, XsLilType return_type,
                                 const XsLilType *parameters, size_t parameter_count, bool is_definition,
                                 XsLilFunction **out_function, XsLilError *error)
@@ -146,6 +167,16 @@ static XsLilStatus add_function(XsLilModule *module, const char *name, XsLilType
       return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while copying XLIL parameters");
     }
     memcpy(function.parameters, parameters, parameter_count * sizeof(*function.parameters));
+    for (size_t parameter = 0; parameter < parameter_count; ++parameter)
+    {
+      XsLilValueId value = 0;
+      XsLilStatus status = add_value(&function, parameters[parameter], &value, error);
+      if (status != XS_LIL_OK)
+      {
+        function_free(&function);
+        return status;
+      }
+    }
   }
   XsLilStatus status = append_function(module, function, error);
   if (status != XS_LIL_OK)
@@ -229,22 +260,6 @@ const XsLilBlock *xs_lil_function_block_at(const XsLilFunction *function, size_t
   if (function == NULL || index >= function->block_count)
     return NULL;
   return function->blocks[index];
-}
-
-static XsLilStatus add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error)
-{
-  if (function->value_count == function->value_capacity)
-  {
-    size_t capacity = function->value_capacity == 0 ? 8 : function->value_capacity * 2;
-    XsLilValue *values = realloc(function->values, capacity * sizeof(*values));
-    if (values == NULL)
-      return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while adding XLIL value");
-    function->values = values;
-    function->value_capacity = capacity;
-  }
-  *value = (XsLilValueId)function->value_count;
-  function->values[function->value_count++] = (XsLilValue){.type = type};
-  return XS_LIL_OK;
 }
 
 XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *label, XsLilBlock **block,
@@ -349,6 +364,78 @@ XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValu
   return XS_LIL_OK;
 }
 
+static XsLilStatus add_call(XsLilBlock *block, const char *callee, XsLilType return_type, const XsLilValueId *arguments,
+                            size_t argument_count, bool has_result, XsLilValueId *result, XsLilError *error)
+{
+  xs_lil_clear_error(error);
+  if (result != nullptr)
+    *result = UINT32_MAX;
+  if (block == nullptr || block->owner == nullptr || callee == nullptr || callee[0] == '\0' ||
+      (argument_count != 0 && arguments == nullptr))
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL call instruction is required");
+  if ((has_result && return_type.kind == XS_LIL_TYPE_VOID) || (!has_result && return_type.kind != XS_LIL_TYPE_VOID))
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL call result does not match return type");
+  for (size_t argument = 0; argument < argument_count; ++argument)
+  {
+    if ((size_t)arguments[argument] >= block->owner->value_count)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL call references an unknown argument value");
+  }
+  XsLilInstruction instruction = {
+      .kind = XS_LIL_INSTRUCTION_CALL,
+      .result = UINT32_MAX,
+      .callee = xs_lil_copy_text(callee),
+      .argument_count = argument_count,
+  };
+  if (instruction.callee == nullptr)
+    return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while naming XLIL call target");
+  if (argument_count != 0)
+  {
+    instruction.arguments = malloc(argument_count * sizeof(*instruction.arguments));
+    if (instruction.arguments == nullptr)
+    {
+      free(instruction.callee);
+      return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while copying XLIL call arguments");
+    }
+    memcpy(instruction.arguments, arguments, argument_count * sizeof(*instruction.arguments));
+  }
+  if (has_result)
+  {
+    XsLilStatus status = add_value(block->owner, return_type, &instruction.result, error);
+    if (status != XS_LIL_OK)
+    {
+      free(instruction.arguments);
+      free(instruction.callee);
+      return status;
+    }
+  }
+  XsLilStatus status = append_instruction(block, instruction, error);
+  if (status != XS_LIL_OK)
+  {
+    if (has_result)
+      --block->owner->value_count;
+    free(instruction.arguments);
+    free(instruction.callee);
+    return status;
+  }
+  if (result != nullptr)
+    *result = instruction.result;
+  return XS_LIL_OK;
+}
+
+XsLilStatus xs_lil_block_add_call(XsLilBlock *block, const char *callee, XsLilType return_type,
+                                  const XsLilValueId *arguments, size_t argument_count, XsLilValueId *result,
+                                  XsLilError *error)
+{
+  return add_call(block, callee, return_type, arguments, argument_count, true, result, error);
+}
+
+XsLilStatus xs_lil_block_add_void_call(XsLilBlock *block, const char *callee, const XsLilValueId *arguments,
+                                       size_t argument_count, XsLilError *error)
+{
+  return add_call(block, callee, (XsLilType){.kind = XS_LIL_TYPE_VOID}, arguments, argument_count, false, nullptr,
+                  error);
+}
+
 static XsLilStatus set_terminator(XsLilBlock *block, XsLilTerminator terminator, XsLilError *error)
 {
   xs_lil_clear_error(error);
@@ -409,12 +496,11 @@ XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLi
 XsLilStatus xs_lil_block_set_branch_if(XsLilBlock *block, XsLilValueId condition, XsLilBlockId then_block,
                                        XsLilBlockId else_block, XsLilError *error)
 {
-  return set_terminator(block,
-                        (XsLilTerminator){.kind = XS_LIL_TERMINATOR_BRANCH_IF,
-                                          .condition = condition,
-                                          .target = then_block,
-                                          .else_target = else_block},
-                        error);
+  return set_terminator(
+      block,
+      (XsLilTerminator){
+          .kind = XS_LIL_TERMINATOR_BRANCH_IF, .condition = condition, .target = then_block, .else_target = else_block},
+      error);
 }
 
 XsLilBlockId xs_lil_block_id(const XsLilBlock *block)
@@ -458,6 +544,30 @@ bool xs_lil_block_instruction_bool(const XsLilBlock *block, size_t index)
   if (block == NULL || index >= block->instruction_count)
     return false;
   return block->instructions[index].immediate_bool;
+}
+
+const char *xs_lil_block_instruction_callee(const XsLilBlock *block, size_t index)
+{
+  if (block == nullptr || index >= block->instruction_count ||
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL)
+    return nullptr;
+  return block->instructions[index].callee;
+}
+
+size_t xs_lil_block_instruction_argument_count(const XsLilBlock *block, size_t index)
+{
+  if (block == nullptr || index >= block->instruction_count ||
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL)
+    return 0;
+  return block->instructions[index].argument_count;
+}
+
+XsLilValueId xs_lil_block_instruction_argument(const XsLilBlock *block, size_t index, size_t argument)
+{
+  if (block == nullptr || index >= block->instruction_count || argument >= block->instructions[index].argument_count ||
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL)
+    return UINT32_MAX;
+  return block->instructions[index].arguments[argument];
 }
 
 XsLilTerminatorKind xs_lil_block_terminator_kind(const XsLilBlock *block)

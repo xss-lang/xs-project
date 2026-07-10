@@ -412,12 +412,13 @@ XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char
   return status;
 }
 
-static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, const XsLilBlock *block, size_t index,
-                                             LLVMValueRef *values, size_t value_count, XsBackendError *error)
+static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilderRef builder, const XsLilBlock *block,
+                                             size_t index, LLVMValueRef *values, size_t value_count,
+                                             XsBackendError *error)
 {
   XsLilInstructionKind kind = xs_lil_block_instruction_kind(block, index);
   XsLilValueId result = xs_lil_block_instruction_result(block, index);
-  if ((size_t)result >= value_count)
+  if (kind != XS_LIL_INSTRUCTION_CALL && (size_t)result >= value_count)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL instruction result references an unknown value");
   LLVMTypeRef type = nullptr;
   if (kind == XS_LIL_INSTRUCTION_CONST_I64)
@@ -435,6 +436,49 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, const XsLi
       return status;
     values[result] = LLVMConstInt(type, xs_lil_block_instruction_bool(block, index) ? 1 : 0, false);
     return XS_BACKEND_OK;
+  }
+  if (kind == XS_LIL_INSTRUCTION_CALL)
+  {
+    const char *callee_name = xs_lil_block_instruction_callee(block, index);
+    LLVMValueRef callee = LLVMGetNamedFunction(unit->module, callee_name);
+    if (callee == nullptr)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call target must be declared before body lowering");
+    size_t argument_count = xs_lil_block_instruction_argument_count(block, index);
+    if (argument_count > (size_t)UINT_MAX)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call has too many arguments for LLVM C API");
+    LLVMValueRef *arguments = calloc(argument_count == 0 ? 1 : argument_count, sizeof(*arguments));
+    if (arguments == nullptr)
+      return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering XLIL call arguments");
+    XsBackendStatus status = XS_BACKEND_OK;
+    for (size_t argument = 0; argument < argument_count; ++argument)
+    {
+      XsLilValueId value = xs_lil_block_instruction_argument(block, index, argument);
+      if ((size_t)value >= value_count || values[value] == nullptr)
+      {
+        status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call references an unavailable argument value");
+        goto call_cleanup;
+      }
+      arguments[argument] = values[value];
+    }
+    LLVMValueRef call = LLVMBuildCall2(builder, LLVMGlobalGetValueType(callee), callee, arguments,
+                                       (unsigned)argument_count, result == UINT32_MAX ? "" : "call");
+    if (call == nullptr)
+    {
+      status = set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL call instruction");
+      goto call_cleanup;
+    }
+    if (result != UINT32_MAX)
+    {
+      if ((size_t)result >= value_count)
+      {
+        status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call result references an unknown value");
+        goto call_cleanup;
+      }
+      values[result] = call;
+    }
+  call_cleanup:
+    free(arguments);
+    return status;
   }
   return set_error(error, XS_BACKEND_DEFERRED, "XLIL instruction lowering is not supported yet");
 }
@@ -493,8 +537,6 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and XLIL function are required");
   if (!xs_lil_function_is_definition(function))
     return XS_BACKEND_OK;
-  if (xs_lil_function_parameter_count(function) != 0)
-    return set_error(error, XS_BACKEND_DEFERRED, "XLIL function body lowering with parameters is deferred");
   const char *name = xs_lil_function_name(function);
   LLVMValueRef llvm_function = LLVMGetNamedFunction(unit->module, name);
   if (llvm_function == nullptr)
@@ -519,6 +561,21 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
   }
 
   XsBackendStatus status = XS_BACKEND_OK;
+  size_t parameter_count = xs_lil_function_parameter_count(function);
+  for (size_t parameter = 0; parameter < parameter_count; ++parameter)
+  {
+    if (parameter >= value_count)
+    {
+      status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function parameter value is unavailable");
+      goto cleanup;
+    }
+    values[parameter] = LLVMGetParam(llvm_function, (unsigned)parameter);
+    if (values[parameter] == nullptr)
+    {
+      status = set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not read function parameter");
+      goto cleanup;
+    }
+  }
   for (size_t i = 0; i < block_count; ++i)
   {
     const XsLilBlock *block = xs_lil_function_block_at(function, i);
@@ -541,7 +598,7 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
     size_t instruction_count = xs_lil_block_instruction_count(block);
     for (size_t instruction = 0; instruction < instruction_count; ++instruction)
     {
-      status = lower_lil_instruction(unit, block, instruction, values, value_count, error);
+      status = lower_lil_instruction(unit, builder, block, instruction, values, value_count, error);
       if (status != XS_BACKEND_OK)
         goto cleanup;
     }

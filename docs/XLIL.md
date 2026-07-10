@@ -59,6 +59,8 @@ Format notes:
 - `.xlil module <name>` declares the module name after the version header.
 - `.extern <symbol> : (<params>) -> <return>` declares an external function.
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
+- `.param %rN:type` maps a signature parameter to a body register. Records occur before the first basic block, in
+  signature order, and repeat the signature type.
 - `bbN.<label>:` starts a basic block.
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
@@ -68,6 +70,19 @@ Format notes:
 - `br_if %rN, bbA, bbB` branches to `bbA` when the `bool` condition `%rN` is true, otherwise to `bbB`.
 - `ret` and `ret %rN` are the current return terminators.
 - `.end` closes a function body.
+
+A parameter-returning definition therefore has an explicit body mapping:
+
+```text
+.func Identity : (i64) -> i64
+.param %r0:i64
+bb0.entry:
+  ret %r0
+.end
+```
+
+Call targets resolve only within the registry module. Forward references are accepted, but every target must be declared by
+`.extern` or `.func` and its argument and return types must match the call record.
 
 Version `0` is the only supported XLIL version today. The header exists so `xs build --xlil -file <input.xlil>` can select
 the correct XLIL grammar as the format evolves. It is not a bytecode VM version and does not make `.xlil` binary.
@@ -89,6 +104,6 @@ The API is intended to let:
 - alternative frontends exist,
 - every XLIL-producing compiler reuse the same backend infrastructure.
 
-The C23 API currently includes module construction, text writing, v0 text parsing, and read-only function/body inspection.
-Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting temporary LLVM IR. The command is intended
-to produce a native executable later, after object emission and linking are connected.
+The C23 API currently includes module construction, verification, text writing, v0 text parsing, and read-only
+function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting temporary LLVM
+IR. The command is intended to produce a native executable later, after object emission and linking are connected.

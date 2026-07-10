@@ -96,11 +96,12 @@ The direct file paths skip project manifests. Their final semantics depend on th
 - `mir` with `.xs`: parse/check/lower a single `.xs` input and emit `.xmir`.
 - `mir` with `.xmir`: parse the `.xmir version N` header and accept only supported XMIR grammar versions.
 - `xlil` with `.xs`: lower a single X# source file to `.xlil`.
-- `xlil` with `.xlil`: parse the `.xlil version N` header, verify the supported XLIL registry, then backend/link it.
+- `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, then emit the supported LLVM IR subset.
 
 The CLI recognizes the forms now; full production semantics are still being connected.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
 unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API and can
-currently produce a temporary LLVM IR checkpoint containing matching declarations and the supported initial body subset.
+currently produce a temporary LLVM IR checkpoint containing matching declarations, `.param` records, and the supported
+body subset including direct calls.
 The final `xs build --xlil -file <input.xlil>` output is intended to become a native executable once object emission and
 linking are wired into the command.

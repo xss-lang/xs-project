@@ -14,6 +14,9 @@ complete native executable pipeline.
 
 ### Added
 
+- XLIL v0 now has explicit `.param %rN:type` body records and registry-verified direct `call` records.
+- The public C23 XLIL API verifies direct call signatures, and the LLVM backend lowers XLIL parameters and calls.
+
 ### Changed
 
 ### Known gaps
@@ -39,8 +42,8 @@ complete native executable pipeline.
 - Direct `.xlil` inputs with supported version/module headers and top-level `.extern`/`.func` signatures can produce LLVM IR
   declarations.
 - Public XLIL C23 API can parse v0 text registry files and expose read-only function signature metadata.
-- LLVM backend can lower the first XLIL body subset: parameterless `const i64`, `const.bool`, `br`, `br_if`, `ret`, and
-  `ret %rN` functions.
+- LLVM backend can lower the first XLIL body subset: parameters, `const i64`, `const.bool`, direct calls, `br`, `br_if`,
+  `ret`, and `ret %rN` functions.
 - Documentation clarifies that `.xhir`, `.xmir`, and `.xlil` are human-readable text formats, not binary or opaque
   serialized compiler state.
 - XHIR and XMIR documentation now separates their structured text design from XLIL's assembly-like registry format.

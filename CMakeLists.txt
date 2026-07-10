@@ -149,6 +149,7 @@ if(XS_BUILD_PROJECT_XS)
   add_library(xs_lil
     xs/sources/xlil/model.c
     xs/sources/xlil/parser.c
+    xs/sources/xlil/verify.c
     xs/sources/xlil/writer.c
   )
 

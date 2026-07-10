@@ -101,6 +101,8 @@ int main(int argc, char **argv)
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(function != nullptr);
   CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 1);
+  CHECK(xs_llvm_declare_lil_function(first, "Sink", (XsLilType){.kind = XS_LIL_TYPE_VOID}, import_parameters, 1,
+                                     &function, &error) == XS_BACKEND_OK);
   XsLilModule *lil_module = nullptr;
   CHECK(xs_lil_module_create("Lowering", &lil_module, nullptr) == XS_LIL_OK);
   XsLilFunction *lil_function = nullptr;
@@ -114,23 +116,62 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_declare_lil_function(first, "Answer", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0, &function,
                                      &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, xs_lil_module_function_at(lil_module, 0), &error) == XS_BACKEND_OK);
+  CHECK(xs_lil_module_add_function(lil_module, "Import", (XsLilType){.kind = XS_LIL_TYPE_I64}, import_parameters, 1,
+                                   nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_function(lil_module, "Sink", (XsLilType){.kind = XS_LIL_TYPE_VOID}, import_parameters, 1,
+                                   nullptr) == XS_LIL_OK);
+  XsLilFunction *identity = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Identity", (XsLilType){.kind = XS_LIL_TYPE_I64},
+                                              import_parameters, 1, &identity, nullptr) == XS_LIL_OK);
+  XsLilBlock *identity_entry = nullptr;
+  CHECK(xs_lil_function_append_block(identity, "entry", &identity_entry, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(identity_entry, 0, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Identity", (XsLilType){.kind = XS_LIL_TYPE_I64}, import_parameters, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, identity, &error) == XS_BACKEND_OK);
+  XsLilFunction *call_import = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "CallImport", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr,
+                                              0, &call_import, nullptr) == XS_LIL_OK);
+  XsLilBlock *call_import_entry = nullptr;
+  CHECK(xs_lil_function_append_block(call_import, "entry", &call_import_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId import_argument = 0;
+  XsLilValueId import_result = 0;
+  CHECK(xs_lil_block_add_const_i64(call_import_entry, 7, &import_argument, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_call(call_import_entry, "Import", (XsLilType){.kind = XS_LIL_TYPE_I64}, &import_argument, 1,
+                              &import_result, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(call_import_entry, import_result, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "CallImport", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0, &function,
+                                     &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, call_import, &error) == XS_BACKEND_OK);
+  XsLilFunction *call_sink = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "CallSink", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
+                                              &call_sink, nullptr) == XS_LIL_OK);
+  XsLilBlock *call_sink_entry = nullptr;
+  CHECK(xs_lil_function_append_block(call_sink, "entry", &call_sink_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId sink_argument = 0;
+  CHECK(xs_lil_block_add_const_i64(call_sink_entry, 9, &sink_argument, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_void_call(call_sink_entry, "Sink", &sink_argument, 1, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return(call_sink_entry, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "CallSink", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
+                                     &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, call_sink, &error) == XS_BACKEND_OK);
   XsLilFunction *branch_function = nullptr;
-  CHECK(xs_lil_module_add_function_definition(lil_module, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
-                                              &branch_function, nullptr) == XS_LIL_OK);
+  const XsLilType bool_parameter[] = {{.kind = XS_LIL_TYPE_BOOL}};
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID},
+                                              bool_parameter, 1, &branch_function, nullptr) == XS_LIL_OK);
   XsLilBlock *branch_entry = nullptr;
   XsLilBlock *branch_then = nullptr;
   XsLilBlock *branch_else = nullptr;
   CHECK(xs_lil_function_append_block(branch_function, "entry", &branch_entry, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_function_append_block(branch_function, "then", &branch_then, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_function_append_block(branch_function, "else", &branch_else, nullptr) == XS_LIL_OK);
-  XsLilValueId condition = 0;
-  CHECK(xs_lil_block_add_const_bool(branch_entry, true, &condition, nullptr) == XS_LIL_OK);
-  CHECK(xs_lil_block_set_branch_if(branch_entry, condition, 1, 2, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_branch_if(branch_entry, 0, 1, 2, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_set_return(branch_then, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_set_return(branch_else, nullptr) == XS_LIL_OK);
-  CHECK(xs_llvm_declare_lil_function(first, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
-                                     &error) == XS_BACKEND_OK);
-  CHECK(xs_llvm_lower_lil_function_body(first, xs_lil_module_function_at(lil_module, 1), &error) == XS_BACKEND_OK);
+  CHECK(xs_lil_module_verify(lil_module, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID}, bool_parameter, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, branch_function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);
   char ir_path[4096] = {0};
   CHECK(snprintf(ir_path, sizeof(ir_path), "%s.ll", argv[1]) > 0);
@@ -138,10 +179,16 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "target triple"));
   CHECK(file_contains(ir_path, "declare i64 @Add(i64, i64)"));
   CHECK(file_contains(ir_path, "declare i64 @Import(i64)"));
+  CHECK(file_contains(ir_path, "declare void @Sink(i64)"));
   CHECK(file_contains(ir_path, "define i64 @Answer()"));
   CHECK(file_contains(ir_path, "ret i64 42"));
-  CHECK(file_contains(ir_path, "define void @Choose()"));
-  CHECK(file_contains(ir_path, "br i1 true"));
+  CHECK(file_contains(ir_path, "define i64 @Identity(i64"));
+  CHECK(file_contains(ir_path, "define i64 @CallImport()"));
+  CHECK(file_contains(ir_path, "call i64 @Import(i64 7)"));
+  CHECK(file_contains(ir_path, "define void @CallSink()"));
+  CHECK(file_contains(ir_path, "call void @Sink(i64 9)"));
+  CHECK(file_contains(ir_path, "define void @Choose(i1"));
+  CHECK(file_contains(ir_path, "br i1"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
 
   const char *linker_arguments[] = {"--version"};

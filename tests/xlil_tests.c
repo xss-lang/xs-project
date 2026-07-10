@@ -231,8 +231,8 @@ static void test_text_parser_reads_function_definition(void)
 
 static void test_text_parser_round_trips_supported_body_subset(void)
 {
-  const char text[] =
-      ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %r0:i64 = const 42\n  ret %r0\n.end\n";
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %r0:i64 = const 42\n "
+                      " ret %r0\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = NULL;
   CHECK(xs_lil_module_parse_text("body.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
@@ -302,6 +302,45 @@ static void test_text_parser_round_trips_branch_if_subset(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_parameters_and_calls(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Forward : (i64) -> i64\n.param %r0:i64\nbb0.entry:\n"
+                      "  %r1:i64 = call Import(%r0)\n  call Sink(%r1)\n  ret %r1\n.end\n.extern Import : (i64) -> i64\n"
+                      ".extern Sink : (i64) -> void\n";
+  XsLilError error = {0};
+  XsLilModule *module = NULL;
+  CHECK(xs_lil_module_parse_text("calls.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != NULL);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  const XsLilFunction *function = xs_lil_module_function_at(module, 0);
+  CHECK(function != NULL);
+  CHECK(xs_lil_function_value_count(function) == 2);
+  CHECK(xs_lil_function_value_type(function, 0).kind == XS_LIL_TYPE_I64);
+  const XsLilBlock *block = xs_lil_function_block_at(function, 0);
+  CHECK(block != NULL);
+  CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_CALL);
+  CHECK(strcmp(xs_lil_block_instruction_callee(block, 0), "Import") == 0);
+  CHECK(xs_lil_block_instruction_argument_count(block, 0) == 1);
+  CHECK(xs_lil_block_instruction_argument(block, 0, 0) == 0);
+  CHECK(xs_lil_block_instruction_result(block, 1) == UINT32_MAX);
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, ".param %r0:i64\n") != NULL);
+  CHECK(strstr(buffer, "%r1:i64 = call Import(%r0)\n  call Sink(%r1)\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_rejects_invalid_inputs(void)
 {
   static const char *const invalid_inputs[] = {
@@ -312,6 +351,16 @@ static void test_text_parser_rejects_invalid_inputs(void)
       ".xlil version 0\n.xlil module App\n.func Bad : () -> void\nbb0.entry:\n  ret\n  %r0:i64 = const 1\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %0:i64 = const 1\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %r0:i64 = const 1\n  ret %0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : (i64) -> i64\nbb0.entry:\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : (i64) -> i64\n.param %r1:i64\nbb0.entry:\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %r0:i64 = call Missing()\n  ret "
+      "%r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.extern Import : (i64) -> i64\n.func Bad : () -> i64\nbb0.entry:\n"
+      "  %r0:i64 = call Import()\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.extern Sink : () -> void\n.func Bad : () -> void\nbb0.entry:\n"
+      "  %r0:void = call Sink()\n  ret\n.end\n",
+      ".xlil version 0\n.xlil module App\n.extern Import : () -> i64\n.func Bad : () -> void\nbb0.entry:\n"
+      "  call Import()\n  ret\n.end\n",
   };
   for (size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
@@ -336,6 +385,7 @@ int main(void)
   test_text_parser_round_trips_supported_body_subset();
   test_text_parser_round_trips_branch_subset();
   test_text_parser_round_trips_branch_if_subset();
+  test_text_parser_round_trips_parameters_and_calls();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

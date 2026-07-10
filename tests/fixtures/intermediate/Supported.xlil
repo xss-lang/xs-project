@@ -1,6 +1,19 @@
 .xlil version 0
 .xlil module App
 .extern Import : (i64) -> i64
+.extern Sink : (i64) -> void
+.func Identity : (i64) -> i64
+.param %r0:i64
+bb0.entry:
+  ret %r0
+.end
+.func CallImport : () -> i64
+bb0.entry:
+  %r0:i64 = const 7
+  %r1:i64 = call Import(%r0)
+  call Sink(%r1)
+  ret %r1
+.end
 .func Answer : () -> i64
 bb0.entry:
   %r0:i64 = const 42

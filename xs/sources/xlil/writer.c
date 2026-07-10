@@ -39,6 +39,23 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
         fprintf(stream, "  %%r%u:bool = const.bool %s\n", instruction->result,
                 instruction->immediate_bool ? "true" : "false") < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.bool instruction");
+    if (instruction->kind == XS_LIL_INSTRUCTION_CALL)
+    {
+      if (instruction->result != UINT32_MAX &&
+          fprintf(stream, "  %%r%u:%s = ", instruction->result,
+                  xs_lil_type_name(block->owner->values[instruction->result].type)) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL call result");
+      if (fprintf(stream, "%scall %s(", instruction->result == UINT32_MAX ? "  " : "", instruction->callee) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL call instruction");
+      for (size_t argument = 0; argument < instruction->argument_count; ++argument)
+      {
+        if ((argument != 0 && xs_lil_write_checked(stream, error, ", ") != XS_LIL_OK) ||
+            fprintf(stream, "%%r%u", instruction->arguments[argument]) < 0)
+          return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL call argument");
+      }
+      if (xs_lil_write_checked(stream, error, ")\n") != XS_LIL_OK)
+        return error == nullptr ? XS_LIL_IO_ERROR : error->status;
+    }
   }
   if (block->terminator.kind == XS_LIL_TERMINATOR_RETURN)
   {
@@ -89,6 +106,11 @@ XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, Xs
       return error == NULL ? XS_LIL_IO_ERROR : error->status;
     if (!function->is_definition)
       continue;
+    for (size_t parameter = 0; parameter < function->parameter_count; ++parameter)
+    {
+      if (fprintf(stream, ".param %%r%zu:%s\n", parameter, xs_lil_type_name(function->parameters[parameter])) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL function parameter");
+    }
     for (size_t block = 0; block < function->block_count; ++block)
     {
       if (write_block(stream, error, function->blocks[block]) != XS_LIL_OK)

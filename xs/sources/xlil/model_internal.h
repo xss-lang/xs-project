@@ -29,6 +29,9 @@ typedef struct
   XsLilValueId result;
   int64_t immediate_i64;
   bool immediate_bool;
+  char *callee;
+  XsLilValueId *arguments;
+  size_t argument_count;
 } XsLilInstruction;
 
 struct XsLilBlock
