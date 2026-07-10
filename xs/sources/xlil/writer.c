@@ -39,6 +39,22 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
         fprintf(stream, "  %%r%u:bool = const.bool %s\n", instruction->result,
                 instruction->immediate_bool ? "true" : "false") < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.bool instruction");
+    if (instruction->kind == XS_LIL_INSTRUCTION_ADD_I64 &&
+        fprintf(stream, "  %%r%u:i64 = add.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
+                instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL add.i64 instruction");
+    if (instruction->kind == XS_LIL_INSTRUCTION_SUB_I64 &&
+        fprintf(stream, "  %%r%u:i64 = sub.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
+                instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL sub.i64 instruction");
+    if (instruction->kind == XS_LIL_INSTRUCTION_MUL_I64 &&
+        fprintf(stream, "  %%r%u:i64 = mul.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
+                instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL mul.i64 instruction");
+    if (instruction->kind == XS_LIL_INSTRUCTION_EQ_I64 &&
+        fprintf(stream, "  %%r%u:bool = eq.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
+                instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL eq.i64 instruction");
     if (instruction->kind == XS_LIL_INSTRUCTION_CALL)
     {
       if (instruction->result != UINT32_MAX &&

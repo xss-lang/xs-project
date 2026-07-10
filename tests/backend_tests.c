@@ -155,6 +155,36 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_declare_lil_function(first, "CallSink", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
                                      &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, call_sink, &error) == XS_BACKEND_OK);
+  XsLilFunction *arithmetic = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Arithmetic", (XsLilType){.kind = XS_LIL_TYPE_I64},
+                                              import_parameters, 1, &arithmetic, nullptr) == XS_LIL_OK);
+  XsLilBlock *arithmetic_entry = nullptr;
+  CHECK(xs_lil_function_append_block(arithmetic, "entry", &arithmetic_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId left = 0;
+  XsLilValueId right = 0;
+  XsLilValueId sum = 0;
+  XsLilValueId difference = 0;
+  XsLilValueId product = 0;
+  CHECK(xs_lil_block_add_i64(arithmetic_entry, left, right, &sum, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_sub_i64(arithmetic_entry, sum, right, &difference, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_mul_i64(arithmetic_entry, difference, right, &product, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(arithmetic_entry, product, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Arithmetic", (XsLilType){.kind = XS_LIL_TYPE_I64}, import_parameters, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, arithmetic, &error) == XS_BACKEND_OK);
+  XsLilFunction *equality = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Equality", (XsLilType){.kind = XS_LIL_TYPE_BOOL},
+                                              import_parameters, 1, &equality, nullptr) == XS_LIL_OK);
+  XsLilBlock *equality_entry = nullptr;
+  CHECK(xs_lil_function_append_block(equality, "entry", &equality_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId equality_left = 0;
+  XsLilValueId equality_right = 0;
+  XsLilValueId equal = 0;
+  CHECK(xs_lil_block_eq_i64(equality_entry, equality_left, equality_right, &equal, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(equality_entry, equal, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Equality", (XsLilType){.kind = XS_LIL_TYPE_BOOL}, import_parameters, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, equality, &error) == XS_BACKEND_OK);
   XsLilFunction *branch_function = nullptr;
   const XsLilType bool_parameter[] = {{.kind = XS_LIL_TYPE_BOOL}};
   CHECK(xs_lil_module_add_function_definition(lil_module, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID},
@@ -187,6 +217,12 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "call i64 @Import(i64 7)"));
   CHECK(file_contains(ir_path, "define void @CallSink()"));
   CHECK(file_contains(ir_path, "call void @Sink(i64 9)"));
+  CHECK(file_contains(ir_path, "define i64 @Arithmetic(i64"));
+  CHECK(file_contains(ir_path, "add i64"));
+  CHECK(file_contains(ir_path, "sub i64"));
+  CHECK(file_contains(ir_path, "mul i64"));
+  CHECK(file_contains(ir_path, "define i1 @Equality(i64"));
+  CHECK(file_contains(ir_path, "icmp eq i64"));
   CHECK(file_contains(ir_path, "define void @Choose(i1"));
   CHECK(file_contains(ir_path, "br i1"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);

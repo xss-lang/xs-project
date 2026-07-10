@@ -70,6 +70,20 @@ static XsLilStatus verify_call(const XsLilModule *module, const XsLilFunction *f
   return XS_LIL_OK;
 }
 
+static XsLilStatus verify_binary_i64(const XsLilFunction *function, const XsLilInstruction *instruction,
+                                     XsLilError *error)
+{
+  if ((size_t)instruction->left >= function->value_count || (size_t)instruction->right >= function->value_count ||
+      (size_t)instruction->result >= function->value_count ||
+      function->values[instruction->left].type.kind != XS_LIL_TYPE_I64 ||
+      function->values[instruction->right].type.kind != XS_LIL_TYPE_I64)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL binary i64 instruction has invalid operands");
+  XsLilTypeKind expected = instruction->kind == XS_LIL_INSTRUCTION_EQ_I64 ? XS_LIL_TYPE_BOOL : XS_LIL_TYPE_I64;
+  if (function->values[instruction->result].type.kind != expected)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL binary i64 instruction has an invalid result type");
+  return XS_LIL_OK;
+}
+
 XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
 {
   xs_lil_clear_error(error);
@@ -94,6 +108,13 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if (current->kind == XS_LIL_INSTRUCTION_CALL)
         {
           status = verify_call(module, function, current, error);
+          if (status != XS_LIL_OK)
+            return status;
+        }
+        if (current->kind == XS_LIL_INSTRUCTION_ADD_I64 || current->kind == XS_LIL_INSTRUCTION_SUB_I64 ||
+            current->kind == XS_LIL_INSTRUCTION_MUL_I64 || current->kind == XS_LIL_INSTRUCTION_EQ_I64)
+        {
+          status = verify_binary_i64(function, current, error);
           if (status != XS_LIL_OK)
             return status;
         }

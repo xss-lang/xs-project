@@ -364,6 +364,63 @@ XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValu
   return XS_LIL_OK;
 }
 
+static XsLilStatus add_binary_i64(XsLilBlock *block, XsLilInstructionKind kind, XsLilValueId left, XsLilValueId right,
+                                  XsLilType result_type, XsLilValueId *result, XsLilError *error)
+{
+  xs_lil_clear_error(error);
+  if (result != nullptr)
+    *result = UINT32_MAX;
+  if (block == nullptr || block->owner == nullptr || (size_t)left >= block->owner->value_count ||
+      (size_t)right >= block->owner->value_count || block->owner->values[left].type.kind != XS_LIL_TYPE_I64 ||
+      block->owner->values[right].type.kind != XS_LIL_TYPE_I64)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL binary i64 instruction requires two i64 values");
+  XsLilInstruction instruction = {
+      .kind = kind,
+      .left = left,
+      .right = right,
+  };
+  XsLilStatus status = add_value(block->owner, result_type, &instruction.result, error);
+  if (status != XS_LIL_OK)
+    return status;
+  status = append_instruction(block, instruction, error);
+  if (status != XS_LIL_OK)
+  {
+    --block->owner->value_count;
+    return status;
+  }
+  if (result != nullptr)
+    *result = instruction.result;
+  return XS_LIL_OK;
+}
+
+XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_i64(block, XS_LIL_INSTRUCTION_ADD_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_i64(block, XS_LIL_INSTRUCTION_SUB_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsLilStatus xs_lil_block_mul_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_i64(block, XS_LIL_INSTRUCTION_MUL_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsLilStatus xs_lil_block_eq_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_i64(block, XS_LIL_INSTRUCTION_EQ_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
+}
+
 static XsLilStatus add_call(XsLilBlock *block, const char *callee, XsLilType return_type, const XsLilValueId *arguments,
                             size_t argument_count, bool has_result, XsLilValueId *result, XsLilError *error)
 {
@@ -568,6 +625,20 @@ XsLilValueId xs_lil_block_instruction_argument(const XsLilBlock *block, size_t i
       block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL)
     return UINT32_MAX;
   return block->instructions[index].arguments[argument];
+}
+
+XsLilValueId xs_lil_block_instruction_left(const XsLilBlock *block, size_t index)
+{
+  if (block == nullptr || index >= block->instruction_count)
+    return UINT32_MAX;
+  return block->instructions[index].left;
+}
+
+XsLilValueId xs_lil_block_instruction_right(const XsLilBlock *block, size_t index)
+{
+  if (block == nullptr || index >= block->instruction_count)
+    return UINT32_MAX;
+  return block->instructions[index].right;
 }
 
 XsLilTerminatorKind xs_lil_block_terminator_kind(const XsLilBlock *block)

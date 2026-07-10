@@ -64,6 +64,8 @@ Format notes:
 - `bbN.<label>:` starts a basic block.
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
+- `%rN:i64 = add.i64 %rA, %rB`, `sub.i64`, and `mul.i64` perform signed 64-bit integer arithmetic.
+- `%rN:bool = eq.i64 %rA, %rB` compares two `i64` values for equality.
 - `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.
 - `call <symbol>(%rA, %rB)` calls a void function and discards the result.
 - `br bbN` transfers control to another basic block.

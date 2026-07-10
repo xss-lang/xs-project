@@ -11,8 +11,9 @@ bb0.entry:
 bb0.entry:
   %r0:i64 = const 7
   %r1:i64 = call Import(%r0)
-  call Sink(%r1)
-  ret %r1
+  %r2:i64 = add.i64 %r1, %r0
+  call Sink(%r2)
+  ret %r2
 .end
 .func Answer : () -> i64
 bb0.entry:

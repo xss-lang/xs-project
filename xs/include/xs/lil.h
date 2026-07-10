@@ -56,6 +56,10 @@ typedef enum
 {
   XS_LIL_INSTRUCTION_CONST_I64,
   XS_LIL_INSTRUCTION_CONST_BOOL,
+  XS_LIL_INSTRUCTION_ADD_I64,
+  XS_LIL_INSTRUCTION_SUB_I64,
+  XS_LIL_INSTRUCTION_MUL_I64,
+  XS_LIL_INSTRUCTION_EQ_I64,
   XS_LIL_INSTRUCTION_CALL,
 } XsLilInstructionKind;
 
@@ -99,6 +103,14 @@ XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *la
                                          XsLilError *error);
 XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_mul_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_eq_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error);
 XsLilStatus xs_lil_block_add_call(XsLilBlock *block, const char *callee, XsLilType return_type,
                                   const XsLilValueId *arguments, size_t argument_count, XsLilValueId *result,
                                   XsLilError *error);
@@ -119,6 +131,8 @@ bool xs_lil_block_instruction_bool(const XsLilBlock *block, size_t index);
 const char *xs_lil_block_instruction_callee(const XsLilBlock *block, size_t index);
 size_t xs_lil_block_instruction_argument_count(const XsLilBlock *block, size_t index);
 XsLilValueId xs_lil_block_instruction_argument(const XsLilBlock *block, size_t index, size_t argument);
+XsLilValueId xs_lil_block_instruction_left(const XsLilBlock *block, size_t index);
+XsLilValueId xs_lil_block_instruction_right(const XsLilBlock *block, size_t index);
 XsLilTerminatorKind xs_lil_block_terminator_kind(const XsLilBlock *block);
 bool xs_lil_block_terminator_has_value(const XsLilBlock *block);
 XsLilValueId xs_lil_block_terminator_value(const XsLilBlock *block);
