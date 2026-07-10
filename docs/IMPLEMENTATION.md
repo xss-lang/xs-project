@@ -89,7 +89,7 @@ The documented compilation order is preserved:
 - Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
-  Clang/LLD executable path.
+  Clang/LLD `.xse` executable path.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -379,14 +379,16 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - LLVM optimization pipelines from `default<O0>` through `default<O3>` can be configured.
 - LLVM module verification, LLVM IR text emission, and object file emission work.
 - `xs build --xlil -file <input.xlil>` parses and verifies XLIL v0 text through `xs_lil_module_parse_text`, then lowers to
-  LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native executable beside the input. Native
-  direct XLIL requires exactly one defined
+  LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native `.xse` executable beside the input.
+  Native direct XLIL requires exactly one defined
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `eq.i32`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`,
   and `ret %rN`.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured
   cross-target still receives LLVM IR and object artifacts, then stops before executable linking; runtime and external
   library linking remain unconfigured.
+- `.xse` is the native executable artifact extension. The first output format under that extension is ELF; PE support comes
+  later.
 - The linker can be invoked without a shell, with argument policy left to the upper layer.
 
 Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)

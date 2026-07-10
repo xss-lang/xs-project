@@ -157,7 +157,7 @@ bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_
   }
   char *ir_path = direct_artifact_path(input_path, ".ll");
   char *object_path = direct_artifact_path(input_path, ".o");
-  char *executable_path = direct_artifact_path(input_path, "");
+  char *executable_path = direct_artifact_path(input_path, ".xse");
   if (ir_path == nullptr || object_path == nullptr || executable_path == nullptr)
   {
     free(ir_path);

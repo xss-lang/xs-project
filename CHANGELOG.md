@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Native executable artifacts now use the `.xse` extension; the first implemented container target is Linux ELF, with PE
+  planned after ELF support.
+
 ### Changed
 
 ### Known gaps

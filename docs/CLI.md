@@ -104,8 +104,8 @@ The CLI recognizes the forms now; full production semantics are still being conn
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
 unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API, verified,
 lowered through the LLVM backend, verified by LLVM, and passed through the configured optimization pipeline. It writes
-`<input-stem>.ll`, `<input-stem>.o`, and a native executable named `<input-stem>` alongside the input file. The direct XLIL
-path currently uses the backend default `O0` pipeline; no CLI optimization flag is exposed yet.
+`<input-stem>.ll`, `<input-stem>.o`, and a native executable named `<input-stem>.xse` alongside the input file. The direct
+XLIL path currently uses the backend default `O0` pipeline; no CLI optimization flag is exposed yet.
 
 Direct native XLIL builds require exactly one function definition with this platform entry signature:
 
@@ -117,3 +117,6 @@ This is a direct XLIL build ABI, not the X# source-language entry-point rule. Th
 for local Linux ELF linking. When the configured target triple differs from the host, it still writes the LLVM IR and object
 file but stops before linking with a cross-linking diagnostic. Runtime and external-library linking are not configured yet;
 an unresolved XLIL `.extern` symbol causes the linker to report a failed direct native build.
+
+The `.xse` extension is the xs-project native executable artifact name. The first target format is Linux ELF; PE native
+executables are planned after ELF support.
