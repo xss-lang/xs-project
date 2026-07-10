@@ -130,11 +130,31 @@ impl Parser<'_>
         break;
       };
       self.index += 1;
+      let local = self.required_parameter_local();
       let value_type = self.required_parameter_type();
-      function.parameters.push(Parameter { name: name.to_string(),
+      function.parameters.push(Parameter { local,
+                                           name: name.to_string(),
                                            value_type,
                                            span: span() });
     }
+  }
+
+  fn required_parameter_local(&mut self) -> LocalId
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report("missing parameter local".to_string());
+      return LocalId(u32::MAX);
+    };
+    self.index += 1;
+    let Some(local) = line.strip_prefix("local ").and_then(|local| local.parse::<u32>().ok())
+    else
+    {
+      self.report("expected parameter local".to_string());
+      return LocalId(u32::MAX);
+    };
+    LocalId(local)
   }
 
   fn required_parameter_type(&mut self) -> Type

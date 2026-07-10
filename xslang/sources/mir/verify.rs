@@ -87,6 +87,12 @@ impl<'a> Verifier<'a>
                     format!("parameter '{}' is declared more than once", parameter.name),
                     parameter.span);
       }
+      if !self.locals.insert(parameter.local)
+      {
+        self.report(DiagnosticCode::DuplicateLocal,
+                    format!("local id {} is declared more than once", parameter.local.0),
+                    parameter.span);
+      }
     }
   }
 
@@ -440,11 +446,12 @@ mod tests
   fn accepts_valid_function()
   {
     let function = Function { name: "main".to_string(),
-                              parameters: vec![Parameter { name: "input".to_string(),
+                              parameters: vec![Parameter { local: LocalId(0),
+                                                           name: "input".to_string(),
                                                            value_type: Type::I64,
                                                            span: span(0, 1) }],
                               return_type: Type::I64,
-                              locals: vec![typed_local(0, Type::I64)],
+                              locals: vec![],
                               blocks: vec![block(0, Some(Terminator::Return(Some(LocalId(0)))))] };
 
     assert!(verify_function(&function).is_empty());
@@ -579,7 +586,8 @@ mod tests
   #[test]
   fn reports_duplicate_parameters()
   {
-    let parameter = Parameter { name: "value".to_string(),
+    let parameter = Parameter { local: LocalId(0),
+                                name: "value".to_string(),
                                 value_type: Type::I64,
                                 span: span(0, 1) };
     let function = Function { name: "bad_parameters".to_string(),

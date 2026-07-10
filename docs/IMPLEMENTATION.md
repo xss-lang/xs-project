@@ -404,7 +404,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
   `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `ret`, and `.end`.
-- MIR functions carry explicit XLIL-vocabulary parameter and return types. The first MIR → XLIL body bridge lowers MIR
+- MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
+  to bind them to XLIL `.param` values. The bridge lowers MIR
   parameter signatures, typed MIR `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, and `eq.i64` local statements,
   typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,

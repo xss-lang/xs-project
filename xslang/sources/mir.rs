@@ -31,6 +31,7 @@ pub struct Local
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Parameter
 {
+  pub local: LocalId,
   pub name: String,
   pub value_type: Type,
   pub span: Span,
@@ -188,6 +189,16 @@ impl BorrowChecker
   #[must_use]
   pub fn check_function(mut self, function: &Function) -> Vec<Diagnostic>
   {
+    for parameter in &function.parameters
+    {
+      let local = Local { id: parameter.local,
+                          name: parameter.name.clone(),
+                          value_type: Some(parameter.value_type),
+                          mutable: false,
+                          span: parameter.span };
+      self.local_defs.insert(local.id, local);
+      self.states.insert(parameter.local, BorrowState::default());
+    }
     for local in &function.locals
     {
       self.local_defs.insert(local.id, local.clone());
@@ -560,6 +571,28 @@ mod tests
     let diagnostics = BorrowChecker::new().check_function(&function);
 
     assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::ImmutableLocalMutableBorrow);
+  }
+
+  #[test]
+  fn treats_parameters_as_immutable_live_locals()
+  {
+    let function =
+      Function { name: "main".to_string(),
+                 parameters: vec![Parameter { local: LocalId(0),
+                                              name: "input".to_string(),
+                                              value_type: Type::I64,
+                                              span: span(0, 1) }],
+                 return_type: Type::VOID,
+                 locals: vec![],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::BorrowMutable { local: LocalId(0),
+                                                                                       span: span(1, 2) }],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(0, 2) }] };
+
+    let diagnostics = BorrowChecker::new().check_function(&function);
+
     assert_eq!(diagnostics[0].code, DiagnosticCode::ImmutableLocalMutableBorrow);
   }
 

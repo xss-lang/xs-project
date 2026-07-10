@@ -36,6 +36,7 @@ returns void
 
 parameters
   parameter value
+    local 0
     type i64
 .end
 
@@ -71,7 +72,8 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `.xmir version 0`
 - `function <name>`
 - `returns <xlil-type>`
-- `parameters` with `parameter <name>` and `type <xlil-type>` records
+- `parameters` with `parameter <name>`, `local <id>`, and `type <xlil-type>` records. A parameter local is immutable and
+  identifies the value used by MIR statements and terminators.
 - `locals`, including optional `type <xlil-type>` records for values that can lower into XLIL
 - `control_flow`
 - explicit `.end` section markers and `.program end` document marker

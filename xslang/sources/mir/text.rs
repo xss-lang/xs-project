@@ -349,19 +349,20 @@ mod tests
   {
     let function =
       Function { name: "Main".to_string(),
-                 parameters: vec![Parameter { name: "argc".to_string(),
+                 parameters: vec![Parameter { local: LocalId(0),
+                                              name: "argc".to_string(),
                                               value_type: crate::xlil::Type::I64,
                                               span: span() }],
                  return_type: crate::xlil::Type::VOID,
-                 locals: vec![Local { id: LocalId(0),
+                 locals: vec![Local { id: LocalId(1),
                                       name: "message".to_string(),
                                       value_type: None,
                                       mutable: false,
                                       span: span() }],
                  blocks: vec![BasicBlock { id: BlockId(0),
-                                           statements: vec![Statement::BorrowShared { local: LocalId(0),
+                                           statements: vec![Statement::BorrowShared { local: LocalId(1),
                                                                                       span: span() },
-                                                            Statement::EndBorrow { local: LocalId(0),
+                                                            Statement::EndBorrow { local: LocalId(1),
                                                                                    span: span() },],
                                            terminator: Some(Terminator::Return(None)),
                                            span: span() }] };
@@ -386,6 +387,7 @@ mod tests
     let parsed = parse_xmir_function(&text).expect("XMIR function should parse");
     assert_eq!(parsed.name, "Main");
     assert_eq!(parsed.parameters.len(), 1);
+    assert_eq!(parsed.parameters[0].local, LocalId(0));
     assert_eq!(parsed.parameters[0].name, "argc");
     assert_eq!(parsed.parameters[0].value_type, crate::xlil::Type::I64);
     assert_eq!(parsed.locals.len(), 1);
@@ -740,9 +742,9 @@ mod tests
   #[test]
   fn parses_explicit_end_markers_without_indentation()
   {
-    let text = ".xmir version 0\nfunction Main\nreturns void\n\nparameters\nparameter value\ntype \
-                i64\n.end\nlocals\nlocal 0\nname value\ntype i64\nmutability immutable\n.end\ncontrol_flow\nblock \
-                0\nstatements\nstatement use\nlocal 0\nterminator return\n.end\n.program end\n";
+    let text = ".xmir version 0\nfunction Main\nreturns void\n\nparameters\nparameter value\nlocal 0\ntype \
+                i64\n.end\nlocals\nlocal 1\nname value\ntype i64\nmutability immutable\n.end\ncontrol_flow\nblock \
+                0\nstatements\nstatement use\nlocal 1\nterminator return\n.end\n.program end\n";
 
     let parsed = parse_xmir_function(text).expect("XMIR should not be indentation based");
 

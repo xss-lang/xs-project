@@ -44,7 +44,7 @@ impl MirToXlilLowerer
 
   pub fn lower_function(mut self, function: &mir::Function) -> Result<Function, Vec<Diagnostic>>
   {
-    let local_types = local_types(function);
+    let mut local_types = local_types(function);
     let parameters = function.parameters
                              .iter()
                              .map(|parameter| parameter.value_type)
@@ -52,6 +52,14 @@ impl MirToXlilLowerer
     let mut lowered = Function::definition(function.name.clone(), function.return_type, parameters);
     let mut blocks = HashMap::new();
     let mut values = HashMap::new();
+    for (index, parameter) in function.parameters.iter().enumerate()
+    {
+      local_types.insert(parameter.local, Some(parameter.value_type));
+      if let Some(value) = lowered.parameter_value(index)
+      {
+        values.insert(parameter.local, value);
+      }
+    }
     for block in &function.blocks
     {
       let xlil_block = lowered.append_block(format!("bb{}", block.id.0));

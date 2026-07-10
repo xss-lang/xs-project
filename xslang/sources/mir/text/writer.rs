@@ -40,6 +40,7 @@ fn write_parameters(output: &mut String, function: &Function)
 fn write_parameter(output: &mut String, parameter: &Parameter)
 {
   let _ = writeln!(output, "  parameter {}", parameter.name);
+  let _ = writeln!(output, "    local {}", parameter.local.0);
   let _ = writeln!(output, "    type {}", type_name(parameter.value_type));
 }
 

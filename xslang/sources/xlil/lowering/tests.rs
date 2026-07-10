@@ -325,20 +325,25 @@ fn lowers_const_bool_and_eq_i64_statement()
 fn lowers_signature_parameters()
 {
   let function = MirFunction { name: "WithParameter".to_string(),
-                               parameters: vec![Parameter { name: "value".to_string(),
+                               parameters: vec![Parameter { local: LocalId(0),
+                                                            name: "value".to_string(),
                                                             value_type: Type::I64,
                                                             span: span(0, 1) }],
-                               return_type: Type::VOID,
+                               return_type: Type::I64,
                                locals: vec![],
                                blocks: vec![BasicBlock { id: MirBlockId(0),
                                                          statements: vec![],
-                                                         terminator: Some(mir::Terminator::Return(None)),
+                                                         terminator:
+                                                           Some(mir::Terminator::Return(Some(LocalId(0)))),
                                                          span: span(0, 1) }] };
 
   let lowered = MirToXlilLowerer::new().lower_function(&function)
                                        .expect("lowering should succeed");
 
   assert_eq!(lowered.parameters, vec![Type::I64]);
+  assert_eq!(lowered.parameter_value(0), Some(crate::xlil::ValueId(0)));
+  assert_eq!(lowered.blocks[0].terminator,
+             Some(Terminator::Return(Some(crate::xlil::ValueId(0)))));
 }
 
 #[test]
