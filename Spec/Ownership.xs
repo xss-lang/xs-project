@@ -3,42 +3,42 @@
 
 // ownership system:
 
-//{
-All values are move-by-default.
-
-Assignments move ownership.
-Function arguments move ownership.
-Return values move ownership.
-
-After a move, the source value becomes invalid.
-
-Borrowing follows Rust-style rules.
-
-Immutable borrow:
-&T
-
-Mutable borrow:
-&mut T
-
-At any given time, a value may have:
-
-- Exactly one mutable borrow (&mut T)
-
-or
-
-- One or more immutable borrows (&T)
-
-Mutable and immutable borrows cannot coexist.
-
-Borrow checking is performed at compile time.
-
-Lifetime analysis is performed at compile time.
-
-None is a valid value for Optional<T>.
-
-Ownership rules apply to all values,
-including Optional<T> values containing None.
-}//
+//
+// All values are move-by-default.
+//
+// Assignments move ownership.
+// Function arguments move ownership.
+// Return values move ownership.
+//
+// After a move, the source value becomes invalid.
+//
+// Borrowing follows Rust-style rules.
+//
+// Immutable borrow:
+// &T
+//
+// Mutable borrow:
+// &mut T
+//
+// At any given time, a value may have:
+//
+// - Exactly one mutable borrow (&mut T)
+//
+// or
+//
+// - One or more immutable borrows (&T)
+//
+// Mutable and immutable borrows cannot coexist.
+//
+// Borrow checking is performed at compile time.
+//
+// Lifetime analysis is performed at compile time.
+//
+// None is a valid value for Optional<T>.
+//
+// Ownership rules apply to all values,
+// including Optional<T> values containing None.
+//
 
 // move by assignment
 

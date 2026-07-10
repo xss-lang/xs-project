@@ -58,58 +58,13 @@ static void skip_line_comment(XsLexer *lexer)
     ++lexer->cursor;
 }
 
-static bool skip_block_comment(XsLexer *lexer, bool document, size_t start)
-{
-  size_t depth = 1;
-  lexer->cursor += document ? 4 : 3;
-  while (!at_end(lexer))
-  {
-    if (starts_with(lexer, "///{", 4))
-    {
-      ++depth;
-      lexer->cursor += 4;
-    }
-    else if (starts_with(lexer, "//{", 3))
-    {
-      ++depth;
-      lexer->cursor += 3;
-    }
-    else if (starts_with(lexer, "}///", 4))
-    {
-      --depth;
-      lexer->cursor += 4;
-      if (depth == 0)
-        return true;
-    }
-    else if (starts_with(lexer, "}//", 3))
-    {
-      --depth;
-      lexer->cursor += 3;
-      if (depth == 0)
-        return true;
-    }
-    else
-    {
-      ++lexer->cursor;
-    }
-  }
-  error(lexer, start, lexer->cursor, "unterminated block comment");
-  return false;
-}
-
 static void skip_trivia(XsLexer *lexer)
 {
   for (;;)
   {
     while (!at_end(lexer) && isspace((unsigned char)peek(lexer, 0)) != 0)
       ++lexer->cursor;
-    if (starts_with(lexer, "//{", 3))
-    {
-      size_t start = lexer->cursor;
-      if (!skip_block_comment(lexer, false, start))
-        return;
-    }
-    else if (starts_with(lexer, "//", 2) && !starts_with(lexer, "///", 3) && !starts_with(lexer, "//!", 3))
+    if (starts_with(lexer, "//", 2) && !starts_with(lexer, "///", 3) && !starts_with(lexer, "//!", 3))
     {
       skip_line_comment(lexer);
     }
@@ -123,11 +78,6 @@ static void skip_trivia(XsLexer *lexer)
 static XsToken lex_doc_comment(XsLexer *lexer)
 {
   size_t start = lexer->cursor;
-  if (starts_with(lexer, "///{", 4))
-  {
-    skip_block_comment(lexer, true, start);
-    return token(XS_TOKEN_DOC_COMMENT, start, lexer->cursor);
-  }
   lexer->cursor += 3;
   skip_line_comment(lexer);
   return token(XS_TOKEN_DOC_COMMENT, start, lexer->cursor);

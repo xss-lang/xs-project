@@ -3,21 +3,21 @@
 
 // Project system:
 
-//{
-The project system defines:
-
-- .xsproj project manifests
-- Project metadata
-- Compiler options
-- Entry selection
-- Build-graph source files
-- Output targets
-- External modules
-- Project CLI commands
-- Module declarations
-- Import resolution
-- Module and build-graph interaction
-}//
+//
+// The project system defines:
+//
+// - .xsproj project manifests
+// - Project metadata
+// - Compiler options
+// - Entry selection
+// - Build-graph source files
+// - Output targets
+// - External modules
+// - Project CLI commands
+// - Module declarations
+// - Import resolution
+// - Module and build-graph interaction
+//
 
 
 // ============================================================
@@ -77,7 +77,7 @@ appRelease: "BETA"
 appLicense: "MIT"
 
 appAuthors {
-    ["Alfa", "alfa@example.me"]
+    ["Alpha", "alfa@example.me"]
     ["Foo", "foo@baz.me"]
 }
 
@@ -220,7 +220,7 @@ appLicense: None
 // ============================================================
 
 appAuthors {
-    ["Alfa", "alfa@example.me"]
+    ["Alpha", "alfa@example.me"]
     ["Foo", None]
 }
 
@@ -242,7 +242,7 @@ appAuthors {
 // Valid:
 
 appAuthors {
-    ["Alfa", None]
+    ["Alpha", None]
 }
 
 
@@ -256,7 +256,7 @@ appAuthors {
 // Invalid because the record contains only one value:
 
 appAuthors {
-    ["Alfa"]
+    ["Alpha"]
 }
 
 
@@ -777,7 +777,7 @@ imports Math;
 // Project-system summary
 // ============================================================
 
-//{
+//
 // .xsproj
 //     Project manifest.
 //
@@ -804,4 +804,4 @@ imports Math;
 // module name
 //     Independent from the file name.
 //     Must be unique.
-//}//
+//

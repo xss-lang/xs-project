@@ -3,49 +3,49 @@
 
 // process and error handling system:
 
-//{
-Process execution is provided by the Process module.
-
-Process.execute() does not return a value.
-
-Command execution failures throw exceptions.
-
-Raw shell execution is disabled by default.
-
-Shell execution must be explicitly enabled
-using .shell(true).
-
-Error handling is based on:
-
-- try
-- catch
-- finally
-- throw
-- throws
-
-Functions may declare thrown exceptions.
-
-Multiple exception types may be declared.
-
-Exceptions are normal classes.
-
-Built-in exceptions:
-
-- IOException
-- NetworkException
-- OptionalException
-- OptionalUnboxingException
-- ArgumentException
-- OutOfRangeException
-
-Users may define custom exception types.
-
-During exception unwinding:
-
-- RAII rules apply
-- Destructors run automatically
-- Destructors execute in LIFO order
-}//
+//
+// Process execution is provided by the Process module.
+//
+// Process.execute() does not return a value.
+//
+// Command execution failures throw exceptions.
+//
+// Raw shell execution is disabled by default.
+//
+// Shell execution must be explicitly enabled
+// using .shell(true).
+//
+// Error handling is based on:
+//
+// - try
+// - catch
+// - finally
+// - throw
+// - throws
+//
+// Functions may declare thrown exceptions.
+//
+// Multiple exception types may be declared.
+//
+// Exceptions are normal classes.
+//
+// Built-in exceptions:
+//
+// - IOException
+// - NetworkException
+// - OptionalException
+// - OptionalUnboxingException
+// - ArgumentException
+// - OutOfRangeException
+//
+// Users may define custom exception types.
+//
+// During exception unwinding:
+//
+// - RAII rules apply
+// - Destructors run automatically
+// - Destructors execute in LIFO order
+//
 
 imports Process;
 

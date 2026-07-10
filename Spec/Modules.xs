@@ -3,29 +3,29 @@
 
 // module system:
 
-//{
-module declaration is optional.
-
-If a file will be imported by another file,
-it must contain a module declaration.
-
-Only one module declaration is allowed per file.
-
-module name does not have to match the file name.
-
-namespace is optional.
-namespace must be declared under module.
-namespace does not use braces.
-namespace declarations are chained.
-
-public namespace is file-scoped.
-If public namespace is used, top-level declarations in that file are public.
-
-Non-public members are not visible from other modules.
-
-Duplicate imports are allowed.
-Duplicate imports are treated as one import.
-}//
+//
+// module declaration is optional.
+//
+// If a file will be imported by another file,
+// it must contain a module declaration.
+//
+// Only one module declaration is allowed per file.
+//
+// module name does not have to match the file name.
+//
+// namespace is optional.
+// namespace must be declared under module.
+// namespace does not use braces.
+// namespace declarations are chained.
+//
+// public namespace is file-scoped.
+// If public namespace is used, top-level declarations in that file are public.
+//
+// Non-public members are not visible from other modules.
+//
+// Duplicate imports are allowed.
+// Duplicate imports are treated as one import.
+//
 
 // module declaration
 module Math;

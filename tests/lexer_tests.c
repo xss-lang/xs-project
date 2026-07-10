@@ -60,7 +60,7 @@ static void test_comments_and_strings(void)
                                          XS_TOKEN_STRING,      XS_TOKEN_CHARACTER,      XS_TOKEN_CHARACTER,
                                          XS_TOKEN_EOF};
   expect_tokens(
-      "// ordinary\n//{ outer //{ nested }// }///\n/// docs\n//! module\n\"A\\n\" \"\"\"multi\nline\"\"\" 'A' '\\n'",
+      "// ordinary\n//{ former block-comment spelling is an ordinary line comment\n/// docs\n//! module\n\"A\\n\" \"\"\"multi\nline\"\"\" 'A' '\\n'",
       expected, sizeof(expected) / sizeof(expected[0]));
 }
 

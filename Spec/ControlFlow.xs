@@ -3,28 +3,28 @@
 
 // control flow system:
 
-//{
-if/else may be used as a statement or as an expression.
-match may be used as a statement or as an expression.
-
-Supported statements:
-- if
-- else if
-- else
-- for
-- while
-- break
-- continue
-- match
-
-if statement syntax may omit `else`.
-if expression syntax requires `else` and ends with `};` when used
-as a full statement.
-
-match statement syntax ends with `}`.
-match expression syntax ends with `};` when used as a full statement,
-for example in `return match (...) { ... };`.
-}//
+//
+// if/else may be used as a statement or as an expression.
+// match may be used as a statement or as an expression.
+//
+// Supported statements:
+// - if
+// - else if
+// - else
+// - for
+// - while
+// - break
+// - continue
+// - match
+//
+// if statement syntax may omit `else`.
+// if expression syntax requires `else` and ends with `};` when used
+// as a full statement.
+//
+// match statement syntax ends with `}`.
+// match expression syntax ends with `};` when used as a full statement,
+// for example in `return match (...) { ... };`.
+//
 
 fn Main() {
     x: Int = 5;

@@ -21,6 +21,8 @@ complete native executable pipeline.
   `.func main : () -> i32` XLIL entry point.
 - XLIL v0 now supports `%rN:i32 = const.i32 N` for direct native process exit values.
 - Rust `xslang` now carries `const.i32` through XMIR text, MIR verification, MIR → XLIL lowering, and XLIL v0 text.
+- GitHub Actions now verifies C23 debug and sanitizer builds, Rust formatting/tests, and patch hygiene.
+- X# source comments are line-only; `include!` now enters the driver after the initial structural AST parse.
 
 ### Changed
 

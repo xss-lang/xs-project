@@ -3,16 +3,16 @@
 
 // variable system:
 
-//{
-Type annotations are required unless the declaration uses `:=`.
-Normal variables are mutable.
-Top-level variables are not supported.
-}//
+//
+// Type annotations are required unless the declaration uses `:=`.
+// Normal variables are mutable.
+// Top-level variables are not supported.
+//
 
 fn Main() {
     // mutable variables
     x: Int = 5;
-    name: Str = "Alfa";
+    name: Str = "Alpha";
     enabled: Bool = true;
     letter: Char = "A";
     data: Byte = 255;
@@ -34,12 +34,12 @@ fn Main() {
     inferredAge := 26;
     inferredPi := 3.14;
     inferredLetter := 'A';
-    inferredName := "Alfa";
+    inferredName := "Alpha";
     maybe: Optional<Int> = None;
 
     // reassignment
     x = 10;
-    name = "Hasan";
+    name = "Leitewolf";
     enabled = false;
 
     // immutable variable

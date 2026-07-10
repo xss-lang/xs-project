@@ -3,21 +3,21 @@
 
 // Module search and import resolution:
 
-//{
-This file defines:
-
-- Project-root detection
-- Recursive module-file search
-- Module declaration requirements
-- Module-name uniqueness
-- Import resolution
-- Build-graph interaction
-- HIR dependency-graph construction
-
-Module search is based on declared module names.
-
-Module search is not based on source file names.
-}//
+//
+// This file defines:
+//
+// - Project-root detection
+// - Recursive module-file search
+// - Module declaration requirements
+// - Module-name uniqueness
+// - Import resolution
+// - Build-graph interaction
+// - HIR dependency-graph construction
+//
+// Module search is based on declared module names.
+//
+// Module search is not based on source file names.
+//
 
 // ============================================================
 // Project root
@@ -696,7 +696,7 @@ imports Math;
 // Complete algorithm
 // ============================================================
 
-//{
+//
 // input:
 //     active .xsproj path
 //
@@ -719,13 +719,12 @@ imports Math;
 //
 // failure:
 //     emit compile-time diagnostics
-//}//
-
+//
 // ============================================================
 // Summary
 // ============================================================
 
-//{
+//
 // Project root:
 //
 //     Directory containing the active .xsproj file.
@@ -768,4 +767,4 @@ imports Math;
 // Resolution stage:
 //
 //     HIR.
-//}//
+//

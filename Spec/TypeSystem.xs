@@ -6,6 +6,7 @@
 // Primitive type names are nominal language types.
 // Even when two user-defined types have the same fields, type identity is
 // based on the declared name.
+// Str is an immutable UTF-16 static-string-reference counterpart.
 
 valueStr: Str = "text";
 valueBool: Bool = true;
@@ -30,6 +31,7 @@ valueFloat: Float = 1.0;
 // Optional<T> is a prelude wrapper.
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
+// There is no nullable T? type operator.
 
 name: Optional<Str> = None;
 name = Some("Leitwolf");
@@ -39,6 +41,7 @@ name ??= Some("guest");
 
 // Automatic unboxing from Optional<T> to T may throw
 // OptionalUnboxingException when the value is None.
+// Other Optional runtime failures use OptionalException.
 
 unboxedName: Str = name;
 forcedName: Str = name!;

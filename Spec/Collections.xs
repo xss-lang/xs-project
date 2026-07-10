@@ -3,51 +3,51 @@
 
 // collections system:
 
-//{
-Array:
-- T[]
-- T[n]
-- Fixed size.
-- Supports indexing.
-- Supports len().
-- Does not support push().
-- Does not support pop().
-- Mutable arrays allow element modification.
-- val arrays do not allow element modification.
-
-Array size:
-- T[3] means indexes 0..3.
-- Total element count is 4.
-
-Array initialization:
-- Missing values are filled with the type's default value.
-- Excess values are discarded.
-
-Default values:
-- Numeric types -> 0
-- Bool -> None
-- Str -> None
-
-Vector:
-- Collections.vector<T>
-- Dynamic size.
-- Supports push().
-- Supports pop().
-- Supports get().
-- Supports adjust().
-- Supports length().
-- Supports literal initialization.
-- Supports new().
-
-HashMap:
-- Collections.hashmap<K, V>
-- Supports new().
-- Supports insert().
-- Supports get().
-- Supports delete().
-- Does not support [] access.
-- Does not support literal initialization.
-}//
+//
+// Array:
+// - T[]
+// - T[n]
+// - Fixed size.
+// - Supports indexing.
+// - Supports len().
+// - Does not support push().
+// - Does not support pop().
+// - Mutable arrays allow element modification.
+// - val arrays do not allow element modification.
+//
+// Array size:
+// - T[3] means indexes 0..3.
+// - Total element count is 4.
+//
+// Array initialization:
+// - Missing values are filled with the type's default value.
+// - Excess values are discarded.
+//
+// Default values:
+// - Numeric types -> 0
+// - Bool -> None
+// - Str -> None
+//
+// Vector:
+// - Collections.vector<T>
+// - Dynamic size.
+// - Supports push().
+// - Supports pop().
+// - Supports get().
+// - Supports adjust().
+// - Supports length().
+// - Supports literal initialization.
+// - Supports new().
+//
+// HashMap:
+// - Collections.hashmap<K, V>
+// - Supports new().
+// - Supports insert().
+// - Supports get().
+// - Supports delete().
+// - Does not support [] access.
+// - Does not support literal initialization.
+//
 
 imports Collections;
 
@@ -87,10 +87,10 @@ nums: Int[3] = {1, 2, 3, 4, 5};
 
 // string defaults
 
-names: Str[3] = {"Hasan"};
+names: Str[3] = {"Leitewolf"};
 
 // Result:
-// {"Hasan", None, None, None}
+// {"Leitewolf", None, None, None}
 
 
 // Bool defaults
@@ -113,8 +113,8 @@ nums[0] = 5;
 // vectors
 
 users: Collections.vector<Str> = {
-    "Hasan",
-    "Alfa",
+    "Leitewolf",
+    "Alpha",
 };
 
 
@@ -126,12 +126,12 @@ users: Collections.vector<Str> =
 
 // vector push
 
-Collections.vector.push(users, "Mehmet");
+Collections.vector.push(users, "Friedrich");
 
 
 // vector pop by value
 
-Collections.vector.pop(users, "Hasan");
+Collections.vector.pop(users, "Leitewolf");
 
 
 // vector pop by index
@@ -149,7 +149,7 @@ name: Str =
 
 Collections.vector.adjust(
     users[1],
-    "Mehmet"
+    "Friedrich"
 );
 
 
@@ -169,13 +169,13 @@ scores: Collections.hashmap<Str, Int> =
 
 Collections.hashmap.insert(
     scores,
-    "Alfa",
+    "Alpha",
     90
 );
 
 Collections.hashmap.insert(
     scores,
-    "Hasan",
+    "Leitewolf",
     50
 );
 
@@ -185,7 +185,7 @@ Collections.hashmap.insert(
 score: Int =
     Collections.hashmap.get(
         scores,
-        "Alfa"
+        "Alpha"
     );
 
 
@@ -193,7 +193,7 @@ score: Int =
 
 Collections.hashmap.delete(
     scores,
-    "Alfa"
+    "Alpha"
 );
 
 
@@ -206,21 +206,21 @@ scores: Collections.hashmap<Str, Int> =
 
 Collections.hashmap.insert(
     scores,
-    "Alfa",
+    "Alpha",
     90
 );
 
 Collections.hashmap.insert(
     scores,
-    "Hasan",
+    "Leitewolf",
     50
 );
 
-println!("{}", Collections.hashmap.get(scores, "Alfa"));
+println!("{}", Collections.hashmap.get(scores, "Alpha"));
 
 println!(
-    "Hasan's score: {}",
-    Collections.hashmap.get(scores, "Hasan")
+    "Leitewolf's score: {}",
+    Collections.hashmap.get(scores, "Leitewolf")
 );
 
 
@@ -244,7 +244,7 @@ users: Collections.vector<Str> =
 
 Collections.vector.push(
     users,
-    "Mehmet"
+    "Friedrich"
 );
 
 
@@ -259,7 +259,7 @@ Collections.vector.get(
 
 Collections.vector.adjust(
     users[1],
-    "Mehmet"
+    "Friedrich"
 );
 
 
@@ -273,7 +273,7 @@ scores: Collections.hashmap<Str, Int> =
 
 Collections.hashmap.insert(
     scores,
-    "Alfa",
+    "Alpha",
     90
 );
 
@@ -282,7 +282,7 @@ Collections.hashmap.insert(
 
 Collections.hashmap.get(
     scores,
-    "Alfa"
+    "Alpha"
 );
 
 
@@ -290,7 +290,7 @@ Collections.hashmap.get(
 
 Collections.hashmap.delete(
     scores,
-    "Alfa"
+    "Alpha"
 );
 
 
@@ -304,13 +304,13 @@ Collections.vector.get(
 
 // INVALID
 
-scores["Alfa"];
+scores["Alpha"];
 
 
 // INVALID
 
 scores: Collections.hashmap<Str, Int> = {
-    "Alfa": 90,
+    "Alpha": 90,
 };
 
 

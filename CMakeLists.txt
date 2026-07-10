@@ -77,6 +77,12 @@ set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+option(XS_ENABLE_SANITIZERS "Enable Clang address and undefined behavior sanitizers" OFF)
+if(XS_ENABLE_SANITIZERS)
+  add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address,undefined)
+endif()
+
 if(CMAKE_C_FLAGS MATCHES "(^| )-std=gnu" OR CMAKE_C_FLAGS_DEBUG MATCHES "(^| )-std=gnu" OR
    CMAKE_C_FLAGS_RELEASE MATCHES "(^| )-std=gnu")
   message(FATAL_ERROR "GNU C dialect flags are unsupported; use strict C23.")

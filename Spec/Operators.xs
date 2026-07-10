@@ -3,30 +3,30 @@
 
 // operators system:
 
-//{
-Comparison Operators:
-==
-!=
->
-<
->=
-<=
-
-Logical Operators:
-&&
-||
-!
-
-Bitwise Operators:
-&
-|
-
-Optional Operators:
-?.
-??
-??=
-!
-}//
+//
+// Comparison Operators:
+// ==
+// !=
+// >
+// <
+// >=
+// <=
+//
+// Logical Operators:
+// &&
+// ||
+// !
+//
+// Bitwise Operators:
+// &
+// |
+//
+// Optional Operators:
+// ?.
+// ??
+// ??=
+// !
+//
 
 fn Main() {
     a: Int = 10;

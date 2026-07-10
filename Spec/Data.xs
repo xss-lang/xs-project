@@ -3,32 +3,32 @@
 
 // data system:
 
-//{
-Data types are lightweight field-only containers.
-
-Data declarations may appear:
-
-- At top-level
-- Inside classes
-
-Data types cannot contain:
-
-- Methods
-- Constructors
-- Destructors
-- Inheritance
-- Interfaces
-
-Data types support generics.
-
-Fields are assigned using:
-
-set.field{value}
-
-Fields are accessed using:
-
-value get.field
-}//
+//
+// Data types are lightweight field-only containers.
+//
+// Data declarations may appear:
+//
+// - At top-level
+// - Inside classes
+//
+// Data types cannot contain:
+//
+// - Methods
+// - Constructors
+// - Destructors
+// - Inheritance
+// - Interfaces
+//
+// Data types support generics.
+//
+// Fields are assigned using:
+//
+// set.field{value}
+//
+// Fields are accessed using:
+//
+// value get.field
+//
 
 // simple data
 
@@ -41,7 +41,7 @@ data User {
 // initialization
 
 user: User = {
-    set.name{"Alfa"};
+    set.name{"Alpha"};
     set.age{26};
 };
 
@@ -76,7 +76,7 @@ data Pair<T, U> {
 // generic data initialization
 
 pair: Pair<Str, Int> = {
-    set.first{"Alfa"};
+    set.first{"Alpha"};
     set.second{26};
 };
 
@@ -137,7 +137,7 @@ class Program {
 // VALID
 
 user: User = {
-    set.name{"Alfa"};
+    set.name{"Alpha"};
     set.age{26};
 };
 
@@ -214,19 +214,19 @@ data User {
 
 // summary
 
-//{
-Data types are field-only containers.
-
-Data supports generics.
-
-Data may be declared at top-level
-or inside classes.
-
-Fields are assigned using:
-
-set.field{value}
-
-Fields are accessed using:
-
-value get.field
-}//
+//
+// Data types are field-only containers.
+//
+// Data supports generics.
+//
+// Data may be declared at top-level
+// or inside classes.
+//
+// Fields are assigned using:
+//
+// set.field{value}
+//
+// Fields are accessed using:
+//
+// value get.field
+//

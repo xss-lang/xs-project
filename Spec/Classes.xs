@@ -3,42 +3,42 @@
 
 // class system:
 
-//{
-Class declarations use braces.
-Parentheses are not used in class declarations.
-
-Fields are supported.
-Field initializers are optional.
-
-Constructors are supported.
-Constructor name must match the class name.
-
-A class may contain overloaded constructors.
-Constructor overload resolution follows the same arity/type selection model as function overload resolution.
-
-Methods are supported.
-Static methods are supported.
-Static fields are supported.
-
-Methods with the same name are overloaded.
-Method merging is not supported.
-Two methods with the same name and the same parameter type list are a duplicate declaration error.
-
-Single inheritance is supported through extends.
-Interfaces are supported through implements.
-Multiple interface implementation is supported.
-
-Visibility modifiers:
-- public
-- private
-- protected
-- internal
-
-Object creation uses new().
-Method calls use the dot operator.
-
-incomplete classes are supported.
-}//
+//
+// Class declarations use braces.
+// Parentheses are not used in class declarations.
+//
+// Fields are supported.
+// Field initializers are optional.
+//
+// Constructors are supported.
+// Constructor name must match the class name.
+//
+// A class may contain overloaded constructors.
+// Constructor overload resolution follows the same arity/type selection model as function overload resolution.
+//
+// Methods are supported.
+// Static methods are supported.
+// Static fields are supported.
+//
+// Methods with the same name are overloaded.
+// Method merging is not supported.
+// Two methods with the same name and the same parameter type list are a duplicate declaration error.
+//
+// Single inheritance is supported through extends.
+// Interfaces are supported through implements.
+// Multiple interface implementation is supported.
+//
+// Visibility modifiers:
+// - public
+// - private
+// - protected
+// - internal
+//
+// Object creation uses new().
+// Method calls use the dot operator.
+//
+// incomplete classes are supported.
+//
 
 // basic class
 class User {
@@ -74,7 +74,7 @@ fn Main() {
 // methods
 class User {
     fn GetName() => Str {
-        return "Alfa";
+        return "Alpha";
     }
 }
 
@@ -186,7 +186,7 @@ class User {
 
 // VALID
 class User {
-    name: Str = "Alfa";
+    name: Str = "Alpha";
 }
 
 

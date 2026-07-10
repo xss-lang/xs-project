@@ -3,36 +3,36 @@
 
 // iterator system:
 
-//{
-Iterators are supported.
-
-Iterators are lazy.
-
-Iterators are zero-cost abstractions.
-
-Iterators use monomorphization.
-
-Type erasure does not exist.
-
-Boxing does not exist.
-
-Virtual dispatch does not exist.
-
-Hidden allocations are forbidden.
-
-Iterator chains must not create intermediate collections.
-
-Iterator usage must compile to code equivalent
-to an explicit loop.
-
-Iterator iteration moves yielded values by default.
-
-The source collection remains valid after iteration.
-
-Ownership rules apply normally during iteration.
-
-break and continue are supported inside iterator loops.
-}//
+//
+// Iterators are supported.
+//
+// Iterators are lazy.
+//
+// Iterators are zero-cost abstractions.
+//
+// Iterators use monomorphization.
+//
+// Type erasure does not exist.
+//
+// Boxing does not exist.
+//
+// Virtual dispatch does not exist.
+//
+// Hidden allocations are forbidden.
+//
+// Iterator chains must not create intermediate collections.
+//
+// Iterator usage must compile to code equivalent
+// to an explicit loop.
+//
+// Iterator iteration moves yielded values by default.
+//
+// The source collection remains valid after iteration.
+//
+// Ownership rules apply normally during iteration.
+//
+// break and continue are supported inside iterator loops.
+//
 
 
 imports Collections;
@@ -51,8 +51,8 @@ for (num in nums.iter()) {
 // vector iteration
 
 users: Collections.vector<Str> = {
-    "Hasan",
-    "Alfa",
+    "Leitewolf",
+    "Alpha",
 };
 
 for (user in users.iter()) {
@@ -77,8 +77,8 @@ for (user in users.iter()) {
 // indexed iteration
 
 users: Collections.vector<Str> = {
-    "Hasan",
-    "Alfa",
+    "Leitewolf",
+    "Alpha",
 };
 
 for ((index, user) in users.iter()) {
@@ -91,7 +91,7 @@ for ((index, user) in users.iter()) {
 
 for (user in users.iter()) {
 
-    if (user == "Alfa") {
+    if (user == "Alpha") {
         break;
     }
 }
@@ -101,7 +101,7 @@ for (user in users.iter()) {
 
 for (user in users.iter()) {
 
-    if (user == "Hasan") {
+    if (user == "Leitewolf") {
         continue;
     }
 
@@ -179,21 +179,21 @@ for (item in &mut users.iter()) {
 
 // performance guarantees
 
-//{
-Iterators are lazy.
-
-Iterators use monomorphization.
-
-Iterators are zero-cost abstractions.
-
-Iterator chains do not create
-intermediate collections.
-
-No hidden allocations.
-
-No boxing.
-
-No type erasure.
-
-No virtual dispatch.
-}//
+//
+// Iterators are lazy.
+//
+// Iterators use monomorphization.
+//
+// Iterators are zero-cost abstractions.
+//
+// Iterator chains do not create
+// intermediate collections.
+//
+// No hidden allocations.
+//
+// No boxing.
+//
+// No type erasure.
+//
+// No virtual dispatch.
+//

@@ -3,28 +3,28 @@
 
 // Sync system:
 
-//{
-The synchronization system provides:
-
-- Mutex
-- RwLock
-- Arc
-- Weak
-- WeakControl
-- Atomic values
-- Async tasks
-- Built-in async thread pool
-- Thread channels
-
-Synchronization misuse may produce SyncException.
-
-SyncException may be caught normally.
-
-Writing `throws SyncException` explicitly is not required.
-
-Statically provable synchronization violations are compile-time errors.
-Violations that can only be detected at runtime throw SyncException.
-}//
+//
+// The synchronization system provides:
+//
+// - Mutex
+// - RwLock
+// - Arc
+// - Weak
+// - WeakControl
+// - Atomic values
+// - Async tasks
+// - Built-in async thread pool
+// - Thread channels
+//
+// Synchronization misuse may produce SyncException.
+//
+// SyncException may be caught normally.
+//
+// Writing `throws SyncException` explicitly is not required.
+//
+// Statically provable synchronization violations are compile-time errors.
+// Violations that can only be detected at runtime throw SyncException.
+//
 
 
 // ============================================================
@@ -156,10 +156,10 @@ fn RecoverPoisonedMutex() {
 
 // mutex trait rules
 
-//{
+//
 // Mutex<T>: Send if T: Send
 // Mutex<T>: Sync if T: Send
-//}}
+//
 
 
 // mutex movement between threads
@@ -388,10 +388,10 @@ fn RecoverPoisonedRwLock() {
 
 // rwlock trait rules
 
-//{
+//
 // RwLock<T>: Send if T: Send
 // RwLock<T>: Sync if T: Send + Sync
-//}}
+//
 
 
 // ============================================================
@@ -404,14 +404,14 @@ imports Arc;
 // arc creation
 
 fn ArcCreation() {
-    value: Arc<Str> = Arc.new("Alfa");
+    value: Arc<Str> = Arc.new("Alpha");
 }
 
 
 // arc cloning
 
 fn ArcCloning() {
-    value: Arc<Str> = Arc.new("Alfa");
+    value: Arc<Str> = Arc.new("Alpha");
 
     second: Arc<Str> = Arc.clone(&value);
     third: Arc<Str> = Arc.clone(&value);
@@ -459,17 +459,17 @@ fn InvalidArcMutation() {
 
 // arc trait rules
 
-//{
+//
 // Arc<T>: Send if T: Send + Sync
 // Arc<T>: Sync if T: Send + Sync
-//}}
+//
 
 
 // shared mutex
 
 fn SharedMutex() {
     shared: Arc<Mutex<Str>> =
-        Arc.new(Mutex.new("Alfa"));
+        Arc.new(Mutex.new("Alpha"));
 
     second: Arc<Mutex<Str>> =
         Arc.clone(&shared);
@@ -503,7 +503,7 @@ imports WeakControl;
 // weak creation
 
 fn WeakCreation() {
-    strong: Arc<Str> = Arc.new("Alfa");
+    strong: Arc<Str> = Arc.new("Alpha");
 
     weak: Weak<Str> = Arc.downgrade(&strong);
 }
@@ -519,7 +519,7 @@ fn WeakCreation() {
 // weak cloning
 
 fn WeakCloning() {
-    strong: Arc<Str> = Arc.new("Alfa");
+    strong: Arc<Str> = Arc.new("Alpha");
     weak: Weak<Str> = Arc.downgrade(&strong);
 
     otherWeak: Weak<Str> =
@@ -536,7 +536,7 @@ fn WeakCloning() {
 // weak upgrade
 
 fn WeakUpgrade() {
-    strong: Arc<Str> = Arc.new("Alfa");
+    strong: Arc<Str> = Arc.new("Alpha");
     weak: Weak<Str> = Arc.downgrade(&strong);
 
     strongAgain: Arc<Str> =
@@ -566,10 +566,10 @@ fn WeakUpgrade() {
 
 // weak trait rules
 
-//{
+//
 // Weak<T>: Send if T: Send + Sync
 // Weak<T>: Sync if T: Send + Sync
-//}}
+//
 
 
 // ============================================================
@@ -591,7 +591,7 @@ fn AtomicCreation() {
 
 // supported atomic value types
 
-//{
+//
 // Short
 // Long
 // Int
@@ -603,18 +603,18 @@ fn AtomicCreation() {
 // Uint128
 //
 // Bool
-//}}
+//
 
 
 // atomic ordering values
 
-//{
+//
 // Atomic.ordering.Relaxed
 // Atomic.ordering.Acquire
 // Atomic.ordering.Release
 // Atomic.ordering.AcqRel
 // Atomic.ordering.SeqCst
-//}}
+//
 
 
 // atomic load
@@ -948,10 +948,10 @@ async fn MoveTask() => Task<()> {
 
 // task thread rule
 
-//{
+//
 // Task<T>: Send if T: Send
 // Task<T> is not Sync
-//}}
+//
 
 // A Task<T> may move to another thread when T: Send.
 //
@@ -979,7 +979,7 @@ async fn AsyncExceptionHandling() => Task<()> {
 
 // async runtime
 
-//{
+//
 // The async executor is built into the language.
 //
 // Async tasks run on a built-in thread pool.
@@ -988,7 +988,7 @@ async fn AsyncExceptionHandling() => Task<()> {
 //
 // The user does not manually initialize or configure the
 // executor.
-//}}
+//
 
 
 // ============================================================
@@ -1027,7 +1027,7 @@ fn ChannelSendMovesValue() {
     (tx, rx): Thread.channel<Str> =
         Thread.channel();
 
-    message: Str = "Alfa";
+    message: Str = "Alpha";
 
     tx.send(message);
 
@@ -1119,7 +1119,7 @@ fn CatchSyncException() {
 // Shared-memory summary
 // ============================================================
 
-//{
+//
 // T
 //     Single ownership and ordinary single-thread use.
 //
@@ -1136,4 +1136,4 @@ fn CatchSyncException() {
 //
 // Arc<Atomic<T>>
 //     Multi-thread shared lock-free atomic value access.
-//}//
+//

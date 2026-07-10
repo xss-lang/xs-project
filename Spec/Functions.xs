@@ -3,11 +3,11 @@
 
 // function and file structure:
 
-//{
-Semicolons are required.
-Top-level execution is not supported.
-Top-level functions are allowed.
-}//
+//
+// Semicolons are required.
+// Top-level execution is not supported.
+// Top-level functions are allowed.
+//
 
 fn Add(a: Int, b: Int) => Int {
   return a + b;

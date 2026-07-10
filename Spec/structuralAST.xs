@@ -3,28 +3,28 @@
 
 // Structural AST system:
 
-//{
-The structural AST represents parsed X# source code as explicit
-syntax nodes instead of storing complete declarations and bodies only
-as raw source ranges.
-
-The parser constructs structural AST nodes.
-
-The structural AST does not perform:
-
-- Name resolution
-- Import resolution
-- Type checking
-- Send or Sync validation
-- Ownership validation
-- Borrow checking
-- Method resolution
-- Operator resolution
-- Monomorphization
-- Code generation
-
-Those operations belong to later compiler stages.
-}//
+//
+// The structural AST represents parsed X# source code as explicit
+// syntax nodes instead of storing complete declarations and bodies only
+// as raw source ranges.
+//
+// The parser constructs structural AST nodes.
+//
+// The structural AST does not perform:
+//
+// - Name resolution
+// - Import resolution
+// - Type checking
+// - Send or Sync validation
+// - Ownership validation
+// - Borrow checking
+// - Method resolution
+// - Operator resolution
+// - Monomorphization
+// - Code generation
+//
+// Those operations belong to later compiler stages.
+//
 
 
 // ============================================================
@@ -843,7 +843,7 @@ data LiteralExpression {
 // 1'000
 // 3.141'592
 // 1e-6
-// "Alfa"
+// "Alpha"
 // 'A'
 // true
 // None
@@ -1117,7 +1117,7 @@ data FieldSetExpression {
 
 // Example:
 //
-// set.name{"Alfa"}
+// set.name{"Alpha"}
 
 
 // ============================================================
@@ -1581,7 +1581,7 @@ data TokenNode {
 // Summary
 // ============================================================
 
-//{
+//
 // Structural AST:
 //
 //     Explicit syntax-node tree
@@ -1618,4 +1618,4 @@ data TokenNode {
 // MIR:
 //
 //     Resolves ownership and execution behavior
-//}//
+//

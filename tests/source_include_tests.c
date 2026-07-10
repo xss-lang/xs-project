@@ -46,8 +46,10 @@ static void test_source_include_macro(void)
   XsIncludedSource expanded;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
-  CHECK(xs_source_expand_includes(&source, &diagnostics, &expanded));
+  CHECK(xs_syntax_parse(&source, 35, &diagnostics, &tree));
+  CHECK(xs_source_expand_include_macros(&tree, &diagnostics, &expanded));
   CHECK(expanded.text != nullptr && strstr(expanded.text, "Included") != nullptr);
+  xs_syntax_tree_free(&tree);
   XsSource expanded_source = {.path = main_path, .text = expanded.text, .length = expanded.length};
   CHECK(xs_syntax_parse(&expanded_source, 35, &diagnostics, &tree));
   xs_syntax_tree_free(&tree);
@@ -63,9 +65,12 @@ static void test_source_include_rejects_nonlocal_path(void)
   XsSource source = {.path = "RejectInclude.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsIncludedSource expanded;
+  XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
-  CHECK(!xs_source_expand_includes(&source, &diagnostics, &expanded));
+  CHECK(xs_syntax_parse(&source, 36, &diagnostics, &tree));
+  CHECK(!xs_source_expand_include_macros(&tree, &diagnostics, &expanded));
   CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
 
@@ -77,9 +82,12 @@ static void test_source_include_ignores_comments_and_strings(void)
   XsSource source = {.path = "IgnoredInclude.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsIncludedSource expanded;
+  XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
-  CHECK(xs_source_expand_includes(&source, &diagnostics, &expanded));
+  CHECK(xs_syntax_parse(&source, 37, &diagnostics, &tree));
+  CHECK(xs_source_expand_include_macros(&tree, &diagnostics, &expanded));
   CHECK(expanded.length == strlen(text));
+  xs_syntax_tree_free(&tree);
   xs_included_source_free(&expanded);
   xs_diagnostics_free(&diagnostics);
 }

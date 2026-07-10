@@ -7,6 +7,7 @@
 #define XS_SOURCE_INCLUDE_H
 
 #include "xs/diagnostic.h"
+#include "xs/syntax_ast.h"
 
 typedef struct
 {
@@ -14,7 +15,7 @@ typedef struct
   size_t length;
 } XsIncludedSource;
 
-bool xs_source_expand_includes(const XsSource *source, XsDiagnostics *diagnostics, XsIncludedSource *expanded);
+bool xs_source_expand_include_macros(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsIncludedSource *expanded);
 void xs_included_source_free(XsIncludedSource *expanded);
 
 #endif

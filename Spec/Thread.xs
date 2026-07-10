@@ -3,23 +3,23 @@
 
 // Thread system:
 
-//{
-The Thread module provides:
-
-- Native thread creation
-- Move-based thread closures
-- Join handles
-- Thread result values
-- Detached threads
-- Thread sleeping
-- Cooperative yielding
-- Single-sender, single-receiver channels
-
-Thread synchronization failures use SyncException.
-
-Thread values and channel endpoints follow the language's ownership,
-move and Send rules.
-}//
+//
+// The Thread module provides:
+//
+// - Native thread creation
+// - Move-based thread closures
+// - Join handles
+// - Thread result values
+// - Detached threads
+// - Thread sleeping
+// - Cooperative yielding
+// - Single-sender, single-receiver channels
+//
+// Thread synchronization failures use SyncException.
+//
+// Thread values and channel endpoints follow the language's ownership,
+// move and Send rules.
+//
 
 imports Thread;
 
@@ -78,7 +78,7 @@ fn ResultlessThreadHandle() {
 // ============================================================
 
 fn MoveValueToThread() {
-    value: Str = "Alfa";
+    value: Str = "Alpha";
 
     thread: Thread.handle<()> =
         Thread.spawn(move fn() {
@@ -139,10 +139,10 @@ fn MoveThreadHandle() {
 //
 // Trait rules:
 //
-//{
+//
 // Thread.handle<T>: Send if T: Send
 // Thread.handle<T>: not Sync
-//}}
+//
 
 
 // ============================================================
@@ -312,7 +312,7 @@ fn SendChannelValue() {
     (tx, rx): Thread.channel<Str> =
         Thread.channel();
 
-    message: Str = "Alfa";
+    message: Str = "Alpha";
 
     tx.send(message);
 

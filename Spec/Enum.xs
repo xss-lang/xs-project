@@ -3,27 +3,27 @@
 
 // enum system:
 
-//{
-enum:
-- May be empty.
-- Cannot contain typed variants.
-- Has no numeric value.
-- Is not implicitly convertible to integers.
-
-enum data:
-- Must contain at least one typed variant.
-- May contain both typed and non-typed variants.
-- Each variant may contain at most one value.
-- Payload type may be any valid type.
-
-Visibility modifiers:
-- public
-- private
-- protected
-- internal
-
-Trailing commas are supported but not required.
-}//
+//
+// enum:
+// - May be empty.
+// - Cannot contain typed variants.
+// - Has no numeric value.
+// - Is not implicitly convertible to integers.
+//
+// enum data:
+// - Must contain at least one typed variant.
+// - May contain both typed and non-typed variants.
+// - Each variant may contain at most one value.
+// - Payload type may be any valid type.
+//
+// Visibility modifiers:
+// - public
+// - private
+// - protected
+// - internal
+//
+// Trailing commas are supported but not required.
+//
 
 // basic enum
 enum Color {

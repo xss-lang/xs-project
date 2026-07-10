@@ -649,7 +649,11 @@ static XsBackendStatus verify_module(XsLlvmCodegenUnit *unit, XsBackendError *er
 {
   char *llvm_error = nullptr;
   if (LLVMVerifyModule(unit->module, LLVMReturnStatusAction, &llvm_error) == 0)
+  {
+    if (llvm_error != nullptr)
+      LLVMDisposeMessage(llvm_error);
     return XS_BACKEND_OK;
+  }
   XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, llvm_error);
   LLVMDisposeMessage(llvm_error);
   return status;

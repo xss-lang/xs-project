@@ -60,6 +60,19 @@ ctest --preset clang-debug --output-on-failure
 Tests are expected to run quickly. If a test suddenly consumes a lot of memory, treat it as a possible infinite loop, parser
 progress bug, or runaway macro expansion.
 
+## Sanitizer build
+
+AddressSanitizer and UndefinedBehaviorSanitizer are available through the separate Clang preset:
+
+```text
+cmake --preset clang-sanitize
+cmake --build --preset clang-sanitize
+ctest --preset clang-sanitize --output-on-failure
+```
+
+Do not apply the 2GB virtual-memory limit to AddressSanitizer runs: its required shadow-memory reservation exceeds that
+limit even when the program's real memory use is small.
+
 ## Project selection
 
 Stable projects:

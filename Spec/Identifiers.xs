@@ -3,18 +3,18 @@
 
 // Identifier and numeric-literal rules:
 
-//{
-This file defines:
-
-- Identifier character rules
-- Reserved-word restrictions
-- Unicode restrictions
-- Decimal Integer literals
-- Decimal floating-point literals
-- Scientific notation
-- Digit separators
-- Unicode and hexadecimal character escapes
-}//
+//
+// This file defines:
+//
+// - Identifier character rules
+// - Reserved-word restrictions
+// - Unicode restrictions
+// - Decimal Integer literals
+// - Decimal floating-point literals
+// - Scientific notation
+// - Digit separators
+// - Unicode and hexadecimal character escapes
+//
 
 
 // ============================================================
@@ -390,7 +390,7 @@ fn InvalidNumericLiterals() {
 // Summary
 // ============================================================
 
-//{
+//
 // Identifier:
 //
 //     [A-Za-z_][A-Za-z0-9_]*
@@ -420,4 +420,4 @@ fn InvalidNumericLiterals() {
 //     \uFFFF
 //     \U000FFFFF
 //     \xFF
-//}//
+//

@@ -3,27 +3,27 @@
 
 // generics system:
 
-//{
-Generics are supported for classes and functions.
-
-Generics use monomorphization.
-
-Each concrete type produces a separate specialization.
-
-Type erasure does not exist.
-
-Generics are zero-cost abstractions.
-
-Generics must not introduce hidden allocations.
-
-Generic parameters may be constrained by interfaces.
-
-Multiple generic parameters are supported.
-
-Multiple constraints are supported.
-
-Default generic parameters are not supported.
-}//
+//
+// Generics are supported for classes and functions.
+//
+// Generics use monomorphization.
+//
+// Each concrete type produces a separate specialization.
+//
+// Type erasure does not exist.
+//
+// Generics are zero-cost abstractions.
+//
+// Generics must not introduce hidden allocations.
+//
+// Generic parameters may be constrained by interfaces.
+//
+// Multiple generic parameters are supported.
+//
+// Multiple constraints are supported.
+//
+// Default generic parameters are not supported.
+//
 
 
 // generic class
@@ -230,15 +230,15 @@ class Storage<T: UnknownInterface> {
 
 // performance guarantees
 
-//{
-Generics use monomorphization.
-
-No type erasure.
-
-No hidden allocation.
-
-Zero-cost abstraction.
-
-Allocation behavior must remain visible
-or predictable.
-}//
+//
+// Generics use monomorphization.
+//
+// No type erasure.
+//
+// No hidden allocation.
+//
+// Zero-cost abstraction.
+//
+// Allocation behavior must remain visible
+// or predictable.
+//

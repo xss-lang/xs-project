@@ -3,12 +3,12 @@
 
 // Fs module:
 
-//{
-Fs provides filesystem and raw stream operations.
-
-Formatted output belongs to Stdio.
-Fs.Write does not format text and does not add a newline.
-}//
+//
+// Fs provides filesystem and raw stream operations.
+//
+// Formatted output belongs to Stdio.
+// Fs.Write does not format text and does not add a newline.
+//
 
 imports Fs, Stdio, Collections;
 

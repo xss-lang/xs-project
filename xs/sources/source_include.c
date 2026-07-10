@@ -94,40 +94,6 @@ static size_t skip_line_comment(const XsSource *source, size_t cursor)
   return cursor;
 }
 
-static size_t skip_block_comment(const XsSource *source, size_t cursor)
-{
-  size_t depth = 1;
-  cursor += starts_with(source, cursor, "///{") ? 4 : 3;
-  while (cursor < source->length && depth != 0)
-  {
-    if (starts_with(source, cursor, "///{"))
-    {
-      ++depth;
-      cursor += 4;
-    }
-    else if (starts_with(source, cursor, "//{"))
-    {
-      ++depth;
-      cursor += 3;
-    }
-    else if (starts_with(source, cursor, "}///"))
-    {
-      --depth;
-      cursor += 4;
-    }
-    else if (starts_with(source, cursor, "}//"))
-    {
-      --depth;
-      cursor += 3;
-    }
-    else
-    {
-      ++cursor;
-    }
-  }
-  return cursor;
-}
-
 static size_t skip_string_or_character(const XsSource *source, size_t cursor)
 {
   bool triple = starts_with(source, cursor, "\"\"\"");
@@ -258,11 +224,6 @@ static bool expand_source(const XsSource *source, XsDiagnostics *diagnostics, In
       cursor = skip_string_or_character(source, cursor);
       continue;
     }
-    if (starts_with(source, cursor, "//{") || starts_with(source, cursor, "///{"))
-    {
-      cursor = skip_block_comment(source, cursor);
-      continue;
-    }
     if (starts_with(source, cursor, "//"))
     {
       cursor = skip_line_comment(source, cursor);
@@ -316,13 +277,13 @@ static bool expand_source(const XsSource *source, XsDiagnostics *diagnostics, In
   return buffer_append(buffer, source->text + chunk_start, source->length - chunk_start);
 }
 
-bool xs_source_expand_includes(const XsSource *source, XsDiagnostics *diagnostics, XsIncludedSource *expanded)
+bool xs_source_expand_include_macros(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsIncludedSource *expanded)
 {
-  if (source == nullptr || diagnostics == nullptr || expanded == nullptr)
+  if (tree == nullptr || tree->root == nullptr || tree->source == nullptr || diagnostics == nullptr || expanded == nullptr)
     return false;
   *expanded = (XsIncludedSource){0};
   IncludeBuffer buffer = {0};
-  if (!expand_source(source, diagnostics, &buffer, 0))
+  if (!expand_source(tree->source, diagnostics, &buffer, 0))
   {
     free(buffer.data);
     return false;

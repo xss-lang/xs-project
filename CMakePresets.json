@@ -18,18 +18,43 @@
         "XS_ENABLE_PROJECTS": "xs",
         "XS_ENABLE_RUNTIMES": ""
       }
+    },
+    {
+      "name": "clang-sanitize",
+      "displayName": "Clang Sanitizers",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clang-sanitize",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "XS_ENABLE_PROJECTS": "xs",
+        "XS_ENABLE_RUNTIMES": "",
+        "XS_ENABLE_SANITIZERS": "ON"
+      }
     }
   ],
   "buildPresets": [
     {
       "name": "clang-debug",
       "configurePreset": "clang-debug"
+    },
+    {
+      "name": "clang-sanitize",
+      "configurePreset": "clang-sanitize"
     }
   ],
   "testPresets": [
     {
       "name": "clang-debug",
       "configurePreset": "clang-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-sanitize",
+      "configurePreset": "clang-sanitize",
       "output": {
         "outputOnFailure": true
       }

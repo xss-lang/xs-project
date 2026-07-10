@@ -3,24 +3,24 @@
 
 // Http standard library module:
 
-//{
-The Http module provides synchronous and asynchronous HTTP requests.
-
-Confirmed features:
-
-- Http.client
-- Http.request
-- Http.response<T>
-- URI.create(...)
-- Request builder methods
-- String request bodies
-- String response body handlers
-- Synchronous send(...)
-- Asynchronous sendAsync(...)
-- NetworkException
-
-No additional HTTP API is defined in this file.
-}//
+//
+// The Http module provides synchronous and asynchronous HTTP requests.
+//
+// Confirmed features:
+//
+// - Http.client
+// - Http.request
+// - Http.response<T>
+// - URI.create(...)
+// - Request builder methods
+// - String request bodies
+// - String response body handlers
+// - Synchronous send(...)
+// - Asynchronous sendAsync(...)
+// - NetworkException
+//
+// No additional HTTP API is defined in this file.
+//
 
 imports Http, Stdio;
 
@@ -39,7 +39,7 @@ fn Main() throws NetworkException {
             HttpRequest.BodyPublishers.ofstr(
                 """
                 {
-                    "name": "Alfa"
+                    "name": "Alpha"
                 }
                 """
             )
@@ -89,7 +89,7 @@ fn StringRequestBody() {
             HttpRequest.BodyPublishers.ofstr(
                 """
                 {
-                    "name": "Alfa"
+                    "name": "Alpha"
                 }
                 """
             )
@@ -233,10 +233,10 @@ fn CatchNetworkException() {
 // Confirmed type summary
 // ============================================================
 
-//{
+//
 // Http.client
 // Http.request
 // Http.response<T>
 // Task<Http.response<Str>>
 // NetworkException
-//}//
+//

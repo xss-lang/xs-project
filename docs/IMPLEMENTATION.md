@@ -82,6 +82,8 @@ The documented compilation order is preserved:
 - When `entry: None`, the documented first additional source selection rule is applied.
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
 - `xs check -proj <project.xsproj>` works.
+- `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
+  reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macroRules!` declaration.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
 - `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized.
 - Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
@@ -95,7 +97,8 @@ The documented compilation order is preserved:
 
 ### Lexer and structural AST
 
-- Documented keywords, operators, comments, and multiline text are tokenized.
+- Documented keywords, operators, line comments, and multiline text literals are tokenized. X# accepts `//`, `///`, and
+  `//!` line comments; multiline and nested comments are not supported.
 - ASCII identifier rules are applied.
 - Decimal integers, floating-point numbers, scientific notation, and `'` digit separators are validated.
 - String and character literal source spellings are carried into AST literal nodes; resolving `Char` as a 16-bit character is
@@ -197,9 +200,15 @@ validation does not decide dispatch, override, or overload selection.
 - `Bool` is resolved as a 1-bit primitive in HIR; the LLVM backend lowers it to `i1`.
 - `Byte` is an unsigned 8-bit primitive and `SByte` is a signed 8-bit primitive at the HIR level.
 - `Char` is a 16-bit UTF-16 code-unit type.
+- Signed integer widths are `Short`/`Long`/`Int`/`Integer` = i16/i32/i64/i128; unsigned widths are
+  `UShort`/`ULong`/`UInt`/`UInteger` = u16/u32/u64/u128. `SFloat` and `Float` map to f32 and f64.
 - `Str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
+- Semantically, `Str` is the UTF-16 X# counterpart of Rust's immutable static string reference; its runtime layout remains
+  deferred and it is not yet lowered to XLIL storage.
 - `Optional<T>` is a prelude wrapper type, not an enum lowering. `None`, `Some(...)`, `?.`, `??`, `??=`, and postfix `!`
-  are represented syntactically; full unboxing, exception, and flow-sensitive Optional semantics are later HIR work.
+  are represented syntactically; `Optional<T>` has automatic unboxing to `T`, which can throw
+  `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full flow-sensitive Optional
+  semantics are later HIR work. There is no nullable `T?` type operator.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.

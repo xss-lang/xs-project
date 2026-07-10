@@ -3,51 +3,51 @@
 
 // memory system:
 
-//{
-Memory management is based on:
-
-- Ownership
-- Move Semantics
-- Borrow Checking
-- Lifetime Analysis
-- RAII
-- Arena Allocation
-
-Garbage Collection does not exist.
-
-All values are move-by-default.
-
-Assignments move ownership.
-Function arguments move ownership.
-Return values move ownership.
-
-After a move, the source value becomes invalid.
-
-Ownership is verified at compile time.
-
-Borrow checking is verified at compile time.
-
-Lifetime analysis is verified at compile time.
-
-Allocation must be visible or predictable.
-
-Hidden allocations are forbidden.
-
-Zero-cost abstractions are required.
-
-Iterators, generics and closures must not introduce
-runtime allocations unless explicitly documented.
-
-Small Short-lived values should remain on the stack.
-
-Escape analysis may move values when necessary.
-
-Resource destruction is deterministic.
-
-Destructors execute in LIFO order.
-
-None is a valid value for Optional<T>.
-}//
+//
+// Memory management is based on:
+//
+// - Ownership
+// - Move Semantics
+// - Borrow Checking
+// - Lifetime Analysis
+// - RAII
+// - Arena Allocation
+//
+// Garbage Collection does not exist.
+//
+// All values are move-by-default.
+//
+// Assignments move ownership.
+// Function arguments move ownership.
+// Return values move ownership.
+//
+// After a move, the source value becomes invalid.
+//
+// Ownership is verified at compile time.
+//
+// Borrow checking is verified at compile time.
+//
+// Lifetime analysis is verified at compile time.
+//
+// Allocation must be visible or predictable.
+//
+// Hidden allocations are forbidden.
+//
+// Zero-cost abstractions are required.
+//
+// Iterators, generics and closures must not introduce
+// runtime allocations unless explicitly documented.
+//
+// Small Short-lived values should remain on the stack.
+//
+// Escape analysis may move values when necessary.
+//
+// Resource destruction is deterministic.
+//
+// Destructors execute in LIFO order.
+//
+// None is a valid value for Optional<T>.
+//
 
 // ownership
 
@@ -103,17 +103,17 @@ a: &mut User = &mut user;
 
 // borrow rules
 
-//{
-At any given time, a value may have:
-
-- Exactly one mutable borrow (&mut T)
-
-or
-
-- One or more immutable borrows (&T)
-
-Mutable and immutable borrows cannot coexist.
-}//
+//
+// At any given time, a value may have:
+//
+// - Exactly one mutable borrow (&mut T)
+//
+// or
+//
+// - One or more immutable borrows (&T)
+//
+// Mutable and immutable borrows cannot coexist.
+//
 
 
 // VALID
@@ -292,22 +292,22 @@ result: Str = a + b;
 
 // performance principles
 
-//{
-No Garbage Collection.
-
-No Hidden Allocation.
-
-Deterministic Destruction.
-
-Predictable Resource Release.
-
-Ownership Verified At Compile Time.
-
-Borrow Checking Verified At Compile Time.
-
-Lifetime Analysis Verified At Compile Time.
-
-Zero-Cost Abstractions.
-
-Allocation Must Be Visible Or Predictable.
-}//
+//
+// No Garbage Collection.
+//
+// No Hidden Allocation.
+//
+// Deterministic Destruction.
+//
+// Predictable Resource Release.
+//
+// Ownership Verified At Compile Time.
+//
+// Borrow Checking Verified At Compile Time.
+//
+// Lifetime Analysis Verified At Compile Time.
+//
+// Zero-Cost Abstractions.
+//
+// Allocation Must Be Visible Or Predictable.
+//

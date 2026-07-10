@@ -3,15 +3,17 @@
 
 // Stdio module:
 
-//{
-Stdio provides formatted text output macros and standard stream handles.
-
-Stdio does not provide filesystem operations.
-Filesystem operations belong to the Fs module.
-
-Stdio does not provide string interpolation.
-Formatted output uses placeholder-based formatting.
-}//
+//
+// Stdio provides formatted text output macros and standard stream handles.
+// print!, println!, eprint!, eprintln!, and format! are exported Stdio macros.
+// They are available through `imports Stdio`, not as compiler built-ins.
+//
+// Stdio does not provide filesystem operations.
+// Filesystem operations belong to the Fs module.
+//
+// Stdio does not provide string interpolation.
+// Formatted output uses placeholder-based formatting.
+//
 
 imports Stdio, Fs;
 
@@ -41,7 +43,7 @@ fn ErrorWithNewline() throws IOException {
 // formatting
 
 fn FormatValues() throws IOException {
-    user: Str = "Alfa";
+    user: Str = "Alpha";
     age: Int = 26;
 
     println!("{} is {}", user, age);
@@ -61,7 +63,7 @@ fn FormatValues() throws IOException {
 // format! returns Str and does not write to a stream.
 
 fn BuildMessage() {
-    user1: Str = "Alfa";
+    user1: Str = "Alpha";
     user2: Str = "Leitwolf";
 
     users: Str = format!("{} {}", user1, user2);

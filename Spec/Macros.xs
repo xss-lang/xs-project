@@ -3,33 +3,34 @@
 
 // Macro system:
 
-//{
-The macro system provides AST-based declarative macros.
-
-Macro expansion runs after AST creation and before HIR generation.
-
-Macros are defined with macroRules!.
-
-Macros:
-
-- Match syntax fragments.
-- Expand into AST nodes.
-- Follow lexical scope rules.
-- May be declared at top level or inside another scope.
-- May be called before their textual declaration.
-- May call other macros when no recursion cycle is created.
-- Are not hygienic.
-}//
+//
+// The macro system provides AST-based declarative macros.
+//
+// Macro expansion runs after AST creation and before HIR generation.
+//
+// Macros are defined with macroRules!.
+//
+// Macros:
+//
+// - Match syntax fragments.
+// - Expand into AST nodes.
+// - Follow lexical scope rules.
+// - May be declared at top level or inside another scope.
+// - May be called before their textual declaration.
+// - May call other macros when no recursion cycle is created.
+// - Are not hygienic.
+//
 
 // include!() is a built-in source inclusion macro.
 //
-// It is expanded before lexing and parsing.
+// It is recognized after the enclosing source has a structural AST.
+// Its included text is then reparsed and materialized at the macro call site.
 //
 // It is not a macroRules! declaration and is not resolved through
 // the AST macro scope system.
 //
 // include!() accepts only a local relative file path string.
-// The included file is inserted textually at the call site.
+// The included file contributes declarations at the call site.
 //
 // Valid:
 //
@@ -47,6 +48,9 @@ Macros:
 
 imports Stdio;
 
+// print!, println!, eprint!, eprintln!, and format! are normal macros
+// exported by Stdio. They are not compiler built-ins.
+
 
 // ============================================================
 // Basic macro
@@ -59,14 +63,14 @@ macroRules! say {
 }
 
 fn Main() {
-    say!("Alfa");
+    say!("Alpha");
 }
 
 
 // Equivalent expansion:
 
 fn ExpandedMain() {
-    println!("{}", "Alfa");
+    println!("{}", "Alpha");
 }
 
 
@@ -116,7 +120,7 @@ macroRules! invalidRule {
 
 // Macro calls use ! followed by parentheses.
 
-say!("Alfa");
+say!("Alpha");
 
 
 // Only parentheses are valid for macro calls.
@@ -124,8 +128,8 @@ say!("Alfa");
 
 // Invalid:
 
-say!["Alfa"];
-say!{"Alfa"};
+say!["Alpha"];
+say!{"Alpha"};
 
 
 // A macro call used as a statement follows ordinary statement
@@ -659,7 +663,7 @@ macroRules! outerMacro {
 }
 
 fn NestedMacroCall() {
-    outerMacro!("Alfa");
+    outerMacro!("Alpha");
 }
 
 
@@ -806,7 +810,7 @@ fn InvalidUnmatchedMacroCall() {
 // Summary
 // ============================================================
 
-//{
+//
 // Definition:
 //
 //     macroRules! name {
@@ -869,4 +873,4 @@ fn InvalidUnmatchedMacroCall() {
 //
 //     macros are not hygienic
 //     generated names enter the call scope
-//}//
+//
