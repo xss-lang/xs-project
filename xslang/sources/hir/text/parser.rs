@@ -16,7 +16,6 @@ pub struct XhirParseDiagnostic
   pub message: String,
 }
 
-#[must_use]
 pub fn parse_xhir_module_symbols(text: &str) -> Result<Module, Vec<XhirParseDiagnostic>>
 {
   let mut parser = Parser { lines: text.lines().collect(),
@@ -33,7 +32,6 @@ pub fn parse_xhir_module_symbols(text: &str) -> Result<Module, Vec<XhirParseDiag
   }
 }
 
-#[must_use]
 pub fn parse_xhir_function(text: &str) -> Result<Function, Vec<XhirParseDiagnostic>>
 {
   let mut parser = Parser { lines: text.lines().collect(),
@@ -167,7 +165,7 @@ impl Parser<'_>
     }
     else
     {
-      self.parse_type(&name)
+      self.parse_type(name)
     };
     if self.current().as_deref() == Some(".end")
     {
@@ -190,7 +188,7 @@ impl Parser<'_>
       {
         break;
       };
-      match parse_local_record(&rest)
+      match parse_local_record(rest)
       {
         Some(local) => function.locals.push(local),
         None => self.report(format!("invalid local record '{line}'")),
@@ -303,7 +301,7 @@ impl Parser<'_>
       self.report("expected local type".to_string());
       return Type::Named(String::new());
     };
-    self.parse_type(&name).unwrap_or(Type::Named(name.to_string()))
+    self.parse_type(name).unwrap_or(Type::Named(name.to_string()))
   }
 
   fn local_mutability(&mut self) -> bool

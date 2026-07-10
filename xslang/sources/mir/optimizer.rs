@@ -214,12 +214,9 @@ fn fold_const_i64_adds_in_block(block: &mut BasicBlock) -> usize
         constants.insert(result, value);
         folded += 1;
       }
-      Statement::Call { result, .. } =>
+      Statement::Call { result: Some(result), .. } =>
       {
-        if let Some(result) = result
-        {
-          constants.remove(result);
-        }
+        constants.remove(result);
       }
       _ =>
       {}
@@ -277,12 +274,9 @@ fn fold_const_i64_subs_in_block(block: &mut BasicBlock) -> usize
         constants.insert(result, value);
         folded += 1;
       }
-      Statement::Call { result, .. } =>
+      Statement::Call { result: Some(result), .. } =>
       {
-        if let Some(result) = result
-        {
-          constants.remove(result);
-        }
+        constants.remove(result);
       }
       _ =>
       {}
@@ -340,12 +334,9 @@ fn fold_const_i64_muls_in_block(block: &mut BasicBlock) -> usize
         constants.insert(result, value);
         folded += 1;
       }
-      Statement::Call { result, .. } =>
+      Statement::Call { result: Some(result), .. } =>
       {
-        if let Some(result) = result
-        {
-          constants.remove(result);
-        }
+        constants.remove(result);
       }
       _ =>
       {}
@@ -395,12 +386,9 @@ fn fold_const_i64_eqs_in_block(block: &mut BasicBlock) -> usize
                                             span };
         folded += 1;
       }
-      Statement::Call { result, .. } =>
+      Statement::Call { result: Some(result), .. } =>
       {
-        if let Some(result) = result
-        {
-          constants.remove(result);
-        }
+        constants.remove(result);
       }
       _ =>
       {}
@@ -443,12 +431,9 @@ fn fold_const_bool_branch_in_block(block: &mut BasicBlock) -> usize
       {
         constants.remove(result);
       }
-      Statement::Call { result, .. } =>
+      Statement::Call { result: Some(result), .. } =>
       {
-        if let Some(result) = result
-        {
-          constants.remove(result);
-        }
+        constants.remove(result);
       }
       _ =>
       {}

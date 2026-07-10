@@ -16,7 +16,6 @@ pub struct XmirParseDiagnostic
   pub message: String,
 }
 
-#[must_use]
 pub fn parse_xmir_function(text: &str) -> Result<Function, Vec<XmirParseDiagnostic>>
 {
   let mut parser = Parser { lines: text.lines().collect(),
@@ -459,16 +458,8 @@ impl Parser<'_>
 
   fn local_type(&mut self) -> Option<Type>
   {
-    let Some(line) = self.current()
-    else
-    {
-      return None;
-    };
-    let Some(type_name) = line.strip_prefix("type ")
-    else
-    {
-      return None;
-    };
+    let line = self.current()?;
+    let type_name = line.strip_prefix("type ")?;
     self.index += 1;
     let value_type = type_from_name(type_name);
     if value_type.is_none()

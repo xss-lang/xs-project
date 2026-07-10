@@ -154,6 +154,7 @@ impl MirToXlilLowerer
     }
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn lower_const_i64(&mut self,
                      local: mir::LocalId,
                      value: i64,
@@ -181,6 +182,7 @@ impl MirToXlilLowerer
     }
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn lower_const_bool(&mut self,
                       local: mir::LocalId,
                       value: bool,
@@ -208,6 +210,7 @@ impl MirToXlilLowerer
     }
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn lower_const_i32(&mut self,
                      local: mir::LocalId,
                      value: i32,
@@ -235,6 +238,7 @@ impl MirToXlilLowerer
     }
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn lower_call(&mut self,
                 result: Option<mir::LocalId>,
                 function: &str,
@@ -280,6 +284,7 @@ impl MirToXlilLowerer
     }
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn lower_binary_i64(&mut self,
                       result: mir::LocalId,
                       left: mir::LocalId,
@@ -324,6 +329,7 @@ impl MirToXlilLowerer
     values.insert(result, value);
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn lower_eq_i64(&mut self,
                   result: mir::LocalId,
                   left: mir::LocalId,
