@@ -85,8 +85,8 @@ The documented compilation order is preserved:
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
 - `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized.
 - Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
-- Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API and can emit LLVM IR declarations
-  and supported function bodies.
+- Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
+  input emits LLVM IR, an object file, and an executable through the LLVM backend and Clang/LLD driver path.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -363,11 +363,13 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - XLIL function declaration signatures lower through the XLIL type vocabulary rather than through HIR primitive types.
 - LLVM optimization pipelines from `default<O0>` through `default<O3>` can be configured.
 - LLVM module verification, LLVM IR text emission, and object file emission work.
-- `xs build --xlil -file <input.xlil>` parses and verifies XLIL v0 text through `xs_lil_module_parse_text` and emits LLVM
-  IR declarations from top-level `.extern` and `.func` signatures plus the supported body subset: `.param`, `const i64`,
-  `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`. This LLVM IR file
-  is a temporary checkpoint; the command's
-  final output is intended to become a native executable once object emission and linking are wired in.
+- `xs build --xlil -file <input.xlil>` parses and verifies XLIL v0 text through `xs_lil_module_parse_text`, then emits
+  LLVM IR, an object file, and a native executable beside the input. Native direct XLIL requires exactly one defined
+  `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
+  `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
+- Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured
+  cross-target still receives LLVM IR and object artifacts, then stops before executable linking; runtime and external
+  library linking remain unconfigured.
 - The linker can be invoked without a shell, with argument policy left to the upper layer.
 
 Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
@@ -440,7 +442,7 @@ syntax, public APIs, and the current architecture stable.
 - XLIL to LLVM IR function body lowering
 - LLVM mapping for `Str`, whose runtime/ABI layout is not fully implemented
 - Linking generated object files according to project targets
-- End-to-end `xs build` and `xs run`
+- End-to-end source-project `xs build` and `xs run`
 
 Temporary language rules are not invented in the parser or LLVM backend for unfinished semantic stages.
 

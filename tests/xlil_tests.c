@@ -370,6 +370,30 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_i32_constant(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func main : () -> i32\nbb0.entry:\n"
+                      "  %r0:i32 = const.i32 0\n  ret %r0\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("main.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  FILE *stream = tmpfile();
+  if (stream == nullptr)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[256] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "%r0:i32 = const.i32 0\n") != nullptr);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_rejects_invalid_inputs(void)
 {
   static const char *const invalid_inputs[] = {
@@ -416,6 +440,7 @@ int main(void)
   test_text_parser_round_trips_branch_if_subset();
   test_text_parser_round_trips_parameters_and_calls();
   test_text_parser_round_trips_binary_i64_instructions();
+  test_text_parser_round_trips_i32_constant();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

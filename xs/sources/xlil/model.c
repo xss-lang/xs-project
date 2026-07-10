@@ -339,6 +339,31 @@ XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilVa
   return XS_LIL_OK;
 }
 
+XsLilStatus xs_lil_block_add_const_i32(XsLilBlock *block, int32_t value, XsLilValueId *result, XsLilError *error)
+{
+  xs_lil_clear_error(error);
+  if (result != nullptr)
+    *result = 0;
+  if (block == nullptr || block->owner == nullptr)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
+  XsLilValueId value_id = 0;
+  XsLilStatus status = add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_I32}, &value_id, error);
+  if (status != XS_LIL_OK)
+    return status;
+  status = append_instruction(block,
+                              (XsLilInstruction){
+                                  .kind = XS_LIL_INSTRUCTION_CONST_I32,
+                                  .result = value_id,
+                                  .immediate_i64 = value,
+                              },
+                              error);
+  if (status != XS_LIL_OK)
+    return status;
+  if (result != nullptr)
+    *result = value_id;
+  return XS_LIL_OK;
+}
+
 XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error)
 {
   xs_lil_clear_error(error);

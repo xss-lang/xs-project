@@ -8,6 +8,6 @@
 
 #include <stddef.h>
 
-bool xs_driver_emit_direct_xlil_llvm_ir(const char *input_path, const char *text, size_t length);
+bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_t length);
 
 #endif

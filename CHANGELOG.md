@@ -17,6 +17,9 @@ complete native executable pipeline.
 - XLIL v0 now has explicit `.param %rN:type` body records and registry-verified direct `call` records.
 - The public C23 XLIL API verifies direct call signatures, and the LLVM backend lowers XLIL parameters and calls.
 - The C23 XLIL model and LLVM backend now support `add.i64`, `sub.i64`, `mul.i64`, and `eq.i64` instructions.
+- Direct `xs build --xlil -file` now emits LLVM IR, an object file, and a local native executable for a defined
+  `.func main : () -> i32` XLIL entry point.
+- XLIL v0 now supports `%rN:i32 = const.i32 N` for direct native process exit values.
 
 ### Changed
 

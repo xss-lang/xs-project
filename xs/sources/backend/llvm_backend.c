@@ -429,6 +429,14 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
     return XS_BACKEND_OK;
   }
+  if (kind == XS_LIL_INSTRUCTION_CONST_I32)
+  {
+    XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_I32}, &type, error);
+    if (status != XS_BACKEND_OK)
+      return status;
+    values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
+    return XS_BACKEND_OK;
+  }
   if (kind == XS_LIL_INSTRUCTION_CONST_BOOL)
   {
     XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &type, error);

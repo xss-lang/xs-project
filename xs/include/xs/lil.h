@@ -55,6 +55,7 @@ typedef uint32_t XsLilBlockId;
 typedef enum
 {
   XS_LIL_INSTRUCTION_CONST_I64,
+  XS_LIL_INSTRUCTION_CONST_I32,
   XS_LIL_INSTRUCTION_CONST_BOOL,
   XS_LIL_INSTRUCTION_ADD_I64,
   XS_LIL_INSTRUCTION_SUB_I64,
@@ -102,6 +103,7 @@ const XsLilBlock *xs_lil_function_block_at(const XsLilFunction *function, size_t
 XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *label, XsLilBlock **block,
                                          XsLilError *error);
 XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_i32(XsLilBlock *block, int32_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);

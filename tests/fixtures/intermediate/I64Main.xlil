@@ -1,0 +1,7 @@
+.xlil version 0
+.xlil module Invalid
+.func main : () -> i64
+bb0.entry:
+  %r0:i64 = const 0
+  ret %r0
+.end

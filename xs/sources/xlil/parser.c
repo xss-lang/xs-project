@@ -384,7 +384,25 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
     return XS_LIL_OK;
   }
   if ((size_t)(line + length - colon) < 6U || !span_equals(colon, 6, ":i64 ="))
-    return parse_error(parser, error, "unsupported XLIL instruction");
+  {
+    if ((size_t)(line + length - colon) < 6U || !span_equals(colon, 6, ":i32 ="))
+      return parse_error(parser, error, "unsupported XLIL instruction");
+    const char *operation = skip_space(colon + 6, line + length);
+    static const char const_i32_prefix[] = "const.i32 ";
+    int64_t value = 0;
+    if ((size_t)(line + length - operation) < sizeof(const_i32_prefix) - 1U ||
+        strncmp(operation, const_i32_prefix, sizeof(const_i32_prefix) - 1U) != 0 ||
+        !parse_i64_tail(operation + sizeof(const_i32_prefix) - 1U, line + length, &value) || value < INT32_MIN ||
+        value > INT32_MAX)
+      return parse_error(parser, error, "unsupported XLIL instruction");
+    XsLilValueId actual = 0;
+    XsLilStatus status = xs_lil_block_add_const_i32(block, (int32_t)value, &actual, error);
+    if (status != XS_LIL_OK)
+      return status;
+    if (actual != result)
+      return parse_error(parser, error, "XLIL value ids must be sequential");
+    return XS_LIL_OK;
+  }
   const char *operation = skip_space(colon + 6, line + length);
   const char *const_prefix = "const ";
   const char *const_i64_prefix = "const.i64 ";

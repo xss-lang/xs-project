@@ -96,12 +96,22 @@ The direct file paths skip project manifests. Their final semantics depend on th
 - `mir` with `.xs`: parse/check/lower a single `.xs` input and emit `.xmir`.
 - `mir` with `.xmir`: parse the `.xmir version N` header and accept only supported XMIR grammar versions.
 - `xlil` with `.xs`: lower a single X# source file to `.xlil`.
-- `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, then emit the supported LLVM IR subset.
+- `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, lower the supported subset to LLVM IR, emit an
+  object file, and link a native executable when the target is the local host.
 
 The CLI recognizes the forms now; full production semantics are still being connected.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
-unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API and can
-currently produce a temporary LLVM IR checkpoint containing matching declarations, `.param` records, and the supported
-body subset including direct calls.
-The final `xs build --xlil -file <input.xlil>` output is intended to become a native executable once object emission and
-linking are wired into the command.
+unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API, verified,
+and lowered through the LLVM backend. It writes `<input-stem>.ll`, `<input-stem>.o`, and a native executable named
+`<input-stem>` alongside the input file.
+
+Direct native XLIL builds require exactly one function definition with this platform entry signature:
+
+```text
+.func main : () -> i32
+```
+
+This is a direct XLIL build ABI, not the X# source-language entry-point rule. The command uses the Clang driver with LLD
+for local Linux ELF linking. When the configured target triple differs from the host, it still writes the LLVM IR and object
+file but stops before linking with a cross-linking diagnostic. Runtime and external-library linking are not configured yet;
+an unresolved XLIL `.extern` symbol causes the linker to report a failed direct native build.

@@ -64,6 +64,7 @@ Format notes:
 - `bbN.<label>:` starts a basic block.
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
+- `%rN:i32 = const.i32 N` creates a signed 32-bit integer constant.
 - `%rN:i64 = add.i64 %rA, %rB`, `sub.i64`, and `mul.i64` perform signed 64-bit integer arithmetic.
 - `%rN:bool = eq.i64 %rA, %rB` compares two `i64` values for equality.
 - `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.
@@ -107,5 +108,21 @@ The API is intended to let:
 - every XLIL-producing compiler reuse the same backend infrastructure.
 
 The C23 API currently includes module construction, verification, text writing, v0 text parsing, and read-only
-function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting temporary LLVM
-IR. The command is intended to produce a native executable later, after object emission and linking are connected.
+function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting LLVM IR, an
+object file, and a native executable for the supported local-target subset.
+
+## Direct native entry point
+
+Direct native builds require exactly one defined XLIL entry function:
+
+```text
+.func main : () -> i32
+bb0.entry:
+  %r0:i32 = const.i32 0
+  ret %r0
+.end
+```
+
+The direct driver uses this function as the operating-system process entry point without generating an X# runtime wrapper.
+It writes `.ll`, `.o`, and executable artifacts next to the input registry. Linking is currently limited to the local Linux
+ELF host and does not provide runtime or external-library resolution.

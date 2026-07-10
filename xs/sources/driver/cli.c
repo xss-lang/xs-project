@@ -516,7 +516,7 @@ static int run_file_command(const XsCliOptions *options)
     }
     if (options->output == XS_BUILD_OUTPUT_XLIL)
     {
-      bool success = xs_driver_emit_direct_xlil_llvm_ir(options->file_path, text, length);
+      bool success = xs_driver_build_direct_xlil(options->file_path, text, length);
       free(text);
       return success ? 0 : 1;
     }
