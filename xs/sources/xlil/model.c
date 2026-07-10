@@ -389,16 +389,17 @@ XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValu
   return XS_LIL_OK;
 }
 
-static XsLilStatus add_binary_i64(XsLilBlock *block, XsLilInstructionKind kind, XsLilValueId left, XsLilValueId right,
-                                  XsLilType result_type, XsLilValueId *result, XsLilError *error)
+static XsLilStatus add_binary_integer(XsLilBlock *block, XsLilInstructionKind kind, XsLilValueId left,
+                                      XsLilValueId right, XsLilTypeKind operand_type, XsLilType result_type,
+                                      XsLilValueId *result, XsLilError *error)
 {
   xs_lil_clear_error(error);
   if (result != nullptr)
     *result = UINT32_MAX;
   if (block == nullptr || block->owner == nullptr || (size_t)left >= block->owner->value_count ||
-      (size_t)right >= block->owner->value_count || block->owner->values[left].type.kind != XS_LIL_TYPE_I64 ||
-      block->owner->values[right].type.kind != XS_LIL_TYPE_I64)
-    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL binary i64 instruction requires two i64 values");
+      (size_t)right >= block->owner->value_count || block->owner->values[left].type.kind != operand_type ||
+      block->owner->values[right].type.kind != operand_type)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL binary integer instruction requires matching values");
   XsLilInstruction instruction = {
       .kind = kind,
       .left = left,
@@ -421,29 +422,57 @@ static XsLilStatus add_binary_i64(XsLilBlock *block, XsLilInstructionKind kind, 
 XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error)
 {
-  return add_binary_i64(block, XS_LIL_INSTRUCTION_ADD_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_I64}, result,
-                        error);
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_ADD_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
 }
 
 XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error)
 {
-  return add_binary_i64(block, XS_LIL_INSTRUCTION_SUB_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_I64}, result,
-                        error);
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_SUB_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
 }
 
 XsLilStatus xs_lil_block_mul_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error)
 {
-  return add_binary_i64(block, XS_LIL_INSTRUCTION_MUL_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_I64}, result,
-                        error);
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_MUL_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
 }
 
 XsLilStatus xs_lil_block_eq_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error)
 {
-  return add_binary_i64(block, XS_LIL_INSTRUCTION_EQ_I64, left, right, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result,
-                        error);
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_EQ_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_add_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_ADD_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_I32}, result, error);
+}
+
+XsLilStatus xs_lil_block_sub_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_SUB_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_I32}, result, error);
+}
+
+XsLilStatus xs_lil_block_mul_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_MUL_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_I32}, result, error);
+}
+
+XsLilStatus xs_lil_block_eq_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_EQ_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
 }
 
 static XsLilStatus add_call(XsLilBlock *block, const char *callee, XsLilType return_type, const XsLilValueId *arguments,

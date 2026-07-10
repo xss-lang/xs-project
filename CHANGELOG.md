@@ -16,6 +16,7 @@ source-to-native executable pipeline.
 
 - Direct XLIL native builds now run the LLVM verification and optimization pipeline before writing LLVM IR and object
   artifacts.
+- XLIL v0 and the LLVM backend now support `add.i32`, `sub.i32`, `mul.i32`, and `eq.i32` instructions.
 
 ### Changed
 

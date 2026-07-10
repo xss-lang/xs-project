@@ -446,25 +446,26 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     return XS_BACKEND_OK;
   }
   if (kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_MUL_I64 ||
-      kind == XS_LIL_INSTRUCTION_EQ_I64)
+      kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
+      kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32)
   {
     XsLilValueId left = xs_lil_block_instruction_left(block, index);
     XsLilValueId right = xs_lil_block_instruction_right(block, index);
     if ((size_t)result >= value_count || (size_t)left >= value_count || (size_t)right >= value_count ||
         values[left] == nullptr || values[right] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT,
-                       "XLIL binary i64 instruction references an unavailable value");
+                       "XLIL binary integer instruction references an unavailable value");
     LLVMValueRef lowered = nullptr;
-    if (kind == XS_LIL_INSTRUCTION_ADD_I64)
+    if (kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32)
       lowered = LLVMBuildAdd(builder, values[left], values[right], "add");
-    else if (kind == XS_LIL_INSTRUCTION_SUB_I64)
+    else if (kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_SUB_I32)
       lowered = LLVMBuildSub(builder, values[left], values[right], "sub");
-    else if (kind == XS_LIL_INSTRUCTION_MUL_I64)
+    else if (kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_MUL_I32)
       lowered = LLVMBuildMul(builder, values[left], values[right], "mul");
     else
       lowered = LLVMBuildICmp(builder, LLVMIntEQ, values[left], values[right], "eq");
     if (lowered == nullptr)
-      return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL binary i64 instruction");
+      return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL binary integer instruction");
     values[result] = lowered;
     return XS_BACKEND_OK;
   }

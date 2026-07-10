@@ -65,6 +65,8 @@ Format notes:
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
 - `%rN:i32 = const.i32 N` creates a signed 32-bit integer constant.
+- `%rN:i32 = add.i32 %rA, %rB`, `sub.i32`, and `mul.i32` perform signed 32-bit integer arithmetic.
+- `%rN:bool = eq.i32 %rA, %rB` compares two `i32` values for equality.
 - `%rN:i64 = add.i64 %rA, %rB`, `sub.i64`, and `mul.i64` perform signed 64-bit integer arithmetic.
 - `%rN:bool = eq.i64 %rA, %rB` compares two `i64` values for equality.
 - `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.

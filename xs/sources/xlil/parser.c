@@ -280,8 +280,8 @@ static const char *trim_end(const char *start, const char *end)
   return end;
 }
 
-static XsLilStatus parse_binary_i64(Parser *parser, XsLilBlock *block, const char *operands, size_t length,
-                                    XsLilInstructionKind kind, uint32_t expected_result, XsLilError *error)
+static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const char *operands, size_t length,
+                                        XsLilInstructionKind kind, uint32_t expected_result, XsLilError *error)
 {
   const char *end = operands + length;
   const char *comma = operands;
@@ -294,7 +294,7 @@ static XsLilStatus parse_binary_i64(Parser *parser, XsLilBlock *block, const cha
   const char *right_end = trim_end(right_start, end);
   if (comma == end || !parse_u32_after_prefix(operands, (size_t)(left_end - operands), "%r", &left) ||
       !parse_u32_after_prefix(right_start, (size_t)(right_end - right_start), "%r", &right))
-    return parse_error(parser, error, "XLIL binary i64 operands are invalid");
+    return parse_error(parser, error, "XLIL binary integer operands are invalid");
   XsLilValueId result = 0;
   XsLilStatus status = XS_LIL_OK;
   switch (kind)
@@ -310,6 +310,18 @@ static XsLilStatus parse_binary_i64(Parser *parser, XsLilBlock *block, const cha
     break;
   case XS_LIL_INSTRUCTION_EQ_I64:
     status = xs_lil_block_eq_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_ADD_I32:
+    status = xs_lil_block_add_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_SUB_I32:
+    status = xs_lil_block_sub_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_MUL_I32:
+    status = xs_lil_block_mul_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_EQ_I32:
+    status = xs_lil_block_eq_i32(block, left, right, &result, error);
     break;
   default:
     return parse_error(parser, error, "unsupported XLIL binary instruction");
@@ -350,6 +362,10 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"sub.i64 ", XS_LIL_INSTRUCTION_SUB_I64, XS_LIL_TYPE_I64},
         {"mul.i64 ", XS_LIL_INSTRUCTION_MUL_I64, XS_LIL_TYPE_I64},
         {"eq.i64 ", XS_LIL_INSTRUCTION_EQ_I64, XS_LIL_TYPE_BOOL},
+        {"add.i32 ", XS_LIL_INSTRUCTION_ADD_I32, XS_LIL_TYPE_I32},
+        {"sub.i32 ", XS_LIL_INSTRUCTION_SUB_I32, XS_LIL_TYPE_I32},
+        {"mul.i32 ", XS_LIL_INSTRUCTION_MUL_I32, XS_LIL_TYPE_I32},
+        {"eq.i32 ", XS_LIL_INSTRUCTION_EQ_I32, XS_LIL_TYPE_BOOL},
     };
     size_t operation_length = (size_t)(line + length - operation);
     for (size_t binary = 0; binary < sizeof(binary_instructions) / sizeof(binary_instructions[0]); ++binary)
@@ -357,8 +373,8 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
       size_t name_length = strlen(binary_instructions[binary].name);
       if (result_type.kind == binary_instructions[binary].result_type && operation_length > name_length &&
           strncmp(operation, binary_instructions[binary].name, name_length) == 0)
-        return parse_binary_i64(parser, block, operation + name_length, operation_length - name_length,
-                                binary_instructions[binary].kind, result, error);
+        return parse_binary_integer(parser, block, operation + name_length, operation_length - name_length,
+                                    binary_instructions[binary].kind, result, error);
     }
   }
   if ((size_t)(line + length - colon) >= 7U && span_equals(colon, 7, ":bool ="))

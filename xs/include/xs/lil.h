@@ -61,6 +61,10 @@ typedef enum
   XS_LIL_INSTRUCTION_SUB_I64,
   XS_LIL_INSTRUCTION_MUL_I64,
   XS_LIL_INSTRUCTION_EQ_I64,
+  XS_LIL_INSTRUCTION_ADD_I32,
+  XS_LIL_INSTRUCTION_SUB_I32,
+  XS_LIL_INSTRUCTION_MUL_I32,
+  XS_LIL_INSTRUCTION_EQ_I32,
   XS_LIL_INSTRUCTION_CALL,
 } XsLilInstructionKind;
 
@@ -112,6 +116,14 @@ XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValu
 XsLilStatus xs_lil_block_mul_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_eq_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error);
+XsLilStatus xs_lil_block_add_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_sub_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_mul_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_eq_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error);
 XsLilStatus xs_lil_block_add_call(XsLilBlock *block, const char *callee, XsLilType return_type,
                                   const XsLilValueId *arguments, size_t argument_count, XsLilValueId *result,

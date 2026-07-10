@@ -382,7 +382,8 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native executable beside the input. Native
   direct XLIL requires exactly one defined
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
-  `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
+  `add.i32`, `sub.i32`, `mul.i32`, `eq.i32`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`,
+  and `ret %rN`.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured
   cross-target still receives LLVM IR and object artifacts, then stops before executable linking; runtime and external
   library linking remain unconfigured.
@@ -418,8 +419,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - Direct file compilation entries are recognized as `xs build --output hir|mir|xlil -file <input>` and
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, verification, primitive types, text parsing/writing,
-  read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.bool`, `add.i64`,
-  `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, and `return`.
+  read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.bool`,
+  i32/i64 add/subtract/multiply/equality, `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
   `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge

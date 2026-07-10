@@ -394,6 +394,35 @@ static void test_text_parser_round_trips_i32_constant(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_binary_i32_instructions(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Arithmetic32 : () -> i32\nbb0.entry:\n"
+                      "  %r0:i32 = const.i32 9\n  %r1:i32 = const.i32 3\n  %r2:i32 = add.i32 %r0, %r1\n"
+                      "  %r3:i32 = sub.i32 %r2, %r1\n  %r4:i32 = mul.i32 %r3, %r1\n"
+                      "  %r5:bool = eq.i32 %r4, %r0\n  ret %r4\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("arithmetic32.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  FILE *stream = tmpfile();
+  if (stream == nullptr)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "%r2:i32 = add.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r3:i32 = sub.i32 %r2, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r4:i32 = mul.i32 %r3, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r5:bool = eq.i32 %r4, %r0\n") != nullptr);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_rejects_invalid_inputs(void)
 {
   static const char *const invalid_inputs[] = {
@@ -441,6 +470,7 @@ int main(void)
   test_text_parser_round_trips_parameters_and_calls();
   test_text_parser_round_trips_binary_i64_instructions();
   test_text_parser_round_trips_i32_constant();
+  test_text_parser_round_trips_binary_i32_instructions();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }
