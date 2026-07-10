@@ -25,8 +25,8 @@ design to x86-64; ARM64 compatibility must be preserved.
 - XLIL type mapping for function declarations
 - Direct `.xlil` parser/model-driven `.extern`/`.func` lowering to verified and optimized LLVM IR, objects, and local
   native `.xse` executable artifacts for `.func main : () -> i32`
-- Initial XLIL body lowering for parameters, constants, i32/i64 add/subtract/multiply/equality, `call`, `br`, `br_if`,
-  `ret`, and `ret %rN`
+- Initial XLIL body lowering for parameters, constants, i32/i64 add/subtract/multiply/equality, signed i32 comparisons,
+  `call`, `br`, `br_if`, `ret`, and `ret %rN`
 - LLVM optimization pipeline selection from `default<O0>` through `default<O3>`
 - LLVM module verification
 - Object file emission per codegen unit
@@ -69,8 +69,8 @@ Borrow-checked and optimized MIR
 ```
 
 XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, and boolean constants, i32/i64
-add/subtract/multiply/equality, direct calls, unconditional `br`, conditional `br_if`, `ret`, and `ret %rN`. Parameter values
-are read from the declared
+add/subtract/multiply/equality, signed i32 comparisons, direct calls, unconditional `br`, conditional `br_if`, `ret`, and
+`ret %rN`. Parameter values are read from the declared
 LLVM function; calls use declarations emitted for the same XLIL registry module. The backend emits declarations from the
 public C API and direct `.xlil` files after they are parsed into the XLIL C model, can write verified LLVM IR text for the
 current codegen unit, runs the configured LLVM verification/optimization pipeline, emits an object through LLVM, and invokes

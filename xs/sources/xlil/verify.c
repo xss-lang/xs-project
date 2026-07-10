@@ -79,7 +79,14 @@ static bool is_binary_i64(XsLilInstructionKind kind)
 static bool is_binary_i32(XsLilInstructionKind kind)
 {
   return kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
-         kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32;
+         kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
+         kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
+}
+
+static bool is_bool_result_integer(XsLilInstructionKind kind)
+{
+  return kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
+         kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
 }
 
 static XsLilStatus verify_binary_integer(const XsLilFunction *function, const XsLilInstruction *instruction,
@@ -91,10 +98,7 @@ static XsLilStatus verify_binary_integer(const XsLilFunction *function, const Xs
       function->values[instruction->left].type.kind != operand ||
       function->values[instruction->right].type.kind != operand)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL binary integer instruction has invalid operands");
-  XsLilTypeKind expected =
-      instruction->kind == XS_LIL_INSTRUCTION_EQ_I64 || instruction->kind == XS_LIL_INSTRUCTION_EQ_I32
-          ? XS_LIL_TYPE_BOOL
-          : operand;
+  XsLilTypeKind expected = is_bool_result_integer(instruction->kind) ? XS_LIL_TYPE_BOOL : operand;
   if (function->values[instruction->result].type.kind != expected)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
                             "XLIL binary integer instruction has an invalid result type");

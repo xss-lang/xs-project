@@ -214,6 +214,25 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_declare_lil_function(first, "Equality32", (XsLilType){.kind = XS_LIL_TYPE_BOOL}, i32_parameter, 1,
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, equality32, &error) == XS_BACKEND_OK);
+  XsLilFunction *compare32 = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Compare32", (XsLilType){.kind = XS_LIL_TYPE_BOOL},
+                                              i32_parameter, 1, &compare32, nullptr) == XS_LIL_OK);
+  XsLilBlock *compare32_entry = nullptr;
+  CHECK(xs_lil_function_append_block(compare32, "entry", &compare32_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId i32_compare_right = 0;
+  XsLilValueId i32_lt = 0;
+  XsLilValueId i32_le = 0;
+  XsLilValueId i32_gt = 0;
+  XsLilValueId i32_ge = 0;
+  CHECK(xs_lil_block_add_const_i32(compare32_entry, 5, &i32_compare_right, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_lt_i32(compare32_entry, 0, i32_compare_right, &i32_lt, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_le_i32(compare32_entry, 0, i32_compare_right, &i32_le, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_gt_i32(compare32_entry, 0, i32_compare_right, &i32_gt, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_ge_i32(compare32_entry, 0, i32_compare_right, &i32_ge, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(compare32_entry, i32_lt, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Compare32", (XsLilType){.kind = XS_LIL_TYPE_BOOL}, i32_parameter, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, compare32, &error) == XS_BACKEND_OK);
   XsLilFunction *branch_function = nullptr;
   const XsLilType bool_parameter[] = {{.kind = XS_LIL_TYPE_BOOL}};
   CHECK(xs_lil_module_add_function_definition(lil_module, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID},
@@ -258,6 +277,11 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "mul i32"));
   CHECK(file_contains(ir_path, "define i1 @Equality32(i32"));
   CHECK(file_contains(ir_path, "icmp eq i32"));
+  CHECK(file_contains(ir_path, "define i1 @Compare32(i32"));
+  CHECK(file_contains(ir_path, "icmp slt i32"));
+  CHECK(file_contains(ir_path, "icmp sle i32"));
+  CHECK(file_contains(ir_path, "icmp sgt i32"));
+  CHECK(file_contains(ir_path, "icmp sge i32"));
   CHECK(file_contains(ir_path, "define void @Choose(i1"));
   CHECK(file_contains(ir_path, "br i1"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);

@@ -323,6 +323,18 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
   case XS_LIL_INSTRUCTION_EQ_I32:
     status = xs_lil_block_eq_i32(block, left, right, &result, error);
     break;
+  case XS_LIL_INSTRUCTION_LT_I32:
+    status = xs_lil_block_lt_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_LE_I32:
+    status = xs_lil_block_le_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_GT_I32:
+    status = xs_lil_block_gt_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_GE_I32:
+    status = xs_lil_block_ge_i32(block, left, right, &result, error);
+    break;
   default:
     return parse_error(parser, error, "unsupported XLIL binary instruction");
   }
@@ -366,6 +378,10 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"sub.i32 ", XS_LIL_INSTRUCTION_SUB_I32, XS_LIL_TYPE_I32},
         {"mul.i32 ", XS_LIL_INSTRUCTION_MUL_I32, XS_LIL_TYPE_I32},
         {"eq.i32 ", XS_LIL_INSTRUCTION_EQ_I32, XS_LIL_TYPE_BOOL},
+        {"lt.i32 ", XS_LIL_INSTRUCTION_LT_I32, XS_LIL_TYPE_BOOL},
+        {"le.i32 ", XS_LIL_INSTRUCTION_LE_I32, XS_LIL_TYPE_BOOL},
+        {"gt.i32 ", XS_LIL_INSTRUCTION_GT_I32, XS_LIL_TYPE_BOOL},
+        {"ge.i32 ", XS_LIL_INSTRUCTION_GE_I32, XS_LIL_TYPE_BOOL},
     };
     size_t operation_length = (size_t)(line + length - operation);
     for (size_t binary = 0; binary < sizeof(binary_instructions) / sizeof(binary_instructions[0]); ++binary)

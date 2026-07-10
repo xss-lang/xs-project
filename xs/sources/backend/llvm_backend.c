@@ -447,7 +447,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
   }
   if (kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_MUL_I64 ||
       kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
-      kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32)
+      kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
+      kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32)
   {
     XsLilValueId left = xs_lil_block_instruction_left(block, index);
     XsLilValueId right = xs_lil_block_instruction_right(block, index);
@@ -462,8 +463,16 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
       lowered = LLVMBuildSub(builder, values[left], values[right], "sub");
     else if (kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_MUL_I32)
       lowered = LLVMBuildMul(builder, values[left], values[right], "mul");
-    else
+    else if (kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntEQ, values[left], values[right], "eq");
+    else if (kind == XS_LIL_INSTRUCTION_LT_I32)
+      lowered = LLVMBuildICmp(builder, LLVMIntSLT, values[left], values[right], "lt");
+    else if (kind == XS_LIL_INSTRUCTION_LE_I32)
+      lowered = LLVMBuildICmp(builder, LLVMIntSLE, values[left], values[right], "le");
+    else if (kind == XS_LIL_INSTRUCTION_GT_I32)
+      lowered = LLVMBuildICmp(builder, LLVMIntSGT, values[left], values[right], "gt");
+    else
+      lowered = LLVMBuildICmp(builder, LLVMIntSGE, values[left], values[right], "ge");
     if (lowered == nullptr)
       return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL binary integer instruction");
     values[result] = lowered;

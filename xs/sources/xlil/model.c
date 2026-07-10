@@ -475,6 +475,34 @@ XsLilStatus xs_lil_block_eq_i32(XsLilBlock *block, XsLilValueId left, XsLilValue
                             (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
 }
 
+XsLilStatus xs_lil_block_lt_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_LT_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_le_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_LE_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_gt_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_GT_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_ge_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_GE_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
 static XsLilStatus add_call(XsLilBlock *block, const char *callee, XsLilType return_type, const XsLilValueId *arguments,
                             size_t argument_count, bool has_result, XsLilValueId *result, XsLilError *error)
 {
