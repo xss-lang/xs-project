@@ -817,6 +817,82 @@ mod tests
   }
 
   #[test]
+  fn roundtrips_i32_instruction_family()
+  {
+    let function =
+      Function { name: "I32Flow".to_string(),
+                 parameters: vec![],
+                 return_type: crate::xlil::Type::VOID,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "left".to_string(),
+                                      value_type: Some(crate::xlil::Type::I32),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(1),
+                                      name: "right".to_string(),
+                                      value_type: Some(crate::xlil::Type::I32),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(2),
+                                      name: "sum".to_string(),
+                                      value_type: Some(crate::xlil::Type::I32),
+                                      mutable: false,
+                                      span: span() },
+                              Local { id: LocalId(3),
+                                      name: "same".to_string(),
+                                      value_type: Some(crate::xlil::Type::BOOL),
+                                      mutable: false,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::AddI32 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span() },
+                                                            Statement::EqI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span() },
+                                                            Statement::LtI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span() },
+                                                            Statement::LeI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span() },
+                                                            Statement::GtI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span() },
+                                                            Statement::GeI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span() }],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span() }] };
+
+    let text = function_to_xmir(&function);
+    let parsed = parse_xmir_function(&text).expect("XMIR i32 instructions should parse");
+
+    assert!(text.contains("statement add.i32"));
+    assert!(matches!(parsed.blocks[0].statements[0], Statement::AddI32 { result:
+                                                                           LocalId(2),
+                                                                         left: LocalId(0),
+                                                                         right: LocalId(1),
+                                                                         .. }));
+    assert!(matches!(parsed.blocks[0].statements[1], Statement::EqI32 { result: LocalId(3),
+                                                                        .. }));
+    assert!(matches!(parsed.blocks[0].statements[2], Statement::LtI32 { result: LocalId(3),
+                                                                        .. }));
+    assert!(matches!(parsed.blocks[0].statements[3], Statement::LeI32 { result: LocalId(3),
+                                                                        .. }));
+    assert!(matches!(parsed.blocks[0].statements[4], Statement::GtI32 { result: LocalId(3),
+                                                                        .. }));
+    assert!(matches!(parsed.blocks[0].statements[5], Statement::GeI32 { result: LocalId(3),
+                                                                        .. }));
+  }
+
+  #[test]
   fn roundtrips_optimizer_analysis()
   {
     let reports = vec![OptimizationReport { pass: OptimizationPass::RemoveUnreachableBlocks,

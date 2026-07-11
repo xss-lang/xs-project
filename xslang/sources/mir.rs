@@ -100,6 +100,62 @@ pub enum Statement
     right: LocalId,
     span: Span,
   },
+  AddI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  SubI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  MulI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  EqI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  LtI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  LeI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  GtI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  GeI32
+  {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
   Call
   {
     result: Option<LocalId>,
@@ -266,6 +322,46 @@ impl BorrowChecker
                           span,
                           .. } |
       Statement::EqI64 { left,
+                         right,
+                         result,
+                         span,
+                         .. } |
+      Statement::AddI32 { left,
+                          right,
+                          result,
+                          span,
+                          .. } |
+      Statement::SubI32 { left,
+                          right,
+                          result,
+                          span,
+                          .. } |
+      Statement::MulI32 { left,
+                          right,
+                          result,
+                          span,
+                          .. } |
+      Statement::EqI32 { left,
+                         right,
+                         result,
+                         span,
+                         .. } |
+      Statement::LtI32 { left,
+                         right,
+                         result,
+                         span,
+                         .. } |
+      Statement::LeI32 { left,
+                         right,
+                         result,
+                         span,
+                         .. } |
+      Statement::GtI32 { left,
+                         right,
+                         result,
+                         span,
+                         .. } |
+      Statement::GeI32 { left,
                          right,
                          result,
                          span,

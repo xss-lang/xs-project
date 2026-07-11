@@ -272,6 +272,14 @@ impl Parser<'_>
         "sub.i64" => block.statements.push(self.sub_i64_statement()),
         "mul.i64" => block.statements.push(self.mul_i64_statement()),
         "eq.i64" => block.statements.push(self.eq_i64_statement()),
+        "add.i32" => block.statements.push(self.i32_statement("add.i32")),
+        "sub.i32" => block.statements.push(self.i32_statement("sub.i32")),
+        "mul.i32" => block.statements.push(self.i32_statement("mul.i32")),
+        "eq.i32" => block.statements.push(self.i32_statement("eq.i32")),
+        "lt.i32" => block.statements.push(self.i32_statement("lt.i32")),
+        "le.i32" => block.statements.push(self.i32_statement("le.i32")),
+        "gt.i32" => block.statements.push(self.i32_statement("gt.i32")),
+        "ge.i32" => block.statements.push(self.i32_statement("ge.i32")),
         "call" => block.statements.push(self.call_statement()),
         "use" | "move" | "borrow shared" | "borrow mutable" | "borrow end" | "drop" =>
         {
@@ -673,7 +681,56 @@ impl Parser<'_>
                        span: span() }
   }
 
+  fn i32_statement(&mut self, instruction: &str) -> Statement
+  {
+    let result = self.binary_local(instruction, "result");
+    let left = self.binary_local(instruction, "left");
+    let right = self.binary_local(instruction, "right");
+    match instruction
+    {
+      "add.i32" => Statement::AddI32 { result,
+                                       left,
+                                       right,
+                                       span: span() },
+      "sub.i32" => Statement::SubI32 { result,
+                                       left,
+                                       right,
+                                       span: span() },
+      "mul.i32" => Statement::MulI32 { result,
+                                       left,
+                                       right,
+                                       span: span() },
+      "eq.i32" => Statement::EqI32 { result,
+                                     left,
+                                     right,
+                                     span: span() },
+      "lt.i32" => Statement::LtI32 { result,
+                                     left,
+                                     right,
+                                     span: span() },
+      "le.i32" => Statement::LeI32 { result,
+                                     left,
+                                     right,
+                                     span: span() },
+      "gt.i32" => Statement::GtI32 { result,
+                                     left,
+                                     right,
+                                     span: span() },
+      "ge.i32" => Statement::GeI32 { result,
+                                     left,
+                                     right,
+                                     span: span() },
+      _ => Statement::Use { local: result,
+                            span: span() },
+    }
+  }
+
   fn binary_i64_local(&mut self, instruction: &str, field: &str) -> LocalId
+  {
+    self.binary_local(instruction, field)
+  }
+
+  fn binary_local(&mut self, instruction: &str, field: &str) -> LocalId
   {
     let Some(line) = self.current()
     else

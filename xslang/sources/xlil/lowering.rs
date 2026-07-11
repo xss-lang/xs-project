@@ -136,6 +136,62 @@ impl MirToXlilLowerer
       {
         self.lower_eq_i64(result, left, right, span, xlil_block, values, lowered);
       }
+      if let mir::Statement::AddI32 { result,
+                                      left,
+                                      right,
+                                      span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "add.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::SubI32 { result,
+                                      left,
+                                      right,
+                                      span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "sub.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::MulI32 { result,
+                                      left,
+                                      right,
+                                      span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "mul.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::EqI32 { result,
+                                     left,
+                                     right,
+                                     span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "eq.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::LtI32 { result,
+                                     left,
+                                     right,
+                                     span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "lt.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::LeI32 { result,
+                                     left,
+                                     right,
+                                     span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "le.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::GtI32 { result,
+                                     left,
+                                     right,
+                                     span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "gt.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::GeI32 { result,
+                                     left,
+                                     right,
+                                     span, } = *statement
+      {
+        self.lower_binary_i32(result, left, right, span, "ge.i32", xlil_block, values, lowered);
+      }
       if let mir::Statement::Call { result,
                                     ref function,
                                     ref arguments,
@@ -360,6 +416,56 @@ impl MirToXlilLowerer
     {
       self.report(DiagnosticCode::UnsupportedLocalType,
                   "MIR eq.i64 operands must lower to XLIL i64 values",
+                  span);
+      return;
+    };
+    values.insert(result, value);
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  fn lower_binary_i32(&mut self,
+                      result: mir::LocalId,
+                      left: mir::LocalId,
+                      right: mir::LocalId,
+                      span: Span,
+                      instruction: &str,
+                      xlil_block: BlockId,
+                      values: &mut HashMap<mir::LocalId, ValueId>,
+                      lowered: &mut Function)
+  {
+    let Some(left) = values.get(&left).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  &format!("MIR {instruction} left operand does not have a lowered XLIL value"),
+                  span);
+      return;
+    };
+    let Some(right) = values.get(&right).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  &format!("MIR {instruction} right operand does not have a lowered XLIL value"),
+                  span);
+      return;
+    };
+    let value = match instruction
+    {
+      "add.i32" => lowered.add_i32(xlil_block, left, right),
+      "sub.i32" => lowered.sub_i32(xlil_block, left, right),
+      "mul.i32" => lowered.mul_i32(xlil_block, left, right),
+      "eq.i32" => lowered.eq_i32(xlil_block, left, right),
+      "lt.i32" => lowered.lt_i32(xlil_block, left, right),
+      "le.i32" => lowered.le_i32(xlil_block, left, right),
+      "gt.i32" => lowered.gt_i32(xlil_block, left, right),
+      "ge.i32" => lowered.ge_i32(xlil_block, left, right),
+      _ => None,
+    };
+    let Some(value) = value
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedLocalType,
+                  &format!("MIR {instruction} operands must lower to XLIL i32 values"),
                   span);
       return;
     };

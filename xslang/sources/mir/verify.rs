@@ -178,6 +178,38 @@ impl<'a> Verifier<'a>
                          left,
                          right,
                          span, } => self.verify_eq_i64(result, left, right, span),
+      Statement::AddI32 { result,
+                          left,
+                          right,
+                          span, } => self.verify_i32_binary(result, left, right, "add.i32", span),
+      Statement::SubI32 { result,
+                          left,
+                          right,
+                          span, } => self.verify_i32_binary(result, left, right, "sub.i32", span),
+      Statement::MulI32 { result,
+                          left,
+                          right,
+                          span, } => self.verify_i32_binary(result, left, right, "mul.i32", span),
+      Statement::EqI32 { result,
+                         left,
+                         right,
+                         span, } => self.verify_i32_compare(result, left, right, "eq.i32", span),
+      Statement::LtI32 { result,
+                         left,
+                         right,
+                         span, } => self.verify_i32_compare(result, left, right, "lt.i32", span),
+      Statement::LeI32 { result,
+                         left,
+                         right,
+                         span, } => self.verify_i32_compare(result, left, right, "le.i32", span),
+      Statement::GtI32 { result,
+                         left,
+                         right,
+                         span, } => self.verify_i32_compare(result, left, right, "gt.i32", span),
+      Statement::GeI32 { result,
+                         left,
+                         right,
+                         span, } => self.verify_i32_compare(result, left, right, "ge.i32", span),
       Statement::Call { result,
                         ref arguments,
                         return_type,
@@ -311,6 +343,20 @@ impl<'a> Verifier<'a>
     self.verify_i64_local(right, "eq.i64 right operand", span);
   }
 
+  fn verify_i32_binary(&mut self, result: LocalId, left: LocalId, right: LocalId, instruction: &str, span: Span)
+  {
+    self.verify_i32_local(result, &format!("{instruction} result local"), span);
+    self.verify_i32_local(left, &format!("{instruction} left operand"), span);
+    self.verify_i32_local(right, &format!("{instruction} right operand"), span);
+  }
+
+  fn verify_i32_compare(&mut self, result: LocalId, left: LocalId, right: LocalId, instruction: &str, span: Span)
+  {
+    self.verify_bool_local(result, &format!("{instruction} result local"), span);
+    self.verify_i32_local(left, &format!("{instruction} left operand"), span);
+    self.verify_i32_local(right, &format!("{instruction} right operand"), span);
+  }
+
   fn verify_bool_local(&mut self, local: LocalId, label: &str, span: Span)
   {
     self.verify_local(local, span);
@@ -346,6 +392,27 @@ impl<'a> Verifier<'a>
       {}
       Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
                              format!("{label} must have XLIL i64 type"),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          format!("{label} has no XLIL value type"),
+                          span),
+    }
+  }
+
+  fn verify_i32_local(&mut self, local: LocalId, label: &str, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(crate::xlil::Type::I32) =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             format!("{label} must have XLIL i32 type"),
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           format!("{label} has no XLIL value type"),
@@ -587,6 +654,79 @@ mod tests
                                            span: span(0, 3) }] };
 
     assert!(verify_function(&function).is_empty());
+  }
+
+  #[test]
+  fn accepts_i32_instruction_family()
+  {
+    let function =
+      Function { name: "i32_ops".to_string(),
+                 parameters: vec![],
+                 return_type: Type::VOID,
+                 locals: vec![typed_local(0, Type::I32),
+                              typed_local(1, Type::I32),
+                              typed_local(2, Type::I32),
+                              typed_local(3, Type::BOOL)],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::AddI32 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(1, 2) },
+                                                            Statement::SubI32 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(2, 3) },
+                                                            Statement::MulI32 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(3, 4) },
+                                                            Statement::EqI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span(4, 5) },
+                                                            Statement::LtI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span(5, 6) },
+                                                            Statement::LeI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span(6, 7) },
+                                                            Statement::GtI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span(7, 8) },
+                                                            Statement::GeI32 { result: LocalId(3),
+                                                                               left: LocalId(0),
+                                                                               right: LocalId(1),
+                                                                               span: span(8, 9) }],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(0, 10) }] };
+
+    assert!(verify_function(&function).is_empty());
+  }
+
+  #[test]
+  fn rejects_i32_instruction_type_mismatch()
+  {
+    let function =
+      Function { name: "bad_i32_ops".to_string(),
+                 parameters: vec![],
+                 return_type: Type::VOID,
+                 locals: vec![typed_local(0, Type::I64),
+                              typed_local(1, Type::I32),
+                              typed_local(2, Type::I32)],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::AddI32 { result: LocalId(2),
+                                                                                left: LocalId(0),
+                                                                                right: LocalId(1),
+                                                                                span: span(1, 2) }],
+                                           terminator: Some(Terminator::Return(None)),
+                                           span: span(0, 3) }] };
+
+    let diagnostics = verify_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::LocalTypeMismatch);
   }
 
   #[test]

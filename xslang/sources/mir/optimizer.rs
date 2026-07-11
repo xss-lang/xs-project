@@ -427,7 +427,15 @@ fn fold_const_bool_branch_in_block(block: &mut BasicBlock) -> usize
       Statement::AddI64 { result, .. } |
       Statement::SubI64 { result, .. } |
       Statement::MulI64 { result, .. } |
-      Statement::EqI64 { result, .. } =>
+      Statement::EqI64 { result, .. } |
+      Statement::AddI32 { result, .. } |
+      Statement::SubI32 { result, .. } |
+      Statement::MulI32 { result, .. } |
+      Statement::EqI32 { result, .. } |
+      Statement::LtI32 { result, .. } |
+      Statement::LeI32 { result, .. } |
+      Statement::GtI32 { result, .. } |
+      Statement::GeI32 { result, .. } =>
       {
         constants.remove(result);
       }

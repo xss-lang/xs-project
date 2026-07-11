@@ -349,6 +349,93 @@ fn lowers_const_bool_and_eq_i64_statement()
 }
 
 #[test]
+fn lowers_i32_instruction_family()
+{
+  let function =
+    MirFunction { name: "I32Ops".to_string(),
+                  parameters: vec![],
+                  return_type: Type::VOID,
+                  locals: vec![Local { id: LocalId(0),
+                                       name: "left".to_string(),
+                                       value_type: Some(Type::I32),
+                                       mutable: false,
+                                       span: span(0, 1) },
+                               Local { id: LocalId(1),
+                                       name: "right".to_string(),
+                                       value_type: Some(Type::I32),
+                                       mutable: false,
+                                       span: span(0, 1) },
+                               Local { id: LocalId(2),
+                                       name: "value".to_string(),
+                                       value_type: Some(Type::I32),
+                                       mutable: false,
+                                       span: span(0, 1) },
+                               Local { id: LocalId(3),
+                                       name: "flag".to_string(),
+                                       value_type: Some(Type::BOOL),
+                                       mutable: false,
+                                       span: span(0, 1) }],
+                  blocks: vec![BasicBlock { id: MirBlockId(0),
+                                            statements: vec![mir::Statement::ConstI32 { local: LocalId(0),
+                                                                                        value: 4,
+                                                                                        span: span(1, 2) },
+                                                             mir::Statement::ConstI32 { local: LocalId(1),
+                                                                                        value: 2,
+                                                                                        span: span(2, 3) },
+                                                             mir::Statement::AddI32 { result: LocalId(2),
+                                                                                      left: LocalId(0),
+                                                                                      right: LocalId(1),
+                                                                                      span: span(3, 4) },
+                                                             mir::Statement::SubI32 { result: LocalId(2),
+                                                                                      left: LocalId(0),
+                                                                                      right: LocalId(1),
+                                                                                      span: span(4, 5) },
+                                                             mir::Statement::MulI32 { result: LocalId(2),
+                                                                                      left: LocalId(0),
+                                                                                      right: LocalId(1),
+                                                                                      span: span(5, 6) },
+                                                             mir::Statement::EqI32 { result: LocalId(3),
+                                                                                     left: LocalId(0),
+                                                                                     right: LocalId(1),
+                                                                                     span: span(6, 7) },
+                                                             mir::Statement::LtI32 { result: LocalId(3),
+                                                                                     left: LocalId(0),
+                                                                                     right: LocalId(1),
+                                                                                     span: span(7, 8) },
+                                                             mir::Statement::LeI32 { result: LocalId(3),
+                                                                                     left: LocalId(0),
+                                                                                     right: LocalId(1),
+                                                                                     span: span(8, 9) },
+                                                             mir::Statement::GtI32 { result: LocalId(3),
+                                                                                     left: LocalId(0),
+                                                                                     right: LocalId(1),
+                                                                                     span: span(9, 10) },
+                                                             mir::Statement::GeI32 { result: LocalId(3),
+                                                                                     left: LocalId(0),
+                                                                                     right: LocalId(1),
+                                                                                     span: span(10, 11) }],
+                                            terminator: Some(mir::Terminator::Return(None)),
+                                            span: span(0, 12) }] };
+
+  let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                       .expect("lowering should succeed");
+
+  assert_eq!(lowered.blocks[0].instructions[2], Instruction::AddI32 { result:
+                                                                        crate::xlil::ValueId(2),
+                                                                      left:
+                                                                        crate::xlil::ValueId(0),
+                                                                      right:
+                                                                        crate::xlil::ValueId(1) });
+  assert!(matches!(lowered.blocks[0].instructions[3], Instruction::SubI32 { .. }));
+  assert!(matches!(lowered.blocks[0].instructions[4], Instruction::MulI32 { .. }));
+  assert!(matches!(lowered.blocks[0].instructions[5], Instruction::EqI32 { .. }));
+  assert!(matches!(lowered.blocks[0].instructions[6], Instruction::LtI32 { .. }));
+  assert!(matches!(lowered.blocks[0].instructions[7], Instruction::LeI32 { .. }));
+  assert!(matches!(lowered.blocks[0].instructions[8], Instruction::GtI32 { .. }));
+  assert!(matches!(lowered.blocks[0].instructions[9], Instruction::GeI32 { .. }));
+}
+
+#[test]
 fn lowers_signature_parameters()
 {
   let function = MirFunction { name: "WithParameter".to_string(),
