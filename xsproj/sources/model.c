@@ -54,9 +54,46 @@ void xs_project_free(XsProject *project)
 
 const XsProjectValue *xs_project_selected_entry(const XsProject *project)
 {
-  if (!project->entry.is_nil && project->entry.text != NULL)
+  if (project == nullptr)
+    return nullptr;
+  if (!project->entry.is_nil && project->entry.text != nullptr)
     return &project->entry;
   if (project->additional_file_count != 0)
     return &project->additional_files[0];
-  return NULL;
+  return nullptr;
+}
+
+size_t xs_project_external_module_count(const XsProject *project)
+{
+  if (project == nullptr)
+    return 0;
+  return project->external_module_count;
+}
+
+const XsProjectModule *xs_project_external_module_at(const XsProject *project, size_t index)
+{
+  if (project == nullptr || index >= project->external_module_count)
+    return nullptr;
+  return &project->external_modules[index];
+}
+
+const XsProjectValue *xs_project_external_module_name(const XsProjectModule *module)
+{
+  if (module == nullptr)
+    return nullptr;
+  return &module->name;
+}
+
+const XsProjectValue *xs_project_external_module_repo(const XsProjectModule *module)
+{
+  if (module == nullptr)
+    return nullptr;
+  return &module->repo;
+}
+
+const XsProjectValue *xs_project_external_module_version(const XsProjectModule *module)
+{
+  if (module == nullptr)
+    return nullptr;
+  return &module->version;
 }

@@ -144,10 +144,10 @@ char *copy_string(ProjectParser *parser, XsSpan span)
   size_t start = span.start + 1;
   size_t length = span.end - span.start - 2;
   char *text = malloc(length + 1);
-  if (text == NULL)
+  if (text == nullptr)
   {
     project_error(parser, span, "compiler ran out of memory while reading the project manifest");
-    return NULL;
+    return nullptr;
   }
   memcpy(text, parser->source->text + start, length);
   text[length] = '\0';

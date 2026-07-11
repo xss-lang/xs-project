@@ -16,4 +16,5 @@ Implementation files live under `xsproj/sources/`.
 `externalModules` records are manifest metadata only at this stage. Each
 `addModule` block carries `moduleName`, `moduleRepo`, and `moduleVersion`; the
 parser stores those fields but does not download or resolve external module
-repositories yet.
+repositories yet. Public accessors expose the external module list and each
+module field for third-party manifest readers.

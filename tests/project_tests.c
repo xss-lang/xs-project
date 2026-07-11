@@ -43,7 +43,8 @@ static void test_complete_project(void)
                      "output {\n[osName: \"Linux\"; osArch: \"x64\"]\n}\n"
                      "}\n"
                      "externalModules {\n"
-                     "addModule { moduleName: \"xsmods.JSON\"; moduleRepo: \"https://github.com/xss-lang/externalModules\"; moduleVersion: \"0.1\" }\n"
+                     "addModule { moduleName: \"xsmods.JSON\"; moduleRepo: "
+                     "\"https://github.com/xss-lang/externalModules\"; moduleVersion: \"0.1\" }\n"
                      "}\n";
   XsProject project;
   XsDiagnostics diagnostics;
@@ -52,10 +53,21 @@ static void test_complete_project(void)
   CHECK(project.additional_file_count == 2);
   CHECK(project.target_count == 1);
   CHECK(project.external_module_count == 1);
-  CHECK(project.external_modules[0].repo.text != NULL &&
-        strcmp(project.external_modules[0].repo.text, "https://github.com/xss-lang/externalModules") == 0);
+  CHECK(xs_project_external_module_count(&project) == 1);
+  const XsProjectModule *module = xs_project_external_module_at(&project, 0);
+  CHECK(module == &project.external_modules[0]);
+  CHECK(xs_project_external_module_at(&project, 1) == nullptr);
+  CHECK(xs_project_external_module_count(nullptr) == 0);
+  CHECK(xs_project_external_module_name(module) == &module->name);
+  CHECK(xs_project_external_module_repo(module) == &module->repo);
+  CHECK(xs_project_external_module_version(module) == &module->version);
+  CHECK(xs_project_external_module_repo(nullptr) == nullptr);
+  const XsProjectValue *repo = xs_project_external_module_repo(module);
+  CHECK(repo != nullptr && repo->text != nullptr &&
+        strcmp(repo->text, "https://github.com/xss-lang/externalModules") == 0);
   CHECK(project.xs_backend.text != NULL && strcmp(project.xs_backend.text, "LLVM") == 0);
   CHECK(xs_project_selected_entry(&project) == &project.entry);
+  CHECK(xs_project_selected_entry(nullptr) == nullptr);
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
 }

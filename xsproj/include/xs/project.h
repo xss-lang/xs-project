@@ -59,5 +59,10 @@ void xs_project_init(XsProject *project);
 void xs_project_free(XsProject *project);
 bool xs_project_parse(const XsSource *source, XsDiagnostics *diagnostics, XsProject *project);
 const XsProjectValue *xs_project_selected_entry(const XsProject *project);
+size_t xs_project_external_module_count(const XsProject *project);
+const XsProjectModule *xs_project_external_module_at(const XsProject *project, size_t index);
+const XsProjectValue *xs_project_external_module_name(const XsProjectModule *module);
+const XsProjectValue *xs_project_external_module_repo(const XsProjectModule *module);
+const XsProjectValue *xs_project_external_module_version(const XsProjectModule *module);
 
 #endif
