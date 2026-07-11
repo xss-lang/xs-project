@@ -5,7 +5,7 @@
 
 use crate::hir::async_check::Span;
 use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
-use crate::hir::type_check::{Expression, Function, Literal, Local, PrimitiveType, Statement, Type};
+use crate::hir::type_check::{BinaryOperator, Expression, Function, Literal, Local, PrimitiveType, Statement, Type};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
@@ -283,7 +283,62 @@ impl Parser<'_>
                                        value: Box::new(value),
                                        span: span() });
     }
+    if let Some(operator) = rest.strip_prefix("binary ")
+    {
+      self.index += 1;
+      let operator = self.binary_operator(operator).unwrap_or(BinaryOperator::Add);
+      self.consume_expression_field("left");
+      let left = self.expression()
+                     .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                      span: span() });
+      self.consume_expression_field("right");
+      let right = self.expression()
+                      .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                       span: span() });
+      return Some(Expression::Binary { operator,
+                                       left: Box::new(left),
+                                       right: Box::new(right),
+                                       span: span() });
+    }
     None
+  }
+
+  fn consume_expression_field(&mut self, field: &str)
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report(format!("missing binary {field} expression"));
+      return;
+    };
+    if line == field
+    {
+      self.index += 1;
+    }
+    else
+    {
+      self.report(format!("expected binary {field} expression"));
+    }
+  }
+
+  fn binary_operator(&mut self, name: &str) -> Option<BinaryOperator>
+  {
+    match name
+    {
+      "add" => Some(BinaryOperator::Add),
+      "sub" => Some(BinaryOperator::Sub),
+      "mul" => Some(BinaryOperator::Mul),
+      "eq" => Some(BinaryOperator::Equal),
+      "lt" => Some(BinaryOperator::Less),
+      "le" => Some(BinaryOperator::LessEqual),
+      "gt" => Some(BinaryOperator::Greater),
+      "ge" => Some(BinaryOperator::GreaterEqual),
+      _ =>
+      {
+        self.report(format!("unknown binary operator '{name}'"));
+        None
+      }
+    }
   }
 
   fn local_type(&mut self) -> Type

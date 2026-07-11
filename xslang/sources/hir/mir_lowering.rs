@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use super::async_check::Span;
-use super::type_check::{Expression, Function, Literal, PrimitiveType, Statement, Type};
+use super::type_check::{BinaryOperator, Expression, Function, Literal, PrimitiveType, Statement, Type};
 use crate::mir;
 use crate::xlil::{Type as XlilType, TypeKind};
 
@@ -127,6 +127,10 @@ impl HirToMirLowerer
     {
       Expression::Literal { literal,
                             span, } => self.lower_literal_into(target, literal, *span, lowered),
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           span, } => self.lower_binary_into(target, *operator, left, right, *span, lowered),
       _ => self.unsupported_expression(expression),
     }
   }
@@ -164,6 +168,19 @@ impl HirToMirLowerer
         self.lower_literal_into(local, literal, *span, lowered);
         mir::Terminator::Return(Some(local))
       }
+      Some(Expression::Binary { operator,
+                                left,
+                                right,
+                                span, }) =>
+      {
+        let Some(local) = self.declare_temp(lowered.return_type, *span, lowered)
+        else
+        {
+          return;
+        };
+        self.lower_binary_into(local, *operator, left, right, *span, lowered);
+        mir::Terminator::Return(Some(local))
+      }
       Some(expression) =>
       {
         self.unsupported_expression(expression);
@@ -172,6 +189,256 @@ impl HirToMirLowerer
     };
     lowered.blocks[0].terminator = Some(terminator);
     lowered.blocks[0].span = span;
+  }
+
+  fn lower_expression_to_local(&mut self,
+                               expression: &Expression,
+                               expected_type: XlilType,
+                               lowered: &mut mir::Function)
+                               -> Option<mir::LocalId>
+  {
+    match expression
+    {
+      Expression::Local { name,
+                          span, } =>
+      {
+        let Some(local) = self.locals.get(name).copied()
+        else
+        {
+          self.report(DiagnosticCode::UnknownLocal,
+                      format!("unknown HIR local '{name}'"),
+                      *span);
+          return None;
+        };
+        Some(local)
+      }
+      Expression::Literal { literal,
+                            span, } =>
+      {
+        let local = self.declare_temp(expected_type, *span, lowered)?;
+        self.lower_literal_into(local, literal, *span, lowered);
+        Some(local)
+      }
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           span, } =>
+      {
+        let local = self.declare_temp(expected_type, *span, lowered)?;
+        self.lower_binary_into(local, *operator, left, right, *span, lowered);
+        Some(local)
+      }
+      Expression::Assign { .. } =>
+      {
+        self.unsupported_expression(expression);
+        None
+      }
+    }
+  }
+
+  fn lower_binary_into(&mut self,
+                       target: mir::LocalId,
+                       operator: BinaryOperator,
+                       left: &Expression,
+                       right: &Expression,
+                       span: Span,
+                       lowered: &mut mir::Function)
+  {
+    let Some(target_type) = self.local_value_type(target, lowered)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "binary expression target local has no MIR value type",
+                  span);
+      return;
+    };
+    let Some(operand_type) = self.binary_operand_type(operator, target_type, left, right, lowered)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedExpression,
+                  "HIR binary expression cannot lower to MIR for these operand/result types",
+                  span);
+      return;
+    };
+    let Some(left) = self.lower_expression_to_local(left, operand_type, lowered)
+    else
+    {
+      return;
+    };
+    let Some(right) = self.lower_expression_to_local(right, operand_type, lowered)
+    else
+    {
+      return;
+    };
+    match (operator, target_type, operand_type)
+    {
+      (BinaryOperator::Add, XlilType::I32, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::AddI32 { result: target,
+                                                        left,
+                                                        right,
+                                                        span })
+      }
+      (BinaryOperator::Sub, XlilType::I32, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::SubI32 { result: target,
+                                                        left,
+                                                        right,
+                                                        span })
+      }
+      (BinaryOperator::Mul, XlilType::I32, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::MulI32 { result: target,
+                                                        left,
+                                                        right,
+                                                        span })
+      }
+      (BinaryOperator::Equal, XlilType::BOOL, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::EqI32 { result: target,
+                                                       left,
+                                                       right,
+                                                       span })
+      }
+      (BinaryOperator::Less, XlilType::BOOL, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::LtI32 { result: target,
+                                                       left,
+                                                       right,
+                                                       span })
+      }
+      (BinaryOperator::LessEqual, XlilType::BOOL, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::LeI32 { result: target,
+                                                       left,
+                                                       right,
+                                                       span })
+      }
+      (BinaryOperator::Greater, XlilType::BOOL, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::GtI32 { result: target,
+                                                       left,
+                                                       right,
+                                                       span })
+      }
+      (BinaryOperator::GreaterEqual, XlilType::BOOL, XlilType::I32) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::GeI32 { result: target,
+                                                       left,
+                                                       right,
+                                                       span })
+      }
+      (BinaryOperator::Add, XlilType::I64, XlilType::I64) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::AddI64 { result: target,
+                                                        left,
+                                                        right,
+                                                        span })
+      }
+      (BinaryOperator::Sub, XlilType::I64, XlilType::I64) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::SubI64 { result: target,
+                                                        left,
+                                                        right,
+                                                        span })
+      }
+      (BinaryOperator::Mul, XlilType::I64, XlilType::I64) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::MulI64 { result: target,
+                                                        left,
+                                                        right,
+                                                        span })
+      }
+      (BinaryOperator::Equal, XlilType::BOOL, XlilType::I64) =>
+      {
+        lowered.blocks[0].statements
+                         .push(mir::Statement::EqI64 { result: target,
+                                                       left,
+                                                       right,
+                                                       span })
+      }
+      _ => self.report(DiagnosticCode::UnsupportedExpression,
+                       "HIR binary expression has no MIR instruction for this type combination",
+                       span),
+    }
+  }
+
+  fn binary_operand_type(&self,
+                         operator: BinaryOperator,
+                         target_type: XlilType,
+                         left: &Expression,
+                         right: &Expression,
+                         lowered: &mir::Function)
+                         -> Option<XlilType>
+  {
+    match (operator, target_type)
+    {
+      (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I32) => Some(XlilType::I32),
+      (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I64) => Some(XlilType::I64),
+      (BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual,
+       XlilType::BOOL) => Some(XlilType::I32),
+      (BinaryOperator::Equal, XlilType::BOOL) => self.common_operand_type(left, right, lowered),
+      _ => None,
+    }
+  }
+
+  fn common_operand_type(&self, left: &Expression, right: &Expression, lowered: &mir::Function) -> Option<XlilType>
+  {
+    let left_type = self.expression_value_type(left, lowered);
+    let right_type = self.expression_value_type(right, lowered);
+    match (left_type, right_type)
+    {
+      (Some(left_type), Some(right_type)) if left_type == right_type => Some(left_type),
+      (Some(value_type), None) | (None, Some(value_type)) => Some(value_type),
+      _ => None,
+    }
+  }
+
+  fn expression_value_type(&self, expression: &Expression, lowered: &mir::Function) -> Option<XlilType>
+  {
+    match expression
+    {
+      Expression::Local { name, .. } =>
+      {
+        let local = self.locals.get(name)?;
+        self.local_value_type(*local, lowered)
+      }
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           .. } => match operator
+      {
+        BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul =>
+        {
+          self.common_operand_type(left, right, lowered)
+        }
+        BinaryOperator::Equal |
+        BinaryOperator::Less |
+        BinaryOperator::LessEqual |
+        BinaryOperator::Greater |
+        BinaryOperator::GreaterEqual => Some(XlilType::BOOL),
+      },
+      Expression::Literal { .. } | Expression::Assign { .. } => None,
+    }
+  }
+
+  fn local_value_type(&self, local: mir::LocalId, lowered: &mir::Function) -> Option<XlilType>
+  {
+    lowered.locals
+           .iter()
+           .find(|candidate| candidate.id == local)
+           .and_then(|candidate| candidate.value_type)
   }
 
   fn lower_literal_into(&mut self, target: mir::LocalId, literal: &Literal, span: Span, lowered: &mut mir::Function)
@@ -333,7 +600,10 @@ const fn expression_span(expression: &Expression) -> Span
 {
   match expression
   {
-    Expression::Literal { span, .. } | Expression::Local { span, .. } | Expression::Assign { span, .. } => *span,
+    Expression::Literal { span, .. } |
+    Expression::Local { span, .. } |
+    Expression::Assign { span, .. } |
+    Expression::Binary { span, .. } => *span,
   }
 }
 
@@ -487,6 +757,92 @@ mod tests
     assert_eq!(mir.blocks[0].terminator,
                Some(mir::Terminator::Return(Some(mir::LocalId(0)))));
     assert!(verify_function(&mir).is_empty());
+  }
+
+  #[test]
+  fn lowers_long_binary_add_to_mir_and_xlil_i32()
+  {
+    let function = Function { name: "AddLong".to_string(),
+                              return_type: Some(primitive(PrimitiveType::Long)),
+                              locals: vec![],
+                              body:
+                                vec![Statement::Let { local: local("left", primitive(PrimitiveType::Long), false),
+                                          initializer: Some(Expression::Literal { literal:
+                                                                                    Literal::Integer("4".to_string()),
+                                                                                  span: span(1, 2) }) },
+                        Statement::Let { local: local("right", primitive(PrimitiveType::Long), false),
+                                         initializer: Some(Expression::Literal { literal:
+                                                                                   Literal::Integer("2".to_string()),
+                                                                                 span: span(3, 4) }) },
+                        Statement::Return { value:
+                                              Some(Expression::Binary {
+                                                operator: BinaryOperator::Add,
+                                                left: Box::new(Expression::Local { name: "left".to_string(),
+                                                                                  span: span(5, 9) }),
+                                                right: Box::new(Expression::Local { name: "right".to_string(),
+                                                                                   span: span(12, 17) }),
+                                                span: span(5, 17),
+                                              }),
+                                            span: span(0, 17) }] };
+
+    let mir = HirToMirLowerer::new().lower_function(&function)
+                                    .expect("Long add should lower");
+
+    assert!(matches!(mir.blocks[0].statements[2], mir::Statement::AddI32 { result:
+                                                                             mir::LocalId(2),
+                                                                           left:
+                                                                             mir::LocalId(0),
+                                                                           right:
+                                                                             mir::LocalId(1),
+                                                                           .. }));
+    assert!(verify_function(&mir).is_empty());
+
+    let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                             .expect("Long add MIR should lower to XLIL");
+    assert!(matches!(xlil.blocks[0].instructions[2], crate::xlil::Instruction::AddI32 { .. }));
+  }
+
+  #[test]
+  fn lowers_long_comparison_to_mir_and_xlil_i32()
+  {
+    let function = Function { name: "CompareLong".to_string(),
+                              return_type: Some(primitive(PrimitiveType::Bool)),
+                              locals: vec![],
+                              body:
+                                vec![Statement::Let { local: local("left", primitive(PrimitiveType::Long), false),
+                                          initializer: Some(Expression::Literal { literal:
+                                                                                    Literal::Integer("4".to_string()),
+                                                                                  span: span(1, 2) }) },
+                        Statement::Let { local: local("right", primitive(PrimitiveType::Long), false),
+                                         initializer: Some(Expression::Literal { literal:
+                                                                                   Literal::Integer("7".to_string()),
+                                                                                 span: span(3, 4) }) },
+                        Statement::Return { value:
+                                              Some(Expression::Binary {
+                                                operator: BinaryOperator::Less,
+                                                left: Box::new(Expression::Local { name: "left".to_string(),
+                                                                                  span: span(5, 9) }),
+                                                right: Box::new(Expression::Local { name: "right".to_string(),
+                                                                                   span: span(12, 17) }),
+                                                span: span(5, 17),
+                                              }),
+                                            span: span(0, 17) }] };
+
+    let mir = HirToMirLowerer::new().lower_function(&function)
+                                    .expect("Long comparison should lower");
+
+    assert!(matches!(mir.blocks[0].statements[2], mir::Statement::LtI32 { result:
+                                                                            mir::LocalId(2),
+                                                                          left:
+                                                                            mir::LocalId(0),
+                                                                          right:
+                                                                            mir::LocalId(1),
+                                                                          .. }));
+    assert!(verify_function(&mir).is_empty());
+
+    let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                             .expect("Long comparison MIR should lower to XLIL");
+    assert!(matches!(xlil.blocks[0].instructions[2], crate::xlil::Instruction::LtI32 { .. }));
   }
 
   #[test]

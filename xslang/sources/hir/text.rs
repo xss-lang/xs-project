@@ -6,8 +6,8 @@
 use std::fmt::Write;
 
 use super::symbols::{Import, Module, SymbolKind, Visibility};
+use super::type_check::{BinaryOperator, Expression, Function, Literal, PrimitiveType, Statement, Type};
 use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
-use super::type_check::{Expression, Function, Literal, PrimitiveType, Statement, Type};
 
 pub mod parser;
 
@@ -236,6 +236,7 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::LiteralTypeMismatch => "literal_type_mismatch",
     TypeDiagnosticCode::ImmutableAssignment => "immutable_assignment",
     TypeDiagnosticCode::UnknownLocal => "unknown_local",
+    TypeDiagnosticCode::BinaryTypeMismatch => "binary_type_mismatch",
   }
 }
 
@@ -249,6 +250,7 @@ fn parse_type_diagnostic_code(name: &str,
     "literal_type_mismatch" => Some(TypeDiagnosticCode::LiteralTypeMismatch),
     "immutable_assignment" => Some(TypeDiagnosticCode::ImmutableAssignment),
     "unknown_local" => Some(TypeDiagnosticCode::UnknownLocal),
+    "binary_type_mismatch" => Some(TypeDiagnosticCode::BinaryTypeMismatch),
     _ =>
     {
       diagnostics.push(XhirParseDiagnostic { line,
@@ -372,6 +374,32 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       let _ = writeln!(output, "{pad}assign {target}");
       write_expression(output, value, indent + 1);
     }
+    Expression::Binary { operator,
+                         left,
+                         right,
+                         .. } =>
+    {
+      let _ = writeln!(output, "{pad}binary {}", binary_operator_name(*operator));
+      let _ = writeln!(output, "{pad}  left");
+      write_expression(output, left, indent + 2);
+      let _ = writeln!(output, "{pad}  right");
+      write_expression(output, right, indent + 2);
+    }
+  }
+}
+
+const fn binary_operator_name(operator: BinaryOperator) -> &'static str
+{
+  match operator
+  {
+    BinaryOperator::Add => "add",
+    BinaryOperator::Sub => "sub",
+    BinaryOperator::Mul => "mul",
+    BinaryOperator::Equal => "eq",
+    BinaryOperator::Less => "lt",
+    BinaryOperator::LessEqual => "le",
+    BinaryOperator::Greater => "gt",
+    BinaryOperator::GreaterEqual => "ge",
   }
 }
 
@@ -520,6 +548,45 @@ mod tests
     assert_eq!(parsed.return_type, Some(Type::Primitive(PrimitiveType::Int)));
     assert_eq!(parsed.locals.len(), 1);
     assert_eq!(parsed.body.len(), 1);
+  }
+
+  #[test]
+  fn roundtrips_binary_expression()
+  {
+    let function = Function { name: "Compare".to_string(),
+                              return_type: Some(Type::Primitive(PrimitiveType::Bool)),
+                              locals: vec![Local { name: "left".to_string(),
+                                                   ty: Type::Primitive(PrimitiveType::Long),
+                                                   mutable: false,
+                                                   span: span() },
+                                           Local { name: "right".to_string(),
+                                                   ty: Type::Primitive(PrimitiveType::Long),
+                                                   mutable: false,
+                                                   span: span() }],
+                              body: vec![Statement::Return { value:
+                                                                Some(Expression::Binary {
+                                                                  operator: BinaryOperator::LessEqual,
+                                                                  left: Box::new(Expression::Local {
+                                                                    name: "left".to_string(),
+                                                                    span: span(),
+                                                                  }),
+                                                                  right: Box::new(Expression::Local {
+                                                                    name: "right".to_string(),
+                                                                    span: span(),
+                                                                  }),
+                                                                  span: span(),
+                                                                }),
+                                                              span: span() }] };
+
+    let text = function_to_xhir(&function);
+    let parsed = parse_xhir_function(&text).expect("binary XHIR should parse");
+
+    assert!(text.contains("binary le"));
+    assert!(matches!(&parsed.body[0], Statement::Return { value:
+                                                            Some(Expression::Binary { operator:
+                                                                                        BinaryOperator::LessEqual,
+                                                                                      .. }),
+                                                          .. }));
   }
 
   #[test]

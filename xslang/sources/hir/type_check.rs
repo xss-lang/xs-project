@@ -52,6 +52,19 @@ pub enum Literal
   None,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BinaryOperator
+{
+  Add,
+  Sub,
+  Mul,
+  Equal,
+  Less,
+  LessEqual,
+  Greater,
+  GreaterEqual,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Expression
 {
@@ -67,6 +80,13 @@ pub enum Expression
   {
     target: String,
     value: Box<Expression>,
+    span: Span,
+  },
+  Binary
+  {
+    operator: BinaryOperator,
+    left: Box<Expression>,
+    right: Box<Expression>,
     span: Span,
   },
 }
@@ -102,6 +122,7 @@ pub enum DiagnosticCode
   LiteralTypeMismatch,
   ImmutableAssignment,
   UnknownLocal,
+  BinaryTypeMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -173,28 +194,58 @@ impl TypeChecker
 
   fn check_expression(&mut self, expression: &Expression)
   {
-    if let Expression::Assign { target,
-                                value,
-                                span, } = expression
+    match expression
     {
-      let Some(local) = self.find_local(target).cloned()
-      else
+      Expression::Assign { target,
+                           value,
+                           span, } =>
       {
-        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownLocal,
-                                           message: format!("unknown local '{target}'"),
-                                           span: *span });
-        self.check_expression(value);
-        return;
-      };
+        let Some(local) = self.find_local(target).cloned()
+        else
+        {
+          self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownLocal,
+                                             message: format!("unknown local '{target}'"),
+                                             span: *span });
+          self.check_expression(value);
+          return;
+        };
 
-      if !local.mutable
-      {
-        self.diagnostics
-            .push(Diagnostic { code: DiagnosticCode::ImmutableAssignment,
-                               message: format!("cannot assign to immutable local '{target}'"),
-                               span: *span });
+        if !local.mutable
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::ImmutableAssignment,
+                                 message: format!("cannot assign to immutable local '{target}'"),
+                                 span: *span });
+        }
+        self.check_expression_against_type(value, &local.ty);
       }
-      self.check_expression_against_type(value, &local.ty);
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           span, } =>
+      {
+        self.check_expression(left);
+        self.check_expression(right);
+        if self.binary_expression_type(*operator, left, right).is_none()
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::BinaryTypeMismatch,
+                                 message: "binary expression operands are not valid for this operator".to_string(),
+                                 span: *span });
+        }
+      }
+      Expression::Local { name,
+                          span, } =>
+      {
+        if self.find_local(name).is_none()
+        {
+          self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownLocal,
+                                             message: format!("unknown local '{name}'"),
+                                             span: *span });
+        }
+      }
+      Expression::Literal { .. } =>
+      {}
     }
   }
 
@@ -211,9 +262,91 @@ impl TypeChecker
                                message: "literal is not assignable to the target type".to_string(),
                                span: *span });
       }
+      Expression::Binary { span, .. } =>
+      {
+        self.check_expression(expression);
+        let Some(result_type) = self.expression_type(expression)
+        else
+        {
+          return;
+        };
+        if result_type != *ty
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "expression is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
+      Expression::Local { name,
+                          span, } =>
+      {
+        let Some(local) = self.find_local(name)
+        else
+        {
+          self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownLocal,
+                                             message: format!("unknown local '{name}'"),
+                                             span: *span });
+          return;
+        };
+        if local.ty != *ty
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "local expression is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
       Expression::Assign { .. } => self.check_expression(expression),
-      Expression::Literal { .. } | Expression::Local { .. } =>
+      Expression::Literal { .. } =>
       {}
+    }
+  }
+
+  fn expression_type(&self, expression: &Expression) -> Option<Type>
+  {
+    match expression
+    {
+      Expression::Literal { literal, .. } => literal_default_type(literal),
+      Expression::Local { name, .. } => self.find_local(name).map(|local| local.ty.clone()),
+      Expression::Assign { value, .. } => self.expression_type(value),
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           .. } => self.binary_expression_type(*operator, left, right),
+    }
+  }
+
+  fn binary_expression_type(&self, operator: BinaryOperator, left: &Expression, right: &Expression) -> Option<Type>
+  {
+    let left_type = self.expression_type(left)?;
+    let right_type = self.expression_type(right)?;
+    if left_type != right_type
+    {
+      return None;
+    }
+    let Type::Primitive(primitive) = left_type
+    else
+    {
+      return None;
+    };
+    match operator
+    {
+      BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul
+        if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+      {
+        Some(Type::Primitive(primitive))
+      }
+      BinaryOperator::Equal if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+      {
+        Some(Type::Primitive(PrimitiveType::Bool))
+      }
+      BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual
+        if primitive == PrimitiveType::Long =>
+      {
+        Some(Type::Primitive(PrimitiveType::Bool))
+      }
+      _ => None,
     }
   }
 
@@ -221,6 +354,20 @@ impl TypeChecker
   {
     self.locals.iter().rev().find(|local| local.name == name)
   }
+}
+
+fn literal_default_type(literal: &Literal) -> Option<Type>
+{
+  let primitive = match literal
+  {
+    Literal::Bool(_) => PrimitiveType::Bool,
+    Literal::Integer(_) => PrimitiveType::Int,
+    Literal::Float(_) => PrimitiveType::Float,
+    Literal::Char(_) => PrimitiveType::Char,
+    Literal::String(_) => PrimitiveType::Str,
+    Literal::None => return None,
+  };
+  Some(Type::Primitive(primitive))
 }
 
 #[must_use]
@@ -371,5 +518,57 @@ mod tests
 
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].code, DiagnosticCode::LiteralTypeMismatch);
+  }
+
+  #[test]
+  fn validates_long_binary_expression()
+  {
+    let function = Function { name: "compare".to_string(),
+                              return_type: Some(primitive(PrimitiveType::Bool)),
+                              locals: vec![local("left", primitive(PrimitiveType::Long), false),
+                                           local("right", primitive(PrimitiveType::Long), false)],
+                              body: vec![Statement::Return { value:
+                                                                Some(Expression::Binary {
+                                                                  operator: BinaryOperator::Less,
+                                                                  left: Box::new(Expression::Local {
+                                                                    name: "left".to_string(),
+                                                                    span: span(10, 14),
+                                                                  }),
+                                                                  right: Box::new(Expression::Local {
+                                                                    name: "right".to_string(),
+                                                                    span: span(17, 22),
+                                                                  }),
+                                                                  span: span(10, 22),
+                                                                }),
+                                                              span: span(3, 22) }] };
+
+    assert!(TypeChecker::new().check_function(&function).is_empty());
+  }
+
+  #[test]
+  fn rejects_unsupported_binary_expression()
+  {
+    let function = Function { name: "compare".to_string(),
+                              return_type: Some(primitive(PrimitiveType::Bool)),
+                              locals: vec![local("left", primitive(PrimitiveType::Int), false),
+                                           local("right", primitive(PrimitiveType::Int), false)],
+                              body: vec![Statement::Return { value:
+                                                                Some(Expression::Binary {
+                                                                  operator: BinaryOperator::Less,
+                                                                  left: Box::new(Expression::Local {
+                                                                    name: "left".to_string(),
+                                                                    span: span(10, 14),
+                                                                  }),
+                                                                  right: Box::new(Expression::Local {
+                                                                    name: "right".to_string(),
+                                                                    span: span(17, 22),
+                                                                  }),
+                                                                  span: span(10, 22),
+                                                                }),
+                                                              span: span(3, 22) }] };
+
+    let diagnostics = TypeChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::BinaryTypeMismatch);
   }
 }

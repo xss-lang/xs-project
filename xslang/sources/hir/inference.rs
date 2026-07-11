@@ -4,7 +4,7 @@
  */
 
 use super::async_check::Span;
-use super::type_check::{Expression, Literal, Local, PrimitiveType, Type};
+use super::type_check::{BinaryOperator, Expression, Literal, Local, PrimitiveType, Type};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BindingOperator
@@ -98,6 +98,47 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                                             .find(|local| local.name == *name)
                                             .map(|local| local.ty.clone()),
     Expression::Assign { value, .. } => infer_expression_type(value, locals),
+    Expression::Binary { operator,
+                         left,
+                         right,
+                         .. } => infer_binary_expression_type(*operator, left, right, locals),
+  }
+}
+
+fn infer_binary_expression_type(operator: BinaryOperator,
+                                left: &Expression,
+                                right: &Expression,
+                                locals: &[Local])
+                                -> Option<Type>
+{
+  let left_type = infer_expression_type(left, locals)?;
+  let right_type = infer_expression_type(right, locals)?;
+  if left_type != right_type
+  {
+    return None;
+  }
+  let Type::Primitive(primitive) = left_type
+  else
+  {
+    return None;
+  };
+  match operator
+  {
+    BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul
+      if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+    {
+      Some(Type::Primitive(primitive))
+    }
+    BinaryOperator::Equal if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+    {
+      Some(Type::Primitive(PrimitiveType::Bool))
+    }
+    BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual
+      if primitive == PrimitiveType::Long =>
+    {
+      Some(Type::Primitive(PrimitiveType::Bool))
+    }
+    _ => None,
   }
 }
 
