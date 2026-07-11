@@ -333,6 +333,7 @@ impl Parser<'_>
       "return" => Some(self.return_terminator()),
       "goto" => Some(Terminator::Goto(self.goto_target())),
       "branch_if" => Some(self.branch_if_terminator()),
+      "panic" => Some(Terminator::Panic),
       "unreachable" => Some(Terminator::Unreachable),
       _ =>
       {

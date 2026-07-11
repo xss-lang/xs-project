@@ -35,6 +35,24 @@ fn lowers_void_return_function_skeleton()
 }
 
 #[test]
+fn lowers_panic_terminator()
+{
+  let function = MirFunction { name: "Panic".to_string(),
+                               parameters: vec![],
+                               return_type: Type::VOID,
+                               locals: vec![],
+                               blocks: vec![BasicBlock { id: MirBlockId(0),
+                                                         statements: vec![],
+                                                         terminator: Some(mir::Terminator::Panic),
+                                                         span: span(0, 1) }] };
+
+  let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                       .expect("lowering should succeed");
+
+  assert_eq!(lowered.blocks[0].terminator, Some(Terminator::Panic));
+}
+
+#[test]
 fn rejects_return_value_without_type_and_value_mapping()
 {
   let function = MirFunction { name: "Value".to_string(),

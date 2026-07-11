@@ -181,6 +181,7 @@ pub enum Terminator
     then_block: BlockId,
     else_block: BlockId,
   },
+  Panic,
   Unreachable,
 }
 

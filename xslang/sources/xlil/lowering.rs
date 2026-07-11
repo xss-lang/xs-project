@@ -581,6 +581,15 @@ impl MirToXlilLowerer
                       block.span);
         }
       }
+      Some(mir::Terminator::Panic) =>
+      {
+        if !lowered.set_panic(xlil_block)
+        {
+          self.report(DiagnosticCode::MissingMirTerminator,
+                      "XLIL block could not receive a panic terminator",
+                      block.span);
+        }
+      }
       Some(mir::Terminator::Unreachable) | None => self.report(DiagnosticCode::MissingMirTerminator,
                                                                "MIR terminator cannot yet be lowered to XLIL",
                                                                block.span),

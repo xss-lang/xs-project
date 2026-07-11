@@ -177,6 +177,16 @@ fn roundtrips_branch_if_function()
 }
 
 #[test]
+fn roundtrips_panic_function()
+{
+  let text = ".xlil version 0\n.xlil module App\n.func xs$App$Panic : () -> void\nbb0.entry:\n  panic\n.end\n";
+
+  let module = parse_module(text).expect("parse should succeed");
+
+  assert_eq!(module_to_string(&module), text);
+}
+
+#[test]
 fn rejects_legacy_plain_value_ids()
 {
   let text = ".xlil version 0\n.xlil module App\n.func xs$App$Legacy : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  \

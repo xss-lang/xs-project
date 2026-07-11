@@ -61,10 +61,10 @@ static void test_top_level_declaration_view_expands_macro_calls(void)
 {
   const char *text = "module App;\n"
                      "macroRules! make {\n"
-                     "  (): { incomplete fn First(); };\n"
-                     "  (): { incomplete fn Second(); };\n"
+                     "  (first): { incomplete fn First(); };\n"
+                     "  (second): { incomplete fn Second(); };\n"
                      "}\n"
-                     "make!();\n"
+                     "make!(first);\n"
                      "data Tail { value: Int }\n";
   XsSource source = {.path = "ExpandedView.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -75,18 +75,14 @@ static void test_top_level_declaration_view_expands_macro_calls(void)
   CHECK(xs_syntax_parse(&source, 91, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
-  CHECK(declarations.count == 2);
+  CHECK(declarations.count == 1);
   CHECK(xs_macro_expand_top_level_declarations(&tree, &declarations, &diagnostics, &expanded));
-  CHECK(expanded.count == 5);
+  CHECK(expanded.count == 4);
   CHECK(expanded.count < 3 || expanded.items[2].from_macro_expansion);
-  CHECK(expanded.count < 4 || expanded.items[3].from_macro_expansion);
   CHECK(expanded.count < 3 || expanded.items[2].declaration->kind == XS_SYNTAX_DECL_FUNCTION);
-  CHECK(expanded.count < 4 || expanded.items[3].declaration->kind == XS_SYNTAX_DECL_FUNCTION);
-  CHECK(expanded.count < 5 || expanded.items[4].declaration->kind == XS_SYNTAX_DECL_DATA);
+  CHECK(expanded.count < 4 || expanded.items[3].declaration->kind == XS_SYNTAX_DECL_DATA);
   const XsSyntaxNode *first = expanded.count < 3 ? nullptr : first_identifier(expanded.items[2].declaration);
-  const XsSyntaxNode *second = expanded.count < 4 ? nullptr : first_identifier(expanded.items[3].declaration);
   CHECK(first != nullptr && text_is(first->text, "First"));
-  CHECK(second != nullptr && text_is(second->text, "Second"));
   xs_macro_expanded_declaration_set_free(&expanded);
   xs_macro_declaration_expansion_set_free(&declarations);
   xs_syntax_tree_free(&tree);

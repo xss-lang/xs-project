@@ -82,6 +82,7 @@ fn write_block(block: &Block, output: &mut impl Write) -> fmt::Result
                                 else_block, }) => writeln!(output,
                                                            "  br_if %r{}, bb{}, bb{}",
                                                            condition.0, then_block.0, else_block.0),
+    Some(Terminator::Panic) => writeln!(output, "  panic"),
     None => writeln!(output, "  .missing_terminator"),
   }
 }
@@ -261,6 +262,19 @@ mod tests
     assert_eq!(module_to_string(&module),
                ".xlil version 0\n.xlil module App\n.func xs$App$BranchIf : () -> void\nbb0.entry:\n  %r0:bool = \
                 const.bool true\n  br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n");
+  }
+
+  #[test]
+  fn writes_panic_terminator()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("xs$App$Panic", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+    assert!(function.set_panic(entry));
+    module.add_function(function);
+
+    assert_eq!(module_to_string(&module),
+               ".xlil version 0\n.xlil module App\n.func xs$App$Panic : () -> void\nbb0.entry:\n  panic\n.end\n");
   }
 
   #[test]

@@ -171,6 +171,7 @@ pub enum Terminator
     then_block: BlockId,
     else_block: BlockId,
   },
+  Panic,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -504,6 +505,21 @@ impl Function
     true
   }
 
+  pub fn set_panic(&mut self, block: BlockId) -> bool
+  {
+    let Some(block) = self.block_mut(block)
+    else
+    {
+      return false;
+    };
+    if block.terminator.is_some()
+    {
+      return false;
+    }
+    block.terminator = Some(Terminator::Panic);
+    true
+  }
+
   fn block(&self, block: BlockId) -> Option<&Block>
   {
     self.blocks
@@ -800,6 +816,16 @@ mod tests
                Some(Terminator::BranchIf { condition,
                                            then_block,
                                            else_block }));
+  }
+
+  #[test]
+  fn sets_panic_terminator()
+  {
+    let mut function = Function::definition("Panic", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+
+    assert!(function.set_panic(entry));
+    assert_eq!(function.blocks[0].terminator, Some(Terminator::Panic));
   }
 
   #[test]

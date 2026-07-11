@@ -262,6 +262,10 @@ fn write_terminator(output: &mut String, terminator: &Terminator)
       let _ = writeln!(output, "      then block {}", then_block.0);
       let _ = writeln!(output, "      else block {}", else_block.0);
     }
+    Terminator::Panic =>
+    {
+      let _ = writeln!(output, "    terminator panic");
+    }
     Terminator::Unreachable =>
     {
       let _ = writeln!(output, "    terminator unreachable");

@@ -241,6 +241,8 @@ impl<'a> Verifier<'a>
                       span);
         }
       }
+      Terminator::Panic =>
+      {}
       Terminator::Unreachable =>
       {}
     }

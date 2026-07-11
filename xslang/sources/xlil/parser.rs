@@ -330,6 +330,10 @@ impl Parser<'_>
       {
         block.terminator = self.branch_if_terminator(branch_if, line_number);
       }
+      else if line == "  panic"
+      {
+        block.terminator = Some(Terminator::Panic);
+      }
       else if line == "  .missing_terminator"
       {
         block.terminator = None;

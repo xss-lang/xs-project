@@ -397,7 +397,7 @@ mod tests
   }
 
   #[test]
-  fn roundtrips_goto_return_value_and_unreachable()
+  fn roundtrips_goto_return_value_panic_and_unreachable()
   {
     let function =
       Function { name: "Flow".to_string(),
@@ -427,6 +427,10 @@ mod tests
                                            span: span() },
                               BasicBlock { id: BlockId(2),
                                            statements: vec![],
+                                           terminator: Some(Terminator::Panic),
+                                           span: span() },
+                              BasicBlock { id: BlockId(3),
+                                           statements: vec![],
                                            terminator: Some(Terminator::Unreachable),
                                            span: span() }] };
 
@@ -440,7 +444,8 @@ mod tests
     assert!(parsed.locals[0].mutable);
     assert_eq!(parsed.blocks[0].terminator, Some(Terminator::Goto(BlockId(1))));
     assert_eq!(parsed.blocks[1].terminator, Some(Terminator::Return(Some(LocalId(0)))));
-    assert_eq!(parsed.blocks[2].terminator, Some(Terminator::Unreachable));
+    assert_eq!(parsed.blocks[2].terminator, Some(Terminator::Panic));
+    assert_eq!(parsed.blocks[3].terminator, Some(Terminator::Unreachable));
     assert!(matches!(parsed.blocks[0].statements[0], Statement::ConstI64 { local:
                                                                              LocalId(0),
                                                                            value: 7,

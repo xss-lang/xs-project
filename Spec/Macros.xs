@@ -166,8 +166,9 @@ macroRules! output {
 
 // If multiple rules match:
 //
-// - Every matching rule is expanded.
-// - Matching rules are expanded in declaration order.
+// - A compile-time error is produced.
+//
+// A macro call must match exactly one rule.
 
 
 // Example:
@@ -182,17 +183,12 @@ macroRules! describe {
     };
 }
 
-fn MultipleMatchingRules() {
+fn InvalidMultipleMatchingRules() {
     describe!(value);
 }
 
 
-// If value matches both expr and ident, expansion order is:
-
-fn ExpandedMultipleMatchingRules() {
-    println!("expression");
-    println!("identifier");
-}
+// INVALID: value can match both expr and ident.
 
 
 // ============================================================
@@ -756,7 +752,7 @@ macroRules! invalidSecond {
 // In particular, X# keeps these differences:
 //
 // - Calls may appear before textual declaration in the same scope.
-// - Every matching rule expands in declaration order.
+// - A call must match exactly one rule.
 // - Macros are not hygienic.
 // - Only comma is a repetition separator.
 // - Optional `?` repetition is not supported.
@@ -868,7 +864,8 @@ fn InvalidUnmatchedMacroCall() {
 // Rule matching:
 //
 //     no match         -> compile-time error
-//     multiple matches -> expand all in declaration order
+//     one match        -> expand that rule
+//     multiple matches -> compile-time error
 //
 // Recursion:
 //

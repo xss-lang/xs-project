@@ -299,6 +299,8 @@ impl Verifier
                       "XLIL br_if else target must reference an existing block");
         }
       }
+      Terminator::Panic =>
+      {}
     }
   }
 
@@ -629,6 +631,18 @@ mod tests
     assert!(function.set_branch_if(entry, condition, then_block, else_block));
     assert!(function.set_return(then_block, None));
     assert!(function.set_return(else_block, None));
+    module.add_function(function);
+
+    assert!(verify_module(&module).is_empty());
+  }
+
+  #[test]
+  fn accepts_panic_terminator()
+  {
+    let mut module = Module::new("App");
+    let mut function = Function::definition("panic", Type::VOID, vec![]);
+    let entry = function.append_block("entry");
+    assert!(function.set_panic(entry));
     module.add_function(function);
 
     assert!(verify_module(&module).is_empty());

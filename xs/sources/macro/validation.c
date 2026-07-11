@@ -228,6 +228,7 @@ typedef enum
   MATCH_NO,
   MATCH_YES,
   MATCH_DEFERRED,
+  MATCH_AMBIGUOUS,
 } MatchStatus;
 
 static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntaxNode *call)
@@ -271,15 +272,20 @@ static MatchStatus match_rule_arguments(const XsSyntaxNode *rule, const XsSyntax
 static MatchStatus macro_matches_call(const XsSyntaxNode *macro, const XsSyntaxNode *call)
 {
   MatchStatus result = MATCH_NO;
+  size_t matches = 0;
   for (size_t i = 0; i < macro->child_count; ++i)
   {
     MatchStatus status = match_rule_arguments(macro->children[i], call);
     if (status == MATCH_YES)
-      return MATCH_YES;
+    {
+      ++matches;
+      result = MATCH_YES;
+      continue;
+    }
     if (status == MATCH_DEFERRED)
       result = MATCH_DEFERRED;
   }
-  return result;
+  return matches > 1 ? MATCH_AMBIGUOUS : result;
 }
 
 static void validate_scope_calls(const XsSyntaxTree *tree, const XsSyntaxNode *scope, const NodeList *inherited,
@@ -305,8 +311,13 @@ static void validate_node_calls(const XsSyntaxTree *tree, const XsSyntaxNode *no
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not resolve in this scope");
       return;
     }
-    if (macro != nullptr && macro_matches_call(macro, node) == MATCH_NO)
+    if (macro == nullptr)
+      return;
+    MatchStatus status = macro_matches_call(macro, node);
+    if (status == MATCH_NO)
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not match any rule");
+    else if (status == MATCH_AMBIGUOUS)
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call matches more than one rule");
     return;
   }
   for (size_t i = 0; i < node->child_count; ++i)

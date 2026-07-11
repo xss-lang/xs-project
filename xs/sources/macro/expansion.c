@@ -251,7 +251,7 @@ static bool prepare_call(const XsSyntaxNode *call, const MacroList *visible, XsD
     return true;
   ++report->calls_resolved;
   bool has_deferred_rule = false;
-  bool matched = false;
+  size_t matches = 0;
   for (size_t i = 0; i < macro->child_count; ++i)
   {
     const XsSyntaxNode *rule = macro->children[i];
@@ -265,16 +265,16 @@ static bool prepare_call(const XsSyntaxNode *call, const MacroList *visible, XsD
     CaptureSet captures = {0};
     if (rule_matches(rule, call, &captures) && plan_expansion(rule, &captures, report))
     {
-      matched = true;
+      ++matches;
       continue;
     }
   }
-  if (matched)
+  if (matches == 1)
   {
     ++report->calls_expandable;
     return true;
   }
-  if (has_deferred_rule)
+  if (has_deferred_rule || matches > 1)
     ++report->calls_deferred;
   return true;
 }
@@ -424,6 +424,7 @@ static bool expand_call(const XsSyntaxNode *call, const MacroList *visible, XsMa
   if (macro == nullptr)
     return true;
   bool success = true;
+  bool matched = false;
   for (size_t i = 0; i < macro->child_count; ++i)
   {
     const XsSyntaxNode *rule = macro->children[i];
@@ -432,6 +433,9 @@ static bool expand_call(const XsSyntaxNode *call, const MacroList *visible, XsMa
     CaptureSet captures = {0};
     if (!rule_matches(rule, call, &captures))
       continue;
+    if (matched)
+      return success;
+    matched = true;
     XsSpan span = {.start = call->span.start_offset, .end = call->span.end_offset};
     XsMacroExpansion *expansion = nullptr;
     success = expansion_set_add(set, span, &expansion) && emit_rule_tokens(rule, &captures, expansion, set) && success;
