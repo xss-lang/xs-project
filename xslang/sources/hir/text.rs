@@ -351,6 +351,10 @@ fn write_statement(output: &mut String, statement: &Statement, indent: usize)
         write_expression(output, value, indent + 1);
       }
     }
+    Statement::Panic { .. } =>
+    {
+      let _ = writeln!(output, "{pad}panic");
+    }
   }
 }
 
@@ -587,6 +591,21 @@ mod tests
                                                                                         BinaryOperator::LessEqual,
                                                                                       .. }),
                                                           .. }));
+  }
+
+  #[test]
+  fn roundtrips_panic_statement()
+  {
+    let function = Function { name: "Stop".to_string(),
+                              return_type: None,
+                              locals: vec![],
+                              body: vec![Statement::Panic { span: span() }] };
+
+    let text = function_to_xhir(&function);
+    let parsed = parse_xhir_function(&text).expect("panic XHIR should parse");
+
+    assert!(text.contains("panic"));
+    assert!(matches!(parsed.body[0], Statement::Panic { .. }));
   }
 
   #[test]

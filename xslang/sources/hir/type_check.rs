@@ -105,6 +105,10 @@ pub enum Statement
     value: Option<Expression>,
     span: Span,
   },
+  Panic
+  {
+    span: Span,
+  },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -189,6 +193,8 @@ impl TypeChecker
                                  span: *span });
         }
       }
+      Statement::Panic { .. } =>
+      {}
     }
   }
 

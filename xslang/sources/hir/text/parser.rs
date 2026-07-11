@@ -212,6 +212,7 @@ impl Parser<'_>
         line if line.starts_with("let ") => function.body.push(self.let_statement()),
         "expression" => function.body.push(self.expression_statement()),
         "return" => function.body.push(self.return_statement()),
+        "panic" => function.body.push(self.panic_statement()),
         _ => break,
       }
     }
@@ -255,6 +256,12 @@ impl Parser<'_>
     let value = self.expression();
     Statement::Return { value,
                         span: span() }
+  }
+
+  fn panic_statement(&mut self) -> Statement
+  {
+    self.index += 1;
+    Statement::Panic { span: span() }
   }
 
   fn expression(&mut self) -> Option<Expression>

@@ -118,7 +118,18 @@ impl HirToMirLowerer
       Statement::Expr(expression) => self.unsupported_expression(expression),
       Statement::Return { value,
                           span, } => self.lower_return(value.as_ref(), *span, lowered),
+      Statement::Panic { span } => self.lower_panic(*span, lowered),
     }
+  }
+
+  fn lower_panic(&mut self, span: Span, lowered: &mut mir::Function)
+  {
+    if lowered.blocks[0].terminator.is_some()
+    {
+      return;
+    }
+    lowered.blocks[0].terminator = Some(mir::Terminator::Panic);
+    lowered.blocks[0].span = span;
   }
 
   fn lower_assignment(&mut self, target: mir::LocalId, expression: &Expression, lowered: &mut mir::Function)
@@ -654,6 +665,24 @@ mod tests
 
     assert_eq!(mir.return_type, XlilType::VOID);
     assert_eq!(mir.blocks[0].terminator, Some(mir::Terminator::Return(None)));
+    assert!(verify_function(&mir).is_empty());
+  }
+
+  #[test]
+  fn lowers_panic_statement_to_mir_and_xlil()
+  {
+    let function = Function { name: "Stop".to_string(),
+                              return_type: None,
+                              locals: vec![],
+                              body: vec![Statement::Panic { span: span(4, 12) }] };
+
+    let mir = HirToMirLowerer::new().lower_function(&function)
+                                    .expect("panic function should lower to MIR");
+    let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                             .expect("panic MIR should lower to XLIL");
+
+    assert_eq!(mir.blocks[0].terminator, Some(mir::Terminator::Panic));
+    assert_eq!(xlil.blocks[0].terminator, Some(crate::xlil::Terminator::Panic));
     assert!(verify_function(&mir).is_empty());
   }
 
