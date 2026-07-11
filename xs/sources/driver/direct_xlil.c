@@ -146,13 +146,11 @@ static bool lower_module_function_bodies(XsLlvmCodegenUnit *unit, const XsLilMod
   return true;
 }
 
-bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_t length)
+bool xs_driver_build_lil_module_native(const char *input_path, const XsLilModule *module)
 {
-  XsLilError lil_error = {0};
-  XsLilModule *module = nullptr;
-  if (xs_lil_module_parse_text(input_path, text, length, &module, &lil_error) != XS_LIL_OK)
+  if (module == nullptr)
   {
-    fprintf(stderr, "xs: XLIL parse failed: %s\n", lil_error.message);
+    fprintf(stderr, "xs: XLIL module is required for native build\n");
     return false;
   }
   char *ir_path = direct_artifact_path(input_path, ".ll");
@@ -163,7 +161,6 @@ bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_
     free(ir_path);
     free(object_path);
     free(executable_path);
-    xs_lil_module_destroy(module);
     fprintf(stderr, "xs: out of memory while preparing direct XLIL artifact paths\n");
     return false;
   }
@@ -241,6 +238,19 @@ bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_
   free(ir_path);
   free(object_path);
   free(executable_path);
+  return success;
+}
+
+bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_t length)
+{
+  XsLilError lil_error = {0};
+  XsLilModule *module = nullptr;
+  if (xs_lil_module_parse_text(input_path, text, length, &module, &lil_error) != XS_LIL_OK)
+  {
+    fprintf(stderr, "xs: XLIL parse failed: %s\n", lil_error.message);
+    return false;
+  }
+  bool success = xs_driver_build_lil_module_native(input_path, module);
   xs_lil_module_destroy(module);
   return success;
 }
