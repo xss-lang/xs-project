@@ -56,6 +56,29 @@ static XsMirStatus check_i64_operand(const XsMirFunction *function, XsMirValueId
   return XS_MIR_OK;
 }
 
+static XsMirStatus check_i32_operand(const XsMirFunction *function, XsMirValueId value, const char *message,
+                                     XsMirError *error)
+{
+  XsMirStatus status = check_value_exists(function, value, message, error);
+  if (status != XS_MIR_OK)
+    return status;
+  if (!type_equal(function->values[value].type, (XsMirType){.kind = XS_LIL_TYPE_I32}))
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR i32 instruction operand is not i32");
+  return XS_MIR_OK;
+}
+
+static XsMirStatus check_i32_binary(const XsMirFunction *function, const XsMirInstruction *instruction,
+                                    XsMirError *error)
+{
+  XsMirStatus status = check_value_exists(function, instruction->result, "MIR i32 result is unknown", error);
+  if (status != XS_MIR_OK)
+    return status;
+  status = check_i32_operand(function, instruction->operand_left, "MIR i32 left operand is unknown", error);
+  if (status != XS_MIR_OK)
+    return status;
+  return check_i32_operand(function, instruction->operand_right, "MIR i32 right operand is unknown", error);
+}
+
 static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirInstruction *instruction,
                                      XsMirError *error)
 {
@@ -75,6 +98,10 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
       return status;
     return check_i64_operand(function, instruction->operand_right, "MIR add.i64 right operand is unknown", error);
   }
+  case XS_MIR_INSTRUCTION_ADD_I32:
+  case XS_MIR_INSTRUCTION_SUB_I32:
+  case XS_MIR_INSTRUCTION_MUL_I32:
+    return check_i32_binary(function, instruction, error);
   case XS_MIR_INSTRUCTION_LOAD:
   {
     const XsMirPlace *place = NULL;

@@ -110,7 +110,7 @@ static bool parse_i32_literal(const XsSyntaxNode *literal, int32_t *value)
   return true;
 }
 
-static bool validate_shape(const XsSyntaxNode *function, XsDiagnostics *diagnostics, int32_t *exit_code)
+static bool validate_shape(const XsSyntaxNode *function, XsDiagnostics *diagnostics, const XsSyntaxNode **expression)
 {
   if (child_count_kind(function, XS_SYNTAX_PARAMETER) != 0)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
@@ -128,22 +128,55 @@ static bool validate_shape(const XsSyntaxNode *function, XsDiagnostics *diagnost
   const XsSyntaxNode *body = first_child_kind(function, XS_SYNTAX_STMT_BLOCK);
   if (body == nullptr || body->child_count != 1 || body->children[0]->kind != XS_SYNTAX_STMT_RETURN)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
-                              "native source main body must be exactly 'return <integer-literal>;'") &&
+                              "native source main body must be exactly one return statement") &&
            false;
   const XsSyntaxNode *statement = body->children[0];
-  if (statement->child_count != 1 || statement->children[0]->kind != XS_SYNTAX_EXPR_LITERAL ||
-      statement->children[0]->token_kind != XS_TOKEN_INTEGER)
+  if (statement->child_count != 1)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                              "native source main return value must be an integer literal") &&
+                              "native source main return statement must return one expression") &&
            false;
-  if (!parse_i32_literal(statement->children[0], exit_code))
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement->children[0]),
-                              "native source main integer literal must fit in i32") &&
-           false;
+  *expression = statement->children[0];
   return true;
 }
 
-static bool build_native_module(const char *input_path, int32_t exit_code)
+static bool lower_i32_expression(XsMirBlock *entry, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
+                                 XsMirValueId *result, XsMirError *error)
+{
+  if (expression->kind == XS_SYNTAX_EXPR_LITERAL && expression->token_kind == XS_TOKEN_INTEGER)
+  {
+    int32_t value = 0;
+    if (!parse_i32_literal(expression, &value))
+      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+                                "native source main integer literal must fit in i32") &&
+             false;
+    return xs_mir_block_add_const_i32(entry, value, result, error) == XS_MIR_OK;
+  }
+  if (expression->kind == XS_SYNTAX_EXPR_BINARY && expression->child_count == 3)
+  {
+    XsMirValueId left = 0;
+    XsMirValueId right = 0;
+    if (!lower_i32_expression(entry, expression->children[0], diagnostics, &left, error) ||
+        !lower_i32_expression(entry, expression->children[2], diagnostics, &right, error))
+      return false;
+    switch (expression->token_kind)
+    {
+    case XS_TOKEN_PLUS:
+      return xs_mir_block_add_i32(entry, left, right, result, error) == XS_MIR_OK;
+    case XS_TOKEN_MINUS:
+      return xs_mir_block_sub_i32(entry, left, right, result, error) == XS_MIR_OK;
+    case XS_TOKEN_STAR:
+      return xs_mir_block_mul_i32(entry, left, right, result, error) == XS_MIR_OK;
+    default:
+      break;
+    }
+  }
+  return xs_diagnostics_add(
+             diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+             "native source main return expression supports only integer literals and +, -, * for now") &&
+         false;
+}
+
+static bool build_native_module(const char *input_path, const XsSyntaxNode *expression, XsDiagnostics *diagnostics)
 {
   XsMirError mir_error = {0};
   XsMirModule *mir = nullptr;
@@ -157,7 +190,7 @@ static bool build_native_module(const char *input_path, int32_t exit_code)
   if (success)
     success = xs_mir_function_append_block(function, "entry", &entry, &mir_error) == XS_MIR_OK;
   if (success)
-    success = xs_mir_block_add_const_i32(entry, exit_code, &value, &mir_error) == XS_MIR_OK;
+    success = lower_i32_expression(entry, expression, diagnostics, &value, &mir_error);
   if (success)
     success = xs_mir_block_set_return_value(entry, value, &mir_error) == XS_MIR_OK;
   if (success)
@@ -194,8 +227,8 @@ bool xs_driver_build_source_native(const char *input_path, const XsSyntaxTree *t
     return false;
   }
   const XsSyntaxNode *main_function = find_main(tree, diagnostics);
-  int32_t exit_code = 0;
-  if (main_function == nullptr || !validate_shape(main_function, diagnostics, &exit_code))
+  const XsSyntaxNode *expression = nullptr;
+  if (main_function == nullptr || !validate_shape(main_function, diagnostics, &expression))
     return false;
-  return build_native_module(input_path, exit_code);
+  return build_native_module(input_path, expression, diagnostics);
 }

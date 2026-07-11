@@ -481,6 +481,51 @@ static void test_xlil_body_lowering_for_const_i32_return(void)
   xs_mir_module_destroy(mir);
 }
 
+static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
+{
+  XsMirError error = {0};
+  XsMirModule *mir = NULL;
+  CHECK(xs_mir_module_create("project", &mir, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(mir, "main", (XsMirType){.kind = XS_LIL_TYPE_I32}, NULL, 0, &function,
+                                              &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId one = 0;
+  XsMirValueId two = 0;
+  XsMirValueId sum = 0;
+  XsMirValueId product = 0;
+  CHECK(xs_mir_block_add_const_i32(entry, 1, &one, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i32(entry, 2, &two, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_i32(entry, one, two, &sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_mul_i32(entry, sum, two, &product, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, product, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
+
+  XsLilError lil_error = {0};
+  XsLilModule *xlil = NULL;
+  CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(xlil);
+    xs_mir_module_destroy(mir);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(xlil, stream, &lil_error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "%r2:i32 = add.i32 %r0, %r1\n") != NULL);
+  CHECK(strstr(buffer, "%r3:i32 = mul.i32 %r2, %r1\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(xlil);
+  xs_mir_module_destroy(mir);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
@@ -497,5 +542,6 @@ int main(void)
   test_xlil_declaration_lowering();
   test_xlil_body_lowering_for_const_return();
   test_xlil_body_lowering_for_const_i32_return();
+  test_xlil_body_lowering_for_i32_arithmetic_return();
   return failures == 0 ? 0 : 1;
 }

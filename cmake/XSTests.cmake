@@ -94,7 +94,7 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain
                        WrongReturnMain)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
@@ -120,6 +120,14 @@ add_test(NAME source_native_return7_artifacts COMMAND xs_xse_artifact_tests ${XS
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.o
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.xse 7)
 set_tests_properties(source_native_return7_artifacts PROPERTIES DEPENDS source_native_return7_build TIMEOUT 5)
+add_test(NAME source_native_arithmetic_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.xs)
+set_tests_properties(source_native_arithmetic_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_arithmetic_artifacts COMMAND xs_xse_artifact_tests
+                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.ll
+                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.o
+                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.xse 7)
+set_tests_properties(source_native_arithmetic_artifacts PROPERTIES DEPENDS source_native_arithmetic_build TIMEOUT 5)
 add_test(NAME project_native_build COMMAND xs build -proj ${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj)
 set_tests_properties(project_native_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

@@ -57,6 +57,9 @@ typedef enum
   XS_MIR_INSTRUCTION_CONST_I64,
   XS_MIR_INSTRUCTION_CONST_I32,
   XS_MIR_INSTRUCTION_ADD_I64,
+  XS_MIR_INSTRUCTION_ADD_I32,
+  XS_MIR_INSTRUCTION_SUB_I32,
+  XS_MIR_INSTRUCTION_MUL_I32,
   XS_MIR_INSTRUCTION_LOAD,
   XS_MIR_INSTRUCTION_STORE,
 } XsMirInstructionKind;
@@ -113,6 +116,12 @@ XsMirStatus xs_mir_block_set_unreachable(XsMirBlock *block, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_i64(XsMirBlock *block, int64_t value, XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_i32(XsMirBlock *block, int32_t value, XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_add_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_sub_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_mul_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                  XsMirError *error);
 XsMirStatus xs_mir_block_add_load(XsMirBlock *block, const XsMirPlace *place, XsMirType result_type,
                                   XsMirValueId *result, XsMirError *error);

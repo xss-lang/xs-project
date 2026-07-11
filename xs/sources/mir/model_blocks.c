@@ -225,6 +225,51 @@ XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValu
   return XS_MIR_OK;
 }
 
+static XsMirStatus add_i32_binary(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirInstructionKind kind,
+                                  XsMirValueId *result, XsMirError *error)
+{
+  xs_mir_clear_error(error);
+  if (result != NULL)
+    *result = 0;
+  if (block == NULL || block->owner == NULL)
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR block is required");
+  XsMirValueId value_id = 0;
+  XsMirStatus status = xs_mir_function_add_value(block->owner, (XsMirType){.kind = XS_LIL_TYPE_I32}, &value_id, error);
+  if (status != XS_MIR_OK)
+    return status;
+  status = append_instruction(block,
+                              (XsMirInstruction){
+                                  .kind = kind,
+                                  .result = value_id,
+                                  .operand_left = left,
+                                  .operand_right = right,
+                              },
+                              error);
+  if (status != XS_MIR_OK)
+    return status;
+  if (result != NULL)
+    *result = value_id;
+  return XS_MIR_OK;
+}
+
+XsMirStatus xs_mir_block_add_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i32_binary(block, left, right, XS_MIR_INSTRUCTION_ADD_I32, result, error);
+}
+
+XsMirStatus xs_mir_block_sub_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i32_binary(block, left, right, XS_MIR_INSTRUCTION_SUB_I32, result, error);
+}
+
+XsMirStatus xs_mir_block_mul_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i32_binary(block, left, right, XS_MIR_INSTRUCTION_MUL_I32, result, error);
+}
+
 XsMirStatus xs_mir_block_add_load(XsMirBlock *block, const XsMirPlace *place, XsMirType result_type,
                                   XsMirValueId *result, XsMirError *error)
 {

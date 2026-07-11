@@ -89,6 +89,21 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
                 instruction->operand_right) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR add.i64 instruction");
     return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_ADD_I32:
+    if (fprintf(stream, "  v%u = add.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
+                instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR add.i32 instruction");
+    return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_SUB_I32:
+    if (fprintf(stream, "  v%u = sub.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
+                instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR sub.i32 instruction");
+    return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_MUL_I32:
+    if (fprintf(stream, "  v%u = mul.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
+                instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR mul.i32 instruction");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_LOAD:
     if (fprintf(stream, "  v%u = load place%u\n", instruction->result, instruction->place) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR load instruction");

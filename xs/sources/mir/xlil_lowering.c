@@ -67,6 +67,37 @@ static XsMirStatus lower_instruction(const XsMirInstruction *instruction, XsLilB
     return map_lil_status(status, &lil_error, error);
   }
   case XS_MIR_INSTRUCTION_ADD_I64:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_add_i64(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_ADD_I32:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_add_i32(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_SUB_I32:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_sub_i32(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_MUL_I32:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_mul_i32(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
   case XS_MIR_INSTRUCTION_LOAD:
   case XS_MIR_INSTRUCTION_STORE:
     return set_error(error, XS_MIR_UNSUPPORTED, "MIR to XLIL body lowering does not support this instruction yet");

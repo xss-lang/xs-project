@@ -60,12 +60,13 @@ Today, plain `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can pr
 supported source slice:
 
 ```xs
-fn main() => Long { return 0; }
+fn main() => Long { return 1 + 2 * 3; }
 ```
 
 The function must be top-level, named `main`, have no parameters, return `Long`, and have a body that is exactly
-`return <i32-range integer literal>;`. The compiler lowers that source `Long` literal to the direct native process `i32`
-entry ABI. General source-level function body lowering is still incomplete.
+one return statement. The supported return expression subset is i32-range integer literals plus `+`, `-`, and `*` over
+that same subset. The compiler lowers that source `Long` slice to the direct native process `i32` entry ABI. General
+source-level function body lowering is still incomplete.
 
 `-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and
 `--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.
