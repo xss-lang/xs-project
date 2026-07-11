@@ -59,6 +59,13 @@ static XsMirStatus lower_instruction(const XsMirInstruction *instruction, XsLilB
         xs_lil_block_add_const_i64(block, instruction->immediate_i64, &values[instruction->result], &lil_error);
     return map_lil_status(status, &lil_error, error);
   }
+  case XS_MIR_INSTRUCTION_CONST_I32:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status = xs_lil_block_add_const_i32(block, (int32_t)instruction->immediate_i64,
+                                                    &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
   case XS_MIR_INSTRUCTION_ADD_I64:
   case XS_MIR_INSTRUCTION_LOAD:
   case XS_MIR_INSTRUCTION_STORE:

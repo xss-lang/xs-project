@@ -63,6 +63,8 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
   {
   case XS_MIR_INSTRUCTION_CONST_I64:
     return check_value_exists(function, instruction->result, "MIR const.i64 result is unknown", error);
+  case XS_MIR_INSTRUCTION_CONST_I32:
+    return check_value_exists(function, instruction->result, "MIR const.i32 result is unknown", error);
   case XS_MIR_INSTRUCTION_ADD_I64:
   {
     XsMirStatus status = check_value_exists(function, instruction->result, "MIR add.i64 result is unknown", error);

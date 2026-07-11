@@ -16,6 +16,8 @@ source-to-native executable pipeline.
 
 - Native executable artifacts now use the `.xse` extension; the first implemented container target is Linux ELF, with PE
   planned after ELF support.
+- `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can now produce `.ll`, `.o`, and `.xse` artifacts for the
+  first supported source-native entry slice: `fn main() => Long { return <i32 literal>; }`.
 - XLIL v0 and direct LLVM lowering now support signed `i32` comparison instructions: `lt.i32`, `le.i32`, `gt.i32`,
   and `ge.i32`.
 

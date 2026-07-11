@@ -14,6 +14,7 @@ TOML, or YAML.
 xs check -proj MyApp.xsproj
 xs build -proj MyApp.xsproj
 xs run -proj MyApp.xsproj
+xs build -file Main.xs
 xs build --output hir -proj MyApp.xsproj
 xs build --output mir -proj MyApp.xsproj
 xs build --output xlil -proj MyApp.xsproj
@@ -30,6 +31,7 @@ On usage errors, the CLI prints:
 
 ```text
 usage: xs <check|run> -proj <project.xsproj>
+usage: xs build -file <Main.xs>
 usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -file <input>
 usage: xs build [--hir|--mir|--xlil] -file <input>
@@ -54,7 +56,16 @@ usage: xs --version
 ## `xs build`
 
 `xs build` will eventually run the full check, MIR, borrow checker, monomorphization, XLIL, backend, object, and link flow.
-Today, some output modes may intentionally fail because the intermediate formats are not complete yet.
+Today, plain `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can produce a native `.xse` only for the first
+supported source slice:
+
+```xs
+fn main() => Long { return 0; }
+```
+
+The function must be top-level, named `main`, have no parameters, return `Long`, and have a body that is exactly
+`return <i32-range integer literal>;`. The compiler lowers that source `Long` literal to the direct native process `i32`
+entry ABI. General source-level function body lowering is still incomplete.
 
 `-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and
 `--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.
@@ -84,6 +95,7 @@ Recognized forms:
 xs build --output hir -file foo.xs
 xs build --output mir -file foo.xs
 xs build --output xlil -file foo.xs
+xs build -file foo.xs
 xs build --hir -file foo.xs
 xs build --mir -file foo.xs
 xs build --xlil -file foo.xlil
@@ -99,6 +111,8 @@ The direct file paths skip project manifests. Their final semantics depend on th
 - `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, lower the supported subset to LLVM IR, run the
   configured LLVM verification/optimization pipeline, emit an object file, and link a native executable when the target is
   the local host.
+- no output flag with `.xs`: check the source file and, for the first supported `main` slice, emit `.ll`, `.o`, and `.xse`
+  beside the input.
 
 The CLI recognizes the forms now; full production semantics are still being connected.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects

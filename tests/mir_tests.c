@@ -441,6 +441,46 @@ static void test_xlil_body_lowering_for_const_return(void)
   xs_mir_module_destroy(mir);
 }
 
+static void test_xlil_body_lowering_for_const_i32_return(void)
+{
+  XsMirError error = {0};
+  XsMirModule *mir = NULL;
+  CHECK(xs_mir_module_create("project", &mir, &error) == XS_MIR_OK);
+  XsMirFunction *function = NULL;
+  CHECK(xs_mir_module_add_function_definition(mir, "main", (XsMirType){.kind = XS_LIL_TYPE_I32}, NULL, 0, &function,
+                                              &error) == XS_MIR_OK);
+  XsMirBlock *entry = NULL;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId value = 0;
+  CHECK(xs_mir_block_add_const_i32(entry, 7, &value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_instruction_kind(entry, 0) == XS_MIR_INSTRUCTION_CONST_I32);
+  CHECK(xs_mir_block_set_return_value(entry, value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
+
+  XsLilError lil_error = {0};
+  XsLilModule *xlil = NULL;
+  CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
+  FILE *stream = tmpfile();
+  if (stream == NULL)
+  {
+    ++failures;
+    xs_lil_module_destroy(xlil);
+    xs_mir_module_destroy(mir);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(xlil, stream, &lil_error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[256] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, ".func main : () -> i32\n") != NULL);
+  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i32 = const.i32 7\n  ret %r0\n.end\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(xlil);
+  xs_mir_module_destroy(mir);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
@@ -456,5 +496,6 @@ int main(void)
   test_hir_function_declaration_lowering();
   test_xlil_declaration_lowering();
   test_xlil_body_lowering_for_const_return();
+  test_xlil_body_lowering_for_const_i32_return();
   return failures == 0 ? 0 : 1;
 }

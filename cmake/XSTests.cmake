@@ -92,6 +92,47 @@ foreach(entry_fixture MissingMain ExternMain ParameterizedMain VoidMain I64Main 
   set_tests_properties(direct_xlil_invalid_${entry_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 endforeach()
 
+set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
+file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
+foreach(source_fixture MainReturn0 MainReturn7 MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain
+                       WrongReturnMain)
+  configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
+                 COPYONLY)
+endforeach()
+set(XS_PROJECT_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/projects")
+file(MAKE_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source")
+configure_file(tests/fixtures/projects/NativeMain.xsproj "${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj"
+               COPYONLY)
+configure_file(tests/fixtures/projects/source/NativeMain.xs "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xs"
+               COPYONLY)
+
+add_test(NAME source_native_return0_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.xs)
+set_tests_properties(source_native_return0_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_return0_artifacts COMMAND xs_xse_artifact_tests ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.ll
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.o
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.xse 0)
+set_tests_properties(source_native_return0_artifacts PROPERTIES DEPENDS source_native_return0_build TIMEOUT 5)
+add_test(NAME source_native_return7_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.xs)
+set_tests_properties(source_native_return7_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_return7_artifacts COMMAND xs_xse_artifact_tests ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.ll
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.o
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.xse 7)
+set_tests_properties(source_native_return7_artifacts PROPERTIES DEPENDS source_native_return7_build TIMEOUT 5)
+add_test(NAME project_native_build COMMAND xs build -proj ${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj)
+set_tests_properties(project_native_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME project_native_artifacts COMMAND xs_xse_artifact_tests ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.ll
+                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.o
+                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xse 7)
+set_tests_properties(project_native_artifacts PROPERTIES DEPENDS project_native_build TIMEOUT 5)
+foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain)
+  add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file
+                                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs)
+  set_tests_properties(source_native_invalid_${source_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+endforeach()
+
 add_executable(xs_backend_tests tests/backend_tests.c)
 target_link_libraries(xs_backend_tests PRIVATE xs_backend_llvm)
 add_test(NAME backend COMMAND xs_backend_tests ${XS_BACKEND_TEST_OBJECT} ${XS_LLD_EXECUTABLE})

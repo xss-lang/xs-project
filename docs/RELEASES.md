@@ -33,8 +33,9 @@ It validates the CMake project version, changelog heading, release documentation
 - `0.0.3` is the direct XLIL LLVM pipeline snapshot: verified/optimized LLVM emission plus i32 arithmetic lowering.
 - Later `0.0.x` releases should keep landing narrow compiler infrastructure checkpoints without promising source-level
   native builds.
-- `0.1.0` is reserved for the first source/project build that produces a native `.xse` executable through the normal
-  `xs build` path. The first `.xse` target format is Linux ELF; PE comes after ELF support.
+- The `0.1.0` line starts when source/project `xs build` can produce native `.xse` artifacts. The first implemented source
+  slice is intentionally narrow: top-level `fn main() => Long { return <i32 literal>; }`.
+- The first `.xse` target format is Linux ELF; PE comes after ELF support.
 
 ## 0.1.0 threshold
 

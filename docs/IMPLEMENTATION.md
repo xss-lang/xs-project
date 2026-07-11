@@ -384,6 +384,9 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `eq.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `add.i64`, `sub.i64`,
   `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
+- `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
+  source slice: one top-level `fn main() => Long { return <i32 literal>; }`. This source bridge creates a temporary C MIR
+  function, lowers it to XLIL, and then reuses the XLIL native builder.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured
   cross-target still receives LLVM IR and object artifacts, then stops before executable linking; runtime and external
   library linking remain unconfigured.

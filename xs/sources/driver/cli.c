@@ -7,6 +7,7 @@
 
 #include "direct_xlil.h"
 #include "options.h"
+#include "source_native.h"
 
 #include "xs/diagnostic.h"
 #include "xs/hir/expression_check.h"
@@ -369,10 +370,54 @@ static bool emit_requested_output(XsBuildOutput output, const XsHirSymbolTable *
   return false;
 }
 
-static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output)
+static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolTable *symbols)
+{
+  if (!unit->hir_ready)
+    return false;
+  bool success = xs_hir_resolve_imports(&unit->tree, symbols, &unit->imports, &unit->diagnostics);
+  success = xs_hir_validate_name_uses_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
+                                                  symbols, &unit->imports, &unit->diagnostics) &&
+            success;
+  success = xs_hir_resolve_types_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements, symbols,
+                                             &unit->imports, &unit->diagnostics) &&
+            success;
+  return xs_hir_check_expression_types_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
+                                                   &unit->diagnostics) &&
+         success;
+}
+
+static bool check_single_source_file(const char *path, bool build_native)
+{
+  CompilationUnit unit = {.path = copy_text(path)};
+  if (unit.path == nullptr)
+  {
+    fprintf(stderr, "xs: out of memory while preparing source file '%s'\n", path);
+    return false;
+  }
+  XsHirSymbolTable symbols;
+  xs_hir_symbol_table_init(&symbols);
+  bool success = parse_compilation_unit(&unit, 1, &symbols);
+  if (success)
+    success = check_compilation_unit_semantics(&unit, &symbols);
+  xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
+  if (success && build_native)
+    success = xs_driver_build_source_native(path, &unit.tree, &unit.diagnostics);
+  if (!success && build_native)
+    xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
+  xs_hir_symbol_table_free(&symbols);
+  compilation_unit_free(&unit);
+  return success;
+}
+
+static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output,
+                                  bool build_native)
 {
   if (project->xs_version.is_nil || xs_project_selected_entry(project) == nullptr)
-    return true;
+  {
+    if (build_native)
+      fprintf(stderr, "xs: project native build requires compilerOptions.xsVersion and a selected entry source\n");
+    return !build_native;
+  }
 
   size_t direct_count = project->additional_file_count;
   if (!project->entry.is_nil && project->entry.text != nullptr)
@@ -434,18 +479,7 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
     {
       if (units[i].hir_ready)
       {
-        success = xs_hir_resolve_imports(&units[i].tree, &symbols, &units[i].imports, &units[i].diagnostics) && success;
-        success = xs_hir_validate_name_uses_with_macros(&units[i].tree, &units[i].macro_declarations,
-                                                        &units[i].macro_statements, &symbols, &units[i].imports,
-                                                        &units[i].diagnostics) &&
-                  success;
-        success =
-            xs_hir_resolve_types_with_macros(&units[i].tree, &units[i].macro_declarations, &units[i].macro_statements,
-                                             &symbols, &units[i].imports, &units[i].diagnostics) &&
-            success;
-        success = xs_hir_check_expression_types_with_macros(&units[i].tree, &units[i].macro_declarations,
-                                                            &units[i].macro_statements, &units[i].diagnostics) &&
-                  success;
+        success = check_compilation_unit_semantics(&units[i], &symbols) && success;
       }
     }
   }
@@ -453,6 +487,10 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
     xs_diagnostics_print(&units[i].diagnostics, &units[i].source, stderr);
   if (success)
     success = emit_requested_output(output, &symbols, manifest_path);
+  if (success && build_native)
+    success = unit_count != 0 && xs_driver_build_source_native(units[0].path, &units[0].tree, &units[0].diagnostics);
+  if (!success && build_native && unit_count != 0)
+    xs_diagnostics_print(&units[0].diagnostics, &units[0].source, stderr);
 
   xs_hir_symbol_table_free(&symbols);
   for (size_t i = 0; i < unit_count; ++i)
@@ -489,14 +527,8 @@ static int run_project_command(const XsCliOptions *options)
   bool success = xs_project_parse(&source, &diagnostics, &project);
   xs_diagnostics_print(&diagnostics, &source, stderr);
   if (success)
-    success = check_project_sources(options->manifest_path, &project, options->output);
-
-  if (success && strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE)
-  {
-    fprintf(stderr, "xs: %s is not available yet; MIR, XLIL lowering, object code, and linking are incomplete\n",
-            options->command);
-    success = false;
-  }
+    success = check_project_sources(options->manifest_path, &project, options->output,
+                                    strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE);
 
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
@@ -532,6 +564,8 @@ static int run_file_command(const XsCliOptions *options)
             options->file_path);
     return 1;
   }
+  if (options->output == XS_BUILD_OUTPUT_NONE)
+    return check_single_source_file(options->file_path, strcmp(options->command, "build") == 0) ? 0 : 1;
   fprintf(stderr, "xs: %s emission for -file '%s' is not wired yet\n", xs_cli_output_extension(options->output),
           options->file_path);
   return 1;
