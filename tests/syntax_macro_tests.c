@@ -471,6 +471,51 @@ static void test_declaration_macro_expansion(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_imported_panic_macros_resolve_without_expansion(void)
+{
+  const char *text = "imports Panic;\nfn Main() { assert!(true); assert_eq!(1, 1); assert_ne!(1, 2); panic!(); }\n";
+  XsSource source = {.path = "PanicMacros.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsMacroExpansionSet expansions;
+  XsMacroStatementExpansionSet statements;
+  XsMacroExpandedStatementSet expanded;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 34, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_tokens(&tree, &diagnostics, &expansions));
+  CHECK(expansions.count == 0);
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(statements.count == 0);
+  const XsSyntaxNode *block = xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_BLOCK);
+  CHECK(xs_macro_expand_child_statements(block, &statements, &diagnostics, &expanded));
+  CHECK(expanded.count == 4);
+  CHECK(expanded.count < 1 || expanded.items[0].statement->kind == XS_SYNTAX_STMT_MACRO_CALL);
+  xs_macro_expanded_statement_set_free(&expanded);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_macro_expansion_set_free(&expansions);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *selected = "from Panic imports debug_assert, debug_assert_eq;\n"
+                         "fn Main() { debug_assert!(true); debug_assert_eq!(1, 1); }\n";
+  source = (XsSource){.path = "SelectedPanicMacros.xs", .text = selected, .length = strlen(selected)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 35, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *missing_import = "fn Main() { panic!(); }\n";
+  source = (XsSource){.path = "MissingPanicImport.xs", .text = missing_import, .length = strlen(missing_import)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 36, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_macro_repetition_and_unique_variables();
@@ -484,5 +529,6 @@ int main(void)
   test_path_fragment_expansion();
   test_pattern_fragment_expansion();
   test_declaration_macro_expansion();
+  test_imported_panic_macros_resolve_without_expansion();
   return failures == 0 ? 0 : 1;
 }

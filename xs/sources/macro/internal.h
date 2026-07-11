@@ -14,5 +14,6 @@ bool xs_macro_fragment_kind_is(const XsSyntaxNode *fragment, const char *kind);
 bool xs_macro_fragment_supported(XsText kind);
 bool xs_macro_fragment_is_sequence(const XsSyntaxNode *fragment);
 bool xs_macro_fragment_matches(const XsSyntaxNode *fragment, const XsSyntaxNode *argument);
+bool xs_macro_external_import_resolves(const XsSyntaxTree *tree, XsText name);
 
 #endif

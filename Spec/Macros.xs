@@ -50,6 +50,12 @@ imports Stdio;
 
 // print!, println!, eprint!, eprintln!, and format! are normal macros
 // exported by Stdio. They are not compiler built-ins.
+//
+// assert!, assert_eq!, assert_ne!, debug_assert!, debug_assert_eq!, and
+// panic! are normal macros exported by Panic. They are not compiler
+// built-ins.
+//
+// include! is the only built-in macro currently specified here.
 
 
 // ============================================================
@@ -873,4 +879,14 @@ fn InvalidUnmatchedMacroCall() {
 //
 //     macros are not hygienic
 //     generated names enter the call scope
+//
+// Built-in macro:
+//
+//     include!
+//
+// Module-exported macros:
+//
+//     Stdio exports print!, println!, eprint!, eprintln!, format!
+//     Panic exports assert!, assert_eq!, assert_ne!, debug_assert!,
+//     debug_assert_eq!, panic!
 //

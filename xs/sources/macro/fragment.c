@@ -85,3 +85,80 @@ bool xs_macro_fragment_matches(const XsSyntaxNode *fragment, const XsSyntaxNode 
     return token_is_visibility(argument->token_kind);
   return false;
 }
+
+static bool text_is_cstr(XsText text, const char *value)
+{
+  size_t length = strlen(value);
+  return text.length == length && memcmp(text.data, value, length) == 0;
+}
+
+static bool path_is_single_module(const XsSyntaxNode *path, const char *module_name)
+{
+  if (path == nullptr || path->kind != XS_SYNTAX_PATH || path->child_count != 1)
+    return false;
+  const XsSyntaxNode *segment = path->children[0];
+  return segment->kind == XS_SYNTAX_IDENTIFIER && text_is_cstr(segment->text, module_name);
+}
+
+static bool module_exports_macro(const char *module_name, XsText macro_name)
+{
+  if (strcmp(module_name, "Panic") == 0)
+  {
+    return text_is_cstr(macro_name, "assert") || text_is_cstr(macro_name, "assert_eq") ||
+           text_is_cstr(macro_name, "assert_ne") || text_is_cstr(macro_name, "debug_assert") ||
+           text_is_cstr(macro_name, "debug_assert_eq") || text_is_cstr(macro_name, "panic");
+  }
+  if (strcmp(module_name, "Stdio") == 0)
+  {
+    return text_is_cstr(macro_name, "print") || text_is_cstr(macro_name, "println") ||
+           text_is_cstr(macro_name, "eprint") || text_is_cstr(macro_name, "eprintln") ||
+           text_is_cstr(macro_name, "format");
+  }
+  return false;
+}
+
+static bool imported_name_matches(const XsSyntaxNode *import_name, XsText macro_name)
+{
+  if (import_name == nullptr || import_name->kind != XS_SYNTAX_IMPORT_NAME || import_name->child_count == 0)
+    return false;
+  const XsSyntaxNode *name = import_name->children[0];
+  return name->kind == XS_SYNTAX_IDENTIFIER && xs_macro_text_equal(name->text, macro_name);
+}
+
+static bool import_resolves_module_macro(const XsSyntaxNode *import_node, const char *module_name, XsText macro_name)
+{
+  bool has_selected_names = false;
+  bool has_module_path = false;
+  for (size_t index = 0; index < import_node->child_count; ++index)
+  {
+    const XsSyntaxNode *child = import_node->children[index];
+    if (child->kind == XS_SYNTAX_IMPORT_NAME)
+    {
+      has_selected_names = true;
+      if (imported_name_matches(child, macro_name))
+        return module_exports_macro(module_name, macro_name);
+    }
+    else if (child->kind == XS_SYNTAX_PATH && path_is_single_module(child, module_name))
+      has_module_path = true;
+  }
+  if (!has_module_path)
+    return false;
+  if ((import_node->flags & XS_SYNTAX_FLAG_WILDCARD) != 0)
+    return module_exports_macro(module_name, macro_name);
+  return !has_selected_names && module_exports_macro(module_name, macro_name);
+}
+
+bool xs_macro_external_import_resolves(const XsSyntaxTree *tree, XsText name)
+{
+  if (tree == nullptr || tree->root == nullptr)
+    return false;
+  for (size_t index = 0; index < tree->root->child_count; ++index)
+  {
+    const XsSyntaxNode *child = tree->root->children[index];
+    if (child->kind != XS_SYNTAX_DECL_IMPORT)
+      continue;
+    if (import_resolves_module_macro(child, "Panic", name) || import_resolves_module_macro(child, "Stdio", name))
+      return true;
+  }
+  return false;
+}

@@ -282,15 +282,17 @@ static MatchStatus macro_matches_call(const XsSyntaxNode *macro, const XsSyntaxN
   return result;
 }
 
-static void validate_scope_calls(const XsSyntaxNode *scope, const NodeList *inherited, XsDiagnostics *diagnostics);
+static void validate_scope_calls(const XsSyntaxTree *tree, const XsSyntaxNode *scope, const NodeList *inherited,
+                                 XsDiagnostics *diagnostics);
 
-static void validate_node_calls(const XsSyntaxNode *node, const NodeList *visible, XsDiagnostics *diagnostics)
+static void validate_node_calls(const XsSyntaxTree *tree, const XsSyntaxNode *node, const NodeList *visible,
+                                XsDiagnostics *diagnostics)
 {
   if (node == nullptr)
     return;
   if (is_macro_scope(node->kind))
   {
-    validate_scope_calls(node, visible, diagnostics);
+    validate_scope_calls(tree, node, visible, diagnostics);
     return;
   }
   if (node->kind == XS_SYNTAX_EXPR_MACRO_CALL)
@@ -298,20 +300,21 @@ static void validate_node_calls(const XsSyntaxNode *node, const NodeList *visibl
     XsText name = macro_call_name(node);
     const XsSyntaxNode *macro = resolve_macro(visible, name);
     XsSpan span = {.start = node->span.start_offset, .end = node->span.end_offset};
-    if (macro == nullptr)
+    if (macro == nullptr && !xs_macro_external_import_resolves(tree, name))
     {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not resolve in this scope");
       return;
     }
-    if (macro_matches_call(macro, node) == MATCH_NO)
+    if (macro != nullptr && macro_matches_call(macro, node) == MATCH_NO)
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not match any rule");
     return;
   }
   for (size_t i = 0; i < node->child_count; ++i)
-    validate_node_calls(node->children[i], visible, diagnostics);
+    validate_node_calls(tree, node->children[i], visible, diagnostics);
 }
 
-static void validate_scope_calls(const XsSyntaxNode *scope, const NodeList *inherited, XsDiagnostics *diagnostics)
+static void validate_scope_calls(const XsSyntaxTree *tree, const XsSyntaxNode *scope, const NodeList *inherited,
+                                 XsDiagnostics *diagnostics)
 {
   NodeList visible = {0};
   for (size_t i = 0; i < inherited->count; ++i)
@@ -324,7 +327,7 @@ static void validate_scope_calls(const XsSyntaxNode *scope, const NodeList *inhe
   for (size_t i = 0; i < scope->child_count; ++i)
   {
     if (scope->children[i]->kind != XS_SYNTAX_DECL_MACRO)
-      validate_node_calls(scope->children[i], &visible, diagnostics);
+      validate_node_calls(tree, scope->children[i], &visible, diagnostics);
   }
   free(visible.items);
 }
@@ -364,7 +367,7 @@ bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
     validate_macro_rules(macros.items[i], diagnostics);
   validate_scope_recursion(tree->root, diagnostics);
   NodeList empty = {0};
-  validate_scope_calls(tree->root, &empty, diagnostics);
+  validate_scope_calls(tree, tree->root, &empty, diagnostics);
   free(macros.items);
   return !xs_diagnostics_has_error(diagnostics);
 }

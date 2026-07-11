@@ -110,30 +110,34 @@ static bool statement_expansion_matches_call(const XsMacroStatementExpansion *ex
 static bool add_expanded_macro_call(XsMacroExpandedDeclarationSet *expanded,
                                     const XsMacroDeclarationExpansionSet *declarations, const XsSyntaxNode *macro_call)
 {
+  bool matched = false;
   for (size_t i = 0; declarations != nullptr && i < declarations->count; ++i)
   {
     const XsMacroDeclarationExpansion *expansion = &declarations->items[i];
     if (!expansion_matches_call(expansion, macro_call))
       continue;
+    matched = true;
     if (!add_macro_declarations(expanded, expansion))
       return false;
   }
-  return true;
+  return matched || add_original_declaration(expanded, macro_call);
 }
 
 static bool add_expanded_statement_macro_call(XsMacroExpandedStatementSet *expanded,
                                               const XsMacroStatementExpansionSet *statements,
                                               const XsSyntaxNode *macro_call)
 {
+  bool matched = false;
   for (size_t i = 0; statements != nullptr && i < statements->count; ++i)
   {
     const XsMacroStatementExpansion *expansion = &statements->items[i];
     if (!statement_expansion_matches_call(expansion, macro_call))
       continue;
+    matched = true;
     if (!add_macro_statement(expanded, expansion))
       return false;
   }
-  return true;
+  return matched || add_original_statement(expanded, macro_call);
 }
 
 bool xs_macro_expand_top_level_declarations(const XsSyntaxTree *tree,
