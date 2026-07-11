@@ -42,19 +42,32 @@ fn Main() {
     name = "Leitewolf";
     enabled = false;
 
-    // immutable variable
+    // val binding
+    //
+    // A val binding cannot be reassigned.
+    // It does not make the referenced object deeply immutable.
+    // Object, field, element and interior mutation are controlled by the
+    // value's type, ownership and mutability rules.
     val version: Str = "1.0";
     val maxPlayers: Int = 100;
     val isReady: Bool = true;
     val inferredVersion := "1.0";
 
     // compile-time constant
+    //
+    // A const value prefers compile-time evaluation.
+    // If compile-time evaluation is not possible, initialization is lowered
+    // to runtime evaluation.
+    // After initialization, const is truly immutable.
     const BuildNumber: Int = 42;
     const AppName: Str = "Example";
     const DebugMode: Bool = false;
     const inferredBuildNumber := 42;
 
     // compile-time constant + static lifetime
+    //
+    // A static value must be compile-time evaluated and has static lifetime.
+    // Static initialization never falls back to runtime evaluation.
     static CacheSize: Int = 1024;
     static ProductName: Str = "Example";
     static IsProduction: Bool = true;
@@ -92,7 +105,7 @@ fn Main() {
     val x: Int = 5;
     x = 10;
 }
-// Cannot assign to immutable variable.
+// Cannot reassign a val binding.
 
 
 // VALID
@@ -101,11 +114,11 @@ fn Main() {
 }
 
 
-// INVALID
+// VALID
 fn Main() {
     const Version: Int = RuntimeValue();
 }
-// Const values must be compile-time constants.
+// Valid for const if the runtime result can initialize a truly immutable value.
 
 
 // VALID
@@ -118,7 +131,7 @@ fn Main() {
 fn Main() {
     static BufferSize: Int = RuntimeValue();
 }
-// Static values must be compile-time constants.
+// Static values must be compile-time constants and have static lifetime.
 
 
 // INVALID

@@ -125,7 +125,7 @@ static void test_control_flow_initializer_expression_types(void)
       "module App;\nfn Main() { value: Bool = match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
 }
 
-static void test_immutable_local_assignment_errors(void)
+static void test_binding_reassignment_errors(void)
 {
   const char *valid = "module App;\n"
                       "fn Main() {\n"
@@ -135,6 +135,18 @@ static void test_immutable_local_assignment_errors(void)
   CHECK(check_single_source_expressions(valid));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { val value: Int = 1; value = 2; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { const value: Int = 1; value = 2; }\n"));
+}
+
+static void test_constant_initializer_errors(void)
+{
+  CHECK(check_single_source_expressions("module App;\nfn Main() { const value: Int = 1 + 2; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Main() { static value: Str = \"xs\"; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn RuntimeValue() => Int { return 1; }\nfn Main() { const "
+                                        "value: Int = RuntimeValue(); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { const value: Int; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { static value: Int; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn RuntimeValue() => Int { return 1; }\nfn Main() { static "
+                                         "value: Int = RuntimeValue(); }\n"));
 }
 
 static void test_assignment_literal_expression_types(void)
@@ -194,7 +206,7 @@ static void test_macro_literal_initializer_expression_errors(void)
   CHECK(check_macro_expression_error(main, 96));
 }
 
-static void test_macro_immutable_assignment_errors(void)
+static void test_macro_binding_reassignment_errors(void)
 {
   const char *main = "module App;\n"
                      "macroRules! bad { (): { value = 2; }; }\n"
@@ -222,13 +234,14 @@ int main(void)
 {
   test_literal_initializer_expression_types();
   test_control_flow_initializer_expression_types();
-  test_immutable_local_assignment_errors();
+  test_binding_reassignment_errors();
+  test_constant_initializer_errors();
   test_assignment_literal_expression_types();
   test_control_flow_assignment_expression_types();
   test_return_literal_expression_types();
   test_control_flow_return_expression_types();
   test_macro_literal_initializer_expression_errors();
-  test_macro_immutable_assignment_errors();
+  test_macro_binding_reassignment_errors();
   test_macro_assignment_literal_expression_errors();
   test_macro_return_literal_expression_errors();
   return failures == 0 ? 0 : 1;

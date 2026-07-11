@@ -140,13 +140,29 @@ static bool report_assignment_literal_type_error(XsDiagnostics *diagnostics, con
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(literal), message);
 }
 
-static bool report_immutable_assignment(XsDiagnostics *diagnostics, const XsSyntaxNode *target,
+static bool report_binding_reassignment(XsDiagnostics *diagnostics, const XsSyntaxNode *target,
                                         const LocalBinding *binding)
 {
   int length = binding->name.length > 128 ? 128 : (int)binding->name.length;
   char message[256];
-  snprintf(message, sizeof(message), "cannot assign to immutable local '%.*s'", length, binding->name.data);
+  snprintf(message, sizeof(message), "cannot reassign binding '%.*s'", length, binding->name.data);
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target), message);
+}
+
+static bool report_non_constant_initializer(XsDiagnostics *diagnostics, const XsSyntaxNode *initializer,
+                                            const char *kind)
+{
+  char message[160];
+  snprintf(message, sizeof(message), "%s initializer must be a compile-time constant", kind);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(initializer), message);
+}
+
+static bool report_missing_constant_initializer(XsDiagnostics *diagnostics, const XsSyntaxNode *declaration,
+                                                const char *kind)
+{
+  char message[160];
+  snprintf(message, sizeof(message), "%s declaration requires a compile-time constant initializer", kind);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(declaration), message);
 }
 
 static bool report_return_literal_type_error(XsDiagnostics *diagnostics, const XsSyntaxNode *literal,
@@ -234,14 +250,73 @@ static bool check_expression_value_against_primitive(const XsSyntaxNode *express
   return true;
 }
 
+static const XsSyntaxNode *variable_initializer(const XsSyntaxNode *declaration)
+{
+  if (declaration == nullptr || declaration->kind != XS_SYNTAX_DECL_VARIABLE)
+    return nullptr;
+  if ((declaration->flags & XS_SYNTAX_FLAG_INFERRED_TYPE) != 0)
+    return declaration->child_count >= 2 ? declaration->children[1] : nullptr;
+  return declaration->child_count >= 3 ? declaration->children[2] : nullptr;
+}
+
+static bool is_compile_time_constant_expression(const XsSyntaxNode *expression)
+{
+  if (expression == nullptr)
+    return false;
+  switch (expression->kind)
+  {
+  case XS_SYNTAX_EXPR_LITERAL:
+    return true;
+  case XS_SYNTAX_EXPR_UNARY:
+  case XS_SYNTAX_EXPR_BINARY:
+  case XS_SYNTAX_EXPR_TUPLE:
+  case XS_SYNTAX_EXPR_ARRAY_LITERAL:
+  case XS_SYNTAX_EXPR_OBJECT_LITERAL:
+  {
+    for (size_t i = 0; i < expression->child_count; ++i)
+    {
+      if (expression->children[i]->kind == XS_SYNTAX_TOKEN)
+        continue;
+      if (!is_compile_time_constant_expression(expression->children[i]))
+        return false;
+    }
+    return true;
+  }
+  case XS_SYNTAX_EXPR_FIELD_SET:
+    return expression->child_count >= 2 && is_compile_time_constant_expression(expression->children[1]);
+  default:
+    return false;
+  }
+}
+
+static bool check_constant_initializer(const XsSyntaxNode *declaration, XsDiagnostics *diagnostics)
+{
+  uint32_t constant_flags = declaration->flags & (XS_SYNTAX_FLAG_CONSTANT | XS_SYNTAX_FLAG_STATIC_CONSTANT);
+  if (constant_flags == 0)
+    return true;
+  const XsSyntaxNode *initializer = variable_initializer(declaration);
+  const char *kind = (constant_flags & XS_SYNTAX_FLAG_STATIC_CONSTANT) != 0 ? "static" : "const";
+  if (initializer == nullptr)
+    return report_missing_constant_initializer(diagnostics, declaration, kind);
+  if ((constant_flags & XS_SYNTAX_FLAG_STATIC_CONSTANT) == 0)
+    return true;
+  if (is_compile_time_constant_expression(initializer))
+    return true;
+  return report_non_constant_initializer(diagnostics, initializer, kind);
+}
+
 static bool check_variable_initializer(const XsSyntaxNode *declaration, XsDiagnostics *diagnostics)
 {
+  if ((declaration->flags & XS_SYNTAX_FLAG_INFERRED_TYPE) != 0)
+    return check_constant_initializer(declaration, diagnostics);
+  bool constant_ok = check_constant_initializer(declaration, diagnostics);
   if (declaration->child_count < 3)
-    return true;
+    return constant_ok;
   const XsHirPrimitiveInfo *primitive = primitive_from_type(declaration->children[1]);
-  const XsSyntaxNode *initializer = declaration->children[2];
-  return check_expression_value_against_primitive(initializer, primitive, LITERAL_CONTEXT_INITIALIZER, nullptr,
-                                                  diagnostics);
+  const XsSyntaxNode *initializer = variable_initializer(declaration);
+  bool success = check_expression_value_against_primitive(initializer, primitive, LITERAL_CONTEXT_INITIALIZER, nullptr,
+                                                          diagnostics);
+  return constant_ok && success;
 }
 
 static const XsSyntaxNode *declaration_identifier(const XsSyntaxNode *declaration)
@@ -362,7 +437,7 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
       check_expression_value_against_primitive(value, primitive, LITERAL_CONTEXT_ASSIGNMENT, binding, diagnostics) &&
       success;
   if (binding->immutable)
-    success = report_immutable_assignment(diagnostics, identifier, binding) && success;
+    success = report_binding_reassignment(diagnostics, identifier, binding) && success;
   return success;
 }
 

@@ -12,8 +12,9 @@
 // - Supports len().
 // - Does not support push().
 // - Does not support pop().
-// - Mutable arrays allow element modification.
-// - val arrays do not allow element modification.
+// - Array element modification is controlled by array/type mutability rules.
+// - val array bindings cannot be reassigned, but val does not by itself make
+//   the array value deeply immutable.
 //
 // Array size:
 // - T[3] means indexes 0..3.
@@ -101,13 +102,14 @@ flags: Bool[2] = {};
 // {None, None, None}
 
 
-// immutable arrays
+// val array binding
 
 val nums: Int[] = {1, 2, 3};
 
 nums[0] = 5;
 
-// ERROR
+// Valid when the array value's mutability rules allow element assignment.
+// Invalid only if the array/type rules make the element storage immutable.
 
 
 // vectors

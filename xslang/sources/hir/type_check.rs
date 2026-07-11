@@ -214,7 +214,7 @@ impl TypeChecker
         {
           self.diagnostics
               .push(Diagnostic { code: DiagnosticCode::ImmutableAssignment,
-                                 message: format!("cannot assign to immutable local '{target}'"),
+                                 message: format!("cannot reassign binding '{target}'"),
                                  span: *span });
         }
         self.check_expression_against_type(value, &local.ty);
