@@ -32,6 +32,7 @@ typedef struct
 typedef struct
 {
   XsProjectValue name;
+  XsProjectValue repo;
   XsProjectValue version;
 } XsProjectModule;
 

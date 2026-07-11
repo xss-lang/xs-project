@@ -45,6 +45,7 @@ void xs_project_free(XsProject *project)
   for (size_t i = 0; i < project->external_module_count; ++i)
   {
     free_value(&project->external_modules[i].name);
+    free_value(&project->external_modules[i].repo);
     free_value(&project->external_modules[i].version);
   }
   free(project->external_modules);

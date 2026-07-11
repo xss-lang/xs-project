@@ -12,3 +12,8 @@ This project is separate from the X# source parser. It exposes the public
 without linking the whole compiler.
 
 Implementation files live under `xsproj/sources/`.
+
+`externalModules` records are manifest metadata only at this stage. Each
+`addModule` block carries `moduleName`, `moduleRepo`, and `moduleVersion`; the
+parser stores those fields but does not download or resolve external module
+repositories yet.

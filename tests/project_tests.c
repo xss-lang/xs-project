@@ -43,7 +43,7 @@ static void test_complete_project(void)
                      "output {\n[osName: \"Linux\"; osArch: \"x64\"]\n}\n"
                      "}\n"
                      "externalModules {\n"
-                     "addModule { moduleName: \"xs.Json\"; moduleVersion: \"latest\" }\n"
+                     "addModule { moduleName: \"xsmods.JSON\"; moduleRepo: \"https://github.com/xss-lang/externalModules\"; moduleVersion: \"0.1\" }\n"
                      "}\n";
   XsProject project;
   XsDiagnostics diagnostics;
@@ -52,6 +52,8 @@ static void test_complete_project(void)
   CHECK(project.additional_file_count == 2);
   CHECK(project.target_count == 1);
   CHECK(project.external_module_count == 1);
+  CHECK(project.external_modules[0].repo.text != NULL &&
+        strcmp(project.external_modules[0].repo.text, "https://github.com/xss-lang/externalModules") == 0);
   CHECK(project.xs_backend.text != NULL && strcmp(project.xs_backend.text, "LLVM") == 0);
   CHECK(xs_project_selected_entry(&project) == &project.entry);
   xs_project_free(&project);
@@ -132,6 +134,26 @@ static void test_backend_option_validation(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_external_module_repo_is_required(void)
+{
+  const char *text = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
+                     "appAuthors { [None, None] }\n"
+                     "compilerOptions {\n"
+                     "xsVersion: None\n"
+                     "addFiles { entry: None }\n"
+                     "output { [osName: None; osArch: None] }\n"
+                     "}\n"
+                     "externalModules {\n"
+                     "addModule { moduleName: \"xsmods.JSON\"; moduleVersion: \"0.1\" }\n"
+                     "}\n";
+  XsProject project;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_project(text, &project, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_project_free(&project);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_project_comments_are_line_only(void)
 {
   const char *valid = "/// project doc comment\n"
@@ -171,6 +193,7 @@ int main(void)
   test_invalid_manifest();
   test_optimization_is_unknown();
   test_backend_option_validation();
+  test_external_module_repo_is_required();
   test_project_comments_are_line_only();
   return failures == 0 ? 0 : 1;
 }

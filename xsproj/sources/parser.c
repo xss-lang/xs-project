@@ -415,9 +415,14 @@ static XsProjectModule parse_external_module(ProjectParser *parser)
       duplicate_field(parser, name, &seen, 1U);
       parse_scalar_field(parser, &module.name);
     }
-    else if (token_is(parser, name, "moduleVersion"))
+    else if (token_is(parser, name, "moduleRepo"))
     {
       duplicate_field(parser, name, &seen, 2U);
+      parse_scalar_field(parser, &module.repo);
+    }
+    else if (token_is(parser, name, "moduleVersion"))
+    {
+      duplicate_field(parser, name, &seen, 4U);
       parse_scalar_field(parser, &module.version);
     }
     else
@@ -430,6 +435,8 @@ static XsProjectModule parse_external_module(ProjectParser *parser)
   if ((seen & 1U) == 0)
     project_error(parser, parser->current.span, "required addModule field moduleName is missing");
   if ((seen & 2U) == 0)
+    project_error(parser, parser->current.span, "required addModule field moduleRepo is missing");
+  if ((seen & 4U) == 0)
     project_error(parser, parser->current.span, "required addModule field moduleVersion is missing");
   return module;
 }

@@ -104,8 +104,9 @@ compilerOptions {
 
 externalModules {
     addModule {
-        moduleName: "xs.Json"
-        moduleVersion: "latest"
+        moduleName: "xsmods.JSON"
+        moduleRepo: "https://github.com/xss-lang/externalModules"
+        moduleVersion: "0.1"
     }
 }
 
@@ -553,12 +554,14 @@ output {
 
 externalModules {
     addModule {
-        moduleName: "xs.Json"
-        moduleVersion: "latest"
+        moduleName: "xsmods.JSON"
+        moduleRepo: "https://github.com/xss-lang/externalModules"
+        moduleVersion: "0.1"
     }
 
     addModule {
-        moduleName: "xs.Xml"
+        moduleName: "xsmods.Xml"
+        moduleRepo: "https://github.com/xss-lang/externalModules"
         moduleVersion: "1.2.0"
     }
 }
@@ -579,6 +582,7 @@ externalModules {
 // Each addModule requires:
 //
 // - moduleName
+// - moduleRepo
 // - moduleVersion
 
 
@@ -587,6 +591,7 @@ externalModules {
 externalModules {
     addModule {
         moduleName: None
+        moduleRepo: None
         moduleVersion: None
     }
 }
@@ -603,6 +608,7 @@ externalModules {
 
     addModule {
         moduleName: "xs.Json"
+        moduleRepo: "https://github.com/xss-lang/externalModules"
         moduleVersion: "latest"
     }
 }
@@ -614,6 +620,7 @@ externalModules {
     addModule {
         moduleName: "xs.Json"
         moduleName: "xs.Xml"
+        moduleRepo: "https://github.com/xss-lang/externalModules"
         moduleVersion: "latest"
     }
 }

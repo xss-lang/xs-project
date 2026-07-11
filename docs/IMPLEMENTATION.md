@@ -78,6 +78,8 @@ The documented compilation order is preserved:
   does not support multiline comments.
 - The `.xsproj` parser is not just an internal compiler detail. A public C23 API surface under `#include <xs/project.h>` lets
   third-party tools read `.xsproj` files in a JSON-like model.
+- `externalModules.addModule` records include `moduleName`, `moduleRepo`, and `moduleVersion`. They are parsed and stored as
+  manifest metadata; repository fetching and external module resolution are future work.
 - Required fields, duplicate fields, unknown fields, and `appRelease` values are validated.
 - When `entry: None`, the documented first additional source selection rule is applied.
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
@@ -270,18 +272,17 @@ syntax transfer boundary so one compiler layer is not split across C and Rust.
 - V0 support for `expr`, `stmt`, `block`, `ty`, `path`, `item`, and `pat` fragments captures the call-parentheses token
   sequence as a single expression/statement/block/type/path/item/pattern fragment when the matcher contains exactly one
   remaining fragment. `$name` use in expansion carries that token sequence to statement or declaration reparse.
-- `xs_macro_expand_tokens` produces call span and expanded token lists for simple supported calls. If multiple supported
-  rules match one macro call, each rule produces a separate expansion record in declaration order. This output is not written
-  back into the structural AST yet; it is an intermediate flow for later fragment-level reparse and AST replacement.
+- `xs_macro_expand_tokens` produces call span and expanded token lists for simple supported calls. A macro call must match
+  exactly one rule; zero matches and multiple matches are validation errors. This output is not written back into the
+  structural AST yet; it is an intermediate flow for later fragment-level reparse and AST replacement.
 - `xs_macro_reparse_expansion_as_statement` reparses a supported expansion token list as a statement inside a synthetic
   function body. This is a bridge for fragment-level reparse and AST replacement, not final macro-call replacement.
 - `xs_macro_reparse_result_statement` extracts the replacement statement node from the reparsed synthetic body. Parent-child
   AST replacement remains a later step.
 - `xs_macro_expand_statements` reparses supported token expansions as statements and maps call span to replacement statement
   nodes inside `XsMacroStatementExpansionSet`. The set owns the synthetic reparse trees, so replacement nodes remain valid
-  until the set is freed. If multiple rules match the same statement macro call, the set carries multiple replacement
-  statements for the same call span in declaration order. This API only produces statement replacements for statement-context
-  macro calls; nested macro calls inside other expressions remain token-level expansions.
+  until the set is freed. This API only produces statement replacements for statement-context macro calls; nested macro calls
+  inside other expressions remain token-level expansions.
 - `xs_macro_statement_expansion_find` returns the synthetic replacement statement node for an `XS_SYNTAX_STMT_MACRO_CALL`.
   HIR consumers do not keep their own span mapping code for replacement lookup.
 - `xs_macro_expand_declarations` reparses supported token expansions from declaration-context `XS_SYNTAX_DECL_MACRO_CALL`
@@ -303,13 +304,12 @@ syntax transfer boundary so one compiler layer is not split across C and Rust.
   declaration/statement nodes with replacements from declaration and statement expansion sets. It does not mutate the
   original AST; replacement text/span references in the materialized tree are tied to the expansion set lifetime because the
   expansion sets own the reparse source text.
-- HIR symbol collection operates through the top-level expanded declaration view. All declaration expansion records from all
-  matching rules for the same declaration macro call enter the normal declaration flow in declaration order.
+- HIR symbol collection operates through the top-level expanded declaration view. Declaration macro calls must have one
+  matching rule before their replacement declarations enter the normal declaration flow.
 - The `xs check` flow runs macro validation, macro expansion preparation, and statement expansion set generation before HIR
   symbol collection. The driver keeps the replacement set alive for the compilation unit and passes it to HIR name-use and
   HIR type-resolution traversals. HIR name and type resolution traverse statement child lists through the expanded statement
-  view, so all replacement statement records for the same statement macro call enter the normal statement flow in declaration
-  order.
+  view, so each validated statement macro replacement enters the normal statement flow.
 
 Declaration/item-context macro-call AST input, declaration reparse set generation, top-level/child declaration expanded views,
 statement expanded view, separate expanded tree materialization, HIR symbol-collection integration, and class/interface

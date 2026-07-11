@@ -34,8 +34,9 @@ compilerOptions {
 
 externalModules {
     addModule {
-        moduleName: "xs.Foo"
-        moduleVersion: "latest"
+        moduleName: "xsmods.Foo"
+        moduleRepo: "https://github.com/xss-lang/externalModules"
+        moduleVersion: "0.1"
     }
 }
 
