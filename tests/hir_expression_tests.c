@@ -214,6 +214,15 @@ static void test_macro_binding_reassignment_errors(void)
   CHECK(check_macro_expression_error(main, 97));
 }
 
+static void test_macro_static_runtime_initializer_errors(void)
+{
+  const char *main = "module App;\n"
+                     "fn RuntimeValue() => Int { return 1; }\n"
+                     "macroRules! bad { (): { static value: Int = RuntimeValue(); }; }\n"
+                     "fn Main() { bad!(); }\n";
+  CHECK(check_macro_expression_error(main, 100));
+}
+
 static void test_macro_assignment_literal_expression_errors(void)
 {
   const char *main = "module App;\n"
@@ -242,6 +251,7 @@ int main(void)
   test_control_flow_return_expression_types();
   test_macro_literal_initializer_expression_errors();
   test_macro_binding_reassignment_errors();
+  test_macro_static_runtime_initializer_errors();
   test_macro_assignment_literal_expression_errors();
   test_macro_return_literal_expression_errors();
   return failures == 0 ? 0 : 1;
