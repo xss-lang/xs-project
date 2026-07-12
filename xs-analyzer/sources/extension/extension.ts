@@ -6,7 +6,7 @@
 import type { ExtensionContext } from "vscode";
 
 export function activate(_context: ExtensionContext): void {
-  console.info("XS Analyzer VS Code extension is registered, but implementation has not started yet.");
+  // TextMate grammar registration is handled by package.json contributions.
 }
 
 export function deactivate(): void {

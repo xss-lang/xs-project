@@ -1,0 +1,19 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch XS Analyzer Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/xs-analyzer"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/xs-analyzer/dist/**/*.js"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "X#",
+  "scopeName": "source.xs",
+  "fileTypes": ["xs"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#characters" },
+    { "include": "#numbers" },
+    { "include": "#macros" },
+    { "include": "#attributes" },
+    { "include": "#declarations" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#operators" },
+    { "include": "#identifiers" }
+  ],
+  "repository": {
+    "attributes": {
+      "patterns": [
+        {
+          "name": "meta.attribute.xs",
+          "begin": "#\\[",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.attribute.begin.xs" }
+          },
+          "end": "\\]",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.attribute.end.xs" }
+          },
+          "patterns": [
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#identifiers" }
+          ]
+        }
+      ]
+    },
+    "characters": {
+      "patterns": [
+        {
+          "name": "constant.character.escape.xs",
+          "match": "'\\\\(?:[0nrt'\"\\\\]|u\\{[0-9A-Fa-f_]+\\})'"
+        },
+        {
+          "name": "string.quoted.single.xs",
+          "begin": "'",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.xs" }
+          },
+          "end": "'",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.xs" }
+          },
+          "patterns": [{ "include": "#string_escapes" }]
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.documentation.xs", "match": "///.*$" },
+        { "name": "comment.line.double-slash.xs", "match": "//.*$" },
+        {
+          "name": "comment.block.xs",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.comment.begin.xs" }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.comment.end.xs" }
+          }
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "name": "keyword.declaration.xs",
+          "match": "\\b(?:actor|class|const|data|enum|extern|fn|impl|interface|let|macro|module|namespace|operator|static|struct|trait|type|use|val|var)\\b"
+        },
+        {
+          "name": "storage.modifier.xs",
+          "match": "\\b(?:async|export|inline|internal|mut|override|private|protected|public|readonly|sealed|unsafe|virtual)\\b"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "entity.name.function.xs",
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*(?:<[^\\n>{}]*>)?\\s*\\()"
+        },
+        {
+          "name": "variable.other.local.xs",
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.xs",
+          "match": "\\b(?:as|await|break|catch|continue|defer|else|for|from|if|in|is|loop|match|return|throw|throws|try|where|while|yield)\\b"
+        },
+        {
+          "name": "constant.language.xs",
+          "match": "\\b(?:false|null|nullptr|self|super|this|true)\\b"
+        }
+      ]
+    },
+    "macros": {
+      "patterns": [
+        {
+          "name": "entity.name.function.macro.xs",
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*!(?=\\s*[({\\[])"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.xs",
+          "match": "\\b[0-9][0-9_']*(?:\\.[0-9][0-9_']*)?(?:[eE][+-]?[0-9][0-9_']*)?(?:f16|f32|f64|f128)?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.xs",
+          "match": "\\b(?:0[xX][0-9A-Fa-f_']+|0[bB][01_']+|0[oO][0-7_']+|[0-9][0-9_']*)(?:i8|i16|i32|i64|i128|u8|u16|u32|u64|u128)?\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.xs",
+          "match": "(?:=>|->|\\.\\.|\\.\\.=|::|\\?\\?|&&|\\|\\||==|!=|<=|>=|<<|>>|[-+*/%&|^!~?:=<>@]+)"
+        },
+        { "name": "punctuation.separator.xs", "match": "[,;.]" },
+        { "name": "punctuation.bracket.xs", "match": "[(){}\\[\\]]" }
+      ]
+    },
+    "string_escapes": {
+      "patterns": [
+        {
+          "name": "constant.character.escape.xs",
+          "match": "\\\\(?:[0nrt'\"\\\\]|u\\{[0-9A-Fa-f_]+\\})"
+        },
+        { "name": "invalid.illegal.escape.xs", "match": "\\\\." }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.xs",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.xs" }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.xs" }
+          },
+          "patterns": [{ "include": "#string_escapes" }]
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.primitive.xs",
+          "match": "\\b(?:Bool|Byte|Char|Double|Float|Int|Integer|Long|Short|Str|UByte|UInt|UInteger|ULong|UShort|Void|bool|char|f16|f32|f64|f128|i8|i16|i32|i64|i128|str|u8|u16|u32|u64|u128|void)\\b"
+        },
+        { "name": "support.type.xs", "match": "\\b[A-Z][A-Za-z0-9_]*\\b" }
+      ]
+    }
+  }
+}

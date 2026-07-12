@@ -6,7 +6,8 @@
 
   "files.associations": {
     "CmakeLists.txt": "cmake",
-    "CMakeCache.txt": "cmake"
+    "CMakeCache.txt": "cmake",
+    "*.xs": "xs"
   },
   "FSharp.suggestGitignore": false,
   "r.lsp.promptToInstall": false
