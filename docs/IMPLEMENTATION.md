@@ -278,6 +278,10 @@ The MIR lowerer has a separate `DesugaredFunction` entry point. It can lower des
 supported expression forms, but explicit ResultMatch nodes remain deferred until Result-aware MIR control-flow and return
 construction are implemented.
 
+XHIR text writing can emit desugared functions for inspection. The desugared form writes `result_match` records with explicit
+success/error binding names and types, making `@` expansion visible without pretending that MIR Result control flow is
+complete.
+
 ### Macro validation and scope resolution
 
 - Macro matcher variables, repetition depths, and expansion variables are validated.

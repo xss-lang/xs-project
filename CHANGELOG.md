@@ -30,6 +30,8 @@ source-to-native executable pipeline.
   primitive operation.
 - Rust `xslang` MIR lowering now exposes a `DesugaredFunction` entry point. Desugared functions without ResultMatch lower
   through the existing HIR path, while explicit ResultMatch nodes are rejected until MIR Result control-flow lowering exists.
+- Rust `xslang` XHIR text writing can now emit desugared functions, including explicit `result_match` records for `@`
+  desugar output.
 - Rust `xslang` treats single-argument `Result<T>`/`Result.Result<T>` as using the standard `Result.Error` error type for
   propagation type checking and desugaring.
 - The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result.Result<T>`,

@@ -5,6 +5,7 @@
 
 use std::fmt::Write;
 
+use super::result_desugar::{DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::symbols::{Import, Module, SymbolKind, Visibility};
 use super::type_check::{BinaryOperator, Expression, Function, Literal, PrimitiveType, Statement, Type};
 use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
@@ -135,6 +136,28 @@ pub fn function_to_xhir(function: &Function) -> String
     for statement in &function.body
     {
       write_statement(&mut output, statement, 2);
+    }
+    let _ = writeln!(output, "  .end");
+  }
+  let _ = writeln!(output, ".program end");
+  output
+}
+
+#[must_use]
+pub fn desugared_function_to_xhir(function: &DesugaredFunction) -> String
+{
+  let mut output = String::new();
+  write_function_header(&mut output, &function.name, function.return_type.as_ref());
+  if !function.locals.is_empty()
+  {
+    write_locals(&mut output, &function.locals);
+  }
+  if !function.body.is_empty()
+  {
+    let _ = writeln!(output, "  body");
+    for statement in &function.body
+    {
+      write_desugared_statement(&mut output, statement, 2);
     }
     let _ = writeln!(output, "  .end");
   }
@@ -362,6 +385,44 @@ fn write_statement(output: &mut String, statement: &Statement, indent: usize)
   }
 }
 
+fn write_desugared_statement(output: &mut String, statement: &DesugaredStatement, indent: usize)
+{
+  let pad = "  ".repeat(indent);
+  match statement
+  {
+    DesugaredStatement::Let { local,
+                              initializer, } =>
+    {
+      let mutability = mutability_name(local.mutable);
+      let _ = writeln!(output, "{pad}let {}", local.name);
+      let _ = writeln!(output, "{pad}  type {}", type_name(&local.ty));
+      let _ = writeln!(output, "{pad}  mutability {mutability}");
+      if let Some(initializer) = initializer
+      {
+        let _ = writeln!(output, "{pad}  initializer");
+        write_desugared_expression(output, initializer, indent + 2);
+      }
+    }
+    DesugaredStatement::Expr(expression) =>
+    {
+      let _ = writeln!(output, "{pad}expression");
+      write_desugared_expression(output, expression, indent + 1);
+    }
+    DesugaredStatement::Return { value, .. } =>
+    {
+      let _ = writeln!(output, "{pad}return");
+      if let Some(value) = value
+      {
+        write_desugared_expression(output, value, indent + 1);
+      }
+    }
+    DesugaredStatement::Panic { .. } =>
+    {
+      let _ = writeln!(output, "{pad}panic");
+    }
+  }
+}
+
 fn write_expression(output: &mut String, expression: &Expression, indent: usize)
 {
   let pad = "  ".repeat(indent);
@@ -398,6 +459,98 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       let _ = writeln!(output, "{pad}propagate");
       write_expression(output, value, indent + 1);
     }
+  }
+}
+
+fn write_desugared_expression(output: &mut String, expression: &DesugaredExpression, indent: usize)
+{
+  let pad = "  ".repeat(indent);
+  match expression
+  {
+    DesugaredExpression::Literal { literal, .. } =>
+    {
+      let _ = writeln!(output, "{pad}literal {}", literal_name(literal));
+    }
+    DesugaredExpression::Local { name, .. } =>
+    {
+      let _ = writeln!(output, "{pad}local {name}");
+    }
+    DesugaredExpression::Assign { target,
+                                  value,
+                                  .. } =>
+    {
+      let _ = writeln!(output, "{pad}assign {target}");
+      write_desugared_expression(output, value, indent + 1);
+    }
+    DesugaredExpression::Binary { operator,
+                                  left,
+                                  right,
+                                  .. } =>
+    {
+      let _ = writeln!(output, "{pad}binary {}", binary_operator_name(*operator));
+      let _ = writeln!(output, "{pad}  left");
+      write_desugared_expression(output, left, indent + 2);
+      let _ = writeln!(output, "{pad}  right");
+      write_desugared_expression(output, right, indent + 2);
+    }
+    DesugaredExpression::ResultMatch { value,
+                                       success_binding,
+                                       error_binding,
+                                       success_type,
+                                       error_type,
+                                       .. } =>
+    {
+      let _ = writeln!(output, "{pad}result_match");
+      let _ = writeln!(output, "{pad}  ok {success_binding}: {}", type_name(success_type));
+      let _ = writeln!(output, "{pad}  error {error_binding}: {}", type_name(error_type));
+      let _ = writeln!(output, "{pad}  value");
+      write_desugared_expression(output, value, indent + 2);
+    }
+  }
+}
+
+fn write_function_header(output: &mut String, name: &str, return_type: Option<&Type>)
+{
+  let _ = writeln!(output, ".xhir version 0");
+  let _ = writeln!(output, "function {name}");
+  let _ = writeln!(output, "  signature");
+  match return_type
+  {
+    Some(return_type) =>
+    {
+      let _ = writeln!(output, "    returns {}", type_name(return_type));
+    }
+    None =>
+    {
+      let _ = writeln!(output, "    returns void");
+    }
+  }
+  let _ = writeln!(output, "  .end");
+}
+
+fn write_locals(output: &mut String, locals: &[super::type_check::Local])
+{
+  let _ = writeln!(output, "  locals");
+  for local in locals
+  {
+    let _ = writeln!(output,
+                     "    local {}: {} {}",
+                     local.name,
+                     type_name(&local.ty),
+                     mutability_name(local.mutable));
+  }
+  let _ = writeln!(output, "  .end");
+}
+
+const fn mutability_name(mutable: bool) -> &'static str
+{
+  if mutable
+  {
+    "mutable"
+  }
+  else
+  {
+    "immutable"
   }
 }
 
@@ -622,6 +775,36 @@ mod tests
 
     assert!(text.contains("propagate"));
     assert!(matches!(&parsed.body[0], Statement::Expr(Expression::ResultPropagation { .. })));
+  }
+
+  #[test]
+  fn writes_desugared_result_match_as_structured_xhir()
+  {
+    let function = DesugaredFunction { name: "TryWork".to_string(),
+                                       return_type: Some(Type::Named("Result<(), Result.Error>".to_string())),
+                                       locals: vec![Local { name: "work".to_string(),
+                                                            ty:
+                                                              Type::Named("Result<Long, Result.Error>".to_string()),
+                                                            mutable: false,
+                                                            span: span() }],
+                                       body: vec![DesugaredStatement::Expr(DesugaredExpression::ResultMatch {
+        value: Box::new(DesugaredExpression::Local { name: "work".to_string(),
+                                                     span: span() }),
+        success_binding: "__xs_try_ok_0".to_string(),
+        error_binding: "__xs_try_error_0".to_string(),
+        success_type: Type::Primitive(PrimitiveType::Long),
+        error_type: Type::Named("Result.Error".to_string()),
+        span: span(),
+      })] };
+
+    let text = desugared_function_to_xhir(&function);
+
+    assert!(text.contains("function TryWork"));
+    assert!(text.contains("result_match"));
+    assert!(text.contains("ok __xs_try_ok_0: Long"));
+    assert!(text.contains("error __xs_try_error_0: Result.Error"));
+    assert!(text.contains("value\n          local work"));
+    assert!(!text.contains("propagate"));
   }
 
   #[test]
