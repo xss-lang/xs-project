@@ -12,6 +12,8 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.0.5 - 2026-07-12
+
 ### Added
 
 - Imported `Stdio` macros now include `format_args!`; `print!`, `println!`, `eprint!`, `eprintln!`, `format!`, and
