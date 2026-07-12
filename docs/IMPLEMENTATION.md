@@ -331,21 +331,21 @@ semantics.
 - MIR function definitions carry a basic block list.
 - MIR function definitions carry a local table; local kind, type, mutability, and name are stored.
 - The MIR place model starts with a root local plus a `field`/`deref`/`index` projection chain.
-- MIR has an SSA value table and core `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, `load`, and
-  `store` instructions.
+- MIR has an SSA value table and core `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `div.i64`,
+  `rem.i64`, `eq.i64`, `load`, and `store` instructions.
 - Each basic block may currently have a `return`, `goto`, `branch_if`, or `unreachable` terminator in the Rust MIR model.
 - The MIR text writer deterministically writes declarations and functions with bodies.
 - `xs/mir/borrow_checker.h` contains the first MIR validation/borrow-check skeleton.
 - The borrow-checker skeleton validates mandatory terminators, return type compatibility, and `store` operations into
   immutable local roots.
 - The borrow checker also validates instruction result/value ids, `load`/`store` place ids, `goto`/`branch_if` targets,
-  `branch_if` condition liveness/type, `add.i64`/`sub.i64`/`mul.i64` operand type/id consistency, and `eq.i64` i64-to-bool
-  result consistency.
+  `branch_if` condition liveness/type, `add.i64`/`sub.i64`/`mul.i64`/`div.i64`/`rem.i64` operand type/id consistency,
+  and `eq.i64` i64-to-bool result consistency.
 - `xs/mir/optimizer.h` contains the initial MIR optimization API.
 - The CFG cleanup pass removes blocks unreachable from the entry block and rewrites remaining block ids plus `goto`/`branch`
   targets.
-- Constant folding lowers `add.i64`, `sub.i64`, and `mul.i64` instructions with two `const.i64` operands to a `const.i64`
-  result, and lowers `eq.i64` with two `const.i64` operands to a `const.bool` result.
+- Constant folding lowers `add.i64`, `sub.i64`, `mul.i64`, `div.i64`, and `rem.i64` instructions with two `const.i64`
+  operands to a `const.i64` result when safe, and lowers `eq.i64` with two `const.i64` operands to a `const.bool` result.
 - Constant branch folding lowers a `branch_if` whose condition is a same-block known `const.bool` to a direct `goto`; the
   following CFG cleanup can then remove the dead target block.
 - Rust `xslang` also contains a target-independent MIR structural verifier for duplicate local/block ids, missing
@@ -387,7 +387,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   Native direct XLIL requires exactly one defined
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`, `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `add.i64`,
-  `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
+  `sub.i64`, `mul.i64`, `div.i64`, `rem.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
   source slice: one top-level `main` returning `Long` with one return statement whose expression is built from i32-range
   integer literals, unary `+`/`-`, and `+`, `-`, `*`, `/`, or `%`. This source bridge creates a temporary C MIR function, lowers
@@ -430,12 +430,13 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, verification, primitive types, text parsing/writing,
   read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.bool`,
-  i32/i64 add/subtract/multiply/equality, signed i32 comparisons, `call`, `br`, `br_if`, and `return`.
+  i32/i64 add/subtract/multiply/divide/remainder/equality, signed i32 comparisons, `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
   `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
   to bind them to XLIL `.param` values. The bridge lowers MIR
-  parameter signatures, typed MIR `const.i64`, `const.i32`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, and `eq.i64` local statements,
+  parameter signatures, typed MIR `const.i64`, `const.i32`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `div.i64`,
+  `rem.i64`, and `eq.i64` local statements,
   typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,
   compare, `call`, `br`, `br_if`, and `ret %rN` records.

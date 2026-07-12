@@ -440,6 +440,20 @@ XsLilStatus xs_lil_block_mul_i64(XsLilBlock *block, XsLilValueId left, XsLilValu
                             (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
 }
 
+XsLilStatus xs_lil_block_div_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_DIV_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
+}
+
+XsLilStatus xs_lil_block_rem_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_REM_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
+}
+
 XsLilStatus xs_lil_block_eq_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error)
 {

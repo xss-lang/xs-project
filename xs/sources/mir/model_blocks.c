@@ -223,8 +223,8 @@ XsMirStatus xs_mir_block_add_const_bool(XsMirBlock *block, bool value, XsMirValu
   return XS_MIR_OK;
 }
 
-XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
-                                 XsMirError *error)
+static XsMirStatus add_i64_binary(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirInstructionKind kind,
+                                  XsMirType result_type, XsMirValueId *result, XsMirError *error)
 {
   xs_mir_clear_error(error);
   if(result != nullptr)
@@ -232,12 +232,12 @@ XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValu
   if(block == nullptr || block->owner == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR block is required");
   XsMirValueId value_id = 0;
-  XsMirStatus status = xs_mir_function_add_value(block->owner, (XsMirType){.kind = XS_LIL_TYPE_I64}, &value_id, error);
+  XsMirStatus status = xs_mir_function_add_value(block->owner, result_type, &value_id, error);
   if(status != XS_MIR_OK)
     return status;
   status = append_instruction(block,
                               (XsMirInstruction){
-                                  .kind = XS_MIR_INSTRUCTION_ADD_I64,
+                                  .kind = kind,
                                   .result = value_id,
                                   .operand_left = left,
                                   .operand_right = right,
@@ -248,6 +248,48 @@ XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValu
   if(result != nullptr)
     *result = value_id;
   return XS_MIR_OK;
+}
+
+XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_ADD_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_sub_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_SUB_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_mul_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_MUL_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_div_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_DIV_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_rem_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_REM_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_eq_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_EQ_I64, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
 }
 
 static XsMirStatus add_i32_binary(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirInstructionKind kind,

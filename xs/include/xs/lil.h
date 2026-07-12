@@ -60,6 +60,8 @@ typedef enum
   XS_LIL_INSTRUCTION_ADD_I64,
   XS_LIL_INSTRUCTION_SUB_I64,
   XS_LIL_INSTRUCTION_MUL_I64,
+  XS_LIL_INSTRUCTION_DIV_I64,
+  XS_LIL_INSTRUCTION_REM_I64,
   XS_LIL_INSTRUCTION_EQ_I64,
   XS_LIL_INSTRUCTION_ADD_I32,
   XS_LIL_INSTRUCTION_SUB_I32,
@@ -125,6 +127,10 @@ XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValu
 XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_mul_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_div_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_rem_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_eq_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error);

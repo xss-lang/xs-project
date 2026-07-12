@@ -36,17 +36,29 @@ static void fold_function_constants(XsMirFunction *function)
     for(size_t instruction_index = 0; instruction_index < block->instruction_count; ++instruction_index)
     {
       XsMirInstruction *instruction = &block->instructions[instruction_index];
-      if(instruction->kind != XS_MIR_INSTRUCTION_ADD_I64)
+      if(instruction->kind != XS_MIR_INSTRUCTION_ADD_I64 && instruction->kind != XS_MIR_INSTRUCTION_SUB_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_MUL_I64 && instruction->kind != XS_MIR_INSTRUCTION_DIV_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_REM_I64 && instruction->kind != XS_MIR_INSTRUCTION_EQ_I64)
         continue;
       int64_t left = 0;
       int64_t right = 0;
       if(!find_const_i64(function, instruction->operand_left, &left) ||
          !find_const_i64(function, instruction->operand_right, &right))
         continue;
+      XsMirInstructionKind kind = instruction->kind;
+      if((kind == XS_MIR_INSTRUCTION_DIV_I64 || kind == XS_MIR_INSTRUCTION_REM_I64) && right == 0)
+        continue;
+      bool bool_result = kind == XS_MIR_INSTRUCTION_EQ_I64;
       *instruction = (XsMirInstruction){
-          .kind = XS_MIR_INSTRUCTION_CONST_I64,
+          .kind = bool_result ? XS_MIR_INSTRUCTION_CONST_BOOL : XS_MIR_INSTRUCTION_CONST_I64,
           .result = instruction->result,
-          .immediate_i64 = left + right,
+          .immediate_i64 = kind == XS_MIR_INSTRUCTION_ADD_I64   ? left + right
+                           : kind == XS_MIR_INSTRUCTION_SUB_I64 ? left - right
+                           : kind == XS_MIR_INSTRUCTION_MUL_I64 ? left * right
+                           : kind == XS_MIR_INSTRUCTION_DIV_I64 ? left / right
+                           : kind == XS_MIR_INSTRUCTION_REM_I64 ? left % right
+                           : kind == XS_MIR_INSTRUCTION_EQ_I64  ? left == right
+                                                                : 0,
       };
     }
   }

@@ -58,6 +58,11 @@ typedef enum
   XS_MIR_INSTRUCTION_CONST_I32,
   XS_MIR_INSTRUCTION_CONST_BOOL,
   XS_MIR_INSTRUCTION_ADD_I64,
+  XS_MIR_INSTRUCTION_SUB_I64,
+  XS_MIR_INSTRUCTION_MUL_I64,
+  XS_MIR_INSTRUCTION_DIV_I64,
+  XS_MIR_INSTRUCTION_REM_I64,
+  XS_MIR_INSTRUCTION_EQ_I64,
   XS_MIR_INSTRUCTION_ADD_I32,
   XS_MIR_INSTRUCTION_SUB_I32,
   XS_MIR_INSTRUCTION_MUL_I32,
@@ -131,6 +136,16 @@ XsMirStatus xs_mir_block_add_const_i32(XsMirBlock *block, int32_t value, XsMirVa
 XsMirStatus xs_mir_block_add_const_bool(XsMirBlock *block, bool value, XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                  XsMirError *error);
+XsMirStatus xs_mir_block_sub_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_mul_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_div_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_rem_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_eq_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error);
 XsMirStatus xs_mir_block_add_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                  XsMirError *error);
 XsMirStatus xs_mir_block_sub_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,

@@ -165,10 +165,14 @@ int main(int argc, char **argv)
   XsLilValueId sum = 0;
   XsLilValueId difference = 0;
   XsLilValueId product = 0;
+  XsLilValueId quotient = 0;
+  XsLilValueId remainder = 0;
   CHECK(xs_lil_block_add_i64(arithmetic_entry, left, right, &sum, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_sub_i64(arithmetic_entry, sum, right, &difference, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_mul_i64(arithmetic_entry, difference, right, &product, nullptr) == XS_LIL_OK);
-  CHECK(xs_lil_block_set_return_value(arithmetic_entry, product, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_div_i64(arithmetic_entry, product, right, &quotient, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_rem_i64(arithmetic_entry, quotient, right, &remainder, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(arithmetic_entry, remainder, nullptr) == XS_LIL_OK);
   CHECK(xs_llvm_declare_lil_function(first, "Arithmetic", (XsLilType){.kind = XS_LIL_TYPE_I64}, import_parameters, 1,
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, arithmetic, &error) == XS_BACKEND_OK);
@@ -273,6 +277,8 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "add i64"));
   CHECK(file_contains(ir_path, "sub i64"));
   CHECK(file_contains(ir_path, "mul i64"));
+  CHECK(file_contains(ir_path, "sdiv i64"));
+  CHECK(file_contains(ir_path, "srem i64"));
   CHECK(file_contains(ir_path, "define i1 @Equality(i64"));
   CHECK(file_contains(ir_path, "icmp eq i64"));
   CHECK(file_contains(ir_path, "define i32 @Arithmetic32(i32"));

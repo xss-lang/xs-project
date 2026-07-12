@@ -82,6 +82,46 @@ static XsMirStatus lower_instruction(const XsMirInstruction *instruction, XsLilB
                              &values[instruction->result], &lil_error);
     return map_lil_status(status, &lil_error, error);
   }
+  case XS_MIR_INSTRUCTION_SUB_I64:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_sub_i64(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_MUL_I64:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_mul_i64(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_DIV_I64:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_div_i64(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_REM_I64:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_rem_i64(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_EQ_I64:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_eq_i64(block, values[instruction->operand_left], values[instruction->operand_right],
+                            &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
   case XS_MIR_INSTRUCTION_ADD_I32:
   {
     XsLilError lil_error = {0};

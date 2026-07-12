@@ -31,6 +31,8 @@ source-to-native executable pipeline.
 - XLIL, MIR, LLVM lowering, and source-native `Long` return expressions now support bitwise `and.i32` and `or.i32`.
 - XLIL, MIR, LLVM lowering, and source-native `Long` return expressions now support signed i32 `shl.i32` and arithmetic
   `shr.i32` shifts.
+- C MIR, XLIL, MIR optimization, and LLVM lowering now support signed `div.i64` and `rem.i64`, completing the current
+  direct i64 arithmetic family.
 - C MIR to XLIL lowering now supports `const.bool`, and source-native `if` conditions accept `true`/`false`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `div.i32`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `rem.i32`.

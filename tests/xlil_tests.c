@@ -346,7 +346,8 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
   const char text[] = ".xlil version 0\n.xlil module App\n.func Arithmetic : () -> i64\nbb0.entry:\n"
                       "  %r0:i64 = const 9\n  %r1:i64 = const 3\n  %r2:i64 = add.i64 %r0, %r1\n"
                       "  %r3:i64 = sub.i64 %r2, %r1\n  %r4:i64 = mul.i64 %r3, %r1\n"
-                      "  %r5:bool = eq.i64 %r4, %r0\n  ret %r4\n.end\n";
+                      "  %r5:i64 = div.i64 %r4, %r1\n  %r6:i64 = rem.i64 %r5, %r1\n"
+                      "  %r7:bool = eq.i64 %r6, %r0\n  ret %r6\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("arithmetic.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
@@ -365,7 +366,9 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
   CHECK(strstr(buffer, "%r2:i64 = add.i64 %r0, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r3:i64 = sub.i64 %r2, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r4:i64 = mul.i64 %r3, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r5:bool = eq.i64 %r4, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r5:i64 = div.i64 %r4, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r6:i64 = rem.i64 %r5, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r7:bool = eq.i64 %r6, %r0\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }

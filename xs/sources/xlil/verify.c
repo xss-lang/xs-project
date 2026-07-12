@@ -72,7 +72,8 @@ static XsLilStatus verify_call(const XsLilModule *module, const XsLilFunction *f
 static bool is_binary_i64(XsLilInstructionKind kind)
 {
   return kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 ||
-         kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_EQ_I64;
+         kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_DIV_I64 ||
+         kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_EQ_I64;
 }
 
 static bool is_binary_i32(XsLilInstructionKind kind)

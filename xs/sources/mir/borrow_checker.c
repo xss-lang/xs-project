@@ -81,6 +81,20 @@ static XsMirStatus check_i32_binary(const XsMirFunction *function, const XsMirIn
   return check_i32_operand(function, instruction->operand_right, "MIR i32 right operand is unknown", error);
 }
 
+static XsMirStatus check_i64_binary(const XsMirFunction *function, const XsMirInstruction *instruction,
+                                    XsMirType result_type, XsMirError *error)
+{
+  XsMirStatus status = check_value_exists(function, instruction->result, "MIR i64 result is unknown", error);
+  if(status != XS_MIR_OK)
+    return status;
+  if(!type_equal(function->values[instruction->result].type, result_type))
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR i64 instruction result has the wrong type");
+  status = check_i64_operand(function, instruction->operand_left, "MIR i64 left operand is unknown", error);
+  if(status != XS_MIR_OK)
+    return status;
+  return check_i64_operand(function, instruction->operand_right, "MIR i64 right operand is unknown", error);
+}
+
 static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirInstruction *instruction,
                                      XsMirError *error)
 {
@@ -93,15 +107,13 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
   case XS_MIR_INSTRUCTION_CONST_BOOL:
     return check_value_exists(function, instruction->result, "MIR const.bool result is unknown", error);
   case XS_MIR_INSTRUCTION_ADD_I64:
-  {
-    XsMirStatus status = check_value_exists(function, instruction->result, "MIR add.i64 result is unknown", error);
-    if(status != XS_MIR_OK)
-      return status;
-    status = check_i64_operand(function, instruction->operand_left, "MIR add.i64 left operand is unknown", error);
-    if(status != XS_MIR_OK)
-      return status;
-    return check_i64_operand(function, instruction->operand_right, "MIR add.i64 right operand is unknown", error);
-  }
+  case XS_MIR_INSTRUCTION_SUB_I64:
+  case XS_MIR_INSTRUCTION_MUL_I64:
+  case XS_MIR_INSTRUCTION_DIV_I64:
+  case XS_MIR_INSTRUCTION_REM_I64:
+    return check_i64_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_I64}, error);
+  case XS_MIR_INSTRUCTION_EQ_I64:
+    return check_i64_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, error);
   case XS_MIR_INSTRUCTION_ADD_I32:
   case XS_MIR_INSTRUCTION_SUB_I32:
   case XS_MIR_INSTRUCTION_MUL_I32:

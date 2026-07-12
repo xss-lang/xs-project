@@ -257,7 +257,7 @@ static void test_branch_terminator_checks_condition_and_reachability(void)
   }
   CHECK(xs_mir_module_write_text(module, stream, &error) == XS_MIR_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
-  char buffer[512] = {0};
+  char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "branch v0, bb1, bb2\n") != nullptr);
@@ -331,13 +331,28 @@ static void test_constant_optimizer_folds_i64_add(void)
   XsMirValueId left = 0;
   XsMirValueId right = 0;
   XsMirValueId sum = 0;
+  XsMirValueId difference = 0;
+  XsMirValueId product = 0;
+  XsMirValueId quotient = 0;
+  XsMirValueId remainder = 0;
+  XsMirValueId equal = 0;
   CHECK(xs_mir_block_add_const_i64(entry, 2, &left, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_const_i64(entry, 3, &right, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_i64(entry, left, right, &sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_sub_i64(entry, sum, left, &difference, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_mul_i64(entry, difference, right, &product, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_div_i64(entry, product, right, &quotient, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_rem_i64(entry, quotient, right, &remainder, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_eq_i64(entry, remainder, left, &equal, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_ADD_I64);
-  CHECK(xs_mir_block_set_return_value(entry, sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, quotient, &error) == XS_MIR_OK);
   CHECK(xs_mir_optimize_module_constants(module, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 3) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 4) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 5) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 6) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 7) == XS_MIR_INSTRUCTION_CONST_BOOL);
 
   FILE *stream = tmpfile();
   if(stream == nullptr)
@@ -352,6 +367,7 @@ static void test_constant_optimizer_folds_i64_add(void)
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "v2 = const.i64 5\n") != nullptr);
+  CHECK(strstr(buffer, "v7 = const.bool false\n") != nullptr);
   fclose(stream);
   xs_mir_module_destroy(module);
 }
