@@ -132,8 +132,9 @@ The documented compilation order is preserved:
   interpreted as return types.
 - Top-level `extern "ABI" { fn ...; static ...; }` blocks are parsed as external declaration blocks. The structural AST
   stores the ABI string token on the block and on each contained function/static symbol. Functions are marked
-  external/incomplete, and static foreign globals are marked external/static. CFFI type validation, library resolution,
-  symbol binding, and backend lowering remain HIR/backend work.
+  external/incomplete, and static foreign globals are marked external/static. HIR currently accepts the first explicit C ABI
+  shape, `#[repr(C)] extern "C"`, and rejects unsupported ABI strings or missing/non-C representation attributes. Library
+  resolution, symbol binding, and backend lowering remain HIR/backend work.
 - Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated. The
   parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result.Result<T, E>` and postfix `@`
   propagation.
@@ -190,6 +191,8 @@ This layer lives under the HIR directory.
 - `extern "ABI"` block functions are collected as function symbols, while `static` foreign globals are collected as
   `extern global` symbols. Visibility on the extern block is inherited by contained declarations unless a contained
   declaration has its own explicit visibility.
+- HIR CFFI validation runs after import resolution. Version 0 currently requires C ABI extern blocks to be written as
+  `#[repr(C)] extern "C" { ... }`; this keeps the ABI/layout intent explicit before backend CFFI lowering exists.
 - `xs_hir_collect_symbols_expanded`, when given a declaration macro expansion set, collects synthetic declarations produced
   by `XS_SYNTAX_DECL_MACRO_CALL` reparse trees into the active HIR namespace of the macro call. Duplicate symbol checks use
   the same namespace rule as normal declarations.

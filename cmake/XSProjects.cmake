@@ -43,6 +43,7 @@ add_library(xs_compiler
   xs/sources/mir/optimizer.c
   xs/sources/mir/xlil_lowering.c
   xs/sources/mono/plan.c
+  xs/sources/hir/cffi.c
   xs/sources/hir/dump.c
   xs/sources/hir/expression_check.c
   xs/sources/hir/module_graph.c

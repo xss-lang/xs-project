@@ -4,6 +4,7 @@
  */
 
 #include "xs/diagnostic.h"
+#include "xs/hir/cffi.h"
 #include "xs/hir/jit.h"
 #include "xs/hir/symbol_table.h"
 #include "xs/syntax_parser.h"
@@ -109,6 +110,66 @@ static void test_extern_block_duplicate_symbol_errors(void)
   CHECK(!parse_and_collect(text, &tree, &symbols, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   free_all(&tree, &symbols, &diagnostics);
+}
+
+static bool parse_and_validate_cffi(const char *text, XsSyntaxTree *tree, XsDiagnostics *diagnostics)
+{
+  XsSource source = {.path = "CFFI.xs", .text = text, .length = strlen(text)};
+  xs_diagnostics_init(diagnostics);
+  if(!xs_syntax_parse(&source, 27, diagnostics, tree))
+    return false;
+  CHECK(xs_syntax_find_first(tree->root, XS_SYNTAX_DECL_EXTERN_BLOCK) != nullptr);
+  return xs_hir_validate_cffi(tree, diagnostics);
+}
+
+static void test_cffi_validation_accepts_repr_c_extern_block(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(C)]\n"
+                     "extern \"C\" { fn puts(text: CFFI.CStr) => Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(parse_and_validate_cffi(text, &tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_cffi_validation_rejects_missing_repr_c(void)
+{
+  const char *text = "module App;\n"
+                     "extern \"C\" { fn puts(text: CFFI.CStr) => Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_cffi_validation_rejects_unsupported_abi(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(C)]\n"
+                     "extern \"stdcall\" { fn puts(text: CFFI.CStr) => Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_cffi_validation_rejects_non_c_repr(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(Rust)]\n"
+                     "extern \"C\" { fn puts(text: CFFI.CStr) => Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
 }
 
 static void test_same_name_in_different_namespace(void)
@@ -495,6 +556,10 @@ int main(void)
   test_duplicate_names_in_namespace();
   test_extern_block_symbols();
   test_extern_block_duplicate_symbol_errors();
+  test_cffi_validation_accepts_repr_c_extern_block();
+  test_cffi_validation_rejects_missing_repr_c();
+  test_cffi_validation_rejects_unsupported_abi();
+  test_cffi_validation_rejects_non_c_repr();
   test_same_name_in_different_namespace();
   test_import_resolution();
   test_public_namespace_exports_default_symbols();

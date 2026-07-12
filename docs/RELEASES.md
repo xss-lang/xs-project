@@ -12,7 +12,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 
 ## Current status
 
-- Current project version: `0.0.5`.
+- Current project version: `0.0.6`.
 - `xs --version` reports the configured compiler version.
 - The root [../CHANGELOG.md](../CHANGELOG.md) file keeps `Unreleased` for work after the current numbered line.
 - Numbered `0.0.x` entries are development snapshots, not stable language releases.
@@ -22,7 +22,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 The root `release.java` source-file tool checks release metadata without using shell scripts:
 
 ```text
-java --source=21 release.java check 0.0.5
+java --source=21 release.java check 0.0.6
 ```
 
 It validates the CMake project version, changelog heading, release documentation, CLI version documentation, and the built
@@ -30,6 +30,8 @@ It validates the CMake project version, changelog heading, release documentation
 
 ## Version line
 
+- `0.0.6` is the CFFI surface snapshot: attributes and `extern "C"` blocks are parsed, collected into HIR symbols, and
+  guarded by the first HIR C ABI validation pass.
 - `0.0.5` is the source-native local-binding snapshot: checked source `main` can lower selected `Long`/`Bool` locals into
   the current native `.xse` slice.
 - `0.0.4` is the first source-native control-flow snapshot: checked source `main` can lower selected i32 arithmetic and

@@ -10,6 +10,7 @@
 #include "source_native.h"
 
 #include "xs/diagnostic.h"
+#include "xs/hir/cffi.h"
 #include "xs/hir/expression_check.h"
 #include "xs/hir/module_registry.h"
 #include "xs/hir/symbol_table.h"
@@ -27,7 +28,7 @@
 #include <string.h>
 
 #ifndef XS_PROJECT_VERSION
-#define XS_PROJECT_VERSION "0.0.5"
+#define XS_PROJECT_VERSION "0.0.6"
 #endif
 
 static char *copy_text(const char *text)
@@ -375,6 +376,7 @@ static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolT
   if(!unit->hir_ready)
     return false;
   bool success = xs_hir_resolve_imports(&unit->tree, symbols, &unit->imports, &unit->diagnostics);
+  success = xs_hir_validate_cffi(&unit->tree, &unit->diagnostics) && success;
   success = xs_hir_validate_name_uses_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
                                                   symbols, &unit->imports, &unit->diagnostics) &&
             success;

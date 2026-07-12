@@ -110,7 +110,7 @@ example today.
 
 ## Release policy
 
-The project is now in the `0.0.5` pre-1.0 development period. Numbered `0.0.x` entries are compiler infrastructure
+The project is now in the `0.0.6` pre-1.0 development period. Numbered `0.0.x` entries are compiler infrastructure
 snapshots; they do not imply that the full X# source-to-native pipeline is complete.
 
 ## CLI summary
