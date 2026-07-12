@@ -8,6 +8,7 @@
 #include "direct_xlil.h"
 
 #include "xs/mir/borrow_checker.h"
+#include "xs/mir/optimizer.h"
 #include "xs/mir/xlil_lowering.h"
 
 #include <stdint.h>
@@ -193,8 +194,9 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
       break;
     }
   }
-  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
-                            "native source main if condition supports only !, bool literals, and i32 comparisons for now") &&
+  return xs_diagnostics_add(
+             diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+             "native source main if condition supports only !, bool literals, and i32 comparisons for now") &&
          false;
 }
 
@@ -253,9 +255,9 @@ static bool lower_i32_expression(XsMirBlock *entry, const XsSyntaxNode *expressi
       break;
     }
   }
-  return xs_diagnostics_add(
-             diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
-             "native source main return expression supports only integer literals, unary +/-, +, -, *, /, %, &, |, <<, >>, and top-level if for now") &&
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+                            "native source main return expression supports only integer literals, unary +/-, +, -, *, "
+                            "/, %, &, |, <<, >>, and top-level if for now") &&
          false;
 }
 
@@ -308,6 +310,12 @@ static bool build_native_module(const char *input_path, const XsSyntaxNode *expr
     success = lower_i32_expression(entry, expression, diagnostics, &value, &mir_error);
   if(success && expression->kind != XS_SYNTAX_EXPR_IF)
     success = xs_mir_block_set_return_value(entry, value, &mir_error) == XS_MIR_OK;
+  if(success)
+    success = xs_mir_borrow_check_module(mir, &mir_error) == XS_MIR_OK;
+  if(success)
+    success = xs_mir_optimize_module_constants(mir, &mir_error) == XS_MIR_OK;
+  if(success)
+    success = xs_mir_optimize_module_cfg(mir, &mir_error) == XS_MIR_OK;
   if(success)
     success = xs_mir_borrow_check_module(mir, &mir_error) == XS_MIR_OK;
   if(!success)

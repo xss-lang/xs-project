@@ -16,8 +16,12 @@ source-to-native executable pipeline.
 
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
+- C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the
+  current source-native `Long` slice.
 
 ### Changed
+
+- Source-native builds now run MIR constant folding and CFG cleanup before MIR is lowered to XLIL.
 
 ### Known gaps
 

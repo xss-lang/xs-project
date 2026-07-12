@@ -344,10 +344,10 @@ semantics.
 - `xs/mir/optimizer.h` contains the initial MIR optimization API.
 - The CFG cleanup pass removes blocks unreachable from the entry block and rewrites remaining block ids plus `goto`/`branch`
   targets.
-- Constant folding lowers safe i64 arithmetic, bitwise, and shift instructions with two `const.i64` operands to a
-  `const.i64` result, and lowers i64 comparisons with two `const.i64` operands to a `const.bool` result.
-- Constant branch folding lowers a `branch_if` whose condition is a same-block known `const.bool` to a direct `goto`; the
-  following CFG cleanup can then remove the dead target block.
+- Constant folding lowers safe i32/i64 arithmetic, bitwise, and shift instructions with two matching constants to a
+  constant result, and lowers i32/i64 comparisons with two matching constants to a `const.bool` result.
+- Source-native builds run C MIR borrow checking, constant folding, CFG cleanup, and a second borrow-check pass before
+  lowering MIR to XLIL.
 - Rust `xslang` also contains a target-independent MIR structural verifier for duplicate local/block ids, missing
   terminators, unknown local references, and unknown block targets. This verifier is separate from LLVM and runs before
   borrow-check-specific reasoning.

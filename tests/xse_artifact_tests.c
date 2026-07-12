@@ -50,6 +50,29 @@ static bool exists(const char *path)
   return true;
 }
 
+static bool file_contains(const char *path, const char *needle)
+{
+  FILE *file = fopen(path, "rb");
+  if(file == nullptr)
+    return false;
+  CHECK(fseek(file, 0, SEEK_END) == 0);
+  long size = ftell(file);
+  CHECK(size >= 0);
+  CHECK(fseek(file, 0, SEEK_SET) == 0);
+  char *buffer = calloc((size_t)size + 1U, 1);
+  if(buffer == nullptr)
+  {
+    fclose(file);
+    return false;
+  }
+  size_t read = fread(buffer, 1, (size_t)size, file);
+  fclose(file);
+  buffer[read] = '\0';
+  bool found = strstr(buffer, needle) != nullptr;
+  free(buffer);
+  return found;
+}
+
 static bool parse_exit_code(const char *text, int *code)
 {
   char *end = nullptr;
@@ -89,9 +112,9 @@ static bool run_and_check_exit(const char *path, int expected)
 
 int main(int argc, char **argv)
 {
-  if(argc != 5)
+  if(argc != 5 && argc != 6)
   {
-    fprintf(stderr, "xse artifact test requires .ll, .o, .xse, and expected exit-code arguments\n");
+    fprintf(stderr, "xse artifact test requires .ll, .o, .xse, expected exit-code, and optional IR text arguments\n");
     return 2;
   }
   int expected_exit = 0;
@@ -106,5 +129,7 @@ int main(int argc, char **argv)
   CHECK(has_magic(argv[2], elf_magic, sizeof(elf_magic)));
   CHECK(has_magic(argv[3], elf_magic, sizeof(elf_magic)));
   CHECK(run_and_check_exit(argv[3], expected_exit));
+  if(argc == 6)
+    CHECK(file_contains(argv[1], argv[5]));
   return failures == 0 ? 0 : 1;
 }

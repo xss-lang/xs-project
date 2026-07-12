@@ -146,7 +146,7 @@ set_tests_properties(source_native_arithmetic_build PROPERTIES TIMEOUT 5
 add_test(NAME source_native_arithmetic_artifacts COMMAND xs_xse_artifact_tests
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.ll
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.o
-                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.xse 7)
+                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.xse 7 "ret i32 7")
 set_tests_properties(source_native_arithmetic_artifacts PROPERTIES DEPENDS source_native_arithmetic_build TIMEOUT 5)
 add_test(NAME source_native_division_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDivision.xs)
 set_tests_properties(source_native_division_build PROPERTIES TIMEOUT 5
@@ -186,7 +186,7 @@ set_tests_properties(source_native_bitwise_build PROPERTIES TIMEOUT 5
 add_test(NAME source_native_bitwise_artifacts COMMAND xs_xse_artifact_tests
                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBitwise.ll
                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBitwise.o
-                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBitwise.xse 6)
+                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBitwise.xse 6 "ret i32 6")
 set_tests_properties(source_native_bitwise_artifacts PROPERTIES DEPENDS source_native_bitwise_build TIMEOUT 5)
 add_test(NAME source_native_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xs)
 set_tests_properties(source_native_if_build PROPERTIES TIMEOUT 5

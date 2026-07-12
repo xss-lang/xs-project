@@ -27,6 +27,74 @@ static bool find_const_i64(const XsMirFunction *function, XsMirValueId value, in
   return false;
 }
 
+static bool find_const_i32(const XsMirFunction *function, XsMirValueId value, int32_t *result)
+{
+  for(size_t block_index = 0; block_index < function->block_count; ++block_index)
+  {
+    const XsMirBlock *block = function->blocks[block_index];
+    for(size_t instruction_index = 0; instruction_index < block->instruction_count; ++instruction_index)
+    {
+      const XsMirInstruction *instruction = &block->instructions[instruction_index];
+      if(instruction->kind == XS_MIR_INSTRUCTION_CONST_I32 && instruction->result == value)
+      {
+        *result = (int32_t)instruction->immediate_i64;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static bool is_i32_fold_candidate(XsMirInstructionKind kind)
+{
+  return kind == XS_MIR_INSTRUCTION_ADD_I32 || kind == XS_MIR_INSTRUCTION_SUB_I32 ||
+         kind == XS_MIR_INSTRUCTION_MUL_I32 || kind == XS_MIR_INSTRUCTION_DIV_I32 ||
+         kind == XS_MIR_INSTRUCTION_REM_I32 || kind == XS_MIR_INSTRUCTION_AND_I32 ||
+         kind == XS_MIR_INSTRUCTION_OR_I32 || kind == XS_MIR_INSTRUCTION_SHL_I32 ||
+         kind == XS_MIR_INSTRUCTION_SHR_I32 || kind == XS_MIR_INSTRUCTION_EQ_I32 || kind == XS_MIR_INSTRUCTION_NE_I32 ||
+         kind == XS_MIR_INSTRUCTION_LT_I32 || kind == XS_MIR_INSTRUCTION_LE_I32 || kind == XS_MIR_INSTRUCTION_GT_I32 ||
+         kind == XS_MIR_INSTRUCTION_GE_I32;
+}
+
+static bool is_i32_bool_result(XsMirInstructionKind kind)
+{
+  return kind == XS_MIR_INSTRUCTION_EQ_I32 || kind == XS_MIR_INSTRUCTION_NE_I32 || kind == XS_MIR_INSTRUCTION_LT_I32 ||
+         kind == XS_MIR_INSTRUCTION_LE_I32 || kind == XS_MIR_INSTRUCTION_GT_I32 || kind == XS_MIR_INSTRUCTION_GE_I32;
+}
+
+static bool fold_i32_result(XsMirInstructionKind kind, int32_t left, int32_t right, int64_t *result)
+{
+  if((kind == XS_MIR_INSTRUCTION_DIV_I32 || kind == XS_MIR_INSTRUCTION_REM_I32) &&
+     (right == 0 || (left == INT32_MIN && right == -1)))
+    return false;
+  if((kind == XS_MIR_INSTRUCTION_SHL_I32 || kind == XS_MIR_INSTRUCTION_SHR_I32) && (right < 0 || right >= 32))
+    return false;
+  if(kind == XS_MIR_INSTRUCTION_SHL_I32 && (left < 0 || left > (INT32_MAX >> (unsigned)right)))
+    return false;
+  if(kind == XS_MIR_INSTRUCTION_SHR_I32 && left < 0)
+    return false;
+  int64_t value = kind == XS_MIR_INSTRUCTION_ADD_I32   ? (int64_t)left + right
+                  : kind == XS_MIR_INSTRUCTION_SUB_I32 ? (int64_t)left - right
+                  : kind == XS_MIR_INSTRUCTION_MUL_I32 ? (int64_t)left * right
+                  : kind == XS_MIR_INSTRUCTION_DIV_I32 ? left / right
+                  : kind == XS_MIR_INSTRUCTION_REM_I32 ? left % right
+                  : kind == XS_MIR_INSTRUCTION_AND_I32 ? left & right
+                  : kind == XS_MIR_INSTRUCTION_OR_I32  ? left | right
+                  : kind == XS_MIR_INSTRUCTION_SHL_I32 ? left << (unsigned)right
+                  : kind == XS_MIR_INSTRUCTION_SHR_I32 ? left >> (unsigned)right
+                  : kind == XS_MIR_INSTRUCTION_EQ_I32  ? left == right
+                  : kind == XS_MIR_INSTRUCTION_NE_I32  ? left != right
+                  : kind == XS_MIR_INSTRUCTION_LT_I32  ? left < right
+                  : kind == XS_MIR_INSTRUCTION_LE_I32  ? left <= right
+                  : kind == XS_MIR_INSTRUCTION_GT_I32  ? left > right
+                  : kind == XS_MIR_INSTRUCTION_GE_I32  ? left >= right
+                                                       : 0;
+  if(!is_i32_bool_result(kind) && (value < INT32_MIN || value > INT32_MAX))
+    return false;
+  *result = value;
+  return true;
+}
+
 static void fold_function_constants(XsMirFunction *function)
 {
   if(!function->is_definition)
@@ -37,6 +105,23 @@ static void fold_function_constants(XsMirFunction *function)
     for(size_t instruction_index = 0; instruction_index < block->instruction_count; ++instruction_index)
     {
       XsMirInstruction *instruction = &block->instructions[instruction_index];
+      if(is_i32_fold_candidate(instruction->kind))
+      {
+        int32_t left = 0;
+        int32_t right = 0;
+        int64_t result = 0;
+        XsMirInstructionKind kind = instruction->kind;
+        if(!find_const_i32(function, instruction->operand_left, &left) ||
+           !find_const_i32(function, instruction->operand_right, &right) ||
+           !fold_i32_result(kind, left, right, &result))
+          continue;
+        *instruction = (XsMirInstruction){
+            .kind = is_i32_bool_result(kind) ? XS_MIR_INSTRUCTION_CONST_BOOL : XS_MIR_INSTRUCTION_CONST_I32,
+            .result = instruction->result,
+            .immediate_i64 = result,
+        };
+        continue;
+      }
       if(instruction->kind != XS_MIR_INSTRUCTION_ADD_I64 && instruction->kind != XS_MIR_INSTRUCTION_SUB_I64 &&
          instruction->kind != XS_MIR_INSTRUCTION_MUL_I64 && instruction->kind != XS_MIR_INSTRUCTION_DIV_I64 &&
          instruction->kind != XS_MIR_INSTRUCTION_REM_I64 && instruction->kind != XS_MIR_INSTRUCTION_AND_I64 &&

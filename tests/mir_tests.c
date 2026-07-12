@@ -401,6 +401,68 @@ static void test_constant_optimizer_folds_i64_add(void)
   xs_mir_module_destroy(module);
 }
 
+static void test_constant_optimizer_folds_i32_family(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = nullptr;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = nullptr;
+  CHECK(xs_mir_module_add_function_definition(module, "App.Fold32", (XsMirType){.kind = XS_LIL_TYPE_I32}, nullptr, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = nullptr;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  XsMirValueId one = 0;
+  XsMirValueId two = 0;
+  XsMirValueId sum = 0;
+  XsMirValueId difference = 0;
+  XsMirValueId product = 0;
+  XsMirValueId quotient = 0;
+  XsMirValueId remainder = 0;
+  XsMirValueId bit_and = 0;
+  XsMirValueId bit_or = 0;
+  XsMirValueId shifted_left = 0;
+  XsMirValueId shifted_right = 0;
+  XsMirValueId equal = 0;
+  XsMirValueId greater = 0;
+  CHECK(xs_mir_block_add_const_i32(entry, 1, &one, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i32(entry, 2, &two, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_i32(entry, one, two, &sum, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_sub_i32(entry, sum, one, &difference, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_mul_i32(entry, difference, two, &product, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_div_i32(entry, product, two, &quotient, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_rem_i32(entry, quotient, two, &remainder, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_and_i32(entry, sum, product, &bit_and, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_or_i32(entry, bit_and, sum, &bit_or, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shl_i32(entry, bit_or, one, &shifted_left, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shr_i32(entry, shifted_left, one, &shifted_right, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_eq_i32(entry, shifted_right, sum, &equal, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_gt_i32(entry, shifted_right, two, &greater, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, shifted_right, &error) == XS_MIR_OK);
+  CHECK(xs_mir_optimize_module_constants(module, &error) == XS_MIR_OK);
+  for(size_t index = 2; index <= 10; ++index)
+    CHECK(xs_mir_block_instruction_kind(entry, index) == XS_MIR_INSTRUCTION_CONST_I32);
+  CHECK(xs_mir_block_instruction_kind(entry, 11) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 12) == XS_MIR_INSTRUCTION_CONST_BOOL);
+
+  FILE *stream = tmpfile();
+  if(stream == nullptr)
+  {
+    ++failures;
+    xs_mir_module_destroy(module);
+    return;
+  }
+  CHECK(xs_mir_module_write_text(module, stream, &error) == XS_MIR_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[1024] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "v2 = const.i32 3\n") != nullptr);
+  CHECK(strstr(buffer, "v10 = const.i32 3\n") != nullptr);
+  CHECK(strstr(buffer, "v11 = const.bool true\n") != nullptr);
+  fclose(stream);
+  xs_mir_module_destroy(module);
+}
+
 static void test_hir_function_declaration_lowering(void)
 {
   const char *text = "module App;\n"
@@ -652,6 +714,7 @@ int main(void)
   test_borrow_checker_rejects_non_bool_branch_condition();
   test_cfg_optimizer_removes_unreachable_blocks();
   test_constant_optimizer_folds_i64_add();
+  test_constant_optimizer_folds_i32_family();
   test_hir_function_declaration_lowering();
   test_xlil_declaration_lowering();
   test_xlil_body_lowering_for_const_return();
