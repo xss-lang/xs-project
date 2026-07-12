@@ -18,6 +18,8 @@ source-to-native executable pipeline.
   signed ordering comparisons.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the
   current source-native `Long` slice.
+- C MIR constant folding now turns `branch_if` with a known `const.bool` condition into a direct `goto`, allowing CFG cleanup
+  to remove the dead branch.
 
 ### Changed
 

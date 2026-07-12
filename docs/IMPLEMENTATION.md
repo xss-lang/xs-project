@@ -346,6 +346,8 @@ semantics.
   targets.
 - Constant folding lowers safe i32/i64 arithmetic, bitwise, and shift instructions with two matching constants to a
   constant result, and lowers i32/i64 comparisons with two matching constants to a `const.bool` result.
+- Constant folding also lowers a MIR `branch_if` whose condition resolves to a known `const.bool` into a direct `goto`;
+  CFG cleanup can then remove the dead target block.
 - Source-native builds run C MIR borrow checking, constant folding, CFG cleanup, and a second borrow-check pass before
   lowering MIR to XLIL.
 - Rust `xslang` also contains a target-independent MIR structural verifier for duplicate local/block ids, missing

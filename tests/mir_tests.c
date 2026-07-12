@@ -463,6 +463,40 @@ static void test_constant_optimizer_folds_i32_family(void)
   xs_mir_module_destroy(module);
 }
 
+static void test_constant_optimizer_folds_bool_branch(void)
+{
+  XsMirError error = {0};
+  XsMirModule *module = nullptr;
+  CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
+  XsMirFunction *function = nullptr;
+  CHECK(xs_mir_module_add_function_definition(module, "App.FoldBranch", (XsMirType){.kind = XS_LIL_TYPE_I32}, nullptr,
+                                              0, &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = nullptr;
+  XsMirBlock *then_block = nullptr;
+  XsMirBlock *else_block = nullptr;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "then", &then_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "else", &else_block, &error) == XS_MIR_OK);
+  XsMirValueId condition = 0;
+  XsMirValueId then_value = 0;
+  XsMirValueId else_value = 0;
+  CHECK(xs_mir_block_add_const_bool(entry, false, &condition, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_branch(entry, condition, then_block, else_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i32(then_block, 7, &then_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(then_block, then_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i32(else_block, 3, &else_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(else_block, else_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_terminator_kind(entry) == XS_MIR_TERMINATOR_BRANCH);
+  CHECK(xs_mir_optimize_module_constants(module, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_terminator_kind(entry) == XS_MIR_TERMINATOR_GOTO);
+  CHECK(xs_mir_optimize_module_cfg(module, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_block_count(function) == 2);
+  const XsMirBlock *live = xs_mir_function_block_at(function, 1);
+  CHECK(live != nullptr && strcmp(xs_mir_block_label(live), "else") == 0);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
+  xs_mir_module_destroy(module);
+}
+
 static void test_hir_function_declaration_lowering(void)
 {
   const char *text = "module App;\n"
@@ -715,6 +749,7 @@ int main(void)
   test_cfg_optimizer_removes_unreachable_blocks();
   test_constant_optimizer_folds_i64_add();
   test_constant_optimizer_folds_i32_family();
+  test_constant_optimizer_folds_bool_branch();
   test_hir_function_declaration_lowering();
   test_xlil_declaration_lowering();
   test_xlil_body_lowering_for_const_return();

@@ -45,6 +45,24 @@ static bool find_const_i32(const XsMirFunction *function, XsMirValueId value, in
   return false;
 }
 
+static bool find_const_bool(const XsMirFunction *function, XsMirValueId value, bool *result)
+{
+  for(size_t block_index = 0; block_index < function->block_count; ++block_index)
+  {
+    const XsMirBlock *block = function->blocks[block_index];
+    for(size_t instruction_index = 0; instruction_index < block->instruction_count; ++instruction_index)
+    {
+      const XsMirInstruction *instruction = &block->instructions[instruction_index];
+      if(instruction->kind == XS_MIR_INSTRUCTION_CONST_BOOL && instruction->result == value)
+      {
+        *result = instruction->immediate_i64 != 0;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 static bool is_i32_fold_candidate(XsMirInstructionKind kind)
 {
   return kind == XS_MIR_INSTRUCTION_ADD_I32 || kind == XS_MIR_INSTRUCTION_SUB_I32 ||
@@ -169,6 +187,17 @@ static void fold_function_constants(XsMirFunction *function)
                            : kind == XS_MIR_INSTRUCTION_GE_I64  ? left >= right
                                                                 : 0,
       };
+    }
+    if(block->terminator.kind == XS_MIR_TERMINATOR_BRANCH)
+    {
+      bool condition = false;
+      if(find_const_bool(function, block->terminator.value, &condition))
+      {
+        block->terminator = (XsMirTerminator){
+            .kind = XS_MIR_TERMINATOR_GOTO,
+            .target = condition ? block->terminator.target : block->terminator.else_target,
+        };
+      }
     }
   }
 }
