@@ -124,6 +124,11 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
                instruction->operand_right) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR eq.i32 instruction");
     return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_NE_I32:
+    if(fprintf(stream, "  v%u = ne.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
+               instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR ne.i32 instruction");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_LT_I32:
     if(fprintf(stream, "  v%u = lt.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
                instruction->operand_right) < 0)
@@ -159,7 +164,7 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
 XsMirStatus xs_mir_module_write_text(const XsMirModule *module, FILE *stream, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if(module == NULL || stream == NULL)
+  if(module == nullptr || stream == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR module and stream are required");
   if(fprintf(stream, "mir module %s\n", module->name) < 0)
     return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR module header");

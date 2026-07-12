@@ -41,12 +41,12 @@ XsSyntaxNode *parse_type(SyntaxParser *parser)
     return parse_function_type(parser, start);
   if(accept(parser, XS_TOKEN_AMPERSAND))
   {
-    XsSyntaxNode *lifetime = parser->current.kind == XS_TOKEN_LIFETIME ? parse_lifetime(parser) : NULL;
+    XsSyntaxNode *lifetime = parser->current.kind == XS_TOKEN_LIFETIME ? parse_lifetime(parser) : nullptr;
     bool mutable = accept(parser, XS_TOKEN_KW_MUT);
     XsSyntaxNode *reference = node(parser, mutable ? XS_SYNTAX_TYPE_MUTABLE_REFERENCE : XS_SYNTAX_TYPE_REFERENCE,
                                    (XsSpan){start, parser->previous.span.end});
     xs_syntax_node_add(parser->tree, reference, parse_type(parser));
-    if(lifetime != NULL)
+    if(lifetime != nullptr)
       xs_syntax_node_add(parser->tree, reference, lifetime);
     finish_node(parser, reference, parser->previous.span.end);
     return reference;

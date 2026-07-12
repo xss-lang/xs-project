@@ -291,7 +291,7 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   XsSyntaxNode *expression = parse_expression(parser, 1);
   xs_syntax_node_add(parser->tree, statement, expression);
   expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after expression statement");
-  if(expression != NULL && expression->kind == XS_SYNTAX_EXPR_MACRO_CALL)
+  if(expression != nullptr && expression->kind == XS_SYNTAX_EXPR_MACRO_CALL)
     statement->kind = XS_SYNTAX_STMT_MACRO_CALL;
   finish_node(parser, statement, parser->previous.span.end);
   return statement;

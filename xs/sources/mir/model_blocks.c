@@ -319,6 +319,13 @@ XsMirStatus xs_mir_block_eq_i32(XsMirBlock *block, XsMirValueId left, XsMirValue
                         error);
 }
 
+XsMirStatus xs_mir_block_ne_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i32_binary(block, left, right, XS_MIR_INSTRUCTION_NE_I32, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
+}
+
 XsMirStatus xs_mir_block_lt_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                 XsMirError *error)
 {

@@ -24,7 +24,7 @@ static int failures;
 
 static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
-  if(node == NULL)
+  if(node == nullptr)
     return 0;
   size_t count = node->kind == kind ? 1 : 0;
   for(size_t index = 0; index < node->child_count; ++index)
@@ -34,7 +34,7 @@ static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 
 static size_t count_kind_with_flag(const XsSyntaxNode *node, XsSyntaxKind kind, uint32_t flag)
 {
-  if(node == NULL)
+  if(node == nullptr)
     return 0;
   size_t count = node->kind == kind && (node->flags & flag) != 0;
   for(size_t index = 0; index < node->child_count; ++index)
@@ -53,8 +53,8 @@ static void test_top_level_variable_declaration_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 19, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_DECL_VARIABLE) == 2);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_OBJECT_LITERAL) != NULL);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_OBJECT_FIELD) != NULL);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_OBJECT_LITERAL) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_OBJECT_FIELD) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -69,7 +69,7 @@ static void test_inferred_variable_declaration_structure(void)
   CHECK(xs_syntax_parse(&source, 20, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_DECL_VARIABLE) == 3);
   const XsSyntaxNode *declaration = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_VARIABLE);
-  CHECK(declaration != NULL);
+  CHECK(declaration != nullptr);
   CHECK((declaration->flags & XS_SYNTAX_FLAG_INFERRED_TYPE) != 0);
   CHECK(declaration->child_count == 2);
   xs_syntax_tree_free(&tree);
@@ -231,8 +231,8 @@ static void test_incomplete_function_rules(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 37, &diagnostics, &tree));
   const XsSyntaxNode *function = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_FUNCTION);
-  CHECK(function != NULL);
-  CHECK(function == NULL || (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) != 0);
+  CHECK(function != nullptr);
+  CHECK(function == nullptr || (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) != 0);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
@@ -263,8 +263,8 @@ static void test_enum_payload_rules(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 40, &diagnostics, &tree));
   const XsSyntaxNode *declaration = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_ENUM);
-  CHECK(declaration != NULL);
-  CHECK(declaration == NULL || (declaration->flags & XS_SYNTAX_FLAG_DATA_ENUM) != 0);
+  CHECK(declaration != nullptr);
+  CHECK(declaration == nullptr || (declaration->flags & XS_SYNTAX_FLAG_DATA_ENUM) != 0);
   CHECK(count_kind(tree.root, XS_SYNTAX_ENUM_VARIANT) == 3);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);

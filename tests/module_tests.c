@@ -31,7 +31,7 @@ static void test_discovery_and_resolution(const char *root)
   CHECK(xs_module_registry_discover(root, &registry, &issues));
   CHECK(registry.count == 1);
   const XsDiscoveredModule *module = xs_module_registry_find(&registry, "Math.Advanced");
-  CHECK(module != NULL);
+  CHECK(module != nullptr);
   const char *direct[] = {"source/Main.xs"};
   CHECK(xs_module_graph_resolve(root, direct, 1, &registry, &graph, &issues));
   CHECK(graph.count == 1);

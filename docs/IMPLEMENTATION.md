@@ -386,7 +386,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native `.xse` executable beside the input.
   Native direct XLIL requires exactly one defined
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
-  `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `eq.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `add.i64`,
+  `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `eq.i32`, `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `add.i64`,
   `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
   source slice: one top-level `main` returning `Long` with one return statement whose expression is built from i32-range

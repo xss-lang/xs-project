@@ -24,9 +24,9 @@ static int failures;
 static void test_module_and_text_writer(void)
 {
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.Main", &module, &error) == XS_LIL_OK);
-  CHECK(module != NULL);
+  CHECK(module != nullptr);
   CHECK(strcmp(xs_lil_module_name(module), "App.Main") == 0);
   const XsLilType parameters[] = {
       {.kind = XS_LIL_TYPE_U8},
@@ -41,7 +41,7 @@ static void test_module_and_text_writer(void)
   CHECK(strcmp(xs_lil_type_name((XsLilType){.kind = XS_LIL_TYPE_I8}), "i8") == 0);
 
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -50,12 +50,12 @@ static void test_module_and_text_writer(void)
   CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
   char buffer[128] = {0};
-  CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
-  CHECK(strstr(buffer, ".xlil version 0\n") != NULL);
-  CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
-  CHECK(strstr(buffer, ".xlil module App.Main\n") != NULL);
-  CHECK(fgets(buffer, sizeof(buffer), stream) != NULL);
-  CHECK(strstr(buffer, ".extern Check : (u8, i8, bool) -> bool\n") != NULL);
+  CHECK(fgets(buffer, sizeof(buffer), stream) != nullptr);
+  CHECK(strstr(buffer, ".xlil version 0\n") != nullptr);
+  CHECK(fgets(buffer, sizeof(buffer), stream) != nullptr);
+  CHECK(strstr(buffer, ".xlil module App.Main\n") != nullptr);
+  CHECK(fgets(buffer, sizeof(buffer), stream) != nullptr);
+  CHECK(strstr(buffer, ".extern Check : (u8, i8, bool) -> bool\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -63,20 +63,20 @@ static void test_module_and_text_writer(void)
 static void test_function_body_text_writer(void)
 {
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.Body", &module, &error) == XS_LIL_OK);
-  XsLilFunction *function = NULL;
-  CHECK(xs_lil_module_add_function_definition(module, "Answer", (XsLilType){.kind = XS_LIL_TYPE_I64}, NULL, 0,
+  XsLilFunction *function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(module, "Answer", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0,
                                               &function, &error) == XS_LIL_OK);
-  CHECK(function != NULL);
-  XsLilBlock *entry = NULL;
+  CHECK(function != nullptr);
+  XsLilBlock *entry = nullptr;
   CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
   XsLilValueId value = 0;
   CHECK(xs_lil_block_add_const_i64(entry, 42, &value, &error) == XS_LIL_OK);
   CHECK(xs_lil_block_set_return_value(entry, value, &error) == XS_LIL_OK);
 
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -87,8 +87,8 @@ static void test_function_body_text_writer(void)
   char buffer[256] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, ".func Answer : () -> i64\n") != NULL);
-  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const 42\n  ret %r0\n.end\n") != NULL);
+  CHECK(strstr(buffer, ".func Answer : () -> i64\n") != nullptr);
+  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const 42\n  ret %r0\n.end\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -96,12 +96,12 @@ static void test_function_body_text_writer(void)
 static void test_function_body_rejects_missing_return_value(void)
 {
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.BadBody", &module, &error) == XS_LIL_OK);
-  XsLilFunction *function = NULL;
-  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_I64}, NULL, 0, &function,
+  XsLilFunction *function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0, &function,
                                               &error) == XS_LIL_OK);
-  XsLilBlock *entry = NULL;
+  XsLilBlock *entry = nullptr;
   CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
   CHECK(xs_lil_block_set_return(entry, &error) == XS_LIL_INVALID_ARGUMENT);
   xs_lil_module_destroy(module);
@@ -110,20 +110,20 @@ static void test_function_body_rejects_missing_return_value(void)
 static void test_function_body_branch_text_writer(void)
 {
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.Branch", &module, &error) == XS_LIL_OK);
-  XsLilFunction *function = NULL;
-  CHECK(xs_lil_module_add_function_definition(module, "Jump", (XsLilType){.kind = XS_LIL_TYPE_VOID}, NULL, 0, &function,
+  XsLilFunction *function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(module, "Jump", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
                                               &error) == XS_LIL_OK);
-  XsLilBlock *entry = NULL;
-  XsLilBlock *exit = NULL;
+  XsLilBlock *entry = nullptr;
+  XsLilBlock *exit = nullptr;
   CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
   CHECK(xs_lil_function_append_block(function, "exit", &exit, &error) == XS_LIL_OK);
   CHECK(xs_lil_block_set_branch(entry, 1, &error) == XS_LIL_OK);
   CHECK(xs_lil_block_set_return(exit, &error) == XS_LIL_OK);
 
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -134,7 +134,7 @@ static void test_function_body_branch_text_writer(void)
   char buffer[256] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "bb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n") != NULL);
+  CHECK(strstr(buffer, "bb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -142,14 +142,14 @@ static void test_function_body_branch_text_writer(void)
 static void test_function_body_branch_if_text_writer(void)
 {
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.BranchIf", &module, &error) == XS_LIL_OK);
-  XsLilFunction *function = NULL;
-  CHECK(xs_lil_module_add_function_definition(module, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID}, NULL, 0,
+  XsLilFunction *function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(module, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
                                               &function, &error) == XS_LIL_OK);
-  XsLilBlock *entry = NULL;
-  XsLilBlock *then_block = NULL;
-  XsLilBlock *else_block = NULL;
+  XsLilBlock *entry = nullptr;
+  XsLilBlock *then_block = nullptr;
+  XsLilBlock *else_block = nullptr;
   CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
   CHECK(xs_lil_function_append_block(function, "then", &then_block, &error) == XS_LIL_OK);
   CHECK(xs_lil_function_append_block(function, "else", &else_block, &error) == XS_LIL_OK);
@@ -160,7 +160,7 @@ static void test_function_body_branch_if_text_writer(void)
   CHECK(xs_lil_block_set_return(else_block, &error) == XS_LIL_OK);
 
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -171,7 +171,7 @@ static void test_function_body_branch_if_text_writer(void)
   char buffer[512] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "bb0.entry:\n  %r0:bool = const.bool true\n  br_if %r0, bb1, bb2\n") != NULL);
+  CHECK(strstr(buffer, "bb0.entry:\n  %r0:bool = const.bool true\n  br_if %r0, bb1, bb2\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -179,14 +179,14 @@ static void test_function_body_branch_if_text_writer(void)
 static void test_function_body_rejects_non_bool_branch_if(void)
 {
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.BadBranchIf", &module, &error) == XS_LIL_OK);
-  XsLilFunction *function = NULL;
-  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_VOID}, NULL, 0, &function,
+  XsLilFunction *function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
                                               &error) == XS_LIL_OK);
-  XsLilBlock *entry = NULL;
-  XsLilBlock *then_block = NULL;
-  XsLilBlock *else_block = NULL;
+  XsLilBlock *entry = nullptr;
+  XsLilBlock *then_block = nullptr;
+  XsLilBlock *else_block = nullptr;
   CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
   CHECK(xs_lil_function_append_block(function, "then", &then_block, &error) == XS_LIL_OK);
   CHECK(xs_lil_function_append_block(function, "else", &else_block, &error) == XS_LIL_OK);
@@ -200,13 +200,13 @@ static void test_text_parser_reads_external_signature(void)
 {
   const char text[] = ".xlil version 0\n.xlil module App\n.extern Import : (i64) -> i64\n";
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("extern.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
-  CHECK(module != NULL);
+  CHECK(module != nullptr);
   CHECK(strcmp(xs_lil_module_name(module), "App") == 0);
   CHECK(xs_lil_module_function_count(module) == 1);
   const XsLilFunction *function = xs_lil_module_function_at(module, 0);
-  CHECK(function != NULL);
+  CHECK(function != nullptr);
   CHECK(strcmp(xs_lil_function_name(function), "Import") == 0);
   CHECK(!xs_lil_function_is_definition(function));
   CHECK(xs_lil_function_return_type(function).kind == XS_LIL_TYPE_I64);
@@ -219,10 +219,10 @@ static void test_text_parser_reads_function_definition(void)
 {
   const char text[] = ".xlil version 0\n.xlil module App\n.func Main : () -> void\nbb0.entry:\n  ret\n.end\n";
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("func.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   const XsLilFunction *function = xs_lil_module_function_at(module, 0);
-  CHECK(function != NULL);
+  CHECK(function != nullptr);
   CHECK(strcmp(xs_lil_function_name(function), "Main") == 0);
   CHECK(xs_lil_function_is_definition(function));
   CHECK(xs_lil_function_return_type(function).kind == XS_LIL_TYPE_VOID);
@@ -234,10 +234,10 @@ static void test_text_parser_round_trips_supported_body_subset(void)
   const char text[] = ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %r0:i64 = const 42\n "
                       " ret %r0\n.end\n";
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("body.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -248,8 +248,8 @@ static void test_text_parser_round_trips_supported_body_subset(void)
   char buffer[256] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, ".func Answer : () -> i64\n") != NULL);
-  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const 42\n  ret %r0\n.end\n") != NULL);
+  CHECK(strstr(buffer, ".func Answer : () -> i64\n") != nullptr);
+  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const 42\n  ret %r0\n.end\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -259,10 +259,10 @@ static void test_text_parser_round_trips_branch_subset(void)
   const char text[] =
       ".xlil version 0\n.xlil module App\n.func Jump : () -> void\nbb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n";
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("branch.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -273,7 +273,7 @@ static void test_text_parser_round_trips_branch_subset(void)
   char buffer[256] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "bb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n") != NULL);
+  CHECK(strstr(buffer, "bb0.entry:\n  br bb1\nbb1.exit:\n  ret\n.end\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -283,10 +283,10 @@ static void test_text_parser_round_trips_branch_if_subset(void)
   const char text[] = ".xlil version 0\n.xlil module App\n.func Choose : () -> void\nbb0.entry:\n  %r0:bool = "
                       "const.bool true\n  br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n";
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("branch_if.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -297,7 +297,7 @@ static void test_text_parser_round_trips_branch_if_subset(void)
   char buffer[512] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n") != NULL);
+  CHECK(strstr(buffer, "br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -308,23 +308,23 @@ static void test_text_parser_round_trips_parameters_and_calls(void)
                       "  %r1:i64 = call Import(%r0)\n  call Sink(%r1)\n  ret %r1\n.end\n.extern Import : (i64) -> i64\n"
                       ".extern Sink : (i64) -> void\n";
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("calls.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
-  CHECK(module != NULL);
+  CHECK(module != nullptr);
   CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
   const XsLilFunction *function = xs_lil_module_function_at(module, 0);
-  CHECK(function != NULL);
+  CHECK(function != nullptr);
   CHECK(xs_lil_function_value_count(function) == 2);
   CHECK(xs_lil_function_value_type(function, 0).kind == XS_LIL_TYPE_I64);
   const XsLilBlock *block = xs_lil_function_block_at(function, 0);
-  CHECK(block != NULL);
+  CHECK(block != nullptr);
   CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_CALL);
   CHECK(strcmp(xs_lil_block_instruction_callee(block, 0), "Import") == 0);
   CHECK(xs_lil_block_instruction_argument_count(block, 0) == 1);
   CHECK(xs_lil_block_instruction_argument(block, 0, 0) == 0);
   CHECK(xs_lil_block_instruction_result(block, 1) == UINT32_MAX);
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -335,8 +335,8 @@ static void test_text_parser_round_trips_parameters_and_calls(void)
   char buffer[512] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, ".param %r0:i64\n") != NULL);
-  CHECK(strstr(buffer, "%r1:i64 = call Import(%r0)\n  call Sink(%r1)\n") != NULL);
+  CHECK(strstr(buffer, ".param %r0:i64\n") != nullptr);
+  CHECK(strstr(buffer, "%r1:i64 = call Import(%r0)\n  call Sink(%r1)\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -348,10 +348,10 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
                       "  %r3:i64 = sub.i64 %r2, %r1\n  %r4:i64 = mul.i64 %r3, %r1\n"
                       "  %r5:bool = eq.i64 %r4, %r0\n  ret %r4\n.end\n";
   XsLilError error = {0};
-  XsLilModule *module = NULL;
+  XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("arithmetic.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if(stream == NULL)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -362,10 +362,10 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
   char buffer[512] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "%r2:i64 = add.i64 %r0, %r1\n") != NULL);
-  CHECK(strstr(buffer, "%r3:i64 = sub.i64 %r2, %r1\n") != NULL);
-  CHECK(strstr(buffer, "%r4:i64 = mul.i64 %r3, %r1\n") != NULL);
-  CHECK(strstr(buffer, "%r5:bool = eq.i64 %r4, %r0\n") != NULL);
+  CHECK(strstr(buffer, "%r2:i64 = add.i64 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r3:i64 = sub.i64 %r2, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r4:i64 = mul.i64 %r3, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r5:bool = eq.i64 %r4, %r0\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -400,9 +400,9 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
                       "  %r0:i32 = const.i32 9\n  %r1:i32 = const.i32 3\n  %r2:i32 = add.i32 %r0, %r1\n"
                       "  %r3:i32 = sub.i32 %r2, %r1\n  %r4:i32 = mul.i32 %r3, %r1\n"
                       "  %r5:i32 = div.i32 %r4, %r1\n  %r6:i32 = rem.i32 %r5, %r1\n"
-                      "  %r7:bool = eq.i32 %r6, %r0\n  %r8:bool = lt.i32 %r1, %r0\n"
-                      "  %r9:bool = le.i32 %r1, %r0\n  %r10:bool = gt.i32 %r0, %r1\n"
-                      "  %r11:bool = ge.i32 %r0, %r1\n  ret %r6\n.end\n";
+                      "  %r7:bool = eq.i32 %r6, %r0\n  %r8:bool = ne.i32 %r6, %r1\n"
+                      "  %r9:bool = lt.i32 %r1, %r0\n  %r10:bool = le.i32 %r1, %r0\n"
+                      "  %r11:bool = gt.i32 %r0, %r1\n  %r12:bool = ge.i32 %r0, %r1\n  ret %r6\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("arithmetic32.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
@@ -424,10 +424,11 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
   CHECK(strstr(buffer, "%r5:i32 = div.i32 %r4, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r6:i32 = rem.i32 %r5, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r7:bool = eq.i32 %r6, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r8:bool = lt.i32 %r1, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r9:bool = le.i32 %r1, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r10:bool = gt.i32 %r0, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r11:bool = ge.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r8:bool = ne.i32 %r6, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r9:bool = lt.i32 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r10:bool = le.i32 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r11:bool = gt.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r12:bool = ge.i32 %r0, %r1\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -456,10 +457,10 @@ static void test_text_parser_rejects_invalid_inputs(void)
   for(size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
     XsLilError error = {0};
-    XsLilModule *module = NULL;
+    XsLilModule *module = nullptr;
     CHECK(xs_lil_module_parse_text("bad.xlil", invalid_inputs[i], strlen(invalid_inputs[i]), &module, &error) ==
           XS_LIL_INVALID_ARGUMENT);
-    CHECK(module == NULL);
+    CHECK(module == nullptr);
   }
 }
 

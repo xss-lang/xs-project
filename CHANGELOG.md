@@ -27,7 +27,7 @@ source-to-native executable pipeline.
 - `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can now produce `.ll`, `.o`, and `.xse` artifacts for the
   first supported source-native entry slice: top-level `main` returning `Long` with i32-range literals, `+`, `-`, `*`, and
   one top-level `if` expression over i32 comparisons.
-- Source-native `if` conditions now accept `!=` by lowering equality and swapping MIR branch targets.
+- XLIL, MIR, LLVM lowering, and source-native `if` conditions now support signed `ne.i32` inequality.
 - C MIR to XLIL lowering now supports `const.bool`, and source-native `if` conditions accept `true`/`false`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `div.i32`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `rem.i32`.

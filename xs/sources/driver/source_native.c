@@ -180,8 +180,7 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
     case XS_TOKEN_EQUAL:
       return xs_mir_block_eq_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_NOT_EQUAL:
-      *invert = true;
-      return xs_mir_block_eq_i32(entry, left, right, result, error) == XS_MIR_OK;
+      return xs_mir_block_ne_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_LESS:
       return xs_mir_block_lt_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_LESS_EQUAL:

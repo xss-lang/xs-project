@@ -14,14 +14,14 @@ static XsLilStatus write_signature(FILE *stream, XsLilError *error, const XsLilF
   for(size_t parameter = 0; parameter < function->parameter_count; ++parameter)
   {
     if(parameter != 0 && xs_lil_write_checked(stream, error, ", ") != XS_LIL_OK)
-      return error == NULL ? XS_LIL_IO_ERROR : error->status;
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     if(xs_lil_write_checked(stream, error, xs_lil_type_name(function->parameters[parameter])) != XS_LIL_OK)
-      return error == NULL ? XS_LIL_IO_ERROR : error->status;
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
   }
   if(fprintf(stream, ") -> %s", xs_lil_type_name(function->return_type)) < 0)
     return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL function signature");
   if(xs_lil_write_checked(stream, error, "\n") != XS_LIL_OK)
-    return error == NULL ? XS_LIL_IO_ERROR : error->status;
+    return error == nullptr ? XS_LIL_IO_ERROR : error->status;
   return XS_LIL_OK;
 }
 
@@ -82,6 +82,10 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:bool = eq.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL eq.i32 instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_NE_I32 &&
+       fprintf(stream, "  %%r%u:bool = ne.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
+               instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL ne.i32 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_LT_I32 &&
        fprintf(stream, "  %%r%u:bool = lt.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)
@@ -125,7 +129,7 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
     }
     else if(xs_lil_write_checked(stream, error, "  ret\n") != XS_LIL_OK)
     {
-      return error == NULL ? XS_LIL_IO_ERROR : error->status;
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     }
   }
   else if(block->terminator.kind == XS_LIL_TERMINATOR_BRANCH)
@@ -142,7 +146,7 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
   else if(block->terminator.kind == XS_LIL_TERMINATOR_NONE)
   {
     if(xs_lil_write_checked(stream, error, "  .missing_terminator\n") != XS_LIL_OK)
-      return error == NULL ? XS_LIL_IO_ERROR : error->status;
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
   }
   return XS_LIL_OK;
 }
@@ -150,19 +154,19 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
 XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, XsLilError *error)
 {
   xs_lil_clear_error(error);
-  if(module == NULL || stream == NULL)
+  if(module == nullptr || stream == nullptr)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL module and stream are required");
   if(xs_lil_write_checked(stream, error, ".xlil version 0\n") != XS_LIL_OK)
-    return error == NULL ? XS_LIL_IO_ERROR : error->status;
+    return error == nullptr ? XS_LIL_IO_ERROR : error->status;
   if(fprintf(stream, ".xlil module %s\n", module->name) < 0)
     return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL module header");
   for(size_t i = 0; i < module->function_count; ++i)
   {
     const XsLilFunction *function = &module->functions[i];
     if(xs_lil_write_checked(stream, error, function->is_definition ? ".func " : ".extern ") != XS_LIL_OK)
-      return error == NULL ? XS_LIL_IO_ERROR : error->status;
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     if(write_signature(stream, error, function) != XS_LIL_OK)
-      return error == NULL ? XS_LIL_IO_ERROR : error->status;
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     if(!function->is_definition)
       continue;
     for(size_t parameter = 0; parameter < function->parameter_count; ++parameter)
@@ -173,10 +177,10 @@ XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, Xs
     for(size_t block = 0; block < function->block_count; ++block)
     {
       if(write_block(stream, error, function->blocks[block]) != XS_LIL_OK)
-        return error == NULL ? XS_LIL_IO_ERROR : error->status;
+        return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     }
     if(xs_lil_write_checked(stream, error, ".end\n") != XS_LIL_OK)
-      return error == NULL ? XS_LIL_IO_ERROR : error->status;
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
   }
   return XS_LIL_OK;
 }

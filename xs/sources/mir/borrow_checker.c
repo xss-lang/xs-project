@@ -109,6 +109,7 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
   case XS_MIR_INSTRUCTION_REM_I32:
     return check_i32_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_I32}, error);
   case XS_MIR_INSTRUCTION_EQ_I32:
+  case XS_MIR_INSTRUCTION_NE_I32:
   case XS_MIR_INSTRUCTION_LT_I32:
   case XS_MIR_INSTRUCTION_LE_I32:
   case XS_MIR_INSTRUCTION_GT_I32:

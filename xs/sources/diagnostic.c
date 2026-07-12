@@ -27,7 +27,7 @@ bool xs_diagnostics_add(XsDiagnostics *diagnostics, XsDiagnosticSeverity severit
   {
     size_t capacity = diagnostics->capacity == 0 ? 8 : diagnostics->capacity * 2;
     XsDiagnostic *items = realloc(diagnostics->items, capacity * sizeof(*items));
-    if(items == NULL)
+    if(items == nullptr)
     {
       diagnostics->allocation_failed = true;
       return false;
@@ -38,7 +38,7 @@ bool xs_diagnostics_add(XsDiagnostics *diagnostics, XsDiagnosticSeverity severit
 
   size_t length = strlen(message);
   char *copy = malloc(length + 1);
-  if(copy == NULL)
+  if(copy == nullptr)
   {
     diagnostics->allocation_failed = true;
     return false;

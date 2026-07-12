@@ -93,7 +93,7 @@ static XsMirStatus optimize_function_cfg(XsMirFunction *function, XsMirError *er
     return XS_MIR_OK;
   bool *reachable = calloc(function->block_count, sizeof(*reachable));
   XsMirBlockId *remap = calloc(function->block_count, sizeof(*remap));
-  if(reachable == NULL || remap == NULL)
+  if(reachable == nullptr || remap == nullptr)
   {
     free(reachable);
     free(remap);
@@ -122,7 +122,7 @@ static XsMirStatus optimize_function_cfg(XsMirFunction *function, XsMirError *er
 XsMirStatus xs_mir_optimize_module_cfg(XsMirModule *module, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if(module == NULL)
+  if(module == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR module is required");
   for(size_t i = 0; i < module->function_count; ++i)
   {
@@ -136,7 +136,7 @@ XsMirStatus xs_mir_optimize_module_cfg(XsMirModule *module, XsMirError *error)
 XsMirStatus xs_mir_optimize_module_constants(XsMirModule *module, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if(module == NULL)
+  if(module == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR module is required");
   for(size_t i = 0; i < module->function_count; ++i)
     fold_function_constants(&module->functions[i]);

@@ -65,7 +65,7 @@ static void test_complete_project(void)
   const XsProjectValue *repo = xs_project_external_module_repo(module);
   CHECK(repo != nullptr && repo->text != nullptr &&
         strcmp(repo->text, "https://github.com/xss-lang/externalModules") == 0);
-  CHECK(project.xs_backend.text != NULL && strcmp(project.xs_backend.text, "LLVM") == 0);
+  CHECK(project.xs_backend.text != nullptr && strcmp(project.xs_backend.text, "LLVM") == 0);
   CHECK(xs_project_selected_entry(&project) == &project.entry);
   CHECK(xs_project_selected_entry(nullptr) == nullptr);
   xs_project_free(&project);
@@ -83,7 +83,7 @@ static void test_none_entry_selects_first_file(void)
   XsDiagnostics diagnostics;
   CHECK(parse_project(text, &project, &diagnostics));
   const XsProjectValue *entry = xs_project_selected_entry(&project);
-  CHECK(entry != NULL && entry->text != NULL && strcmp(entry->text, "source/Foo.xs") == 0);
+  CHECK(entry != nullptr && entry->text != nullptr && strcmp(entry->text, "source/Foo.xs") == 0);
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
 }
@@ -129,7 +129,7 @@ static void test_backend_option_validation(void)
   XsProject project;
   XsDiagnostics diagnostics;
   CHECK(parse_project(valid, &project, &diagnostics));
-  CHECK(project.xs_backend.text != NULL && strcmp(project.xs_backend.text, "XS") == 0);
+  CHECK(project.xs_backend.text != nullptr && strcmp(project.xs_backend.text, "XS") == 0);
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
 
