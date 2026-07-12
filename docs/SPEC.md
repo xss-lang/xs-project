@@ -34,7 +34,7 @@ syntax takes priority over ad-hoc implementation shortcuts.
   enclosing file/module form. Official X# attributes live under `STD.Attrs.*`; the compiler brings those names into
   attribute scope automatically, so `imports Attrs;` is optional.
 - CFFI is explicit. The standard CFFI module is not automatically imported or placed in scope; source uses `imports CFFI;`
-  before C foreign-function declarations and CFFI helper types.
+  before C foreign-function declarations and the canonical helper types under `STD.CFFI.*`.
 - `Optional<T>` is available as if the compiler had inserted `imports Optional` and brought
   `STD.Optional.Optional<T>` into scope as `Optional<T>`.
 - Optional value constructors are `STD.Optional.None` and `STD.Optional.Some(...)`; the same implicit import may make

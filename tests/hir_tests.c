@@ -83,7 +83,7 @@ static void test_extern_block_symbols(void)
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
                      "extern \"C\" {\n"
-                     "  fn puts(text: CFFI.CStr) => Int;\n"
+                     "  fn puts(text: STD.CFFI.CStr) => Int;\n"
                      "  static errno: Int;\n"
                      "}\n";
   XsSyntaxTree tree;
@@ -114,7 +114,7 @@ static void test_extern_block_duplicate_symbol_errors(void)
 
 static bool parse_and_validate_cffi(const char *text, XsSyntaxTree *tree, XsDiagnostics *diagnostics)
 {
-  XsSource source = {.path = "CFFI.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "STD.CFFI.xs", .text = text, .length = strlen(text)};
   xs_diagnostics_init(diagnostics);
   if(!xs_syntax_parse(&source, 27, diagnostics, tree))
     return false;
@@ -137,7 +137,7 @@ static void test_cffi_validation_accepts_repr_c_extern_block(void)
                      "extern \"C\" {\n"
                      "  #[LinkName(\"puts\")]\n"
                      "  #[NoUnwind]\n"
-                     "  fn puts(text: CFFI.CStr) => Int;\n"
+                     "  fn puts(text: STD.CFFI.CStr) => Int;\n"
                      "  #[ThreadLocal]\n"
                      "  #[LinkName(\"errno\")]\n"
                      "  static errno: Int;\n"
@@ -168,7 +168,7 @@ static void test_cffi_validation_accepts_repr_c_extern_block(void)
 static void test_cffi_validation_rejects_missing_repr_c(void)
 {
   const char *text = "module App;\n"
-                     "extern \"C\" { fn puts(text: CFFI.CStr) => Int; }\n";
+                     "extern \"C\" { fn puts(text: STD.CFFI.CStr) => Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -181,7 +181,7 @@ static void test_cffi_validation_rejects_unsupported_abi(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"stdcall\" { fn puts(text: CFFI.CStr) => Int; }\n";
+                     "extern \"stdcall\" { fn puts(text: STD.CFFI.CStr) => Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -194,7 +194,7 @@ static void test_cffi_validation_rejects_non_c_repr(void)
 {
   const char *text = "module App;\n"
                      "#[repr(Rust)]\n"
-                     "extern \"C\" { fn puts(text: CFFI.CStr) => Int; }\n";
+                     "extern \"C\" { fn puts(text: STD.CFFI.CStr) => Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -207,7 +207,7 @@ static void test_cffi_validation_rejects_invalid_link_name(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"C\" { #[LinkName(puts)] fn puts(text: CFFI.CStr) => Int; }\n";
+                     "extern \"C\" { #[LinkName(puts)] fn puts(text: STD.CFFI.CStr) => Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -220,7 +220,7 @@ static void test_cffi_validation_rejects_thread_local_function(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"C\" { #[ThreadLocal] fn puts(text: CFFI.CStr) => Int; }\n";
+                     "extern \"C\" { #[ThreadLocal] fn puts(text: STD.CFFI.CStr) => Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -246,7 +246,7 @@ static void test_cffi_validation_rejects_block_attribute_on_function(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"C\" { #[LinkLibrary(\"c\")] fn puts(text: CFFI.CStr) => Int; }\n";
+                     "extern \"C\" { #[LinkLibrary(\"c\")] fn puts(text: STD.CFFI.CStr) => Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));

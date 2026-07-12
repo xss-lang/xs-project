@@ -342,7 +342,7 @@ static void test_extern_c_function_structure(void)
                      "#[repr(C)]\n"
                      "extern \"C\" {\n"
                      "  #[LinkName(\"puts\")]\n"
-                     "  fn puts(text: CFFI.CStr) => Int;\n"
+                     "  fn puts(text: STD.CFFI.CStr) => Int;\n"
                      "  #[ThreadLocal]\n"
                      "  static errno: Int;\n"
                      "}\n";
@@ -363,7 +363,7 @@ static void test_extern_c_function_structure(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *body = "extern \"C\" { fn puts(text: CFFI.CStr) => Int {} }\n";
+  const char *body = "extern \"C\" { fn puts(text: STD.CFFI.CStr) => Int {} }\n";
   source = (XsSource){.path = "ExternCBodyInvalid.xs", .text = body, .length = strlen(body)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 48, &diagnostics, &tree));

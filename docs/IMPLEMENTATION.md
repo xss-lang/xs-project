@@ -260,9 +260,9 @@ validation does not decide dispatch, override, or overload selection.
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`
   still require `imports Stdio;` or selected imports. `format_args!` remains built in.
-- The C23 HIR type resolver also recognizes the initial standard CFFI family: `CFFI.CStr`, `CFFI.CString`,
-  `CFFI.RawPtr<T>`, `CFFI.NonNull<T>`, `CFFI.Slice<T>`, `CFFI.Handle<T>`, `CFFI.Owned<T>`, `CFFI.Borrowed<T>`,
-  `CFFI.Out<T>`, `CFFI.DynamicLibrary`, `CFFI.Symbol<T>`, `CFFI.FILE`, and `CFFI.VarArgs`.
+- The C23 HIR type resolver also recognizes the initial standard CFFI family: `STD.CFFI.CStr`, `STD.CFFI.CString`,
+  `STD.CFFI.RawPtr<T>`, `STD.CFFI.NonNull<T>`, `STD.CFFI.Slice<T>`, `STD.CFFI.Handle<T>`, `STD.CFFI.Owned<T>`, `STD.CFFI.Borrowed<T>`,
+  `STD.CFFI.Out<T>`, `STD.CFFI.DynamicLibrary`, `STD.CFFI.Symbol<T>`, `STD.CFFI.FILE`, and `STD.CFFI.VarArgs`.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.

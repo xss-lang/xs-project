@@ -133,18 +133,20 @@ static void test_standard_generic_types(void)
 static void test_standard_cffi_types(void)
 {
   const char *valid = "module App;\n"
-                      "data NativeLibrary { handle: CFFI.Handle<NativeLibrary>; }\n"
+                      "imports CFFI;\n"
+                      "data NativeLibrary { handle: STD.CFFI.Handle<NativeLibrary>; }\n"
                       "#[repr(C)]\n"
                       "extern \"C\" {\n"
-                      "  fn puts(text: CFFI.CStr) => Int;\n"
-                      "  fn free(ptr: CFFI.RawPtr<Byte>);\n"
-                      "  fn read(out: CFFI.Out<Int>) => Int;\n"
-                      "  static stdin_handle: CFFI.RawPtr<CFFI.FILE>;\n"
+                      "  fn puts(text: STD.CFFI.CStr) => Int;\n"
+                      "  fn free(ptr: STD.CFFI.RawPtr<Byte>);\n"
+                      "  fn read(out: STD.CFFI.Out<Int>) => Int;\n"
+                      "  static stdin_handle: STD.CFFI.RawPtr<STD.CFFI.FILE>;\n"
                       "}\n"
-                      "fn Load(symbol: CFFI.Symbol<fn() => Int>, library: CFFI.DynamicLibrary) {}\n";
+                      "fn Load(symbol: STD.CFFI.Symbol<fn() => Int>, library: STD.CFFI.DynamicLibrary) {}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nextern \"C\" { fn Bad(ptr: CFFI.RawPtr); }\n"));
-  CHECK(!check_single_source("module App;\nextern \"C\" { fn Bad(ptr: CFFI.CStr<Int>); }\n"));
+  CHECK(!check_single_source("module App;\nimports CFFI;\nextern \"C\" { fn Bad(ptr: STD.CFFI.RawPtr); }\n"));
+  CHECK(!check_single_source("module App;\nimports CFFI;\nextern \"C\" { fn Bad(ptr: STD.CFFI.CStr<Int>); }\n"));
+  CHECK(!check_single_source("module App;\nfn Bad(ptr: STD.CFFI.CStr) {}\n"));
 }
 
 static void test_duplicate_generic_parameter_names(void)

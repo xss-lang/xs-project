@@ -31,19 +31,19 @@ static const StandardTypeInfo standard_types[] = {
     {.name = "Result.Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Error", .min_arity = 0, .max_arity = 0},
     {.name = "Result.IO.error", .min_arity = 0, .max_arity = 0},
-    {.name = "CFFI.CStr", .min_arity = 0, .max_arity = 0},
-    {.name = "CFFI.CString", .min_arity = 0, .max_arity = 0},
-    {.name = "CFFI.FILE", .min_arity = 0, .max_arity = 0},
-    {.name = "CFFI.VarArgs", .min_arity = 0, .max_arity = 0},
-    {.name = "CFFI.RawPtr", .min_arity = 1, .max_arity = 1},
-    {.name = "CFFI.NonNull", .min_arity = 1, .max_arity = 1},
-    {.name = "CFFI.Slice", .min_arity = 1, .max_arity = 1},
-    {.name = "CFFI.Handle", .min_arity = 1, .max_arity = 1},
-    {.name = "CFFI.Owned", .min_arity = 1, .max_arity = 1},
-    {.name = "CFFI.Borrowed", .min_arity = 1, .max_arity = 1},
-    {.name = "CFFI.Out", .min_arity = 1, .max_arity = 1},
-    {.name = "CFFI.DynamicLibrary", .min_arity = 0, .max_arity = 0},
-    {.name = "CFFI.Symbol", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.CStr", .min_arity = 0, .max_arity = 0},
+    {.name = "STD.CFFI.CString", .min_arity = 0, .max_arity = 0},
+    {.name = "STD.CFFI.FILE", .min_arity = 0, .max_arity = 0},
+    {.name = "STD.CFFI.VarArgs", .min_arity = 0, .max_arity = 0},
+    {.name = "STD.CFFI.RawPtr", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.NonNull", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.Slice", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.Handle", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.Owned", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.Borrowed", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.Out", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.CFFI.DynamicLibrary", .min_arity = 0, .max_arity = 0},
+    {.name = "STD.CFFI.Symbol", .min_arity = 1, .max_arity = 1},
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
@@ -180,6 +180,12 @@ static const StandardTypeInfo *find_standard_type_from_path(const XsSyntaxNode *
   const StandardTypeInfo *type = find_standard_type(name);
   free(name);
   return type;
+}
+
+static bool standard_type_is_from_module(const char *name, const char *module_name)
+{
+  size_t length = strlen(module_name);
+  return strncmp(name, module_name, length) == 0 && name[length] == '.';
 }
 
 static bool single_segment_standard_named_type(XsText name)
@@ -381,6 +387,8 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
   if(standard != nullptr)
   {
     bool success = true;
+    if(standard_type_is_from_module(name, "STD.CFFI") && !xs_hir_import_scope_has_module(imports, "CFFI"))
+      success = report_unimported_type(diagnostics, type, name) && success;
     if(check_arity && standard->max_arity != 0)
       success =
           report_generic_arity_range(diagnostics, type, name, standard->min_arity, standard->max_arity, 0) && success;

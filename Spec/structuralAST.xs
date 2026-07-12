@@ -295,7 +295,7 @@ data ExternBlockDeclaration {
 //
 // #[repr(C)]
 // extern "C" {
-//     fn puts(text: CFFI.CStr) => Int;
+//     fn puts(text: STD.CFFI.CStr) => Int;
 //     static errno: Int;
 // }
 //
