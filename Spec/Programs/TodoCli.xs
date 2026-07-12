@@ -6,7 +6,7 @@
 
 module Programs.TodoCli;
 
-imports Stdio, Fs, Collections, Process;
+imports Stdio, FS, Collections, Process;
 
 enum data TodoError {
     Io: IOException,
@@ -81,11 +81,11 @@ class TodoStore {
     }
 
     fn Load() throws TodoError {
-        if (!STD.Fs.exists(this.path)) {
+        if (!STD.FS.exists(this.path)) {
             return;
         }
 
-        content: Str = STD.Fs.readToStr(this.path);
+        content: Str = STD.FS.readToStr(this.path);
 
         for (line: Str in content.lines()) {
             if (line.length() == 0) {
@@ -102,16 +102,16 @@ class TodoStore {
     }
 
     fn Save() throws TodoError {
-        if (!STD.Fs.exists(this.path)) {
-            STD.Fs.createFile(this.path);
+        if (!STD.FS.exists(this.path)) {
+            STD.FS.createFile(this.path);
         }
 
-        opened: STD.Fs.File = STD.Fs.OpenOptions.new()
+        opened: STD.FS.File = STD.FS.OpenOptions.new()
             .truncate(true)
             .open(this.path);
 
         for (item: TodoItem in this.items) {
-            STD.Fs.write(opened, format!("{}\n", TodoCodec.Format(item)));
+            STD.FS.write(opened, format!("{}\n", TodoCodec.Format(item)));
         }
     }
 }

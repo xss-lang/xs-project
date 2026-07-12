@@ -6,7 +6,7 @@
 
 module Programs.CsvAnalytics;
 
-imports Collections, Stdio, Fs, Process;
+imports Collections, Stdio, FS, Process;
 
 enum data CsvError {
     Io: IOException,
@@ -76,7 +76,7 @@ class Analytics {
 
 fn LoadSales(path: Str) => STD.Collections.vector<Sale> throws CsvError, IOException {
     rows: STD.Collections.vector<Sale> = STD.Collections.vector<Sale>.new();
-    content: Str = STD.Fs.readToStr(path);
+    content: Str = STD.FS.readToStr(path);
 
     for (line: Str in content.lines().skip(1)) {
         if (line.length() == 0) {

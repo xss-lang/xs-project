@@ -10,13 +10,13 @@
 // They are available through `imports Stdio`, not as compiler built-ins.
 //
 // Stdio does not provide filesystem operations.
-// Filesystem operations belong to the Fs module.
+// Filesystem operations belong to the FS module.
 //
 // Stdio does not provide string interpolation.
 // Formatted output uses placeholder-based formatting.
 //
 
-imports Stdio, Fs, Collections;
+imports Stdio, FS, Collections;
 
 
 // standard output macros
@@ -90,16 +90,16 @@ fn BuildMessage() {
 // standard stream handles
 
 fn StandardHandles() throws IOException {
-    STD.Fs.write(STD.Stdout, "stdout text\n");
-    STD.Fs.write(STD.Stderr, "stderr text\n");
+    STD.FS.write(STD.Stdout, "stdout text\n");
+    STD.FS.write(STD.Stderr, "stderr text\n");
 
-    text: Str = STD.Fs.readToStr(STD.Stdin());
+    text: Str = STD.FS.readToStr(STD.Stdin());
     println!("{}", text);
 }
 
 // STD.Stdout and STD.Stderr are stream handles.
 // STD.Stdin() returns the standard input stream handle.
-// Raw reading and writing through these handles is provided by STD.Fs.
+// Raw reading and writing through these handles is provided by STD.FS.
 // Stdio macros use STD.Stdout and STD.Stderr internally.
 
 

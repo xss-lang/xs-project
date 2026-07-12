@@ -41,6 +41,7 @@
 //
 // - STD is the standard-library root.
 // - PascalCase is used for public modules, namespaces, and nominal types.
+// - Short public acronyms may stay fully uppercase, for example STD.FS.
 // - snake_case is used for registry-like families such as collection kinds.
 // - lowercase is used for short free functions such as get().
 // - camelCase is used for methods and longer function names such as readLine().

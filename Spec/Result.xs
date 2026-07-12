@@ -9,7 +9,7 @@
 // handling model, not a replacement for throws/catch.
 //
 
-imports Result, Fs, Stdio;
+imports Result, FS, Stdio;
 
 
 // result data model
@@ -50,7 +50,7 @@ fn DoWork() => Result.Result<(), Result.Error> {
 // explicit match without @
 
 fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
-    file = match (STD.Fs.File.open(path)) {
+    file = match (STD.FS.File.open(path)) {
         Result.Ok(value) -> value,
         Result.Error(error) -> return Result.Error(error),
     };
@@ -69,7 +69,7 @@ fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
 // propagation with @
 
 fn ReadFile(path: Str) => Result.Result<Optional<Str>, Result.Error> {
-    file = STD.Fs.File.open(path)@;
+    file = STD.FS.File.open(path)@;
     content: Optional<Str> = Some("");
     file.readToString(&mut content)@;
     return Result.Ok(content);
