@@ -46,6 +46,8 @@ source-to-native executable pipeline.
   slice.
 - C MIR, XLIL, LLVM lowering, and the source-native slice now support materialized boolean negation through `not.bool`, so
   `Bool` local initializers can use unary `!` in the current native path.
+- The lexer/parser and source-native `Long` expression slice now support bitwise `^`, lowering to the existing `xor.i32`
+  MIR/XLIL/LLVM path.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the
   current source-native `Long` slice.
 - C MIR constant folding now turns `branch_if` with a known `const.bool` condition into a direct `goto`, allowing CFG cleanup

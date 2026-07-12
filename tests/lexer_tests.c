@@ -83,6 +83,8 @@ static void test_documented_operators(void)
       XS_TOKEN_SWITCH_OUTPUT,
       XS_TOKEN_SHIFT_RIGHT,
       XS_TOKEN_SWITCH_INPUT,
+      XS_TOKEN_CARET,
+      XS_TOKEN_CARET_ASSIGN,
       XS_TOKEN_ARROW,
       XS_TOKEN_FAT_ARROW,
       XS_TOKEN_QUESTION,
@@ -92,7 +94,7 @@ static void test_documented_operators(void)
       XS_TOKEN_AT,
       XS_TOKEN_EOF,
   };
-  expect_tokens("== != > < >= <= && || := ! & | << <<< >> >>> -> => ? ?. ?? ?"
+  expect_tokens("== != > < >= <= && || := ! & | << <<< >> >>> ^ ^= -> => ? ?. ?? ?"
                 "?= @",
                 expected, sizeof(expected) / sizeof(expected[0]));
 }

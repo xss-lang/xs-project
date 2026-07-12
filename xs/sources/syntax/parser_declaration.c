@@ -147,6 +147,7 @@ static bool token_is_overloadable_operator(XsTokenKind kind)
   case XS_TOKEN_GREATER_EQUAL:
   case XS_TOKEN_AMPERSAND:
   case XS_TOKEN_PIPE:
+  case XS_TOKEN_CARET:
   case XS_TOKEN_SHIFT_LEFT:
   case XS_TOKEN_SHIFT_RIGHT:
     return true;

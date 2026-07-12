@@ -326,6 +326,7 @@ static bool static_i32_expression(const XsSyntaxNode *expression, int32_t *value
                    : expression->token_kind == XS_TOKEN_PERCENT     ? left % right
                    : expression->token_kind == XS_TOKEN_AMPERSAND   ? left & right
                    : expression->token_kind == XS_TOKEN_PIPE        ? left | right
+                   : expression->token_kind == XS_TOKEN_CARET       ? left ^ right
                    : expression->token_kind == XS_TOKEN_SHIFT_LEFT  ? left << (unsigned)right
                    : expression->token_kind == XS_TOKEN_SHIFT_RIGHT ? left >> (unsigned)right
                                                                     : (int64_t)INT32_MIN - 1;
@@ -453,6 +454,8 @@ static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context
       return xs_mir_block_and_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_PIPE:
       return xs_mir_block_or_i32(entry, left, right, result, error) == XS_MIR_OK;
+    case XS_TOKEN_CARET:
+      return xs_mir_block_xor_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_SHIFT_LEFT:
       return xs_mir_block_shl_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_SHIFT_RIGHT:
@@ -463,7 +466,7 @@ static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context
   }
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
                             "native source main return expression supports only integer literals, unary +/-, +, -, *, "
-                            "/, %, &, |, <<, >>, and top-level if for now") &&
+                            "/, %, &, |, ^, <<, >>, and top-level if for now") &&
          false;
 }
 

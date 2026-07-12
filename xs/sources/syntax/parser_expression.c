@@ -505,6 +505,7 @@ static unsigned precedence(XsTokenKind kind)
   case XS_TOKEN_STAR_ASSIGN:
   case XS_TOKEN_SLASH_ASSIGN:
   case XS_TOKEN_PERCENT_ASSIGN:
+  case XS_TOKEN_CARET_ASSIGN:
   case XS_TOKEN_QUESTION_QUESTION_ASSIGN:
     return 1;
   case XS_TOKEN_QUESTION_QUESTION:
@@ -515,28 +516,30 @@ static unsigned precedence(XsTokenKind kind)
     return 4;
   case XS_TOKEN_PIPE:
     return 5;
-  case XS_TOKEN_AMPERSAND:
+  case XS_TOKEN_CARET:
     return 6;
+  case XS_TOKEN_AMPERSAND:
+    return 7;
   case XS_TOKEN_EQUAL:
   case XS_TOKEN_NOT_EQUAL:
-    return 7;
+    return 8;
   case XS_TOKEN_GREATER:
   case XS_TOKEN_GREATER_EQUAL:
   case XS_TOKEN_LESS:
   case XS_TOKEN_LESS_EQUAL:
-    return 8;
+    return 9;
   case XS_TOKEN_SHIFT_LEFT:
   case XS_TOKEN_SHIFT_RIGHT:
   case XS_TOKEN_SWITCH_INPUT:
   case XS_TOKEN_SWITCH_OUTPUT:
-    return 9;
+    return 10;
   case XS_TOKEN_PLUS:
   case XS_TOKEN_MINUS:
-    return 10;
+    return 11;
   case XS_TOKEN_STAR:
   case XS_TOKEN_SLASH:
   case XS_TOKEN_PERCENT:
-    return 11;
+    return 12;
   default:
     return 0;
   }
