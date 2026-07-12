@@ -186,6 +186,7 @@ static void test_public_namespace_exports_default_type(void)
                         "public namespace Records;\n"
                         "data User { name: Str; }\n";
   const char *main = "module App;\n"
+                     "imports Model.Records;\n"
                      "fn Main(value: Model.Records.User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -201,6 +202,32 @@ static void test_public_namespace_exports_default_type(void)
   CHECK(add_file(main, 86, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
   CHECK(xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&main_tree);
+  xs_syntax_tree_free(&library_tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_public_qualified_type_requires_import(void)
+{
+  const char *library = "module Model;\n"
+                        "public data User { name: Str; }\n";
+  const char *main = "module App;\n"
+                     "fn Main(value: Model.User) {}\n";
+  XsSyntaxTree library_tree;
+  XsSyntaxTree main_tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(add_file(library, 89, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file(main, 90, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_hir_import_scope_free(&imports);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
@@ -401,6 +428,7 @@ int main(void)
   test_duplicate_generic_parameter_names();
   test_imported_user_type();
   test_public_namespace_exports_default_type();
+  test_public_qualified_type_requires_import();
   test_private_qualified_type_visibility();
   test_private_same_namespace_type_visibility();
   test_private_same_namespace_different_file_type_visibility();

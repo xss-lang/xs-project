@@ -151,6 +151,8 @@ static bool import_resolves_module_macro(const XsSyntaxNode *import_node, const 
 
 bool xs_macro_external_import_resolves(const XsSyntaxTree *tree, XsText name)
 {
+  if(module_exports_macro("Panic", name))
+    return true;
   if(tree == nullptr || tree->root == nullptr)
     return false;
   for(size_t index = 0; index < tree->root->child_count; ++index)

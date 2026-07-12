@@ -106,6 +106,20 @@ static bool symbol_visible_from(const XsHirSymbol *symbol, const char *current_n
   return strcmp(symbol->namespace_name, current_namespace) == 0 && symbol->span.file_id == current_file_id;
 }
 
+static bool same_root_module(const char *left, const char *right)
+{
+  size_t left_length = strcspn(left, ".");
+  size_t right_length = strcspn(right, ".");
+  return left_length == right_length && strncmp(left, right, left_length) == 0;
+}
+
+static bool symbol_module_available(const XsHirSymbol *symbol, const char *current_namespace,
+                                    const XsHirImportScope *imports)
+{
+  return symbol == nullptr || same_root_module(symbol->namespace_name, current_namespace) ||
+         xs_hir_import_scope_has_module(imports, symbol->namespace_name);
+}
+
 static const XsHirSymbol *resolve_name_use(const char *path, const char *current_namespace,
                                            const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports)
 {
@@ -210,6 +224,14 @@ static bool validate_call_target(const XsSyntaxNode *target, const XsSyntaxNode 
   {
     char message[512];
     snprintf(message, sizeof(message), "name '%s' is not visible from namespace '%s'", path, namespace_name);
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(target), message);
+    free(path);
+    return false;
+  }
+  if(strchr(path, '.') != nullptr && !symbol_module_available(symbol, namespace_name, imports))
+  {
+    char message[512];
+    snprintf(message, sizeof(message), "module for name '%s' is not imported", path);
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(target), message);
     free(path);
     return false;

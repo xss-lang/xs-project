@@ -38,6 +38,12 @@ valueFloat: Float = 1.0;
 name: Optional<Str> = None;
 name = Some("Leitwolf");
 
+// Result is also special. The compiler behaves as if `imports Result;` existed
+// and brings the short Result<T, E> wrapper name into scope. Most other STD
+// modules still require qualified STD.* names or explicit selected imports.
+
+status: Result<Int, Result.Error> = Result.Ok(0);
+
 emptyCanonical: STD.Optional.Optional<Str> = STD.Optional.None;
 canonicalName: STD.Optional.Optional<Str> = STD.Optional.Some("Leitwolf");
 shortName: Optional<Str> = canonicalName;

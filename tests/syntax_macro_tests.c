@@ -506,12 +506,11 @@ static void test_imported_panic_macros_resolve_without_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *missing_import = "fn Main() { panic!(); }\n";
-  source = (XsSource){.path = "MissingPanicImport.xs", .text = missing_import, .length = strlen(missing_import)};
+  const char *implicit_import = "fn Main() { panic!(); assert!(true); }\n";
+  source = (XsSource){.path = "ImplicitPanicImport.xs", .text = implicit_import, .length = strlen(implicit_import)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 36, &diagnostics, &tree));
-  CHECK(!xs_macro_validate(&tree, &diagnostics));
-  CHECK(xs_diagnostics_has_error(&diagnostics));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }

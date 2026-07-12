@@ -219,6 +219,20 @@ static bool symbol_visible_from(const XsHirSymbol *symbol, const char *namespace
   return strcmp(symbol->namespace_name, namespace_name) == 0 && symbol->span.file_id == current_file_id;
 }
 
+static bool same_root_module(const char *left, const char *right)
+{
+  size_t left_length = strcspn(left, ".");
+  size_t right_length = strcspn(right, ".");
+  return left_length == right_length && strncmp(left, right, left_length) == 0;
+}
+
+static bool symbol_module_available(const XsHirSymbol *symbol, const char *namespace_name,
+                                    const XsHirImportScope *imports)
+{
+  return symbol == nullptr || same_root_module(symbol->namespace_name, namespace_name) ||
+         xs_hir_import_scope_has_module(imports, symbol->namespace_name);
+}
+
 static const XsHirSymbol *resolve_user_type(const char *path, const char *namespace_name,
                                             const XsHirSymbolTable *symbols, const XsHirImportScope *imports)
 {
@@ -248,6 +262,13 @@ static bool report_invisible_type(XsDiagnostics *diagnostics, const XsSyntaxNode
 {
   char message[512];
   snprintf(message, sizeof(message), "type '%s' is not visible from namespace '%s'", path, namespace_name);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
+}
+
+static bool report_unimported_type(XsDiagnostics *diagnostics, const XsSyntaxNode *type, const char *path)
+{
+  char message[512];
+  snprintf(message, sizeof(message), "module for type '%s' is not imported", path);
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
 }
 
@@ -372,6 +393,8 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
     success = report_unresolved_type(diagnostics, type, name);
   else if(!symbol_visible_from(symbol, namespace_name, current_file_id))
     success = report_invisible_type(diagnostics, type, name, namespace_name);
+  else if(strchr(name, '.') != nullptr && !symbol_module_available(symbol, namespace_name, imports))
+    success = report_unimported_type(diagnostics, type, name);
   else
   {
     if(check_arity)

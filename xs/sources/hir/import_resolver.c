@@ -29,6 +29,42 @@ static bool append_import_binding(XsHirImportScope *scope, XsHirImportBinding bi
   return true;
 }
 
+static bool append_module_import(XsHirImportScope *scope, char *module_name)
+{
+  if(scope->module_count == scope->module_capacity)
+  {
+    size_t capacity = scope->module_capacity == 0 ? 8 : scope->module_capacity * 2;
+    char **module_names = realloc(scope->module_names, capacity * sizeof(*module_names));
+    if(module_names == nullptr)
+    {
+      scope->allocation_failed = true;
+      return false;
+    }
+    scope->module_names = module_names;
+    scope->module_capacity = capacity;
+  }
+  scope->module_names[scope->module_count++] = module_name;
+  return true;
+}
+
+static bool import_module_name(XsHirImportScope *scope, const char *module_name)
+{
+  if(xs_hir_import_scope_has_module(scope, module_name))
+    return true;
+  char *copy = xs_hir_copy_cstr(module_name);
+  if(copy == nullptr)
+  {
+    scope->allocation_failed = true;
+    return false;
+  }
+  if(!append_module_import(scope, copy))
+  {
+    free(copy);
+    return false;
+  }
+  return true;
+}
+
 static bool report_import_conflict(XsDiagnostics *diagnostics, XsSpan span, const char *local_name)
 {
   char message[512];
@@ -69,33 +105,21 @@ static bool import_module_namespace(const XsSyntaxNode *import_node, const XsSyn
                                     const XsHirSymbolTable *project_symbols, XsHirImportScope *scope,
                                     XsDiagnostics *diagnostics)
 {
+  (void)project_symbols;
+  (void)diagnostics;
+  (void)import_node;
   char *module_name = xs_hir_path_to_string(path);
   if(module_name == nullptr)
   {
     scope->allocation_failed = true;
     return false;
   }
-  for(size_t i = 0; i < project_symbols->count; ++i)
+  if(xs_hir_import_scope_has_module(scope, module_name))
   {
-    if(!xs_hir_symbol_is_public_child_of_namespace(&project_symbols->symbols[i], module_name))
-      continue;
-    char *local_name = xs_hir_join_qualified(module_name, project_symbols->symbols[i].name);
-    if(local_name == nullptr)
-    {
-      free(module_name);
-      scope->allocation_failed = true;
-      return false;
-    }
-    bool ok = import_symbol_as(scope, &project_symbols->symbols[i], local_name, import_node->span, diagnostics);
-    free(local_name);
-    if(!ok)
-    {
-      free(module_name);
-      return false;
-    }
+    free(module_name);
+    return true;
   }
-  free(module_name);
-  return true;
+  return append_module_import(scope, module_name);
 }
 
 static const XsHirSymbol *find_symbol_in_namespace(const XsHirSymbolTable *table, const char *namespace_name,
@@ -185,7 +209,10 @@ void xs_hir_import_scope_free(XsHirImportScope *scope)
 {
   for(size_t i = 0; i < scope->count; ++i)
     free(scope->bindings[i].local_name);
+  for(size_t i = 0; i < scope->module_count; ++i)
+    free(scope->module_names[i]);
   free(scope->bindings);
+  free(scope->module_names);
   *scope = (XsHirImportScope){0};
 }
 
@@ -201,18 +228,37 @@ const XsHirImportBinding *xs_hir_import_scope_find(const XsHirImportScope *scope
   return nullptr;
 }
 
+bool xs_hir_import_scope_has_module(const XsHirImportScope *scope, const char *namespace_name)
+{
+  if(scope == nullptr || namespace_name == nullptr)
+    return false;
+  for(size_t i = 0; i < scope->module_count; ++i)
+  {
+    const char *module = scope->module_names[i];
+    size_t length = strlen(module);
+    if(strncmp(namespace_name, module, length) == 0 &&
+       (namespace_name[length] == '\0' || namespace_name[length] == '.'))
+      return true;
+  }
+  return false;
+}
+
 bool xs_hir_resolve_imports(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols, XsHirImportScope *scope,
                             XsDiagnostics *diagnostics)
 {
-  if(tree == nullptr || tree->root == nullptr || project_symbols == nullptr || scope == nullptr || diagnostics == nullptr)
+  if(tree == nullptr || tree->root == nullptr || project_symbols == nullptr || scope == nullptr ||
+     diagnostics == nullptr)
     return false;
   bool success = true;
+  success = import_module_name(scope, "Panic") && success;
+  success = import_module_name(scope, "Result") && success;
   for(size_t i = 0; i < tree->root->child_count; ++i)
   {
     const XsSyntaxNode *child = tree->root->children[i];
     if(child->kind != XS_SYNTAX_DECL_IMPORT)
       continue;
-    if(xs_hir_first_child_kind(child, XS_SYNTAX_IMPORT_NAME) != nullptr || (child->flags & XS_SYNTAX_FLAG_WILDCARD) != 0)
+    if(xs_hir_first_child_kind(child, XS_SYNTAX_IMPORT_NAME) != nullptr ||
+       (child->flags & XS_SYNTAX_FLAG_WILDCARD) != 0)
       success = import_selected(child, project_symbols, scope, diagnostics) && success;
     else
     {

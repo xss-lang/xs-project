@@ -26,6 +26,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 
 - Macro names are snake_case and are not under `STD`.
 - Standard modules use `STD.<Module>` names, such as `STD.FS` and `STD.Collections`.
+- `imports Module;` makes a module usable through its qualified name. It does not place the module's public symbols in
+  local scope. Use `from Module imports Name;` or `from Module imports *;` when short names are desired.
 - `format_args!` and `include!` are built-in macros.
 - `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` come from `Stdio`.
 - Attribute delimiter syntax is built in: `#[...]` applies to the following declaration/member, and `#![...]` applies to the
@@ -37,6 +39,13 @@ syntax takes priority over ad-hoc implementation shortcuts.
   `STD.Optional.Optional<T>` into scope as `Optional<T>`.
 - Optional value constructors are `STD.Optional.None` and `STD.Optional.Some(...)`; the same implicit import may make
   `None` and `Some(...)` available in source.
+- `Result` is a special standard import: the compiler behaves as if `imports Result;` existed and brings `Result<T, E>`
+  into scope. Most other `STD.*` modules are not automatically placed in local scope.
+- `Panic` is also an implicit standard import for assertion and panic macros. `assert!`, `assert_eq!`, `assert_ne!`,
+  `debug_assert!`, `debug_assert_eq!`, and `panic!` are available without an explicit import, but they are still library
+  macros rather than compiler built-ins.
+- `Stdio` is not prelude and is not implicit. Its macros require `imports Stdio;` or selected imports, except
+  `format_args!`, which is built in.
 - Legacy exception syntax is deprecated. Active examples should prefer `Result.Result<T, E>` and postfix `@` propagation;
   old `throws`/`throw`/`try`/`catch` spellings should appear only in explicitly marked legacy notes.
 

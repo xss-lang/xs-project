@@ -205,10 +205,13 @@ This layer lives under the HIR directory.
 - Symbols carry short name, namespace name, fully qualified name, visibility, source location, and source AST node.
 - Duplicate top-level declarations with the same short name in the same namespace are errors.
 - The same short name may be used under different namespaces.
-- `imports Module;` opens the imported module’s public top-level symbols under module-qualified local names.
+- `imports Module;` records that the module is usable through its qualified name. It does not place public symbols into the
+  local import scope.
 - `from Module imports Name;`, `from Module imports Name as Alias;`, and `from Module imports *;` open public top-level
   symbols into the local import scope.
 - Non-public symbols are not opened through external module imports.
+- Qualified external names and types require a matching `imports Module;` or `imports Module.Namespace;` declaration unless
+  they share the same root module as the current namespace.
 - Direct call targets in function bodies are resolved through same-namespace symbols and the import scope.
 - Fully qualified call targets through another namespace/module resolve only to public symbols.
 - Non-public symbols can be resolved only from the same namespace and same source file through direct qualified names.
@@ -251,6 +254,12 @@ validation does not decide dispatch, override, or overload selection.
   `Result.Result<T>`, `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result.Error`. This
   is name and arity validation only; constructors, method calls, and propagation lowering are still handled by later
   semantic passes.
+- `Result` is treated as an implicit standard import and shorthand scope entry for `Result<T, E>`. That exception does not
+  make general `STD.*` modules scope-imported.
+- `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
+  imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
+- `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`
+  still require `imports Stdio;` or selected imports. `format_args!` remains built in.
 - The C23 HIR type resolver also recognizes the initial standard CFFI family: `CFFI.CStr`, `CFFI.CString`,
   `CFFI.RawPtr<T>`, `CFFI.NonNull<T>`, `CFFI.Slice<T>`, `CFFI.Handle<T>`, `CFFI.Owned<T>`, `CFFI.Borrowed<T>`,
   `CFFI.Out<T>`, `CFFI.DynamicLibrary`, `CFFI.Symbol<T>`, `CFFI.FILE`, and `CFFI.VarArgs`.

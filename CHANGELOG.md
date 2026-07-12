@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 - HIR CFFI validation now checks the first standard CFFI attribute shapes and scopes for extern blocks, extern functions,
   and extern static declarations.
+- `imports Module;` now records module usability without placing module symbols in local scope. `Result` and `Panic` are
+  implicit standard imports; `Panic` assertion/panic macros no longer require an explicit import. `Stdio` remains explicit
+  and is not prelude.
 
 ## 0.0.6 - 2026-07-13
 

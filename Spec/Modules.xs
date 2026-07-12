@@ -56,6 +56,8 @@ fn Add(a: Int, b: Int) => Int {
 
 
 // normal import
+// imports makes the module usable through its qualified name.
+// It does not place the module's public symbols directly in local scope.
 imports Math;
 
 fn Main() {
@@ -84,6 +86,7 @@ fn Main() {
 
 
 // selected import
+// selected imports place the selected public name in local scope.
 from Math imports Add;
 
 fn Main() {

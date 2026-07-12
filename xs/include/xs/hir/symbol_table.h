@@ -61,8 +61,11 @@ typedef struct
 typedef struct
 {
   XsHirImportBinding *bindings;
+  char **module_names;
   size_t count;
   size_t capacity;
+  size_t module_count;
+  size_t module_capacity;
   bool allocation_failed;
 } XsHirImportScope;
 
@@ -104,6 +107,7 @@ bool xs_hir_collect_member_symbols(const XsHirSymbol *owner, const XsMacroDeclar
 void xs_hir_import_scope_init(XsHirImportScope *scope);
 void xs_hir_import_scope_free(XsHirImportScope *scope);
 const XsHirImportBinding *xs_hir_import_scope_find(const XsHirImportScope *scope, const char *local_name);
+bool xs_hir_import_scope_has_module(const XsHirImportScope *scope, const char *namespace_name);
 bool xs_hir_resolve_imports(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols, XsHirImportScope *scope,
                             XsDiagnostics *diagnostics);
 bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols,

@@ -86,6 +86,7 @@ pub struct ResolvedModule
 {
   pub name: String,
   pub local_symbols: HashMap<String, Symbol>,
+  pub available_modules: HashSet<String>,
   pub imported_symbols: HashMap<String, Symbol>,
 }
 
@@ -122,9 +123,10 @@ impl Resolver
         continue;
       }
       let local_symbols = self.collect_local_symbols(module);
-      let imported_symbols = self.resolve_imports(module, &module_index);
+      let (imported_symbols, available_modules) = self.resolve_imports(module, &module_index);
       resolved.insert(module.name.clone(), ResolvedModule { name: module.name.clone(),
                                                             local_symbols,
+                                                            available_modules,
                                                             imported_symbols });
     }
     Resolution { modules: resolved,
@@ -169,9 +171,13 @@ impl Resolver
     locals
   }
 
-  fn resolve_imports(&mut self, module: &Module, module_index: &HashMap<&str, &Module>) -> HashMap<String, Symbol>
+  fn resolve_imports(&mut self,
+                     module: &Module,
+                     module_index: &HashMap<&str, &Module>)
+                     -> (HashMap<String, Symbol>, HashSet<String>)
   {
     let mut imports = HashMap::new();
+    let mut available_modules = HashSet::from(["Panic".to_string(), "Result".to_string()]);
     for import in &module.imports
     {
       match import
@@ -179,14 +185,9 @@ impl Resolver
         Import::Module { module: target,
                          span, } =>
         {
-          if let Some(target_module) = self.find_module(module_index, target, *span)
+          if self.find_module(module_index, target, *span).is_some() || target == "Panic" || target == "Result"
           {
-            for symbol in target_module.symbols
-                                       .iter()
-                                       .filter(|symbol| symbol.visibility == Visibility::Public)
-            {
-              imports.insert(format!("{target}.{}", symbol.name), symbol.clone());
-            }
+            available_modules.insert(target.clone());
           }
         }
         Import::All { module: target,
@@ -214,7 +215,7 @@ impl Resolver
         }
       }
     }
-    imports
+    (imports, available_modules)
   }
 
   fn find_module<'a>(&mut self, module_index: &HashMap<&str, &'a Module>, name: &str, span: Span)
@@ -317,6 +318,28 @@ mod tests
     assert!(resolution.diagnostics.is_empty());
     assert!(app.imported_symbols.contains_key("User"));
     assert!(!app.imported_symbols.contains_key("Secret"));
+  }
+
+  #[test]
+  fn module_import_makes_module_available_without_scope_importing_symbols()
+  {
+    let library = Module { name: "Math".to_string(),
+                           symbols: vec![symbol("Add", Visibility::Public)],
+                           imports: vec![] };
+    let app = Module { name: "App".to_string(),
+                       symbols: vec![],
+                       imports: vec![Import::Module { module: "Math".to_string(),
+                                                      span: span(10, 20) }] };
+
+    let resolution = Resolver::new().resolve(&[library, app]);
+    let app = resolution.modules.get("App").expect("App module should exist");
+
+    assert!(resolution.diagnostics.is_empty());
+    assert!(app.available_modules.contains("Math"));
+    assert!(app.available_modules.contains("Panic"));
+    assert!(app.available_modules.contains("Result"));
+    assert!(!app.imported_symbols.contains_key("Math.Add"));
+    assert!(!app.imported_symbols.contains_key("Add"));
   }
 
   #[test]

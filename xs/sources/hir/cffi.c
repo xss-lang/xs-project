@@ -202,6 +202,145 @@ static bool validate_attributes(const XsSyntaxNode *node, XsCffiAttributeScope s
   return success;
 }
 
+static XsText empty_text(void)
+{
+  return (XsText){0};
+}
+
+static XsText attribute_argument_text(const XsSyntaxNode *attribute)
+{
+  const XsSyntaxNode *argument = attribute_first_argument(attribute);
+  return argument == nullptr ? empty_text() : argument->text;
+}
+
+static void read_common_boundary_attribute(const char *name, bool *unsafe_boundary, bool *safe_boundary)
+{
+  if(strcmp(name, "Unsafe") == 0)
+    *unsafe_boundary = true;
+  if(strcmp(name, "Safe") == 0)
+    *safe_boundary = true;
+}
+
+static void read_block_attribute(const XsSyntaxNode *attribute, const char *name, XsHirCffiExternBlock *metadata)
+{
+  if(strcmp(name, "LinkLibrary") == 0)
+    metadata->link_library = attribute_argument_text(attribute);
+  else if(strcmp(name, "Header") == 0)
+    metadata->header = attribute_argument_text(attribute);
+  else if(strcmp(name, "CallingConvention") == 0)
+    metadata->calling_convention = attribute_argument_text(attribute);
+  else
+    read_common_boundary_attribute(name, &metadata->unsafe_boundary, &metadata->safe_boundary);
+}
+
+static void read_function_attribute(const XsSyntaxNode *attribute, const char *name, XsHirCffiFunction *metadata)
+{
+  if(strcmp(name, "LinkName") == 0)
+    metadata->link_name = attribute_argument_text(attribute);
+  else if(strcmp(name, "ExportName") == 0)
+    metadata->export_name = attribute_argument_text(attribute);
+  else if(strcmp(name, "SymbolVisibility") == 0)
+    metadata->symbol_visibility = attribute_argument_text(attribute);
+  else if(strcmp(name, "Ownership") == 0)
+    metadata->ownership = attribute_argument_text(attribute);
+  else if(strcmp(name, "NoUnwind") == 0)
+    metadata->no_unwind = true;
+  else if(strcmp(name, "MayUnwind") == 0)
+    metadata->may_unwind = true;
+  else if(strcmp(name, "Variadic") == 0)
+    metadata->variadic = true;
+  else if(strcmp(name, "ForeignThreadSafe") == 0)
+    metadata->foreign_thread_safe = true;
+  else if(strcmp(name, "NoCallbackIntoRuntime") == 0)
+    metadata->no_callback_into_runtime = true;
+  else if(strcmp(name, "MayBlock") == 0)
+    metadata->may_block = true;
+  else if(strcmp(name, "CancellationSafe") == 0)
+    metadata->cancellation_safe = true;
+  else if(strcmp(name, "CancellationUnsafe") == 0)
+    metadata->cancellation_unsafe = true;
+  else
+    read_common_boundary_attribute(name, &metadata->unsafe_boundary, &metadata->safe_boundary);
+}
+
+static void read_static_attribute(const XsSyntaxNode *attribute, const char *name, XsHirCffiStatic *metadata)
+{
+  if(strcmp(name, "LinkName") == 0)
+    metadata->link_name = attribute_argument_text(attribute);
+  else if(strcmp(name, "ThreadLocal") == 0)
+    metadata->thread_local_storage = true;
+  else
+    read_common_boundary_attribute(name, &metadata->unsafe_boundary, &metadata->safe_boundary);
+}
+
+typedef void (*XsCffiReadAttribute)(const XsSyntaxNode *attribute, const char *name, void *metadata);
+
+static void read_attribute_list(const XsSyntaxNode *node, XsCffiReadAttribute read_attribute, void *metadata)
+{
+  const XsSyntaxNode *attributes = xs_hir_first_child_kind(node, XS_SYNTAX_ATTRIBUTE_LIST);
+  if(attributes == nullptr)
+    return;
+  for(size_t i = 0; i < attributes->child_count; ++i)
+  {
+    const XsSyntaxNode *attribute = attributes->children[i];
+    char *name = attribute_name(attribute);
+    if(name == nullptr)
+      continue;
+    read_attribute(attribute, name, metadata);
+    free(name);
+  }
+}
+
+static void read_block_attribute_bridge(const XsSyntaxNode *attribute, const char *name, void *metadata)
+{
+  read_block_attribute(attribute, name, metadata);
+}
+
+static void read_function_attribute_bridge(const XsSyntaxNode *attribute, const char *name, void *metadata)
+{
+  read_function_attribute(attribute, name, metadata);
+}
+
+static void read_static_attribute_bridge(const XsSyntaxNode *attribute, const char *name, void *metadata)
+{
+  read_static_attribute(attribute, name, metadata);
+}
+
+static XsText extern_abi_text(const XsSyntaxNode *node)
+{
+  const XsSyntaxNode *abi = xs_hir_first_child_kind(node, XS_SYNTAX_TOKEN);
+  return abi == nullptr ? empty_text() : abi->text;
+}
+
+bool xs_hir_cffi_read_extern_block(const XsSyntaxNode *node, XsHirCffiExternBlock *metadata)
+{
+  if(node == nullptr || metadata == nullptr || node->kind != XS_SYNTAX_DECL_EXTERN_BLOCK)
+    return false;
+  *metadata = (XsHirCffiExternBlock){.abi = extern_abi_text(node)};
+  read_attribute_list(node, read_block_attribute_bridge, metadata);
+  return true;
+}
+
+bool xs_hir_cffi_read_function(const XsSyntaxNode *node, XsHirCffiFunction *metadata)
+{
+  if(node == nullptr || metadata == nullptr || node->kind != XS_SYNTAX_DECL_FUNCTION ||
+     (node->flags & XS_SYNTAX_FLAG_EXTERN) == 0)
+    return false;
+  *metadata = (XsHirCffiFunction){.abi = extern_abi_text(node)};
+  read_attribute_list(node, read_function_attribute_bridge, metadata);
+  return true;
+}
+
+bool xs_hir_cffi_read_static(const XsSyntaxNode *node, XsHirCffiStatic *metadata)
+{
+  if(node == nullptr || metadata == nullptr || node->kind != XS_SYNTAX_DECL_VARIABLE ||
+     (node->flags & XS_SYNTAX_FLAG_EXTERN) == 0)
+    return false;
+  *metadata = (XsHirCffiStatic){.abi = extern_abi_text(node)};
+  read_attribute_list(node, read_static_attribute_bridge, metadata);
+  return true;
+}
+
 static bool validate_extern_block(const XsSyntaxNode *node, XsDiagnostics *diagnostics)
 {
   bool success = validate_attributes(node, XS_CFFI_ATTRIBUTE_BLOCK, diagnostics);

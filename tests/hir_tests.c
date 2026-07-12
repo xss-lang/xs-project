@@ -122,6 +122,12 @@ static bool parse_and_validate_cffi(const char *text, XsSyntaxTree *tree, XsDiag
   return xs_hir_validate_cffi(tree, diagnostics);
 }
 
+static bool node_text_is(XsText text, const char *expected)
+{
+  size_t length = strlen(expected);
+  return text.length == length && memcmp(text.data, expected, length) == 0;
+}
+
 static void test_cffi_validation_accepts_repr_c_extern_block(void)
 {
   const char *text = "module App;\n"
@@ -139,6 +145,22 @@ static void test_cffi_validation_accepts_repr_c_extern_block(void)
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(parse_and_validate_cffi(text, &tree, &diagnostics));
+  const XsSyntaxNode *block = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_EXTERN_BLOCK);
+  const XsSyntaxNode *function = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_FUNCTION);
+  const XsSyntaxNode *global = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_VARIABLE);
+  XsHirCffiExternBlock block_metadata;
+  XsHirCffiFunction function_metadata;
+  XsHirCffiStatic static_metadata;
+  CHECK(xs_hir_cffi_read_extern_block(block, &block_metadata));
+  CHECK(xs_hir_cffi_read_function(function, &function_metadata));
+  CHECK(xs_hir_cffi_read_static(global, &static_metadata));
+  CHECK(node_text_is(block_metadata.abi, "\"C\""));
+  CHECK(node_text_is(block_metadata.link_library, "\"c\""));
+  CHECK(node_text_is(block_metadata.header, "\"stdio.h\""));
+  CHECK(node_text_is(function_metadata.link_name, "\"puts\""));
+  CHECK(function_metadata.no_unwind);
+  CHECK(node_text_is(static_metadata.link_name, "\"errno\""));
+  CHECK(static_metadata.thread_local_storage);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -280,8 +302,11 @@ static void test_import_resolution(void)
   CHECK(add_file_symbols(library, 31, &library_tree, &symbols, &diagnostics));
   CHECK(add_file_symbols(main, 32, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Add") != nullptr);
-  CHECK(xs_hir_import_scope_find(&imports, "Math.errno") != nullptr);
+  CHECK(xs_hir_import_scope_has_module(&imports, "Panic"));
+  CHECK(xs_hir_import_scope_has_module(&imports, "Result"));
+  CHECK(xs_hir_import_scope_has_module(&imports, "Math"));
+  CHECK(xs_hir_import_scope_find(&imports, "Math.Add") == nullptr);
+  CHECK(xs_hir_import_scope_find(&imports, "Math.errno") == nullptr);
   CHECK(xs_hir_import_scope_find(&imports, "Math.Hidden") == nullptr);
   const XsHirImportBinding *sum = xs_hir_import_scope_find(&imports, "Sum");
   CHECK(sum != nullptr);
@@ -321,7 +346,8 @@ static void test_public_namespace_exports_default_symbols(void)
   CHECK(hidden != nullptr && hidden->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
   CHECK(add_file_symbols(main, 36, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Add") != nullptr);
+  CHECK(xs_hir_import_scope_has_module(&imports, "Math.Advanced"));
+  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Add") == nullptr);
   CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Hidden") == nullptr);
   CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
   xs_hir_import_scope_free(&imports);
@@ -404,6 +430,32 @@ static void test_name_use_errors(void)
   xs_hir_import_scope_free(&imports);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_qualified_external_name_requires_import(void)
+{
+  const char *library = "module Math;\n"
+                        "public fn Add() {}\n";
+  const char *main = "module App;\n"
+                     "fn Main() { Math.Add(); }\n";
+  XsSyntaxTree library_tree;
+  XsSyntaxTree main_tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(add_file_symbols(library, 41, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file_symbols(main, 42, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&main_tree);
+  xs_syntax_tree_free(&library_tree);
   xs_diagnostics_free(&diagnostics);
 }
 
@@ -631,6 +683,7 @@ int main(void)
   test_import_errors();
   test_name_use_resolution();
   test_name_use_errors();
+  test_qualified_external_name_requires_import();
   test_expanded_macro_name_use_errors();
   test_statement_fragment_macro_name_use_errors();
   test_block_fragment_macro_name_use_errors();
