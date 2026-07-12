@@ -448,6 +448,7 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
   if(kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_MUL_I64 ||
      kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
      kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_DIV_I32 ||
+     kind == XS_LIL_INSTRUCTION_REM_I32 ||
      kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
      kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32)
   {
@@ -466,6 +467,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
       lowered = LLVMBuildMul(builder, values[left], values[right], "mul");
     else if(kind == XS_LIL_INSTRUCTION_DIV_I32)
       lowered = LLVMBuildSDiv(builder, values[left], values[right], "div");
+    else if(kind == XS_LIL_INSTRUCTION_REM_I32)
+      lowered = LLVMBuildSRem(builder, values[left], values[right], "rem");
     else if(kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntEQ, values[left], values[right], "eq");
     else if(kind == XS_LIL_INSTRUCTION_LT_I32)

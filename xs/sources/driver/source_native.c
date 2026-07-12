@@ -219,13 +219,15 @@ static bool lower_i32_expression(XsMirBlock *entry, const XsSyntaxNode *expressi
       return xs_mir_block_mul_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_SLASH:
       return xs_mir_block_div_i32(entry, left, right, result, error) == XS_MIR_OK;
+    case XS_TOKEN_PERCENT:
+      return xs_mir_block_rem_i32(entry, left, right, result, error) == XS_MIR_OK;
     default:
       break;
     }
   }
   return xs_diagnostics_add(
              diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
-             "native source main return expression supports only integer literals, +, -, *, /, and top-level if for now") &&
+             "native source main return expression supports only integer literals, +, -, *, /, %, and top-level if for now") &&
          false;
 }
 

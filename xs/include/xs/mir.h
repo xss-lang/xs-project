@@ -62,6 +62,7 @@ typedef enum
   XS_MIR_INSTRUCTION_SUB_I32,
   XS_MIR_INSTRUCTION_MUL_I32,
   XS_MIR_INSTRUCTION_DIV_I32,
+  XS_MIR_INSTRUCTION_REM_I32,
   XS_MIR_INSTRUCTION_EQ_I32,
   XS_MIR_INSTRUCTION_LT_I32,
   XS_MIR_INSTRUCTION_LE_I32,
@@ -132,6 +133,8 @@ XsMirStatus xs_mir_block_sub_i32(XsMirBlock *block, XsMirValueId left, XsMirValu
 XsMirStatus xs_mir_block_mul_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                  XsMirError *error);
 XsMirStatus xs_mir_block_div_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error);
+XsMirStatus xs_mir_block_rem_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                  XsMirError *error);
 XsMirStatus xs_mir_block_eq_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                 XsMirError *error);

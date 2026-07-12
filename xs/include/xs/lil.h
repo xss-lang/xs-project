@@ -65,6 +65,7 @@ typedef enum
   XS_LIL_INSTRUCTION_SUB_I32,
   XS_LIL_INSTRUCTION_MUL_I32,
   XS_LIL_INSTRUCTION_DIV_I32,
+  XS_LIL_INSTRUCTION_REM_I32,
   XS_LIL_INSTRUCTION_EQ_I32,
   XS_LIL_INSTRUCTION_LT_I32,
   XS_LIL_INSTRUCTION_LE_I32,
@@ -129,6 +130,8 @@ XsLilStatus xs_lil_block_sub_i32(XsLilBlock *block, XsLilValueId left, XsLilValu
 XsLilStatus xs_lil_block_mul_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_div_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_rem_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_eq_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error);

@@ -30,6 +30,7 @@ source-to-native executable pipeline.
 - Source-native `if` conditions now accept `!=` by lowering equality and swapping MIR branch targets.
 - C MIR to XLIL lowering now supports `const.bool`, and source-native `if` conditions accept `true`/`false`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `div.i32`.
+- XLIL, MIR, LLVM lowering, and the source-native slice now support signed `rem.i32`.
 - XLIL v0 and direct LLVM lowering now support signed `i32` comparison instructions: `lt.i32`, `le.i32`, `gt.i32`,
   and `ge.i32`.
 - C MIR to XLIL body lowering now creates all destination blocks before lowering terminators, so `br` and `br_if` can target
