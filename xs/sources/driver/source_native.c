@@ -156,6 +156,9 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
                                   XsMirValueId *result, bool *invert, XsMirError *error)
 {
   *invert = false;
+  if(expression->kind == XS_SYNTAX_EXPR_LITERAL &&
+     (expression->token_kind == XS_TOKEN_KW_TRUE || expression->token_kind == XS_TOKEN_KW_FALSE))
+    return xs_mir_block_add_const_bool(entry, expression->token_kind == XS_TOKEN_KW_TRUE, result, error) == XS_MIR_OK;
   if(expression->kind == XS_SYNTAX_EXPR_BINARY && expression->child_count == 3)
   {
     XsMirValueId left = 0;
@@ -183,7 +186,7 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
     }
   }
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
-                            "native source main if condition supports only i32 comparisons for now") &&
+                            "native source main if condition supports only bool literals and i32 comparisons for now") &&
          false;
 }
 

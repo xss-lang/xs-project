@@ -198,6 +198,31 @@ XsMirStatus xs_mir_block_add_const_i32(XsMirBlock *block, int32_t value, XsMirVa
   return XS_MIR_OK;
 }
 
+XsMirStatus xs_mir_block_add_const_bool(XsMirBlock *block, bool value, XsMirValueId *result, XsMirError *error)
+{
+  xs_mir_clear_error(error);
+  if(result != nullptr)
+    *result = 0;
+  if(block == nullptr || block->owner == nullptr)
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR block is required");
+  XsMirValueId value_id = 0;
+  XsMirStatus status = xs_mir_function_add_value(block->owner, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, &value_id, error);
+  if(status != XS_MIR_OK)
+    return status;
+  status = append_instruction(block,
+                              (XsMirInstruction){
+                                  .kind = XS_MIR_INSTRUCTION_CONST_BOOL,
+                                  .result = value_id,
+                                  .immediate_i64 = value ? 1 : 0,
+                              },
+                              error);
+  if(status != XS_MIR_OK)
+    return status;
+  if(result != nullptr)
+    *result = value_id;
+  return XS_MIR_OK;
+}
+
 XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                  XsMirError *error)
 {

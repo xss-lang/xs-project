@@ -56,6 +56,7 @@ typedef enum
 {
   XS_MIR_INSTRUCTION_CONST_I64,
   XS_MIR_INSTRUCTION_CONST_I32,
+  XS_MIR_INSTRUCTION_CONST_BOOL,
   XS_MIR_INSTRUCTION_ADD_I64,
   XS_MIR_INSTRUCTION_ADD_I32,
   XS_MIR_INSTRUCTION_SUB_I32,
@@ -121,6 +122,7 @@ XsMirStatus xs_mir_block_set_branch(XsMirBlock *block, XsMirValueId condition, c
 XsMirStatus xs_mir_block_set_unreachable(XsMirBlock *block, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_i64(XsMirBlock *block, int64_t value, XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_i32(XsMirBlock *block, int32_t value, XsMirValueId *result, XsMirError *error);
+XsMirStatus xs_mir_block_add_const_bool(XsMirBlock *block, bool value, XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                  XsMirError *error);
 XsMirStatus xs_mir_block_add_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,

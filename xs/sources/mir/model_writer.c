@@ -84,6 +84,11 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
     if(fprintf(stream, "  v%u = const.i32 %lld\n", instruction->result, (long long)instruction->immediate_i64) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR const.i32 instruction");
     return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_CONST_BOOL:
+    if(fprintf(stream, "  v%u = const.bool %s\n", instruction->result,
+               instruction->immediate_i64 != 0 ? "true" : "false") < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR const.bool instruction");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_ADD_I64:
     if(fprintf(stream, "  v%u = add.i64 v%u, v%u\n", instruction->result, instruction->operand_left,
                instruction->operand_right) < 0)
