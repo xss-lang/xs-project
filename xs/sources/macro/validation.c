@@ -223,6 +223,143 @@ static const XsSyntaxNode *resolve_macro(const NodeList *visible, XsText name)
   return nullptr;
 }
 
+static bool text_is_cstr(XsText text, const char *value)
+{
+  size_t length = strlen(value);
+  return text.length == length && memcmp(text.data, value, length) == 0;
+}
+
+static bool is_stdio_macro(XsText name)
+{
+  return text_is_cstr(name, "print") || text_is_cstr(name, "println") || text_is_cstr(name, "eprint") ||
+         text_is_cstr(name, "eprintln") || text_is_cstr(name, "format") || text_is_cstr(name, "format_args");
+}
+
+static bool stdio_macro_allows_empty(XsText name)
+{
+  return text_is_cstr(name, "println") || text_is_cstr(name, "eprintln");
+}
+
+static bool token_changes_depth(XsTokenKind kind, int *depth)
+{
+  if(kind == XS_TOKEN_LEFT_PAREN || kind == XS_TOKEN_LEFT_BRACE || kind == XS_TOKEN_LEFT_BRACKET)
+  {
+    ++*depth;
+    return true;
+  }
+  if(kind == XS_TOKEN_RIGHT_PAREN || kind == XS_TOKEN_RIGHT_BRACE || kind == XS_TOKEN_RIGHT_BRACKET)
+  {
+    if(*depth > 0)
+      --*depth;
+    return true;
+  }
+  return false;
+}
+
+static size_t count_stdio_format_arguments(const XsSyntaxNode *call)
+{
+  if(call->child_count <= 2 || call->children[2]->token_kind != XS_TOKEN_COMMA)
+    return 0;
+  size_t count = 0;
+  bool saw_argument = false;
+  int depth = 0;
+  for(size_t index = 3; index < call->child_count; ++index)
+  {
+    XsTokenKind kind = call->children[index]->token_kind;
+    if(token_changes_depth(kind, &depth))
+    {
+      if(!saw_argument)
+      {
+        saw_argument = true;
+        ++count;
+      }
+      continue;
+    }
+    if(depth == 0 && kind == XS_TOKEN_COMMA)
+    {
+      saw_argument = false;
+      continue;
+    }
+    if(!saw_argument)
+    {
+      saw_argument = true;
+      ++count;
+    }
+  }
+  return count;
+}
+
+static bool count_stdio_placeholders(XsText literal, size_t *count)
+{
+  *count = 0;
+  if(literal.length < 2)
+    return false;
+  for(size_t index = 1; index + 1 < literal.length; ++index)
+  {
+    char current = literal.data[index];
+    char next = index + 1 < literal.length ? literal.data[index + 1] : '\0';
+    if(current == '{')
+    {
+      if(next == '{')
+      {
+        ++index;
+        continue;
+      }
+      ++*count;
+      while(index + 1 < literal.length && literal.data[index] != '}')
+        ++index;
+      if(index + 1 >= literal.length)
+        return false;
+      continue;
+    }
+    if(current == '}')
+    {
+      if(next == '}')
+      {
+        ++index;
+        continue;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+static void validate_stdio_macro_call(const XsSyntaxNode *call, XsText name, XsDiagnostics *diagnostics)
+{
+  if(!is_stdio_macro(name))
+    return;
+  XsSpan span = {.start = call->span.start_offset, .end = call->span.end_offset};
+  if(call->child_count == 1)
+  {
+    if(!stdio_macro_allows_empty(name))
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "stdio macro requires a format string argument");
+    return;
+  }
+  const XsSyntaxNode *format = call->children[1];
+  if(format->token_kind != XS_TOKEN_STRING)
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "stdio macro first argument must be a string literal");
+    return;
+  }
+  if(call->child_count > 2 && call->children[2]->token_kind != XS_TOKEN_COMMA)
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                       "stdio macro format string must be followed by ',' before arguments");
+    return;
+  }
+  size_t placeholders = 0;
+  if(!count_stdio_placeholders(format->text, &placeholders))
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "stdio macro format string is malformed");
+    return;
+  }
+  size_t arguments = count_stdio_format_arguments(call);
+  if(placeholders != arguments)
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                       "stdio macro placeholder count must match the number of format arguments");
+}
+
 typedef enum
 {
   MATCH_NO,
@@ -312,7 +449,10 @@ static void validate_node_calls(const XsSyntaxTree *tree, const XsSyntaxNode *no
       return;
     }
     if(macro == nullptr)
+    {
+      validate_stdio_macro_call(node, name, diagnostics);
       return;
+    }
     MatchStatus status = macro_matches_call(macro, node);
     if(status == MATCH_NO)
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not match any rule");

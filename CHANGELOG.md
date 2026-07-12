@@ -14,6 +14,10 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Imported `Stdio` macros now include `format_args!`; `print!`, `println!`, `eprint!`, `eprintln!`, `format!`, and
+  `format_args!` are validated through `imports Stdio` with Rust 1.57-style newline-only `println!()`/`eprintln!()` forms.
+- `Spec/Stdio.xs` now documents `std.Stdin()` line input examples, and `Spec/Result.xs` documents the explicit `Result`
+  model, postfix `@` propagation, `expect`, and `unwrap`.
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the

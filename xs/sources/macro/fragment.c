@@ -112,7 +112,7 @@ static bool module_exports_macro(const char *module_name, XsText macro_name)
   {
     return text_is_cstr(macro_name, "print") || text_is_cstr(macro_name, "println") ||
            text_is_cstr(macro_name, "eprint") || text_is_cstr(macro_name, "eprintln") ||
-           text_is_cstr(macro_name, "format");
+           text_is_cstr(macro_name, "format") || text_is_cstr(macro_name, "format_args");
   }
   return false;
 }

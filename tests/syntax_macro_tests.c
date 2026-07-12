@@ -516,6 +516,70 @@ static void test_imported_panic_macros_resolve_without_expansion(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_imported_stdio_macros_match_rust_output_forms(void)
+{
+  const char *valid = "imports Stdio;\n"
+                      "fn Main(value: Long) {\n"
+                      "  print!(\"{}\", value);\n"
+                      "  println!();\n"
+                      "  println!(\"{}\", value,);\n"
+                      "  println!(\"{{}}\");\n"
+                      "  eprint!(\"error\");\n"
+                      "  eprintln!();\n"
+                      "  eprintln!(\"{:?}\", value);\n"
+                      "  format!(\"{}\", value);\n"
+                      "  format_args!(\"{}\", value);\n"
+                      "}\n";
+  XsSource source = {.path = "StdioMacros.xs", .text = valid, .length = strlen(valid)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 37, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *selected = "from Stdio imports println, format_args;\n"
+                         "fn Main(value: Long) { println!(); format_args!(\"{}\", value); }\n";
+  source = (XsSource){.path = "SelectedStdioMacros.xs", .text = selected, .length = strlen(selected)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 38, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *missing = "fn Main() { println!(); }\n";
+  source = (XsSource){.path = "MissingStdioImport.xs", .text = missing, .length = strlen(missing)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 39, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_imported_stdio_macros_reject_invalid_forms(void)
+{
+  const char *invalid_cases[] = {
+      "imports Stdio;\nfn Main() { print!(); }\n",          "imports Stdio;\nfn Main() { eprint!(); }\n",
+      "imports Stdio;\nfn Main() { println!(10); }\n",      "imports Stdio;\nfn Main() { println!(\"value\", 10); }\n",
+      "imports Stdio;\nfn Main() { println!(\"{}\",); }\n", "imports Stdio;\nfn Main() { format_args!(); }\n",
+      "imports Stdio;\nfn Main() { println!(\"{\"); }\n",
+  };
+  for(size_t index = 0; index < sizeof(invalid_cases) / sizeof(invalid_cases[0]); ++index)
+  {
+    XsSource source = {
+        .path = "InvalidStdioMacro.xs", .text = invalid_cases[index], .length = strlen(invalid_cases[index])};
+    XsDiagnostics diagnostics;
+    XsSyntaxTree tree;
+    xs_diagnostics_init(&diagnostics);
+    CHECK(xs_syntax_parse(&source, 40 + index, &diagnostics, &tree));
+    CHECK(!xs_macro_validate(&tree, &diagnostics));
+    CHECK(xs_diagnostics_has_error(&diagnostics));
+    xs_syntax_tree_free(&tree);
+    xs_diagnostics_free(&diagnostics);
+  }
+}
+
 int main(void)
 {
   test_macro_repetition_and_unique_variables();
@@ -530,5 +594,7 @@ int main(void)
   test_pattern_fragment_expansion();
   test_declaration_macro_expansion();
   test_imported_panic_macros_resolve_without_expansion();
+  test_imported_stdio_macros_match_rust_output_forms();
+  test_imported_stdio_macros_reject_invalid_forms();
   return failures == 0 ? 0 : 1;
 }

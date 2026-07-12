@@ -5,7 +5,8 @@
 
 //
 // Stdio provides formatted text output macros and standard stream handles.
-// print!, println!, eprint!, eprintln!, and format! are exported Stdio macros.
+// print!, println!, eprint!, eprintln!, format! and format_args! are exported
+// Stdio macros.
 // They are available through `imports Stdio`, not as compiler built-ins.
 //
 // Stdio does not provide filesystem operations.
@@ -15,7 +16,7 @@
 // Formatted output uses placeholder-based formatting.
 //
 
-imports Stdio, Fs;
+imports Stdio, Fs, Collections;
 
 
 // standard output macros
@@ -26,6 +27,10 @@ fn PrintWithoutNewline() throws IOException {
 
 fn PrintWithNewline() throws IOException {
     println!("Hello");
+}
+
+fn PrintNewlineOnly() throws IOException {
+    println!();
 }
 
 
@@ -39,6 +44,10 @@ fn ErrorWithNewline() throws IOException {
     eprintln!("error");
 }
 
+fn ErrorNewlineOnly() throws IOException {
+    eprintln!();
+}
+
 
 // formatting
 
@@ -49,8 +58,13 @@ fn FormatValues() throws IOException {
     println!("{} is {}", user, age);
 }
 
-// The first argument to print!, println!, eprint!, eprintln! and format!
-// must be a Str format template.
+// print!, eprint!, format! and format_args! require a Str format template as
+// the first argument.
+//
+// println! and eprintln! either take no arguments or use the same format
+// template form as print!/eprint!. With no arguments they write exactly one
+// newline. With arguments they append exactly one newline after the formatted
+// text. This matches Rust 1.57 output macro behavior.
 //
 // "{}" formats one value with the Display formatter.
 // "{:?}" formats one value with the Debug formatter.
@@ -61,12 +75,15 @@ fn FormatValues() throws IOException {
 
 
 // format! returns Str and does not write to a stream.
+// format_args! returns the Stdio formatting argument value used by output
+// macros and does not write to a stream.
 
 fn BuildMessage() {
     user1: Str = "Alpha";
     user2: Str = "Leitwolf";
 
     users: Str = format!("{} {}", user1, user2);
+    format_args!("{} {}", user1, user2);
 }
 
 
@@ -76,13 +93,54 @@ fn StandardHandles() throws IOException {
     Fs.Write(std.Stdout, "stdout text\n");
     Fs.Write(std.Stderr, "stderr text\n");
 
-    text: Str = Fs.ReadToStr(std.Stdin);
+    text: Str = Fs.ReadToStr(std.Stdin());
     println!("{}", text);
 }
 
-// std.Stdout, std.Stderr and std.Stdin are stream handles.
+// std.Stdout and std.Stderr are stream handles.
+// std.Stdin() returns the standard input stream handle.
 // Raw reading and writing through these handles is provided by Fs.
 // Stdio macros use std.Stdout and std.Stderr internally.
+
+
+// line input
+
+fn ReadLine() {
+    input: Optional<Str> = Some("");
+
+    std.Stdin()
+        .readLine(&mut input)
+        .expect("input could not be read");
+
+    println!("Input: {}", input.trim());
+}
+
+fn ReadNumber() {
+    input: Optional<Str> = Some("");
+
+    std.Stdin()
+        .readLine(&mut input)
+        .expect("input could not be read");
+
+    number: Int = input.trim().parse().expect("expected a valid number");
+    println!("Number: {}", number);
+}
+
+fn ReadManyNumbers() {
+    input: Optional<Str> = Some("");
+
+    std.Stdin()
+        .readLine(&mut input)
+        .unwrap();
+
+    numbers: Collections.vector<Int> = input
+        .splitWhitespace()
+        .map(fn(value) {
+            return value.parse().expect("invalid number");
+        });
+
+    println!("Input: {:?}", numbers);
+}
 
 
 // invalid examples
@@ -106,3 +164,17 @@ fn InvalidMissingArgument() throws IOException {
 }
 
 // INVALID: the template has one placeholder but no value argument.
+
+
+fn InvalidEmptyPrint() throws IOException {
+    print!();
+}
+
+// INVALID: print! has no newline-only form.
+
+
+fn InvalidEmptyFormatArgs() {
+    format_args!();
+}
+
+// INVALID: format_args! requires a Str format template.

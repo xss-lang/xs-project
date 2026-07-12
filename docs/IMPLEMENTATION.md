@@ -269,6 +269,10 @@ syntax transfer boundary so one compiler layer is not split across C and Rust.
 - Macro calls before textual definition in the same scope are accepted.
 - Macros defined in an inner scope cannot be called from an outer scope.
 - Calls are checked to resolve to a visible macro definition.
+- Imported `Stdio` macros are treated as external macros, not built-ins. The validator recognizes `print!`, `println!`,
+  `eprint!`, `eprintln!`, `format!`, and `format_args!` through `imports Stdio` or selected imports. `println!()` and
+  `eprintln!()` accept the Rust 1.57 newline-only form; the other Stdio formatting macros require a string literal format
+  template and matching placeholder argument count.
 - Full token matcher rules and empty matcher rules can be matched.
 - Single-token fragment matchers that can be validated precisely (`tt`, `ident`, `literal`, `lifetime`, and `vis`) are matched
   against call tokens.
