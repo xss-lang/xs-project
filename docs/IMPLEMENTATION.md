@@ -146,8 +146,9 @@ The documented compilation order is preserved:
 - In data syntax, `set.field{value}` is represented as `XS_SYNTAX_EXPR_FIELD_SET`, while `value get.field` is represented as
   member access.
 - In stdio syntax, `[target]` I/O targets are represented as `XS_SYNTAX_EXPR_IO_TARGET`.
-- Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. This is structural
-  AST support only; Result type checking, propagation semantics, and lowering are later pipeline work.
+- Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 frontend
+  keeps this as syntax plus explicit diagnostics for now; full propagation control-flow lowering is handled by later HIR/MIR
+  work.
 - `if`, `for`, for-each, `while`, `match`, `try`, `catch`, `finally`, `return`, `throw`, `break`, `continue`, and
   `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous to Rust's
   `let _ = expression;`.
@@ -224,6 +225,9 @@ validation does not decide dispatch, override, or overload selection.
   are represented syntactically; `Optional<T>` has automatic unboxing to `T`, which can throw
   `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full flow-sensitive Optional
   semantics are later HIR work. There is no nullable `T?` type operator.
+- The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `Result.Result<T>`,
+  `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result.Error`. This is name and arity
+  validation only; constructors, method calls, and propagation lowering are still handled by later semantic passes.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.
@@ -262,6 +266,13 @@ only inside async function bodies. `xslang` also carries the first Result propag
 type `T`, requires an enclosing `Result<_, E>` return type, and remains deferred at HIR-to-MIR lowering until error-return
 control-flow lowering exists. The crate is not wired into the C23 driver yet; integration will use a bulk structural syntax
 transfer boundary so one compiler layer is not split across C and Rust.
+
+`@` is a surface-language sugar. In `xslang`, the Result desugar pass translates it into an explicit Result-match and
+early-return intent model before MIR lowering. If a raw `ResultPropagation` expression reaches MIR lowering, that is treated
+as a pipeline ordering error and is rejected instead of becoming a backend primitive.
+
+For `xslang` propagation checking and desugaring, single-argument `Result<T>`/`Result.Result<T>` uses the standard
+`Result.Error` error type.
 
 ### Macro validation and scope resolution
 

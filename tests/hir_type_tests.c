@@ -114,6 +114,21 @@ static void test_generic_type_arity(void)
   CHECK(!check_single_source(too_many));
 }
 
+static void test_standard_generic_types(void)
+{
+  const char *valid = "module App;\n"
+                      "fn Read() => Optional<Str> { return None; }\n"
+                      "fn Save() => Result.Result<Int> { return Result.Ok(1); }\n"
+                      "fn Load() => Result.Result<Int, Result.Error> { return Result.Ok(1); }\n"
+                      "fn Compact() => Result<Int, Result.Error> { return Result.Ok(1); }\n";
+  CHECK(check_single_source(valid));
+  CHECK(!check_single_source("module App;\nfn Missing() => Optional { return None; }\n"));
+  CHECK(!check_single_source("module App;\nfn Missing() => Result.Result { return Result.Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn TooMany() => Result.Result<Int, Result.Error, Int> { return "
+                             "Result.Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn BadError() => Result.Error<Int> { return Result.Ok(1); }\n"));
+}
+
 static void test_duplicate_generic_parameter_names(void)
 {
   CHECK(!check_single_source("module App;\nclass Box<T, T> { value: T; }\n"));
@@ -363,6 +378,7 @@ int main(void)
   test_primitive_and_generic_types();
   test_local_user_type();
   test_generic_type_arity();
+  test_standard_generic_types();
   test_duplicate_generic_parameter_names();
   test_imported_user_type();
   test_public_namespace_exports_default_type();

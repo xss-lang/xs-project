@@ -25,6 +25,13 @@ source-to-native executable pipeline.
 - Rust `xslang` type checking and inference now implement the first Result propagation rule: `Result<T, E>@` yields `T`,
   and the enclosing function must return `Result<_, E>`. HIR-to-MIR lowering still intentionally rejects propagation until
   control-flow lowering for error returns exists.
+- Rust `xslang` now includes an explicit Result propagation desugar pass. Surface `value@` is translated into a
+  Result-match/early-return intent model before MIR lowering work begins, so backend stages do not need to treat `@` as a
+  primitive operation.
+- Rust `xslang` treats single-argument `Result<T>`/`Result.Result<T>` as using the standard `Result.Error` error type for
+  propagation type checking and desugaring.
+- The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result.Result<T>`,
+  `Result.Result<T, E>`, shorthand `Result<T, E>`, and `Result.Error` without requiring a user-defined project symbol.
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the

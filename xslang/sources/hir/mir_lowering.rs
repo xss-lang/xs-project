@@ -899,7 +899,7 @@ mod tests
   }
 
   #[test]
-  fn rejects_result_propagation_until_lowering_exists()
+  fn rejects_surface_result_propagation_without_desugar()
   {
     let function = Function { name: "TryWork".to_string(),
                               return_type: None,
@@ -910,8 +910,9 @@ mod tests
                                 span: span(4, 9),
                               })] };
 
-    let diagnostics = HirToMirLowerer::new().lower_function(&function)
-                                            .expect_err("Result propagation lowering is intentionally deferred");
+    let diagnostics =
+      HirToMirLowerer::new().lower_function(&function)
+                            .expect_err("surface Result propagation must be desugared before MIR lowering");
 
     assert!(diagnostics.iter()
                        .any(|diagnostic| diagnostic.code == DiagnosticCode::UnsupportedExpression));

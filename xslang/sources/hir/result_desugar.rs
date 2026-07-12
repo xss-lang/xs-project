@@ -1,0 +1,454 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+use super::async_check::Span;
+use super::type_check::{
+  BinaryOperator, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, result_type_parts,
+};
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DiagnosticCode
+{
+  RequiresResult,
+  ReturnMismatch,
+  UnknownLocal,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Diagnostic
+{
+  pub code: DiagnosticCode,
+  pub message: String,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DesugaredExpression
+{
+  Literal
+  {
+    literal: Literal, span: Span
+  },
+  Local
+  {
+    name: String, span: Span
+  },
+  Assign
+  {
+    target: String,
+    value: Box<DesugaredExpression>,
+    span: Span,
+  },
+  Binary
+  {
+    operator: BinaryOperator,
+    left: Box<DesugaredExpression>,
+    right: Box<DesugaredExpression>,
+    span: Span,
+  },
+  ResultMatch
+  {
+    value: Box<DesugaredExpression>,
+    success_binding: String,
+    error_binding: String,
+    success_type: Type,
+    error_type: Type,
+    span: Span,
+  },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DesugaredStatement
+{
+  Let
+  {
+    local: Local,
+    initializer: Option<DesugaredExpression>,
+  },
+  Expr(DesugaredExpression),
+  Return
+  {
+    value: Option<DesugaredExpression>,
+    span: Span,
+  },
+  Panic
+  {
+    span: Span,
+  },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DesugaredFunction
+{
+  pub name: String,
+  pub return_type: Option<Type>,
+  pub locals: Vec<Local>,
+  pub body: Vec<DesugaredStatement>,
+}
+
+#[derive(Default)]
+pub struct ResultDesugar
+{
+  locals: Vec<Local>,
+  diagnostics: Vec<Diagnostic>,
+  return_type: Option<Type>,
+  next_binding: u32,
+}
+
+impl ResultDesugar
+{
+  #[must_use]
+  pub fn new() -> Self
+  {
+    Self::default()
+  }
+
+  pub fn desugar_function(mut self, function: &Function) -> Result<DesugaredFunction, Vec<Diagnostic>>
+  {
+    self.locals.extend(function.locals.iter().cloned());
+    self.return_type = function.return_type.clone();
+    let mut body = Vec::with_capacity(function.body.len());
+    for statement in &function.body
+    {
+      body.push(self.desugar_statement(statement));
+    }
+    if self.diagnostics.is_empty()
+    {
+      Ok(DesugaredFunction { name: function.name.clone(),
+                             return_type: function.return_type.clone(),
+                             locals: function.locals.clone(),
+                             body })
+    }
+    else
+    {
+      Err(self.diagnostics)
+    }
+  }
+
+  fn desugar_statement(&mut self, statement: &Statement) -> DesugaredStatement
+  {
+    match statement
+    {
+      Statement::Let { local,
+                       initializer, } =>
+      {
+        let initializer = initializer.as_ref()
+                                     .map(|expression| self.desugar_expression(expression));
+        self.locals.push(local.clone());
+        DesugaredStatement::Let { local: local.clone(),
+                                  initializer }
+      }
+      Statement::Expr(expression) => DesugaredStatement::Expr(self.desugar_expression(expression)),
+      Statement::Return { value,
+                          span, } =>
+      {
+        let value = value.as_ref().map(|expression| self.desugar_expression(expression));
+        DesugaredStatement::Return { value,
+                                     span: *span }
+      }
+      Statement::Panic { span } => DesugaredStatement::Panic { span: *span },
+    }
+  }
+
+  fn desugar_expression(&mut self, expression: &Expression) -> DesugaredExpression
+  {
+    match expression
+    {
+      Expression::Literal { literal,
+                            span, } => DesugaredExpression::Literal { literal: literal.clone(),
+                                                                      span: *span },
+      Expression::Local { name,
+                          span, } => DesugaredExpression::Local { name: name.clone(),
+                                                                  span: *span },
+      Expression::Assign { target,
+                           value,
+                           span, } => DesugaredExpression::Assign { target: target.clone(),
+                                                                    value: Box::new(self.desugar_expression(value)),
+                                                                    span: *span },
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           span, } => DesugaredExpression::Binary { operator: *operator,
+                                                                    left: Box::new(self.desugar_expression(left)),
+                                                                    right: Box::new(self.desugar_expression(right)),
+                                                                    span: *span },
+      Expression::ResultPropagation { value,
+                                      span, } => self.desugar_result_propagation(value, *span),
+    }
+  }
+
+  fn desugar_result_propagation(&mut self, value: &Expression, span: Span) -> DesugaredExpression
+  {
+    let desugared_value = self.desugar_expression(value);
+    let Some((success_type, error_type)) = self.result_parts_of_expression(value, span)
+    else
+    {
+      return desugared_value;
+    };
+    if !self.return_accepts_error(&error_type, span)
+    {
+      return desugared_value;
+    }
+    let index = self.next_binding;
+    self.next_binding += 1;
+    DesugaredExpression::ResultMatch { value: Box::new(desugared_value),
+                                       success_binding: format!("__xs_try_ok_{index}"),
+                                       error_binding: format!("__xs_try_error_{index}"),
+                                       success_type,
+                                       error_type,
+                                       span }
+  }
+
+  fn return_accepts_error(&mut self, error_type: &Type, span: Span) -> bool
+  {
+    let Some(return_type) = &self.return_type
+    else
+    {
+      self.diagnostics.push(Diagnostic { code: DiagnosticCode::ReturnMismatch,
+                                         message: "'@' desugaring requires the enclosing function to return \
+                                                   Result<_, E>"
+                                                                .to_string(),
+                                         span });
+      return false;
+    };
+    let Some((_, return_error)) = result_type_parts(return_type)
+    else
+    {
+      self.diagnostics.push(Diagnostic { code: DiagnosticCode::ReturnMismatch,
+                                         message: "'@' desugaring requires the enclosing function to return \
+                                                   Result<_, E>"
+                                                                .to_string(),
+                                         span });
+      return false;
+    };
+    if &return_error == error_type
+    {
+      return true;
+    }
+    self.diagnostics
+        .push(Diagnostic { code: DiagnosticCode::ReturnMismatch,
+                           message: "'@' desugaring error type does not match function return error".to_string(),
+                           span });
+    false
+  }
+
+  fn result_parts_of_expression(&mut self, expression: &Expression, span: Span) -> Option<(Type, Type)>
+  {
+    let Some(ty) = self.expression_type(expression)
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::RequiresResult,
+                             message: "'@' desugaring requires a typed Result<T, E> expression".to_string(),
+                             span });
+      return None;
+    };
+    let parts = result_type_parts(&ty);
+    if parts.is_none()
+    {
+      self.diagnostics.push(Diagnostic { code: DiagnosticCode::RequiresResult,
+                                         message: "'@' desugaring requires a Result<T, E> expression".to_string(),
+                                         span });
+    }
+    parts
+  }
+
+  fn expression_type(&mut self, expression: &Expression) -> Option<Type>
+  {
+    match expression
+    {
+      Expression::Literal { literal, .. } => literal_default_type(literal),
+      Expression::Local { name,
+                          span, } => self.find_local(name).map(|local| local.ty.clone()).or_else(|| {
+                                                                                          self.diagnostics
+                                                                 .push(Diagnostic { code:
+                                                                                      DiagnosticCode::UnknownLocal,
+                                                                                    message:
+                                                                                      format!("unknown local '{name}'"),
+                                                                                    span: *span });
+                                                                                          None
+                                                                                        }),
+      Expression::Assign { value, .. } => self.expression_type(value),
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           .. } => self.binary_expression_type(*operator, left, right),
+      Expression::ResultPropagation { value,
+                                      span, } => self.result_parts_of_expression(value, *span)
+                                                     .map(|(success, _)| success),
+    }
+  }
+
+  fn binary_expression_type(&mut self, operator: BinaryOperator, left: &Expression, right: &Expression)
+                            -> Option<Type>
+  {
+    let left_type = self.expression_type(left)?;
+    let right_type = self.expression_type(right)?;
+    if left_type != right_type
+    {
+      return None;
+    }
+    let Type::Primitive(primitive) = left_type
+    else
+    {
+      return None;
+    };
+    match operator
+    {
+      BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul
+        if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+      {
+        Some(Type::Primitive(primitive))
+      }
+      BinaryOperator::Equal if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+      {
+        Some(Type::Primitive(PrimitiveType::Bool))
+      }
+      BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual
+        if primitive == PrimitiveType::Long =>
+      {
+        Some(Type::Primitive(PrimitiveType::Bool))
+      }
+      _ => None,
+    }
+  }
+
+  fn find_local(&self, name: &str) -> Option<&Local>
+  {
+    self.locals.iter().rev().find(|local| local.name == name)
+  }
+}
+
+fn literal_default_type(literal: &Literal) -> Option<Type>
+{
+  let primitive = match literal
+  {
+    Literal::Bool(_) => PrimitiveType::Bool,
+    Literal::Integer(_) => PrimitiveType::Int,
+    Literal::Float(_) => PrimitiveType::Float,
+    Literal::Char(_) => PrimitiveType::Char,
+    Literal::String(_) => PrimitiveType::Str,
+    Literal::None => return None,
+  };
+  Some(Type::Primitive(primitive))
+}
+
+#[cfg(test)]
+mod tests
+{
+  use super::*;
+
+  fn span(start: u32, end: u32) -> Span
+  {
+    Span::new(1, start, end)
+  }
+
+  fn local(name: &str, ty: Type) -> Local
+  {
+    Local { name: name.to_string(),
+            ty,
+            mutable: false,
+            span: span(0, 0) }
+  }
+
+  fn primitive(kind: PrimitiveType) -> Type
+  {
+    Type::Primitive(kind)
+  }
+
+  fn named(name: &str) -> Type
+  {
+    Type::Named(name.to_string())
+  }
+
+  #[test]
+  fn desugars_result_propagation_to_explicit_result_match()
+  {
+    let function = Function { name: "try_work".to_string(),
+                              return_type: Some(named("Result<(), Result.Error>")),
+                              locals: vec![local("work", named("Result<Long, Result.Error>"))],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                    span: span(4, 8) }),
+                                span: span(4, 9),
+                              })] };
+
+    let desugared = ResultDesugar::new().desugar_function(&function)
+                                        .expect("valid Result propagation should desugar");
+
+    let DesugaredStatement::Expr(DesugaredExpression::ResultMatch { success_binding,
+                                                                    error_binding,
+                                                                    success_type,
+                                                                    error_type,
+                                                                    .. }) = &desugared.body[0]
+    else
+    {
+      panic!("expected explicit Result match desugar");
+    };
+    assert_eq!(success_binding, "__xs_try_ok_0");
+    assert_eq!(error_binding, "__xs_try_error_0");
+    assert_eq!(success_type, &primitive(PrimitiveType::Long));
+    assert_eq!(error_type, &named("Result.Error"));
+  }
+
+  #[test]
+  fn rejects_non_result_propagation_value()
+  {
+    let function = Function { name: "bad".to_string(),
+                              return_type: Some(named("Result<(), Result.Error>")),
+                              locals: vec![local("value", primitive(PrimitiveType::Long))],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "value".to_string(),
+                                                                    span: span(4, 9) }),
+                                span: span(4, 10),
+                              })] };
+
+    let diagnostics = ResultDesugar::new().desugar_function(&function)
+                                          .expect_err("non-Result value cannot desugar");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::RequiresResult);
+  }
+
+  #[test]
+  fn desugars_single_argument_result_with_default_error()
+  {
+    let function = Function { name: "try_work".to_string(),
+                              return_type: Some(named("Result<()>")),
+                              locals: vec![local("work", named("Result<Long>"))],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                    span: span(4, 8) }),
+                                span: span(4, 9),
+                              })] };
+
+    let desugared = ResultDesugar::new().desugar_function(&function)
+                                        .expect("single-argument Result should use Result.Error");
+
+    let DesugaredStatement::Expr(DesugaredExpression::ResultMatch { error_type, .. }) = &desugared.body[0]
+    else
+    {
+      panic!("expected explicit Result match desugar");
+    };
+    assert_eq!(error_type, &named("Result.Error"));
+  }
+
+  #[test]
+  fn rejects_error_type_mismatch()
+  {
+    let function = Function { name: "bad".to_string(),
+                              return_type: Some(named("Result<(), OtherError>")),
+                              locals: vec![local("work", named("Result<Long, Result.Error>"))],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                    span: span(4, 8) }),
+                                span: span(4, 9),
+                              })] };
+
+    let diagnostics = ResultDesugar::new().desugar_function(&function)
+                                          .expect_err("mismatched error type cannot desugar");
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::ReturnMismatch);
+  }
+}

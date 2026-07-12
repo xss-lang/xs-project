@@ -11,10 +11,26 @@
 #include <string.h>
 
 typedef struct GenericScope GenericScope;
+typedef struct StandardTypeInfo StandardTypeInfo;
 struct GenericScope
 {
   const GenericScope *parent;
   const XsSyntaxNode *declaration;
+};
+
+struct StandardTypeInfo
+{
+  const char *name;
+  size_t min_arity;
+  size_t max_arity;
+};
+
+static const StandardTypeInfo standard_types[] = {
+    {.name = "Optional", .min_arity = 1, .max_arity = 1},
+    {.name = "Result", .min_arity = 1, .max_arity = 2},
+    {.name = "Result.Result", .min_arity = 1, .max_arity = 2},
+    {.name = "Result.Error", .min_arity = 0, .max_arity = 0},
+    {.name = "Result.IO.error", .min_arity = 0, .max_arity = 0},
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
@@ -72,6 +88,12 @@ static bool primitive_type_name(XsText name)
   return xs_hir_primitive_find(name.data, name.length) != nullptr;
 }
 
+static bool text_matches_cstr(XsText text, const char *value)
+{
+  size_t length = strlen(value);
+  return text.length == length && memcmp(text.data, value, length) == 0;
+}
+
 static const XsSyntaxNode *path_identifier_at(const XsSyntaxNode *path, size_t target)
 {
   if(path == nullptr || path->kind != XS_SYNTAX_PATH)
@@ -123,6 +145,31 @@ static char *path_to_string(const XsSyntaxNode *path)
   }
   result[offset] = '\0';
   return result;
+}
+
+static const StandardTypeInfo *find_standard_type(const char *name)
+{
+  for(size_t i = 0; i < sizeof(standard_types) / sizeof(standard_types[0]); ++i)
+  {
+    if(strcmp(standard_types[i].name, name) == 0)
+      return &standard_types[i];
+  }
+  return nullptr;
+}
+
+static const StandardTypeInfo *find_standard_type_from_path(const XsSyntaxNode *path)
+{
+  char *name = path_to_string(path);
+  if(name == nullptr)
+    return nullptr;
+  const StandardTypeInfo *type = find_standard_type(name);
+  free(name);
+  return type;
+}
+
+static bool single_segment_standard_named_type(XsText name)
+{
+  return text_matches_cstr(name, "Optional") || text_matches_cstr(name, "Result");
 }
 
 static bool generic_scope_contains(const GenericScope *scope, XsText name)
@@ -200,6 +247,22 @@ static bool report_generic_arity(XsDiagnostics *diagnostics, const XsSyntaxNode 
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
 }
 
+static bool report_generic_arity_range(XsDiagnostics *diagnostics, const XsSyntaxNode *type, const char *path,
+                                       size_t minimum, size_t maximum, size_t actual)
+{
+  if(minimum == maximum)
+    return report_generic_arity(diagnostics, type, path, minimum, actual);
+  char message[512];
+  snprintf(message, sizeof(message), "generic type '%s' expects %zu to %zu type argument(s), got %zu", path, minimum,
+           maximum, actual);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
+}
+
+static bool standard_type_arity_ok(const StandardTypeInfo *type, size_t actual)
+{
+  return type != nullptr && actual >= type->min_arity && actual <= type->max_arity;
+}
+
 static bool report_constraint_kind(XsDiagnostics *diagnostics, const XsSyntaxNode *type, const char *path)
 {
   char message[512];
@@ -266,9 +329,28 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
   if(path_segment_count(path) == 1 &&
      (primitive_type_name(first->text) || generic_scope_contains(generics, first->text)))
     return true;
+  if(path_segment_count(path) == 1 && single_segment_standard_named_type(first->text))
+  {
+    if(!check_arity)
+      return true;
+    const StandardTypeInfo *standard = find_standard_type_from_path(path);
+    if(standard == nullptr)
+      return false;
+    return report_generic_arity_range(diagnostics, type, standard->name, standard->min_arity, standard->max_arity, 0);
+  }
   char *name = path_to_string(path);
   if(name == nullptr)
     return false;
+  const StandardTypeInfo *standard = find_standard_type(name);
+  if(standard != nullptr)
+  {
+    bool success = true;
+    if(check_arity && standard->max_arity != 0)
+      success =
+          report_generic_arity_range(diagnostics, type, name, standard->min_arity, standard->max_arity, 0) && success;
+    free(name);
+    return success;
+  }
   const XsHirSymbol *symbol = resolve_user_type(name, namespace_name, symbols, imports);
   bool success = true;
   if(!symbol_is_type(symbol))
@@ -300,6 +382,19 @@ static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *name
   const XsHirSymbol *symbol = nullptr;
   bool success = resolve_named_type(base, namespace_name, generics, symbols, imports, diagnostics, current_file_id,
                                     false, &symbol);
+  const XsSyntaxNode *base_path = first_child_kind(base, XS_SYNTAX_PATH);
+  const StandardTypeInfo *standard = find_standard_type_from_path(base_path);
+  if(standard != nullptr)
+  {
+    char *name = path_to_string(base_path);
+    if(name == nullptr)
+      return false;
+    size_t actual = type->child_count - 1;
+    if(!standard_type_arity_ok(standard, actual))
+      success = report_generic_arity_range(diagnostics, type, name, standard->min_arity, standard->max_arity, actual) &&
+                success;
+    free(name);
+  }
   if(symbol != nullptr)
   {
     char *name = path_to_string(first_child_kind(base, XS_SYNTAX_PATH));

@@ -472,8 +472,11 @@ pub(crate) fn result_type_parts(ty: &Type) -> Option<(Type, Type)>
   let generic = name.strip_prefix("Result<")
                     .or_else(|| name.strip_prefix("Result.Result<"))?;
   let inner = generic.strip_suffix('>')?;
-  let (success, error) = split_top_level_pair(inner)?;
-  Some((parse_named_or_primitive(success.trim()), parse_named_or_primitive(error.trim())))
+  if let Some((success, error)) = split_top_level_pair(inner)
+  {
+    return Some((parse_named_or_primitive(success.trim()), parse_named_or_primitive(error.trim())));
+  }
+  Some((parse_named_or_primitive(inner.trim()), Type::Named("Result.Error".to_string())))
 }
 
 fn split_top_level_pair(text: &str) -> Option<(&str, &str)>
@@ -725,6 +728,24 @@ mod tests
     let function = Function { name: "main".to_string(),
                               return_type: Some(Type::Named("Result<(), Error>".to_string())),
                               locals: vec![local("work", Type::Named("Result<Int, Error>".to_string()), false)],
+                              body: vec![Statement::Let {
+                                local: local("value", primitive(PrimitiveType::Int), false),
+                                initializer: Some(Expression::ResultPropagation {
+                                  value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                      span: span(4, 8) }),
+                                  span: span(4, 9),
+                                }),
+                              }] };
+
+    assert!(TypeChecker::new().check_function(&function).is_empty());
+  }
+
+  #[test]
+  fn validates_single_argument_result_as_default_error()
+  {
+    let function = Function { name: "main".to_string(),
+                              return_type: Some(Type::Named("Result<()>".to_string())),
+                              locals: vec![local("work", Type::Named("Result<Int>".to_string()), false)],
                               body: vec![Statement::Let {
                                 local: local("value", primitive(PrimitiveType::Int), false),
                                 initializer: Some(Expression::ResultPropagation {
