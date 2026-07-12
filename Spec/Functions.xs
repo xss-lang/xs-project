@@ -9,6 +9,8 @@
 // Top-level functions are allowed.
 //
 
+imports Stdio, Result;
+
 fn Add(a: Int, b: Int) => Int {
   return a + b;
 }
@@ -22,7 +24,9 @@ class Program {
   }
 }
 
-// INVALID: top-level execution is not supported.
+// INVALID EXAMPLE:
+// Top-level execution is not supported. This snippet is intentionally invalid
+// and is not part of the valid declarations above.
 fn Add(a: Int, b: Int) => Int {
   return a + b;
 }
@@ -37,6 +41,31 @@ fn Main() {
 fn Test() {
 }
 
-// INVALID: => void is not valid.
+// INVALID EXAMPLE:
+// `=> void` is not valid. Omit `=>` for a void-returning function.
 fn Test() => void {
+}
+
+
+// named and inferred helper examples
+
+fn Clamp(value: Int, minimum: Int, maximum: Int) => Int {
+  if (value < minimum) {
+    return minimum;
+  }
+
+  if (value > maximum) {
+    return maximum;
+  }
+
+  return value;
+}
+
+fn DescribeUser(name: Str, age: Int) => Str {
+  return format!("{} ({})", name, age);
+}
+
+fn TryParseId(text: Str) => Result.Result<Int, Result.Error> {
+  parsed: Int = Int.Parse(text);
+  return Result.Ok(parsed);
 }

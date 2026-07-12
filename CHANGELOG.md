@@ -15,7 +15,8 @@ source-to-native executable pipeline.
 - `format_args!` is now validated as a built-in macro instead of a Stdio export.
 - Stdio macro validation now accepts Rust 1.57-style `write!` and `writeln!` forms plus common Rust formatting specs such
   as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` while still checking placeholder counts.
-- `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `STD.Optional.Optional<T>`.
+- `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `STD.Optional.Optional<T>`, with
+  value constructors canonically named `STD.Optional.None` and `STD.Optional.Some(...)`.
 
 ## 0.0.5 - 2026-07-12
 

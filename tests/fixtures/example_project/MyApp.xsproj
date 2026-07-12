@@ -7,7 +7,7 @@ appRelease: "BETA"
 appLicense: "MIT"
 
 appAuthors {
-    ["Alfa", "alfa@example.me"]
+    ["Alpha", "alfa@example.me"]
     ["Foo", "foo@baz.me"]
 }
 

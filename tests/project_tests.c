@@ -35,7 +35,7 @@ static void test_complete_project(void)
                      "appVersion: \"0.0.1\"\n"
                      "appRelease: \"BETA\"\n"
                      "appLicense: \"MIT\"\n"
-                     "appAuthors {\n[\"Alfa\", \"alfa@example.me\"]\n[\"Foo\", None]\n}\n"
+                     "appAuthors {\n[\"Alpha\", \"alfa@example.me\"]\n[\"Foo\", None]\n}\n"
                      "compilerOptions {\n"
                      "xsVersion: \"26\"\n"
                      "xsBackend: \"LLVM\"\n"

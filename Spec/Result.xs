@@ -55,7 +55,7 @@ fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
         Result.Error(error) -> return Result.Error(error),
     };
 
-    content: Optional<Str> = Some("");
+    content: Optional<Str> = STD.Optional.Some("");
 
     match (file.readToString(&mut content)) {
         Result.Ok(else) -> {},
@@ -70,7 +70,7 @@ fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
 
 fn ReadFile(path: Str) => Result.Result<Optional<Str>, Result.Error> {
     file = STD.FS.File.open(path)@;
-    content: Optional<Str> = Some("");
+    content: Optional<Str> = STD.Optional.Some("");
     file.readToString(&mut content)@;
     return Result.Ok(content);
 }
@@ -79,7 +79,7 @@ fn ReadFile(path: Str) => Result.Result<Optional<Str>, Result.Error> {
 // expect and unwrap
 
 fn ReadRequiredLine() => Str {
-    line: Optional<Str> = Some("");
+    line: Optional<Str> = STD.Optional.Some("");
 
     STD.Stdin()
         .readLine(&mut line)

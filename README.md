@@ -19,7 +19,7 @@ Required core tools:
 - Ninja
 - Clang / LLVM tools
 - LLD
-- BusyBox or non-GNU small coreutils alternatives are preferred
+- Optional helper tools such as `fd`, `rg`, `bat -p`, `sd`, and `busybox wc` are useful for development
 
 Default debug build:
 
@@ -87,7 +87,7 @@ the backend. HIR and MIR do not depend on the LLVM API; the backend entry langua
 ## Current working features
 
 - C23-based, Clang/LLVM-focused build system
-- Anti-GNU CMake/toolchain checks
+- Clang/LLVM-oriented CMake/toolchain checks
 - `.xsproj` manifest parser/lexer/model public C API
 - X# lexer and structural AST parser
 - Synthetic reparse and expanded-view infrastructure for declaration/statement macro expansion
@@ -100,6 +100,13 @@ the backend. HIR and MIR do not depend on the LLVM API; the backend entry langua
 - LLVM context/module/target/object/link infrastructure
 
 For the detailed current status, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
+
+## Specification examples
+
+The public language examples live under [Spec/](Spec). Smaller files document syntax and semantic intent for declarations,
+types, macros, standard modules, control flow, and project manifests. Larger one-file completed-language sketches live under
+[Spec/Programs/](Spec/Programs); they are design fixtures, not promises that the current partial compiler can compile every
+example today.
 
 ## Release policy
 
@@ -145,10 +152,10 @@ as `.xlil module`, `.extern`, `.func`, `bb0.entry:`, `%r0:i64 = const 42`, `br b
 - Do not use `#include <stdbool.h>` in new/touched C code; use C23 `bool`.
 - Prefer `nullptr` over `NULL` in new/touched C code.
 - Use CMake; do not use Meson.
-- GNU C compiler, GNU Make, GNU binutils fallbacks, and GNU C dialects are rejected.
+- The supported build path is Clang, Ninja, LLVM tools, and LLD.
 - Do not add persistent shell scripts; use Java source-file tools or D for automation.
 - Keep files under 1000 lines; prefer smaller modules when a component starts to sprawl.
-- Prefer non-GNU tools such as `busybox wc` for line counting.
+- Use `busybox wc` or another compact line-counting tool when checking file length.
 - Use `ulimit -v 2097152` during test/build runs to reduce OOM risk.
 
 For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
@@ -160,6 +167,7 @@ For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CON
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): compiler architecture and stage boundaries
 - [docs/CLI.md](docs/CLI.md): CLI contract and current status
 - [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md): detailed implementation status
+- [docs/SPEC.md](docs/SPEC.md): guide to the `Spec/` language examples
 - [docs/TODO.md](docs/TODO.md): public roadmap
 - [docs/MONOREPO.md](docs/MONOREPO.md): monorepo selection model
 - [docs/LLVM_BACKEND.md](docs/LLVM_BACKEND.md): LLVM backend infrastructure

@@ -5,8 +5,8 @@ SPDX-License-Identifier: Apache-2.0
 
 # Build and test guide
 
-xs-project is built on C23, CMake, Ninja, Clang/LLVM, and LLD. The GNU C compiler, GNU Make generators, GNU binutils
-fallbacks, GNU C dialects, and `_GNU_SOURCE` are not supported.
+xs-project is built on C23, CMake, Ninja, Clang/LLVM, and LLD. The documented and tested build path uses the Clang/LLVM
+toolchain.
 
 ## Required tools
 
@@ -22,7 +22,7 @@ fallbacks, GNU C dialects, and `_GNU_SOURCE` are not supported.
   - `llvm-strip`
 - `ld.lld`
 
-Non-GNU helper tools are preferred:
+Useful helper tools:
 
 - `fd`
 - `rg`

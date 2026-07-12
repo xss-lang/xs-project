@@ -74,7 +74,7 @@ fn Main() {
     displayName: Str = maybeName ?? "guest";
 
     // optional coalescing assignment
-    maybeName ??= Some("guest");
+    maybeName ??= STD.Optional.Some("guest");
 
     // optional-forgiving unboxing
     forcedName: Str = maybeName!;
@@ -120,7 +120,7 @@ display: Str = name ?? "fallback";
 
 
 // VALID
-name ??= Some("fallback");
+name ??= STD.Optional.Some("fallback");
 
 
 // VALID

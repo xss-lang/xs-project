@@ -71,6 +71,10 @@ fn FormatValues() throws IOException {
     age: Int = 26;
 
     println!("{} is {}", user, age);
+    println!("{:?}", user);
+    println!("{:#?}", user);
+    println!("{:_>12}", user);
+    println!("{:08x}", age);
 }
 
 // print!, eprint!, and format! require a Str format template as the first
@@ -106,6 +110,18 @@ fn BuildMessage() {
 
     users: Str = format!("{} {}", user1, user2);
     format_args!("{} {}", user1, user2);
+    debugUsers := format_args!("{:#?}", users);
+    aligned: Str = format!("{:^16}", user1);
+    hexAge: Str = format!("{:#x}", 26);
+}
+
+fn WriteReportLine(name: Str, score: Int) throws IOException {
+    writeln!(STD.Stdout, "{:<16} {:>4}", name, score);
+}
+
+fn WriteDebugReport<T>(value: T) throws IOException {
+    write!(STD.Stderr, "{:#?}", value);
+    writeln!(STD.Stderr);
 }
 
 
@@ -128,7 +144,7 @@ fn StandardHandles() throws IOException {
 // line input
 
 fn ReadLine() {
-    input: Optional<Str> = Some("");
+    input: Optional<Str> = STD.Optional.Some("");
 
     STD.Stdin()
         .readLine(&mut input)
@@ -138,7 +154,7 @@ fn ReadLine() {
 }
 
 fn ReadNumber() {
-    input: Optional<Str> = Some("");
+    input: Optional<Str> = STD.Optional.Some("");
 
     STD.Stdin()
         .readLine(&mut input)
@@ -149,7 +165,7 @@ fn ReadNumber() {
 }
 
 fn ReadManyNumbers() {
-    input: Optional<Str> = Some("");
+    input: Optional<Str> = STD.Optional.Some("");
 
     STD.Stdin()
         .readLine(&mut input)

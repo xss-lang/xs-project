@@ -18,17 +18,19 @@ Recommended order for newcomers:
 3. [ARCHITECTURE.md](ARCHITECTURE.md): compiler pipeline and layer boundaries
 4. [CLI.md](CLI.md): user commands and current status
 5. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
-6. [XHIR.md](XHIR.md): human-readable HIR text format direction
-7. [XMIR.md](XMIR.md): human-readable MIR text format direction
-8. [XLIL.md](XLIL.md): backend input text registry direction
-9. [TODO.md](TODO.md): public roadmap
-10. [RELEASES.md](RELEASES.md): pre-1.0 release policy
-11. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
-12. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
+6. [SPEC.md](SPEC.md): guide to the `Spec/` language-example tree
+7. [XHIR.md](XHIR.md): human-readable HIR text format direction
+8. [XMIR.md](XMIR.md): human-readable MIR text format direction
+9. [XLIL.md](XLIL.md): backend input text registry direction
+10. [TODO.md](TODO.md): public roadmap
+11. [RELEASES.md](RELEASES.md): pre-1.0 release policy
+12. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
+13. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
 
 ## Documentation authority
 
 - For documented X# syntax, `Spec/` has priority.
+- For how to read the example/spec tree, start with [SPEC.md](SPEC.md).
 - For the `.xsproj` format, `Spec/ProjectSystem.xs` and the public C API headers have priority.
 - For XHIR/XMIR text-output behavior, read `docs/XHIR.md` and `docs/XMIR.md`.
 - For XLIL behavior, read `docs/XLIL.md` and `xs/include/xs/lil.h` together.

@@ -13,7 +13,7 @@ This repository is compiler infrastructure. Prefer small, testable patches that 
 - Rust should be used only in future tool projects (`xsfmt`, `xstidy`) or in isolated modules with a clear technical reason.
 - Shell scripts are not added as persistent project artifacts.
 - Use CMake 3.31 or newer; do not use Meson.
-- Do not add dependencies on GNU toolchain behavior.
+- Stay within the documented Clang/LLVM build path and avoid assumptions that are not covered by the supported toolchain.
 - Files must not exceed 1000 lines. New or touched C and header files should stay much smaller when practical.
 - In new/touched C code, use `nullptr` instead of `NULL`, and C23 `bool` instead of `<stdbool.h>`.
 

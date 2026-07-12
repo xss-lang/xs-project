@@ -99,7 +99,7 @@ fn Main() => Int throws LedgerError, IOException {
             cents: 12'500,
             currency: "USD",
         },
-        memo: Some("monthly savings"),
+        memo: STD.Optional.Some("monthly savings"),
     });
 
     ledger.Print();

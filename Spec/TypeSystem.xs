@@ -30,6 +30,7 @@ valueFloat: Float = 1.0;
 
 // Optional<T> is resolved as if the compiler had inserted `imports Optional`
 // and brought STD.Optional.Optional<T> into scope as Optional<T>.
+// The value constructors are STD.Optional.None and STD.Optional.Some(...).
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
 // There is no nullable T? type operator.
@@ -37,8 +38,12 @@ valueFloat: Float = 1.0;
 name: Optional<Str> = None;
 name = Some("Leitwolf");
 
+emptyCanonical: STD.Optional.Optional<Str> = STD.Optional.None;
+canonicalName: STD.Optional.Optional<Str> = STD.Optional.Some("Leitwolf");
+shortName: Optional<Str> = canonicalName;
+
 display: Str = name ?? "guest";
-name ??= Some("guest");
+name ??= STD.Optional.Some("guest");
 
 // Automatic unboxing from Optional<T> to T may throw
 // OptionalUnboxingException when the value is None.
@@ -49,3 +54,7 @@ forcedName: Str = name!;
 
 user: Optional<User> = None;
 city: Optional<Str> = user?.Address?.City;
+
+fn NormalizeOptionalName(value: Optional<Str>) => Str throws OptionalUnboxingException {
+    return value!;
+}

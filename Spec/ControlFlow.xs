@@ -122,6 +122,49 @@ fn TestIfExpression(x: Int) => Int {
         0;
     };
 }
+
+
+// match expression
+
+fn HttpStatusText(status: Int) => Str {
+    return match (status) {
+        200 -> {
+            "ok";
+        },
+        404 -> {
+            "not found";
+        },
+        500 -> {
+            "server error";
+        },
+        else -> {
+            "unknown";
+        },
+    };
+}
+
+
+// if expression used in a local binding
+
+fn SelectPort(debug: Bool) => Int {
+    port: Int = if (debug) {
+        8080;
+    }
+    else {
+        80;
+    };
+
+    return port;
+}
+
+
+// explicit discard for initialization-like side effects
+
+fn WarmCache(cache: Cache) {
+    for (key: Str in cache.keys()) {
+        else: cache.load(key);
+    }
+}
 // if expression branches must produce a value compatible with the
 // surrounding expression type unless the branch diverges.
 

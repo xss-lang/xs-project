@@ -45,7 +45,7 @@ static size_t count_kind_with_flag(const XsSyntaxNode *node, XsSyntaxKind kind, 
 static void test_top_level_variable_declaration_structure(void)
 {
   const char *text = "data User { name: Str }\n"
-                     "user: User = { set.name{\"Alfa\"}; };\n"
+                     "user: User = { set.name{\"Alpha\"}; };\n"
                      "public static Pi: Float = 3.141592653589793;\n";
   XsSource source = {.path = "TopLevelData.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;

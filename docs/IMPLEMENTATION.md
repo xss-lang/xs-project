@@ -5,8 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Current X# compiler status
 
-The compiler is written in C23 and uses Clang, CMake, Ninja, LLVM tools, and LLD. The GNU C compiler, GNU Make generators,
-GNU binutils, GNU C dialects, and `_GNU_SOURCE` are rejected during configuration or build. New and touched C code uses C23
+The compiler is written in C23 and uses Clang, CMake, Ninja, LLVM tools, and LLD. New and touched C code uses C23
 `bool` directly, does not include `<stdbool.h>`, and prefers `nullptr` over `NULL`.
 
 The documented compilation order is preserved:
@@ -61,14 +60,13 @@ The documented compilation order is preserved:
 - Target-specific assembly, if needed, belongs in a separate backend/runtime layer. NASM `.asm`/`.inc` use is allowed, but it
   must not lock the design to x86-64; ARM64 compatibility must be preserved.
 
-### Anti-GNU build rule
+### Supported build toolchain
 
-- CMake accepts only Clang, Ninja, LLVM-binutils equivalents, and LLD.
-- Fallback tools other than `llvm-ar`, `llvm-ranlib`, `llvm-nm`, `llvm-objcopy`, `llvm-objdump`, `llvm-strip`, and `ld.lld`
-  are rejected.
-- GCC and GNU Make generators are rejected.
+- CMake is configured and tested with Clang, Ninja, LLVM tool equivalents, and LLD.
+- Archive, symbol, object-copy, object-dump, strip, and linker tools are selected from the LLVM tool family.
+- Other compiler or generator combinations are outside the supported build contract.
 - The compiler is built in strict ISO C23 mode with `-std=c23` and `CMAKE_C_EXTENSIONS OFF`.
-- GNU C dialects such as `gnu23` and `_GNU_SOURCE` are rejected.
+- The build uses strict ISO C23 rather than compiler-extension dialects.
 
 ### Project system
 
@@ -224,14 +222,16 @@ validation does not decide dispatch, override, or overload selection.
 - Semantically, `Str` is the UTF-16 X# counterpart of Rust's immutable static string reference; its runtime layout remains
   deferred and it is not yet lowered to XLIL storage.
 - `Optional<T>` resolves as if the compiler had inserted `imports Optional` and brought `STD.Optional.Optional<T>` into
-  scope as `Optional<T>`. It is not an enum lowering. `None`, `Some(...)`, `?.`, `??`, `??=`, and postfix `!` are
-  represented syntactically; `Optional<T>` has automatic unboxing to `T`, which can throw `OptionalUnboxingException` for
-  `None`. Runtime Optional failures use `OptionalException`; full flow-sensitive Optional semantics are later HIR work.
+  scope as `Optional<T>`. Optional value constructors are canonically `STD.Optional.None` and
+  `STD.Optional.Some(...)`, with `None` and `Some(...)` available through that implicit import. It is not an enum
+  lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
+  `T`, which can throw `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full
+  flow-sensitive Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
-- The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `Result.Result<T>`,
-  `STD.Optional.Optional<T>`, `Result.Result<T>`, `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error
-  type `Result.Error`. This is name and arity validation only; constructors, method calls, and propagation lowering are
-  still handled by later semantic passes.
+- The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `STD.Optional.Optional<T>`,
+  `Result.Result<T>`, `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result.Error`. This
+  is name and arity validation only; constructors, method calls, and propagation lowering are still handled by later
+  semantic passes.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.

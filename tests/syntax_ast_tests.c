@@ -235,7 +235,7 @@ static void test_top_level_execution_stays_invalid(void)
 static void test_data_field_set_and_get_structure(void)
 {
   const char *text = "fn Update(user: User) {\n"
-                     "  set.name{\"Alfa\"};\n"
+                     "  set.name{\"Alpha\"};\n"
                      "  name: Str = user get.name;\n"
                      "}\n";
   XsSource source = {.path = "DataAccess.xs", .text = text, .length = strlen(text)};
