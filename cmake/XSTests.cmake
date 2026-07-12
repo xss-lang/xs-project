@@ -208,7 +208,8 @@ set_tests_properties(source_native_if_false_build PROPERTIES TIMEOUT 5
 add_test(NAME source_native_if_false_artifacts COMMAND xs_xse_artifact_tests
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.ll
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.o
-                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.xse 7)
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.xse 7 "ret i32 7"
+                                                "!br label")
 set_tests_properties(source_native_if_false_artifacts PROPERTIES DEPENDS source_native_if_false_build TIMEOUT 5)
 add_test(NAME source_native_if_not_equal_build COMMAND xs build -file
                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfNotEqual.xs)

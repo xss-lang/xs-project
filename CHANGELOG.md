@@ -20,6 +20,8 @@ source-to-native executable pipeline.
   current source-native `Long` slice.
 - C MIR constant folding now turns `branch_if` with a known `const.bool` condition into a direct `goto`, allowing CFG cleanup
   to remove the dead branch.
+- Source-native `if` expressions with a syntactically constant boolean condition now lower only the selected branch in the
+  current narrow native slice.
 
 ### Changed
 

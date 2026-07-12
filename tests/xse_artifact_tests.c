@@ -112,7 +112,7 @@ static bool run_and_check_exit(const char *path, int expected)
 
 int main(int argc, char **argv)
 {
-  if(argc != 5 && argc != 6)
+  if(argc < 5)
   {
     fprintf(stderr, "xse artifact test requires .ll, .o, .xse, expected exit-code, and optional IR text arguments\n");
     return 2;
@@ -129,7 +129,12 @@ int main(int argc, char **argv)
   CHECK(has_magic(argv[2], elf_magic, sizeof(elf_magic)));
   CHECK(has_magic(argv[3], elf_magic, sizeof(elf_magic)));
   CHECK(run_and_check_exit(argv[3], expected_exit));
-  if(argc == 6)
-    CHECK(file_contains(argv[1], argv[5]));
+  for(int index = 5; index < argc; ++index)
+  {
+    if(argv[index][0] == '!')
+      CHECK(!file_contains(argv[1], argv[index] + 1));
+    else
+      CHECK(file_contains(argv[1], argv[index]));
+  }
   return failures == 0 ? 0 : 1;
 }

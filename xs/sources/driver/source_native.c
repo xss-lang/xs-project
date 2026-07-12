@@ -200,6 +200,23 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
          false;
 }
 
+static bool static_bool_condition(const XsSyntaxNode *expression, bool *value)
+{
+  if(expression->kind == XS_SYNTAX_EXPR_LITERAL &&
+     (expression->token_kind == XS_TOKEN_KW_TRUE || expression->token_kind == XS_TOKEN_KW_FALSE))
+  {
+    *value = expression->token_kind == XS_TOKEN_KW_TRUE;
+    return true;
+  }
+  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_BANG &&
+     expression->child_count == 1 && static_bool_condition(expression->children[0], value))
+  {
+    *value = !*value;
+    return true;
+  }
+  return false;
+}
+
 static bool lower_i32_expression(XsMirBlock *entry, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
                                  XsMirValueId *result, XsMirError *error)
 {
@@ -272,6 +289,14 @@ static bool lower_if_return(XsMirFunction *function, XsMirBlock *entry, const Xs
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
                               "native source main if branches must each contain exactly one expression statement") &&
            false;
+  bool static_condition = false;
+  if(static_bool_condition(expression->children[0], &static_condition))
+  {
+    XsMirValueId selected_value = 0;
+    const XsSyntaxNode *selected = static_condition ? then_expression : else_expression;
+    return lower_i32_expression(entry, selected, diagnostics, &selected_value, error) &&
+           xs_mir_block_set_return_value(entry, selected_value, error) == XS_MIR_OK;
+  }
   XsMirBlock *then_block = nullptr;
   XsMirBlock *else_block = nullptr;
   XsMirValueId condition = 0;
