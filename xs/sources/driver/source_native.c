@@ -211,6 +211,9 @@ static bool lower_i32_expression(XsMirBlock *entry, const XsSyntaxNode *expressi
            lower_i32_expression(entry, expression->children[0], diagnostics, &value, error) &&
            xs_mir_block_sub_i32(entry, zero, value, result, error) == XS_MIR_OK;
   }
+  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_PLUS &&
+     expression->child_count == 1)
+    return lower_i32_expression(entry, expression->children[0], diagnostics, result, error);
   if(expression->kind == XS_SYNTAX_EXPR_LITERAL && expression->token_kind == XS_TOKEN_INTEGER)
   {
     int32_t value = 0;
