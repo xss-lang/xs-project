@@ -40,6 +40,8 @@ source-to-native executable pipeline.
   signed ordering comparisons.
 - Plain source native builds now accept explicit `Long` and inferred i32-compatible local bindings before the final
   `return`, and those locals can be returned or used by the current i32 expression/condition lowering slice.
+- Plain source native builds now accept explicit and inferred `Bool` local bindings for the current `if` condition lowering
+  slice.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the
   current source-native `Long` slice.
 - C MIR constant folding now turns `branch_if` with a known `const.bool` condition into a direct `goto`, allowing CFG cleanup
