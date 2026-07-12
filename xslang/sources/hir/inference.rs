@@ -4,7 +4,7 @@
  */
 
 use super::async_check::Span;
-use super::type_check::{BinaryOperator, Expression, Literal, Local, PrimitiveType, Type};
+use super::type_check::{BinaryOperator, Expression, Literal, Local, PrimitiveType, Type, result_type_parts};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BindingOperator
@@ -102,7 +102,11 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                          left,
                          right,
                          .. } => infer_binary_expression_type(*operator, left, right, locals),
-    Expression::ResultPropagation { .. } => None,
+    Expression::ResultPropagation { value, .. } =>
+    {
+      let result_type = infer_expression_type(value, locals)?;
+      result_type_parts(&result_type).map(|(success_type, _)| success_type)
+    }
   }
 }
 
@@ -261,5 +265,28 @@ mod tests
                             span: span() };
     assert_eq!(resolve_binding(&binding, &[]).unwrap().ty,
                Type::Named("Optional<Int>".to_string()));
+  }
+
+  #[test]
+  fn infers_result_propagation_success_type()
+  {
+    let result = Local { name: "source".to_string(),
+                         ty: Type::Named("Result<Long, Error>".to_string()),
+                         mutable: false,
+                         span: span() };
+    let binding = Binding { name: "value".to_string(),
+                            annotation: None,
+                            initializer:
+                              Some(Expression::ResultPropagation { value:
+                                                                     Box::new(Expression::Local { name:
+                                                                                                    "source".to_string(),
+                                                                                                  span: span() }),
+                                                                   span: span() }),
+                            mutable: false,
+                            operator: BindingOperator::InferAssign,
+                            span: span() };
+
+    assert_eq!(resolve_binding(&binding, &[result]).unwrap().ty,
+               Type::Primitive(PrimitiveType::Long));
   }
 }

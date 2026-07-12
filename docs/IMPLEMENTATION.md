@@ -258,8 +258,10 @@ checks, trait/interface compatibility, or ABI/layout decisions.
 
 The growing semantic-analysis and type-checking implementation now starts in the isolated Rust `xslang` crate instead of
 adding new semantic rules to the old C23 HIR prototypes. The first checked Rust rule validates that `await` expressions occur
-only inside async function bodies. The crate is not wired into the C23 driver yet; integration will use a bulk structural
-syntax transfer boundary so one compiler layer is not split across C and Rust.
+only inside async function bodies. `xslang` also carries the first Result propagation type rule: `Result<T, E>@` has success
+type `T`, requires an enclosing `Result<_, E>` return type, and remains deferred at HIR-to-MIR lowering until error-return
+control-flow lowering exists. The crate is not wired into the C23 driver yet; integration will use a bulk structural syntax
+transfer boundary so one compiler layer is not split across C and Rust.
 
 ### Macro validation and scope resolution
 

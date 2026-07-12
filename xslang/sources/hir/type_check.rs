@@ -131,7 +131,8 @@ pub enum DiagnosticCode
   ImmutableAssignment,
   UnknownLocal,
   BinaryTypeMismatch,
-  ResultPropagationUnsupported,
+  ResultPropagationRequiresResult,
+  ResultPropagationReturnMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -147,6 +148,7 @@ pub struct TypeChecker
 {
   locals: Vec<Local>,
   diagnostics: Vec<Diagnostic>,
+  return_type: Option<Type>,
 }
 
 impl TypeChecker
@@ -161,6 +163,7 @@ impl TypeChecker
   pub fn check_function(mut self, function: &Function) -> Vec<Diagnostic>
   {
     self.locals.extend(function.locals.iter().cloned());
+    self.return_type = function.return_type.clone();
     for statement in &function.body
     {
       self.check_statement(statement, function.return_type.as_ref());
@@ -249,10 +252,7 @@ impl TypeChecker
                                       span, } =>
       {
         self.check_expression(value);
-        self.diagnostics
-            .push(Diagnostic { code: DiagnosticCode::ResultPropagationUnsupported,
-                               message: "Result propagation with '@' is not type-checked yet".to_string(),
-                               span: *span });
+        self.check_result_propagation(value, *span);
       }
       Expression::Local { name,
                           span, } =>
@@ -318,7 +318,23 @@ impl TypeChecker
         }
       }
       Expression::Assign { .. } => self.check_expression(expression),
-      Expression::ResultPropagation { .. } => self.check_expression(expression),
+      Expression::ResultPropagation { span, .. } =>
+      {
+        self.check_expression(expression);
+        let Some(result_type) = self.expression_type(expression)
+        else
+        {
+          return;
+        };
+        if result_type != *ty
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message:
+                                   "Result propagation success value is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
@@ -335,8 +351,62 @@ impl TypeChecker
                            left,
                            right,
                            .. } => self.binary_expression_type(*operator, left, right),
-      Expression::ResultPropagation { .. } => None,
+      Expression::ResultPropagation { value, .. } => self.result_success_type(value),
     }
+  }
+
+  fn check_result_propagation(&mut self, value: &Expression, span: Span)
+  {
+    let Some((_, error_type)) = self.result_parts_of_expression(value)
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::ResultPropagationRequiresResult,
+                             message: "Result propagation with '@' requires a Result<T, E> value".to_string(),
+                             span });
+      return;
+    };
+    let Some(return_type) = &self.return_type
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
+                             message:
+                               "Result propagation requires the enclosing function to return Result<_, E>".to_string(),
+                             span });
+      return;
+    };
+    let Some((_, return_error_type)) = result_type_parts(return_type)
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
+                             message:
+                               "Result propagation requires the enclosing function to return Result<_, E>".to_string(),
+                             span });
+      return;
+    };
+    if error_type != return_error_type
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
+                             message: "Result propagation error type is not compatible with the function return \
+                                       type"
+                                            .to_string(),
+                             span });
+    }
+  }
+
+  fn result_success_type(&self, value: &Expression) -> Option<Type>
+  {
+    self.result_parts_of_expression(value)
+        .map(|(success_type, _)| success_type)
+  }
+
+  fn result_parts_of_expression(&self, value: &Expression) -> Option<(Type, Type)>
+  {
+    let value_type = self.expression_type(value)?;
+    result_type_parts(&value_type)
   }
 
   fn binary_expression_type(&self, operator: BinaryOperator, left: &Expression, right: &Expression) -> Option<Type>
@@ -390,6 +460,61 @@ fn literal_default_type(literal: &Literal) -> Option<Type>
     Literal::None => return None,
   };
   Some(Type::Primitive(primitive))
+}
+
+pub(crate) fn result_type_parts(ty: &Type) -> Option<(Type, Type)>
+{
+  let Type::Named(name) = ty
+  else
+  {
+    return None;
+  };
+  let generic = name.strip_prefix("Result<")
+                    .or_else(|| name.strip_prefix("Result.Result<"))?;
+  let inner = generic.strip_suffix('>')?;
+  let (success, error) = split_top_level_pair(inner)?;
+  Some((parse_named_or_primitive(success.trim()), parse_named_or_primitive(error.trim())))
+}
+
+fn split_top_level_pair(text: &str) -> Option<(&str, &str)>
+{
+  let mut depth = 0usize;
+  for (index, ch) in text.char_indices()
+  {
+    match ch
+    {
+      '<' => depth += 1,
+      '>' => depth = depth.saturating_sub(1),
+      ',' if depth == 0 => return Some((&text[..index], &text[index + 1..])),
+      _ =>
+      {}
+    }
+  }
+  None
+}
+
+fn parse_named_or_primitive(name: &str) -> Type
+{
+  let primitive = match name
+  {
+    "Bool" => Some(PrimitiveType::Bool),
+    "Byte" => Some(PrimitiveType::Byte),
+    "SByte" => Some(PrimitiveType::SByte),
+    "Char" => Some(PrimitiveType::Char),
+    "Short" => Some(PrimitiveType::Short),
+    "Long" => Some(PrimitiveType::Long),
+    "Int" => Some(PrimitiveType::Int),
+    "Integer" => Some(PrimitiveType::Integer),
+    "UShort" => Some(PrimitiveType::UShort),
+    "ULong" => Some(PrimitiveType::ULong),
+    "UInt" => Some(PrimitiveType::UInt),
+    "UInteger" => Some(PrimitiveType::UInteger),
+    "SFloat" => Some(PrimitiveType::SFloat),
+    "Float" => Some(PrimitiveType::Float),
+    "Str" => Some(PrimitiveType::Str),
+    _ => None,
+  };
+  primitive.map_or_else(|| Type::Named(name.to_string()), Type::Primitive)
 }
 
 #[must_use]
@@ -595,7 +720,25 @@ mod tests
   }
 
   #[test]
-  fn rejects_result_propagation_until_semantics_exist()
+  fn validates_result_propagation_success_type_and_error_return()
+  {
+    let function = Function { name: "main".to_string(),
+                              return_type: Some(Type::Named("Result<(), Error>".to_string())),
+                              locals: vec![local("work", Type::Named("Result<Int, Error>".to_string()), false)],
+                              body: vec![Statement::Let {
+                                local: local("value", primitive(PrimitiveType::Int), false),
+                                initializer: Some(Expression::ResultPropagation {
+                                  value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                      span: span(4, 8) }),
+                                  span: span(4, 9),
+                                }),
+                              }] };
+
+    assert!(TypeChecker::new().check_function(&function).is_empty());
+  }
+
+  #[test]
+  fn rejects_result_propagation_on_non_result_value()
   {
     let function = Function { name: "main".to_string(),
                               return_type: None,
@@ -608,6 +751,23 @@ mod tests
 
     let diagnostics = TypeChecker::new().check_function(&function);
 
-    assert_eq!(diagnostics[0].code, DiagnosticCode::ResultPropagationUnsupported);
+    assert_eq!(diagnostics[0].code, DiagnosticCode::ResultPropagationRequiresResult);
+  }
+
+  #[test]
+  fn rejects_result_propagation_error_mismatch()
+  {
+    let function = Function { name: "main".to_string(),
+                              return_type: Some(Type::Named("Result<(), OtherError>".to_string())),
+                              locals: vec![local("work", Type::Named("Result<Int, Error>".to_string()), false)],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                    span: span(4, 8) }),
+                                span: span(4, 9),
+                              })] };
+
+    let diagnostics = TypeChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::ResultPropagationReturnMismatch);
   }
 }

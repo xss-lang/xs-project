@@ -237,7 +237,8 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::ImmutableAssignment => "immutable_assignment",
     TypeDiagnosticCode::UnknownLocal => "unknown_local",
     TypeDiagnosticCode::BinaryTypeMismatch => "binary_type_mismatch",
-    TypeDiagnosticCode::ResultPropagationUnsupported => "result_propagation_unsupported",
+    TypeDiagnosticCode::ResultPropagationRequiresResult => "result_propagation_requires_result",
+    TypeDiagnosticCode::ResultPropagationReturnMismatch => "result_propagation_return_mismatch",
   }
 }
 
@@ -252,7 +253,8 @@ fn parse_type_diagnostic_code(name: &str,
     "immutable_assignment" => Some(TypeDiagnosticCode::ImmutableAssignment),
     "unknown_local" => Some(TypeDiagnosticCode::UnknownLocal),
     "binary_type_mismatch" => Some(TypeDiagnosticCode::BinaryTypeMismatch),
-    "result_propagation_unsupported" => Some(TypeDiagnosticCode::ResultPropagationUnsupported),
+    "result_propagation_requires_result" => Some(TypeDiagnosticCode::ResultPropagationRequiresResult),
+    "result_propagation_return_mismatch" => Some(TypeDiagnosticCode::ResultPropagationReturnMismatch),
     _ =>
     {
       diagnostics.push(XhirParseDiagnostic { line,
