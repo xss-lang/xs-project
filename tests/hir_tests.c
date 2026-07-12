@@ -77,6 +77,40 @@ static void test_duplicate_names_in_namespace(void)
   free_all(&tree, &symbols, &diagnostics);
 }
 
+static void test_extern_block_symbols(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(C)]\n"
+                     "extern \"C\" {\n"
+                     "  fn puts(text: CFFI.CStr) => Int;\n"
+                     "  static errno: Int;\n"
+                     "}\n";
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsDiagnostics diagnostics;
+  CHECK(parse_and_collect(text, &tree, &symbols, &diagnostics));
+  const XsHirSymbol *puts = xs_hir_symbol_table_find(&symbols, "App.puts");
+  const XsHirSymbol *errno_symbol = xs_hir_symbol_table_find(&symbols, "App.errno");
+  CHECK(puts != nullptr && puts->kind == XS_HIR_SYMBOL_FUNCTION);
+  CHECK(puts != nullptr && (puts->syntax->flags & XS_SYNTAX_FLAG_EXTERN) != 0);
+  CHECK(errno_symbol != nullptr && errno_symbol->kind == XS_HIR_SYMBOL_EXTERN_GLOBAL);
+  CHECK(errno_symbol != nullptr && (errno_symbol->syntax->flags & XS_SYNTAX_FLAG_EXTERN) != 0);
+  free_all(&tree, &symbols, &diagnostics);
+}
+
+static void test_extern_block_duplicate_symbol_errors(void)
+{
+  const char *text = "module App;\n"
+                     "fn puts() {}\n"
+                     "extern \"C\" { fn puts() => Int; }\n";
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_collect(text, &tree, &symbols, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  free_all(&tree, &symbols, &diagnostics);
+}
+
 static void test_same_name_in_different_namespace(void)
 {
   const char *text = "module App;\n"
@@ -107,10 +141,11 @@ static void test_import_resolution(void)
 {
   const char *library = "module Math;\n"
                         "public fn Add() {}\n"
+                        "public extern \"C\" { static errno: Int; }\n"
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
                      "imports Math;\n"
-                     "from Math imports Add as Sum;\n"
+                     "from Math imports Add as Sum, errno;\n"
                      "fn Main() {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -124,10 +159,14 @@ static void test_import_resolution(void)
   CHECK(add_file_symbols(main, 32, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
   CHECK(xs_hir_import_scope_find(&imports, "Math.Add") != nullptr);
+  CHECK(xs_hir_import_scope_find(&imports, "Math.errno") != nullptr);
   CHECK(xs_hir_import_scope_find(&imports, "Math.Hidden") == nullptr);
   const XsHirImportBinding *sum = xs_hir_import_scope_find(&imports, "Sum");
   CHECK(sum != nullptr);
   CHECK(sum != nullptr && strcmp(sum->symbol->qualified_name, "Math.Add") == 0);
+  const XsHirImportBinding *errno_import = xs_hir_import_scope_find(&imports, "errno");
+  CHECK(errno_import != nullptr);
+  CHECK(errno_import != nullptr && errno_import->symbol->kind == XS_HIR_SYMBOL_EXTERN_GLOBAL);
   xs_hir_import_scope_free(&imports);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
@@ -454,6 +493,8 @@ int main(void)
 {
   test_module_namespace_symbols();
   test_duplicate_names_in_namespace();
+  test_extern_block_symbols();
+  test_extern_block_duplicate_symbol_errors();
   test_same_name_in_different_namespace();
   test_import_resolution();
   test_public_namespace_exports_default_symbols();

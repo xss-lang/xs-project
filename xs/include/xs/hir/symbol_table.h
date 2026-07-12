@@ -20,6 +20,7 @@ typedef enum
   XS_HIR_SYMBOL_ENUM,
   XS_HIR_SYMBOL_DATA,
   XS_HIR_SYMBOL_MACRO,
+  XS_HIR_SYMBOL_EXTERN_GLOBAL,
 } XsHirSymbolKind;
 
 typedef enum

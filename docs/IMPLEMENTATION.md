@@ -187,6 +187,9 @@ This layer lives under the HIR directory.
   HIR.
 - `public namespace` does not override explicit `private`, `internal`, or `protected` visibility modifiers.
 - Top-level `fn`, `class`, `interface`, `enum`, `data`, and `macro_rules!` declarations are collected into the symbol table.
+- `extern "ABI"` block functions are collected as function symbols, while `static` foreign globals are collected as
+  `extern global` symbols. Visibility on the extern block is inherited by contained declarations unless a contained
+  declaration has its own explicit visibility.
 - `xs_hir_collect_symbols_expanded`, when given a declaration macro expansion set, collects synthetic declarations produced
   by `XS_SYNTAX_DECL_MACRO_CALL` reparse trees into the active HIR namespace of the macro call. Duplicate symbol checks use
   the same namespace rule as normal declarations.

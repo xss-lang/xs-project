@@ -43,6 +43,16 @@ static bool symbol_kind_for_node(XsSyntaxKind syntax, XsHirSymbolKind *kind)
   }
 }
 
+static bool symbol_kind_for_declaration(const XsSyntaxNode *node, XsHirSymbolKind *kind)
+{
+  if(node != nullptr && node->kind == XS_SYNTAX_DECL_VARIABLE && (node->flags & XS_SYNTAX_FLAG_EXTERN) != 0)
+  {
+    *kind = XS_HIR_SYMBOL_EXTERN_GLOBAL;
+    return true;
+  }
+  return node != nullptr && symbol_kind_for_node(node->kind, kind);
+}
+
 static bool append_symbol(XsHirSymbolTable *table, XsHirSymbol symbol)
 {
   if(table->count == table->capacity)
@@ -135,11 +145,12 @@ static XsSyntaxVisibility declaration_visibility(const XsSyntaxNode *node, bool 
   return node->visibility;
 }
 
-static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_name, bool public_namespace,
-                                XsHirSymbolTable *table, XsDiagnostics *diagnostics)
+static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const char *namespace_name,
+                                                XsSyntaxVisibility visibility, XsHirSymbolTable *table,
+                                                XsDiagnostics *diagnostics)
 {
   XsHirSymbolKind kind;
-  if(!symbol_kind_for_node(node->kind, &kind))
+  if(!symbol_kind_for_declaration(node, &kind))
     return true;
   const XsSyntaxNode *name_node = declaration_name_node(node);
   if(name_node == nullptr)
@@ -174,7 +185,7 @@ static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_
       .name = name,
       .namespace_name = namespace_copy,
       .qualified_name = qualified,
-      .visibility = declaration_visibility(node, public_namespace),
+      .visibility = visibility,
       .span = name_node->span,
       .syntax = node,
   };
@@ -184,6 +195,30 @@ static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_
     free(namespace_copy);
     free(qualified);
     return false;
+  }
+  return true;
+}
+
+static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_name, bool public_namespace,
+                                XsHirSymbolTable *table, XsDiagnostics *diagnostics)
+{
+  return collect_declaration_with_visibility(node, namespace_name, declaration_visibility(node, public_namespace), table,
+                                             diagnostics);
+}
+
+static bool collect_extern_block(const XsSyntaxNode *node, const char *namespace_name, bool public_namespace,
+                                 XsHirSymbolTable *table, XsDiagnostics *diagnostics)
+{
+  XsSyntaxVisibility block_visibility = declaration_visibility(node, public_namespace);
+  for(size_t i = 0; i < node->child_count; ++i)
+  {
+    const XsSyntaxNode *child = node->children[i];
+    if(child->kind != XS_SYNTAX_DECL_FUNCTION && child->kind != XS_SYNTAX_DECL_VARIABLE)
+      continue;
+    XsSyntaxVisibility child_visibility =
+        child->visibility == XS_SYNTAX_VISIBILITY_DEFAULT ? block_visibility : declaration_visibility(child, public_namespace);
+    if(!collect_declaration_with_visibility(child, namespace_name, child_visibility, table, diagnostics))
+      return false;
   }
   return true;
 }
@@ -413,6 +448,12 @@ bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree, const XsMacroDecl
       }
       continue;
     }
+    if(child->kind == XS_SYNTAX_DECL_EXTERN_BLOCK)
+    {
+      if(!collect_extern_block(child, current_namespace, public_namespace, table, diagnostics))
+        break;
+      continue;
+    }
     if(!collect_declaration(child, current_namespace, public_namespace, table, diagnostics))
       break;
   }
@@ -428,7 +469,7 @@ bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree, const XsMacroDecl
 const char *xs_hir_symbol_kind_name(XsHirSymbolKind kind)
 {
   static const char *const names[] = {
-      "function", "class", "interface", "enum", "data", "macro",
+      "function", "class", "interface", "enum", "data", "macro", "extern global",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "symbol";
