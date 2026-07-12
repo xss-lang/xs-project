@@ -36,7 +36,8 @@ It validates the CMake project version, changelog heading, release documentation
 - Later `0.0.x` releases should keep landing narrow compiler infrastructure checkpoints without promising source-level
   native builds.
 - The `0.1.0` line starts when source/project `xs build` can produce native `.xse` artifacts. The first implemented source
-  slice is intentionally narrow: top-level `main` returning `Long` with i32-range literals and `+`, `-`, `*`, `/`, `%`.
+  slice is intentionally narrow: top-level `main` returning `Long` with i32-range literals, unary `-`, and `+`, `-`, `*`,
+  `/`, `%`.
 - The first `.xse` target format is Linux ELF; PE comes after ELF support.
 
 ## 0.1.0 threshold

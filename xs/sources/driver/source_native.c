@@ -193,6 +193,15 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
 static bool lower_i32_expression(XsMirBlock *entry, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
                                  XsMirValueId *result, XsMirError *error)
 {
+  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_MINUS &&
+     expression->child_count == 1)
+  {
+    XsMirValueId zero = 0;
+    XsMirValueId value = 0;
+    return xs_mir_block_add_const_i32(entry, 0, &zero, error) == XS_MIR_OK &&
+           lower_i32_expression(entry, expression->children[0], diagnostics, &value, error) &&
+           xs_mir_block_sub_i32(entry, zero, value, result, error) == XS_MIR_OK;
+  }
   if(expression->kind == XS_SYNTAX_EXPR_LITERAL && expression->token_kind == XS_TOKEN_INTEGER)
   {
     int32_t value = 0;
@@ -227,7 +236,7 @@ static bool lower_i32_expression(XsMirBlock *entry, const XsSyntaxNode *expressi
   }
   return xs_diagnostics_add(
              diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
-             "native source main return expression supports only integer literals, +, -, *, /, %, and top-level if for now") &&
+             "native source main return expression supports only integer literals, unary -, +, -, *, /, %, and top-level if for now") &&
          false;
 }
 
