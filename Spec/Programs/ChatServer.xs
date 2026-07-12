@@ -6,7 +6,7 @@
 
 module Programs.ChatServer;
 
-imports Collections, Stdio, Sync, Thread, Net;
+imports Collections, Stdio, Sync, Thread, Net, Result;
 
 enum data ChatError {
     Io: IOException,
@@ -57,9 +57,9 @@ class ChatHub {
         this.rooms = Arc.new(Mutex.new(STD.Collections.hash_map<Str, Room>.new()));
     }
 
-    async fn Serve(listener: Net.tcpListener) throws ChatError {
+    async fn Serve(listener: Net.tcpListener) => Task<Result.Result<Void, ChatError>> {
         while (true) {
-            socket: Net.tcpStream = await listener.accept();
+            socket: Net.tcpStream = await listener.accept()@;
             id: ClientId = ClientId {
                 value: this.nextId.fetchAdd(1),
             };
@@ -67,7 +67,7 @@ class ChatHub {
 
             Thread.spawn(move async fn() {
                 session: ClientSession = new(id, socket, rooms);
-                await session.Run();
+                await session.Run()@;
             });
         }
     }
@@ -84,7 +84,7 @@ class ClientSession {
         this.rooms = rooms;
     }
 
-    async fn Run() throws ChatError {
+    async fn Run() => Task<Result.Result<Void, ChatError>> {
         currentRoom: Str = "lobby";
         outbound: Thread.channel<Message> = Thread.channel<Message>();
         this.Join(currentRoom, outbound.sender());
@@ -95,7 +95,7 @@ class ClientSession {
 
             if (command == "/quit") {
                 this.Leave(currentRoom);
-                return;
+                return Result.Ok();
             }
 
             if (command.startsWith("/join ")) {
@@ -132,9 +132,9 @@ class ClientSession {
     }
 }
 
-async fn Main() => Task<Int> throws ChatError {
-    listener: Net.tcpListener = await Net.listen("127.0.0.1:9000");
+async fn Main() => Task<Result.Result<Int, ChatError>> {
+    listener: Net.tcpListener = await Net.listen("127.0.0.1:9000")@;
     hub: ChatHub = new();
-    await hub.Serve(listener);
-    return 0;
+    await hub.Serve(listener)@;
+    return Result.Ok(0);
 }

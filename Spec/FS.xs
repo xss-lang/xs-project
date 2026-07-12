@@ -10,12 +10,12 @@
 // STD.FS.write does not format text and does not add a newline.
 //
 
-imports FS, Stdio, Collections;
+imports FS, Stdio, Collections, Result;
 
 
 // raw writes
 
-fn WriteText() throws IOException {
+fn WriteText() => Result.Result<Void, IOException> {
     STD.FS.write("log.txt", "hello\n");
     STD.FS.write(STD.Stdout, "stdout\n");
     STD.FS.write(STD.Stderr, "stderr\n");
@@ -27,17 +27,17 @@ fn WriteText() throws IOException {
 // - Does not apply formatting.
 // - Does not append a newline.
 // - Requires the file to exist.
-// - Throws IOException if the file does not exist or cannot be written.
+// - Returns Result.Error(IOException) if the file does not exist or cannot be written.
 
 
 // raw reads
 
-fn ReadText() throws IOException {
+fn ReadText() => Result.Result<Void, IOException> {
     content: Str = STD.FS.readToStr("log.txt");
     println!("{}", content);
 }
 
-fn ReadBytes() throws IOException {
+fn ReadBytes() => Result.Result<Void, IOException> {
     bytes: STD.Collections.vector<Byte> = STD.FS.read("image.png");
     println!("file size: {}", bytes.length());
 }
@@ -48,7 +48,7 @@ fn ReadBytes() throws IOException {
 
 // create paths
 
-fn CreatePaths() throws IOException {
+fn CreatePaths() => Result.Result<Void, IOException> {
     STD.FS.createDir("data/backups");
     STD.FS.createFile("data/backups/log.txt");
 }
@@ -57,18 +57,18 @@ fn CreatePaths() throws IOException {
 //
 // - Creates the directory and missing parent directories.
 // - Succeeds if the directory already exists.
-// - Throws IOException if a non-directory path component blocks creation.
+// - Returns Result.Error(IOException) if a non-directory path component blocks creation.
 //
 // STD.FS.createFile(path):
 //
 // - Creates a new empty file.
-// - Throws IOException if the file already exists.
-// - Throws IOException if the parent directory does not exist.
+// - Returns Result.Error(IOException) if the file already exists.
+// - Returns Result.Error(IOException) if the parent directory does not exist.
 
 
 // move, copy and remove
 
-fn MoveCopyRemove() throws IOException {
+fn MoveCopyRemove() => Result.Result<Void, IOException> {
     STD.FS.copyFile("data/source.txt", "data/copy.txt");
     STD.FS.move("data/copy.txt", "data/backups/copy.txt");
     STD.FS.removeFile("data/source.txt");
@@ -83,7 +83,7 @@ fn MoveCopyRemove() throws IOException {
 
 // list directory
 
-fn ListDirectory() throws IOException {
+fn ListDirectory() => Result.Result<Void, IOException> {
     for (entry: Str in STD.FS.listDir(".")) {
         println!("{}", entry.trim());
     }
@@ -95,7 +95,7 @@ fn ListDirectory() throws IOException {
 
 // metadata and path helpers
 
-fn InspectPath(path: Str) throws IOException {
+fn InspectPath(path: Str) => Result.Result<Void, IOException> {
     if (STD.FS.exists(path) && STD.FS.isDir(path)) {
         for (entry: Str in STD.FS.walkDir(path)) {
             relative: Str = STD.FS.relativePath(path, entry);
@@ -123,7 +123,7 @@ fn BuildPath(root: Str, name: Str) => Str {
 
 // file handles and open options
 
-fn OpenWithOptions() throws IOException {
+fn OpenWithOptions() => Result.Result<Void, IOException> {
     file: STD.FS.File = STD.FS.OpenOptions.new()
         .create(true)
         .append(true)

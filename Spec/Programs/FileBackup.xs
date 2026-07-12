@@ -6,7 +6,7 @@
 
 module Programs.FileBackup;
 
-imports Collections, Stdio, FS, Process;
+imports Collections, Stdio, FS, Process, Result;
 
 enum data BackupError {
     Io: IOException,
@@ -31,9 +31,9 @@ class BackupPlan {
         this.files = STD.Collections.vector<FileEntry>.new();
     }
 
-    fn Discover() throws BackupError {
+    fn Discover() => Result.Result<Void, BackupError> {
         if (!STD.FS.isDir(this.sourceRoot)) {
-            throw BackupError.InvalidSource(this.sourceRoot);
+            return Result.Error(BackupError.InvalidSource(this.sourceRoot));
         }
 
         for (path: Str in STD.FS.walkDir(this.sourceRoot)) {
@@ -49,9 +49,10 @@ class BackupPlan {
                 modifiedTicks: STD.FS.modifiedTicks(path),
             });
         }
+        return Result.Ok();
     }
 
-    fn Execute() throws IOException {
+    fn Execute() => Result.Result<Void, IOException> {
         for (entry: FileEntry in this.files) {
             destination: Str = STD.FS.joinPath(this.targetRoot, entry.relative);
 
@@ -61,6 +62,7 @@ class BackupPlan {
                 println!("copied {}", entry.relative);
             }
         }
+        return Result.Ok();
     }
 
     fn ShouldCopy(entry: FileEntry, destination: Str) => Bool {
@@ -72,14 +74,14 @@ class BackupPlan {
     }
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Int throws BackupError, IOException {
+fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
     if (args.length() != 3) {
         eprintln!("usage: backup <source> <target>");
         return 2;
     }
 
     plan: BackupPlan = new(args[1], args[2]);
-    plan.Discover();
-    plan.Execute();
-    return 0;
+    plan.Discover()@;
+    plan.Execute()@;
+    return Result.Ok(0);
 }

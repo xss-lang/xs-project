@@ -6,7 +6,7 @@
 
 module Programs.TodoCli;
 
-imports Stdio, FS, Collections, Process;
+imports Stdio, FS, Collections, Process, Result;
 
 enum data TodoError {
     Io: IOException,
@@ -32,14 +32,19 @@ class TodoStore {
     nextId: Int;
     items: STD.Collections.vector<TodoItem>;
 
-    TodoStore(path: Str) throws TodoError {
+    TodoStore(path: Str) {
         this.path = path;
         this.nextId = 1;
         this.items = STD.Collections.vector<TodoItem>.new();
-        this.Load();
     }
 
-    fn Add(title: Str) throws TodoError {
+    static fn Open(path: Str) => Result.Result<TodoStore, TodoError> {
+        store: TodoStore = new(path);
+        store.Load()@;
+        return Result.Ok(store);
+    }
+
+    fn Add(title: Str) => Result.Result<Void, TodoError> {
         item: TodoItem = TodoItem {
             id: this.nextId,
             title: title,
@@ -48,25 +53,26 @@ class TodoStore {
 
         this.nextId += 1;
         this.items.push(item);
-        this.Save();
+        this.Save()@;
+        return Result.Ok();
     }
 
-    fn MarkDone(id: Int) throws TodoError {
+    fn MarkDone(id: Int) => Result.Result<Void, TodoError> {
         for (index: Int = 0; index < this.items.length(); index = index + 1) {
             if (this.items[index].id == id) {
                 this.items[index].done = true;
-                this.Save();
-                return;
+                this.Save()@;
+                return Result.Ok();
             }
         }
 
-        throw TodoError.InvalidId(id);
+        return Result.Error(TodoError.InvalidId(id));
     }
 
-    fn Print() throws IOException {
+    fn Print() => Result.Result<Void, IOException> {
         if (this.items.length() == 0) {
             println!("No tasks yet.");
-            return;
+            return Result.Ok();
         }
 
         for (item: TodoItem in this.items) {
@@ -78,11 +84,12 @@ class TodoStore {
             };
             println!("[{}] #{} {}", status, item.id, item.title);
         }
+        return Result.Ok();
     }
 
-    fn Load() throws TodoError {
+    fn Load() => Result.Result<Void, TodoError> {
         if (!STD.FS.exists(this.path)) {
-            return;
+            return Result.Ok();
         }
 
         content: Str = STD.FS.readToStr(this.path);
@@ -92,16 +99,17 @@ class TodoStore {
                 continue;
             }
 
-            item: TodoItem = TodoCodec.Parse(line);
+            item: TodoItem = TodoCodec.Parse(line)@;
             this.items.push(item);
 
             if (item.id >= this.nextId) {
                 this.nextId = item.id + 1;
             }
         }
+        return Result.Ok();
     }
 
-    fn Save() throws TodoError {
+    fn Save() => Result.Result<Void, TodoError> {
         if (!STD.FS.exists(this.path)) {
             STD.FS.createFile(this.path);
         }
@@ -113,21 +121,22 @@ class TodoStore {
         for (item: TodoItem in this.items) {
             STD.FS.write(opened, format!("{}\n", TodoCodec.Format(item)));
         }
+        return Result.Ok();
     }
 }
 
 class TodoCodec {
-    static fn Parse(line: Str) => TodoItem throws TodoError {
+    static fn Parse(line: Str) => Result.Result<TodoItem, TodoError> {
         parts: STD.Collections.vector<Str> = line.split("|");
         if (parts.length() != 3) {
-            throw TodoError.InvalidCommand(line);
+            return Result.Error(TodoError.InvalidCommand(line));
         }
 
-        return TodoItem {
+        return Result.Ok(TodoItem {
             id: Int.Parse(parts[0]),
             title: parts[2],
             done: parts[1] == "done",
-        };
+        });
     }
 
     static fn Format(item: TodoItem) => Str {
@@ -141,60 +150,61 @@ class TodoCodec {
     }
 }
 
-fn ParseCommand(args: STD.Collections.vector<Str>) => Command throws TodoError {
+fn ParseCommand(args: STD.Collections.vector<Str>) => Result.Result<Command, TodoError> {
     if (args.length() < 2) {
-        return Command.Help;
+        return Result.Ok(Command.Help);
     }
 
     return match (args[1]) {
         "add" -> {
             if (args.length() < 3) {
-                throw TodoError.InvalidCommand("todo add <title>");
+                return Result.Error(TodoError.InvalidCommand("todo add <title>"));
             }
-            Command.Add(args.slice(2).join(" "));
+            Result.Ok(Command.Add(args.slice(2).join(" ")));
         },
         "done" -> {
             if (args.length() != 3) {
-                throw TodoError.InvalidCommand("todo done <id>");
+                return Result.Error(TodoError.InvalidCommand("todo done <id>"));
             }
-            Command.Done(Int.Parse(args[2]));
+            Result.Ok(Command.Done(Int.Parse(args[2])));
         },
         "list" -> {
-            Command.List;
+            Result.Ok(Command.List);
         },
         "help" -> {
-            Command.Help;
+            Result.Ok(Command.Help);
         },
         else -> {
-            throw TodoError.InvalidCommand(args[1]);
+            Result.Error(TodoError.InvalidCommand(args[1]));
         },
     };
 }
 
-fn PrintHelp() throws IOException {
+fn PrintHelp() => Result.Result<Void, IOException> {
     println!("todo add <title>");
     println!("todo done <id>");
     println!("todo list");
+    return Result.Ok();
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Int throws TodoError, IOException {
-    store: TodoStore = new("todo.db");
-    command: Command = ParseCommand(args);
+fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
+    store: TodoStore = TodoStore.Open("todo.db")@;
+    command: Command = ParseCommand(args)@;
 
     match (command) {
         Command.Add(title) -> {
-            store.Add(title);
+            store.Add(title)@;
         },
         Command.Done(id) -> {
-            store.MarkDone(id);
+            store.MarkDone(id)@;
         },
         Command.List -> {
-            store.Print();
+            store.Print()@;
         },
         Command.Help -> {
-            PrintHelp();
+            PrintHelp()@;
         },
     }
 
-    return 0;
+    return Result.Ok(0);
 }

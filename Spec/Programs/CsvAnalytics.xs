@@ -6,7 +6,7 @@
 
 module Programs.CsvAnalytics;
 
-imports Collections, Stdio, FS, Process;
+imports Collections, Stdio, FS, Process, Result;
 
 enum data CsvError {
     Io: IOException,
@@ -27,18 +27,18 @@ data RegionTotal {
 }
 
 class CsvParser {
-    static fn ParseLine(line: Str) => Sale throws CsvError {
+    static fn ParseLine(line: Str) => Result.Result<Sale, CsvError> {
         fields: STD.Collections.vector<Str> = line.split(",");
         if (fields.length() != 4) {
-            throw CsvError.BadRow(line);
+            return Result.Error(CsvError.BadRow(line));
         }
 
-        return Sale {
+        return Result.Ok(Sale {
             region: fields[0],
             product: fields[1],
             quantity: Int.Parse(fields[2]),
             revenue: Float.Parse(fields[3]),
-        };
+        });
     }
 }
 
@@ -62,7 +62,7 @@ class Analytics {
         this.totals[sale.region].revenue += sale.revenue;
     }
 
-    fn Print() throws IOException {
+    fn Print() => Result.Result<Void, IOException> {
         for ((_, total): (Str, RegionTotal) in this.totals) {
             println!(
                 "{}: units={} revenue={}",
@@ -71,10 +71,11 @@ class Analytics {
                 total.revenue
             );
         }
+        return Result.Ok();
     }
 }
 
-fn LoadSales(path: Str) => STD.Collections.vector<Sale> throws CsvError, IOException {
+fn LoadSales(path: Str) => Result.Result<STD.Collections.vector<Sale>, Result.Error> {
     rows: STD.Collections.vector<Sale> = STD.Collections.vector<Sale>.new();
     content: Str = STD.FS.readToStr(path);
 
@@ -82,13 +83,13 @@ fn LoadSales(path: Str) => STD.Collections.vector<Sale> throws CsvError, IOExcep
         if (line.length() == 0) {
             continue;
         }
-        rows.push(CsvParser.ParseLine(line));
+        rows.push(CsvParser.ParseLine(line)@);
     }
 
-    return rows;
+    return Result.Ok(rows);
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Int throws CsvError, IOException {
+fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
     path: Str = if (args.length() > 1) {
         args[1];
     }
@@ -97,10 +98,10 @@ fn Main(args: STD.Collections.vector<Str>) => Int throws CsvError, IOException {
     };
     analytics: Analytics = new();
 
-    for (sale: Sale in LoadSales(path)) {
+    for (sale: Sale in LoadSales(path)@) {
         analytics.Add(sale);
     }
 
-    analytics.Print();
-    return 0;
+    analytics.Print()@;
+    return Result.Ok(0);
 }

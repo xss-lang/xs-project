@@ -45,9 +45,8 @@ shortName: Optional<Str> = canonicalName;
 display: Str = name ?? "guest";
 name ??= STD.Optional.Some("guest");
 
-// Automatic unboxing from Optional<T> to T may throw
-// OptionalUnboxingException when the value is None.
-// Other Optional runtime failures use OptionalException.
+// Automatic unboxing from Optional<T> to T may fail. New code models that as
+// Result.Error rather than legacy exceptions.
 
 unboxedName: Str = name;
 forcedName: Str = name!;
@@ -55,6 +54,12 @@ forcedName: Str = name!;
 user: Optional<User> = None;
 city: Optional<Str> = user?.Address?.City;
 
-fn NormalizeOptionalName(value: Optional<Str>) => Str throws OptionalUnboxingException {
-    return value!;
+fn NormalizeOptionalName(value: Optional<Str>) => Result.Result<Str, Result.Error> {
+    if (value == None) {
+        return Result.Error(Result.Error {
+            message: "name is missing",
+        });
+    }
+
+    return Result.Ok(value!);
 }

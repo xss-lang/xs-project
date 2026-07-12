@@ -6,7 +6,7 @@
 
 module Programs.PackageResolver;
 
-imports Collections, Stdio, Process;
+imports Collections, Stdio, Process, Result;
 
 enum data ResolveError {
     UnknownPackage: Str,
@@ -41,14 +41,14 @@ class PackageGraph {
         this.states[package.name] = VisitState.White;
     }
 
-    fn Resolve(root: Str) => STD.Collections.vector<Package> throws ResolveError {
-        this.Visit(root);
-        return this.ordered;
+    fn Resolve(root: Str) => Result.Result<STD.Collections.vector<Package>, ResolveError> {
+        this.Visit(root)@;
+        return Result.Ok(this.ordered);
     }
 
-    fn Visit(name: Str) throws ResolveError {
+    fn Visit(name: Str) => Result.Result<Void, ResolveError> {
         if (!this.packages.contains(name)) {
-            throw ResolveError.UnknownPackage(name);
+            return Result.Error(ResolveError.UnknownPackage(name));
         }
 
         state: VisitState = this.states[name];
@@ -57,7 +57,7 @@ class PackageGraph {
                 return;
             },
             VisitState.Gray -> {
-                throw ResolveError.Cycle(name);
+                return Result.Error(ResolveError.Cycle(name));
             },
             VisitState.White -> {
             },
@@ -67,11 +67,12 @@ class PackageGraph {
         package: Package = this.packages[name];
 
         for (dependency: Str in package.dependencies) {
-            this.Visit(dependency);
+            this.Visit(dependency)@;
         }
 
         this.states[name] = VisitState.Black;
         this.ordered.push(package);
+        return Result.Ok();
     }
 }
 
@@ -83,7 +84,7 @@ fn PackageOf(name: Str, version: Str, dependencies: STD.Collections.vector<Str>)
     };
 }
 
-fn Main() => Int throws ResolveError, IOException {
+fn Main() => Result.Result<Int, Result.Error> {
     graph: PackageGraph = new();
 
     graph.Add(PackageOf("app", "1.0.0", STD.Collections.vector<Str>.of("net", "json")));
@@ -91,9 +92,9 @@ fn Main() => Int throws ResolveError, IOException {
     graph.Add(PackageOf("json", "3.0.0", STD.Collections.vector<Str>.of("runtime")));
     graph.Add(PackageOf("runtime", "1.4.0", STD.Collections.vector<Str>.new()));
 
-    for (package: Package in graph.Resolve("app")) {
+    for (package: Package in graph.Resolve("app")@) {
         println!("{}@{}", package.name, package.version);
     }
 
-    return 0;
+    return Result.Ok(0);
 }

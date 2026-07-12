@@ -16,14 +16,14 @@
 // - Built-in async thread pool
 // - Thread channels
 //
-// Synchronization misuse may produce SyncException.
+// Synchronization misuse may produce SyncException error payloads.
 //
-// SyncException may be caught normally.
+// SyncException is carried through Result.Error(SyncException).
 //
-// Writing `throws SyncException` explicitly is not required.
+// Writing legacy `throws SyncException` is deprecated.
 //
 // Statically provable synchronization violations are compile-time errors.
-// Violations that can only be detected at runtime throw SyncException.
+// Violations that can only be detected at runtime return Result.Error(SyncException).
 //
 
 
@@ -31,7 +31,7 @@
 // Mutex
 // ============================================================
 
-imports Mutex;
+imports Mutex, Result;
 
 
 // mutex creation
@@ -118,7 +118,7 @@ fn InvalidRecursiveMutexLock() {
 // If a thread terminates with an error while holding a mutex,
 // the mutex becomes poisoned.
 //
-// A later lock() operation throws SyncException.
+// A later lock() operation returns Result.Error(SyncException).
 
 
 // poisoned mutex recovery
@@ -126,11 +126,12 @@ fn InvalidRecursiveMutexLock() {
 fn RecoverPoisonedMutex() {
     counter: Mutex<Long> = Mutex.new(0);
 
-    try {
-        value: Mutex<Long> = counter.lock();
-    }
-    catch (error: SyncException) {
-        counter.unlock();
+    result: Result.Result<Mutex<Long>, SyncException> = counter.lock();
+    match (result) {
+        Result.Ok(value) -> {},
+        Result.Error(error) -> {
+            counter.unlock();
+        },
     }
 }
 
@@ -141,9 +142,9 @@ fn RecoverPoisonedMutex() {
 // - Manual unlocking during normal use is discouraged.
 // - Automatic scope-based unlocking should be preferred.
 // - Calling unlock() from a thread that does not own the
-//   lock throws SyncException.
-// - Calling unlock() when the lock is already open throws
-//   SyncException.
+//   lock returns Result.Error(SyncException).
+// - Calling unlock() when the lock is already open returns
+//   Result.Error(SyncException).
 
 
 // fairness
@@ -315,7 +316,7 @@ fn InvalidWriterReentry() {
 //
 // RwLock<T> is not reentrant.
 //
-// Dynamically detected reentry violations throw SyncException.
+// Dynamically detected reentry violations return Result.Error(SyncException).
 
 
 // rwlock poisoning
@@ -323,7 +324,7 @@ fn InvalidWriterReentry() {
 // If a thread terminates with an error while holding a writer
 // lock, the RwLock becomes poisoned.
 //
-// Later read() or write() calls throw SyncException.
+// Later read() or write() calls return Result.Error(SyncException).
 
 
 // poisoned rwlock recovery
@@ -331,11 +332,12 @@ fn InvalidWriterReentry() {
 fn RecoverPoisonedRwLock() {
     value: RwLock<Int> = RwLock.new(42);
 
-    try {
-        writer: RwLock<Int> = value.write();
-    }
-    catch (error: SyncException) {
-        value.rwunlock();
+    result: Result.Result<RwLock<Int>, SyncException> = value.write();
+    match (result) {
+        Result.Ok(writer) -> {},
+        Result.Error(error) -> {
+            value.rwunlock();
+        },
     }
 }
 
@@ -345,9 +347,9 @@ fn RecoverPoisonedRwLock() {
 // - May manually unlock a normal RwLock.
 // - Manual use during normal operation is discouraged.
 // - Calling rwunlock() from a thread that does not own the
-//   relevant lock throws SyncException.
-// - Calling rwunlock() when no relevant lock is held throws
-//   SyncException.
+//   relevant lock returns Result.Error(SyncException).
+// - Calling rwunlock() when no relevant lock is held returns
+//   Result.Error(SyncException).
 
 
 // rwlock fairness
@@ -958,22 +960,19 @@ async fn MoveTask() => Task<()> {
 // A Task<T> is not shared concurrently between threads.
 
 
-// async exception handling
+// async Result handling
 
-async fn AsyncExceptionHandling() => Task<()> {
-    try {
-        value: Int = await FailingTask();
-    }
-    catch (error: IOException) {
-    }
+async fn AsyncResultHandling() => Task<Result.Result<Void, IOException>> {
+    value: Int = await FailingTask()@;
+    return Result.Ok();
 }
 
-// Exceptions raised by an awaited task are transferred to the
-// await expression.
+// Result.Error raised by an awaited task is transferred through the await
+// expression.
 //
-// A possible exception must be caught at the await point.
+// A possible error must be handled at the await point or propagated with @.
 //
-// Leaving a possible async exception unhandled is a
+// Leaving a possible async error unhandled is a
 // compile-time error.
 
 
@@ -1054,7 +1053,7 @@ fn ChannelReceive() {
 //
 // - Blocks until a value becomes available.
 // - Returns T.
-// - Throws SyncException if the channel is closed.
+// - Returns Result.Error(SyncException) if the channel is closed.
 
 
 // receiver movement
@@ -1094,10 +1093,9 @@ fn InvalidSenderClone() {
 fn CatchSyncException() {
     mutex: Mutex<Int> = Mutex.new(42);
 
-    try {
-        value: Mutex<Int> = mutex.lock();
-    }
-    catch (error: SyncException) {
+    result: Result.Result<Mutex<Int>, SyncException> = mutex.lock();
+    if (result.isError()) {
+        println!("sync failure");
     }
 }
 

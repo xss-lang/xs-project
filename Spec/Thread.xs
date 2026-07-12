@@ -15,13 +15,13 @@
 // - Cooperative yielding
 // - Single-sender, single-receiver channels
 //
-// Thread synchronization failures use SyncException.
+// Thread synchronization failures use SyncException through Result.Error.
 //
 // Thread values and channel endpoints follow the language's ownership,
 // move and Send rules.
 //
 
-imports Thread;
+imports Thread, Result;
 
 
 // ============================================================
@@ -161,11 +161,11 @@ fn JoinThread() {
 // join():
 //
 // - Blocks until the thread finishes.
-// - Returns the thread result T.
+// - Returns Result.Result<T, ThreadError>.
 // - Consumes the Thread.handle<T>.
 // - May only be called once.
-// - Re-throws an uncaught exception from the joined thread.
-// - Throws SyncException for invalid runtime join operations.
+// - Carries thread failure through Result.Error.
+// - Returns Result.Error(SyncException) for invalid runtime join operations.
 
 
 // invalid second join
@@ -186,42 +186,41 @@ fn InvalidSecondJoin() {
 
 // self join
 
-// A thread attempting to join itself throws SyncException.
+// A thread attempting to join itself returns Result.Error(SyncException).
 
 
 // ============================================================
-// Thread exceptions
+// Thread Result failures
 // ============================================================
 
-fn JoinedThreadException() {
-    thread: Thread.handle<Int> =
-        Thread.spawn(move fn() => Int {
-            throw IOException();
+fn JoinedThreadFailure() {
+    thread: Thread.handle<Result.Result<Int, IOException>> =
+        Thread.spawn(move fn() => Result.Result<Int, IOException> {
+            return Result.Error(IOException());
         });
 
-    try {
-        value: Int = thread.join();
-    }
-    catch (error: IOException) {
+    result: Result.Result<Int, IOException> = thread.join()@;
+    if (result.isError()) {
+        eprintln!("thread failed");
     }
 }
 
-// If a joined thread terminates with an uncaught exception:
+// If a joined thread returns Result.Error:
 //
-// - The exception is stored by the thread runtime.
-// - join() re-throws the same exception to the joining thread.
-// - The exception may be caught normally.
+// - The error is stored by the thread runtime.
+// - join() transfers that error to the joining thread.
+// - The error may be matched or propagated with @.
 
 
-// detached thread exception
+// detached thread failure
 
-fn DetachedThreadException() {
-    Thread.spawn(move fn() {
-        throw IOException();
+fn DetachedThreadFailure() {
+    Thread.spawn(move fn() => Result.Result<Void, IOException> {
+        return Result.Error(IOException());
     });
 }
 
-// If a detached thread terminates with an uncaught exception:
+// If a detached thread returns Result.Error:
 //
 // - Only that thread is terminated.
 // - The runtime emits a diagnostic.

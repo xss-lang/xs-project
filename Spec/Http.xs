@@ -17,19 +17,19 @@
 // - Str response body handlers
 // - Synchronous send(...)
 // - Asynchronous sendAsync(...)
-// - NetworkException
+// - NetworkException error payloads through Result
 //
 // No additional HTTP API is defined in this file.
 //
 
-imports Http, Stdio;
+imports Http, Stdio, Result;
 
 
 // ============================================================
 // Synchronous request
 // ============================================================
 
-fn Main() throws NetworkException {
+fn Main() => Result.Result<Void, NetworkException> {
     client: Http.client = new();
 
     request: Http.request = new()
@@ -50,9 +50,10 @@ fn Main() throws NetworkException {
         client.send(
             request,
             HttpResponse.BodyHandlers.ofstr()
-        );
+        )@;
 
     print!("{}", response.body());
+    return Result.Ok();
 }
 
 
@@ -108,7 +109,7 @@ fn StrRequestBody() {
 // Synchronous send
 // ============================================================
 
-fn SendRequest() throws NetworkException {
+fn SendRequest() => Result.Result<Void, NetworkException> {
     client: Http.client = new();
 
     request: Http.request = new()
@@ -119,9 +120,10 @@ fn SendRequest() throws NetworkException {
         client.send(
             request,
             HttpResponse.BodyHandlers.ofstr()
-        );
+        )@;
 
     body: Str = response.body();
+    return Result.Ok();
 }
 
 
@@ -130,7 +132,7 @@ fn SendRequest() throws NetworkException {
 // - Sends the request synchronously.
 // - Blocks until a response is available.
 // - Returns Http.response<Str> when used with ofstr().
-// - May throw NetworkException.
+// - Returns Result.Error(NetworkException) on network failure.
 
 
 // ============================================================
@@ -159,7 +161,7 @@ async fn SendRequestAsync() => Task<()> {
 // - Sends the request asynchronously.
 // - Returns Task<Http.response<Str>> when used with ofstr().
 // - Must be awaited according to Task<T> rules.
-// - A network failure is handled through NetworkException.
+// - A network failure is represented as Result.Error(NetworkException).
 
 
 // ============================================================
@@ -198,35 +200,41 @@ fn StrBodyHandler() {
 
 
 // ============================================================
-// Exceptions
+// Result error handling
 // ============================================================
 
-fn CatchNetworkException() {
-    try {
-        client: Http.client = new();
+fn HandleNetworkError() => Result.Result<Void, NetworkException> {
+    client: Http.client = new();
 
-        request: Http.request = new()
-            .uri(URI.create("https://example.com"))
-            .build();
+    request: Http.request = new()
+        .uri(URI.create("https://example.com"))
+        .build();
 
-        response: Http.response<Str> =
-            client.send(
-                request,
-                HttpResponse.BodyHandlers.ofstr()
-            );
+    result: Result.Result<Http.response<Str>, NetworkException> =
+        client.send(
+            request,
+            HttpResponse.BodyHandlers.ofstr()
+        );
+
+    match (result) {
+        Result.Ok(response) -> {
+            println!("{}", response.body());
+        },
+        Result.Error(error) -> {
+            eprintln!("Network request failed");
+            return Result.Error(error);
+        },
     }
-    catch (error: NetworkException) {
-        eprintln!("Network request failed");
-    }
+
+    return Result.Ok();
 }
 
 
 // NetworkException:
 //
 // - Represents HTTP or network request failure.
-// - May be caught with catch.
-// - Synchronous HTTP functions may declare
-//   `throws NetworkException`.
+// - Is carried through Result.Error(NetworkException).
+// - New code should not use legacy `throws` or `catch`.
 
 
 // ============================================================

@@ -6,7 +6,7 @@
 
 module Programs.PluginPipeline;
 
-imports Collections, Stdio, Process;
+imports Collections, Stdio, Process, Result;
 
 enum data PipelineError {
     Io: IOException,
@@ -15,7 +15,7 @@ enum data PipelineError {
 
 interface TextPlugin {
     fn Name() => Str;
-    fn Run(input: Str) => Str throws PipelineError;
+    fn Run(input: Str) => Result.Result<Str, PipelineError>;
 }
 
 class TrimPlugin {
@@ -25,8 +25,8 @@ class TrimPlugin {
         return "trim";
     }
 
-    fn Run(input: Str) => Str {
-        return input.trim();
+    fn Run(input: Str) => Result.Result<Str, PipelineError> {
+        return Result.Ok(input.trim());
     }
 }
 
@@ -37,8 +37,8 @@ class UppercasePlugin {
         return "upper";
     }
 
-    fn Run(input: Str) => Str {
-        return input.uppercase();
+    fn Run(input: Str) => Result.Result<Str, PipelineError> {
+        return Result.Ok(input.uppercase());
     }
 }
 
@@ -57,8 +57,8 @@ class ReplacePlugin {
         return "replace";
     }
 
-    fn Run(input: Str) => Str {
-        return input.replace(this.fromText, this.toText);
+    fn Run(input: Str) => Result.Result<Str, PipelineError> {
+        return Result.Ok(input.replace(this.fromText, this.toText));
     }
 }
 
@@ -73,18 +73,18 @@ class Pipeline {
         this.stages.push(stage);
     }
 
-    fn Run(input: Str) => Str throws PipelineError {
+    fn Run(input: Str) => Result.Result<Str, PipelineError> {
         output: Str = input;
 
         for (stage: TextPlugin in this.stages) {
-            output = stage.Run(output);
+            output = stage.Run(output)@;
         }
 
-        return output;
+        return Result.Ok(output);
     }
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Int throws PipelineError, IOException {
+fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
     input: Str = if (args.length() > 1) {
         args[1];
     }
@@ -97,6 +97,6 @@ fn Main(args: STD.Collections.vector<Str>) => Int throws PipelineError, IOExcept
     pipeline.Add(ReplacePlugin.new("x#", "X#"));
     pipeline.Add(UppercasePlugin.new());
 
-    println!("{}", pipeline.Run(input));
-    return 0;
+    println!("{}", pipeline.Run(input)@);
+    return Result.Ok(0);
 }

@@ -6,7 +6,7 @@
 
 module Programs.SensorStream;
 
-imports Collections, Stdio, Thread, Sync;
+imports Collections, Stdio, Thread, Sync, Result;
 
 enum data SensorError {
     Disconnected: Str,
@@ -34,14 +34,14 @@ class Sensor {
         this.unit = unit;
     }
 
-    async fn Read() => Task<Optional<Reading>> throws SensorError {
+    async fn Read() => Task<Result.Result<Optional<Reading>, SensorError>> {
         sample: Optional<Float> = await Hardware.readFloat(this.id);
 
-        return sample?.Map(fn(value: Float) => Reading {
+        return Result.Ok(sample?.Map(fn(value: Float) => Reading {
             sensorId: this.id,
             value: value,
             unit: this.unit,
-        });
+        }));
     }
 }
 
@@ -75,7 +75,7 @@ class Aggregator {
     }
 }
 
-async fn Main() => Task<Int> throws SensorError, IOException {
+async fn Main() => Task<Result.Result<Int, Result.Error>> {
     sensors: STD.Collections.vector<Sensor> = STD.Collections.vector<Sensor>.of(
         Sensor.new("temperature", "C"),
         Sensor.new("humidity", "%"),
@@ -86,7 +86,7 @@ async fn Main() => Task<Int> throws SensorError, IOException {
 
     while (!cancellation.isCancelled()) {
         for (sensor: Sensor in sensors) {
-            reading: Optional<Reading> = await sensor.Read();
+            reading: Optional<Reading> = await sensor.Read()@;
             if (reading != None) {
                 aggregator.Add(reading!);
             }
@@ -97,5 +97,5 @@ async fn Main() => Task<Int> throws SensorError, IOException {
         println!("{} average={}", average.sensorId, average.value);
     }
 
-    return 0;
+    return Result.Ok(0);
 }

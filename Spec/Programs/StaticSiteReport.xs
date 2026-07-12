@@ -6,7 +6,7 @@
 
 module Programs.StaticSiteReport;
 
-imports Collections, FS, Optional, Stdio, Process;
+imports Collections, FS, Optional, Stdio, Process, Result;
 
 enum data SiteError {
     Io: IOException,
@@ -20,14 +20,14 @@ data PageInfo {
 }
 
 class Markdown {
-    static fn Title(path: Str, text: Str) => Str throws SiteError {
+    static fn Title(path: Str, text: Str) => Result.Result<Str, SiteError> {
         for (line: Str in text.lines()) {
             if (line.startsWith("# ")) {
-                return line.trimStart("# ").trim();
+                return Result.Ok(line.trimStart("# ").trim());
             }
         }
 
-        throw SiteError.MissingTitle(path);
+        return Result.Error(SiteError.MissingTitle(path));
     }
 
     static fn CountWords(text: Str) => Int {
@@ -42,25 +42,27 @@ class SiteReport {
         this.pages = STD.Collections.vector<PageInfo>.new();
     }
 
-    fn AddMarkdown(path: Str) throws SiteError, IOException {
+    fn AddMarkdown(path: Str) => Result.Result<Void, Result.Error> {
         text: Str = STD.FS.readToStr(path);
         this.pages.push(PageInfo {
             path: path,
-            title: Markdown.Title(path, text),
+            title: Markdown.Title(path, text)@,
             wordCount: Markdown.CountWords(text),
         });
+        return Result.Ok();
     }
 
-    fn Print() throws IOException {
+    fn Print() => Result.Result<Void, IOException> {
         println!("pages: {}", this.pages.length());
 
         for (page: PageInfo in this.pages) {
             println!("{:<32} {:>6} {}", page.title, page.wordCount, page.path);
         }
+        return Result.Ok();
     }
 }
 
-fn Main(args: STD.Process.Args) => Int throws SiteError, IOException {
+fn Main(args: STD.Process.Args) => Result.Result<Int, Result.Error> {
     root: Str = if (args.length() == 2) {
         args[1];
     }
@@ -71,10 +73,10 @@ fn Main(args: STD.Process.Args) => Int throws SiteError, IOException {
     report: SiteReport = new();
     for (path: Str in STD.FS.walk(root)) {
         if (path.endsWith(".md")) {
-            report.AddMarkdown(path);
+            report.AddMarkdown(path)@;
         }
     }
 
-    report.Print();
-    return 0;
+    report.Print()@;
+    return Result.Ok(0);
 }

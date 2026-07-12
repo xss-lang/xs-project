@@ -6,7 +6,7 @@
 
 module Programs.BankLedger;
 
-imports Collections, Stdio, Process;
+imports Collections, Stdio, Process, Result;
 
 enum data LedgerError {
     UnknownAccount: Str,
@@ -49,38 +49,40 @@ class Ledger {
         };
     }
 
-    fn Apply(transfer: Transfer) throws LedgerError {
+    fn Apply(transfer: Transfer) => Result.Result<Void, LedgerError> {
         if (transfer.amount.cents <= 0) {
-            throw LedgerError.InvalidAmount(transfer.amount.cents);
+            return Result.Error(LedgerError.InvalidAmount(transfer.amount.cents));
         }
 
-        fromAccount: &mut Account = this.AccountMut(transfer.sourceAccount);
-        toAccount: &mut Account = this.AccountMut(transfer.targetAccount);
+        fromAccount: &mut Account = this.AccountMut(transfer.sourceAccount)@;
+        toAccount: &mut Account = this.AccountMut(transfer.targetAccount)@;
 
         if (fromAccount.balance.cents < transfer.amount.cents) {
-            throw LedgerError.InsufficientFunds(fromAccount.id);
+            return Result.Error(LedgerError.InsufficientFunds(fromAccount.id));
         }
 
         fromAccount.balance.cents -= transfer.amount.cents;
         toAccount.balance.cents += transfer.amount.cents;
         this.audit.push(transfer);
+        return Result.Ok();
     }
 
-    fn AccountMut(id: Str) => &mut Account throws LedgerError {
+    fn AccountMut(id: Str) => Result.Result<&mut Account, LedgerError> {
         if (!this.accounts.contains(id)) {
-            throw LedgerError.UnknownAccount(id);
+            return Result.Error(LedgerError.UnknownAccount(id));
         }
-        return &mut this.accounts[id];
+        return Result.Ok(&mut this.accounts[id]);
     }
 
-    fn Print() throws IOException {
+    fn Print() => Result.Result<Void, IOException> {
         for ((id, account): (Str, Account) in this.accounts) {
             println!("{} {} {}", id, account.owner, account.balance.cents);
         }
+        return Result.Ok();
     }
 }
 
-fn Main() => Int throws LedgerError, IOException {
+fn Main() => Result.Result<Int, Result.Error> {
     ledger: Ledger = new();
 
     ledger.Open("checking", "Ada", Money {
@@ -100,8 +102,8 @@ fn Main() => Int throws LedgerError, IOException {
             currency: "USD",
         },
         memo: STD.Optional.Some("monthly savings"),
-    });
+    })@;
 
-    ledger.Print();
-    return 0;
+    ledger.Print()@;
+    return Result.Ok(0);
 }

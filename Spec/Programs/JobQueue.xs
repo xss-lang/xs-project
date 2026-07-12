@@ -66,12 +66,12 @@ class Worker {
     }
 }
 
-fn Main() => Int throws IOException {
+fn Main() => Result.Result<Int, Result.Error> {
     queue: Queue = new();
     queue.Push(Job { id: 1, command: "compile", retries: 0 });
     queue.Push(Job { id: 2, command: "test", retries: 0 });
 
-    completed: Int = await Worker.Run(&mut queue).expect("worker failed");
+    completed: Int = await Worker.Run(&mut queue)@;
     println!("completed {} jobs", completed);
-    return 0;
+    return Result.Ok(0);
 }

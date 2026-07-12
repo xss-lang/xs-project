@@ -6,7 +6,7 @@
 
 module Programs.HttpHealthMonitor;
 
-imports Http, Stdio, Collections, Thread, Sync;
+imports Http, Stdio, Collections, Thread, Sync, Result;
 
 enum data HealthError {
     Network: NetworkException,
@@ -26,13 +26,13 @@ data HealthResult {
 }
 
 interface HealthReporter {
-    fn Report(result: HealthResult) throws IOException;
+    fn Report(result: HealthResult) => Result.Result<Void, IOException>;
 }
 
 class ConsoleReporter {
     implements HealthReporter;
 
-    fn Report(result: HealthResult) throws IOException {
+    fn Report(result: HealthResult) => Result.Result<Void, IOException> {
         state: Str = if (result.ok) {
             "OK";
         }
@@ -46,6 +46,7 @@ class ConsoleReporter {
             result.statusCode,
             result.bodyPreview
         );
+        return Result.Ok();
     }
 }
 
@@ -56,7 +57,7 @@ class HealthClient {
         this.client = new();
     }
 
-    async fn Check(endpoint: Endpoint) => Task<HealthResult> throws HealthError {
+    async fn Check(endpoint: Endpoint) => Task<Result.Result<HealthResult, HealthError>> {
         request: Http.request = new()
             .uri(URI.create(endpoint.url))
             .header("Accept", "text/plain")
@@ -76,21 +77,21 @@ class HealthClient {
             body;
         };
 
-        return HealthResult {
+        return Result.Ok(HealthResult {
             endpoint: endpoint,
             ok: response.statusCode() >= 200 && response.statusCode() < 300,
             statusCode: response.statusCode(),
             bodyPreview: preview,
-        };
+        });
     }
 }
 
 async fn CheckAll(
     endpoints: STD.Collections.vector<Endpoint>,
     reporter: HealthReporter
-) => Task<Int> throws HealthError, IOException {
+) => Task<Result.Result<Int, Result.Error>> {
     client: HealthClient = new();
-    tasks: STD.Collections.vector<Task<HealthResult>> = STD.Collections.vector<Task<HealthResult>>.new();
+    tasks: STD.Collections.vector<Task<Result.Result<HealthResult, HealthError>>> = STD.Collections.vector<Task<Result.Result<HealthResult, HealthError>>>.new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));
@@ -98,15 +99,15 @@ async fn CheckAll(
 
     failures: Int = 0;
     for (task: Task<HealthResult> in tasks) {
-        result: HealthResult = await task;
-        reporter.Report(result);
+        result: HealthResult = await task@;
+        reporter.Report(result)@;
 
         if (!result.ok) {
             failures += 1;
         }
     }
 
-    return failures;
+    return Result.Ok(failures);
 }
 
 fn DefaultEndpoints() => STD.Collections.vector<Endpoint> {
@@ -133,17 +134,19 @@ fn DefaultEndpoints() => STD.Collections.vector<Endpoint> {
 async fn Main() => Task<Int> {
     reporter: ConsoleReporter = new();
 
-    try {
-        failures: Int = await CheckAll(DefaultEndpoints(), reporter);
-        if (failures == 0) {
-            println!("All endpoints are healthy.");
-        } else {
-            eprintln!("{} endpoint(s) failed.", failures);
-        }
-        return failures;
-    }
-    catch (error: HealthError) {
-        eprintln!("Health check failed: {}", error.ToString());
-        return 1;
+    result: Result.Result<Int, Result.Error> = await CheckAll(DefaultEndpoints(), reporter);
+    match (result) {
+        Result.Ok(failures) -> {
+            if (failures == 0) {
+                println!("All endpoints are healthy.");
+            } else {
+                eprintln!("{} endpoint(s) failed.", failures);
+            }
+            return failures;
+        },
+        Result.Error(error) -> {
+            eprintln!("Health check failed: {}", error.ToString());
+            return 1;
+        },
     }
 }

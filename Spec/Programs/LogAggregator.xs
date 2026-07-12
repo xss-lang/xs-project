@@ -6,7 +6,7 @@
 
 module Programs.LogAggregator;
 
-imports Collections, FS, Optional, Stdio, Process;
+imports Collections, FS, Optional, Stdio, Process, Result;
 
 enum data LogError {
     Io: IOException,
@@ -19,16 +19,16 @@ data LogEntry {
 }
 
 class LogParser {
-    static fn Parse(line: Str) => LogEntry throws LogError {
+    static fn Parse(line: Str) => Result.Result<LogEntry, LogError> {
         parts: STD.Collections.vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
-            throw LogError.InvalidLine(line);
+            return Result.Error(LogError.InvalidLine(line));
         }
 
-        return LogEntry {
+        return Result.Ok(LogEntry {
             level: parts[0].trim(),
             message: parts[1].trim(),
-        };
+        });
     }
 }
 
@@ -50,7 +50,7 @@ class Report {
         }
     }
 
-    fn Print() throws IOException {
+    fn Print() => Result.Result<Void, IOException> {
         for ((level, count): (Str, Int) in this.counts) {
             println!("{:<8} {}", level, count);
         }
@@ -58,10 +58,12 @@ class Report {
         if (this.newestError != None) {
             println!("newest error: {}", this.newestError!);
         }
+
+        return Result.Ok();
     }
 }
 
-fn Main(args: STD.Process.Args) => Int throws LogError, IOException {
+fn Main(args: STD.Process.Args) => Result.Result<Int, Result.Error> {
     if (args.length() != 2) {
         eprintln!("usage: log-aggregator <log-file>");
         return 2;
@@ -75,9 +77,9 @@ fn Main(args: STD.Process.Args) => Int throws LogError, IOException {
             continue;
         }
 
-        report.Add(LogParser.Parse(line));
+        report.Add(LogParser.Parse(line)@);
     }
 
-    report.Print();
-    return 0;
+    report.Print()@;
+    return Result.Ok(0);
 }

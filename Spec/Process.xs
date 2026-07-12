@@ -1,186 +1,119 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-// process and error handling system:
+// Process module and error handling:
 
 //
-// Process execution is provided by the Process module.
+// Process execution is provided by STD.Process.
 //
-// Process.execute() does not return a value.
+// New X# code uses Result.Result<T, E> for recoverable process and I/O
+// failures. The old exception syntax remains parseable for legacy code, but it
+// is deprecated and should not be used in new examples.
 //
-// Command execution failures throw exceptions.
-//
-// Raw shell execution is disabled by default.
-//
-// Shell execution must be explicitly enabled
-// using .shell(true).
-//
-// Error handling is based on:
-//
-// - try
-// - catch
-// - finally
-// - throw
-// - throws
-//
-// Functions may declare thrown exceptions.
-//
-// Multiple exception types may be declared.
-//
-// Exceptions are normal classes.
-//
-// Built-in exceptions:
-//
-// - IOException
-// - NetworkException
-// - OptionalException
-// - OptionalUnboxingException
-// - ArgumentException
-// - OutOfRangeException
-//
-// Users may define custom exception types.
-//
-// During exception unwinding:
-//
-// - RAII rules apply
-// - Destructors run automatically
-// - Destructors execute in LIFO order
+// Raw shell execution is disabled by default. Shell execution must be
+// explicitly enabled with .shell(true).
 //
 
-imports Process;
+imports Process, Result, Stdio;
 
 
 // process execution
 
-Process.execute(
-    "git"
-    ["pull"]
-);
+fn PullRepository() => Result.Result<Void, Result.Error> {
+    STD.Process.execute("git", ["pull"])@;
+    return Result.Ok();
+}
 
 
 // process execution with arguments
 
-Process.execute(
-    "pacman"
-    ["-S", "foo"]
-);
+fn InstallPackage(name: Str) => Result.Result<Void, Result.Error> {
+    STD.Process.execute("pacman", ["-S", name])@;
+    return Result.Ok();
+}
 
 
 // shell execution
 
-Process.execute(
-    "pacman -Syu"
-).shell(true);
+fn UpgradeSystem() => Result.Result<Void, Result.Error> {
+    STD.Process.execute("pacman -Syu")
+        .shell(true)@;
+
+    return Result.Ok();
+}
 
 
 // INVALID
 
-Process.execute(
-    "pacman -Syu"
-);
+fn InvalidShellExecution() => Result.Result<Void, Result.Error> {
+    STD.Process.execute("pacman -Syu")@;
+    return Result.Ok();
+}
 
 // shell execution requires .shell(true)
 
 
-// exceptions
+// explicit Result match
 
-try {
-    Process.execute(
-        "git"
-        ["pull"]
-    );
-}
-catch (e: IOException) {
-}
-finally {
-}
-
-
-// multiple catch blocks
-
-try {
-    Process.execute(
-        "git"
-        ["pull"]
-    );
-}
-catch (e: IOException) {
-}
-catch (e: NetworkException) {
-}
-finally {
-}
-
-
-// throw
-
-throw IOException("File not found");
-
-
-// throws
-
-fn OpenFile(path: Str)
-throws IOException {
-}
-
-
-// multiple throws
-
-fn Connect()
-throws IOException, NetworkException {
-}
-
-
-// custom exception
-
-class LoginException {
-    message: Str;
-}
-
-
-// throwing custom exceptions
-
-throw LoginException {
-    message: "Invalid username or password",
-};
-
-
-// catching custom exceptions
-
-try {
-    Login();
-}
-catch (e: LoginException) {
-}
-
-
-// exception propagation
-
-fn Login()
-throws LoginException {
-
-    throw LoginException {
-        message: "Invalid username or password",
+fn PrintGitStatus() => Result.Result<Void, Result.Error> {
+    status = match (STD.Process.execute("git", ["status"])) {
+        Result.Ok(value) -> value,
+        Result.Error(error) -> return Result.Error(error),
     };
+
+    println!("{:?}", status);
+    return Result.Ok();
 }
 
 
-// built-in exceptions
+// propagation with @
 
-throw IOException("Disk error");
-
-throw NetworkException("Connection failed");
-
-throw OptionalException("Unexpected None");
-
-throw OptionalUnboxingException("Cannot unbox None");
-
-throw ArgumentException("Invalid argument");
-
-throw OutOfRangeException("Index out of range");
+fn RunFormatter() => Result.Result<Void, Result.Error> {
+    STD.Process.execute("xsfmt", ["--check"])@;
+    STD.Process.execute("xstidy", ["--check"])@;
+    return Result.Ok();
+}
 
 
-// RAII during exception unwinding
+// custom error model
+
+enum data LoginError {
+    InvalidUser: Str,
+    Locked: Str,
+}
+
+fn Login(user: Str) => Result.Result<Void, LoginError> {
+    if (user.length() == 0) {
+        return Result.Error(LoginError.InvalidUser(user));
+    }
+
+    if (user == "root") {
+        return Result.Error(LoginError.Locked(user));
+    }
+
+    return Result.Ok();
+}
+
+
+// built-in error-style values
+
+fn ReadRequiredLine() => Result.Result<Str, Result.Error> {
+    input: Optional<Str> = STD.Optional.Some("");
+
+    STD.Stdin()
+        .readLine(&mut input)@;
+
+    if (input == None) {
+        return Result.Error(Result.Error {
+            message: "no input",
+        });
+    }
+
+    return Result.Ok(input!);
+}
+
+
+// deterministic cleanup still applies
 
 class File {
     File.Drop() {
@@ -188,119 +121,27 @@ class File {
     }
 }
 
-fn Test()
-throws IOException {
-
+fn UseFile() => Result.Result<Void, Result.Error> {
     file: File = new();
-
-    throw IOException("Boom");
+    STD.Process.execute("git", ["rev-parse", "--is-inside-work-tree"])@;
+    return Result.Ok();
 }
 
-// File.Drop() runs automatically
+// File.Drop() runs before returning Result.Error from @ propagation.
 
 
-// LIFO destruction order
+// legacy exception syntax
 
-class Resource {
-    Resource.Drop() {
-    }
-}
-
-fn Test()
-throws IOException {
-
-    a: Resource = new();
-    b: Resource = new();
-    c: Resource = new();
-
-    throw IOException("Boom");
-}
-
-// destruction order:
+// Deprecated syntax remains parseable and produces compiler warnings:
 //
-// c.Drop()
-// b.Drop()
-// a.Drop()
-
-
-// VALID
-
-try {
-}
-catch (e: IOException) {
-}
-
-
-// VALID
-
-try {
-}
-catch (e: IOException) {
-}
-catch (e: NetworkException) {
-}
-finally {
-}
-
-
-// VALID
-
-fn OpenFile(path: Str)
-throws IOException {
-}
-
-
-// VALID
-
-fn Connect()
-throws IOException, NetworkException {
-}
-
-
-// VALID
-
-class LoginException {
-    message: Str;
-}
-
-
-// VALID
-
-throw LoginException {
-    message: "Login failed",
-};
-
-
-// INVALID
-
-Process.execute(
-    "git pull"
-);
-
-// shell execution requires .shell(true)
-
-
-// INVALID
-
-Process.execute(
-    "git pull"
-).shell(false);
-
-// shell execution requires .shell(true)
-
-
-// INVALID
-
-catch (e) {
-}
-
-// catch type is required
-
-
-// INVALID
-
-fn OpenFile(path: Str) {
-    throw IOException("File not found");
-}
-
-// IOException must be declared in throws
+// fn OpenFile(path: Str) throws IOException {
+//     throw IOException("File not found");
+// }
+//
+// try {
+//     OpenFile("missing.txt");
+// }
+// catch (error: IOException) {
+// }
+//
+// New code should use Result.Result<T, E> instead.

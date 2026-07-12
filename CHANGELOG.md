@@ -22,6 +22,8 @@ source-to-native executable pipeline.
 - The C23 HIR expression checker now accepts postfix `@` inside functions returning `Result.Result<T, E>` or
   `Result<T, E>` and rejects it outside Result-returning functions. Direct same-file function call operands are now also
   checked to return a Result type.
+- `Spec/` examples now use Result-style error handling for active examples. Legacy `throws`/`throw`/`try`/`catch` syntax is
+  kept only in deprecated legacy notes.
 
 ## 0.0.5 - 2026-07-12
 

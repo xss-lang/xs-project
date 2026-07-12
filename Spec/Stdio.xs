@@ -18,55 +18,55 @@
 // Formatted output uses placeholder-based formatting.
 //
 
-imports Stdio, FS, Collections;
+imports Stdio, FS, Collections, Result;
 
 
 // standard output macros
 
-fn PrintWithoutNewline() throws IOException {
+fn PrintWithoutNewline() => Result.Result<Void, IOException> {
     print!("Hello");
 }
 
-fn PrintWithNewline() throws IOException {
+fn PrintWithNewline() => Result.Result<Void, IOException> {
     println!("Hello");
 }
 
-fn PrintNewlineOnly() throws IOException {
+fn PrintNewlineOnly() => Result.Result<Void, IOException> {
     println!();
 }
 
 
 // standard error macros
 
-fn ErrorWithoutNewline() throws IOException {
+fn ErrorWithoutNewline() => Result.Result<Void, IOException> {
     eprint!("error");
 }
 
-fn ErrorWithNewline() throws IOException {
+fn ErrorWithNewline() => Result.Result<Void, IOException> {
     eprintln!("error");
 }
 
-fn ErrorNewlineOnly() throws IOException {
+fn ErrorNewlineOnly() => Result.Result<Void, IOException> {
     eprintln!();
 }
 
 // writer macros
 
-fn WriteToStream() throws IOException {
+fn WriteToStream() => Result.Result<Void, IOException> {
     write!(STD.Stdout, "Hello");
 }
 
-fn WriteLineToStream() throws IOException {
+fn WriteLineToStream() => Result.Result<Void, IOException> {
     writeln!(STD.Stdout, "{} is {}", "Alpha", 26);
 }
 
-fn WriteNewlineOnlyToStream() throws IOException {
+fn WriteNewlineOnlyToStream() => Result.Result<Void, IOException> {
     writeln!(STD.Stdout);
 }
 
 // formatting
 
-fn FormatValues() throws IOException {
+fn FormatValues() => Result.Result<Void, IOException> {
     user: Str = "Alpha";
     age: Int = 26;
 
@@ -115,11 +115,11 @@ fn BuildMessage() {
     hexAge: Str = format!("{:#x}", 26);
 }
 
-fn WriteReportLine(name: Str, score: Int) throws IOException {
+fn WriteReportLine(name: Str, score: Int) => Result.Result<Void, IOException> {
     writeln!(STD.Stdout, "{:<16} {:>4}", name, score);
 }
 
-fn WriteDebugReport<T>(value: T) throws IOException {
+fn WriteDebugReport<T>(value: T) => Result.Result<Void, IOException> {
     write!(STD.Stderr, "{:#?}", value);
     writeln!(STD.Stderr);
 }
@@ -127,7 +127,7 @@ fn WriteDebugReport<T>(value: T) throws IOException {
 
 // standard stream handles
 
-fn StandardHandles() throws IOException {
+fn StandardHandles() => Result.Result<Void, IOException> {
     STD.FS.write(STD.Stdout, "stdout text\n");
     STD.FS.write(STD.Stderr, "stderr text\n");
 
@@ -183,28 +183,28 @@ fn ReadManyNumbers() {
 
 // invalid examples
 
-fn InvalidNonStringTemplate() throws IOException {
+fn InvalidNonStringTemplate() => Result.Result<Void, IOException> {
     println!(10);
 }
 
 // INVALID: println! expects a Str format template as its first argument.
 
 
-fn InvalidMissingPlaceholder() throws IOException {
+fn InvalidMissingPlaceholder() => Result.Result<Void, IOException> {
     println!("value", 10);
 }
 
 // INVALID: one argument is supplied but the template has no placeholder.
 
 
-fn InvalidMissingArgument() throws IOException {
+fn InvalidMissingArgument() => Result.Result<Void, IOException> {
     println!("{}",);
 }
 
 // INVALID: the template has one placeholder but no value argument.
 
 
-fn InvalidEmptyPrint() throws IOException {
+fn InvalidEmptyPrint() => Result.Result<Void, IOException> {
     print!();
 }
 
