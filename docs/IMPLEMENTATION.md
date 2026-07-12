@@ -193,6 +193,8 @@ This layer lives under the HIR directory.
   declaration has its own explicit visibility.
 - HIR CFFI validation runs after import resolution. Version 0 currently requires C ABI extern blocks to be written as
   `#[repr(C)] extern "C" { ... }`; this keeps the ABI/layout intent explicit before backend CFFI lowering exists.
+- The same pass validates the first standard CFFI attribute shapes and scopes: block metadata such as `LinkLibrary` and
+  `Header`, function metadata such as `LinkName` and unwind/thread markers, and static metadata such as `ThreadLocal`.
 - `xs_hir_collect_symbols_expanded`, when given a declaration macro expansion set, collects synthetic declarations produced
   by `XS_SYNTAX_DECL_MACRO_CALL` reparse trees into the active HIR namespace of the macro call. Duplicate symbol checks use
   the same namespace rule as normal declarations.

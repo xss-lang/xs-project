@@ -125,8 +125,17 @@ static bool parse_and_validate_cffi(const char *text, XsSyntaxTree *tree, XsDiag
 static void test_cffi_validation_accepts_repr_c_extern_block(void)
 {
   const char *text = "module App;\n"
+                     "#[LinkLibrary(\"c\")]\n"
+                     "#[Header(\"stdio.h\")]\n"
                      "#[repr(C)]\n"
-                     "extern \"C\" { fn puts(text: CFFI.CStr) => Int; }\n";
+                     "extern \"C\" {\n"
+                     "  #[LinkName(\"puts\")]\n"
+                     "  #[NoUnwind]\n"
+                     "  fn puts(text: CFFI.CStr) => Int;\n"
+                     "  #[ThreadLocal]\n"
+                     "  #[LinkName(\"errno\")]\n"
+                     "  static errno: Int;\n"
+                     "}\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -164,6 +173,58 @@ static void test_cffi_validation_rejects_non_c_repr(void)
   const char *text = "module App;\n"
                      "#[repr(Rust)]\n"
                      "extern \"C\" { fn puts(text: CFFI.CStr) => Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_cffi_validation_rejects_invalid_link_name(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(C)]\n"
+                     "extern \"C\" { #[LinkName(puts)] fn puts(text: CFFI.CStr) => Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_cffi_validation_rejects_thread_local_function(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(C)]\n"
+                     "extern \"C\" { #[ThreadLocal] fn puts(text: CFFI.CStr) => Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_cffi_validation_rejects_function_attribute_on_static(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(C)]\n"
+                     "extern \"C\" { #[NoUnwind] static errno: Int; }\n";
+  XsSyntaxTree tree;
+  XsDiagnostics diagnostics;
+  CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_cffi_validation_rejects_block_attribute_on_function(void)
+{
+  const char *text = "module App;\n"
+                     "#[repr(C)]\n"
+                     "extern \"C\" { #[LinkLibrary(\"c\")] fn puts(text: CFFI.CStr) => Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -560,6 +621,10 @@ int main(void)
   test_cffi_validation_rejects_missing_repr_c();
   test_cffi_validation_rejects_unsupported_abi();
   test_cffi_validation_rejects_non_c_repr();
+  test_cffi_validation_rejects_invalid_link_name();
+  test_cffi_validation_rejects_thread_local_function();
+  test_cffi_validation_rejects_function_attribute_on_static();
+  test_cffi_validation_rejects_block_attribute_on_function();
   test_same_name_in_different_namespace();
   test_import_resolution();
   test_public_namespace_exports_default_symbols();

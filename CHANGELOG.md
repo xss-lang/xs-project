@@ -12,6 +12,9 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+- HIR CFFI validation now checks the first standard CFFI attribute shapes and scopes for extern blocks, extern functions,
+  and extern static declarations.
+
 ## 0.0.6 - 2026-07-13
 
 ### Added
