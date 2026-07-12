@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
+  signed ordering comparisons.
+
 ### Changed
 
 ### Known gaps

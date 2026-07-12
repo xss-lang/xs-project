@@ -285,10 +285,73 @@ XsMirStatus xs_mir_block_rem_i64(XsMirBlock *block, XsMirValueId left, XsMirValu
                         error);
 }
 
+XsMirStatus xs_mir_block_and_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_AND_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_or_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_OR_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_shl_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_SHL_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_shr_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                 XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_SHR_I64, (XsMirType){.kind = XS_LIL_TYPE_I64}, result,
+                        error);
+}
+
 XsMirStatus xs_mir_block_eq_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                 XsMirError *error)
 {
   return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_EQ_I64, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_ne_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_NE_I64, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_lt_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_LT_I64, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_le_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_LE_I64, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_gt_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_GT_I64, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
+                        error);
+}
+
+XsMirStatus xs_mir_block_ge_i64(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
+                                XsMirError *error)
+{
+  return add_i64_binary(block, left, right, XS_MIR_INSTRUCTION_GE_I64, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, result,
                         error);
 }
 

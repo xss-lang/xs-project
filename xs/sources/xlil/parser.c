@@ -313,8 +313,35 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
   case XS_LIL_INSTRUCTION_REM_I64:
     status = xs_lil_block_rem_i64(block, left, right, &result, error);
     break;
+  case XS_LIL_INSTRUCTION_AND_I64:
+    status = xs_lil_block_and_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_OR_I64:
+    status = xs_lil_block_or_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_SHL_I64:
+    status = xs_lil_block_shl_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_SHR_I64:
+    status = xs_lil_block_shr_i64(block, left, right, &result, error);
+    break;
   case XS_LIL_INSTRUCTION_EQ_I64:
     status = xs_lil_block_eq_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_NE_I64:
+    status = xs_lil_block_ne_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_LT_I64:
+    status = xs_lil_block_lt_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_LE_I64:
+    status = xs_lil_block_le_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_GT_I64:
+    status = xs_lil_block_gt_i64(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_GE_I64:
+    status = xs_lil_block_ge_i64(block, left, right, &result, error);
     break;
   case XS_LIL_INSTRUCTION_ADD_I32:
     status = xs_lil_block_add_i32(block, left, right, &result, error);
@@ -401,7 +428,16 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"mul.i64 ", XS_LIL_INSTRUCTION_MUL_I64, XS_LIL_TYPE_I64},
         {"div.i64 ", XS_LIL_INSTRUCTION_DIV_I64, XS_LIL_TYPE_I64},
         {"rem.i64 ", XS_LIL_INSTRUCTION_REM_I64, XS_LIL_TYPE_I64},
+        {"and.i64 ", XS_LIL_INSTRUCTION_AND_I64, XS_LIL_TYPE_I64},
+        {"or.i64 ", XS_LIL_INSTRUCTION_OR_I64, XS_LIL_TYPE_I64},
+        {"shl.i64 ", XS_LIL_INSTRUCTION_SHL_I64, XS_LIL_TYPE_I64},
+        {"shr.i64 ", XS_LIL_INSTRUCTION_SHR_I64, XS_LIL_TYPE_I64},
         {"eq.i64 ", XS_LIL_INSTRUCTION_EQ_I64, XS_LIL_TYPE_BOOL},
+        {"ne.i64 ", XS_LIL_INSTRUCTION_NE_I64, XS_LIL_TYPE_BOOL},
+        {"lt.i64 ", XS_LIL_INSTRUCTION_LT_I64, XS_LIL_TYPE_BOOL},
+        {"le.i64 ", XS_LIL_INSTRUCTION_LE_I64, XS_LIL_TYPE_BOOL},
+        {"gt.i64 ", XS_LIL_INSTRUCTION_GT_I64, XS_LIL_TYPE_BOOL},
+        {"ge.i64 ", XS_LIL_INSTRUCTION_GE_I64, XS_LIL_TYPE_BOOL},
         {"add.i32 ", XS_LIL_INSTRUCTION_ADD_I32, XS_LIL_TYPE_I32},
         {"sub.i32 ", XS_LIL_INSTRUCTION_SUB_I32, XS_LIL_TYPE_I32},
         {"mul.i32 ", XS_LIL_INSTRUCTION_MUL_I32, XS_LIL_TYPE_I32},

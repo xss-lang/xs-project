@@ -447,10 +447,12 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
   }
   if(kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_MUL_I64 ||
      kind == XS_LIL_INSTRUCTION_DIV_I64 || kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_EQ_I64 ||
-     kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
-     kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_DIV_I32 ||
-     kind == XS_LIL_INSTRUCTION_REM_I32 || kind == XS_LIL_INSTRUCTION_AND_I32 || kind == XS_LIL_INSTRUCTION_OR_I32 ||
-     kind == XS_LIL_INSTRUCTION_SHL_I32 || kind == XS_LIL_INSTRUCTION_SHR_I32 ||
+     kind == XS_LIL_INSTRUCTION_AND_I64 || kind == XS_LIL_INSTRUCTION_OR_I64 || kind == XS_LIL_INSTRUCTION_SHL_I64 ||
+     kind == XS_LIL_INSTRUCTION_SHR_I64 || kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_LT_I64 ||
+     kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 || kind == XS_LIL_INSTRUCTION_GE_I64 ||
+     kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 || kind == XS_LIL_INSTRUCTION_MUL_I32 ||
+     kind == XS_LIL_INSTRUCTION_DIV_I32 || kind == XS_LIL_INSTRUCTION_REM_I32 || kind == XS_LIL_INSTRUCTION_AND_I32 ||
+     kind == XS_LIL_INSTRUCTION_OR_I32 || kind == XS_LIL_INSTRUCTION_SHL_I32 || kind == XS_LIL_INSTRUCTION_SHR_I32 ||
      kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
      kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32)
   {
@@ -471,23 +473,23 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
       lowered = LLVMBuildSDiv(builder, values[left], values[right], "div");
     else if(kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_REM_I32)
       lowered = LLVMBuildSRem(builder, values[left], values[right], "rem");
-    else if(kind == XS_LIL_INSTRUCTION_AND_I32)
+    else if(kind == XS_LIL_INSTRUCTION_AND_I64 || kind == XS_LIL_INSTRUCTION_AND_I32)
       lowered = LLVMBuildAnd(builder, values[left], values[right], "and");
-    else if(kind == XS_LIL_INSTRUCTION_OR_I32)
+    else if(kind == XS_LIL_INSTRUCTION_OR_I64 || kind == XS_LIL_INSTRUCTION_OR_I32)
       lowered = LLVMBuildOr(builder, values[left], values[right], "or");
-    else if(kind == XS_LIL_INSTRUCTION_SHL_I32)
+    else if(kind == XS_LIL_INSTRUCTION_SHL_I64 || kind == XS_LIL_INSTRUCTION_SHL_I32)
       lowered = LLVMBuildShl(builder, values[left], values[right], "shl");
-    else if(kind == XS_LIL_INSTRUCTION_SHR_I32)
+    else if(kind == XS_LIL_INSTRUCTION_SHR_I64 || kind == XS_LIL_INSTRUCTION_SHR_I32)
       lowered = LLVMBuildAShr(builder, values[left], values[right], "shr");
     else if(kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntEQ, values[left], values[right], "eq");
-    else if(kind == XS_LIL_INSTRUCTION_NE_I32)
+    else if(kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_NE_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntNE, values[left], values[right], "ne");
-    else if(kind == XS_LIL_INSTRUCTION_LT_I32)
+    else if(kind == XS_LIL_INSTRUCTION_LT_I64 || kind == XS_LIL_INSTRUCTION_LT_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntSLT, values[left], values[right], "lt");
-    else if(kind == XS_LIL_INSTRUCTION_LE_I32)
+    else if(kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_LE_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntSLE, values[left], values[right], "le");
-    else if(kind == XS_LIL_INSTRUCTION_GT_I32)
+    else if(kind == XS_LIL_INSTRUCTION_GT_I64 || kind == XS_LIL_INSTRUCTION_GT_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntSGT, values[left], values[right], "gt");
     else
       lowered = LLVMBuildICmp(builder, LLVMIntSGE, values[left], values[right], "ge");

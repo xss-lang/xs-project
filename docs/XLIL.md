@@ -70,7 +70,9 @@ Format notes:
 - `%rN:bool = eq.i32 %rA, %rB` and `ne.i32` compare two `i32` values for equality or inequality.
 - `%rN:bool = lt.i32 %rA, %rB`, `le.i32`, `gt.i32`, and `ge.i32` perform signed `i32` comparisons.
 - `%rN:i64 = add.i64 %rA, %rB`, `sub.i64`, `mul.i64`, `div.i64`, and `rem.i64` perform signed 64-bit integer arithmetic.
-- `%rN:bool = eq.i64 %rA, %rB` compares two `i64` values for equality.
+- `%rN:i64 = and.i64 %rA, %rB`, `or.i64`, `shl.i64`, and arithmetic `shr.i64` perform bitwise 64-bit integer operations.
+- `%rN:bool = eq.i64 %rA, %rB` and `ne.i64` compare two `i64` values for equality or inequality.
+- `%rN:bool = lt.i64 %rA, %rB`, `le.i64`, `gt.i64`, and `ge.i64` perform signed `i64` comparisons.
 - `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.
 - `call <symbol>(%rA, %rB)` calls a void function and discards the result.
 - `br bbN` transfers control to another basic block.

@@ -454,10 +454,73 @@ XsLilStatus xs_lil_block_rem_i64(XsLilBlock *block, XsLilValueId left, XsLilValu
                             (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
 }
 
+XsLilStatus xs_lil_block_and_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_AND_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
+}
+
+XsLilStatus xs_lil_block_or_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_OR_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
+}
+
+XsLilStatus xs_lil_block_shl_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_SHL_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
+}
+
+XsLilStatus xs_lil_block_shr_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_SHR_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_I64}, result, error);
+}
+
 XsLilStatus xs_lil_block_eq_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error)
 {
   return add_binary_integer(block, XS_LIL_INSTRUCTION_EQ_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_ne_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_NE_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_lt_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_LT_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_le_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_LE_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_gt_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_GT_I64, left, right, XS_LIL_TYPE_I64,
+                            (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
+}
+
+XsLilStatus xs_lil_block_ge_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_GE_I64, left, right, XS_LIL_TYPE_I64,
                             (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
 }
 

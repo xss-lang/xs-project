@@ -179,8 +179,8 @@ static void test_borrow_checker_rejects_unknown_value_operand(void)
   XsMirModule *module = nullptr;
   CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
   XsMirFunction *function = nullptr;
-  CHECK(xs_mir_module_add_function_definition(module, "App.BadOperand", (XsMirType){.kind = XS_LIL_TYPE_I64}, nullptr, 0,
-                                              &function, &error) == XS_MIR_OK);
+  CHECK(xs_mir_module_add_function_definition(module, "App.BadOperand", (XsMirType){.kind = XS_LIL_TYPE_I64}, nullptr,
+                                              0, &function, &error) == XS_MIR_OK);
   XsMirBlock *entry = nullptr;
   CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
   XsMirValueId known = 0;
@@ -275,8 +275,8 @@ static void test_borrow_checker_rejects_non_bool_branch_condition(void)
   XsMirModule *module = nullptr;
   CHECK(xs_mir_module_create("project", &module, &error) == XS_MIR_OK);
   XsMirFunction *function = nullptr;
-  CHECK(xs_mir_module_add_function_definition(module, "App.BadBranch", (XsMirType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
-                                              &function, &error) == XS_MIR_OK);
+  CHECK(xs_mir_module_add_function_definition(module, "App.BadBranch", (XsMirType){.kind = XS_LIL_TYPE_VOID}, nullptr,
+                                              0, &function, &error) == XS_MIR_OK);
   XsMirBlock *entry = nullptr;
   XsMirBlock *then_block = nullptr;
   XsMirBlock *else_block = nullptr;
@@ -335,7 +335,16 @@ static void test_constant_optimizer_folds_i64_add(void)
   XsMirValueId product = 0;
   XsMirValueId quotient = 0;
   XsMirValueId remainder = 0;
+  XsMirValueId bit_and = 0;
+  XsMirValueId bit_or = 0;
+  XsMirValueId shifted_left = 0;
+  XsMirValueId shifted_right = 0;
   XsMirValueId equal = 0;
+  XsMirValueId not_equal = 0;
+  XsMirValueId less = 0;
+  XsMirValueId less_equal = 0;
+  XsMirValueId greater = 0;
+  XsMirValueId greater_equal = 0;
   CHECK(xs_mir_block_add_const_i64(entry, 2, &left, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_const_i64(entry, 3, &right, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_i64(entry, left, right, &sum, &error) == XS_MIR_OK);
@@ -343,7 +352,16 @@ static void test_constant_optimizer_folds_i64_add(void)
   CHECK(xs_mir_block_mul_i64(entry, difference, right, &product, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_div_i64(entry, product, right, &quotient, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_rem_i64(entry, quotient, right, &remainder, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_and_i64(entry, left, right, &bit_and, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_or_i64(entry, left, right, &bit_or, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shl_i64(entry, left, right, &shifted_left, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shr_i64(entry, shifted_left, right, &shifted_right, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_eq_i64(entry, remainder, left, &equal, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_ne_i64(entry, remainder, left, &not_equal, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_lt_i64(entry, left, right, &less, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_le_i64(entry, left, right, &less_equal, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_gt_i64(entry, left, right, &greater, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_ge_i64(entry, left, right, &greater_equal, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_ADD_I64);
   CHECK(xs_mir_block_set_return_value(entry, quotient, &error) == XS_MIR_OK);
   CHECK(xs_mir_optimize_module_constants(module, &error) == XS_MIR_OK);
@@ -352,7 +370,16 @@ static void test_constant_optimizer_folds_i64_add(void)
   CHECK(xs_mir_block_instruction_kind(entry, 4) == XS_MIR_INSTRUCTION_CONST_I64);
   CHECK(xs_mir_block_instruction_kind(entry, 5) == XS_MIR_INSTRUCTION_CONST_I64);
   CHECK(xs_mir_block_instruction_kind(entry, 6) == XS_MIR_INSTRUCTION_CONST_I64);
-  CHECK(xs_mir_block_instruction_kind(entry, 7) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 7) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 8) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 9) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 10) == XS_MIR_INSTRUCTION_CONST_I64);
+  CHECK(xs_mir_block_instruction_kind(entry, 11) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 12) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 13) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 14) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 15) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 16) == XS_MIR_INSTRUCTION_CONST_BOOL);
 
   FILE *stream = tmpfile();
   if(stream == nullptr)
@@ -363,11 +390,13 @@ static void test_constant_optimizer_folds_i64_add(void)
   }
   CHECK(xs_mir_module_write_text(module, stream, &error) == XS_MIR_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
-  char buffer[512] = {0};
+  char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "v2 = const.i64 5\n") != nullptr);
-  CHECK(strstr(buffer, "v7 = const.bool false\n") != nullptr);
+  CHECK(strstr(buffer, "v9 = const.i64 16\n") != nullptr);
+  CHECK(strstr(buffer, "v11 = const.bool false\n") != nullptr);
+  CHECK(strstr(buffer, "v12 = const.bool true\n") != nullptr);
   fclose(stream);
   xs_mir_module_destroy(module);
 }
@@ -566,8 +595,8 @@ static void test_xlil_body_lowering_for_i32_branch_return(void)
   XsMirModule *mir = nullptr;
   CHECK(xs_mir_module_create("project", &mir, &error) == XS_MIR_OK);
   XsMirFunction *function = nullptr;
-  CHECK(xs_mir_module_add_function_definition(mir, "main", (XsMirType){.kind = XS_LIL_TYPE_I32}, nullptr, 0,
-                                              &function, &error) == XS_MIR_OK);
+  CHECK(xs_mir_module_add_function_definition(mir, "main", (XsMirType){.kind = XS_LIL_TYPE_I32}, nullptr, 0, &function,
+                                              &error) == XS_MIR_OK);
   XsMirBlock *entry = nullptr;
   XsMirBlock *then_block = nullptr;
   XsMirBlock *else_block = nullptr;

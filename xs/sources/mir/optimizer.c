@@ -6,6 +6,7 @@
 #include "xs/mir/optimizer.h"
 #include "model_internal.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 
 static bool find_const_i64(const XsMirFunction *function, XsMirValueId value, int64_t *result)
@@ -38,7 +39,12 @@ static void fold_function_constants(XsMirFunction *function)
       XsMirInstruction *instruction = &block->instructions[instruction_index];
       if(instruction->kind != XS_MIR_INSTRUCTION_ADD_I64 && instruction->kind != XS_MIR_INSTRUCTION_SUB_I64 &&
          instruction->kind != XS_MIR_INSTRUCTION_MUL_I64 && instruction->kind != XS_MIR_INSTRUCTION_DIV_I64 &&
-         instruction->kind != XS_MIR_INSTRUCTION_REM_I64 && instruction->kind != XS_MIR_INSTRUCTION_EQ_I64)
+         instruction->kind != XS_MIR_INSTRUCTION_REM_I64 && instruction->kind != XS_MIR_INSTRUCTION_AND_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_OR_I64 && instruction->kind != XS_MIR_INSTRUCTION_SHL_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_SHR_I64 && instruction->kind != XS_MIR_INSTRUCTION_EQ_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_NE_I64 && instruction->kind != XS_MIR_INSTRUCTION_LT_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_LE_I64 && instruction->kind != XS_MIR_INSTRUCTION_GT_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_GE_I64)
         continue;
       int64_t left = 0;
       int64_t right = 0;
@@ -46,9 +52,18 @@ static void fold_function_constants(XsMirFunction *function)
          !find_const_i64(function, instruction->operand_right, &right))
         continue;
       XsMirInstructionKind kind = instruction->kind;
-      if((kind == XS_MIR_INSTRUCTION_DIV_I64 || kind == XS_MIR_INSTRUCTION_REM_I64) && right == 0)
+      if((kind == XS_MIR_INSTRUCTION_DIV_I64 || kind == XS_MIR_INSTRUCTION_REM_I64) &&
+         (right == 0 || (left == INT64_MIN && right == -1)))
         continue;
-      bool bool_result = kind == XS_MIR_INSTRUCTION_EQ_I64;
+      if((kind == XS_MIR_INSTRUCTION_SHL_I64 || kind == XS_MIR_INSTRUCTION_SHR_I64) && (right < 0 || right >= 64))
+        continue;
+      if(kind == XS_MIR_INSTRUCTION_SHL_I64 && (left < 0 || left > (INT64_MAX >> (unsigned)right)))
+        continue;
+      if(kind == XS_MIR_INSTRUCTION_SHR_I64 && left < 0)
+        continue;
+      bool bool_result = kind == XS_MIR_INSTRUCTION_EQ_I64 || kind == XS_MIR_INSTRUCTION_NE_I64 ||
+                         kind == XS_MIR_INSTRUCTION_LT_I64 || kind == XS_MIR_INSTRUCTION_LE_I64 ||
+                         kind == XS_MIR_INSTRUCTION_GT_I64 || kind == XS_MIR_INSTRUCTION_GE_I64;
       *instruction = (XsMirInstruction){
           .kind = bool_result ? XS_MIR_INSTRUCTION_CONST_BOOL : XS_MIR_INSTRUCTION_CONST_I64,
           .result = instruction->result,
@@ -57,7 +72,16 @@ static void fold_function_constants(XsMirFunction *function)
                            : kind == XS_MIR_INSTRUCTION_MUL_I64 ? left * right
                            : kind == XS_MIR_INSTRUCTION_DIV_I64 ? left / right
                            : kind == XS_MIR_INSTRUCTION_REM_I64 ? left % right
+                           : kind == XS_MIR_INSTRUCTION_AND_I64 ? left & right
+                           : kind == XS_MIR_INSTRUCTION_OR_I64  ? left | right
+                           : kind == XS_MIR_INSTRUCTION_SHL_I64 ? left << (unsigned)right
+                           : kind == XS_MIR_INSTRUCTION_SHR_I64 ? left >> (unsigned)right
                            : kind == XS_MIR_INSTRUCTION_EQ_I64  ? left == right
+                           : kind == XS_MIR_INSTRUCTION_NE_I64  ? left != right
+                           : kind == XS_MIR_INSTRUCTION_LT_I64  ? left < right
+                           : kind == XS_MIR_INSTRUCTION_LE_I64  ? left <= right
+                           : kind == XS_MIR_INSTRUCTION_GT_I64  ? left > right
+                           : kind == XS_MIR_INSTRUCTION_GE_I64  ? left >= right
                                                                 : 0,
       };
     }

@@ -111,8 +111,17 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
   case XS_MIR_INSTRUCTION_MUL_I64:
   case XS_MIR_INSTRUCTION_DIV_I64:
   case XS_MIR_INSTRUCTION_REM_I64:
+  case XS_MIR_INSTRUCTION_AND_I64:
+  case XS_MIR_INSTRUCTION_OR_I64:
+  case XS_MIR_INSTRUCTION_SHL_I64:
+  case XS_MIR_INSTRUCTION_SHR_I64:
     return check_i64_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_I64}, error);
   case XS_MIR_INSTRUCTION_EQ_I64:
+  case XS_MIR_INSTRUCTION_NE_I64:
+  case XS_MIR_INSTRUCTION_LT_I64:
+  case XS_MIR_INSTRUCTION_LE_I64:
+  case XS_MIR_INSTRUCTION_GT_I64:
+  case XS_MIR_INSTRUCTION_GE_I64:
     return check_i64_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, error);
   case XS_MIR_INSTRUCTION_ADD_I32:
   case XS_MIR_INSTRUCTION_SUB_I32:

@@ -167,12 +167,20 @@ int main(int argc, char **argv)
   XsLilValueId product = 0;
   XsLilValueId quotient = 0;
   XsLilValueId remainder = 0;
+  XsLilValueId bit_and = 0;
+  XsLilValueId bit_or = 0;
+  XsLilValueId shifted_left = 0;
+  XsLilValueId shifted_right = 0;
   CHECK(xs_lil_block_add_i64(arithmetic_entry, left, right, &sum, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_sub_i64(arithmetic_entry, sum, right, &difference, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_mul_i64(arithmetic_entry, difference, right, &product, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_div_i64(arithmetic_entry, product, right, &quotient, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_rem_i64(arithmetic_entry, quotient, right, &remainder, nullptr) == XS_LIL_OK);
-  CHECK(xs_lil_block_set_return_value(arithmetic_entry, remainder, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_and_i64(arithmetic_entry, remainder, right, &bit_and, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_or_i64(arithmetic_entry, bit_and, right, &bit_or, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_shl_i64(arithmetic_entry, bit_or, right, &shifted_left, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_shr_i64(arithmetic_entry, shifted_left, right, &shifted_right, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(arithmetic_entry, shifted_right, nullptr) == XS_LIL_OK);
   CHECK(xs_llvm_declare_lil_function(first, "Arithmetic", (XsLilType){.kind = XS_LIL_TYPE_I64}, import_parameters, 1,
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, arithmetic, &error) == XS_BACKEND_OK);
@@ -189,6 +197,27 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_declare_lil_function(first, "Equality", (XsLilType){.kind = XS_LIL_TYPE_BOOL}, import_parameters, 1,
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, equality, &error) == XS_BACKEND_OK);
+  XsLilFunction *compare64 = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Compare64", (XsLilType){.kind = XS_LIL_TYPE_BOOL},
+                                              import_parameters, 1, &compare64, nullptr) == XS_LIL_OK);
+  XsLilBlock *compare64_entry = nullptr;
+  CHECK(xs_lil_function_append_block(compare64, "entry", &compare64_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId compare_right = 0;
+  XsLilValueId not_equal = 0;
+  XsLilValueId less = 0;
+  XsLilValueId less_equal = 0;
+  XsLilValueId greater = 0;
+  XsLilValueId greater_equal = 0;
+  CHECK(xs_lil_block_add_const_i64(compare64_entry, 4, &compare_right, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_ne_i64(compare64_entry, 0, compare_right, &not_equal, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_lt_i64(compare64_entry, 0, compare_right, &less, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_le_i64(compare64_entry, 0, compare_right, &less_equal, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_gt_i64(compare64_entry, 0, compare_right, &greater, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_ge_i64(compare64_entry, 0, compare_right, &greater_equal, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(compare64_entry, greater_equal, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Compare64", (XsLilType){.kind = XS_LIL_TYPE_BOOL}, import_parameters, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, compare64, &error) == XS_BACKEND_OK);
   XsLilFunction *arithmetic32 = nullptr;
   const XsLilType i32_parameter[] = {{.kind = XS_LIL_TYPE_I32}};
   CHECK(xs_lil_module_add_function_definition(lil_module, "Arithmetic32", (XsLilType){.kind = XS_LIL_TYPE_I32},
@@ -279,8 +308,18 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "mul i64"));
   CHECK(file_contains(ir_path, "sdiv i64"));
   CHECK(file_contains(ir_path, "srem i64"));
+  CHECK(file_contains(ir_path, "and i64"));
+  CHECK(file_contains(ir_path, "or i64"));
+  CHECK(file_contains(ir_path, "shl i64"));
+  CHECK(file_contains(ir_path, "ashr i64"));
   CHECK(file_contains(ir_path, "define i1 @Equality(i64"));
   CHECK(file_contains(ir_path, "icmp eq i64"));
+  CHECK(file_contains(ir_path, "define i1 @Compare64(i64"));
+  CHECK(file_contains(ir_path, "icmp ne i64"));
+  CHECK(file_contains(ir_path, "icmp slt i64"));
+  CHECK(file_contains(ir_path, "icmp sle i64"));
+  CHECK(file_contains(ir_path, "icmp sgt i64"));
+  CHECK(file_contains(ir_path, "icmp sge i64"));
   CHECK(file_contains(ir_path, "define i32 @Arithmetic32(i32"));
   CHECK(file_contains(ir_path, "add i32"));
   CHECK(file_contains(ir_path, "sub i32"));

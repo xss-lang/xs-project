@@ -99,8 +99,8 @@ static void test_function_body_rejects_missing_return_value(void)
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.BadBody", &module, &error) == XS_LIL_OK);
   XsLilFunction *function = nullptr;
-  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0, &function,
-                                              &error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_I64}, nullptr, 0,
+                                              &function, &error) == XS_LIL_OK);
   XsLilBlock *entry = nullptr;
   CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
   CHECK(xs_lil_block_set_return(entry, &error) == XS_LIL_INVALID_ARGUMENT);
@@ -113,8 +113,8 @@ static void test_function_body_branch_text_writer(void)
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.Branch", &module, &error) == XS_LIL_OK);
   XsLilFunction *function = nullptr;
-  CHECK(xs_lil_module_add_function_definition(module, "Jump", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
-                                              &error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_function_definition(module, "Jump", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
+                                              &function, &error) == XS_LIL_OK);
   XsLilBlock *entry = nullptr;
   XsLilBlock *exit = nullptr;
   CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
@@ -182,8 +182,8 @@ static void test_function_body_rejects_non_bool_branch_if(void)
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_create("App.BadBranchIf", &module, &error) == XS_LIL_OK);
   XsLilFunction *function = nullptr;
-  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
-                                              &error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_function_definition(module, "Bad", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
+                                              &function, &error) == XS_LIL_OK);
   XsLilBlock *entry = nullptr;
   XsLilBlock *then_block = nullptr;
   XsLilBlock *else_block = nullptr;
@@ -347,7 +347,12 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
                       "  %r0:i64 = const 9\n  %r1:i64 = const 3\n  %r2:i64 = add.i64 %r0, %r1\n"
                       "  %r3:i64 = sub.i64 %r2, %r1\n  %r4:i64 = mul.i64 %r3, %r1\n"
                       "  %r5:i64 = div.i64 %r4, %r1\n  %r6:i64 = rem.i64 %r5, %r1\n"
-                      "  %r7:bool = eq.i64 %r6, %r0\n  ret %r6\n.end\n";
+                      "  %r7:i64 = and.i64 %r0, %r1\n  %r8:i64 = or.i64 %r0, %r1\n"
+                      "  %r9:i64 = shl.i64 %r1, %r1\n  %r10:i64 = shr.i64 %r0, %r1\n"
+                      "  %r11:bool = eq.i64 %r6, %r0\n  %r12:bool = ne.i64 %r6, %r0\n"
+                      "  %r13:bool = lt.i64 %r1, %r0\n  %r14:bool = le.i64 %r1, %r0\n"
+                      "  %r15:bool = gt.i64 %r0, %r1\n  %r16:bool = ge.i64 %r0, %r1\n"
+                      "  ret %r6\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("arithmetic.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
@@ -368,7 +373,16 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
   CHECK(strstr(buffer, "%r4:i64 = mul.i64 %r3, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r5:i64 = div.i64 %r4, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r6:i64 = rem.i64 %r5, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r7:bool = eq.i64 %r6, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r7:i64 = and.i64 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r8:i64 = or.i64 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r9:i64 = shl.i64 %r1, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r10:i64 = shr.i64 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r11:bool = eq.i64 %r6, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r12:bool = ne.i64 %r6, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r13:bool = lt.i64 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r14:bool = le.i64 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r15:bool = gt.i64 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r16:bool = ge.i64 %r0, %r1\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
