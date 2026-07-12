@@ -269,6 +269,32 @@ static XsSyntaxNode *extern_abi_token(SyntaxParser *parser, XsSpan span)
   return abi;
 }
 
+static XsSyntaxNode *parse_extern_static(SyntaxParser *parser,
+                                         Modifiers modifiers,
+                                         size_t start,
+                                         XsSpan abi_span,
+                                         bool static_consumed)
+{
+  if(!static_consumed)
+    expect(parser, XS_TOKEN_KW_STATIC, "expected 'static'");
+  XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_VARIABLE, (XsSpan){start, parser->previous.span.end});
+  declaration->flags |= XS_SYNTAX_FLAG_EXTERN | XS_SYNTAX_FLAG_STATIC;
+  attach_modifiers(parser, declaration, modifiers);
+  xs_syntax_node_add(parser->tree, declaration, extern_abi_token(parser, abi_span));
+  xs_syntax_node_add(parser->tree, declaration, identifier(parser));
+  expect(parser, XS_TOKEN_COLON, "expected ':' after extern static name");
+  xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
+  if(accept(parser, XS_TOKEN_ASSIGN))
+  {
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                       "extern static declarations must not have initializers");
+    xs_syntax_node_add(parser->tree, declaration, parse_expression(parser, 1));
+  }
+  expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after extern static declaration");
+  finish_node(parser, declaration, parser->previous.span.end);
+  return declaration;
+}
+
 static XsSyntaxNode *parse_extern_block(SyntaxParser *parser, Modifiers modifiers, size_t start)
 {
   expect(parser, XS_TOKEN_KW_EXTERN, "expected 'extern'");
@@ -301,10 +327,16 @@ static XsSyntaxNode *parse_extern_block(SyntaxParser *parser, Modifiers modifier
                            "extern functions must not have bodies");
       xs_syntax_node_add(parser->tree, declaration, function);
     }
+    else if(parser->current.kind == XS_TOKEN_KW_STATIC ||
+            ((member.flags & XS_SYNTAX_FLAG_STATIC) != 0 && parser->current.kind == XS_TOKEN_IDENTIFIER))
+    {
+      xs_syntax_node_add(parser->tree, declaration,
+                         parse_extern_static(parser, member, before, abi_span, parser->current.kind != XS_TOKEN_KW_STATIC));
+    }
     else
     {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
-                         "expected extern function declaration");
+                         "expected extern function or static declaration");
       skip_forbidden_data_member(parser);
     }
     if(parser->current.span.start == before)

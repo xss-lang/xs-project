@@ -343,6 +343,8 @@ static void test_extern_c_function_structure(void)
                      "extern \"C\" {\n"
                      "  #[LinkName(\"puts\")]\n"
                      "  fn puts(text: CFFI.CStr) => Int;\n"
+                     "  #[ThreadLocal]\n"
+                     "  static errno: Int;\n"
                      "}\n";
   XsSource source = {.path = "ExternC.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -356,6 +358,8 @@ static void test_extern_c_function_structure(void)
   CHECK(function == nullptr || (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) != 0);
   CHECK(function == nullptr || xs_syntax_find_first(function, XS_SYNTAX_ATTRIBUTE_LIST) != nullptr);
   CHECK(function == nullptr || count_kind(function, XS_SYNTAX_TOKEN) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_VARIABLE, XS_SYNTAX_FLAG_EXTERN) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_VARIABLE, XS_SYNTAX_FLAG_STATIC) == 1);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
@@ -363,6 +367,14 @@ static void test_extern_c_function_structure(void)
   source = (XsSource){.path = "ExternCBodyInvalid.xs", .text = body, .length = strlen(body)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 48, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *initializer = "extern \"C\" { static errno: Int = 0; }\n";
+  source = (XsSource){.path = "ExternCStaticInitializerInvalid.xs", .text = initializer, .length = strlen(initializer)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 49, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);

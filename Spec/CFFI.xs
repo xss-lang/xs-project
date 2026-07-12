@@ -38,6 +38,16 @@ fn PrintLine(message: Str) => Result.Result<(), Result.Error> {
 #[repr(C)]
 extern "C" {
     fn printf(format: CFFI.CStr, args: CFFI.VarArgs) => Int;
+
+    #[ThreadLocal]
+    #[LinkName("errno")]
+    static errno: Int;
+
+    #[LinkName("stdin")]
+    static stdin_handle: CFFI.RawPtr<CFFI.FILE>;
+
+    #[LinkName("stdout")]
+    static stdout_handle: CFFI.RawPtr<CFFI.FILE>;
 }
 
 #[LinkLibrary("m")]
@@ -79,6 +89,20 @@ data PackedHeader {
 #[transparent]
 data FileDescriptor {
     value: Int,
+}
+
+#[Opaque]
+data NativeLibrary {
+    handle: CFFI.Handle<NativeLibrary>,
+}
+
+
+// dynamic library loading
+
+#[DynamicLibrary]
+#[NoUnwind]
+fn OpenLibrary(path: Str) => Result.Result<NativeLibrary, Result.Error> {
+    return CFFI.DynamicLibrary.open(path);
 }
 
 
@@ -127,6 +151,24 @@ extern "C" {
 }
 
 
+// owned/borrowed/out pointer contracts
+
+#[repr(C)]
+extern "C" {
+    #[Ownership(ReturnsOwned)]
+    fn make_buffer(length: ULong) => CFFI.Owned<CFFI.RawPtr<u8>>;
+
+    #[Ownership(TakesOwnership)]
+    fn destroy_buffer(buffer: CFFI.Owned<CFFI.RawPtr<u8>>);
+
+    #[Ownership(Borrows)]
+    fn inspect_buffer(buffer: CFFI.Borrowed<CFFI.RawPtr<u8>>, length: ULong) => Int;
+
+    #[Ownership(OutParameter)]
+    fn read_status(status: CFFI.Out<Int>) => Int;
+}
+
+
 // thread/async-aware FFI markers
 
 #[repr(C)]
@@ -150,7 +192,10 @@ extern "C" {
 // - CFFI.Slice<T>: pointer plus length view for explicit FFI boundaries.
 // - CFFI.VarArgs: marker for C varargs positions.
 // - CFFI.Handle<T>: opaque native handle with explicit ownership policy.
+// - CFFI.FILE: opaque C FILE handle marker.
 // - CFFI.Owned<T>, CFFI.Borrowed<T>, and CFFI.Out<T>: FFI ownership markers.
+// - CFFI.DynamicLibrary: runtime loader with explicit symbol lookup.
+// - CFFI.Symbol<T>: typed dynamic symbol wrapper.
 //
 // CFFI does not infer safety. Calls marked Unsafe require an unsafe boundary in
 // the completed language. Layout, ABI, unwind, thread, callback, ownership, and

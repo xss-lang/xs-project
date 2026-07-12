@@ -88,7 +88,8 @@ fn RunAsync() => Result.Result<(), Result.Error> {
 // Abi, CallingConvention, LinkLibrary, Header, ImportLibrary,
 // SymbolVisibility, Packed, Transparent, Align, Unsafe, Safe,
 // NoUnwind, MayUnwind, Variadic, CFunctionPointer, ForeignThreadSafe,
-// NoCallbackIntoRuntime.
+// NoCallbackIntoRuntime, ThreadLocal, Opaque, DynamicLibrary, Ownership,
+// ReturnsOwned, TakesOwnership, Borrows, OutParameter.
 //
 // Code generation:
 // Inline, Cold, Naked, NoBuiltins, TargetFeature, TrackCaller,

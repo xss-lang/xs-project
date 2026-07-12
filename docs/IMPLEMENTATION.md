@@ -130,9 +130,10 @@ The documented compilation order is preserved:
 - Function parameters, return type, deprecated `throws` types, and function bodies are structural nodes; bodies are not
   stored as raw ranges. The `=>` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not
   interpreted as return types.
-- Top-level `extern "ABI" { fn ...; }` blocks are parsed as external declaration blocks. The structural AST stores the ABI
-  string token on the block and on each contained function, and marks those functions as external/incomplete. CFFI type
-  validation, library resolution, symbol binding, and backend lowering remain HIR/backend work.
+- Top-level `extern "ABI" { fn ...; static ...; }` blocks are parsed as external declaration blocks. The structural AST
+  stores the ABI string token on the block and on each contained function/static symbol. Functions are marked
+  external/incomplete, and static foreign globals are marked external/static. CFFI type validation, library resolution,
+  symbol binding, and backend lowering remain HIR/backend work.
 - Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated. The
   parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result.Result<T, E>` and postfix `@`
   propagation.

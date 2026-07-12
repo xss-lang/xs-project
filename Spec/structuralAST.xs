@@ -286,6 +286,7 @@ data ExternBlockDeclaration {
     attributes: AttributeNode[]
     abi: TokenNode
     functions: FunctionDeclaration[]
+    variables: VariableDeclaration[]
     span: SourceSpan
 }
 
@@ -295,9 +296,12 @@ data ExternBlockDeclaration {
 // #[repr(C)]
 // extern "C" {
 //     fn puts(text: CFFI.CStr) => Int;
+//     static errno: Int;
 // }
 //
 // Functions inside an extern block are body-less external declarations.
+// Static variables inside an extern block are foreign global symbols and do not
+// have source initializers.
 
 
 // ============================================================
