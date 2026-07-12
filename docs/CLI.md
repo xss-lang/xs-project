@@ -65,8 +65,8 @@ fn main() => Long { return if (1 < 2) { 7; } else { 3; }; }
 
 The function must be top-level, named `main`, have no parameters, return `Long`, and have a body that is exactly
 one return statement. The supported return expression subset is i32-range integer literals, unary `-`, `+`, `-`, `*`, `/`,
-`%`, and one top-level `if (...) { expr; } else { expr; }` expression whose condition is a bool literal or an i32
-comparison, including `==`, `!=`, `<`, `<=`, `>`, and `>=`. The compiler lowers that
+`%`, and one top-level `if (...) { expr; } else { expr; }` expression whose condition is a bool literal, unary `!`, or an
+i32 comparison, including `==`, `!=`, `<`, `<=`, `>`, and `>=`. The compiler lowers that
 source `Long` slice to the direct native process `i32` entry ABI. General source-level function body lowering is still
 incomplete.
 

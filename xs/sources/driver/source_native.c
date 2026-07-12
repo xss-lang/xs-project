@@ -156,6 +156,15 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
                                   XsMirValueId *result, bool *invert, XsMirError *error)
 {
   *invert = false;
+  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_BANG &&
+     expression->child_count == 1)
+  {
+    bool nested_invert = false;
+    if(!lower_bool_expression(entry, expression->children[0], diagnostics, result, &nested_invert, error))
+      return false;
+    *invert = !nested_invert;
+    return true;
+  }
   if(expression->kind == XS_SYNTAX_EXPR_LITERAL &&
      (expression->token_kind == XS_TOKEN_KW_TRUE || expression->token_kind == XS_TOKEN_KW_FALSE))
     return xs_mir_block_add_const_bool(entry, expression->token_kind == XS_TOKEN_KW_TRUE, result, error) == XS_MIR_OK;
@@ -186,7 +195,7 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
     }
   }
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
-                            "native source main if condition supports only bool literals and i32 comparisons for now") &&
+                            "native source main if condition supports only !, bool literals, and i32 comparisons for now") &&
          false;
 }
 

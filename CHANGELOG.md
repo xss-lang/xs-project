@@ -32,6 +32,7 @@ source-to-native executable pipeline.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `div.i32`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `rem.i32`.
 - Source-native `Long` return expressions now support unary `-`.
+- Source-native `if` conditions now support unary `!` by swapping branch targets.
 - XLIL v0 and direct LLVM lowering now support signed `i32` comparison instructions: `lt.i32`, `le.i32`, `gt.i32`,
   and `ge.i32`.
 - C MIR to XLIL body lowering now creates all destination blocks before lowering terminators, so `br` and `br_if` can target
