@@ -18,8 +18,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - `Spec/Macros.xs`, `Spec/Attrs.xs`, `Spec/Stdio.xs`, and `Spec/Panic.xs` cover macro behavior, attributes, and imported
   macro modules.
 - `Spec/Data.xs`, `Spec/Enum.xs`, `Spec/Classes.xs`, and `Spec/Generics.xs` cover declaration forms.
-- `Spec/FS.xs`, `Spec/Http.xs`, `Spec/Process.xs`, `Spec/Sync.xs`, and `Spec/Thread.xs` describe standard-library-facing
-  examples.
+- `Spec/FS.xs`, `Spec/Http.xs`, `Spec/Process.xs`, `Spec/Sync.xs`, `Spec/Thread.xs`, and `Spec/CFFI.xs` describe
+  standard-library-facing examples.
 - `Spec/Programs/` contains larger one-file programs written as if the completed language and standard library existed.
 
 ## Current example conventions
@@ -31,6 +31,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - Attribute delimiter syntax is built in: `#[...]` applies to the following declaration/member, and `#![...]` applies to the
   enclosing file/module form. Official X# attributes live under `STD.Attrs.*`; the compiler brings those names into
   attribute scope automatically, so `imports Attrs;` is optional.
+- CFFI is explicit. The standard CFFI module is not automatically imported or placed in scope; source uses `imports CFFI;`
+  before C foreign-function declarations and CFFI helper types.
 - `Optional<T>` is available as if the compiler had inserted `imports Optional` and brought
   `STD.Optional.Optional<T>` into scope as `Optional<T>`.
 - Optional value constructors are `STD.Optional.None` and `STD.Optional.Some(...)`; the same implicit import may make

@@ -291,6 +291,8 @@ data FunctionDeclaration {
     isAsync: Bool
     isStatic: Bool
     isIncomplete: Bool
+    isExtern: Bool
+    externAbi: TokenNode
 
     genericParameters: GenericParameter[]
     parameters: ParameterDeclaration[]

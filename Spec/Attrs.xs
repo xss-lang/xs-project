@@ -84,6 +84,12 @@ fn RunAsync() => Result.Result<(), Result.Error> {
 // Link, LinkName, LinkOrdinal, NoLink, Repr, CrateType, NoMain,
 // ExportName, LinkSection, NoMangle, Used, CrateName.
 //
+// X# CFFI-oriented attributes:
+// Abi, CallingConvention, LinkLibrary, Header, ImportLibrary,
+// SymbolVisibility, Packed, Transparent, Align, Unsafe, Safe,
+// NoUnwind, MayUnwind, Variadic, CFunctionPointer, ForeignThreadSafe,
+// NoCallbackIntoRuntime.
+//
 // Code generation:
 // Inline, Cold, Naked, NoBuiltins, TargetFeature, TrackCaller,
 // InstructionSet.

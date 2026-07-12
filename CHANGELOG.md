@@ -12,6 +12,8 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+- The C23 lexer/parser now accepts `#[...]`/`#![...]` attribute syntax and top-level `extern "ABI" fn ...;` declarations.
+- `Spec/Attrs.xs` and `Spec/CFFI.xs` document the standard attribute registry and the explicit opt-in CFFI surface.
 - `format_args!` is now validated as a built-in macro instead of a Stdio export.
 - Stdio macro validation now accepts Rust 1.57-style `write!` and `writeln!` forms plus common Rust formatting specs such
   as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` while still checking placeholder counts.

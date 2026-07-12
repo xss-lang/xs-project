@@ -259,6 +259,33 @@ static XsSyntaxNode *parse_declaration_macro_call(SyntaxParser *parser, size_t s
   return declaration;
 }
 
+static XsSyntaxNode *parse_extern_function(SyntaxParser *parser, Modifiers modifiers, size_t start)
+{
+  expect(parser, XS_TOKEN_KW_EXTERN, "expected 'extern'");
+  XsSyntaxNode *abi = nullptr;
+  if(parser->current.kind == XS_TOKEN_STRING)
+  {
+    abi = node(parser, XS_SYNTAX_TOKEN, parser->current.span);
+    if(abi != nullptr)
+      abi->token_kind = parser->current.kind;
+    advance(parser);
+  }
+  else
+  {
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                       "expected ABI string after extern");
+  }
+  expect(parser, XS_TOKEN_KW_FN, "expected 'fn' after extern ABI");
+  XsSyntaxNode *function = parse_function(parser, modifiers, start, true);
+  function->flags |= XS_SYNTAX_FLAG_EXTERN | XS_SYNTAX_FLAG_INCOMPLETE;
+  xs_syntax_node_add(parser->tree, function, abi);
+  if(xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK) != nullptr)
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                       (XsSpan){function->span.start_offset, function->span.end_offset},
+                       "extern functions must not have bodies");
+  return function;
+}
+
 static XsSyntaxNode *parse_enum(SyntaxParser *parser, Modifiers modifiers, size_t start)
 {
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_ENUM, (XsSpan){start, parser->previous.span.end});
@@ -639,6 +666,8 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
     return parse_import(parser, false, start);
   if(accept(parser, XS_TOKEN_KW_FROM))
     return parse_import(parser, true, start);
+  if(parser->current.kind == XS_TOKEN_KW_EXTERN)
+    return parse_extern_function(parser, modifiers, start);
   if(accept(parser, XS_TOKEN_KW_FN))
     return parse_function(parser, modifiers, start, false);
   if(accept(parser, XS_TOKEN_KW_CLASS))
