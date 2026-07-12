@@ -5,8 +5,9 @@
 
 //
 // Result provides explicit success/error values.
-// The exception system remains valid; Result is an additional explicit error
-// handling model, not a replacement for throws/catch.
+// The legacy exception syntax remains parseable, but it is deprecated.
+// New code should use Result.Result<T, E> and postfix @ propagation instead of
+// throws, throw, try, catch, and finally.
 //
 
 imports Result, FS, Stdio;

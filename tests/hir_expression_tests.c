@@ -125,6 +125,26 @@ static void test_control_flow_initializer_expression_types(void)
       "module App;\nfn Main() { value: Bool = match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
 }
 
+static void test_optional_expression_types(void)
+{
+  const char *valid = "module App;\n"
+                      "fn Read() => Optional<Str> {\n"
+                      "  value: Optional<Str> = None;\n"
+                      "  value = STD.Optional.Some(\"xs\");\n"
+                      "  other: STD.Optional.Optional<Str> = STD.Optional.None;\n"
+                      "  return Some(\"ok\");\n"
+                      "}\n";
+  CHECK(check_single_source_expressions(valid));
+  CHECK(check_single_source_expressions(
+      "module App;\nfn Read(flag: Bool) => Optional<Str> { return if (flag) { Some(\"ok\"); } else { None; }; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = None; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = STD.Optional.None; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = Some(1); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Optional<Int> = 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Optional<Int> = Some(); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Read() => Optional<Int> { return 1; }\n"));
+}
+
 static void test_binding_reassignment_errors(void)
 {
   const char *valid = "module App;\n"
@@ -248,6 +268,7 @@ int main(void)
 {
   test_literal_initializer_expression_types();
   test_control_flow_initializer_expression_types();
+  test_optional_expression_types();
   test_binding_reassignment_errors();
   test_constant_initializer_errors();
   test_assignment_literal_expression_types();

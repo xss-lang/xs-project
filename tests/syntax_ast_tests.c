@@ -307,6 +307,7 @@ static void test_optional_operator_structure(void)
 {
   const char *text = "fn Main(user: Optional<User>, fallback: Str) {\n"
                      "  name: Optional<Str> = user?.Name;\n"
+                     "  name = STD.Optional.None;\n"
                      "  display: Str = name ?? fallback;\n"
                      "  name ?"
                      "?= Some(\"guest\");\n"
@@ -321,6 +322,24 @@ static void test_optional_operator_structure(void)
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_OPTIONAL_FORGIVING) == 1);
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_BINARY) >= 1);
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_ASSIGNMENT) >= 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS) >= 2);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_exception_syntax_is_deprecated(void)
+{
+  const char *text = "fn Main() throws IOException { try { throw IOException(); } catch (error: IOException) {} }\n";
+  XsSource source = {.path = "DeprecatedExceptions.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 31, &diagnostics, &tree));
+  CHECK(!xs_diagnostics_has_error(&diagnostics));
+  CHECK(diagnostics.count == 3);
+  CHECK(diagnostics.items[0].severity == XS_DIAGNOSTIC_WARNING);
+  CHECK(diagnostics.items[1].severity == XS_DIAGNOSTIC_WARNING);
+  CHECK(diagnostics.items[2].severity == XS_DIAGNOSTIC_WARNING);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -391,6 +410,7 @@ int main(void)
   test_io_target_expression_structure();
   test_character_literal_structure();
   test_optional_operator_structure();
+  test_exception_syntax_is_deprecated();
   test_result_propagation_structure();
   test_lifetime_type_structure();
   test_nested_generic_type_closers();

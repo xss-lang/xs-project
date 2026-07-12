@@ -195,6 +195,8 @@ static XsSyntaxNode *parse_match(SyntaxParser *parser, size_t start)
 
 static XsSyntaxNode *parse_try(SyntaxParser *parser, size_t start)
 {
+  xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_WARNING, (XsSpan){start, parser->previous.span.end},
+                     "exception syntax is deprecated; prefer Result<T, E>");
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_TRY, (XsSpan){start, parser->previous.span.end});
   xs_syntax_node_add(parser->tree, statement, parse_block(parser));
   while(accept(parser, XS_TOKEN_KW_CATCH))
@@ -268,6 +270,8 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   }
   if(accept(parser, XS_TOKEN_KW_THROW))
   {
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_WARNING, parser->previous.span,
+                       "exception syntax is deprecated; prefer Result<T, E>");
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_THROW, (XsSpan){start, parser->previous.span.end});
     xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after throw");

@@ -41,6 +41,7 @@ struct CheckContext
 {
   LocalScope *scope;
   const XsHirPrimitiveInfo *return_type;
+  const XsSyntaxNode *return_type_node;
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
@@ -58,6 +59,12 @@ static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKi
 static bool text_equal(XsText left, XsText right)
 {
   return left.length == right.length && memcmp(left.data, right.data, left.length) == 0;
+}
+
+static bool text_matches_cstr(XsText text, const char *value)
+{
+  size_t length = strlen(value);
+  return text.length == length && memcmp(text.data, value, length) == 0;
 }
 
 static XsSpan node_span(const XsSyntaxNode *node)
@@ -83,6 +90,42 @@ static const XsHirPrimitiveInfo *primitive_from_type(const XsSyntaxNode *type)
   return xs_hir_primitive_find(identifier->text.data, identifier->text.length);
 }
 
+static const XsSyntaxNode *type_named_path(const XsSyntaxNode *type)
+{
+  if(type == nullptr || type->kind != XS_SYNTAX_TYPE_NAMED)
+    return nullptr;
+  return first_child_kind(type, XS_SYNTAX_PATH);
+}
+
+static bool path_matches_qualified(const XsSyntaxNode *path, const char *first, const char *second, const char *third)
+{
+  if(path == nullptr || path->kind != XS_SYNTAX_PATH || path->child_count != 3)
+    return false;
+  return text_matches_cstr(path->children[0]->text, first) && text_matches_cstr(path->children[1]->text, second) &&
+         text_matches_cstr(path->children[2]->text, third);
+}
+
+static bool path_matches_single(const XsSyntaxNode *path, const char *name)
+{
+  return path != nullptr && path->kind == XS_SYNTAX_PATH && path->child_count == 1 &&
+         text_matches_cstr(path->children[0]->text, name);
+}
+
+static bool named_type_is_optional_base(const XsSyntaxNode *type)
+{
+  const XsSyntaxNode *path = type_named_path(type);
+  return path_matches_single(path, "Optional") || path_matches_qualified(path, "STD", "Optional", "Optional");
+}
+
+static bool type_is_optional(const XsSyntaxNode *type)
+{
+  if(type == nullptr)
+    return false;
+  if(type->kind == XS_SYNTAX_TYPE_GENERIC && type->child_count >= 1)
+    return named_type_is_optional_base(type->children[0]);
+  return false;
+}
+
 static const char *literal_kind_name(XsTokenKind kind)
 {
   switch(kind)
@@ -98,6 +141,8 @@ static const char *literal_kind_name(XsTokenKind kind)
   case XS_TOKEN_KW_TRUE:
   case XS_TOKEN_KW_FALSE:
     return "bool";
+  case XS_TOKEN_KW_NONE:
+    return "None";
   default:
     return "literal";
   }
@@ -105,8 +150,10 @@ static const char *literal_kind_name(XsTokenKind kind)
 
 static bool literal_matches_primitive(XsTokenKind literal, const XsHirPrimitiveInfo *primitive)
 {
-  if(primitive == nullptr || literal == XS_TOKEN_KW_NONE)
+  if(primitive == nullptr)
     return true;
+  if(literal == XS_TOKEN_KW_NONE)
+    return false;
   if(literal == XS_TOKEN_INTEGER)
     return primitive->is_integer && primitive->kind != XS_HIR_PRIMITIVE_BOOL &&
            primitive->kind != XS_HIR_PRIMITIVE_CHAR;
@@ -185,6 +232,64 @@ static bool report_context_literal_type_error(XsDiagnostics *diagnostics, const 
   return report_literal_type_error(diagnostics, literal, primitive);
 }
 
+static bool report_optional_type_error(XsDiagnostics *diagnostics, const XsSyntaxNode *expression)
+{
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+                            "expression is not assignable to Optional<T>; use None or Some(value)");
+}
+
+static bool expression_is_identifier_named(const XsSyntaxNode *expression, const char *name)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_IDENTIFIER || expression->child_count != 1)
+    return false;
+  return expression->children[0]->kind == XS_SYNTAX_IDENTIFIER && text_matches_cstr(expression->children[0]->text, name);
+}
+
+static bool expression_is_std_optional_member(const XsSyntaxNode *expression, const char *name)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_MEMBER_ACCESS || expression->child_count != 2)
+    return false;
+  if(expression->children[1]->kind != XS_SYNTAX_IDENTIFIER || !text_matches_cstr(expression->children[1]->text, name))
+    return false;
+  const XsSyntaxNode *optional = expression->children[0];
+  if(optional == nullptr || optional->kind != XS_SYNTAX_EXPR_MEMBER_ACCESS || optional->child_count != 2)
+    return false;
+  return expression_is_identifier_named(optional->children[0], "STD") &&
+         optional->children[1]->kind == XS_SYNTAX_IDENTIFIER &&
+         text_matches_cstr(optional->children[1]->text, "Optional");
+}
+
+static bool expression_is_optional_none(const XsSyntaxNode *expression)
+{
+  return (expression != nullptr && expression->kind == XS_SYNTAX_EXPR_LITERAL &&
+          expression->token_kind == XS_TOKEN_KW_NONE) ||
+         expression_is_std_optional_member(expression, "None");
+}
+
+static bool expression_is_optional_some(const XsSyntaxNode *expression)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_CALL || expression->child_count != 2)
+    return false;
+  const XsSyntaxNode *callee = expression->children[0];
+  return expression_is_identifier_named(callee, "Some") || expression_is_std_optional_member(callee, "Some");
+}
+
+static bool expression_is_optional_some_callee(const XsSyntaxNode *expression)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_CALL || expression->child_count == 0)
+    return false;
+  const XsSyntaxNode *callee = expression->children[0];
+  return expression_is_identifier_named(callee, "Some") || expression_is_std_optional_member(callee, "Some");
+}
+
+static bool report_optional_to_primitive_error(XsDiagnostics *diagnostics, const XsSyntaxNode *expression,
+                                               const XsHirPrimitiveInfo *primitive)
+{
+  char message[256];
+  snprintf(message, sizeof(message), "Optional value is not assignable to primitive type '%s'", primitive->name);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression), message);
+}
+
 static const XsSyntaxNode *block_tail_expression(const XsSyntaxNode *block)
 {
   if(block == nullptr || block->kind != XS_SYNTAX_STMT_BLOCK || block->child_count == 0)
@@ -198,6 +303,8 @@ static const XsSyntaxNode *block_tail_expression(const XsSyntaxNode *block)
 static bool check_expression_value_against_primitive(const XsSyntaxNode *expression,
                                                      const XsHirPrimitiveInfo *primitive, LiteralContext context,
                                                      const LocalBinding *binding, XsDiagnostics *diagnostics);
+
+static bool check_expression_value_against_optional(const XsSyntaxNode *expression, XsDiagnostics *diagnostics);
 
 static bool check_block_value_against_primitive(const XsSyntaxNode *block, const XsHirPrimitiveInfo *primitive,
                                                 LiteralContext context, const LocalBinding *binding,
@@ -222,6 +329,8 @@ static bool check_expression_value_against_primitive(const XsSyntaxNode *express
 {
   if(expression == nullptr || primitive == nullptr)
     return true;
+  if(expression_is_optional_none(expression) || expression_is_optional_some_callee(expression))
+    return report_optional_to_primitive_error(diagnostics, expression, primitive);
   if(expression->kind == XS_SYNTAX_EXPR_LITERAL)
   {
     if(literal_matches_primitive(expression->token_kind, primitive))
@@ -245,6 +354,44 @@ static bool check_expression_value_against_primitive(const XsSyntaxNode *express
           check_match_arm_value_against_primitive(expression->children[i], primitive, context, binding, diagnostics) &&
           success;
     }
+    return success;
+  }
+  return true;
+}
+
+static bool check_block_value_against_optional(const XsSyntaxNode *block, XsDiagnostics *diagnostics)
+{
+  return check_expression_value_against_optional(block_tail_expression(block), diagnostics);
+}
+
+static bool check_match_arm_value_against_optional(const XsSyntaxNode *arm, XsDiagnostics *diagnostics)
+{
+  if(arm == nullptr || arm->kind != XS_SYNTAX_MATCH_ARM || arm->child_count < 2)
+    return true;
+  return check_block_value_against_optional(arm->children[1], diagnostics);
+}
+
+static bool check_expression_value_against_optional(const XsSyntaxNode *expression, XsDiagnostics *diagnostics)
+{
+  if(expression == nullptr)
+    return true;
+  if(expression_is_optional_none(expression) || expression_is_optional_some(expression))
+    return true;
+  if(expression_is_optional_some_callee(expression))
+    return report_optional_type_error(diagnostics, expression);
+  if(expression->kind == XS_SYNTAX_EXPR_LITERAL)
+    return report_optional_type_error(diagnostics, expression);
+  if(expression->kind == XS_SYNTAX_EXPR_IF && expression->child_count >= 3)
+  {
+    bool then_ok = check_block_value_against_optional(expression->children[1], diagnostics);
+    bool else_ok = check_block_value_against_optional(expression->children[2], diagnostics);
+    return then_ok && else_ok;
+  }
+  if(expression->kind == XS_SYNTAX_EXPR_MATCH)
+  {
+    bool success = true;
+    for(size_t i = 1; i < expression->child_count; ++i)
+      success = check_match_arm_value_against_optional(expression->children[i], diagnostics) && success;
     return success;
   }
   return true;
@@ -314,6 +461,8 @@ static bool check_variable_initializer(const XsSyntaxNode *declaration, XsDiagno
     return constant_ok;
   const XsHirPrimitiveInfo *primitive = primitive_from_type(declaration->children[1]);
   const XsSyntaxNode *initializer = variable_initializer(declaration);
+  if(type_is_optional(declaration->children[1]))
+    return check_expression_value_against_optional(initializer, diagnostics) && constant_ok;
   bool success = check_expression_value_against_primitive(initializer, primitive, LITERAL_CONTEXT_INITIALIZER, nullptr,
                                                           diagnostics);
   return constant_ok && success;
@@ -394,6 +543,20 @@ static const XsHirPrimitiveInfo *function_return_primitive(const XsSyntaxNode *f
   return nullptr;
 }
 
+static const XsSyntaxNode *function_return_type(const XsSyntaxNode *function)
+{
+  if(function == nullptr || (function->kind != XS_SYNTAX_DECL_FUNCTION && function->kind != XS_SYNTAX_EXPR_FUNCTION))
+    return nullptr;
+  for(size_t i = 0; i < function->child_count; ++i)
+  {
+    const XsSyntaxNode *child = function->children[i];
+    if((child->kind == XS_SYNTAX_TYPE_NAMED || child->kind == XS_SYNTAX_TYPE_GENERIC) &&
+       (child->flags & XS_SYNTAX_FLAG_RETURN_TYPE) != 0)
+      return child;
+  }
+  return nullptr;
+}
+
 static const XsSyntaxNode *assignment_identifier_target(const XsSyntaxNode *node)
 {
   if(node == nullptr || node->kind != XS_SYNTAX_EXPR_ASSIGNMENT || node->child_count < 1)
@@ -414,9 +577,11 @@ static const XsSyntaxNode *assignment_value(const XsSyntaxNode *node)
 static bool check_return_statement(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
 {
   if(node == nullptr || node->kind != XS_SYNTAX_STMT_RETURN || node->child_count == 0 ||
-     context->return_type == nullptr)
+     (context->return_type == nullptr && !type_is_optional(context->return_type_node)))
     return true;
   const XsSyntaxNode *value = node->children[0];
+  if(type_is_optional(context->return_type_node))
+    return check_expression_value_against_optional(value, diagnostics);
   return check_expression_value_against_primitive(value, context->return_type, LITERAL_CONTEXT_RETURN, nullptr,
                                                   diagnostics);
 }
@@ -433,6 +598,8 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
   const XsHirPrimitiveInfo *primitive =
       binding->declaration->child_count >= 2 ? primitive_from_type(binding->declaration->children[1]) : nullptr;
   const XsSyntaxNode *value = assignment_value(node);
+  if(binding->declaration->child_count >= 2 && type_is_optional(binding->declaration->children[1]))
+    success = check_expression_value_against_optional(value, diagnostics) && success;
   success =
       check_expression_value_against_primitive(value, primitive, LITERAL_CONTEXT_ASSIGNMENT, binding, diagnostics) &&
       success;
@@ -502,9 +669,11 @@ static bool check_scoped_node(const XsSyntaxNode *node, const XsMacroDeclaration
 {
   LocalScope scope = {.parent = parent.scope};
   const XsHirPrimitiveInfo *return_type = function_return_primitive(node);
+  const XsSyntaxNode *return_type_node = function_return_type(node);
   CheckContext context = {
       .scope = &scope,
       .return_type = return_type == nullptr ? parent.return_type : return_type,
+      .return_type_node = return_type_node == nullptr ? parent.return_type_node : return_type_node,
   };
   bool success = true;
   if(macro_declarations != nullptr && has_child_kind(node, XS_SYNTAX_DECL_MACRO_CALL))

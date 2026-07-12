@@ -17,6 +17,8 @@ source-to-native executable pipeline.
   as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` while still checking placeholder counts.
 - `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `STD.Optional.Optional<T>`, with
   value constructors canonically named `STD.Optional.None` and `STD.Optional.Some(...)`.
+- Legacy exception syntax is now deprecated. `throws`, `throw`, and `try` remain parseable but produce warnings; new code
+  should use `Result.Result<T, E>` and postfix `@` propagation.
 
 ## 0.0.5 - 2026-07-12
 

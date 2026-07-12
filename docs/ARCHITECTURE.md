@@ -76,7 +76,7 @@ API concepts.
 - Full AST macro replacement
 - General expression type inference and overload resolution
 - Nominal interface membership validation
-- Send/Sync, async/await, and checked-exception type checking
+- Send/Sync, async/await, Result propagation, and legacy exception deprecation checks
 - MIR statement/expression lowering
 - Full borrow-checker region/loan/drop model
 - Monomorphization and incremental cache

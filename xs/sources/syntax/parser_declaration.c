@@ -186,6 +186,8 @@ static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, s
   }
   if(accept(parser, XS_TOKEN_KW_THROWS))
   {
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_WARNING, parser->previous.span,
+                       "exception syntax is deprecated; prefer Result<T, E>");
     do
     {
       xs_syntax_node_add(parser->tree, function, parse_type(parser));

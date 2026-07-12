@@ -31,6 +31,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
   `STD.Optional.Optional<T>` into scope as `Optional<T>`.
 - Optional value constructors are `STD.Optional.None` and `STD.Optional.Some(...)`; the same implicit import may make
   `None` and `Some(...)` available in source.
+- Legacy exception syntax remains documented where older examples need it, but it is deprecated. Prefer
+  `Result.Result<T, E>` and postfix `@` propagation in new examples.
 
 ## Program examples
 

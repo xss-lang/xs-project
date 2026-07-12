@@ -9,6 +9,18 @@
 
 static XsSyntaxNode *parse_literal(SyntaxParser *parser);
 
+static XsSyntaxNode *parse_member_identifier(SyntaxParser *parser)
+{
+  if(parser->current.kind == XS_TOKEN_IDENTIFIER || parser->current.kind == XS_TOKEN_KW_NONE)
+  {
+    XsToken token = parser->current;
+    advance(parser);
+    return node(parser, XS_SYNTAX_IDENTIFIER, token.span);
+  }
+  xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected identifier");
+  return nullptr;
+}
+
 static void parse_parenthesized_condition(SyntaxParser *parser, XsSyntaxNode *parent, const char *owner)
 {
   char open_message[64];
@@ -407,7 +419,7 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
     }
     else if(accept(parser, XS_TOKEN_DOT))
     {
-      XsSyntaxNode *name = identifier(parser);
+      XsSyntaxNode *name = parse_member_identifier(parser);
       XsSyntaxKind kind =
           parser->current.kind == XS_TOKEN_LEFT_PAREN ? XS_SYNTAX_EXPR_METHOD_CALL : XS_SYNTAX_EXPR_MEMBER_ACCESS;
       XsSyntaxNode *member = node(parser, kind, (XsSpan){start, parser->previous.span.end});
@@ -430,7 +442,7 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
     }
     else if(accept(parser, XS_TOKEN_QUESTION_DOT))
     {
-      XsSyntaxNode *name = identifier(parser);
+      XsSyntaxNode *name = parse_member_identifier(parser);
       XsSyntaxKind kind = parser->current.kind == XS_TOKEN_LEFT_PAREN ? XS_SYNTAX_EXPR_OPTIONAL_METHOD_CALL
                                                                       : XS_SYNTAX_EXPR_OPTIONAL_MEMBER_ACCESS;
       XsSyntaxNode *member = node(parser, kind, (XsSpan){start, parser->previous.span.end});
@@ -474,7 +486,7 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
       expect(parser, XS_TOKEN_DOT, "expected '.' after get");
       XsSyntaxNode *member = node(parser, XS_SYNTAX_EXPR_MEMBER_ACCESS, (XsSpan){start, parser->previous.span.end});
       xs_syntax_node_add(parser->tree, member, expression);
-      xs_syntax_node_add(parser->tree, member, identifier(parser));
+      xs_syntax_node_add(parser->tree, member, parse_member_identifier(parser));
       finish_node(parser, member, parser->previous.span.end);
       expression = member;
     }

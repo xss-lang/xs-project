@@ -124,9 +124,12 @@ The documented compilation order is preserved:
   tokens when closing generic type/generic parameter contexts.
 - Lifetime spellings in reference types follow Rust base forms (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`) and are carried
   into the AST as `XS_SYNTAX_LIFETIME` nodes. Lifetime elision and validation are left to the borrow-checker stage.
-- Function parameters, return type, `throws` types, and function bodies are structural nodes; bodies are not stored as raw
-  ranges. The `=>` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not interpreted as return
-  types.
+- Function parameters, return type, deprecated `throws` types, and function bodies are structural nodes; bodies are not
+  stored as raw ranges. The `=>` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not
+  interpreted as return types.
+- Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated. The
+  parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result.Result<T, E>` and postfix `@`
+  propagation.
 - `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
   constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
   diagnostic. Data destructors, inheritance, and interface members remain invalid.
@@ -149,9 +152,9 @@ The documented compilation order is preserved:
 - Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 frontend
   keeps this as syntax plus explicit diagnostics for now; full propagation control-flow lowering is handled by later HIR/MIR
   work.
-- `if`, `for`, for-each, `while`, `match`, `try`, `catch`, `finally`, `return`, `throw`, `break`, `continue`, and
-  `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous to Rust's
-  `let _ = expression;`.
+- `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
+  `continue`, and `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous
+  to Rust's `let _ = expression;`.
   structurally.
 
 ### Module discovery and import graph
