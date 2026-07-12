@@ -91,6 +91,56 @@ XsSyntaxNode *parse_path(SyntaxParser *parser)
   return path;
 }
 
+static XsSyntaxNode *parse_attribute(SyntaxParser *parser, bool inner)
+{
+  size_t start = parser->current.span.start;
+  expect(parser, XS_TOKEN_HASH, "expected '#'");
+  if(inner)
+    expect(parser, XS_TOKEN_BANG, "expected '!' in inner attribute");
+  expect(parser, XS_TOKEN_LEFT_BRACKET, "expected '[' before attribute");
+  XsSyntaxNode *attribute = node(parser, XS_SYNTAX_ATTRIBUTE, (XsSpan){start, start});
+  if(inner)
+    attribute->flags |= XS_SYNTAX_FLAG_INNER_ATTRIBUTE;
+  xs_syntax_node_add(parser->tree, attribute, parse_path(parser));
+  if(accept(parser, XS_TOKEN_ASSIGN))
+  {
+    xs_syntax_node_add(parser->tree, attribute, parse_expression(parser, 1));
+  }
+  else if(accept(parser, XS_TOKEN_LEFT_PAREN))
+  {
+    if(parser->current.kind != XS_TOKEN_RIGHT_PAREN)
+    {
+      do
+      {
+        if(parser->current.kind == XS_TOKEN_RIGHT_PAREN)
+          break;
+        xs_syntax_node_add(parser->tree, attribute, parse_expression(parser, 1));
+      } while(accept(parser, XS_TOKEN_COMMA));
+    }
+    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after attribute arguments");
+  }
+  expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after attribute");
+  finish_node(parser, attribute, parser->previous.span.end);
+  return attribute;
+}
+
+static XsSyntaxNode *parse_attribute_list(SyntaxParser *parser)
+{
+  if(parser->current.kind != XS_TOKEN_HASH || parser->next.kind != XS_TOKEN_LEFT_BRACKET)
+    return nullptr;
+  size_t start = parser->current.span.start;
+  XsSyntaxNode *attributes = node(parser, XS_SYNTAX_ATTRIBUTE_LIST, (XsSpan){start, start});
+  while(parser->current.kind == XS_TOKEN_HASH && parser->next.kind == XS_TOKEN_LEFT_BRACKET)
+    xs_syntax_node_add(parser->tree, attributes, parse_attribute(parser, false));
+  finish_node(parser, attributes, parser->previous.span.end);
+  return attributes;
+}
+
+XsSyntaxNode *parse_inner_attribute(SyntaxParser *parser)
+{
+  return parse_attribute(parser, true);
+}
+
 Modifiers parse_modifiers(SyntaxParser *parser)
 {
   Modifiers result = {.visibility = XS_SYNTAX_VISIBILITY_DEFAULT,
@@ -100,7 +150,21 @@ Modifiers parse_modifiers(SyntaxParser *parser)
   {
     progress = false;
     XsToken token = parser->current;
-    if(accept(parser, XS_TOKEN_KW_PUBLIC))
+    XsSyntaxNode *attributes = parse_attribute_list(parser);
+    if(attributes != nullptr)
+    {
+      if(result.attributes == nullptr)
+        result.attributes = attributes;
+      else
+      {
+        for(size_t i = 0; i < attributes->child_count; ++i)
+          xs_syntax_node_add(parser->tree, result.attributes, attributes->children[i]);
+        finish_node(parser, result.attributes, parser->previous.span.end);
+      }
+      result.span.end = parser->previous.span.end;
+      progress = true;
+    }
+    else if(accept(parser, XS_TOKEN_KW_PUBLIC))
     {
       result.visibility = XS_SYNTAX_VISIBILITY_PUBLIC;
       progress = true;
@@ -147,6 +211,7 @@ void attach_modifiers(SyntaxParser *parser, XsSyntaxNode *declaration, Modifiers
     return;
   declaration->visibility = modifiers.visibility;
   declaration->flags |= modifiers.flags;
+  xs_syntax_node_add(parser->tree, declaration, modifiers.attributes);
   XsSyntaxNode *visibility = node(parser, XS_SYNTAX_VISIBILITY, modifiers.span);
   if(visibility != nullptr)
     visibility->visibility = modifiers.visibility;
@@ -172,6 +237,16 @@ bool xs_syntax_parse(const XsSource *source, uint64_t file_id, XsDiagnostics *di
   bool seen_module = false;
   while(parser.current.kind != XS_TOKEN_EOF)
   {
+    if(parser.current.kind == XS_TOKEN_HASH && parser.next.kind == XS_TOKEN_BANG)
+    {
+      XsSyntaxNode *attribute = parse_inner_attribute(&parser);
+      if(seen_declaration)
+        xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){attribute->span.start_offset, attribute->span.end_offset},
+                           "inner file attributes must appear before declarations");
+      xs_syntax_node_add(tree, tree->root, attribute);
+      continue;
+    }
     size_t before = parser.current.span.start;
     XsSyntaxNode *declaration = parse_declaration(&parser, true);
     if(declaration != nullptr)

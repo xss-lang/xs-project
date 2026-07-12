@@ -417,6 +417,8 @@ XsToken xs_lexer_next(XsLexer *lexer)
     return one_or_two(lexer, start, '=', XS_TOKEN_PIPE, XS_TOKEN_PIPE_ASSIGN);
   case '^':
     return one_or_two(lexer, start, '=', XS_TOKEN_CARET, XS_TOKEN_CARET_ASSIGN);
+  case '#':
+    return token(XS_TOKEN_HASH, start, lexer->cursor);
   case '@':
     return token(XS_TOKEN_AT, start, lexer->cursor);
   case '$':

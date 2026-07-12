@@ -559,14 +559,14 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
       {
         XsSyntaxNode *field = parse_variable(parser, true);
         field->kind = XS_SYNTAX_CLASS_FIELD;
-        field->visibility = member.visibility;
-        field->flags |= member.flags;
+        attach_modifiers(parser, field, member);
         xs_syntax_node_add(parser->tree, declaration, field);
       }
       else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN)
       {
         XsSyntaxNode *constructor =
             node(parser, XS_SYNTAX_CLASS_CONSTRUCTOR, (XsSpan){before, parser->current.span.end});
+        attach_modifiers(parser, constructor, member);
         XsSyntaxNode *constructor_name = identifier(parser);
         XsSpan constructor_span = constructor_name == nullptr ? parser->previous.span
                                                               : (XsSpan){constructor_name->span.start_offset,
@@ -588,6 +588,7 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
       else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_DOT)
       {
         XsSyntaxNode *destructor = node(parser, XS_SYNTAX_CLASS_DESTRUCTOR, (XsSpan){before, parser->current.span.end});
+        attach_modifiers(parser, destructor, member);
         xs_syntax_node_add(parser->tree, destructor, identifier(parser));
         expect(parser, XS_TOKEN_DOT, "expected '.' in destructor declaration");
         if(parser->current.kind != XS_TOKEN_IDENTIFIER || !token_text_is(parser, parser->current, "Drop"))

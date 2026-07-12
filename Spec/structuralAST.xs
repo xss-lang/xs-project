@@ -85,6 +85,7 @@ data SourceSpan {
 // ============================================================
 
 data AstFile {
+    innerAttributes: AttributeNode[]
     moduleDeclaration: ModuleDeclaration
     imports: ImportDeclaration[]
     declarations: Declaration[]
@@ -119,10 +120,44 @@ enum data Declaration {
 
 
 // ============================================================
+// Attributes
+// ============================================================
+
+data AttributeNode {
+    path: PathNode
+    arguments: AttributeArgument[]
+    isInner: Bool
+    span: SourceSpan
+}
+
+
+enum data AttributeArgument {
+    Expression: Expression,
+    NameValue: AttributeNameValue,
+}
+
+
+data AttributeNameValue {
+    name: IdentifierNode
+    value: Expression
+    span: SourceSpan
+}
+
+
+// Attribute delimiter syntax is built into the parser.
+// Official X# attributes live in the Attrs module under STD. That module is
+// implicitly available for attribute lookup. Explicit `imports Attrs;` is
+// optional.
+// Outer attributes use #[...]. Inner file attributes use #![...].
+// Attribute semantic names are not keywords.
+
+
+// ============================================================
 // Module declarations
 // ============================================================
 
 data ModuleDeclaration {
+    attributes: AttributeNode[]
     name: PathNode
     visibility: VisibilityNode
     span: SourceSpan
@@ -137,6 +172,7 @@ data ModuleDeclaration {
 // ============================================================
 
 data ImportDeclaration {
+    attributes: AttributeNode[]
     kind: ImportKind
     modulePath: PathNode
     importedNames: ImportName[]
@@ -167,6 +203,7 @@ data ImportName {
 // ============================================================
 
 data NamespaceDeclaration {
+    attributes: AttributeNode[]
     path: PathNode
     visibility: VisibilityNode
     span: SourceSpan
@@ -245,6 +282,7 @@ data GenericParameter {
 // ============================================================
 
 data FunctionDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
 
@@ -278,6 +316,7 @@ data FunctionDeclaration {
 // ============================================================
 
 data ParameterDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     parameterType: TypeNode
     span: SourceSpan
@@ -289,6 +328,7 @@ data ParameterDeclaration {
 // ============================================================
 
 data ClassDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
 
@@ -321,6 +361,7 @@ enum data ClassMember {
 // ============================================================
 
 data FieldDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     fieldType: TypeNode
     initializer: Expression
@@ -339,6 +380,7 @@ data FieldDeclaration {
 // ============================================================
 
 data ConstructorDeclaration {
+    attributes: AttributeNode[]
     className: IdentifierNode
     parameters: ParameterDeclaration[]
     body: BlockStatement
@@ -355,6 +397,7 @@ data ConstructorDeclaration {
 // ============================================================
 
 data DestructorDeclaration {
+    attributes: AttributeNode[]
     className: IdentifierNode
     body: BlockStatement
     span: SourceSpan
@@ -372,6 +415,7 @@ data DestructorDeclaration {
 // ============================================================
 
 data InterfaceDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
     genericParameters: GenericParameter[]
@@ -385,6 +429,7 @@ data InterfaceDeclaration {
 // ============================================================
 
 data EnumDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
     isDataEnum: Bool
@@ -394,6 +439,7 @@ data EnumDeclaration {
 
 
 data EnumVariant {
+    attributes: AttributeNode[]
     name: IdentifierNode
     payloadType: TypeNode
     isOverload: Bool
@@ -430,6 +476,7 @@ data EnumVariant {
 // ============================================================
 
 data DataDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
     genericParameters: GenericParameter[]
@@ -441,6 +488,7 @@ data DataDeclaration {
 
 
 data DataField {
+    attributes: AttributeNode[]
     name: IdentifierNode
     fieldType: TypeNode
     span: SourceSpan
@@ -466,6 +514,7 @@ enum VariableBindingKind {
 
 
 data VariableDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     variableType: TypeNode?
     initializer: Expression
@@ -1263,6 +1312,7 @@ data ElsePattern {
 // ============================================================
 
 data MacroDeclaration {
+    attributes: AttributeNode[]
     name: IdentifierNode
     rules: MacroRule[]
     span: SourceSpan

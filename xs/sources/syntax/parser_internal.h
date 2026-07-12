@@ -29,6 +29,7 @@ typedef struct
   XsSyntaxVisibility visibility;
   uint32_t flags;
   XsSpan span;
+  XsSyntaxNode *attributes;
 } Modifiers;
 
 void xs_syntax_parser_advance(SyntaxParser *parser);
@@ -39,6 +40,7 @@ void xs_syntax_parser_finish_node(SyntaxParser *parser, XsSyntaxNode *value, siz
 XsSyntaxNode *xs_syntax_parser_identifier(SyntaxParser *parser);
 bool xs_syntax_parser_token_text_is(SyntaxParser *parser, XsToken token, const char *text);
 XsSyntaxNode *xs_syntax_parse_path(SyntaxParser *parser);
+XsSyntaxNode *xs_syntax_parse_inner_attribute(SyntaxParser *parser);
 Modifiers xs_syntax_parse_modifiers(SyntaxParser *parser);
 void xs_syntax_attach_modifiers(SyntaxParser *parser, XsSyntaxNode *declaration, Modifiers modifiers);
 XsSyntaxNode *xs_syntax_parse_type(SyntaxParser *parser);
@@ -58,6 +60,7 @@ XsSyntaxNode *xs_syntax_parse_macro(SyntaxParser *parser, size_t start);
 #define identifier xs_syntax_parser_identifier
 #define token_text_is xs_syntax_parser_token_text_is
 #define parse_path xs_syntax_parse_path
+#define parse_inner_attribute xs_syntax_parse_inner_attribute
 #define parse_modifiers xs_syntax_parse_modifiers
 #define attach_modifiers xs_syntax_attach_modifiers
 #define parse_type xs_syntax_parse_type

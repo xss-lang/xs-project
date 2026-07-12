@@ -115,6 +115,9 @@ The documented compilation order is preserved:
 - The parser produces an arena-based structural AST.
 - AST nodes carry full source location: file id, offset, line, and column.
 - Declaration, type, statement, expression, pattern, and macro node families are represented.
+- Outer `#[...]` attributes are parsed before declarations and declaration members into `XS_SYNTAX_ATTRIBUTE` nodes.
+  File-level inner `#![...]` attributes are parsed before declarations. Attribute syntax is built in, but official X#
+  attribute names live under `STD.Attrs.*`; semantic validation of each attribute remains a HIR/name-resolution step.
 - In top-level and class-member contexts, `name!();` macro calls are represented as `XS_SYNTAX_DECL_MACRO_CALL` declaration
   nodes. This node is the entry point for item/declaration-producing macro expansion; inserting produced items as real AST
   replacements in scope is a later macro-expansion step.

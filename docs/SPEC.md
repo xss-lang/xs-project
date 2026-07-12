@@ -15,7 +15,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 
 - `Spec/TypeSystem.xs` covers primitive names, nominal typing, `Optional<T>`, and standard wrapper behavior.
 - `Spec/Variables.xs`, `Spec/Functions.xs`, and `Spec/ControlFlow.xs` cover everyday local/function/control-flow syntax.
-- `Spec/Macros.xs`, `Spec/Stdio.xs`, and `Spec/Panic.xs` cover macro behavior and imported macro modules.
+- `Spec/Macros.xs`, `Spec/Attrs.xs`, `Spec/Stdio.xs`, and `Spec/Panic.xs` cover macro behavior, attributes, and imported
+  macro modules.
 - `Spec/Data.xs`, `Spec/Enum.xs`, `Spec/Classes.xs`, and `Spec/Generics.xs` cover declaration forms.
 - `Spec/FS.xs`, `Spec/Http.xs`, `Spec/Process.xs`, `Spec/Sync.xs`, and `Spec/Thread.xs` describe standard-library-facing
   examples.
@@ -27,6 +28,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - Standard modules use `STD.<Module>` names, such as `STD.FS` and `STD.Collections`.
 - `format_args!` and `include!` are built-in macros.
 - `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` come from `Stdio`.
+- Attribute delimiter syntax is built in: `#[...]` applies to the following declaration/member, and `#![...]` applies to the
+  enclosing file/module form. Official X# attributes live under `STD.Attrs.*`; the compiler brings those names into
+  attribute scope automatically, so `imports Attrs;` is optional.
 - `Optional<T>` is available as if the compiler had inserted `imports Optional` and brought
   `STD.Optional.Optional<T>` into scope as `Optional<T>`.
 - Optional value constructors are `STD.Optional.None` and `STD.Optional.Some(...)`; the same implicit import may make

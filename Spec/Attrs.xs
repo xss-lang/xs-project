@@ -1,0 +1,104 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
+// Attribute system:
+//
+// Attribute delimiters are compiler syntax:
+//
+// - #[...] applies to the following declaration/member.
+// - #![...] applies to the enclosing file/module form.
+//
+// Attribute names are not compiler keywords. The compiler implicitly imports
+// the standard Attrs module and places its exported names in scope for
+// attribute lookup.
+// An explicit `imports Attrs;` declaration is optional and may be used for
+// readability or aliasing, but it is not required.
+// Therefore examples normally use the short scoped form:
+//
+// #[Deprecated("use NewMain")]
+//
+// The official X# attribute registry is the Attrs module under STD.
+//
+// X# keeps Rust's attribute vocabulary as compatibility aliases, then adds
+// stronger async and thread-oriented attributes for the X# pipeline.
+
+#![NoMain]
+
+#[Deprecated("use NewMain")]
+fn OldMain() {
+}
+
+#[MustUse("the returned status must be checked")]
+fn MakeStatus() => Long {
+    return 0;
+}
+
+#[Derive(Ord, Partial, Clone, Debug)]
+data Version {
+    major: Long,
+    minor: Long,
+}
+
+#[Inline(Always)]
+fn FastAdd(left: Long, right: Long) => Long {
+    return left + right;
+}
+
+#[Test]
+#[Ignore("example-only fixture")]
+fn SkippedTest() {
+}
+
+#[ThreadSafe]
+#[Send]
+#[Sync]
+data SharedCounter {
+    value: Atomic<Long>,
+}
+
+#[AsyncEntry]
+#[CancellationSafe]
+fn RunAsync() => Result.Result<(), Result.Error> {
+    return Result.Ok(());
+}
+
+// Rust compatibility names exposed by the standard Attrs module:
+//
+// Conditional compilation:
+// Cfg, CfgAttr.
+//
+// Testing:
+// Test, Ignore, ShouldPanic.
+//
+// Derive:
+// Derive, AutomaticallyDerived.
+//
+// Macro-related:
+// MacroExport, MacroUse, ProcMacro, ProcMacroDerive, ProcMacroAttribute.
+//
+// Diagnostics and lints:
+// Allow, Expect, Warn, Deny, Forbid, Deprecated, MustUse,
+// Diagnostic.OnUnimplemented, Diagnostic.DoNotRecommend.
+//
+// ABI, linking, symbols, and FFI:
+// Link, LinkName, LinkOrdinal, NoLink, Repr, CrateType, NoMain,
+// ExportName, LinkSection, NoMangle, Used, CrateName.
+//
+// Code generation:
+// Inline, Cold, Naked, NoBuiltins, TargetFeature, TrackCaller,
+// InstructionSet.
+//
+// Documentation and preludes:
+// Doc, NoStd, NoImplicitPrelude, Path.
+//
+// Limits and runtime:
+// RecursionLimit, TypeLengthLimit, PanicHandler, GlobalAllocator,
+// WindowsSubsystem.
+//
+// Features, type system, and debugger:
+// Feature, NonExhaustive, DebuggerVisualizer, CollapseDebuginfo.
+//
+// X# stronger async/thread attributes:
+// AsyncEntry, AsyncRuntime, Awaitable, CancellationSafe, CancellationUnsafe,
+// ThreadSafe, ThreadUnsafe, Send, NotSend, Sync, NotSync, MainThread,
+// WorkerThread, ThreadLocal, LockFree, AtomicOnly.

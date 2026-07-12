@@ -393,6 +393,29 @@ static void test_nested_generic_type_closers(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_attribute_structure(void)
+{
+  const char *text = "#![NoMain]\n"
+                     "#[Deprecated(\"use NewMain\")]\n"
+                     "#[Derive(STD.Attrs.Ord, STD.Attrs.Partial)]\n"
+                     "fn Main() {}\n";
+  XsSource source = {.path = "Attributes.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 49, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_ATTRIBUTE) == 3);
+  CHECK(count_kind(tree.root, XS_SYNTAX_ATTRIBUTE_LIST) == 1);
+  const XsSyntaxNode *attribute = xs_syntax_find_first(tree.root, XS_SYNTAX_ATTRIBUTE);
+  CHECK(attribute != nullptr);
+  CHECK(attribute == nullptr || (attribute->flags & XS_SYNTAX_FLAG_INNER_ATTRIBUTE) != 0);
+  const XsSyntaxNode *function = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_FUNCTION);
+  CHECK(function != nullptr);
+  CHECK(function == nullptr || xs_syntax_find_first(function, XS_SYNTAX_ATTRIBUTE_LIST) != nullptr);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_function_tree();
@@ -414,5 +437,6 @@ int main(void)
   test_result_propagation_structure();
   test_lifetime_type_structure();
   test_nested_generic_type_closers();
+  test_attribute_structure();
   return failures == 0 ? 0 : 1;
 }
