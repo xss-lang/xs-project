@@ -92,11 +92,12 @@ The documented compilation order is preserved:
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
-- Plain source native builds support the first expression slice for top-level `fn main() => Long`: i32-range integer
-  literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `<<`, `>>`, and one top-level `if` expression with a bool literal, unary `!`, or i32
-  comparison condition. `!=` and unary `!` are represented by lowering the nested condition and swapping branch targets.
-  Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower only the
-  selected branch in this slice.
+- Plain source native builds support the first expression/local slice for top-level `fn main() => Long`: explicit `Long`
+  local bindings with initializers, local identifier returns, i32-range integer literals, unary `+`/`-`, `+`, `-`, `*`,
+  `/`, `%`, `&`, `|`, `<<`, `>>`, and one top-level `if` expression with a bool literal, unary `!`, or i32 comparison
+  condition. `!=` and unary `!` are represented by lowering the nested condition and swapping branch targets. Syntactically
+  constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower only the selected branch in
+  this slice.
   This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse` linking.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
@@ -421,9 +422,10 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, signed i64 arithmetic/bitwise/shift/comparison instructions, `call`,
   `br`, `br_if`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
-  source slice: one top-level `main` returning `Long` with one return statement whose expression is built from i32-range
-  integer literals, unary `+`/`-`, arithmetic, bitwise, shift, and top-level `if` expressions. This source bridge creates a
-  temporary C MIR function, lowers it to XLIL, and then reuses the XLIL native builder.
+  source slice: one top-level `main` returning `Long` with optional explicit `Long` local bindings followed by one return
+  statement whose expression is built from locals, i32-range integer literals, unary `+`/`-`, arithmetic, bitwise, shift,
+  and top-level `if` expressions. This source bridge creates a temporary C MIR function, lowers it to XLIL, and then reuses
+  the XLIL native builder.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured
   cross-target still receives LLVM IR and object artifacts, then stops before executable linking; runtime and external
   library linking remain unconfigured.
