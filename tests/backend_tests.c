@@ -195,11 +195,13 @@ int main(int argc, char **argv)
   XsLilValueId i32_sum = 0;
   XsLilValueId i32_difference = 0;
   XsLilValueId i32_product = 0;
+  XsLilValueId i32_quotient = 0;
   CHECK(xs_lil_block_add_const_i32(arithmetic32_entry, 3, &i32_right, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_add_i32(arithmetic32_entry, 0, i32_right, &i32_sum, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_sub_i32(arithmetic32_entry, i32_sum, i32_right, &i32_difference, nullptr) == XS_LIL_OK);
   CHECK(xs_lil_block_mul_i32(arithmetic32_entry, i32_difference, i32_right, &i32_product, nullptr) == XS_LIL_OK);
-  CHECK(xs_lil_block_set_return_value(arithmetic32_entry, i32_product, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_div_i32(arithmetic32_entry, i32_product, i32_right, &i32_quotient, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(arithmetic32_entry, i32_quotient, nullptr) == XS_LIL_OK);
   CHECK(xs_llvm_declare_lil_function(first, "Arithmetic32", (XsLilType){.kind = XS_LIL_TYPE_I32}, i32_parameter, 1,
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, arithmetic32, &error) == XS_BACKEND_OK);
@@ -275,6 +277,7 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "add i32"));
   CHECK(file_contains(ir_path, "sub i32"));
   CHECK(file_contains(ir_path, "mul i32"));
+  CHECK(file_contains(ir_path, "sdiv i32"));
   CHECK(file_contains(ir_path, "define i1 @Equality32(i32"));
   CHECK(file_contains(ir_path, "icmp eq i32"));
   CHECK(file_contains(ir_path, "define i1 @Compare32(i32"));

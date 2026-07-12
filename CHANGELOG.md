@@ -14,12 +14,21 @@ source-to-native executable pipeline.
 
 ### Added
 
+### Changed
+
+### Known gaps
+
+## 0.0.4 - 2026-07-12
+
+### Added
+
 - Native executable artifacts now use the `.xse` extension; the first implemented container target is Linux ELF, with PE
   planned after ELF support.
 - `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can now produce `.ll`, `.o`, and `.xse` artifacts for the
   first supported source-native entry slice: top-level `main` returning `Long` with i32-range literals, `+`, `-`, `*`, and
   one top-level `if` expression over i32 comparisons.
 - Source-native `if` conditions now accept `!=` by lowering equality and swapping MIR branch targets.
+- XLIL, MIR, LLVM lowering, and the source-native slice now support signed `div.i32`.
 - XLIL v0 and direct LLVM lowering now support signed `i32` comparison instructions: `lt.i32`, `le.i32`, `gt.i32`,
   and `ge.i32`.
 - C MIR to XLIL body lowering now creates all destination blocks before lowering terminators, so `br` and `br_if` can target

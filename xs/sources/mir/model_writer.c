@@ -104,6 +104,11 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
                instruction->operand_right) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR mul.i32 instruction");
     return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_DIV_I32:
+    if(fprintf(stream, "  v%u = div.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
+               instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR div.i32 instruction");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_EQ_I32:
     if(fprintf(stream, "  v%u = eq.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
                instruction->operand_right) < 0)

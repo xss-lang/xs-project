@@ -12,7 +12,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 
 ## Current status
 
-- Current project version: `0.0.3`.
+- Current project version: `0.0.4`.
 - `xs --version` reports the configured compiler version.
 - The root [../CHANGELOG.md](../CHANGELOG.md) file keeps `Unreleased` for work after the current numbered line.
 - Numbered `0.0.x` entries are development snapshots, not stable language releases.
@@ -22,7 +22,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 The root `release.java` source-file tool checks release metadata without using shell scripts:
 
 ```text
-java --source=21 release.java check 0.0.3
+java --source=21 release.java check 0.0.4
 ```
 
 It validates the CMake project version, changelog heading, release documentation, CLI version documentation, and the built
@@ -30,11 +30,13 @@ It validates the CMake project version, changelog heading, release documentation
 
 ## Version line
 
+- `0.0.4` is the first source-native control-flow snapshot: checked source `main` can lower selected i32 arithmetic and
+  comparison `if` expressions to native `.xse`.
 - `0.0.3` is the direct XLIL LLVM pipeline snapshot: verified/optimized LLVM emission plus i32 arithmetic lowering.
 - Later `0.0.x` releases should keep landing narrow compiler infrastructure checkpoints without promising source-level
   native builds.
 - The `0.1.0` line starts when source/project `xs build` can produce native `.xse` artifacts. The first implemented source
-  slice is intentionally narrow: top-level `main` returning `Long` with i32-range literals and `+`, `-`, `*`.
+  slice is intentionally narrow: top-level `main` returning `Long` with i32-range literals and `+`, `-`, `*`, `/`.
 - The first `.xse` target format is Linux ELF; PE comes after ELF support.
 
 ## 0.1.0 threshold

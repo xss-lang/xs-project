@@ -94,8 +94,8 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainIf MainIfNotEqual MissingMain NonLiteralMain
-                       OutOfRangeMain ParameterizedMain WrongReturnMain)
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainIf MainIfNotEqual MissingMain
+                       NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -128,6 +128,14 @@ add_test(NAME source_native_arithmetic_artifacts COMMAND xs_xse_artifact_tests
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.o
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainArithmetic.xse 7)
 set_tests_properties(source_native_arithmetic_artifacts PROPERTIES DEPENDS source_native_arithmetic_build TIMEOUT 5)
+add_test(NAME source_native_division_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDivision.xs)
+set_tests_properties(source_native_division_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_division_artifacts COMMAND xs_xse_artifact_tests
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDivision.ll
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDivision.o
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDivision.xse 7)
+set_tests_properties(source_native_division_artifacts PROPERTIES DEPENDS source_native_division_build TIMEOUT 5)
 add_test(NAME source_native_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xs)
 set_tests_properties(source_native_if_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

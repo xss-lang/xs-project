@@ -495,11 +495,13 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   XsMirValueId two = 0;
   XsMirValueId sum = 0;
   XsMirValueId product = 0;
+  XsMirValueId quotient = 0;
   CHECK(xs_mir_block_add_const_i32(entry, 1, &one, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_const_i32(entry, 2, &two, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_i32(entry, one, two, &sum, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_mul_i32(entry, sum, two, &product, &error) == XS_MIR_OK);
-  CHECK(xs_mir_block_set_return_value(entry, product, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_div_i32(entry, product, two, &quotient, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, quotient, &error) == XS_MIR_OK);
   CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
 
   XsLilError lil_error = {0};
@@ -521,6 +523,7 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   buffer[read] = '\0';
   CHECK(strstr(buffer, "%r2:i32 = add.i32 %r0, %r1\n") != NULL);
   CHECK(strstr(buffer, "%r3:i32 = mul.i32 %r2, %r1\n") != NULL);
+  CHECK(strstr(buffer, "%r4:i32 = div.i32 %r3, %r1\n") != NULL);
   fclose(stream);
   xs_lil_module_destroy(xlil);
   xs_mir_module_destroy(mir);

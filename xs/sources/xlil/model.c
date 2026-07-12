@@ -468,6 +468,13 @@ XsLilStatus xs_lil_block_mul_i32(XsLilBlock *block, XsLilValueId left, XsLilValu
                             (XsLilType){.kind = XS_LIL_TYPE_I32}, result, error);
 }
 
+XsLilStatus xs_lil_block_div_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error)
+{
+  return add_binary_integer(block, XS_LIL_INSTRUCTION_DIV_I32, left, right, XS_LIL_TYPE_I32,
+                            (XsLilType){.kind = XS_LIL_TYPE_I32}, result, error);
+}
+
 XsLilStatus xs_lil_block_eq_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error)
 {
