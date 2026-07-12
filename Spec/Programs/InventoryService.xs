@@ -27,7 +27,7 @@ data OrderLine {
 
 data Order {
     id: Int;
-    lines: Collections.vector<OrderLine>;
+    lines: STD.Collections.vector<OrderLine>;
 }
 
 data Receipt {
@@ -44,10 +44,10 @@ interface Repository<K, V> {
 class InventoryRepository {
     implements Repository<Str, Product>;
 
-    products: Collections.hashmap<Str, Product>;
+    products: STD.Collections.hash_map<Str, Product>;
 
     InventoryRepository() {
-        this.products = Collections.hashmap<Str, Product>.new();
+        this.products = STD.Collections.hash_map<Str, Product>.new();
     }
 
     fn Get(key: Str) => &Product throws ServiceError {
@@ -122,7 +122,7 @@ fn SeedInventory() => Arc<Mutex<InventoryRepository>> {
 }
 
 fn MakeOrder(id: Int, sku: Str, quantity: Int) => Order {
-    lines: Collections.vector<OrderLine> = Collections.vector<OrderLine>.new();
+    lines: STD.Collections.vector<OrderLine> = STD.Collections.vector<OrderLine>.new();
     lines.push(OrderLine {
         sku: sku,
         quantity: quantity,

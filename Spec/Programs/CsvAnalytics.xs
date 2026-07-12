@@ -28,7 +28,7 @@ data RegionTotal {
 
 class CsvParser {
     static fn ParseLine(line: Str) => Sale throws CsvError {
-        fields: Collections.vector<Str> = line.split(",");
+        fields: STD.Collections.vector<Str> = line.split(",");
         if (fields.length() != 4) {
             throw CsvError.BadRow(line);
         }
@@ -43,10 +43,10 @@ class CsvParser {
 }
 
 class Analytics {
-    totals: Collections.hashmap<Str, RegionTotal>;
+    totals: STD.Collections.hash_map<Str, RegionTotal>;
 
     Analytics() {
-        this.totals = Collections.hashmap<Str, RegionTotal>.new();
+        this.totals = STD.Collections.hash_map<Str, RegionTotal>.new();
     }
 
     fn Add(sale: Sale) {
@@ -74,9 +74,9 @@ class Analytics {
     }
 }
 
-fn LoadSales(path: Str) => Collections.vector<Sale> throws CsvError, IOException {
-    rows: Collections.vector<Sale> = Collections.vector<Sale>.new();
-    content: Str = Fs.ReadToStr(path);
+fn LoadSales(path: Str) => STD.Collections.vector<Sale> throws CsvError, IOException {
+    rows: STD.Collections.vector<Sale> = STD.Collections.vector<Sale>.new();
+    content: Str = STD.Fs.readToStr(path);
 
     for (line: Str in content.lines().skip(1)) {
         if (line.length() == 0) {
@@ -88,7 +88,7 @@ fn LoadSales(path: Str) => Collections.vector<Sale> throws CsvError, IOException
     return rows;
 }
 
-fn Main(args: Collections.vector<Str>) => Int throws CsvError, IOException {
+fn Main(args: STD.Collections.vector<Str>) => Int throws CsvError, IOException {
     path: Str = if (args.length() > 1) {
         args[1];
     }

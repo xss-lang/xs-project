@@ -135,9 +135,9 @@ strBox: Box<Str>;
 
 // generic collections
 
-users: Collections.vector<Str>;
+users: STD.Collections.vector<Str>;
 
-scores: Collections.hashmap<Str, Int>;
+scores: STD.Collections.hash_map<Str, Int>;
 
 
 // generic enum data

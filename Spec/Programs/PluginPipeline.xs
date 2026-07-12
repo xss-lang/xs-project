@@ -63,10 +63,10 @@ class ReplacePlugin {
 }
 
 class Pipeline {
-    stages: Collections.vector<TextPlugin>;
+    stages: STD.Collections.vector<TextPlugin>;
 
     Pipeline() {
-        this.stages = Collections.vector<TextPlugin>.new();
+        this.stages = STD.Collections.vector<TextPlugin>.new();
     }
 
     fn Add(stage: TextPlugin) {
@@ -84,7 +84,7 @@ class Pipeline {
     }
 }
 
-fn Main(args: Collections.vector<Str>) => Int throws PipelineError, IOException {
+fn Main(args: STD.Collections.vector<Str>) => Int throws PipelineError, IOException {
     input: Str = if (args.length() > 1) {
         args[1];
     }

@@ -50,7 +50,7 @@ for (num in nums.iter()) {
 
 // vector iteration
 
-users: Collections.vector<Str> = {
+users: STD.Collections.vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -63,8 +63,8 @@ for (user in users.iter()) {
 
 // empty collection iteration
 
-users: Collections.vector<Str> =
-    Collections.vector.new();
+users: STD.Collections.vector<Str> =
+    STD.Collections.vector.new();
 
 for (user in users.iter()) {
 
@@ -76,7 +76,7 @@ for (user in users.iter()) {
 
 // indexed iteration
 
-users: Collections.vector<Str> = {
+users: STD.Collections.vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -145,7 +145,7 @@ for (user in users.iter()) {
 }
 
 count: Int =
-    Collections.vector.length(users);
+    STD.Collections.vector.length(users);
 
 
 // VALID

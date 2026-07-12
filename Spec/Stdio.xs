@@ -90,17 +90,17 @@ fn BuildMessage() {
 // standard stream handles
 
 fn StandardHandles() throws IOException {
-    Fs.Write(std.Stdout, "stdout text\n");
-    Fs.Write(std.Stderr, "stderr text\n");
+    STD.Fs.write(STD.Stdout, "stdout text\n");
+    STD.Fs.write(STD.Stderr, "stderr text\n");
 
-    text: Str = Fs.ReadToStr(std.Stdin());
+    text: Str = STD.Fs.readToStr(STD.Stdin());
     println!("{}", text);
 }
 
-// std.Stdout and std.Stderr are stream handles.
-// std.Stdin() returns the standard input stream handle.
-// Raw reading and writing through these handles is provided by Fs.
-// Stdio macros use std.Stdout and std.Stderr internally.
+// STD.Stdout and STD.Stderr are stream handles.
+// STD.Stdin() returns the standard input stream handle.
+// Raw reading and writing through these handles is provided by STD.Fs.
+// Stdio macros use STD.Stdout and STD.Stderr internally.
 
 
 // line input
@@ -108,7 +108,7 @@ fn StandardHandles() throws IOException {
 fn ReadLine() {
     input: Optional<Str> = Some("");
 
-    std.Stdin()
+    STD.Stdin()
         .readLine(&mut input)
         .expect("input could not be read");
 
@@ -118,7 +118,7 @@ fn ReadLine() {
 fn ReadNumber() {
     input: Optional<Str> = Some("");
 
-    std.Stdin()
+    STD.Stdin()
         .readLine(&mut input)
         .expect("input could not be read");
 
@@ -129,11 +129,11 @@ fn ReadNumber() {
 fn ReadManyNumbers() {
     input: Optional<Str> = Some("");
 
-    std.Stdin()
+    STD.Stdin()
         .readLine(&mut input)
         .unwrap();
 
-    numbers: Collections.vector<Int> = input
+    numbers: STD.Collections.vector<Int> = input
         .splitWhitespace()
         .map(fn(value) {
             return value.parse().expect("invalid number");

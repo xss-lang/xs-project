@@ -30,7 +30,7 @@
 // - Str -> None
 //
 // Vector:
-// - Collections.vector<T>
+// - STD.Collections.vector<T>
 // - Dynamic size.
 // - Supports push().
 // - Supports pop().
@@ -41,7 +41,7 @@
 // - Supports new().
 //
 // HashMap:
-// - Collections.hashmap<K, V>
+// - STD.Collections.hash_map<K, V>
 // - Supports new().
 // - Supports insert().
 // - Supports get().
@@ -114,7 +114,7 @@ nums[0] = 5;
 
 // vectors
 
-users: Collections.vector<Str> = {
+users: STD.Collections.vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -122,34 +122,34 @@ users: Collections.vector<Str> = {
 
 // vector constructor
 
-users: Collections.vector<Str> =
-    Collections.vector.new();
+users: STD.Collections.vector<Str> =
+    STD.Collections.vector.new();
 
 
 // vector push
 
-Collections.vector.push(users, "Friedrich");
+STD.Collections.vector.push(users, "Friedrich");
 
 
 // vector pop by value
 
-Collections.vector.pop(users, "Leitewolf");
+STD.Collections.vector.pop(users, "Leitewolf");
 
 
 // vector pop by index
 
-Collections.vector.pop(users[1]);
+STD.Collections.vector.pop(users[1]);
 
 
 // vector get
 
 name: Str =
-    Collections.vector.get(users[0]);
+    STD.Collections.vector.get(users[0]);
 
 
 // vector update
 
-Collections.vector.adjust(
+STD.Collections.vector.adjust(
     users[1],
     "Friedrich"
 );
@@ -158,24 +158,24 @@ Collections.vector.adjust(
 // vector length
 
 count: Int =
-    Collections.vector.length(users);
+    STD.Collections.vector.length(users);
 
 
 // hashmaps
 
-scores: Collections.hashmap<Str, Int> =
-    Collections.hashmap.new();
+scores: STD.Collections.hash_map<Str, Int> =
+    STD.Collections.hash_map.new();
 
 
 // insert
 
-Collections.hashmap.insert(
+STD.Collections.hash_map.insert(
     scores,
     "Alpha",
     90
 );
 
-Collections.hashmap.insert(
+STD.Collections.hash_map.insert(
     scores,
     "Leitewolf",
     50
@@ -185,7 +185,7 @@ Collections.hashmap.insert(
 // get
 
 score: Int =
-    Collections.hashmap.get(
+    STD.Collections.hash_map.get(
         scores,
         "Alpha"
     );
@@ -193,7 +193,7 @@ score: Int =
 
 // delete
 
-Collections.hashmap.delete(
+STD.Collections.hash_map.delete(
     scores,
     "Alpha"
 );
@@ -203,26 +203,26 @@ Collections.hashmap.delete(
 
 imports Collections, Stdio, Format;
 
-scores: Collections.hashmap<Str, Int> =
-    Collections.hashmap.new();
+scores: STD.Collections.hash_map<Str, Int> =
+    STD.Collections.hash_map.new();
 
-Collections.hashmap.insert(
+STD.Collections.hash_map.insert(
     scores,
     "Alpha",
     90
 );
 
-Collections.hashmap.insert(
+STD.Collections.hash_map.insert(
     scores,
     "Leitewolf",
     50
 );
 
-println!("{}", Collections.hashmap.get(scores, "Alpha"));
+println!("{}", STD.Collections.hash_map.get(scores, "Alpha"));
 
 println!(
     "Leitewolf's score: {}",
-    Collections.hashmap.get(scores, "Leitewolf")
+    STD.Collections.hash_map.get(scores, "Leitewolf")
 );
 
 
@@ -238,13 +238,13 @@ nums: Int[3] = {1, 2};
 
 // VALID
 
-users: Collections.vector<Str> =
-    Collections.vector.new();
+users: STD.Collections.vector<Str> =
+    STD.Collections.vector.new();
 
 
 // VALID
 
-Collections.vector.push(
+STD.Collections.vector.push(
     users,
     "Friedrich"
 );
@@ -252,14 +252,14 @@ Collections.vector.push(
 
 // VALID
 
-Collections.vector.get(
+STD.Collections.vector.get(
     users[0]
 );
 
 
 // VALID
 
-Collections.vector.adjust(
+STD.Collections.vector.adjust(
     users[1],
     "Friedrich"
 );
@@ -267,13 +267,13 @@ Collections.vector.adjust(
 
 // VALID
 
-scores: Collections.hashmap<Str, Int> =
-    Collections.hashmap.new();
+scores: STD.Collections.hash_map<Str, Int> =
+    STD.Collections.hash_map.new();
 
 
 // VALID
 
-Collections.hashmap.insert(
+STD.Collections.hash_map.insert(
     scores,
     "Alpha",
     90
@@ -282,7 +282,7 @@ Collections.hashmap.insert(
 
 // VALID
 
-Collections.hashmap.get(
+STD.Collections.hash_map.get(
     scores,
     "Alpha"
 );
@@ -290,7 +290,7 @@ Collections.hashmap.get(
 
 // VALID
 
-Collections.hashmap.delete(
+STD.Collections.hash_map.delete(
     scores,
     "Alpha"
 );
@@ -298,7 +298,7 @@ Collections.hashmap.delete(
 
 // INVALID
 
-Collections.vector.get(
+STD.Collections.vector.get(
     users,
     0
 );
@@ -311,14 +311,14 @@ scores["Alpha"];
 
 // INVALID
 
-scores: Collections.hashmap<Str, Int> = {
+scores: STD.Collections.hash_map<Str, Int> = {
     "Alpha": 90,
 };
 
 
 // INVALID
 
-Collections.vector.push(
+STD.Collections.vector.push(
     nums,
     5
 );
@@ -326,7 +326,7 @@ Collections.vector.push(
 
 // INVALID
 
-Collections.vector.pop(
+STD.Collections.vector.pop(
     nums,
     0
 );

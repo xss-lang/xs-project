@@ -23,6 +23,31 @@
 
 // Identifiers are case-sensitive.
 
+// Naming convention:
+//
+// X# permits normal ASCII identifiers in every position, but public
+// language and standard-library names use role-based casing.
+//
+// Canonical path shape:
+//
+//     PascalCase.PascalCase.snake_case.lowercase().camelCase()
+//
+// Standard-library examples:
+//
+//     STD.Collections.hash_map.get(scores, "Alpha")
+//     STD.Stdin().readLine(&mut input)
+//
+// Segment roles:
+//
+// - STD is the standard-library root.
+// - PascalCase is used for public modules, namespaces, and nominal types.
+// - snake_case is used for registry-like families such as collection kinds.
+// - lowercase is used for short free functions such as get().
+// - camelCase is used for methods and longer function names such as readLine().
+//
+// This is a style and standard-library naming rule. It does not make
+// differently cased identifiers equivalent.
+
 
 // Valid first characters:
 //

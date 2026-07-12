@@ -33,12 +33,12 @@ data Transfer {
 }
 
 class Ledger {
-    accounts: Collections.hashmap<Str, Account>;
-    audit: Collections.vector<Transfer>;
+    accounts: STD.Collections.hash_map<Str, Account>;
+    audit: STD.Collections.vector<Transfer>;
 
     Ledger() {
-        this.accounts = Collections.hashmap<Str, Account>.new();
-        this.audit = Collections.vector<Transfer>.new();
+        this.accounts = STD.Collections.hash_map<Str, Account>.new();
+        this.audit = STD.Collections.vector<Transfer>.new();
     }
 
     fn Open(id: Str, owner: Str, balance: Money) {

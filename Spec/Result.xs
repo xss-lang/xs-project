@@ -50,7 +50,7 @@ fn DoWork() => Result.Result<(), Result.Error> {
 // explicit match without @
 
 fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
-    file = match (Fs.File.open(path)) {
+    file = match (STD.Fs.File.open(path)) {
         Result.Ok(value) -> value,
         Result.Error(error) -> return Result.Error(error),
     };
@@ -69,7 +69,7 @@ fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
 // propagation with @
 
 fn ReadFile(path: Str) => Result.Result<Optional<Str>, Result.Error> {
-    file = Fs.File.open(path)@;
+    file = STD.Fs.File.open(path)@;
     content: Optional<Str> = Some("");
     file.readToString(&mut content)@;
     return Result.Ok(content);
@@ -81,7 +81,7 @@ fn ReadFile(path: Str) => Result.Result<Optional<Str>, Result.Error> {
 fn ReadRequiredLine() => Str {
     line: Optional<Str> = Some("");
 
-    std.Stdin()
+    STD.Stdin()
         .readLine(&mut line)
         .expect("input could not be read");
 

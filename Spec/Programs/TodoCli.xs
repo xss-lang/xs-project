@@ -30,12 +30,12 @@ data TodoItem {
 class TodoStore {
     path: Str;
     nextId: Int;
-    items: Collections.vector<TodoItem>;
+    items: STD.Collections.vector<TodoItem>;
 
     TodoStore(path: Str) throws TodoError {
         this.path = path;
         this.nextId = 1;
-        this.items = Collections.vector<TodoItem>.new();
+        this.items = STD.Collections.vector<TodoItem>.new();
         this.Load();
     }
 
@@ -81,11 +81,11 @@ class TodoStore {
     }
 
     fn Load() throws TodoError {
-        if (!Fs.Exists(this.path)) {
+        if (!STD.Fs.exists(this.path)) {
             return;
         }
 
-        content: Str = Fs.ReadToStr(this.path);
+        content: Str = STD.Fs.readToStr(this.path);
 
         for (line: Str in content.lines()) {
             if (line.length() == 0) {
@@ -102,23 +102,23 @@ class TodoStore {
     }
 
     fn Save() throws TodoError {
-        if (!Fs.Exists(this.path)) {
-            Fs.CreateFile(this.path);
+        if (!STD.Fs.exists(this.path)) {
+            STD.Fs.createFile(this.path);
         }
 
-        opened: Fs.File = Fs.OpenOptions.new()
+        opened: STD.Fs.File = STD.Fs.OpenOptions.new()
             .truncate(true)
             .open(this.path);
 
         for (item: TodoItem in this.items) {
-            Fs.Write(opened, format!("{}\n", TodoCodec.Format(item)));
+            STD.Fs.write(opened, format!("{}\n", TodoCodec.Format(item)));
         }
     }
 }
 
 class TodoCodec {
     static fn Parse(line: Str) => TodoItem throws TodoError {
-        parts: Collections.vector<Str> = line.split("|");
+        parts: STD.Collections.vector<Str> = line.split("|");
         if (parts.length() != 3) {
             throw TodoError.InvalidCommand(line);
         }
@@ -141,7 +141,7 @@ class TodoCodec {
     }
 }
 
-fn ParseCommand(args: Collections.vector<Str>) => Command throws TodoError {
+fn ParseCommand(args: STD.Collections.vector<Str>) => Command throws TodoError {
     if (args.length() < 2) {
         return Command.Help;
     }
@@ -177,7 +177,7 @@ fn PrintHelp() throws IOException {
     println!("todo list");
 }
 
-fn Main(args: Collections.vector<Str>) => Int throws TodoError, IOException {
+fn Main(args: STD.Collections.vector<Str>) => Int throws TodoError, IOException {
     store: TodoStore = new("todo.db");
     command: Command = ParseCommand(args);
 

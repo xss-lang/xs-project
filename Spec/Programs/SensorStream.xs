@@ -46,12 +46,12 @@ class Sensor {
 }
 
 class Aggregator {
-    totals: Collections.hashmap<Str, Float>;
-    counts: Collections.hashmap<Str, Int>;
+    totals: STD.Collections.hash_map<Str, Float>;
+    counts: STD.Collections.hash_map<Str, Int>;
 
     Aggregator() {
-        this.totals = Collections.hashmap<Str, Float>.new();
-        this.counts = Collections.hashmap<Str, Int>.new();
+        this.totals = STD.Collections.hash_map<Str, Float>.new();
+        this.counts = STD.Collections.hash_map<Str, Int>.new();
     }
 
     fn Add(reading: Reading) {
@@ -59,8 +59,8 @@ class Aggregator {
         this.counts[reading.sensorId] = (this.counts[reading.sensorId] ?? 0) + 1;
     }
 
-    fn Averages() => Collections.vector<Average> {
-        result: Collections.vector<Average> = Collections.vector<Average>.new();
+    fn Averages() => STD.Collections.vector<Average> {
+        result: STD.Collections.vector<Average> = STD.Collections.vector<Average>.new();
 
         for ((sensorId, total): (Str, Float) in this.totals) {
             count: Int = this.counts[sensorId]!;
@@ -76,7 +76,7 @@ class Aggregator {
 }
 
 async fn Main() => Task<Int> throws SensorError, IOException {
-    sensors: Collections.vector<Sensor> = Collections.vector<Sensor>.of(
+    sensors: STD.Collections.vector<Sensor> = STD.Collections.vector<Sensor>.of(
         Sensor.new("temperature", "C"),
         Sensor.new("humidity", "%"),
         Sensor.new("pressure", "Pa")

@@ -86,11 +86,11 @@ class HealthClient {
 }
 
 async fn CheckAll(
-    endpoints: Collections.vector<Endpoint>,
+    endpoints: STD.Collections.vector<Endpoint>,
     reporter: HealthReporter
 ) => Task<Int> throws HealthError, IOException {
     client: HealthClient = new();
-    tasks: Collections.vector<Task<HealthResult>> = Collections.vector<Task<HealthResult>>.new();
+    tasks: STD.Collections.vector<Task<HealthResult>> = STD.Collections.vector<Task<HealthResult>>.new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));
@@ -109,8 +109,8 @@ async fn CheckAll(
     return failures;
 }
 
-fn DefaultEndpoints() => Collections.vector<Endpoint> {
-    endpoints: Collections.vector<Endpoint> = Collections.vector<Endpoint>.new();
+fn DefaultEndpoints() => STD.Collections.vector<Endpoint> {
+    endpoints: STD.Collections.vector<Endpoint> = STD.Collections.vector<Endpoint>.new();
 
     endpoints.push(Endpoint {
         name: "example",

@@ -4,10 +4,10 @@
 // Fs module:
 
 //
-// Fs provides filesystem and raw stream operations.
+// STD.Fs provides filesystem and raw stream operations.
 //
 // Formatted output belongs to Stdio.
-// Fs.Write does not format text and does not add a newline.
+// STD.Fs.write does not format text and does not add a newline.
 //
 
 imports Fs, Stdio, Collections;
@@ -16,12 +16,12 @@ imports Fs, Stdio, Collections;
 // raw writes
 
 fn WriteText() throws IOException {
-    Fs.Write("log.txt", "hello\n");
-    Fs.Write(std.Stdout, "stdout\n");
-    Fs.Write(std.Stderr, "stderr\n");
+    STD.Fs.write("log.txt", "hello\n");
+    STD.Fs.write(STD.Stdout, "stdout\n");
+    STD.Fs.write(STD.Stderr, "stderr\n");
 }
 
-// Fs.Write(path, text):
+// STD.Fs.write(path, text):
 //
 // - Writes the exact Str bytes/text representation selected by the runtime.
 // - Does not apply formatting.
@@ -33,33 +33,33 @@ fn WriteText() throws IOException {
 // raw reads
 
 fn ReadText() throws IOException {
-    content: Str = Fs.ReadToStr("log.txt");
+    content: Str = STD.Fs.readToStr("log.txt");
     println!("{}", content);
 }
 
 fn ReadBytes() throws IOException {
-    bytes: Collections.vector<Byte> = Fs.Read("image.png");
+    bytes: STD.Collections.vector<Byte> = STD.Fs.read("image.png");
     println!("file size: {}", bytes.length());
 }
 
-// Fs.ReadToStr(path-or-stream) reads UTF-16 text into Str.
-// Fs.Read(path-or-stream) reads raw bytes into Collections.vector<Byte>.
+// STD.Fs.readToStr(path-or-stream) reads UTF-16 text into Str.
+// STD.Fs.read(path-or-stream) reads raw bytes into STD.Collections.vector<Byte>.
 
 
 // create paths
 
 fn CreatePaths() throws IOException {
-    Fs.CreateDir("data/backups");
-    Fs.CreateFile("data/backups/log.txt");
+    STD.Fs.createDir("data/backups");
+    STD.Fs.createFile("data/backups/log.txt");
 }
 
-// Fs.CreateDir(path):
+// STD.Fs.createDir(path):
 //
 // - Creates the directory and missing parent directories.
 // - Succeeds if the directory already exists.
 // - Throws IOException if a non-directory path component blocks creation.
 //
-// Fs.CreateFile(path):
+// STD.Fs.createFile(path):
 //
 // - Creates a new empty file.
 // - Throws IOException if the file already exists.
@@ -69,70 +69,70 @@ fn CreatePaths() throws IOException {
 // move, copy and remove
 
 fn MoveCopyRemove() throws IOException {
-    Fs.CopyFile("data/source.txt", "data/copy.txt");
-    Fs.Move("data/copy.txt", "data/backups/copy.txt");
-    Fs.RemoveFile("data/source.txt");
+    STD.Fs.copyFile("data/source.txt", "data/copy.txt");
+    STD.Fs.move("data/copy.txt", "data/backups/copy.txt");
+    STD.Fs.removeFile("data/source.txt");
 
-    Fs.CopyDir("data/backups", "data/archive");
-    Fs.RemoveDir("data/archive");
+    STD.Fs.copyDir("data/backups", "data/archive");
+    STD.Fs.removeDir("data/archive");
 }
 
-// Fs.RemoveDir removes an empty directory.
+// STD.Fs.removeDir removes an empty directory.
 // Recursive directory deletion is intentionally not the default operation.
 
 
 // list directory
 
 fn ListDirectory() throws IOException {
-    for (entry: Str in Fs.ListDir(".")) {
+    for (entry: Str in STD.Fs.listDir(".")) {
         println!("{}", entry.trim());
     }
 }
 
-// Fs.ListDir(path) returns Collections.vector<Str>.
+// STD.Fs.listDir(path) returns STD.Collections.vector<Str>.
 // Entries are returned in deterministic lexicographic order.
 
 
 // metadata and path helpers
 
 fn InspectPath(path: Str) throws IOException {
-    if (Fs.Exists(path) && Fs.IsDir(path)) {
-        for (entry: Str in Fs.WalkDir(path)) {
-            relative: Str = Fs.RelativePath(path, entry);
-            println!("{} {}", relative, Fs.Size(entry));
+    if (STD.Fs.exists(path) && STD.Fs.isDir(path)) {
+        for (entry: Str in STD.Fs.walkDir(path)) {
+            relative: Str = STD.Fs.relativePath(path, entry);
+            println!("{} {}", relative, STD.Fs.size(entry));
         }
     }
 }
 
 fn BuildPath(root: Str, name: Str) => Str {
-    path: Str = Fs.JoinPath(root, name);
-    return Fs.ParentDir(path);
+    path: Str = STD.Fs.joinPath(root, name);
+    return STD.Fs.parentDir(path);
 }
 
-// Fs.Exists(path) returns false instead of throwing for a missing path.
-// Fs.IsFile(path) and Fs.IsDir(path) return false for a missing path.
-// Fs.Size(path) returns the byte length of a regular file.
-// Fs.ModifiedTicks(path) returns a runtime-defined comparable timestamp.
-// Fs.JoinPath(base, child) joins path components using the target platform.
-// Fs.ParentDir(path) returns the lexical parent directory.
-// Fs.RelativePath(root, path) returns a lexical relative path.
-// Fs.WalkDir(path) recursively returns files and directories in
+// STD.Fs.exists(path) returns false instead of throwing for a missing path.
+// STD.Fs.isFile(path) and STD.Fs.isDir(path) return false for a missing path.
+// STD.Fs.size(path) returns the byte length of a regular file.
+// STD.Fs.modifiedTicks(path) returns a runtime-defined comparable timestamp.
+// STD.Fs.joinPath(base, child) joins path components using the target platform.
+// STD.Fs.parentDir(path) returns the lexical parent directory.
+// STD.Fs.relativePath(root, path) returns a lexical relative path.
+// STD.Fs.walkDir(path) recursively returns files and directories in
 // deterministic lexicographic order.
-// Fs.WalkDir does not follow symbolic links by default.
+// STD.Fs.walkDir does not follow symbolic links by default.
 
 
 // file handles and open options
 
 fn OpenWithOptions() throws IOException {
-    file: Fs.File = Fs.OpenOptions.new()
+    file: STD.Fs.File = STD.Fs.OpenOptions.new()
         .create(true)
         .append(true)
         .open("log.txt");
 
-    Fs.Write(file, "new log line\n");
+    STD.Fs.write(file, "new log line\n");
 }
 
-// Fs.File is an owned file handle.
+// STD.Fs.File is an owned file handle.
 // File handles close through deterministic drop.
 // OpenOptions defaults:
 //
