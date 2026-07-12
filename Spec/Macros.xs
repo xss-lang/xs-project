@@ -8,7 +8,7 @@
 //
 // Macro expansion runs after AST creation and before HIR generation.
 //
-// Macros are defined with macroRules!.
+// Macros are defined with macro_rules!.
 //
 // Macros:
 //
@@ -26,7 +26,7 @@
 // It is recognized after the enclosing source has a structural AST.
 // Its included text is then reparsed and materialized at the macro call site.
 //
-// It is not a macroRules! declaration and is not resolved through
+// It is not a macro_rules! declaration and is not resolved through
 // the AST macro scope system.
 //
 // include!() accepts only a local relative file path string.
@@ -48,7 +48,7 @@
 
 imports Stdio;
 
-// print!, println!, eprint!, eprintln!, and format! are normal macros
+// print!, println!, eprint!, eprintln!, format!, and format_args! are normal macros
 // exported by Stdio. They are not compiler built-ins.
 //
 // assert!, assert_eq!, assert_ne!, debug_assert!, debug_assert_eq!, and
@@ -62,7 +62,7 @@ imports Stdio;
 // Basic macro
 // ============================================================
 
-macroRules! say {
+macro_rules! say {
     ($x:expr): {
         println!("{}", $x);
     };
@@ -86,18 +86,20 @@ fn ExpandedMain() {
 
 // General form:
 //
-// macroRules! macroName {
+// macro_rules! macro_name {
 //     (matcher): {
 //         expansion
 //     };
 // }
 
 
-// macroRules!
+// macro_rules!
 //
 // - Begins a macro definition.
 // - Must be followed by the macro name.
 // - The macro name follows normal identifier rules.
+// - snake_case is the canonical style for macro names, but it is not a hard
+//   validity requirement.
 // - Each matcher is written inside parentheses.
 // - Each expansion is written inside braces.
 // - Every macro rule must end with semicolon.
@@ -106,7 +108,7 @@ fn ExpandedMain() {
 
 // Valid:
 
-macroRules! empty {
+macro_rules! empty {
     (): {
     };
 }
@@ -114,7 +116,7 @@ macroRules! empty {
 
 // Invalid because the rule does not end with semicolon:
 
-macroRules! invalidRule {
+macro_rules! invalid_rule {
     (): {
     }
 }
@@ -146,7 +148,7 @@ say!{"Alpha"};
 // Multiple rules
 // ============================================================
 
-macroRules! output {
+macro_rules! output {
     (): {
         println!("");
     };
@@ -173,7 +175,7 @@ macroRules! output {
 
 // Example:
 
-macroRules! describe {
+macro_rules! describe {
     ($expression:expr): {
         println!("expression");
     };
@@ -214,7 +216,7 @@ fn InvalidMultipleMatchingRules() {
 
 // Expression:
 
-macroRules! expressionMacro {
+macro_rules! expression_macro {
     ($value:expr): {
         print!("{}", $value);
     };
@@ -223,7 +225,7 @@ macroRules! expressionMacro {
 
 // Identifier:
 
-macroRules! identifierMacro {
+macro_rules! identifier_macro {
     ($name:ident): {
         $name: Int = 42;
     };
@@ -232,7 +234,7 @@ macroRules! identifierMacro {
 
 // Type:
 
-macroRules! typeMacro {
+macro_rules! type_macro {
     ($typeValue:ty): {
         value: $typeValue;
     };
@@ -241,7 +243,7 @@ macroRules! typeMacro {
 
 // Path:
 
-macroRules! pathMacro {
+macro_rules! path_macro {
     ($modulePath:path): {
         $modulePath;
     };
@@ -250,7 +252,7 @@ macroRules! pathMacro {
 
 // Pattern:
 
-macroRules! patternMacro {
+macro_rules! pattern_macro {
     ($patternValue:pat): {
         match (value) {
             $patternValue -> {
@@ -262,7 +264,7 @@ macroRules! patternMacro {
 
 // Statement:
 
-macroRules! statementMacro {
+macro_rules! statement_macro {
     ($statementValue:stmt): {
         $statementValue
     };
@@ -271,7 +273,7 @@ macroRules! statementMacro {
 
 // Block:
 
-macroRules! blockMacro {
+macro_rules! block_macro {
     ($blockValue:block): {
         $blockValue
     };
@@ -280,7 +282,7 @@ macroRules! blockMacro {
 
 // Item:
 
-macroRules! itemMacro {
+macro_rules! item_macro {
     ($itemValue:item): {
         $itemValue
     };
@@ -289,7 +291,7 @@ macroRules! itemMacro {
 
 // Literal:
 
-macroRules! literalMacro {
+macro_rules! literal_macro {
     ($literalValue:literal): {
         print!("{}", $literalValue);
     };
@@ -298,7 +300,7 @@ macroRules! literalMacro {
 
 // Metadata:
 
-macroRules! metadataMacro {
+macro_rules! metadata_macro {
     ($metadataValue:meta): {
         $metadataValue
     };
@@ -307,7 +309,7 @@ macroRules! metadataMacro {
 
 // Token tree:
 
-macroRules! tokenTreeMacro {
+macro_rules! token_tree_macro {
     ($tokenValue:tt): {
         $tokenValue
     };
@@ -316,7 +318,7 @@ macroRules! tokenTreeMacro {
 
 // Lifetime:
 
-macroRules! lifetimeMacro {
+macro_rules! lifetime_macro {
     ($lifetimeValue:lifetime): {
         $lifetimeValue
     };
@@ -325,7 +327,7 @@ macroRules! lifetimeMacro {
 
 // Visibility:
 
-macroRules! visibilityMacro {
+macro_rules! visibility_macro {
     ($visibilityValue:vis): {
         $visibilityValue fn Generated() {
         }
@@ -356,7 +358,7 @@ macroRules! visibilityMacro {
 
 // Zero or more expressions:
 
-macroRules! printMany {
+macro_rules! print_many {
     ($(
         $value:expr
     )*): {
@@ -369,7 +371,7 @@ macroRules! printMany {
 
 // One or more expressions:
 
-macroRules! printAtLeastOne {
+macro_rules! print_at_least_one {
     ($(
         $value:expr
     )+): {
@@ -389,7 +391,7 @@ macroRules! printAtLeastOne {
 
 // Zero or more comma-separated expressions:
 
-macroRules! commaSeparated {
+macro_rules! comma_separated {
     ($(
         $value:expr
     ),*): {
@@ -402,7 +404,7 @@ macroRules! commaSeparated {
 
 // One or more comma-separated expressions:
 
-macroRules! commaSeparatedRequired {
+macro_rules! comma_separated_required {
     ($(
         $value:expr
     ),+): {
@@ -416,12 +418,12 @@ macroRules! commaSeparatedRequired {
 // Valid:
 
 fn RepetitionCalls() {
-    commaSeparated!();
-    commaSeparated!(1);
-    commaSeparated!(1, 2, 3);
+    comma_separated!();
+    comma_separated!(1);
+    comma_separated!(1, 2, 3);
 
-    commaSeparatedRequired!(1);
-    commaSeparatedRequired!(1, 2, 3);
+    comma_separated_required!(1);
+    comma_separated_required!(1, 2, 3);
 }
 
 
@@ -439,7 +441,7 @@ fn RepetitionCalls() {
 
 // Macro variables begin with $.
 
-macroRules! duplicateOutput {
+macro_rules! duplicate_output {
     ($value:expr): {
         print!("{}{}", $value, $value);
     };
@@ -451,12 +453,12 @@ macroRules! duplicateOutput {
 
 
 // A macro variable name may be declared only once in the entire
-// macroRules! definition.
+// macro_rules! definition.
 
 
 // Invalid: duplicate variable in one rule.
 
-macroRules! invalidDuplicateInRule {
+macro_rules! invalid_duplicate_in_rule {
     ($value:expr, $value:expr): {
     };
 }
@@ -464,7 +466,7 @@ macroRules! invalidDuplicateInRule {
 
 // Invalid: duplicate variable across different rules.
 
-macroRules! invalidDuplicateAcrossRules {
+macro_rules! invalid_duplicate_across_rules {
     ($value:expr): {
     };
 
@@ -475,7 +477,7 @@ macroRules! invalidDuplicateAcrossRules {
 
 // Invalid: duplicate variable inside and outside repetition.
 
-macroRules! invalidDuplicateWithRepetition {
+macro_rules! invalid_duplicate_with_repetition {
     (
         $value:expr,
         $(
@@ -488,7 +490,7 @@ macroRules! invalidDuplicateWithRepetition {
 
 // Valid: every matcher variable has a unique name.
 
-macroRules! uniqueVariables {
+macro_rules! unique_variables {
     ($expressionValue:expr): {
     };
 
@@ -503,7 +505,7 @@ macroRules! uniqueVariables {
 
 // A macro may be declared at top level.
 
-macroRules! globalMacro {
+macro_rules! global_macro {
     (): {
         println!("global");
     };
@@ -516,13 +518,13 @@ macroRules! globalMacro {
 // A macro may also be declared inside a scope.
 
 fn LocalMacroScope() {
-    macroRules! localMacro {
+    macro_rules! local_macro {
         (): {
             println!("local");
         };
     }
 
-    localMacro!();
+    local_macro!();
 }
 
 
@@ -532,14 +534,14 @@ fn LocalMacroScope() {
 // Nested scopes may use a macro from an enclosing scope.
 
 fn OuterScope() {
-    macroRules! outerMacro {
+    macro_rules! outer_macro {
         (): {
             println!("outer");
         };
     }
 
     {
-        outerMacro!();
+        outer_macro!();
     }
 }
 
@@ -556,9 +558,9 @@ fn OuterScope() {
 // same scope.
 
 fn CallBeforeDefinition() {
-    localMacro!();
+    local_macro!();
 
-    macroRules! localMacro {
+    macro_rules! local_macro {
         (): {
             println!("local");
         };
@@ -577,14 +579,14 @@ fn CallBeforeDefinition() {
 // Declarations produced by a macro become active in the scope in
 // which the macro is called.
 
-macroRules! createValue {
+macro_rules! create_value {
     (): {
         generatedValue: Int = 42;
     };
 }
 
 fn GeneratedVariable() {
-    createValue!();
+    create_value!();
 
     print!("{}", generatedValue);
 }
@@ -593,7 +595,7 @@ fn GeneratedVariable() {
 // Generated declarations may be used before the textual macro call
 // because macro expansion is completed before later semantic stages.
 
-macroRules! createType {
+macro_rules! create_type {
     (): {
         class GeneratedUser {
         }
@@ -603,7 +605,7 @@ macroRules! createType {
 fn GeneratedTypeBeforeCall() {
     user: GeneratedUser = new();
 
-    createType!();
+    create_type!();
 }
 
 
@@ -629,7 +631,7 @@ fn GeneratedTypeBeforeCall() {
 
 // Name conflicts produce compile-time errors.
 
-macroRules! createConflictingValue {
+macro_rules! create_conflicting_value {
     (): {
         value: Int = 42;
     };
@@ -638,7 +640,7 @@ macroRules! createConflictingValue {
 fn InvalidGeneratedNameConflict() {
     value: Int = 1;
 
-    createConflictingValue!();
+    create_conflicting_value!();
 }
 
 
@@ -652,20 +654,20 @@ fn InvalidGeneratedNameConflict() {
 
 // A macro may call another macro.
 
-macroRules! innerMacro {
+macro_rules! inner_macro {
     ($value:expr): {
         println!("{}", $value);
     };
 }
 
-macroRules! outerMacro {
+macro_rules! outer_macro {
     ($outerValue:expr): {
-        innerMacro!($outerValue);
+        inner_macro!($outerValue);
     };
 }
 
 fn NestedMacroCall() {
-    outerMacro!("Alpha");
+    outer_macro!("Alpha");
 }
 
 
@@ -678,24 +680,24 @@ fn NestedMacroCall() {
 
 // Direct macro recursion is forbidden.
 
-macroRules! invalidDirectRecursion {
+macro_rules! invalid_direct_recursion {
     (): {
-        invalidDirectRecursion!();
+        invalid_direct_recursion!();
     };
 }
 
 
 // Indirect macro recursion is also forbidden.
 
-macroRules! invalidFirst {
+macro_rules! invalid_first {
     (): {
-        invalidSecond!();
+        invalid_second!();
     };
 }
 
-macroRules! invalidSecond {
+macro_rules! invalid_second {
     (): {
-        invalidFirst!();
+        invalid_first!();
     };
 }
 
@@ -795,14 +797,14 @@ macroRules! invalidSecond {
 // Invalid unmatched call
 // ============================================================
 
-macroRules! onlyLiteral {
+macro_rules! only_literal {
     ($value:literal): {
         print!("{}", $value);
     };
 }
 
 fn InvalidUnmatchedMacroCall() {
-    onlyLiteral!(first + second);
+    only_literal!(first + second);
 }
 
 // If the argument does not match any rule, compilation fails.
@@ -815,7 +817,7 @@ fn InvalidUnmatchedMacroCall() {
 //
 // Definition:
 //
-//     macroRules! name {
+//     macro_rules! name {
 //         (matcher): {
 //             expansion
 //         };

@@ -85,7 +85,7 @@ The documented compilation order is preserved:
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
 - `xs check -proj <project.xsproj>` works.
 - `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
-  reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macroRules!` declaration.
+  reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macro_rules!` declaration.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
 - `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized.
 - Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
@@ -175,7 +175,7 @@ This layer lives under the HIR directory.
 - If a file uses `public namespace`, top-level declarations without an explicit visibility modifier are treated as public in
   HIR.
 - `public namespace` does not override explicit `private`, `internal`, or `protected` visibility modifiers.
-- Top-level `fn`, `class`, `interface`, `enum`, `data`, and `macroRules!` declarations are collected into the symbol table.
+- Top-level `fn`, `class`, `interface`, `enum`, `data`, and `macro_rules!` declarations are collected into the symbol table.
 - `xs_hir_collect_symbols_expanded`, when given a declaration macro expansion set, collects synthetic declarations produced
   by `XS_SYNTAX_DECL_MACRO_CALL` reparse trees into the active HIR namespace of the macro call. Duplicate symbol checks use
   the same namespace rule as normal declarations.

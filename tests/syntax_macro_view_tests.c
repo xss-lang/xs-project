@@ -60,7 +60,7 @@ static bool has_identifier(const XsSyntaxNode *node, const char *value)
 static void test_top_level_declaration_view_expands_macro_calls(void)
 {
   const char *text = "module App;\n"
-                     "macroRules! make {\n"
+                     "macro_rules! make {\n"
                      "  (first): { incomplete fn First(); };\n"
                      "  (second): { incomplete fn Second(); };\n"
                      "}\n"
@@ -93,7 +93,7 @@ static void test_child_declaration_view_expands_member_macro_calls(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macroRules! make { (): { incomplete fn Generated(); }; }\n"
+                     "  macro_rules! make { (): { incomplete fn Generated(); }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "ExpandedMemberView.xs", .text = text, .length = strlen(text)};
@@ -128,7 +128,7 @@ static void test_child_declaration_view_expands_field_like_macro_calls(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macroRules! make { (): { value: Int; }; }\n"
+                     "  macro_rules! make { (): { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "ExpandedFieldLikeMemberView.xs", .text = text, .length = strlen(text)};
@@ -162,7 +162,7 @@ static void test_child_declaration_view_expands_field_like_macro_calls(void)
 static void test_child_statement_view_expands_macro_calls(void)
 {
   const char *text = "module App;\n"
-                     "macroRules! emit { (): { Known(); }; }\n"
+                     "macro_rules! emit { (): { Known(); }; }\n"
                      "fn Known() {}\n"
                      "fn Main() {\n"
                      "  Before();\n"
@@ -206,8 +206,8 @@ static void test_child_statement_view_expands_macro_calls(void)
 static void test_materialized_expanded_tree_replaces_macro_calls(void)
 {
   const char *text = "module App;\n"
-                     "macroRules! make { (): { incomplete fn Generated(); }; }\n"
-                     "macroRules! emit { (): { Generated(); }; }\n"
+                     "macro_rules! make { (): { incomplete fn Generated(); }; }\n"
+                     "macro_rules! emit { (): { Generated(); }; }\n"
                      "make!();\n"
                      "fn Main() { emit!(); }\n";
   XsSource source = {.path = "MaterializedMacroTree.xs", .text = text, .length = strlen(text)};

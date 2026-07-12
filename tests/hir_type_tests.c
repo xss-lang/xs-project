@@ -310,7 +310,7 @@ static void test_unknown_type_errors(void)
 static void test_expanded_macro_type_errors(void)
 {
   const char *main = "module App;\n"
-                     "macroRules! bad { (): { value: Missing = None }; }\n"
+                     "macro_rules! bad { (): { value: Missing = None }; }\n"
                      "fn Main() { bad!(); }\n";
   XsSource source = {.path = "MacroTypes.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
@@ -342,7 +342,7 @@ static void test_expanded_macro_type_errors(void)
 static void test_type_fragment_macro_type_errors(void)
 {
   const char *main = "module App;\n"
-                     "macroRules! declare { ($kind:ty): { value: $kind = None }; }\n"
+                     "macro_rules! declare { ($kind:ty): { value: $kind = None }; }\n"
                      "fn Main() { declare!(Missing); }\n";
   XsSource source = {.path = "MacroTypeFragmentTypes.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;

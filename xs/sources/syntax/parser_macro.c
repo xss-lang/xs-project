@@ -151,7 +151,7 @@ static void parse_expansion_elements(SyntaxParser *parser, XsSyntaxNode *parent,
 XsSyntaxNode *parse_macro(SyntaxParser *parser, size_t start)
 {
   XsSyntaxNode *macro = node(parser, XS_SYNTAX_DECL_MACRO, (XsSpan){start, parser->previous.span.end});
-  expect(parser, XS_TOKEN_BANG, "expected '!' after macroRules");
+  expect(parser, XS_TOKEN_BANG, "expected '!' after macro_rules");
   xs_syntax_node_add(parser->tree, macro, identifier(parser));
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before macro rules");
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)

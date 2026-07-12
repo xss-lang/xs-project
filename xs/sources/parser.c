@@ -192,7 +192,7 @@ static bool parse_function(XsParser *parser, XsAst *ast, XsVisibility visibility
 
 static bool parse_macro(XsParser *parser, XsAst *ast, size_t start)
 {
-  if(!expect(parser, XS_TOKEN_BANG, "expected '!' after macroRules"))
+  if(!expect(parser, XS_TOKEN_BANG, "expected '!' after macro_rules"))
     return false;
   if(!expect(parser, XS_TOKEN_IDENTIFIER, "expected macro name"))
     return false;

@@ -138,7 +138,7 @@ static void test_macro_tokens(void)
       XS_TOKEN_COLON,          XS_TOKEN_LEFT_BRACE,  XS_TOKEN_DOLLAR,     XS_TOKEN_IDENTIFIER, XS_TOKEN_RIGHT_BRACE,
       XS_TOKEN_SEMICOLON,      XS_TOKEN_RIGHT_BRACE, XS_TOKEN_EOF,
   };
-  expect_tokens("macroRules! identity { ($value:expr): { $value }; }", expected,
+  expect_tokens("macro_rules! identity { ($value:expr): { $value }; }", expected,
                 sizeof(expected) / sizeof(expected[0]));
 }
 
