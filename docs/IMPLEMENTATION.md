@@ -246,6 +246,9 @@ validation does not decide dispatch, override, or overload selection.
   `Result.Result<T>`, `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result.Error`. This
   is name and arity validation only; constructors, method calls, and propagation lowering are still handled by later
   semantic passes.
+- The C23 HIR type resolver also recognizes the initial standard CFFI family: `CFFI.CStr`, `CFFI.CString`,
+  `CFFI.RawPtr<T>`, `CFFI.NonNull<T>`, `CFFI.Slice<T>`, `CFFI.Handle<T>`, `CFFI.Owned<T>`, `CFFI.Borrowed<T>`,
+  `CFFI.Out<T>`, `CFFI.DynamicLibrary`, `CFFI.Symbol<T>`, `CFFI.FILE`, and `CFFI.VarArgs`.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.

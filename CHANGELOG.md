@@ -16,6 +16,7 @@ source-to-native executable pipeline.
   `extern "ABI" { fn ...; static ...; }` blocks.
 - HIR symbol collection now descends into extern blocks, collecting foreign functions and foreign static globals with
   inherited block visibility.
+- HIR type resolution now recognizes the initial standard CFFI type family and validates its generic arity.
 - `Spec/Attrs.xs` and `Spec/CFFI.xs` document the standard attribute registry and the explicit opt-in CFFI surface.
 - `format_args!` is now validated as a built-in macro instead of a Stdio export.
 - Stdio macro validation now accepts Rust 1.57-style `write!` and `writeln!` forms plus common Rust formatting specs such

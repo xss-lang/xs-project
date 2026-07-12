@@ -31,6 +31,19 @@ static const StandardTypeInfo standard_types[] = {
     {.name = "Result.Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Error", .min_arity = 0, .max_arity = 0},
     {.name = "Result.IO.error", .min_arity = 0, .max_arity = 0},
+    {.name = "CFFI.CStr", .min_arity = 0, .max_arity = 0},
+    {.name = "CFFI.CString", .min_arity = 0, .max_arity = 0},
+    {.name = "CFFI.FILE", .min_arity = 0, .max_arity = 0},
+    {.name = "CFFI.VarArgs", .min_arity = 0, .max_arity = 0},
+    {.name = "CFFI.RawPtr", .min_arity = 1, .max_arity = 1},
+    {.name = "CFFI.NonNull", .min_arity = 1, .max_arity = 1},
+    {.name = "CFFI.Slice", .min_arity = 1, .max_arity = 1},
+    {.name = "CFFI.Handle", .min_arity = 1, .max_arity = 1},
+    {.name = "CFFI.Owned", .min_arity = 1, .max_arity = 1},
+    {.name = "CFFI.Borrowed", .min_arity = 1, .max_arity = 1},
+    {.name = "CFFI.Out", .min_arity = 1, .max_arity = 1},
+    {.name = "CFFI.DynamicLibrary", .min_arity = 0, .max_arity = 0},
+    {.name = "CFFI.Symbol", .min_arity = 1, .max_arity = 1},
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
