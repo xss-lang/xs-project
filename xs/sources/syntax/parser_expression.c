@@ -460,6 +460,15 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
       finish_node(parser, forgiving, parser->previous.span.end);
       expression = forgiving;
     }
+    else if(accept(parser, XS_TOKEN_AT))
+    {
+      XsSyntaxNode *propagation =
+          node(parser, XS_SYNTAX_EXPR_RESULT_PROPAGATION, (XsSpan){start, parser->previous.span.end});
+      propagation->token_kind = XS_TOKEN_AT;
+      xs_syntax_node_add(parser->tree, propagation, expression);
+      finish_node(parser, propagation, parser->previous.span.end);
+      expression = propagation;
+    }
     else if(accept(parser, XS_TOKEN_KW_GET))
     {
       expect(parser, XS_TOKEN_DOT, "expected '.' after get");

@@ -325,6 +325,24 @@ static void test_optional_operator_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_result_propagation_structure(void)
+{
+  const char *text = "fn Main() {\n"
+                     "  DoWork()@;\n"
+                     "  file.readToString(&mut content)@;\n"
+                     "}\n";
+  XsSource source = {.path = "ResultPropagation.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 28, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_RESULT_PROPAGATION) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_CALL) >= 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_METHOD_CALL) >= 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_lifetime_type_structure(void)
 {
   const char *text = "fn Print(first: &'a User, second: &'b mut User, shared: &'static Str, inferred: &'_ User) {\n"
@@ -373,6 +391,7 @@ int main(void)
   test_io_target_expression_structure();
   test_character_literal_structure();
   test_optional_operator_structure();
+  test_result_propagation_structure();
   test_lifetime_type_structure();
   test_nested_generic_type_closers();
   return failures == 0 ? 0 : 1;

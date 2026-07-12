@@ -89,10 +89,11 @@ static void test_documented_operators(void)
       XS_TOKEN_QUESTION_DOT,
       XS_TOKEN_QUESTION_QUESTION,
       XS_TOKEN_QUESTION_QUESTION_ASSIGN,
+      XS_TOKEN_AT,
       XS_TOKEN_EOF,
   };
   expect_tokens("== != > < >= <= && || := ! & | << <<< >> >>> -> => ? ?. ?? ?"
-                "?=",
+                "?= @",
                 expected, sizeof(expected) / sizeof(expected[0]));
 }
 

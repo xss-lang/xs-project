@@ -232,6 +232,7 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "optional method call",
       "optional member access",
       "optional-forgiving expression",
+      "result propagation expression",
       "index expression",
       "new expression",
       "function expression",

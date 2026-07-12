@@ -146,6 +146,8 @@ The documented compilation order is preserved:
 - In data syntax, `set.field{value}` is represented as `XS_SYNTAX_EXPR_FIELD_SET`, while `value get.field` is represented as
   member access.
 - In stdio syntax, `[target]` I/O targets are represented as `XS_SYNTAX_EXPR_IO_TARGET`.
+- Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. This is structural
+  AST support only; Result type checking, propagation semantics, and lowering are later pipeline work.
 - `if`, `for`, for-each, `while`, `match`, `try`, `catch`, `finally`, `return`, `throw`, `break`, `continue`, and
   `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous to Rust's
   `let _ = expression;`.
