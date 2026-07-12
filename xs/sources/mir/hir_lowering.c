@@ -13,7 +13,7 @@
 
 static XsMirStatus unsupported(XsMirError *error, const char *message)
 {
-  if (error != NULL)
+  if(error != NULL)
   {
     error->status = XS_MIR_UNSUPPORTED;
     snprintf(error->message, sizeof(error->message), "%s", message);
@@ -31,11 +31,11 @@ static bool type_node_kind(XsSyntaxKind kind)
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
-  if (node == NULL)
+  if(node == NULL)
     return NULL;
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
   {
-    if (node->children[i]->kind == kind)
+    if(node->children[i]->kind == kind)
       return node->children[i];
   }
   return NULL;
@@ -43,11 +43,11 @@ static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKi
 
 static const XsSyntaxNode *first_direct_type_child(const XsSyntaxNode *node)
 {
-  if (node == NULL)
+  if(node == NULL)
     return NULL;
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
   {
-    if (type_node_kind(node->children[i]->kind))
+    if(type_node_kind(node->children[i]->kind))
       return node->children[i];
   }
   return NULL;
@@ -60,14 +60,14 @@ static bool generic_function(const XsSyntaxNode *function)
 
 static bool primitive_named_type(const XsSyntaxNode *type, XsMirType *mir_type)
 {
-  if (type == NULL || mir_type == NULL || type->kind != XS_SYNTAX_TYPE_NAMED)
+  if(type == NULL || mir_type == NULL || type->kind != XS_SYNTAX_TYPE_NAMED)
     return false;
   const XsSyntaxNode *path = first_child_kind(type, XS_SYNTAX_PATH);
-  if (path == NULL || path->child_count != 1 || path->children[0]->kind != XS_SYNTAX_IDENTIFIER)
+  if(path == NULL || path->child_count != 1 || path->children[0]->kind != XS_SYNTAX_IDENTIFIER)
     return false;
   const XsSyntaxNode *identifier = path->children[0];
   const XsHirPrimitiveInfo *primitive = xs_hir_primitive_find(identifier->text.data, identifier->text.length);
-  if (primitive == NULL || !primitive->has_xlil_type)
+  if(primitive == NULL || !primitive->has_xlil_type)
     return false;
   *mir_type = primitive->xlil_type;
   return true;
@@ -75,7 +75,7 @@ static bool primitive_named_type(const XsSyntaxNode *type, XsMirType *mir_type)
 
 static XsMirStatus lower_type(const XsSyntaxNode *type, XsMirType *mir_type, XsMirError *error)
 {
-  if (!primitive_named_type(type, mir_type))
+  if(!primitive_named_type(type, mir_type))
     return unsupported(error, "MIR signature lowering currently supports only primitive XLIL-mapped types");
   return XS_MIR_OK;
 }
@@ -83,9 +83,9 @@ static XsMirStatus lower_type(const XsSyntaxNode *type, XsMirType *mir_type, XsM
 static size_t parameter_count(const XsSyntaxNode *function)
 {
   size_t count = 0;
-  for (size_t i = 0; i < function->child_count; ++i)
+  for(size_t i = 0; i < function->child_count; ++i)
   {
-    if (function->children[i]->kind == XS_SYNTAX_PARAMETER)
+    if(function->children[i]->kind == XS_SYNTAX_PARAMETER)
       ++count;
   }
   return count;
@@ -93,25 +93,25 @@ static size_t parameter_count(const XsSyntaxNode *function)
 
 static XsMirStatus lower_function(const XsHirSymbol *symbol, XsMirModule *module, XsMirError *error)
 {
-  if (generic_function(symbol->syntax))
+  if(generic_function(symbol->syntax))
     return unsupported(error, "MIR signature lowering requires monomorphization for generic functions");
   size_t count = parameter_count(symbol->syntax);
   XsMirType *parameters = count == 0 ? NULL : malloc(count * sizeof(*parameters));
-  if (count != 0 && parameters == NULL)
+  if(count != 0 && parameters == NULL)
     return xs_mir_module_add_function_declaration(NULL, NULL, (XsMirType){0}, NULL, 0, error);
   size_t parameter = 0;
-  for (size_t i = 0; i < symbol->syntax->child_count; ++i)
+  for(size_t i = 0; i < symbol->syntax->child_count; ++i)
   {
     const XsSyntaxNode *node = symbol->syntax->children[i];
-    if (node->kind != XS_SYNTAX_PARAMETER)
+    if(node->kind != XS_SYNTAX_PARAMETER)
       continue;
-    if (parameter >= count)
+    if(parameter >= count)
     {
       free(parameters);
       return unsupported(error, "MIR signature lowering found an inconsistent parameter list");
     }
     XsMirStatus status = lower_type(first_direct_type_child(node), &parameters[parameter++], error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
     {
       free(parameters);
       return status;
@@ -119,10 +119,10 @@ static XsMirStatus lower_function(const XsHirSymbol *symbol, XsMirModule *module
   }
   XsMirType return_type = {.kind = XS_LIL_TYPE_VOID};
   const XsSyntaxNode *return_node = first_direct_type_child(symbol->syntax);
-  if (return_node != NULL)
+  if(return_node != NULL)
   {
     XsMirStatus status = lower_type(return_node, &return_type, error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
     {
       free(parameters);
       return status;
@@ -137,15 +137,15 @@ static XsMirStatus lower_function(const XsHirSymbol *symbol, XsMirModule *module
 XsMirStatus xs_mir_module_add_hir_function_declarations(XsMirModule *module, const XsHirSymbolTable *symbols,
                                                         XsMirError *error)
 {
-  if (module == NULL || symbols == NULL)
+  if(module == NULL || symbols == NULL)
     return xs_mir_module_add_function_declaration(NULL, NULL, (XsMirType){0}, NULL, 0, error);
-  for (size_t i = 0; i < symbols->count; ++i)
+  for(size_t i = 0; i < symbols->count; ++i)
   {
     const XsHirSymbol *symbol = &symbols->symbols[i];
-    if (symbol->kind != XS_HIR_SYMBOL_FUNCTION)
+    if(symbol->kind != XS_HIR_SYMBOL_FUNCTION)
       continue;
     XsMirStatus status = lower_function(symbol, module, error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
   }
   return XS_MIR_OK;

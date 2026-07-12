@@ -15,29 +15,29 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
-  if (node == NULL)
+  if(node == NULL)
     return 0;
   size_t count = node->kind == kind ? 1 : 0;
-  for (size_t index = 0; index < node->child_count; ++index)
+  for(size_t index = 0; index < node->child_count; ++index)
     count += count_kind(node->children[index], kind);
   return count;
 }
 
 static size_t count_kind_with_flag(const XsSyntaxNode *node, XsSyntaxKind kind, uint32_t flag)
 {
-  if (node == NULL)
+  if(node == NULL)
     return 0;
   size_t count = node->kind == kind && (node->flags & flag) != 0;
-  for (size_t index = 0; index < node->child_count; ++index)
+  for(size_t index = 0; index < node->child_count; ++index)
     count += count_kind_with_flag(node->children[index], kind, flag);
   return count;
 }

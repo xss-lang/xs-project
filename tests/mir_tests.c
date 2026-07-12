@@ -21,12 +21,12 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static void test_module_and_text_writer(void)
 {
@@ -41,7 +41,7 @@ static void test_module_and_text_writer(void)
   CHECK(xs_mir_module_function_count(module) == 1);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_mir_module_destroy(module);
@@ -114,7 +114,7 @@ static void test_function_definition_blocks_and_terminators(void)
   CHECK(xs_mir_block_terminator_kind(done) == XS_MIR_TERMINATOR_RETURN);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_mir_module_destroy(module);
@@ -249,7 +249,7 @@ static void test_branch_terminator_checks_condition_and_reachability(void)
   CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_mir_module_destroy(module);
@@ -340,7 +340,7 @@ static void test_constant_optimizer_folds_i64_add(void)
   CHECK(xs_mir_block_instruction_kind(entry, 2) == XS_MIR_INSTRUCTION_CONST_I64);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_mir_module_destroy(module);
@@ -422,7 +422,7 @@ static void test_xlil_body_lowering_for_const_return(void)
   CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
   CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(xlil);
@@ -462,7 +462,7 @@ static void test_xlil_body_lowering_for_const_i32_return(void)
   CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
   CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(xlil);
@@ -507,7 +507,7 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
   CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(xlil);
@@ -521,6 +521,61 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   buffer[read] = '\0';
   CHECK(strstr(buffer, "%r2:i32 = add.i32 %r0, %r1\n") != NULL);
   CHECK(strstr(buffer, "%r3:i32 = mul.i32 %r2, %r1\n") != NULL);
+  fclose(stream);
+  xs_lil_module_destroy(xlil);
+  xs_mir_module_destroy(mir);
+}
+
+static void test_xlil_body_lowering_for_i32_branch_return(void)
+{
+  XsMirError error = {0};
+  XsMirModule *mir = nullptr;
+  CHECK(xs_mir_module_create("project", &mir, &error) == XS_MIR_OK);
+  XsMirFunction *function = nullptr;
+  CHECK(xs_mir_module_add_function_definition(mir, "main", (XsMirType){.kind = XS_LIL_TYPE_I32}, nullptr, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = nullptr;
+  XsMirBlock *then_block = nullptr;
+  XsMirBlock *else_block = nullptr;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "then", &then_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_function_append_block(function, "else", &else_block, &error) == XS_MIR_OK);
+  XsMirValueId one = 0;
+  XsMirValueId two = 0;
+  XsMirValueId condition = 0;
+  XsMirValueId then_value = 0;
+  XsMirValueId else_value = 0;
+  CHECK(xs_mir_block_add_const_i32(entry, 1, &one, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i32(entry, 2, &two, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_lt_i32(entry, one, two, &condition, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_branch(entry, condition, then_block, else_block, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i32(then_block, 7, &then_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(then_block, then_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_const_i32(else_block, 3, &else_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(else_block, else_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
+
+  XsLilError lil_error = {0};
+  XsLilModule *xlil = nullptr;
+  CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
+  FILE *stream = tmpfile();
+  if(stream == nullptr)
+  {
+    ++failures;
+    xs_lil_module_destroy(xlil);
+    xs_mir_module_destroy(mir);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(xlil, stream, &lil_error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[768] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "%r2:bool = lt.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "br_if %r2, bb1, bb2\n") != nullptr);
+  CHECK(strstr(buffer, "bb1.then:\n  %r3:i32 = const.i32 7\n  ret %r3\n") != nullptr);
+  CHECK(strstr(buffer, "bb2.else:\n  %r4:i32 = const.i32 3\n  ret %r4\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(xlil);
   xs_mir_module_destroy(mir);
@@ -543,5 +598,6 @@ int main(void)
   test_xlil_body_lowering_for_const_return();
   test_xlil_body_lowering_for_const_i32_return();
   test_xlil_body_lowering_for_i32_arithmetic_return();
+  test_xlil_body_lowering_for_i32_branch_return();
   return failures == 0 ? 0 : 1;
 }

@@ -26,13 +26,13 @@ struct XsMonoPlan
 
 static void clear_error(XsMonoError *error)
 {
-  if (error != NULL)
+  if(error != NULL)
     *error = (XsMonoError){.status = XS_MONO_OK};
 }
 
 static XsMonoStatus set_error(XsMonoError *error, XsMonoStatus status, const char *message)
 {
-  if (error != NULL)
+  if(error != NULL)
   {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s",
@@ -45,7 +45,7 @@ static char *copy_text(const char *text)
 {
   size_t length = strlen(text);
   char *copy = malloc(length + 1);
-  if (copy != NULL)
+  if(copy != NULL)
     memcpy(copy, text, length + 1);
   return copy;
 }
@@ -54,10 +54,10 @@ static char *mangle_concrete_function(const char *name)
 {
   size_t length = strlen(name);
   char *symbol = malloc(length + 11);
-  if (symbol == NULL)
+  if(symbol == NULL)
     return NULL;
   memcpy(symbol, "_XS_FN_", 7);
-  for (size_t i = 0; i < length; ++i)
+  for(size_t i = 0; i < length; ++i)
   {
     unsigned char character = (unsigned char)name[i];
     symbol[7 + i] = isalnum(character) != 0 ? (char)character : '_';
@@ -69,9 +69,9 @@ static char *mangle_concrete_function(const char *name)
 static const char *last_dot(const char *text)
 {
   const char *result = NULL;
-  for (const char *cursor = text; *cursor != '\0'; ++cursor)
+  for(const char *cursor = text; *cursor != '\0'; ++cursor)
   {
-    if (*cursor == '.')
+    if(*cursor == '.')
       result = cursor;
   }
   return result;
@@ -80,7 +80,7 @@ static const char *last_dot(const char *text)
 static char *copy_range(const char *text, size_t length)
 {
   char *copy = malloc(length + 1);
-  if (copy == NULL)
+  if(copy == NULL)
     return NULL;
   memcpy(copy, text, length);
   copy[length] = '\0';
@@ -90,7 +90,7 @@ static char *copy_range(const char *text, size_t length)
 static char *unit_name_for_function(const XsMirModule *module, const char *function_name)
 {
   const char *dot = last_dot(function_name);
-  if (dot != NULL && dot != function_name)
+  if(dot != NULL && dot != function_name)
     return copy_range(function_name, (size_t)(dot - function_name));
   return copy_text(xs_mir_module_name(module));
 }
@@ -105,9 +105,9 @@ static void free_entry(XsMonoEntry *entry)
 
 void xs_mono_plan_destroy(XsMonoPlan *plan)
 {
-  if (plan == NULL)
+  if(plan == NULL)
     return;
-  for (size_t i = 0; i < plan->entry_count; ++i)
+  for(size_t i = 0; i < plan->entry_count; ++i)
     free_entry(&plan->entries[i]);
   free(plan->entries);
   free(plan);
@@ -115,11 +115,11 @@ void xs_mono_plan_destroy(XsMonoPlan *plan)
 
 static XsMonoStatus append_entry(XsMonoPlan *plan, XsMonoEntry entry, XsMonoError *error)
 {
-  if (plan->entry_count == plan->entry_capacity)
+  if(plan->entry_count == plan->entry_capacity)
   {
     size_t capacity = plan->entry_capacity == 0 ? 8 : plan->entry_capacity * 2;
     XsMonoEntry *entries = realloc(plan->entries, capacity * sizeof(*entries));
-    if (entries == NULL)
+    if(entries == NULL)
       return set_error(error, XS_MONO_ALLOCATION_FAILED, "out of memory while adding a monomorphization entry");
     plan->entries = entries;
     plan->entry_capacity = capacity;
@@ -131,14 +131,14 @@ static XsMonoStatus append_entry(XsMonoPlan *plan, XsMonoEntry entry, XsMonoErro
 XsMonoStatus xs_mono_plan_create_for_concrete_mir(const XsMirModule *module, XsMonoPlan **plan, XsMonoError *error)
 {
   clear_error(error);
-  if (plan != NULL)
+  if(plan != NULL)
     *plan = NULL;
-  if (module == NULL || plan == NULL)
+  if(module == NULL || plan == NULL)
     return set_error(error, XS_MONO_INVALID_ARGUMENT, "valid MIR module and output plan are required");
   XsMonoPlan *created = calloc(1, sizeof(*created));
-  if (created == NULL)
+  if(created == NULL)
     return set_error(error, XS_MONO_ALLOCATION_FAILED, "out of memory while creating a monomorphization plan");
-  for (size_t i = 0; i < xs_mir_module_function_count(module); ++i)
+  for(size_t i = 0; i < xs_mir_module_function_count(module); ++i)
   {
     const XsMirFunction *function = xs_mir_module_function_at(module, i);
     const char *name = xs_mir_function_name(function);
@@ -147,14 +147,14 @@ XsMonoStatus xs_mono_plan_create_for_concrete_mir(const XsMirModule *module, XsM
         .source_name = copy_text(name),
         .symbol_name = mangle_concrete_function(name),
     };
-    if (entry.unit_name == NULL || entry.source_name == NULL || entry.symbol_name == NULL)
+    if(entry.unit_name == NULL || entry.source_name == NULL || entry.symbol_name == NULL)
     {
       free_entry(&entry);
       xs_mono_plan_destroy(created);
       return set_error(error, XS_MONO_ALLOCATION_FAILED, "out of memory while naming a monomorphization entry");
     }
     XsMonoStatus status = append_entry(created, entry, error);
-    if (status != XS_MONO_OK)
+    if(status != XS_MONO_OK)
     {
       free_entry(&entry);
       xs_mono_plan_destroy(created);
@@ -172,21 +172,21 @@ size_t xs_mono_plan_entry_count(const XsMonoPlan *plan)
 
 const char *xs_mono_plan_entry_unit_name(const XsMonoPlan *plan, size_t index)
 {
-  if (plan == NULL || index >= plan->entry_count)
+  if(plan == NULL || index >= plan->entry_count)
     return NULL;
   return plan->entries[index].unit_name;
 }
 
 const char *xs_mono_plan_entry_source_name(const XsMonoPlan *plan, size_t index)
 {
-  if (plan == NULL || index >= plan->entry_count)
+  if(plan == NULL || index >= plan->entry_count)
     return NULL;
   return plan->entries[index].source_name;
 }
 
 const char *xs_mono_plan_entry_symbol_name(const XsMonoPlan *plan, size_t index)
 {
-  if (plan == NULL || index >= plan->entry_count)
+  if(plan == NULL || index >= plan->entry_count)
     return NULL;
   return plan->entries[index].symbol_name;
 }

@@ -11,11 +11,11 @@
 
 static bool append_import(ImportList *imports, char *name, size_t start, size_t end)
 {
-  if (imports->count == imports->capacity)
+  if(imports->count == imports->capacity)
   {
     size_t capacity = imports->capacity == 0 ? 4 : imports->capacity * 2;
     ImportView *items = realloc(imports->items, capacity * sizeof(*items));
-    if (items == nullptr)
+    if(items == nullptr)
     {
       free(name);
       return false;
@@ -29,7 +29,7 @@ static bool append_import(ImportList *imports, char *name, size_t start, size_t 
 
 static void free_imports(ImportList *imports)
 {
-  for (size_t i = 0; i < imports->count; ++i)
+  for(size_t i = 0; i < imports->count; ++i)
     free(imports->items[i].name);
   free(imports->items);
   *imports = (ImportList){0};
@@ -39,7 +39,7 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
 {
   size_t length = 0;
   char *text = read_file(path, &length);
-  if (text == nullptr)
+  if(text == nullptr)
   {
     append_issue(issues, path, 0, 0, "source file could not be read during import resolution");
     return false;
@@ -52,22 +52,22 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
   scanner_advance(&scanner);
   size_t brace_depth = 0;
   bool success = true;
-  while (scanner.current.kind != XS_TOKEN_EOF)
+  while(scanner.current.kind != XS_TOKEN_EOF)
   {
-    if (scanner.current.kind == XS_TOKEN_LEFT_BRACE)
+    if(scanner.current.kind == XS_TOKEN_LEFT_BRACE)
     {
       ++brace_depth;
       scanner_advance(&scanner);
       continue;
     }
-    if (scanner.current.kind == XS_TOKEN_RIGHT_BRACE)
+    if(scanner.current.kind == XS_TOKEN_RIGHT_BRACE)
     {
-      if (brace_depth != 0)
+      if(brace_depth != 0)
         --brace_depth;
       scanner_advance(&scanner);
       continue;
     }
-    if (brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_IMPORTS)
+    if(brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_IMPORTS)
     {
       scanner_advance(&scanner);
       do
@@ -75,30 +75,30 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
         size_t start = 0;
         size_t end = 0;
         char *name = scan_path(&scanner, &start, &end);
-        if (name == nullptr || !append_import(imports, name, start, end))
+        if(name == nullptr || !append_import(imports, name, start, end))
         {
           success = false;
           break;
         }
-        if (scanner.current.kind == XS_TOKEN_KW_AS)
+        if(scanner.current.kind == XS_TOKEN_KW_AS)
         {
           scanner_advance(&scanner);
-          if (scanner.current.kind == XS_TOKEN_IDENTIFIER)
+          if(scanner.current.kind == XS_TOKEN_IDENTIFIER)
             scanner_advance(&scanner);
         }
-        if (scanner.current.kind != XS_TOKEN_COMMA)
+        if(scanner.current.kind != XS_TOKEN_COMMA)
           break;
         scanner_advance(&scanner);
-      } while (true);
+      } while(true);
       continue;
     }
-    if (brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_FROM)
+    if(brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_FROM)
     {
       scanner_advance(&scanner);
       size_t start = 0;
       size_t end = 0;
       char *name = scan_path(&scanner, &start, &end);
-      if (name == nullptr || !append_import(imports, name, start, end))
+      if(name == nullptr || !append_import(imports, name, start, end))
         success = false;
       continue;
     }
@@ -111,9 +111,9 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
 
 static bool string_list_contains(const StringList *list, const char *text)
 {
-  for (size_t i = 0; i < list->count; ++i)
+  for(size_t i = 0; i < list->count; ++i)
   {
-    if (strcmp(list->items[i], text) == 0)
+    if(strcmp(list->items[i], text) == 0)
       return true;
   }
   return false;
@@ -121,11 +121,11 @@ static bool string_list_contains(const StringList *list, const char *text)
 
 static bool string_list_append(StringList *list, char *text)
 {
-  if (list->count == list->capacity)
+  if(list->count == list->capacity)
   {
     size_t capacity = list->capacity == 0 ? 8 : list->capacity * 2;
     char **items = realloc(list->items, capacity * sizeof(*items));
-    if (items == nullptr)
+    if(items == nullptr)
       return false;
     list->items = items;
     list->capacity = capacity;
@@ -137,11 +137,11 @@ static bool string_list_append(StringList *list, char *text)
 static bool append_dependency(XsModuleGraph *graph, const char *importer, const ImportView *import,
                               const char *imported_path)
 {
-  if (graph->count == graph->capacity)
+  if(graph->count == graph->capacity)
   {
     size_t capacity = graph->capacity == 0 ? 8 : graph->capacity * 2;
     XsModuleDependency *items = realloc(graph->dependencies, capacity * sizeof(*items));
-    if (items == nullptr)
+    if(items == nullptr)
       return false;
     graph->dependencies = items;
     graph->capacity = capacity;
@@ -153,7 +153,7 @@ static bool append_dependency(XsModuleGraph *graph, const char *importer, const 
       .import_start = import->start,
       .import_end = import->end,
   };
-  if (dependency.importer_path == nullptr || dependency.module_name == nullptr || dependency.imported_path == nullptr)
+  if(dependency.importer_path == nullptr || dependency.module_name == nullptr || dependency.imported_path == nullptr)
   {
     free(dependency.importer_path);
     free(dependency.module_name);
@@ -167,17 +167,17 @@ static bool append_dependency(XsModuleGraph *graph, const char *importer, const 
 bool xs_module_graph_resolve(const char *project_root, const char *const *direct_sources, size_t direct_source_count,
                              const XsModuleRegistry *registry, XsModuleGraph *graph, XsModuleIssues *issues)
 {
-  if (project_root == nullptr || registry == nullptr || graph == nullptr || issues == nullptr ||
-      (direct_source_count != 0 && direct_sources == nullptr))
+  if(project_root == nullptr || registry == nullptr || graph == nullptr || issues == nullptr ||
+     (direct_source_count != 0 && direct_sources == nullptr))
     return false;
   StringList queue = {0};
   StringList visited = {0};
   bool success = true;
-  for (size_t i = 0; i < direct_source_count; ++i)
+  for(size_t i = 0; i < direct_source_count; ++i)
   {
     char *path =
         direct_sources[i][0] == '/' ? copy_text(direct_sources[i]) : join_path(project_root, direct_sources[i]);
-    if (path == nullptr || !string_list_append(&queue, path))
+    if(path == nullptr || !string_list_append(&queue, path))
     {
       free(path);
       issues->allocation_failed = true;
@@ -185,13 +185,13 @@ bool xs_module_graph_resolve(const char *project_root, const char *const *direct
       break;
     }
   }
-  for (size_t index = 0; index < queue.count; ++index)
+  for(size_t index = 0; index < queue.count; ++index)
   {
     char *path = queue.items[index];
-    if (string_list_contains(&visited, path))
+    if(string_list_contains(&visited, path))
       continue;
     char *visited_path = copy_text(path);
-    if (visited_path == nullptr || !string_list_append(&visited, visited_path))
+    if(visited_path == nullptr || !string_list_append(&visited, visited_path))
     {
       free(visited_path);
       issues->allocation_failed = true;
@@ -199,12 +199,12 @@ bool xs_module_graph_resolve(const char *project_root, const char *const *direct
       break;
     }
     ImportList imports = {0};
-    if (!scan_imports(path, &imports, issues))
+    if(!scan_imports(path, &imports, issues))
       success = false;
-    for (size_t i = 0; i < imports.count; ++i)
+    for(size_t i = 0; i < imports.count; ++i)
     {
       const XsDiscoveredModule *module = xs_module_registry_find(registry, imports.items[i].name);
-      if (module == nullptr)
+      if(module == nullptr)
       {
         char message[512];
         snprintf(message, sizeof(message), "imported module '%s' was not found", imports.items[i].name);
@@ -212,16 +212,16 @@ bool xs_module_graph_resolve(const char *project_root, const char *const *direct
         success = false;
         continue;
       }
-      if (!append_dependency(graph, path, &imports.items[i], module->source_path))
+      if(!append_dependency(graph, path, &imports.items[i], module->source_path))
       {
         issues->allocation_failed = true;
         success = false;
         continue;
       }
-      if (!string_list_contains(&visited, module->source_path))
+      if(!string_list_contains(&visited, module->source_path))
       {
         char *imported_path = copy_text(module->source_path);
-        if (imported_path == nullptr || !string_list_append(&queue, imported_path))
+        if(imported_path == nullptr || !string_list_append(&queue, imported_path))
         {
           free(imported_path);
           issues->allocation_failed = true;
@@ -231,9 +231,9 @@ bool xs_module_graph_resolve(const char *project_root, const char *const *direct
     }
     free_imports(&imports);
   }
-  for (size_t i = 0; i < queue.count; ++i)
+  for(size_t i = 0; i < queue.count; ++i)
     free(queue.items[i]);
-  for (size_t i = 0; i < visited.count; ++i)
+  for(size_t i = 0; i < visited.count; ++i)
     free(visited.items[i]);
   free(queue.items);
   free(visited.items);

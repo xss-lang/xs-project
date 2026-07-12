@@ -16,12 +16,12 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static bool text_is(XsText text, const char *value)
 {
@@ -177,7 +177,7 @@ static void test_macro_expansion_preparation_report(void)
   CHECK(found != nullptr && found->kind == XS_SYNTAX_STMT_EXPRESSION);
   CHECK(xs_macro_statement_expansion_find(&statements, tree.root) == nullptr);
   xs_macro_statement_expansion_set_free(&statements);
-  if (expansions.count >= 2)
+  if(expansions.count >= 2)
   {
     XsMacroReparseResult reparse;
     CHECK(xs_macro_reparse_expansion_as_statement(&expansions.items[1], 22, &diagnostics, &reparse));

@@ -18,25 +18,25 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static bool has_magic(const char *path, const uint8_t *magic, size_t length)
 {
   FILE *file = fopen(path, "rb");
-  if (file == nullptr)
+  if(file == nullptr)
     return false;
   uint8_t buffer[8] = {0};
   size_t read = fread(buffer, 1, length, file);
   fclose(file);
-  if (read != length)
+  if(read != length)
     return false;
-  for (size_t i = 0; i < length; ++i)
-    if (buffer[i] != magic[i])
+  for(size_t i = 0; i < length; ++i)
+    if(buffer[i] != magic[i])
       return false;
   return true;
 }
@@ -44,7 +44,7 @@ static bool has_magic(const char *path, const uint8_t *magic, size_t length)
 static bool exists(const char *path)
 {
   FILE *file = fopen(path, "rb");
-  if (file == nullptr)
+  if(file == nullptr)
     return false;
   fclose(file);
   return true;
@@ -54,7 +54,7 @@ static bool parse_exit_code(const char *text, int *code)
 {
   char *end = nullptr;
   long value = strtol(text, &end, 10);
-  if (end == text || *end != '\0' || value < 0 || value > 255)
+  if(end == text || *end != '\0' || value < 0 || value > 255)
     return false;
   *code = (int)value;
   return true;
@@ -65,21 +65,21 @@ static bool run_and_check_exit(const char *path, int expected)
   char *const arguments[] = {(char *)path, nullptr};
   pid_t process = 0;
   int spawn_status = posix_spawnp(&process, path, nullptr, nullptr, arguments, environ);
-  if (spawn_status != 0)
+  if(spawn_status != 0)
   {
     fprintf(stderr, "could not run %s: %s\n", path, strerror(spawn_status));
     return false;
   }
   int status = 0;
-  if (waitpid(process, &status, 0) < 0)
+  if(waitpid(process, &status, 0) < 0)
   {
     fprintf(stderr, "could not wait for %s: %s\n", path, strerror(errno));
     return false;
   }
-  if (!WIFEXITED(status))
+  if(!WIFEXITED(status))
     return false;
   int actual = WEXITSTATUS(status);
-  if (actual != expected)
+  if(actual != expected)
   {
     fprintf(stderr, "%s exited with %d, expected %d\n", path, actual, expected);
     return false;
@@ -89,13 +89,13 @@ static bool run_and_check_exit(const char *path, int expected)
 
 int main(int argc, char **argv)
 {
-  if (argc != 5)
+  if(argc != 5)
   {
     fprintf(stderr, "xse artifact test requires .ll, .o, .xse, and expected exit-code arguments\n");
     return 2;
   }
   int expected_exit = 0;
-  if (!parse_exit_code(argv[4], &expected_exit))
+  if(!parse_exit_code(argv[4], &expected_exit))
   {
     fprintf(stderr, "invalid expected exit code: %s\n", argv[4]);
     return 2;

@@ -11,13 +11,13 @@
 
 void xs_mir_clear_error(XsMirError *error)
 {
-  if (error != NULL)
+  if(error != NULL)
     *error = (XsMirError){.status = XS_MIR_OK};
 }
 
 XsMirStatus xs_mir_set_error(XsMirError *error, XsMirStatus status, const char *message)
 {
-  if (error != NULL)
+  if(error != NULL)
   {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s", message == NULL ? "MIR error" : message);
@@ -29,7 +29,7 @@ char *xs_mir_copy_text(const char *text)
 {
   size_t length = strlen(text);
   char *copy = malloc(length + 1);
-  if (copy != NULL)
+  if(copy != NULL)
     memcpy(copy, text, length + 1);
   return copy;
 }
@@ -49,14 +49,14 @@ static void place_free(XsMirPlace *place)
 
 static void function_free(XsMirFunction *function)
 {
-  for (size_t i = 0; i < function->block_count; ++i)
+  for(size_t i = 0; i < function->block_count; ++i)
   {
     xs_mir_block_free(function->blocks[i]);
     free(function->blocks[i]);
   }
-  for (size_t i = 0; i < function->local_count; ++i)
+  for(size_t i = 0; i < function->local_count; ++i)
     free(function->locals[i].name);
-  for (size_t i = 0; i < function->place_count; ++i)
+  for(size_t i = 0; i < function->place_count; ++i)
   {
     place_free(function->places[i]);
     free(function->places[i]);
@@ -73,13 +73,13 @@ static void function_free(XsMirFunction *function)
 XsMirStatus xs_mir_module_create(const char *name, XsMirModule **module, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (name == NULL || name[0] == '\0' || module == NULL)
+  if(name == NULL || name[0] == '\0' || module == NULL)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR module name and output are required");
   *module = calloc(1, sizeof(**module));
-  if (*module == NULL)
+  if(*module == NULL)
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while creating MIR module");
   (*module)->name = xs_mir_copy_text(name);
-  if ((*module)->name == NULL)
+  if((*module)->name == NULL)
   {
     xs_mir_module_destroy(*module);
     *module = NULL;
@@ -90,9 +90,9 @@ XsMirStatus xs_mir_module_create(const char *name, XsMirModule **module, XsMirEr
 
 void xs_mir_module_destroy(XsMirModule *module)
 {
-  if (module == NULL)
+  if(module == NULL)
     return;
-  for (size_t i = 0; i < module->function_count; ++i)
+  for(size_t i = 0; i < module->function_count; ++i)
     function_free(&module->functions[i]);
   free(module->functions);
   free(module->name);
@@ -106,17 +106,17 @@ const char *xs_mir_module_name(const XsMirModule *module)
 
 static XsMirStatus append_function(XsMirModule *module, XsMirFunction function, XsMirFunction **out, XsMirError *error)
 {
-  if (module->function_count == module->function_capacity)
+  if(module->function_count == module->function_capacity)
   {
     size_t capacity = module->function_capacity == 0 ? 8 : module->function_capacity * 2;
     XsMirFunction *functions = realloc(module->functions, capacity * sizeof(*functions));
-    if (functions == NULL)
+    if(functions == NULL)
       return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while adding MIR function");
     module->functions = functions;
     module->function_capacity = capacity;
   }
   module->functions[module->function_count] = function;
-  if (out != NULL)
+  if(out != NULL)
     *out = &module->functions[module->function_count];
   ++module->function_count;
   return XS_MIR_OK;
@@ -125,7 +125,7 @@ static XsMirStatus append_function(XsMirModule *module, XsMirFunction function, 
 static XsMirStatus make_function(const char *qualified_name, XsMirType return_type, const XsMirType *parameters,
                                  size_t parameter_count, bool is_definition, XsMirFunction *function, XsMirError *error)
 {
-  if (qualified_name == NULL || qualified_name[0] == '\0' || (parameter_count != 0 && parameters == NULL))
+  if(qualified_name == NULL || qualified_name[0] == '\0' || (parameter_count != 0 && parameters == NULL))
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR function signature is required");
   *function = (XsMirFunction){
       .qualified_name = xs_mir_copy_text(qualified_name),
@@ -133,12 +133,12 @@ static XsMirStatus make_function(const char *qualified_name, XsMirType return_ty
       .parameter_count = parameter_count,
       .is_definition = is_definition,
   };
-  if (function->qualified_name == NULL)
+  if(function->qualified_name == NULL)
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while naming MIR function");
-  if (parameter_count == 0)
+  if(parameter_count == 0)
     return XS_MIR_OK;
   function->parameters = malloc(parameter_count * sizeof(*function->parameters));
-  if (function->parameters == NULL)
+  if(function->parameters == NULL)
   {
     function_free(function);
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while copying MIR parameters");
@@ -152,14 +152,14 @@ XsMirStatus xs_mir_module_add_function_declaration(XsMirModule *module, const ch
                                                    size_t parameter_count, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (module == NULL)
+  if(module == NULL)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR module and function signature are required");
   XsMirFunction function = {0};
   XsMirStatus status = make_function(qualified_name, return_type, parameters, parameter_count, false, &function, error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     return status;
   status = append_function(module, function, NULL, error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     function_free(&function);
   return status;
 }
@@ -169,16 +169,16 @@ XsMirStatus xs_mir_module_add_function_definition(XsMirModule *module, const cha
                                                   size_t parameter_count, XsMirFunction **function, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (function != NULL)
+  if(function != NULL)
     *function = NULL;
-  if (module == NULL)
+  if(module == NULL)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR module and function signature are required");
   XsMirFunction created = {0};
   XsMirStatus status = make_function(qualified_name, return_type, parameters, parameter_count, true, &created, error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     return status;
   status = append_function(module, created, function, error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     function_free(&created);
   return status;
 }
@@ -190,7 +190,7 @@ size_t xs_mir_module_function_count(const XsMirModule *module)
 
 const XsMirFunction *xs_mir_module_function_at(const XsMirModule *module, size_t index)
 {
-  if (module == NULL || index >= module->function_count)
+  if(module == NULL || index >= module->function_count)
     return NULL;
   return &module->functions[index];
 }
@@ -224,16 +224,16 @@ XsMirStatus xs_mir_function_add_local(XsMirFunction *function, XsMirLocalKind ki
                                       bool is_mutable, XsMirLocalId *local, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (local != NULL)
+  if(local != NULL)
     *local = 0;
-  if (function == NULL || !function->is_definition || name == NULL || name[0] == '\0')
+  if(function == NULL || !function->is_definition || name == NULL || name[0] == '\0')
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT,
                             "valid MIR function definition and local name are required");
-  if (function->local_count == function->local_capacity)
+  if(function->local_count == function->local_capacity)
   {
     size_t capacity = function->local_capacity == 0 ? 8 : function->local_capacity * 2;
     XsMirLocal *locals = realloc(function->locals, capacity * sizeof(*locals));
-    if (locals == NULL)
+    if(locals == NULL)
       return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while adding MIR local");
     function->locals = locals;
     function->local_capacity = capacity;
@@ -244,11 +244,11 @@ XsMirStatus xs_mir_function_add_local(XsMirFunction *function, XsMirLocalKind ki
       .kind = kind,
       .is_mutable = is_mutable,
   };
-  if (created.name == NULL)
+  if(created.name == NULL)
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while naming MIR local");
   XsMirLocalId id = (XsMirLocalId)function->local_count;
   function->locals[function->local_count++] = created;
-  if (local != NULL)
+  if(local != NULL)
     *local = id;
   return XS_MIR_OK;
 }
@@ -260,7 +260,7 @@ size_t xs_mir_function_local_count(const XsMirFunction *function)
 
 static const XsMirLocal *local_at(const XsMirFunction *function, XsMirLocalId local)
 {
-  if (function == NULL || (size_t)local >= function->local_count)
+  if(function == NULL || (size_t)local >= function->local_count)
     return NULL;
   return &function->locals[local];
 }
@@ -292,29 +292,29 @@ bool xs_mir_function_local_is_mutable(const XsMirFunction *function, XsMirLocalI
 XsMirStatus xs_mir_function_add_value(XsMirFunction *function, XsMirType type, XsMirValueId *value, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (value != NULL)
+  if(value != NULL)
     *value = 0;
-  if (function == NULL || !function->is_definition)
+  if(function == NULL || !function->is_definition)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR function definition is required");
-  if (function->value_count == function->value_capacity)
+  if(function->value_count == function->value_capacity)
   {
     size_t capacity = function->value_capacity == 0 ? 8 : function->value_capacity * 2;
     XsMirValue *values = realloc(function->values, capacity * sizeof(*values));
-    if (values == NULL)
+    if(values == NULL)
       return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while adding MIR value");
     function->values = values;
     function->value_capacity = capacity;
   }
   XsMirValueId id = (XsMirValueId)function->value_count;
   function->values[function->value_count++] = (XsMirValue){.type = type};
-  if (value != NULL)
+  if(value != NULL)
     *value = id;
   return XS_MIR_OK;
 }
 
 XsMirType xs_mir_function_value_type(const XsMirFunction *function, XsMirValueId value)
 {
-  if (function == NULL || (size_t)value >= function->value_count)
+  if(function == NULL || (size_t)value >= function->value_count)
     return (XsMirType){.kind = XS_LIL_TYPE_VOID};
   return function->values[value].type;
 }
@@ -323,26 +323,26 @@ XsMirStatus xs_mir_function_add_local_place(XsMirFunction *function, XsMirLocalI
                                             XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (place != NULL)
+  if(place != NULL)
     *place = NULL;
-  if (function == NULL || !function->is_definition || (size_t)local >= function->local_count)
+  if(function == NULL || !function->is_definition || (size_t)local >= function->local_count)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR function and local are required");
-  if (function->place_count == function->place_capacity)
+  if(function->place_count == function->place_capacity)
   {
     size_t capacity = function->place_capacity == 0 ? 8 : function->place_capacity * 2;
     XsMirPlace **places = realloc(function->places, capacity * sizeof(*places));
-    if (places == NULL)
+    if(places == NULL)
       return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while adding MIR place");
     function->places = places;
     function->place_capacity = capacity;
   }
   XsMirPlace *created = calloc(1, sizeof(*created));
-  if (created == NULL)
+  if(created == NULL)
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while adding MIR place");
   created->id = (XsMirPlaceId)function->place_count;
   created->root_local = local;
   function->places[function->place_count++] = created;
-  if (place != NULL)
+  if(place != NULL)
     *place = created;
   return XS_MIR_OK;
 }
@@ -360,13 +360,13 @@ XsMirLocalId xs_mir_place_root_local(const XsMirPlace *place)
 static XsMirStatus append_projection(XsMirPlace *place, XsMirPlaceProjection projection, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (place == NULL)
+  if(place == NULL)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR place is required");
-  if (place->projection_count == place->projection_capacity)
+  if(place->projection_count == place->projection_capacity)
   {
     size_t capacity = place->projection_capacity == 0 ? 4 : place->projection_capacity * 2;
     XsMirPlaceProjection *projections = realloc(place->projections, capacity * sizeof(*projections));
-    if (projections == NULL)
+    if(projections == NULL)
       return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while adding MIR place projection");
     place->projections = projections;
     place->projection_capacity = capacity;
@@ -399,7 +399,7 @@ size_t xs_mir_place_projection_count(const XsMirPlace *place)
 
 XsMirPlaceProjectionKind xs_mir_place_projection_kind(const XsMirPlace *place, size_t index)
 {
-  if (place == NULL || index >= place->projection_count)
+  if(place == NULL || index >= place->projection_count)
     return XS_MIR_PLACE_PROJECTION_FIELD;
   return place->projections[index].kind;
 }

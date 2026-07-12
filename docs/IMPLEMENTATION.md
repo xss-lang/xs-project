@@ -92,6 +92,9 @@ The documented compilation order is preserved:
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
+- Plain source native builds support the first expression slice for top-level `fn main() => Long`: i32-range integer
+  literals, `+`, `-`, `*`, and one top-level `if` expression with an i32 comparison condition. This lowers through C MIR,
+  XLIL, LLVM IR, object emission, and native `.xse` linking.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.

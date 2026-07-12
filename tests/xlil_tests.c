@@ -14,12 +14,12 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static void test_module_and_text_writer(void)
 {
@@ -41,7 +41,7 @@ static void test_module_and_text_writer(void)
   CHECK(strcmp(xs_lil_type_name((XsLilType){.kind = XS_LIL_TYPE_I8}), "i8") == 0);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -76,7 +76,7 @@ static void test_function_body_text_writer(void)
   CHECK(xs_lil_block_set_return_value(entry, value, &error) == XS_LIL_OK);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -123,7 +123,7 @@ static void test_function_body_branch_text_writer(void)
   CHECK(xs_lil_block_set_return(exit, &error) == XS_LIL_OK);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -160,7 +160,7 @@ static void test_function_body_branch_if_text_writer(void)
   CHECK(xs_lil_block_set_return(else_block, &error) == XS_LIL_OK);
 
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -237,7 +237,7 @@ static void test_text_parser_round_trips_supported_body_subset(void)
   XsLilModule *module = NULL;
   CHECK(xs_lil_module_parse_text("body.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -262,7 +262,7 @@ static void test_text_parser_round_trips_branch_subset(void)
   XsLilModule *module = NULL;
   CHECK(xs_lil_module_parse_text("branch.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -286,7 +286,7 @@ static void test_text_parser_round_trips_branch_if_subset(void)
   XsLilModule *module = NULL;
   CHECK(xs_lil_module_parse_text("branch_if.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -324,7 +324,7 @@ static void test_text_parser_round_trips_parameters_and_calls(void)
   CHECK(xs_lil_block_instruction_argument(block, 0, 0) == 0);
   CHECK(xs_lil_block_instruction_result(block, 1) == UINT32_MAX);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -351,7 +351,7 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
   XsLilModule *module = NULL;
   CHECK(xs_lil_module_parse_text("arithmetic.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if (stream == NULL)
+  if(stream == NULL)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -378,7 +378,7 @@ static void test_text_parser_round_trips_i32_constant(void)
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("main.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if (stream == nullptr)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -406,7 +406,7 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("arithmetic32.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   FILE *stream = tmpfile();
-  if (stream == nullptr)
+  if(stream == nullptr)
   {
     ++failures;
     xs_lil_module_destroy(module);
@@ -450,7 +450,7 @@ static void test_text_parser_rejects_invalid_inputs(void)
       ".xlil version 0\n.xlil module App\n.extern Import : () -> i64\n.func Bad : () -> void\nbb0.entry:\n"
       "  call Import()\n  ret\n.end\n",
   };
-  for (size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
+  for(size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
     XsLilError error = {0};
     XsLilModule *module = NULL;

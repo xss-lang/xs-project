@@ -34,7 +34,7 @@ static char *copy_text(const char *text)
 {
   size_t length = strlen(text);
   char *copy = malloc(length + 1);
-  if (copy != nullptr)
+  if(copy != nullptr)
     memcpy(copy, text, length + 1);
   return copy;
 }
@@ -42,34 +42,34 @@ static char *copy_text(const char *text)
 static char *read_file(const char *path, size_t *length)
 {
   FILE *file = fopen(path, "rb");
-  if (file == nullptr)
+  if(file == nullptr)
     return nullptr;
-  if (fseek(file, 0, SEEK_END) != 0)
+  if(fseek(file, 0, SEEK_END) != 0)
   {
     fclose(file);
     return nullptr;
   }
   long size = ftell(file);
-  if (size < 0 || fseek(file, 0, SEEK_SET) != 0)
+  if(size < 0 || fseek(file, 0, SEEK_SET) != 0)
   {
     fclose(file);
     return nullptr;
   }
-  if ((uintmax_t)size > (uintmax_t)SIZE_MAX - 1U)
+  if((uintmax_t)size > (uintmax_t)SIZE_MAX - 1U)
   {
     fclose(file);
     return nullptr;
   }
   size_t file_size = (size_t)size;
   char *text = calloc(file_size + 1U, 1U);
-  if (text == nullptr)
+  if(text == nullptr)
   {
     fclose(file);
     return nullptr;
   }
   size_t read = fread(text, 1, file_size, file);
   fclose(file);
-  if (read != file_size)
+  if(read != file_size)
   {
     free(text);
     return nullptr;
@@ -87,7 +87,7 @@ static bool has_suffix(const char *text, const char *suffix)
 
 static const char *ir_version_prefix(XsBuildOutput output)
 {
-  switch (output)
+  switch(output)
   {
   case XS_BUILD_OUTPUT_HIR:
     return ".xhir version ";
@@ -103,7 +103,7 @@ static const char *ir_version_prefix(XsBuildOutput output)
 
 static const char *ir_kind_name(XsBuildOutput output)
 {
-  switch (output)
+  switch(output)
   {
   case XS_BUILD_OUTPUT_HIR:
     return "XHIR";
@@ -131,18 +131,18 @@ static bool supported_ir_version(uint32_t version)
 static bool parse_ir_version_line(const char *line, const char *prefix, uint32_t *version)
 {
   size_t prefix_length = strlen(prefix);
-  if (strncmp(line, prefix, prefix_length) != 0)
+  if(strncmp(line, prefix, prefix_length) != 0)
     return false;
   const char *digits = line + prefix_length;
-  if (*digits == '\0')
+  if(*digits == '\0')
     return false;
   uint32_t value = 0;
-  for (const char *cursor = digits; *cursor != '\0'; ++cursor)
+  for(const char *cursor = digits; *cursor != '\0'; ++cursor)
   {
-    if (*cursor < '0' || *cursor > '9')
+    if(*cursor < '0' || *cursor > '9')
       return false;
     uint32_t digit = (uint32_t)(*cursor - '0');
-    if (value > (UINT32_MAX - digit) / 10U)
+    if(value > (UINT32_MAX - digit) / 10U)
       return false;
     value = value * 10U + digit;
   }
@@ -154,10 +154,10 @@ static bool validate_direct_ir_version(XsBuildOutput output, const char *path, c
 {
   const char *prefix = ir_version_prefix(output);
   size_t line_length = 0;
-  while (line_length < length && text[line_length] != '\n' && text[line_length] != '\r')
+  while(line_length < length && text[line_length] != '\n' && text[line_length] != '\r')
     ++line_length;
   char *line = malloc(line_length + 1U);
-  if (line == nullptr)
+  if(line == nullptr)
   {
     fprintf(stderr, "xs: out of memory while checking %s version\n", ir_kind_name(output));
     return false;
@@ -167,12 +167,12 @@ static bool validate_direct_ir_version(XsBuildOutput output, const char *path, c
   uint32_t version = 0;
   bool parsed = parse_ir_version_line(line, prefix, &version);
   free(line);
-  if (!parsed)
+  if(!parsed)
   {
     fprintf(stderr, "xs: %s file '%s' has an invalid version header\n", ir_kind_name(output), path);
     return false;
   }
-  if (!supported_ir_version(version))
+  if(!supported_ir_version(version))
   {
     fprintf(stderr, "xs: %s version %" PRIu32 " is not supported; supported version is 0\n", ir_kind_name(output),
             version);
@@ -183,11 +183,11 @@ static bool validate_direct_ir_version(XsBuildOutput output, const char *path, c
 
 static char *project_path(const char *manifest_path, const char *source_path)
 {
-  if (source_path[0] == '/')
+  if(source_path[0] == '/')
   {
     size_t length = strlen(source_path);
     char *result = malloc(length + 1);
-    if (result != nullptr)
+    if(result != nullptr)
       memcpy(result, source_path, length + 1);
     return result;
   }
@@ -195,7 +195,7 @@ static char *project_path(const char *manifest_path, const char *source_path)
   size_t directory_length = slash == nullptr ? 0 : (size_t)(slash - manifest_path + 1);
   size_t source_length = strlen(source_path);
   char *result = malloc(directory_length + source_length + 1);
-  if (result == nullptr)
+  if(result == nullptr)
     return nullptr;
   memcpy(result, manifest_path, directory_length);
   memcpy(result + directory_length, source_path, source_length + 1);
@@ -205,11 +205,11 @@ static char *project_path(const char *manifest_path, const char *source_path)
 static char *project_root(const char *manifest_path)
 {
   const char *slash = strrchr(manifest_path, '/');
-  if (slash == nullptr)
+  if(slash == nullptr)
     return copy_text(".");
   size_t length = slash == manifest_path ? 1 : (size_t)(slash - manifest_path);
   char *root = malloc(length + 1);
-  if (root != nullptr)
+  if(root != nullptr)
   {
     memcpy(root, manifest_path, length);
     root[length] = '\0';
@@ -223,13 +223,13 @@ static char *build_output_path(const char *manifest_path, XsBuildOutput output)
   const char *slash = strrchr(manifest_path, '/');
   const char *base = slash == nullptr ? manifest_path : slash + 1;
   size_t base_length = strlen(base);
-  if (base_length >= 7 && strcmp(base + base_length - 7, ".xsproj") == 0)
+  if(base_length >= 7 && strcmp(base + base_length - 7, ".xsproj") == 0)
     base_length -= 7;
   size_t extension_length = strlen(extension);
   char *path = malloc(base_length + extension_length + 1);
-  if (path == nullptr)
+  if(path == nullptr)
     return nullptr;
-  for (size_t i = 0; i < base_length; ++i)
+  for(size_t i = 0; i < base_length; ++i)
     path[i] = base[i];
   memcpy(path + base_length, extension, extension_length + 1);
   return path;
@@ -255,15 +255,15 @@ typedef struct
 
 static void compilation_unit_free(CompilationUnit *unit)
 {
-  if (unit->imports_initialized)
+  if(unit->imports_initialized)
     xs_hir_import_scope_free(&unit->imports);
-  if (unit->macro_declarations_initialized)
+  if(unit->macro_declarations_initialized)
     xs_macro_declaration_expansion_set_free(&unit->macro_declarations);
-  if (unit->macro_statements_initialized)
+  if(unit->macro_statements_initialized)
     xs_macro_statement_expansion_set_free(&unit->macro_statements);
-  if (unit->tree_initialized)
+  if(unit->tree_initialized)
     xs_syntax_tree_free(&unit->tree);
-  if (unit->diagnostics_initialized)
+  if(unit->diagnostics_initialized)
     xs_diagnostics_free(&unit->diagnostics);
   free(unit->text);
   free(unit->path);
@@ -272,9 +272,9 @@ static void compilation_unit_free(CompilationUnit *unit)
 
 static bool unit_path_exists(const CompilationUnit *units, size_t count, const char *path)
 {
-  for (size_t i = 0; i < count; ++i)
+  for(size_t i = 0; i < count; ++i)
   {
-    if (strcmp(units[i].path, path) == 0)
+    if(strcmp(units[i].path, path) == 0)
       return true;
   }
   return false;
@@ -282,16 +282,16 @@ static bool unit_path_exists(const CompilationUnit *units, size_t count, const c
 
 static bool append_compilation_unit(CompilationUnit **units, size_t *count, size_t *capacity, char *path)
 {
-  if (unit_path_exists(*units, *count, path))
+  if(unit_path_exists(*units, *count, path))
   {
     free(path);
     return true;
   }
-  if (*count == *capacity)
+  if(*count == *capacity)
   {
     size_t new_capacity = *capacity == 0 ? 8 : *capacity * 2;
     CompilationUnit *grown = realloc(*units, new_capacity * sizeof(*grown));
-    if (grown == nullptr)
+    if(grown == nullptr)
     {
       free(path);
       return false;
@@ -307,7 +307,7 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
 {
   size_t length = 0;
   unit->text = read_file(unit->path, &length);
-  if (unit->text == nullptr)
+  if(unit->text == nullptr)
   {
     fprintf(stderr, "xs: source file '%s' could not be read\n", unit->path);
     return false;
@@ -320,9 +320,9 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   bool success = xs_syntax_parse(&unit->source, file_id, &unit->diagnostics, &unit->tree);
   unit->tree_initialized = true;
   XsIncludedSource included = {0};
-  if (success)
+  if(success)
     success = xs_source_expand_include_macros(&unit->tree, &unit->diagnostics, &included);
-  if (success)
+  if(success)
   {
     xs_syntax_tree_free(&unit->tree);
     free(unit->text);
@@ -332,22 +332,22 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
     success = xs_syntax_parse(&unit->source, file_id, &unit->diagnostics, &unit->tree);
   }
   xs_included_source_free(&included);
-  if (success)
+  if(success)
     success = xs_macro_validate(&unit->tree, &unit->diagnostics);
-  if (success)
+  if(success)
   {
     XsMacroExpansionReport macro_report;
     success = xs_macro_prepare_expansion(&unit->tree, &unit->diagnostics, &macro_report);
   }
-  if (success)
+  if(success)
   {
     success = xs_macro_expand_statements(&unit->tree, &unit->diagnostics, &unit->macro_statements);
     unit->macro_statements_initialized = success;
   }
-  if (success)
+  if(success)
     success = xs_macro_expand_declarations(&unit->tree, &unit->diagnostics, &unit->macro_declarations);
   unit->macro_declarations_initialized = success;
-  if (success)
+  if(success)
     success = xs_hir_collect_symbols_expanded(&unit->tree, &unit->macro_declarations, symbols, &unit->diagnostics);
   unit->hir_ready = success;
   return success;
@@ -355,11 +355,11 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
 
 static bool emit_requested_output(XsBuildOutput output, const XsHirSymbolTable *symbols, const char *manifest_path)
 {
-  if (output == XS_BUILD_OUTPUT_NONE)
+  if(output == XS_BUILD_OUTPUT_NONE)
     return true;
   (void)symbols;
   char *path = build_output_path(manifest_path, output);
-  if (path == nullptr)
+  if(path == nullptr)
   {
     fprintf(stderr, "xs: out of memory while preparing the output file\n");
     return false;
@@ -372,7 +372,7 @@ static bool emit_requested_output(XsBuildOutput output, const XsHirSymbolTable *
 
 static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolTable *symbols)
 {
-  if (!unit->hir_ready)
+  if(!unit->hir_ready)
     return false;
   bool success = xs_hir_resolve_imports(&unit->tree, symbols, &unit->imports, &unit->diagnostics);
   success = xs_hir_validate_name_uses_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
@@ -389,7 +389,7 @@ static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolT
 static bool check_single_source_file(const char *path, bool build_native)
 {
   CompilationUnit unit = {.path = copy_text(path)};
-  if (unit.path == nullptr)
+  if(unit.path == nullptr)
   {
     fprintf(stderr, "xs: out of memory while preparing source file '%s'\n", path);
     return false;
@@ -397,12 +397,12 @@ static bool check_single_source_file(const char *path, bool build_native)
   XsHirSymbolTable symbols;
   xs_hir_symbol_table_init(&symbols);
   bool success = parse_compilation_unit(&unit, 1, &symbols);
-  if (success)
+  if(success)
     success = check_compilation_unit_semantics(&unit, &symbols);
   xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
-  if (success && build_native)
+  if(success && build_native)
     success = xs_driver_build_source_native(path, &unit.tree, &unit.diagnostics);
-  if (!success && build_native)
+  if(!success && build_native)
     xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
   xs_hir_symbol_table_free(&symbols);
   compilation_unit_free(&unit);
@@ -412,19 +412,19 @@ static bool check_single_source_file(const char *path, bool build_native)
 static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output,
                                   bool build_native)
 {
-  if (project->xs_version.is_nil || xs_project_selected_entry(project) == nullptr)
+  if(project->xs_version.is_nil || xs_project_selected_entry(project) == nullptr)
   {
-    if (build_native)
+    if(build_native)
       fprintf(stderr, "xs: project native build requires compilerOptions.xsVersion and a selected entry source\n");
     return !build_native;
   }
 
   size_t direct_count = project->additional_file_count;
-  if (!project->entry.is_nil && project->entry.text != nullptr)
+  if(!project->entry.is_nil && project->entry.text != nullptr)
     ++direct_count;
   const char **direct = calloc(direct_count, sizeof(*direct));
   char *root = project_root(manifest_path);
-  if (direct == nullptr || root == nullptr)
+  if(direct == nullptr || root == nullptr)
   {
     free(direct);
     free(root);
@@ -432,11 +432,11 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
     return false;
   }
   size_t direct_index = 0;
-  if (!project->entry.is_nil && project->entry.text != nullptr)
+  if(!project->entry.is_nil && project->entry.text != nullptr)
     direct[direct_index++] = project->entry.text;
-  for (size_t i = 0; i < project->additional_file_count; ++i)
+  for(size_t i = 0; i < project->additional_file_count; ++i)
   {
-    if (!project->additional_files[i].is_nil && project->additional_files[i].text != nullptr)
+    if(!project->additional_files[i].is_nil && project->additional_files[i].text != nullptr)
       direct[direct_index++] = project->additional_files[i].text;
   }
   direct_count = direct_index;
@@ -448,52 +448,52 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
   xs_module_graph_init(&graph);
   xs_module_issues_init(&issues);
   bool success = xs_module_registry_discover(root, &registry, &issues);
-  if (success)
+  if(success)
     success = xs_module_graph_resolve(root, direct, direct_count, &registry, &graph, &issues);
   xs_module_issues_print(&issues);
 
   CompilationUnit *units = nullptr;
   size_t unit_count = 0;
   size_t unit_capacity = 0;
-  for (size_t i = 0; i < direct_count; ++i)
+  for(size_t i = 0; i < direct_count; ++i)
   {
     char *path = direct[i][0] == '/' ? copy_text(direct[i]) : project_path(manifest_path, direct[i]);
-    if (path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path))
+    if(path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path))
       success = false;
   }
-  for (size_t i = 0; i < graph.count; ++i)
+  for(size_t i = 0; i < graph.count; ++i)
   {
     char *path = copy_text(graph.dependencies[i].imported_path);
-    if (path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path))
+    if(path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path))
       success = false;
   }
 
   XsHirSymbolTable symbols;
   xs_hir_symbol_table_init(&symbols);
   uint64_t file_id = 1;
-  for (size_t i = 0; i < unit_count; ++i)
+  for(size_t i = 0; i < unit_count; ++i)
     success = parse_compilation_unit(&units[i], file_id++, &symbols) && success;
-  if (success)
+  if(success)
   {
-    for (size_t i = 0; i < unit_count; ++i)
+    for(size_t i = 0; i < unit_count; ++i)
     {
-      if (units[i].hir_ready)
+      if(units[i].hir_ready)
       {
         success = check_compilation_unit_semantics(&units[i], &symbols) && success;
       }
     }
   }
-  for (size_t i = 0; i < unit_count; ++i)
+  for(size_t i = 0; i < unit_count; ++i)
     xs_diagnostics_print(&units[i].diagnostics, &units[i].source, stderr);
-  if (success)
+  if(success)
     success = emit_requested_output(output, &symbols, manifest_path);
-  if (success && build_native)
+  if(success && build_native)
     success = unit_count != 0 && xs_driver_build_source_native(units[0].path, &units[0].tree, &units[0].diagnostics);
-  if (!success && build_native && unit_count != 0)
+  if(!success && build_native && unit_count != 0)
     xs_diagnostics_print(&units[0].diagnostics, &units[0].source, stderr);
 
   xs_hir_symbol_table_free(&symbols);
-  for (size_t i = 0; i < unit_count; ++i)
+  for(size_t i = 0; i < unit_count; ++i)
     compilation_unit_free(&units[i]);
   free(units);
   xs_module_issues_free(&issues);
@@ -506,14 +506,14 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
 
 static int run_project_command(const XsCliOptions *options)
 {
-  if (!has_suffix(options->manifest_path, ".xsproj"))
+  if(!has_suffix(options->manifest_path, ".xsproj"))
   {
     fprintf(stderr, "xs: -proj must be used with a .xsproj file path\n");
     return 2;
   }
   size_t length = 0;
   char *text = read_file(options->manifest_path, &length);
-  if (text == nullptr)
+  if(text == nullptr)
   {
     fprintf(stderr, "xs: project file '%s' could not be read\n", options->manifest_path);
     return 2;
@@ -526,7 +526,7 @@ static int run_project_command(const XsCliOptions *options)
   xs_project_init(&project);
   bool success = xs_project_parse(&source, &diagnostics, &project);
   xs_diagnostics_print(&diagnostics, &source, stderr);
-  if (success)
+  if(success)
     success = check_project_sources(options->manifest_path, &project, options->output,
                                     strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE);
 
@@ -538,22 +538,22 @@ static int run_project_command(const XsCliOptions *options)
 
 static int run_file_command(const XsCliOptions *options)
 {
-  if (is_direct_ir_input(options))
+  if(is_direct_ir_input(options))
   {
     size_t length = 0;
     char *text = read_file(options->file_path, &length);
-    if (text == nullptr)
+    if(text == nullptr)
     {
       fprintf(stderr, "xs: input file '%s' could not be read\n", options->file_path);
       return 2;
     }
     bool valid_version = validate_direct_ir_version(options->output, options->file_path, text, length);
-    if (!valid_version)
+    if(!valid_version)
     {
       free(text);
       return 1;
     }
-    if (options->output == XS_BUILD_OUTPUT_XLIL)
+    if(options->output == XS_BUILD_OUTPUT_XLIL)
     {
       bool success = xs_driver_build_direct_xlil(options->file_path, text, length);
       free(text);
@@ -564,7 +564,7 @@ static int run_file_command(const XsCliOptions *options)
             options->file_path);
     return 1;
   }
-  if (options->output == XS_BUILD_OUTPUT_NONE)
+  if(options->output == XS_BUILD_OUTPUT_NONE)
     return check_single_source_file(options->file_path, strcmp(options->command, "build") == 0) ? 0 : 1;
   fprintf(stderr, "xs: %s emission for -file '%s' is not wired yet\n", xs_cli_output_extension(options->output),
           options->file_path);
@@ -573,18 +573,18 @@ static int run_file_command(const XsCliOptions *options)
 
 int xs_driver_main(int argc, char **argv)
 {
-  if (argc == 2 && strcmp(argv[1], "--version") == 0)
+  if(argc == 2 && strcmp(argv[1], "--version") == 0)
   {
     printf("xs %s\n", XS_PROJECT_VERSION);
     return 0;
   }
   XsCliOptions options = {0};
-  if (!xs_cli_parse(argc, argv, &options))
+  if(!xs_cli_parse(argc, argv, &options))
   {
     xs_cli_print_usage(stderr);
     return 2;
   }
-  if (options.file_path != nullptr)
+  if(options.file_path != nullptr)
     return run_file_command(&options);
   return run_project_command(&options);
 }

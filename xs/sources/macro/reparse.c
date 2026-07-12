@@ -18,7 +18,7 @@ typedef struct
 
 static bool append_text(char *buffer, size_t *cursor, const char *text, size_t length)
 {
-  if (length == 0)
+  if(length == 0)
     return true;
   memcpy(buffer + *cursor, text, length);
   *cursor += length;
@@ -32,11 +32,11 @@ static bool spans_equal(XsSpan left, XsSpan right)
 
 static bool span_list_add(MacroCallSpans *spans, XsSpan span)
 {
-  if (spans->count == spans->capacity)
+  if(spans->count == spans->capacity)
   {
     size_t capacity = spans->capacity == 0 ? 4 : spans->capacity * 2;
     XsSpan *items = realloc(spans->items, capacity * sizeof(*items));
-    if (items == nullptr)
+    if(items == nullptr)
       return false;
     spans->items = items;
     spans->capacity = capacity;
@@ -47,9 +47,9 @@ static bool span_list_add(MacroCallSpans *spans, XsSpan span)
 
 static bool span_list_contains(const MacroCallSpans *spans, XsSpan span)
 {
-  for (size_t i = 0; i < spans->count; ++i)
+  for(size_t i = 0; i < spans->count; ++i)
   {
-    if (spans_equal(spans->items[i], span))
+    if(spans_equal(spans->items[i], span))
       return true;
   }
   return false;
@@ -57,19 +57,19 @@ static bool span_list_contains(const MacroCallSpans *spans, XsSpan span)
 
 static bool collect_statement_calls(const XsSyntaxNode *node, MacroCallSpans *spans)
 {
-  if (node == nullptr)
+  if(node == nullptr)
     return true;
-  if (node->kind == XS_SYNTAX_STMT_MACRO_CALL)
+  if(node->kind == XS_SYNTAX_STMT_MACRO_CALL)
   {
     const XsSyntaxNode *call = xs_syntax_find_first(node, XS_SYNTAX_EXPR_MACRO_CALL);
-    if (call == nullptr)
+    if(call == nullptr)
       return true;
     XsSpan span = {.start = call->span.start_offset, .end = call->span.end_offset};
     return span_list_add(spans, span);
   }
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
   {
-    if (!collect_statement_calls(node->children[i], spans))
+    if(!collect_statement_calls(node->children[i], spans))
       return false;
   }
   return true;
@@ -77,19 +77,19 @@ static bool collect_statement_calls(const XsSyntaxNode *node, MacroCallSpans *sp
 
 static bool collect_declaration_calls(const XsSyntaxNode *node, MacroCallSpans *spans)
 {
-  if (node == nullptr)
+  if(node == nullptr)
     return true;
-  if (node->kind == XS_SYNTAX_DECL_MACRO_CALL)
+  if(node->kind == XS_SYNTAX_DECL_MACRO_CALL)
   {
     const XsSyntaxNode *call = xs_syntax_find_first(node, XS_SYNTAX_EXPR_MACRO_CALL);
-    if (call == nullptr)
+    if(call == nullptr)
       return true;
     XsSpan span = {.start = call->span.start_offset, .end = call->span.end_offset};
     return span_list_add(spans, span);
   }
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
   {
-    if (!collect_declaration_calls(node->children[i], spans))
+    if(!collect_declaration_calls(node->children[i], spans))
       return false;
   }
   return true;
@@ -98,14 +98,14 @@ static bool collect_declaration_calls(const XsSyntaxNode *node, MacroCallSpans *
 static size_t expansion_text_length(const XsMacroExpansion *expansion)
 {
   size_t length = 0;
-  for (size_t i = 0; i < expansion->token_count; ++i)
+  for(size_t i = 0; i < expansion->token_count; ++i)
     length += expansion->tokens[i].text.length + 1;
   return length;
 }
 
 static bool expansion_needs_semicolon(const XsMacroExpansion *expansion)
 {
-  if (expansion->token_count == 0)
+  if(expansion->token_count == 0)
     return false;
   XsTokenKind last = expansion->tokens[expansion->token_count - 1].kind;
   return last != XS_TOKEN_SEMICOLON && last != XS_TOKEN_RIGHT_BRACE;
@@ -118,18 +118,18 @@ static char *render_statement_source(const XsMacroExpansion *expansion, size_t *
   bool needs_semicolon = expansion_needs_semicolon(expansion);
   size_t capacity = sizeof(prefix) - 1 + expansion_text_length(expansion) + (needs_semicolon ? 1 : 0) + sizeof(suffix);
   char *text = malloc(capacity);
-  if (text == nullptr)
+  if(text == nullptr)
     return nullptr;
 
   size_t cursor = 0;
   append_text(text, &cursor, prefix, sizeof(prefix) - 1);
-  for (size_t i = 0; i < expansion->token_count; ++i)
+  for(size_t i = 0; i < expansion->token_count; ++i)
   {
-    if (i != 0)
+    if(i != 0)
       append_text(text, &cursor, " ", 1);
     append_text(text, &cursor, expansion->tokens[i].text.data, expansion->tokens[i].text.length);
   }
-  if (needs_semicolon)
+  if(needs_semicolon)
     append_text(text, &cursor, ";", 1);
   append_text(text, &cursor, suffix, sizeof(suffix) - 1);
   text[cursor] = '\0';
@@ -143,17 +143,17 @@ static char *render_declaration_source(const XsMacroExpansion *expansion, size_t
   bool needs_semicolon = expansion_needs_semicolon(expansion);
   size_t capacity = expansion_text_length(expansion) + (needs_semicolon ? 1 : 0) + sizeof(suffix);
   char *text = malloc(capacity);
-  if (text == nullptr)
+  if(text == nullptr)
     return nullptr;
 
   size_t cursor = 0;
-  for (size_t i = 0; i < expansion->token_count; ++i)
+  for(size_t i = 0; i < expansion->token_count; ++i)
   {
-    if (i != 0)
+    if(i != 0)
       append_text(text, &cursor, " ", 1);
     append_text(text, &cursor, expansion->tokens[i].text.data, expansion->tokens[i].text.length);
   }
-  if (needs_semicolon)
+  if(needs_semicolon)
     append_text(text, &cursor, ";", 1);
   append_text(text, &cursor, suffix, sizeof(suffix) - 1);
   text[cursor] = '\0';
@@ -164,9 +164,9 @@ static char *render_declaration_source(const XsMacroExpansion *expansion, size_t
 bool xs_macro_reparse_expansion_as_statement(const XsMacroExpansion *expansion, uint64_t file_id,
                                              XsDiagnostics *diagnostics, XsMacroReparseResult *result)
 {
-  if (expansion == nullptr || diagnostics == nullptr || result == nullptr)
+  if(expansion == nullptr || diagnostics == nullptr || result == nullptr)
     return false;
-  if (expansion->token_count == 0)
+  if(expansion->token_count == 0)
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, expansion->call_span,
                        "macro expansion did not produce a statement");
@@ -175,7 +175,7 @@ bool xs_macro_reparse_expansion_as_statement(const XsMacroExpansion *expansion, 
   *result = (XsMacroReparseResult){0};
   size_t length = 0;
   char *text = render_statement_source(expansion, &length);
-  if (text == nullptr)
+  if(text == nullptr)
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, expansion->call_span,
                        "compiler ran out of memory while reparsing macro expansion");
@@ -183,7 +183,7 @@ bool xs_macro_reparse_expansion_as_statement(const XsMacroExpansion *expansion, 
   }
   result->text = text;
   result->source = (XsSource){.path = "<macro-expansion>", .text = text, .length = length};
-  if (!xs_syntax_parse(&result->source, file_id, diagnostics, &result->tree))
+  if(!xs_syntax_parse(&result->source, file_id, diagnostics, &result->tree))
   {
     xs_macro_reparse_result_free(result);
     return false;
@@ -194,9 +194,9 @@ bool xs_macro_reparse_expansion_as_statement(const XsMacroExpansion *expansion, 
 bool xs_macro_reparse_expansion_as_declarations(const XsMacroExpansion *expansion, uint64_t file_id,
                                                 XsDiagnostics *diagnostics, XsMacroReparseResult *result)
 {
-  if (expansion == nullptr || diagnostics == nullptr || result == nullptr)
+  if(expansion == nullptr || diagnostics == nullptr || result == nullptr)
     return false;
-  if (expansion->token_count == 0)
+  if(expansion->token_count == 0)
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, expansion->call_span,
                        "macro expansion did not produce a declaration");
@@ -205,7 +205,7 @@ bool xs_macro_reparse_expansion_as_declarations(const XsMacroExpansion *expansio
   *result = (XsMacroReparseResult){0};
   size_t length = 0;
   char *text = render_declaration_source(expansion, &length);
-  if (text == nullptr)
+  if(text == nullptr)
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, expansion->call_span,
                        "compiler ran out of memory while reparsing macro declarations");
@@ -213,7 +213,7 @@ bool xs_macro_reparse_expansion_as_declarations(const XsMacroExpansion *expansio
   }
   result->text = text;
   result->source = (XsSource){.path = "<macro-declarations>", .text = text, .length = length};
-  if (!xs_syntax_parse(&result->source, file_id, diagnostics, &result->tree))
+  if(!xs_syntax_parse(&result->source, file_id, diagnostics, &result->tree))
   {
     xs_macro_reparse_result_free(result);
     return false;
@@ -226,7 +226,7 @@ const XsSyntaxNode *xs_macro_reparse_result_statement(const XsMacroReparseResult
   const XsSyntaxNode *function =
       xs_syntax_find_first(result == nullptr ? nullptr : result->tree.root, XS_SYNTAX_DECL_FUNCTION);
   const XsSyntaxNode *block = xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK);
-  if (block == nullptr || block->child_count == 0)
+  if(block == nullptr || block->child_count == 0)
     return nullptr;
   return block->children[0];
 }
@@ -240,11 +240,11 @@ void xs_macro_reparse_result_free(XsMacroReparseResult *result)
 
 static bool statement_set_add(XsMacroStatementExpansionSet *set, XsMacroStatementExpansion item)
 {
-  if (set->count == set->capacity)
+  if(set->count == set->capacity)
   {
     size_t capacity = set->capacity == 0 ? 4 : set->capacity * 2;
     XsMacroStatementExpansion *items = realloc(set->items, capacity * sizeof(*items));
-    if (items == nullptr)
+    if(items == nullptr)
     {
       set->allocation_failed = true;
       return false;
@@ -258,11 +258,11 @@ static bool statement_set_add(XsMacroStatementExpansionSet *set, XsMacroStatemen
 
 static bool declaration_set_add(XsMacroDeclarationExpansionSet *set, XsMacroDeclarationExpansion item)
 {
-  if (set->count == set->capacity)
+  if(set->count == set->capacity)
   {
     size_t capacity = set->capacity == 0 ? 4 : set->capacity * 2;
     XsMacroDeclarationExpansion *items = realloc(set->items, capacity * sizeof(*items));
-    if (items == nullptr)
+    if(items == nullptr)
     {
       set->allocation_failed = true;
       return false;
@@ -276,7 +276,7 @@ static bool declaration_set_add(XsMacroDeclarationExpansionSet *set, XsMacroDecl
 
 void xs_macro_statement_expansion_set_free(XsMacroStatementExpansionSet *set)
 {
-  for (size_t i = 0; i < set->count; ++i)
+  for(size_t i = 0; i < set->count; ++i)
     xs_macro_reparse_result_free(&set->items[i].reparse);
   free(set->items);
   *set = (XsMacroStatementExpansionSet){0};
@@ -284,7 +284,7 @@ void xs_macro_statement_expansion_set_free(XsMacroStatementExpansionSet *set)
 
 void xs_macro_declaration_expansion_set_free(XsMacroDeclarationExpansionSet *set)
 {
-  for (size_t i = 0; i < set->count; ++i)
+  for(size_t i = 0; i < set->count; ++i)
     xs_macro_reparse_result_free(&set->items[i].reparse);
   free(set->items);
   *set = (XsMacroDeclarationExpansionSet){0};
@@ -293,15 +293,15 @@ void xs_macro_declaration_expansion_set_free(XsMacroDeclarationExpansionSet *set
 const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpansionSet *set,
                                                       const XsSyntaxNode *statement)
 {
-  if (set == nullptr || statement == nullptr || statement->kind != XS_SYNTAX_STMT_MACRO_CALL)
+  if(set == nullptr || statement == nullptr || statement->kind != XS_SYNTAX_STMT_MACRO_CALL)
     return nullptr;
   const XsSyntaxNode *call = xs_syntax_find_first(statement, XS_SYNTAX_EXPR_MACRO_CALL);
-  if (call == nullptr)
+  if(call == nullptr)
     return nullptr;
-  for (size_t i = 0; i < set->count; ++i)
+  for(size_t i = 0; i < set->count; ++i)
   {
     XsSpan span = set->items[i].call_span;
-    if (span.start == call->span.start_offset && span.end == call->span.end_offset)
+    if(span.start == call->span.start_offset && span.end == call->span.end_offset)
       return set->items[i].statement;
   }
   return nullptr;
@@ -309,10 +309,10 @@ const XsSyntaxNode *xs_macro_statement_expansion_find(const XsMacroStatementExpa
 
 bool xs_macro_statement_expansion_matches(const XsMacroStatementExpansion *expansion, const XsSyntaxNode *statement)
 {
-  if (expansion == nullptr || statement == nullptr || statement->kind != XS_SYNTAX_STMT_MACRO_CALL)
+  if(expansion == nullptr || statement == nullptr || statement->kind != XS_SYNTAX_STMT_MACRO_CALL)
     return false;
   const XsSyntaxNode *call = xs_syntax_find_first(statement, XS_SYNTAX_EXPR_MACRO_CALL);
-  if (call == nullptr)
+  if(call == nullptr)
     return false;
   return expansion->call_span.start == call->span.start_offset && expansion->call_span.end == call->span.end_offset;
 }
@@ -320,15 +320,15 @@ bool xs_macro_statement_expansion_matches(const XsMacroStatementExpansion *expan
 const XsMacroDeclarationExpansion *xs_macro_declaration_expansion_find(const XsMacroDeclarationExpansionSet *set,
                                                                        const XsSyntaxNode *declaration)
 {
-  if (set == nullptr || declaration == nullptr || declaration->kind != XS_SYNTAX_DECL_MACRO_CALL)
+  if(set == nullptr || declaration == nullptr || declaration->kind != XS_SYNTAX_DECL_MACRO_CALL)
     return nullptr;
   const XsSyntaxNode *call = xs_syntax_find_first(declaration, XS_SYNTAX_EXPR_MACRO_CALL);
-  if (call == nullptr)
+  if(call == nullptr)
     return nullptr;
-  for (size_t i = 0; i < set->count; ++i)
+  for(size_t i = 0; i < set->count; ++i)
   {
     XsSpan span = set->items[i].call_span;
-    if (span.start == call->span.start_offset && span.end == call->span.end_offset)
+    if(span.start == call->span.start_offset && span.end == call->span.end_offset)
       return &set->items[i];
   }
   return nullptr;
@@ -336,12 +336,12 @@ const XsMacroDeclarationExpansion *xs_macro_declaration_expansion_find(const XsM
 
 bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, XsMacroStatementExpansionSet *set)
 {
-  if (tree == nullptr || tree->root == nullptr || diagnostics == nullptr || set == nullptr)
+  if(tree == nullptr || tree->root == nullptr || diagnostics == nullptr || set == nullptr)
     return false;
   *set = (XsMacroStatementExpansionSet){0};
 
   MacroCallSpans statement_calls = {0};
-  if (!collect_statement_calls(tree->root, &statement_calls))
+  if(!collect_statement_calls(tree->root, &statement_calls))
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while collecting macro statement calls");
@@ -349,19 +349,19 @@ bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnos
   }
 
   XsMacroExpansionSet tokens = {0};
-  if (!xs_macro_expand_tokens(tree, diagnostics, &tokens))
+  if(!xs_macro_expand_tokens(tree, diagnostics, &tokens))
   {
     free(statement_calls.items);
     xs_macro_expansion_set_free(&tokens);
     return false;
   }
 
-  for (size_t i = 0; i < tokens.count; ++i)
+  for(size_t i = 0; i < tokens.count; ++i)
   {
-    if (!span_list_contains(&statement_calls, tokens.items[i].call_span))
+    if(!span_list_contains(&statement_calls, tokens.items[i].call_span))
       continue;
     XsMacroReparseResult reparse;
-    if (!xs_macro_reparse_expansion_as_statement(&tokens.items[i], tree->file_id, diagnostics, &reparse))
+    if(!xs_macro_reparse_expansion_as_statement(&tokens.items[i], tree->file_id, diagnostics, &reparse))
     {
       free(statement_calls.items);
       xs_macro_statement_expansion_set_free(set);
@@ -369,7 +369,7 @@ bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnos
       return false;
     }
     const XsSyntaxNode *statement = xs_macro_reparse_result_statement(&reparse);
-    if (statement == nullptr)
+    if(statement == nullptr)
     {
       xs_macro_reparse_result_free(&reparse);
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, tokens.items[i].call_span,
@@ -384,7 +384,7 @@ bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnos
         .reparse = reparse,
         .statement = statement,
     };
-    if (!statement_set_add(set, item))
+    if(!statement_set_add(set, item))
     {
       xs_macro_reparse_result_free(&reparse);
       free(statement_calls.items);
@@ -404,12 +404,12 @@ bool xs_macro_expand_statements(const XsSyntaxTree *tree, XsDiagnostics *diagnos
 bool xs_macro_expand_declarations(const XsSyntaxTree *tree, XsDiagnostics *diagnostics,
                                   XsMacroDeclarationExpansionSet *set)
 {
-  if (tree == nullptr || tree->root == nullptr || diagnostics == nullptr || set == nullptr)
+  if(tree == nullptr || tree->root == nullptr || diagnostics == nullptr || set == nullptr)
     return false;
   *set = (XsMacroDeclarationExpansionSet){0};
 
   MacroCallSpans declaration_calls = {0};
-  if (!collect_declaration_calls(tree->root, &declaration_calls))
+  if(!collect_declaration_calls(tree->root, &declaration_calls))
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while collecting macro declaration calls");
@@ -417,19 +417,19 @@ bool xs_macro_expand_declarations(const XsSyntaxTree *tree, XsDiagnostics *diagn
   }
 
   XsMacroExpansionSet tokens = {0};
-  if (!xs_macro_expand_tokens(tree, diagnostics, &tokens))
+  if(!xs_macro_expand_tokens(tree, diagnostics, &tokens))
   {
     free(declaration_calls.items);
     xs_macro_expansion_set_free(&tokens);
     return false;
   }
 
-  for (size_t i = 0; i < tokens.count; ++i)
+  for(size_t i = 0; i < tokens.count; ++i)
   {
-    if (!span_list_contains(&declaration_calls, tokens.items[i].call_span))
+    if(!span_list_contains(&declaration_calls, tokens.items[i].call_span))
       continue;
     XsMacroReparseResult reparse;
-    if (!xs_macro_reparse_expansion_as_declarations(&tokens.items[i], tree->file_id, diagnostics, &reparse))
+    if(!xs_macro_reparse_expansion_as_declarations(&tokens.items[i], tree->file_id, diagnostics, &reparse))
     {
       free(declaration_calls.items);
       xs_macro_declaration_expansion_set_free(set);
@@ -437,7 +437,7 @@ bool xs_macro_expand_declarations(const XsSyntaxTree *tree, XsDiagnostics *diagn
       return false;
     }
     size_t declaration_count = reparse.tree.root == nullptr ? 0 : reparse.tree.root->child_count;
-    if (declaration_count == 0)
+    if(declaration_count == 0)
     {
       xs_macro_reparse_result_free(&reparse);
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, tokens.items[i].call_span,
@@ -452,7 +452,7 @@ bool xs_macro_expand_declarations(const XsSyntaxTree *tree, XsDiagnostics *diagn
         .reparse = reparse,
         .declaration_count = declaration_count,
     };
-    if (!declaration_set_add(set, item))
+    if(!declaration_set_add(set, item))
     {
       xs_macro_reparse_result_free(&reparse);
       free(declaration_calls.items);

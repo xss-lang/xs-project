@@ -20,15 +20,15 @@ static char *direct_artifact_path(const char *input_path, const char *extension)
   const char *base = slash == nullptr ? input_path : slash + 1;
   size_t directory_length = slash == nullptr ? 0 : (size_t)(base - input_path);
   size_t base_length = strlen(base);
-  if (base_length >= 5 && strcmp(base + base_length - 5, ".xlil") == 0)
+  if(base_length >= 5 && strcmp(base + base_length - 5, ".xlil") == 0)
     base_length -= 5;
-  else if (base_length >= 3 && strcmp(base + base_length - 3, ".xs") == 0)
+  else if(base_length >= 3 && strcmp(base + base_length - 3, ".xs") == 0)
     base_length -= 3;
   size_t extension_length = strlen(extension);
   char *path = malloc(directory_length + base_length + extension_length + 1U);
-  if (path == nullptr)
+  if(path == nullptr)
     return nullptr;
-  if (directory_length != 0)
+  if(directory_length != 0)
     memcpy(path, input_path, directory_length);
   memcpy(path + directory_length, base, base_length);
   memcpy(path + directory_length + base_length, extension, extension_length + 1U);
@@ -40,23 +40,23 @@ static bool validate_native_entry(const XsLilModule *module, XsBackendError *err
   const XsLilFunction *entry = nullptr;
   size_t entry_count = 0;
   size_t function_count = xs_lil_module_function_count(module);
-  for (size_t i = 0; i < function_count; ++i)
+  for(size_t i = 0; i < function_count; ++i)
   {
     const XsLilFunction *function = xs_lil_module_function_at(module, i);
-    if (strcmp(xs_lil_function_name(function), "main") != 0)
+    if(strcmp(xs_lil_function_name(function), "main") != 0)
       continue;
     entry = function;
     ++entry_count;
   }
-  if (entry_count != 1)
+  if(entry_count != 1)
   {
     error->status = XS_BACKEND_INVALID_ARGUMENT;
     snprintf(error->message, sizeof(error->message), "%s",
              "direct XLIL native build requires exactly one '.func main : () -> i32' definition");
     return false;
   }
-  if (!xs_lil_function_is_definition(entry) || xs_lil_function_parameter_count(entry) != 0 ||
-      xs_lil_function_return_type(entry).kind != XS_LIL_TYPE_I32)
+  if(!xs_lil_function_is_definition(entry) || xs_lil_function_parameter_count(entry) != 0 ||
+     xs_lil_function_return_type(entry).kind != XS_LIL_TYPE_I32)
   {
     error->status = XS_BACKEND_INVALID_ARGUMENT;
     snprintf(error->message, sizeof(error->message), "%s",
@@ -69,7 +69,7 @@ static bool validate_native_entry(const XsLilModule *module, XsBackendError *err
 static bool target_is_native_host(const XsLlvmBackend *backend)
 {
   char *host_triple = LLVMGetDefaultTargetTriple();
-  if (host_triple == nullptr)
+  if(host_triple == nullptr)
     return false;
   bool matches = strcmp(xs_llvm_backend_target_triple(backend), host_triple) == 0;
   LLVMDisposeMessage(host_triple);
@@ -86,9 +86,9 @@ static bool link_native_executable(const char *object_path, const char *executab
   };
   int exit_code = -1;
   XsBackendStatus status = xs_linker_invoke(&invocation, &exit_code, error);
-  if (status != XS_BACKEND_OK)
+  if(status != XS_BACKEND_OK)
     return false;
-  if (exit_code == 0)
+  if(exit_code == 0)
     return true;
   error->status = XS_BACKEND_SYSTEM_ERROR;
   snprintf(error->message, sizeof(error->message), "Clang and LLD exited with status %d", exit_code);
@@ -100,16 +100,16 @@ static bool declare_module_functions(XsLlvmCodegenUnit *unit, const XsLilModule 
 {
   *declared = 0;
   size_t function_count = xs_lil_module_function_count(module);
-  for (size_t i = 0; i < function_count; ++i)
+  for(size_t i = 0; i < function_count; ++i)
   {
     const XsLilFunction *function = xs_lil_module_function_at(module, i);
     const char *name = xs_lil_function_name(function);
     size_t parameter_count = xs_lil_function_parameter_count(function);
     XsLilType *parameters = nullptr;
-    if (parameter_count != 0)
+    if(parameter_count != 0)
     {
       parameters = malloc(parameter_count * sizeof(*parameters));
-      if (parameters == nullptr)
+      if(parameters == nullptr)
       {
         error->status = XS_BACKEND_SYSTEM_ERROR;
         snprintf(error->message, sizeof(error->message), "%s",
@@ -117,13 +117,13 @@ static bool declare_module_functions(XsLlvmCodegenUnit *unit, const XsLilModule 
         return false;
       }
     }
-    for (size_t parameter = 0; parameter < parameter_count; ++parameter)
+    for(size_t parameter = 0; parameter < parameter_count; ++parameter)
       parameters[parameter] = xs_lil_function_parameter_type(function, parameter);
     LLVMValueRef llvm_function = nullptr;
     XsBackendStatus status = xs_llvm_declare_lil_function(unit, name, xs_lil_function_return_type(function), parameters,
                                                           parameter_count, &llvm_function, error);
     free(parameters);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return false;
     ++*declared;
   }
@@ -135,13 +135,13 @@ static bool lower_module_function_bodies(XsLlvmCodegenUnit *unit, const XsLilMod
 {
   *lowered = 0;
   size_t function_count = xs_lil_module_function_count(module);
-  for (size_t i = 0; i < function_count; ++i)
+  for(size_t i = 0; i < function_count; ++i)
   {
     const XsLilFunction *function = xs_lil_module_function_at(module, i);
-    if (!xs_lil_function_is_definition(function))
+    if(!xs_lil_function_is_definition(function))
       continue;
     XsBackendStatus status = xs_llvm_lower_lil_function_body(unit, function, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return false;
     ++*lowered;
   }
@@ -150,7 +150,7 @@ static bool lower_module_function_bodies(XsLlvmCodegenUnit *unit, const XsLilMod
 
 bool xs_driver_build_lil_module_native(const char *input_path, const XsLilModule *module)
 {
-  if (module == nullptr)
+  if(module == nullptr)
   {
     fprintf(stderr, "xs: XLIL module is required for native build\n");
     return false;
@@ -158,7 +158,7 @@ bool xs_driver_build_lil_module_native(const char *input_path, const XsLilModule
   char *ir_path = direct_artifact_path(input_path, ".ll");
   char *object_path = direct_artifact_path(input_path, ".o");
   char *executable_path = direct_artifact_path(input_path, ".xse");
-  if (ir_path == nullptr || object_path == nullptr || executable_path == nullptr)
+  if(ir_path == nullptr || object_path == nullptr || executable_path == nullptr)
   {
     free(ir_path);
     free(object_path);
@@ -178,44 +178,44 @@ bool xs_driver_build_lil_module_native(const char *input_path, const XsLilModule
   };
   const char *stage = "create LLVM backend";
   bool success = xs_llvm_backend_create(&config, &backend, &error) == XS_BACKEND_OK;
-  if (success)
+  if(success)
   {
     stage = "validate direct XLIL entry";
     success = validate_native_entry(module, &error);
   }
-  if (success)
+  if(success)
   {
     stage = "create LLVM codegen unit";
     success = xs_llvm_codegen_unit_create(backend, xs_lil_module_name(module), &unit, &error) == XS_BACKEND_OK;
   }
   size_t declared = 0;
-  if (success)
+  if(success)
   {
     stage = "lower XLIL declarations to LLVM";
     success = declare_module_functions(unit, module, &declared, &error);
   }
   size_t lowered = 0;
-  if (success)
+  if(success)
   {
     stage = "lower XLIL function bodies to LLVM";
     success = lower_module_function_bodies(unit, module, &lowered, &error);
   }
-  if (success)
+  if(success)
   {
     stage = "verify and optimize LLVM module";
     success = xs_llvm_optimize_codegen_unit(unit, &error) == XS_BACKEND_OK;
   }
-  if (success)
+  if(success)
   {
     stage = "write LLVM IR";
     success = xs_llvm_write_ir_file(unit, ir_path, &error) == XS_BACKEND_OK;
   }
-  if (success)
+  if(success)
   {
     stage = "emit object file";
     success = xs_llvm_emit_object_file(unit, object_path, &error) == XS_BACKEND_OK;
   }
-  if (success && !target_is_native_host(backend))
+  if(success && !target_is_native_host(backend))
   {
     stage = "link native executable";
     error.status = XS_BACKEND_DEFERRED;
@@ -223,12 +223,12 @@ bool xs_driver_build_lil_module_native(const char *input_path, const XsLilModule
              "object file was emitted, but direct XLIL executable linking supports only the native host target");
     success = false;
   }
-  if (success)
+  if(success)
   {
     stage = "link native executable";
     success = link_native_executable(object_path, executable_path, &error);
   }
-  if (success)
+  if(success)
     fprintf(stderr,
             "xs: wrote optimized LLVM IR '%s', object '%s', and executable '%s' from XLIL module '%s' with %zu "
             "declaration(s), %zu body/bodies\n",
@@ -247,7 +247,7 @@ bool xs_driver_build_direct_xlil(const char *input_path, const char *text, size_
 {
   XsLilError lil_error = {0};
   XsLilModule *module = nullptr;
-  if (xs_lil_module_parse_text(input_path, text, length, &module, &lil_error) != XS_LIL_OK)
+  if(xs_lil_module_parse_text(input_path, text, length, &module, &lil_error) != XS_LIL_OK)
   {
     fprintf(stderr, "xs: XLIL parse failed: %s\n", lil_error.message);
     return false;

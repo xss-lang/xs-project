@@ -16,12 +16,12 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static bool text_is(XsText text, const char *value)
 {
@@ -35,23 +35,23 @@ static const XsSyntaxNode *first_identifier(const XsSyntaxNode *node)
 
 static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
-  if (node == nullptr)
+  if(node == nullptr)
     return 0;
   size_t count = node->kind == kind ? 1 : 0;
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
     count += count_kind(node->children[i], kind);
   return count;
 }
 
 static bool has_identifier(const XsSyntaxNode *node, const char *value)
 {
-  if (node == nullptr)
+  if(node == nullptr)
     return false;
-  if (node->kind == XS_SYNTAX_IDENTIFIER && text_is(node->text, value))
+  if(node->kind == XS_SYNTAX_IDENTIFIER && text_is(node->text, value))
     return true;
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
   {
-    if (has_identifier(node->children[i], value))
+    if(has_identifier(node->children[i], value))
       return true;
   }
   return false;
@@ -110,9 +110,9 @@ static void test_child_declaration_view_expands_member_macro_calls(void)
   CHECK(class_node != nullptr);
   CHECK(xs_macro_expand_child_declarations(class_node, &declarations, &diagnostics, &expanded));
   const XsSyntaxNode *generated = nullptr;
-  for (size_t i = 0; i < expanded.count; ++i)
+  for(size_t i = 0; i < expanded.count; ++i)
   {
-    if (expanded.items[i].from_macro_expansion && expanded.items[i].declaration->kind == XS_SYNTAX_DECL_FUNCTION)
+    if(expanded.items[i].from_macro_expansion && expanded.items[i].declaration->kind == XS_SYNTAX_DECL_FUNCTION)
       generated = expanded.items[i].declaration;
   }
   CHECK(generated != nullptr);
@@ -145,9 +145,9 @@ static void test_child_declaration_view_expands_field_like_macro_calls(void)
   CHECK(class_node != nullptr);
   CHECK(xs_macro_expand_child_declarations(class_node, &declarations, &diagnostics, &expanded));
   const XsSyntaxNode *field_like = nullptr;
-  for (size_t i = 0; i < expanded.count; ++i)
+  for(size_t i = 0; i < expanded.count; ++i)
   {
-    if (expanded.items[i].from_macro_expansion && expanded.items[i].declaration->kind == XS_SYNTAX_DECL_VARIABLE)
+    if(expanded.items[i].from_macro_expansion && expanded.items[i].declaration->kind == XS_SYNTAX_DECL_VARIABLE)
       field_like = expanded.items[i].declaration;
   }
   CHECK(field_like != nullptr);
@@ -180,11 +180,11 @@ static void test_child_statement_view_expands_macro_calls(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   const XsSyntaxNode *function = nullptr;
-  for (size_t i = 0; tree.root != nullptr && i < tree.root->child_count; ++i)
+  for(size_t i = 0; tree.root != nullptr && i < tree.root->child_count; ++i)
   {
     const XsSyntaxNode *child = tree.root->children[i];
     const XsSyntaxNode *name = child->kind == XS_SYNTAX_DECL_FUNCTION ? first_identifier(child) : nullptr;
-    if (name != nullptr && text_is(name->text, "Main"))
+    if(name != nullptr && text_is(name->text, "Main"))
       function = child;
   }
   const XsSyntaxNode *block = xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK);

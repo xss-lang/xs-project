@@ -18,18 +18,18 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static bool add_file(const char *text, uint64_t file_id, XsSyntaxTree *tree, XsHirSymbolTable *symbols,
                      XsDiagnostics *diagnostics)
 {
   XsSource source = {.path = "HirExpressions.xs", .text = text, .length = strlen(text)};
-  if (!xs_syntax_parse(&source, file_id, diagnostics, tree))
+  if(!xs_syntax_parse(&source, file_id, diagnostics, tree))
     return false;
   return xs_hir_collect_symbols(tree, symbols, diagnostics);
 }
@@ -44,11 +44,11 @@ static bool check_single_source_expressions(const char *text)
   xs_hir_symbol_table_init(&symbols);
   xs_hir_import_scope_init(&imports);
   bool success = add_file(text, 72, &tree, &symbols, &diagnostics);
-  if (success)
+  if(success)
     success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
-  if (success)
+  if(success)
     success = xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics);
-  if (success)
+  if(success)
     success = xs_hir_check_expression_types(&tree, &diagnostics);
   xs_hir_import_scope_free(&imports);
   xs_hir_symbol_table_free(&symbols);
@@ -69,17 +69,17 @@ static bool check_macro_expression_error(const char *main, uint64_t file_id)
   xs_hir_symbol_table_init(&symbols);
   xs_hir_import_scope_init(&imports);
   bool success = xs_syntax_parse(&source, file_id, &diagnostics, &tree);
-  if (success)
+  if(success)
     success = xs_macro_validate(&tree, &diagnostics);
-  if (success)
+  if(success)
     success = xs_macro_expand_statements(&tree, &diagnostics, &statements);
-  if (success)
+  if(success)
     success = xs_hir_collect_symbols(&tree, &symbols, &diagnostics);
-  if (success)
+  if(success)
     success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
-  if (success)
+  if(success)
     success = xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics);
-  if (success)
+  if(success)
     success = !xs_hir_check_expression_types_with_macros(&tree, nullptr, &statements, &diagnostics) &&
               xs_diagnostics_has_error(&diagnostics);
   xs_macro_statement_expansion_set_free(&statements);

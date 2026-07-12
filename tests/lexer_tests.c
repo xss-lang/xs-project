@@ -14,12 +14,12 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static void expect_tokens(const char *text, const XsTokenKind *expected, size_t count)
 {
@@ -28,10 +28,10 @@ static void expect_tokens(const char *text, const XsTokenKind *expected, size_t 
   XsLexer lexer;
   xs_diagnostics_init(&diagnostics);
   xs_lexer_init(&lexer, &source, &diagnostics);
-  for (size_t i = 0; i < count; ++i)
+  for(size_t i = 0; i < count; ++i)
   {
     XsToken actual = xs_lexer_next(&lexer);
-    if (actual.kind != expected[i])
+    if(actual.kind != expected[i])
     {
       fprintf(stderr, "token %zu: expected %s, got %s\n", i, xs_token_kind_name(expected[i]),
               xs_token_kind_name(actual.kind));
@@ -59,9 +59,9 @@ static void test_comments_and_strings(void)
   static const XsTokenKind expected[] = {XS_TOKEN_DOC_COMMENT, XS_TOKEN_MODULE_COMMENT, XS_TOKEN_STRING,
                                          XS_TOKEN_STRING,      XS_TOKEN_CHARACTER,      XS_TOKEN_CHARACTER,
                                          XS_TOKEN_EOF};
-  expect_tokens(
-      "// ordinary\n//{ former block-comment spelling is an ordinary line comment\n/// docs\n//! module\n\"A\\n\" \"\"\"multi\nline\"\"\" 'A' '\\n'",
-      expected, sizeof(expected) / sizeof(expected[0]));
+  expect_tokens("// ordinary\n//{ former block-comment spelling is an ordinary line comment\n/// docs\n//! "
+                "module\n\"A\\n\" \"\"\"multi\nline\"\"\" 'A' '\\n'",
+                expected, sizeof(expected) / sizeof(expected[0]));
 }
 
 static void test_documented_operators(void)
@@ -144,7 +144,7 @@ static void test_macro_tokens(void)
 static void test_invalid_numbers(void)
 {
   const char *texts[] = {"1_000", "100'", "1''000", "0xFF", "1e'10", "1value"};
-  for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i)
+  for(size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i)
   {
     XsSource source = {.path = "<test>", .text = texts[i], .length = strlen(texts[i])};
     XsDiagnostics diagnostics;
@@ -160,7 +160,7 @@ static void test_invalid_numbers(void)
 static void test_invalid_characters(void)
 {
   const char *texts[] = {"''", "'ab'", "'\n", "'\\q'"};
-  for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i)
+  for(size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i)
   {
     XsSource source = {.path = "<test>", .text = texts[i], .length = strlen(texts[i])};
     XsDiagnostics diagnostics;

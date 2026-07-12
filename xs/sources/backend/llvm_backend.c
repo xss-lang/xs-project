@@ -33,13 +33,13 @@ struct XsLlvmCodegenUnit
 
 static void clear_error(XsBackendError *error)
 {
-  if (error != nullptr)
+  if(error != nullptr)
     *error = (XsBackendError){.status = XS_BACKEND_OK};
 }
 
 static XsBackendStatus set_error(XsBackendError *error, XsBackendStatus status, const char *message)
 {
-  if (error != nullptr)
+  if(error != nullptr)
   {
     error->status = status;
     snprintf(error->message, sizeof(error->message), "%s", message == nullptr ? "unknown backend error" : message);
@@ -51,14 +51,14 @@ static char *copy_text(const char *text)
 {
   size_t length = strlen(text);
   char *copy = malloc(length + 1);
-  if (copy != nullptr)
+  if(copy != nullptr)
     memcpy(copy, text, length + 1);
   return copy;
 }
 
 static LLVMCodeGenOptLevel codegen_level(XsLlvmOptimizationLevel level)
 {
-  switch (level)
+  switch(level)
   {
   case XS_LLVM_OPT_NONE:
     return LLVMCodeGenLevelNone;
@@ -76,9 +76,9 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
                                        XsBackendError *error)
 {
   clear_error(error);
-  if (config == nullptr || backend == nullptr)
+  if(config == nullptr || backend == nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "backend configuration and output are required");
-  if ((unsigned)config->optimization > (unsigned)XS_LLVM_OPT_AGGRESSIVE)
+  if((unsigned)config->optimization > (unsigned)XS_LLVM_OPT_AGGRESSIVE)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "invalid LLVM optimization level");
   *backend = nullptr;
 
@@ -89,7 +89,7 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
 
   char *default_triple = nullptr;
   const char *requested_triple = config->target_triple;
-  if (requested_triple == nullptr || requested_triple[0] == '\0')
+  if(requested_triple == nullptr || requested_triple[0] == '\0')
   {
     default_triple = LLVMGetDefaultTargetTriple();
     requested_triple = default_triple;
@@ -97,19 +97,19 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
 
   LLVMTargetRef target = nullptr;
   char *llvm_error = nullptr;
-  if (LLVMGetTargetFromTriple(requested_triple, &target, &llvm_error) != 0)
+  if(LLVMGetTargetFromTriple(requested_triple, &target, &llvm_error) != 0)
   {
     XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, llvm_error);
     LLVMDisposeMessage(llvm_error);
-    if (default_triple != nullptr)
+    if(default_triple != nullptr)
       LLVMDisposeMessage(default_triple);
     return status;
   }
 
   XsLlvmBackend *result = calloc(1, sizeof(*result));
-  if (result == nullptr)
+  if(result == nullptr)
   {
-    if (default_triple != nullptr)
+    if(default_triple != nullptr)
       LLVMDisposeMessage(default_triple);
     return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while creating LLVM backend");
   }
@@ -121,29 +121,29 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
       LLVMCreateTargetMachine(target, requested_triple, config->cpu == nullptr ? "" : config->cpu,
                               config->features == nullptr ? "" : config->features, codegen_level(config->optimization),
                               LLVMRelocDefault, LLVMCodeModelDefault);
-  if (default_triple != nullptr)
+  if(default_triple != nullptr)
     LLVMDisposeMessage(default_triple);
 
-  if (result->context == nullptr || result->target_triple == nullptr || result->target_machine == nullptr)
+  if(result->context == nullptr || result->target_triple == nullptr || result->target_machine == nullptr)
   {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not create the target context or target machine");
   }
   result->target_data = LLVMCreateTargetDataLayout(result->target_machine);
-  if (result->target_data == nullptr)
+  if(result->target_data == nullptr)
   {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not determine target data layout");
   }
   char *layout = LLVMCopyStringRepOfTargetData(result->target_data);
-  if (layout == nullptr)
+  if(layout == nullptr)
   {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not format target data layout");
   }
   result->data_layout = copy_text(layout);
   LLVMDisposeMessage(layout);
-  if (result->target_data == nullptr || result->data_layout == nullptr)
+  if(result->target_data == nullptr || result->data_layout == nullptr)
   {
     xs_llvm_backend_destroy(result);
     return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not determine target data layout");
@@ -154,13 +154,13 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
 
 void xs_llvm_backend_destroy(XsLlvmBackend *backend)
 {
-  if (backend == nullptr)
+  if(backend == nullptr)
     return;
-  if (backend->target_data != nullptr)
+  if(backend->target_data != nullptr)
     LLVMDisposeTargetData(backend->target_data);
-  if (backend->target_machine != nullptr)
+  if(backend->target_machine != nullptr)
     LLVMDisposeTargetMachine(backend->target_machine);
-  if (backend->context != nullptr)
+  if(backend->context != nullptr)
     LLVMContextDispose(backend->context);
   free(backend->target_triple);
   free(backend->data_layout);
@@ -186,14 +186,14 @@ XsBackendStatus xs_llvm_codegen_unit_create(XsLlvmBackend *backend, const char *
                                             XsBackendError *error)
 {
   clear_error(error);
-  if (backend == nullptr || name == nullptr || unit == nullptr)
+  if(backend == nullptr || name == nullptr || unit == nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "backend, codegen-unit name, and output are required");
   *unit = calloc(1, sizeof(**unit));
-  if (*unit == nullptr)
+  if(*unit == nullptr)
     return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while creating codegen unit");
   (*unit)->backend = backend;
   (*unit)->module = LLVMModuleCreateWithNameInContext(name, backend->context);
-  if ((*unit)->module == nullptr)
+  if((*unit)->module == nullptr)
   {
     free(*unit);
     *unit = nullptr;
@@ -206,9 +206,9 @@ XsBackendStatus xs_llvm_codegen_unit_create(XsLlvmBackend *backend, const char *
 
 void xs_llvm_codegen_unit_destroy(XsLlvmCodegenUnit *unit)
 {
-  if (unit == nullptr)
+  if(unit == nullptr)
     return;
-  if (unit->module != nullptr)
+  if(unit->module != nullptr)
     LLVMDisposeModule(unit->module);
   free(unit);
 }
@@ -222,10 +222,10 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
                                        XsBackendError *error)
 {
   clear_error(error);
-  if (backend == nullptr || type == nullptr)
+  if(backend == nullptr || type == nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "backend and LLVM type output are required");
   *type = nullptr;
-  switch (primitive)
+  switch(primitive)
   {
   case XS_PRIMITIVE_UNIT:
     *type = LLVMVoidTypeInContext(backend->context);
@@ -272,10 +272,10 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
 XsBackendStatus xs_llvm_lil_type(XsLlvmBackend *backend, XsLilType type, LLVMTypeRef *llvm_type, XsBackendError *error)
 {
   clear_error(error);
-  if (backend == nullptr || llvm_type == nullptr)
+  if(backend == nullptr || llvm_type == nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "backend and LLVM type output are required");
   *llvm_type = nullptr;
-  switch (type.kind)
+  switch(type.kind)
   {
   case XS_LIL_TYPE_VOID:
     *llvm_type = LLVMVoidTypeInContext(backend->context);
@@ -322,12 +322,12 @@ static XsBackendStatus declare_function_with_types(XsLlvmCodegenUnit *unit, cons
                                                    const LLVMTypeRef *parameter_types, size_t parameter_count,
                                                    LLVMValueRef *function, XsBackendError *error)
 {
-  if (unit == nullptr || name == nullptr || name[0] == '\0' || return_type == nullptr || function == nullptr ||
-      (parameter_count != 0 && parameter_types == nullptr))
+  if(unit == nullptr || name == nullptr || name[0] == '\0' || return_type == nullptr || function == nullptr ||
+     (parameter_count != 0 && parameter_types == nullptr))
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and function signature are required");
-  if (parameter_count > (size_t)UINT_MAX)
+  if(parameter_count > (size_t)UINT_MAX)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function has too many parameters for LLVM C API");
-  if (LLVMGetNamedFunction(unit->module, name) != nullptr)
+  if(LLVMGetNamedFunction(unit->module, name) != nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function is already declared in this codegen unit");
   LLVMTypeRef function_type =
       LLVMFunctionType(return_type, (LLVMTypeRef *)parameter_types, (unsigned)parameter_count, false);
@@ -339,30 +339,30 @@ XsBackendStatus xs_llvm_declare_function(XsLlvmCodegenUnit *unit, const XsFuncti
                                          LLVMValueRef *function, XsBackendError *error)
 {
   clear_error(error);
-  if (unit == nullptr || signature == nullptr ||
-      (signature->parameter_count != 0 && signature->parameter_types == nullptr))
+  if(unit == nullptr || signature == nullptr ||
+     (signature->parameter_count != 0 && signature->parameter_types == nullptr))
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and function signature are required");
 
   LLVMTypeRef return_type = nullptr;
   XsBackendStatus status = xs_llvm_primitive_type(unit->backend, signature->return_type, &return_type, error);
-  if (status != XS_BACKEND_OK)
+  if(status != XS_BACKEND_OK)
     return status;
   LLVMTypeRef *parameters = nullptr;
-  if (signature->parameter_count != 0)
+  if(signature->parameter_count != 0)
   {
     parameters = malloc(signature->parameter_count * sizeof(*parameters));
-    if (parameters == nullptr)
+    if(parameters == nullptr)
       return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering function signature");
   }
-  for (size_t i = 0; i < signature->parameter_count; ++i)
+  for(size_t i = 0; i < signature->parameter_count; ++i)
   {
     status = xs_llvm_primitive_type(unit->backend, signature->parameter_types[i], &parameters[i], error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
     {
       free(parameters);
       return status;
     }
-    if (LLVMGetTypeKind(parameters[i]) == LLVMVoidTypeKind)
+    if(LLVMGetTypeKind(parameters[i]) == LLVMVoidTypeKind)
     {
       free(parameters);
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "function parameters cannot have unit type");
@@ -379,28 +379,28 @@ XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char
                                              LLVMValueRef *function, XsBackendError *error)
 {
   clear_error(error);
-  if (unit == nullptr || name == nullptr || function == nullptr || (parameter_count != 0 && parameter_types == nullptr))
+  if(unit == nullptr || name == nullptr || function == nullptr || (parameter_count != 0 && parameter_types == nullptr))
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and XLIL function signature are required");
   LLVMTypeRef lowered_return_type = nullptr;
   XsBackendStatus status = xs_llvm_lil_type(unit->backend, return_type, &lowered_return_type, error);
-  if (status != XS_BACKEND_OK)
+  if(status != XS_BACKEND_OK)
     return status;
   LLVMTypeRef *lowered_parameters = nullptr;
-  if (parameter_count != 0)
+  if(parameter_count != 0)
   {
     lowered_parameters = malloc(parameter_count * sizeof(*lowered_parameters));
-    if (lowered_parameters == nullptr)
+    if(lowered_parameters == nullptr)
       return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering XLIL function signature");
   }
-  for (size_t i = 0; i < parameter_count; ++i)
+  for(size_t i = 0; i < parameter_count; ++i)
   {
     status = xs_llvm_lil_type(unit->backend, parameter_types[i], &lowered_parameters[i], error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
     {
       free(lowered_parameters);
       return status;
     }
-    if (LLVMGetTypeKind(lowered_parameters[i]) == LLVMVoidTypeKind)
+    if(LLVMGetTypeKind(lowered_parameters[i]) == LLVMVoidTypeKind)
     {
       free(lowered_parameters);
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function parameters cannot have void type");
@@ -418,83 +418,83 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
 {
   XsLilInstructionKind kind = xs_lil_block_instruction_kind(block, index);
   XsLilValueId result = xs_lil_block_instruction_result(block, index);
-  if (kind != XS_LIL_INSTRUCTION_CALL && (size_t)result >= value_count)
+  if(kind != XS_LIL_INSTRUCTION_CALL && (size_t)result >= value_count)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL instruction result references an unknown value");
   LLVMTypeRef type = nullptr;
-  if (kind == XS_LIL_INSTRUCTION_CONST_I64)
+  if(kind == XS_LIL_INSTRUCTION_CONST_I64)
   {
     XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_I64}, &type, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return status;
     values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
     return XS_BACKEND_OK;
   }
-  if (kind == XS_LIL_INSTRUCTION_CONST_I32)
+  if(kind == XS_LIL_INSTRUCTION_CONST_I32)
   {
     XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_I32}, &type, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return status;
     values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
     return XS_BACKEND_OK;
   }
-  if (kind == XS_LIL_INSTRUCTION_CONST_BOOL)
+  if(kind == XS_LIL_INSTRUCTION_CONST_BOOL)
   {
     XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &type, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return status;
     values[result] = LLVMConstInt(type, xs_lil_block_instruction_bool(block, index) ? 1 : 0, false);
     return XS_BACKEND_OK;
   }
-  if (kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_MUL_I64 ||
-      kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
-      kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
-      kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32)
+  if(kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_MUL_I64 ||
+     kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
+     kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
+     kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32)
   {
     XsLilValueId left = xs_lil_block_instruction_left(block, index);
     XsLilValueId right = xs_lil_block_instruction_right(block, index);
-    if ((size_t)result >= value_count || (size_t)left >= value_count || (size_t)right >= value_count ||
-        values[left] == nullptr || values[right] == nullptr)
+    if((size_t)result >= value_count || (size_t)left >= value_count || (size_t)right >= value_count ||
+       values[left] == nullptr || values[right] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT,
                        "XLIL binary integer instruction references an unavailable value");
     LLVMValueRef lowered = nullptr;
-    if (kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32)
+    if(kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32)
       lowered = LLVMBuildAdd(builder, values[left], values[right], "add");
-    else if (kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_SUB_I32)
+    else if(kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_SUB_I32)
       lowered = LLVMBuildSub(builder, values[left], values[right], "sub");
-    else if (kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_MUL_I32)
+    else if(kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_MUL_I32)
       lowered = LLVMBuildMul(builder, values[left], values[right], "mul");
-    else if (kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32)
+    else if(kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntEQ, values[left], values[right], "eq");
-    else if (kind == XS_LIL_INSTRUCTION_LT_I32)
+    else if(kind == XS_LIL_INSTRUCTION_LT_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntSLT, values[left], values[right], "lt");
-    else if (kind == XS_LIL_INSTRUCTION_LE_I32)
+    else if(kind == XS_LIL_INSTRUCTION_LE_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntSLE, values[left], values[right], "le");
-    else if (kind == XS_LIL_INSTRUCTION_GT_I32)
+    else if(kind == XS_LIL_INSTRUCTION_GT_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntSGT, values[left], values[right], "gt");
     else
       lowered = LLVMBuildICmp(builder, LLVMIntSGE, values[left], values[right], "ge");
-    if (lowered == nullptr)
+    if(lowered == nullptr)
       return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL binary integer instruction");
     values[result] = lowered;
     return XS_BACKEND_OK;
   }
-  if (kind == XS_LIL_INSTRUCTION_CALL)
+  if(kind == XS_LIL_INSTRUCTION_CALL)
   {
     const char *callee_name = xs_lil_block_instruction_callee(block, index);
     LLVMValueRef callee = LLVMGetNamedFunction(unit->module, callee_name);
-    if (callee == nullptr)
+    if(callee == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call target must be declared before body lowering");
     size_t argument_count = xs_lil_block_instruction_argument_count(block, index);
-    if (argument_count > (size_t)UINT_MAX)
+    if(argument_count > (size_t)UINT_MAX)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call has too many arguments for LLVM C API");
     LLVMValueRef *arguments = calloc(argument_count == 0 ? 1 : argument_count, sizeof(*arguments));
-    if (arguments == nullptr)
+    if(arguments == nullptr)
       return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering XLIL call arguments");
     XsBackendStatus status = XS_BACKEND_OK;
-    for (size_t argument = 0; argument < argument_count; ++argument)
+    for(size_t argument = 0; argument < argument_count; ++argument)
     {
       XsLilValueId value = xs_lil_block_instruction_argument(block, index, argument);
-      if ((size_t)value >= value_count || values[value] == nullptr)
+      if((size_t)value >= value_count || values[value] == nullptr)
       {
         status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call references an unavailable argument value");
         goto call_cleanup;
@@ -503,14 +503,14 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     }
     LLVMValueRef call = LLVMBuildCall2(builder, LLVMGlobalGetValueType(callee), callee, arguments,
                                        (unsigned)argument_count, result == UINT32_MAX ? "" : "call");
-    if (call == nullptr)
+    if(call == nullptr)
     {
       status = set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL call instruction");
       goto call_cleanup;
     }
-    if (result != UINT32_MAX)
+    if(result != UINT32_MAX)
     {
-      if ((size_t)result >= value_count)
+      if((size_t)result >= value_count)
       {
         status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL call result references an unknown value");
         goto call_cleanup;
@@ -528,13 +528,13 @@ static XsBackendStatus lower_lil_terminator(LLVMBuilderRef builder, const XsLilB
                                             size_t value_count, LLVMBasicBlockRef *blocks, size_t block_count,
                                             XsBackendError *error)
 {
-  switch (xs_lil_block_terminator_kind(block))
+  switch(xs_lil_block_terminator_kind(block))
   {
   case XS_LIL_TERMINATOR_RETURN:
-    if (xs_lil_block_terminator_has_value(block))
+    if(xs_lil_block_terminator_has_value(block))
     {
       XsLilValueId value = xs_lil_block_terminator_value(block);
-      if ((size_t)value >= value_count || values[value] == nullptr)
+      if((size_t)value >= value_count || values[value] == nullptr)
         return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL return references an unavailable value");
       LLVMBuildRet(builder, values[value]);
     }
@@ -546,7 +546,7 @@ static XsBackendStatus lower_lil_terminator(LLVMBuilderRef builder, const XsLilB
   case XS_LIL_TERMINATOR_BRANCH:
   {
     XsLilBlockId target = xs_lil_block_terminator_target(block);
-    if ((size_t)target >= block_count || blocks[target] == nullptr)
+    if((size_t)target >= block_count || blocks[target] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL branch target references an unknown block");
     LLVMBuildBr(builder, blocks[target]);
     return XS_BACKEND_OK;
@@ -556,10 +556,10 @@ static XsBackendStatus lower_lil_terminator(LLVMBuilderRef builder, const XsLilB
     XsLilValueId condition = xs_lil_block_terminator_condition(block);
     XsLilBlockId then_block = xs_lil_block_terminator_then_block(block);
     XsLilBlockId else_block = xs_lil_block_terminator_else_block(block);
-    if ((size_t)condition >= value_count || values[condition] == nullptr)
+    if((size_t)condition >= value_count || values[condition] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL branch_if condition references an unavailable value");
-    if ((size_t)then_block >= block_count || blocks[then_block] == nullptr || (size_t)else_block >= block_count ||
-        blocks[else_block] == nullptr)
+    if((size_t)then_block >= block_count || blocks[then_block] == nullptr || (size_t)else_block >= block_count ||
+       blocks[else_block] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL branch_if target references an unknown block");
     LLVMBuildCondBr(builder, values[condition], blocks[then_block], blocks[else_block]);
     return XS_BACKEND_OK;
@@ -574,77 +574,77 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
                                                 XsBackendError *error)
 {
   clear_error(error);
-  if (unit == nullptr || function == nullptr)
+  if(unit == nullptr || function == nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and XLIL function are required");
-  if (!xs_lil_function_is_definition(function))
+  if(!xs_lil_function_is_definition(function))
     return XS_BACKEND_OK;
   const char *name = xs_lil_function_name(function);
   LLVMValueRef llvm_function = LLVMGetNamedFunction(unit->module, name);
-  if (llvm_function == nullptr)
+  if(llvm_function == nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function must be declared before body lowering");
-  if (LLVMCountBasicBlocks(llvm_function) != 0)
+  if(LLVMCountBasicBlocks(llvm_function) != 0)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "LLVM function body already exists");
 
   size_t block_count = xs_lil_function_block_count(function);
   size_t value_count = xs_lil_function_value_count(function);
-  if (block_count > (size_t)UINT_MAX || value_count > (size_t)UINT_MAX)
+  if(block_count > (size_t)UINT_MAX || value_count > (size_t)UINT_MAX)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function body is too large for LLVM C API");
   LLVMBasicBlockRef *blocks = calloc(block_count == 0 ? 1 : block_count, sizeof(*blocks));
   LLVMValueRef *values = calloc(value_count == 0 ? 1 : value_count, sizeof(*values));
   LLVMBuilderRef builder = LLVMCreateBuilderInContext(unit->backend->context);
-  if (blocks == nullptr || values == nullptr || builder == nullptr)
+  if(blocks == nullptr || values == nullptr || builder == nullptr)
   {
     free(blocks);
     free(values);
-    if (builder != nullptr)
+    if(builder != nullptr)
       LLVMDisposeBuilder(builder);
     return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering XLIL function body");
   }
 
   XsBackendStatus status = XS_BACKEND_OK;
   size_t parameter_count = xs_lil_function_parameter_count(function);
-  for (size_t parameter = 0; parameter < parameter_count; ++parameter)
+  for(size_t parameter = 0; parameter < parameter_count; ++parameter)
   {
-    if (parameter >= value_count)
+    if(parameter >= value_count)
     {
       status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function parameter value is unavailable");
       goto cleanup;
     }
     values[parameter] = LLVMGetParam(llvm_function, (unsigned)parameter);
-    if (values[parameter] == nullptr)
+    if(values[parameter] == nullptr)
     {
       status = set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not read function parameter");
       goto cleanup;
     }
   }
-  for (size_t i = 0; i < block_count; ++i)
+  for(size_t i = 0; i < block_count; ++i)
   {
     const XsLilBlock *block = xs_lil_function_block_at(function, i);
-    if (xs_lil_block_id(block) != (XsLilBlockId)i)
+    if(xs_lil_block_id(block) != (XsLilBlockId)i)
     {
       status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL block ids must be sequential");
       goto cleanup;
     }
     blocks[i] = LLVMAppendBasicBlockInContext(unit->backend->context, llvm_function, xs_lil_block_label(block));
-    if (blocks[i] == nullptr)
+    if(blocks[i] == nullptr)
     {
       status = set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not create a basic block");
       goto cleanup;
     }
   }
-  for (size_t i = 0; i < block_count; ++i)
+  for(size_t i = 0; i < block_count; ++i)
   {
     const XsLilBlock *block = xs_lil_function_block_at(function, i);
     LLVMPositionBuilderAtEnd(builder, blocks[i]);
     size_t instruction_count = xs_lil_block_instruction_count(block);
-    for (size_t instruction = 0; instruction < instruction_count; ++instruction)
+    for(size_t instruction = 0; instruction < instruction_count; ++instruction)
     {
       status = lower_lil_instruction(unit, builder, block, instruction, values, value_count, error);
-      if (status != XS_BACKEND_OK)
+      if(status != XS_BACKEND_OK)
         goto cleanup;
     }
     status = lower_lil_terminator(builder, block, values, value_count, blocks, block_count, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       goto cleanup;
   }
 
@@ -658,9 +658,9 @@ cleanup:
 static XsBackendStatus verify_module(XsLlvmCodegenUnit *unit, XsBackendError *error)
 {
   char *llvm_error = nullptr;
-  if (LLVMVerifyModule(unit->module, LLVMReturnStatusAction, &llvm_error) == 0)
+  if(LLVMVerifyModule(unit->module, LLVMReturnStatusAction, &llvm_error) == 0)
   {
-    if (llvm_error != nullptr)
+    if(llvm_error != nullptr)
       LLVMDisposeMessage(llvm_error);
     return XS_BACKEND_OK;
   }
@@ -672,12 +672,12 @@ static XsBackendStatus verify_module(XsLlvmCodegenUnit *unit, XsBackendError *er
 XsBackendStatus xs_llvm_optimize_codegen_unit(XsLlvmCodegenUnit *unit, XsBackendError *error)
 {
   clear_error(error);
-  if (unit == nullptr)
+  if(unit == nullptr)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "codegen unit is required");
-  if (unit->backend->verify_modules)
+  if(unit->backend->verify_modules)
   {
     XsBackendStatus status = verify_module(unit, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return status;
   }
   static const char *const pipelines[] = {"default<O0>", "default<O1>", "default<O2>", "default<O3>"};
@@ -685,7 +685,7 @@ XsBackendStatus xs_llvm_optimize_codegen_unit(XsLlvmCodegenUnit *unit, XsBackend
   LLVMErrorRef llvm_error =
       LLVMRunPasses(unit->module, pipelines[unit->backend->optimization], unit->backend->target_machine, options);
   LLVMDisposePassBuilderOptions(options);
-  if (llvm_error != nullptr)
+  if(llvm_error != nullptr)
   {
     char *message = LLVMGetErrorMessage(llvm_error);
     XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, message);
@@ -698,16 +698,16 @@ XsBackendStatus xs_llvm_optimize_codegen_unit(XsLlvmCodegenUnit *unit, XsBackend
 XsBackendStatus xs_llvm_write_ir_file(XsLlvmCodegenUnit *unit, const char *path, XsBackendError *error)
 {
   clear_error(error);
-  if (unit == nullptr || path == nullptr || path[0] == '\0')
+  if(unit == nullptr || path == nullptr || path[0] == '\0')
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "codegen unit and LLVM IR path are required");
-  if (unit->backend->verify_modules)
+  if(unit->backend->verify_modules)
   {
     XsBackendStatus status = verify_module(unit, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return status;
   }
   char *llvm_error = nullptr;
-  if (LLVMPrintModuleToFile(unit->module, path, &llvm_error) != 0)
+  if(LLVMPrintModuleToFile(unit->module, path, &llvm_error) != 0)
   {
     XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, llvm_error);
     LLVMDisposeMessage(llvm_error);
@@ -719,22 +719,22 @@ XsBackendStatus xs_llvm_write_ir_file(XsLlvmCodegenUnit *unit, const char *path,
 XsBackendStatus xs_llvm_emit_object_file(XsLlvmCodegenUnit *unit, const char *path, XsBackendError *error)
 {
   clear_error(error);
-  if (unit == nullptr || path == nullptr || path[0] == '\0')
+  if(unit == nullptr || path == nullptr || path[0] == '\0')
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "codegen unit and object-file path are required");
-  if (unit->backend->verify_modules)
+  if(unit->backend->verify_modules)
   {
     XsBackendStatus status = verify_module(unit, error);
-    if (status != XS_BACKEND_OK)
+    if(status != XS_BACKEND_OK)
       return status;
   }
   char *mutable_path = copy_text(path);
-  if (mutable_path == nullptr)
+  if(mutable_path == nullptr)
     return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while preparing object-file path");
   char *llvm_error = nullptr;
   int failed = LLVMTargetMachineEmitToFile(unit->backend->target_machine, unit->module, mutable_path, LLVMObjectFile,
                                            &llvm_error);
   free(mutable_path);
-  if (failed != 0)
+  if(failed != 0)
   {
     XsBackendStatus status = set_error(error, XS_BACKEND_LLVM_ERROR, llvm_error);
     LLVMDisposeMessage(llvm_error);

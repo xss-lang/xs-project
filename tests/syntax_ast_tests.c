@@ -16,19 +16,19 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
-  if (node == nullptr)
+  if(node == nullptr)
     return 0;
   size_t count = node->kind == kind ? 1 : 0;
-  for (size_t index = 0; index < node->child_count; ++index)
+  for(size_t index = 0; index < node->child_count; ++index)
     count += count_kind(node->children[index], kind);
   return count;
 }
@@ -42,7 +42,7 @@ static void test_function_tree(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 42, &diagnostics, &tree));
   CHECK(tree.root != nullptr && tree.root->kind == XS_SYNTAX_FILE);
-  if (tree.root == nullptr)
+  if(tree.root == nullptr)
   {
     xs_syntax_tree_free(&tree);
     xs_diagnostics_free(&diagnostics);
@@ -51,7 +51,7 @@ static void test_function_tree(void)
   CHECK(tree.root->child_count == 1);
   const XsSyntaxNode *function = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_FUNCTION);
   CHECK(function != nullptr);
-  if (function == nullptr)
+  if(function == nullptr)
   {
     xs_syntax_tree_free(&tree);
     xs_diagnostics_free(&diagnostics);

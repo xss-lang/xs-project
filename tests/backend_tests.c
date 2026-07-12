@@ -16,17 +16,17 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static bool file_contains(const char *path, const char *needle)
 {
   FILE *file = fopen(path, "rb");
-  if (file == nullptr)
+  if(file == nullptr)
     return false;
   char buffer[4096] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1U, file);
@@ -37,7 +37,7 @@ static bool file_contains(const char *path, const char *needle)
 
 int main(int argc, char **argv)
 {
-  if (argc != 3)
+  if(argc != 3)
   {
     fprintf(stderr, "backend test requires object path and linker path\n");
     return 2;

@@ -19,7 +19,7 @@ static bool value_exists(const XsMirFunction *function, XsMirValueId value)
 static XsMirStatus check_value_exists(const XsMirFunction *function, XsMirValueId value, const char *message,
                                       XsMirError *error)
 {
-  if (!value_exists(function, value))
+  if(!value_exists(function, value))
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, message);
   return XS_MIR_OK;
 }
@@ -27,20 +27,20 @@ static XsMirStatus check_value_exists(const XsMirFunction *function, XsMirValueI
 static XsMirStatus find_place(const XsMirFunction *function, XsMirPlaceId place_id, const XsMirPlace **place,
                               XsMirError *error)
 {
-  if ((size_t)place_id >= function->place_count || function->places[place_id] == NULL)
+  if((size_t)place_id >= function->place_count || function->places[place_id] == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR instruction references an unknown place");
   *place = function->places[place_id];
-  if ((size_t)(*place)->root_local >= function->local_count)
+  if((size_t)(*place)->root_local >= function->local_count)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR place references an unknown local");
   return XS_MIR_OK;
 }
 
 static XsMirStatus check_store_mutability(const XsMirFunction *function, const XsMirPlace *place, XsMirError *error)
 {
-  if (place == NULL)
+  if(place == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR store references an unknown place");
   const XsMirLocal *local = &function->locals[place->root_local];
-  if (!local->is_mutable)
+  if(!local->is_mutable)
     return xs_mir_set_error(error, XS_MIR_UNSUPPORTED, "MIR store targets an immutable local");
   return XS_MIR_OK;
 }
@@ -49,9 +49,9 @@ static XsMirStatus check_i64_operand(const XsMirFunction *function, XsMirValueId
                                      XsMirError *error)
 {
   XsMirStatus status = check_value_exists(function, value, message, error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     return status;
-  if (!type_equal(function->values[value].type, (XsMirType){.kind = XS_LIL_TYPE_I64}))
+  if(!type_equal(function->values[value].type, (XsMirType){.kind = XS_LIL_TYPE_I64}))
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR i64 instruction operand is not i64");
   return XS_MIR_OK;
 }
@@ -60,21 +60,23 @@ static XsMirStatus check_i32_operand(const XsMirFunction *function, XsMirValueId
                                      XsMirError *error)
 {
   XsMirStatus status = check_value_exists(function, value, message, error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     return status;
-  if (!type_equal(function->values[value].type, (XsMirType){.kind = XS_LIL_TYPE_I32}))
+  if(!type_equal(function->values[value].type, (XsMirType){.kind = XS_LIL_TYPE_I32}))
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR i32 instruction operand is not i32");
   return XS_MIR_OK;
 }
 
 static XsMirStatus check_i32_binary(const XsMirFunction *function, const XsMirInstruction *instruction,
-                                    XsMirError *error)
+                                    XsMirType result_type, XsMirError *error)
 {
   XsMirStatus status = check_value_exists(function, instruction->result, "MIR i32 result is unknown", error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     return status;
+  if(!type_equal(function->values[instruction->result].type, result_type))
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR i32 instruction result has the wrong type");
   status = check_i32_operand(function, instruction->operand_left, "MIR i32 left operand is unknown", error);
-  if (status != XS_MIR_OK)
+  if(status != XS_MIR_OK)
     return status;
   return check_i32_operand(function, instruction->operand_right, "MIR i32 right operand is unknown", error);
 }
@@ -82,7 +84,7 @@ static XsMirStatus check_i32_binary(const XsMirFunction *function, const XsMirIn
 static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirInstruction *instruction,
                                      XsMirError *error)
 {
-  switch (instruction->kind)
+  switch(instruction->kind)
   {
   case XS_MIR_INSTRUCTION_CONST_I64:
     return check_value_exists(function, instruction->result, "MIR const.i64 result is unknown", error);
@@ -91,33 +93,39 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
   case XS_MIR_INSTRUCTION_ADD_I64:
   {
     XsMirStatus status = check_value_exists(function, instruction->result, "MIR add.i64 result is unknown", error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
     status = check_i64_operand(function, instruction->operand_left, "MIR add.i64 left operand is unknown", error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
     return check_i64_operand(function, instruction->operand_right, "MIR add.i64 right operand is unknown", error);
   }
   case XS_MIR_INSTRUCTION_ADD_I32:
   case XS_MIR_INSTRUCTION_SUB_I32:
   case XS_MIR_INSTRUCTION_MUL_I32:
-    return check_i32_binary(function, instruction, error);
+    return check_i32_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_I32}, error);
+  case XS_MIR_INSTRUCTION_EQ_I32:
+  case XS_MIR_INSTRUCTION_LT_I32:
+  case XS_MIR_INSTRUCTION_LE_I32:
+  case XS_MIR_INSTRUCTION_GT_I32:
+  case XS_MIR_INSTRUCTION_GE_I32:
+    return check_i32_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, error);
   case XS_MIR_INSTRUCTION_LOAD:
   {
-    const XsMirPlace *place = NULL;
+    const XsMirPlace *place = nullptr;
     XsMirStatus status = check_value_exists(function, instruction->result, "MIR load result is unknown", error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
     return find_place(function, instruction->place, &place, error);
   }
   case XS_MIR_INSTRUCTION_STORE:
   {
-    const XsMirPlace *place = NULL;
+    const XsMirPlace *place = nullptr;
     XsMirStatus status = check_value_exists(function, instruction->operand_left, "MIR store value is unknown", error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
     status = find_place(function, instruction->place, &place, error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
     return check_store_mutability(function, place, error);
   }
@@ -127,15 +135,15 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
 
 static XsMirStatus check_return_type(const XsMirFunction *function, const XsMirBlock *block, XsMirError *error)
 {
-  if (block->terminator.kind != XS_MIR_TERMINATOR_RETURN)
+  if(block->terminator.kind != XS_MIR_TERMINATOR_RETURN)
     return XS_MIR_OK;
-  if (!block->terminator.has_value)
+  if(!block->terminator.has_value)
     return type_equal(function->return_type, (XsMirType){.kind = XS_LIL_TYPE_VOID})
                ? XS_MIR_OK
                : xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR return is missing a value");
-  if ((size_t)block->terminator.value >= function->value_count)
+  if((size_t)block->terminator.value >= function->value_count)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR return references an unknown value");
-  if (!type_equal(function->values[block->terminator.value].type, function->return_type))
+  if(!type_equal(function->values[block->terminator.value].type, function->return_type))
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT,
                             "MIR return value type does not match function return type");
   return XS_MIR_OK;
@@ -143,26 +151,26 @@ static XsMirStatus check_return_type(const XsMirFunction *function, const XsMirB
 
 static XsMirStatus check_terminator(const XsMirFunction *function, const XsMirBlock *block, XsMirError *error)
 {
-  switch (block->terminator.kind)
+  switch(block->terminator.kind)
   {
   case XS_MIR_TERMINATOR_NONE:
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR block is missing a terminator");
   case XS_MIR_TERMINATOR_RETURN:
     return check_return_type(function, block, error);
   case XS_MIR_TERMINATOR_GOTO:
-    if ((size_t)block->terminator.target >= function->block_count)
+    if((size_t)block->terminator.target >= function->block_count)
       return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR goto references an unknown block");
     return XS_MIR_OK;
   case XS_MIR_TERMINATOR_BRANCH:
   {
     XsMirStatus status =
         check_value_exists(function, block->terminator.value, "MIR branch condition is unknown", error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
-    if (!type_equal(function->values[block->terminator.value].type, (XsMirType){.kind = XS_LIL_TYPE_BOOL}))
+    if(!type_equal(function->values[block->terminator.value].type, (XsMirType){.kind = XS_LIL_TYPE_BOOL}))
       return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR branch condition is not bool");
-    if ((size_t)block->terminator.target >= function->block_count ||
-        (size_t)block->terminator.else_target >= function->block_count)
+    if((size_t)block->terminator.target >= function->block_count ||
+       (size_t)block->terminator.else_target >= function->block_count)
       return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR branch references an unknown block");
     return XS_MIR_OK;
   }
@@ -174,10 +182,10 @@ static XsMirStatus check_terminator(const XsMirFunction *function, const XsMirBl
 
 static XsMirStatus check_block(const XsMirFunction *function, const XsMirBlock *block, XsMirError *error)
 {
-  for (size_t i = 0; i < block->instruction_count; ++i)
+  for(size_t i = 0; i < block->instruction_count; ++i)
   {
     XsMirStatus status = check_instruction(function, &block->instructions[i], error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
   }
   return check_terminator(function, block, error);
@@ -185,12 +193,12 @@ static XsMirStatus check_block(const XsMirFunction *function, const XsMirBlock *
 
 static XsMirStatus check_function(const XsMirFunction *function, XsMirError *error)
 {
-  if (!function->is_definition)
+  if(!function->is_definition)
     return XS_MIR_OK;
-  for (size_t i = 0; i < function->block_count; ++i)
+  for(size_t i = 0; i < function->block_count; ++i)
   {
     XsMirStatus status = check_block(function, function->blocks[i], error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
   }
   return XS_MIR_OK;
@@ -199,12 +207,12 @@ static XsMirStatus check_function(const XsMirFunction *function, XsMirError *err
 XsMirStatus xs_mir_borrow_check_module(const XsMirModule *module, XsMirError *error)
 {
   xs_mir_clear_error(error);
-  if (module == NULL)
+  if(module == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR module is required");
-  for (size_t i = 0; i < module->function_count; ++i)
+  for(size_t i = 0; i < module->function_count; ++i)
   {
     XsMirStatus status = check_function(&module->functions[i], error);
-    if (status != XS_MIR_OK)
+    if(status != XS_MIR_OK)
       return status;
   }
   return XS_MIR_OK;

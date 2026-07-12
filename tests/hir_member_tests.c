@@ -16,19 +16,19 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static bool parse_symbols(const char *text, XsSyntaxTree *tree, XsHirSymbolTable *symbols, XsDiagnostics *diagnostics)
 {
   XsSource source = {.path = "Members.xs", .text = text, .length = strlen(text)};
   xs_diagnostics_init(diagnostics);
   xs_hir_symbol_table_init(symbols);
-  if (!xs_syntax_parse(&source, 101, diagnostics, tree))
+  if(!xs_syntax_parse(&source, 101, diagnostics, tree))
     return false;
   return xs_hir_collect_symbols(tree, symbols, diagnostics);
 }

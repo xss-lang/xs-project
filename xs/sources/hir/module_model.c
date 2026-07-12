@@ -15,7 +15,7 @@ void xs_module_registry_init(XsModuleRegistry *registry)
 
 void xs_module_registry_free(XsModuleRegistry *registry)
 {
-  for (size_t i = 0; i < registry->count; ++i)
+  for(size_t i = 0; i < registry->count; ++i)
   {
     free(registry->modules[i].module_name);
     free(registry->modules[i].source_path);
@@ -31,7 +31,7 @@ void xs_module_graph_init(XsModuleGraph *graph)
 
 void xs_module_graph_free(XsModuleGraph *graph)
 {
-  for (size_t i = 0; i < graph->count; ++i)
+  for(size_t i = 0; i < graph->count; ++i)
   {
     free(graph->dependencies[i].importer_path);
     free(graph->dependencies[i].module_name);
@@ -48,7 +48,7 @@ void xs_module_issues_init(XsModuleIssues *issues)
 
 void xs_module_issues_free(XsModuleIssues *issues)
 {
-  for (size_t i = 0; i < issues->count; ++i)
+  for(size_t i = 0; i < issues->count; ++i)
   {
     free(issues->issues[i].source_path);
     free(issues->issues[i].message);
@@ -59,9 +59,9 @@ void xs_module_issues_free(XsModuleIssues *issues)
 
 void xs_module_issues_print(const XsModuleIssues *issues)
 {
-  for (size_t i = 0; i < issues->count; ++i)
+  for(size_t i = 0; i < issues->count; ++i)
     fprintf(stderr, "%s:%zu: error: %s\n", issues->issues[i].source_path, issues->issues[i].start,
             issues->issues[i].message);
-  if (issues->allocation_failed)
+  if(issues->allocation_failed)
     fprintf(stderr, "xs: error: out of memory while resolving modules\n");
 }

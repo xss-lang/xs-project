@@ -72,7 +72,7 @@ PenaltyBreakFirstLessLess: 120
 
 SpaceBeforeParens: Custom
 SpaceBeforeParensOptions:
-  AfterControlStatements: true
+  AfterControlStatements: false
   AfterForeachMacros: false
   AfterFunctionDefinitionName: false
   AfterFunctionDeclarationName: false

@@ -99,7 +99,7 @@ class Git
 
     int code = process.waitFor();
 
-    if (code != 0)
+    if(code != 0)
     {
       throw new RuntimeException(String.join(" ", command) + " failed with code " + code);
     }
@@ -114,11 +114,11 @@ class Git
 
     int start = 0;
 
-    for (int i = 0; i < raw.length(); ++i)
+    for(int i = 0; i < raw.length(); ++i)
     {
-      if (raw.charAt(i) == '\0')
+      if(raw.charAt(i) == '\0')
       {
-        if (i > start)
+        if(i > start)
         {
           result.add(raw.substring(start, i));
         }
@@ -127,7 +127,7 @@ class Git
       }
     }
 
-    if (start < raw.length())
+    if(start < raw.length())
     {
       result.add(raw.substring(start));
     }
@@ -139,7 +139,7 @@ class Git
   {
     ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-    for (String value : values)
+    for(String value : values)
     {
       output.writeBytes(value.getBytes(StandardCharsets.UTF_8));
       output.write(0);
@@ -193,22 +193,22 @@ class Git
 
   static Cli parse(String[] args)
   {
-    if (args.length == 1 && args[0].equals("help"))
+    if(args.length == 1 && args[0].equals("help"))
     {
       return new Cli(Command.HELP, null);
     }
 
-    if (args.length == 1 && args[0].equals("clean"))
+    if(args.length == 1 && args[0].equals("clean"))
     {
       return new Cli(Command.CLEAN, null);
     }
 
-    if (args.length == 1 && args[0].equals("uncom"))
+    if(args.length == 1 && args[0].equals("uncom"))
     {
       return new Cli(Command.UNCOM, null);
     }
 
-    if (args.length == 2 && args[0].equals("update"))
+    if(args.length == 2 && args[0].equals("update"))
     {
       return new Cli(Command.UPDATE, args[1]);
     }
@@ -223,7 +223,7 @@ class Git
   {
     String result = capture("git", "rev-parse", "--is-inside-work-tree").trim();
 
-    if (!result.equals("true"))
+    if(!result.equals("true"))
     {
       exit(1, "error: not inside a git work tree");
     }
@@ -233,7 +233,7 @@ class Git
   {
     String branch = capture("git", "branch", "--show-current").trim();
 
-    if (branch.isBlank())
+    if(branch.isBlank())
     {
       exit(1, "error: detached HEAD state; cannot determine current branch");
     }
@@ -277,14 +277,14 @@ class Git
   {
     LinkedHashSet<String> pathspecs = new LinkedHashSet<>();
 
-    for (String path : GENERATED_PATHS)
+    for(String path : GENERATED_PATHS)
     {
       pathspecs.add(path);
     }
 
-    for (String path : ignoredTrackedFiles())
+    for(String path : ignoredTrackedFiles())
     {
-      if (!isCoveredByGeneratedPaths(path))
+      if(!isCoveredByGeneratedPaths(path))
       {
         pathspecs.add(path);
       }
@@ -297,7 +297,7 @@ class Git
   {
     LinkedHashSet<String> pathspecs = generatedAndIgnoredPathspecs();
 
-    if (pathspecs.isEmpty())
+    if(pathspecs.isEmpty())
     {
       return;
     }
@@ -312,7 +312,7 @@ class Git
         "--pathspec-from-file=-",
         "--pathspec-file-nul");
 
-    if (rmCode != 0)
+    if(rmCode != 0)
     {
       exit(rmCode, "error: generated or ignored files could not be removed from the index");
     }
@@ -329,7 +329,7 @@ class Git
 
     int addCode = run("git", "add", "--all");
 
-    if (addCode != 0)
+    if(addCode != 0)
     {
       exit(addCode, "error: git add --all failed");
     }
@@ -338,19 +338,19 @@ class Git
 
     int diffCode = runQuiet("git", "diff", "--cached", "--quiet");
 
-    if (diffCode == 0)
+    if(diffCode == 0)
     {
       exit(1, "error: nothing to commit");
     }
 
-    if (diffCode != 1)
+    if(diffCode != 1)
     {
       exit(diffCode, "error: git diff --cached --quiet failed");
     }
 
     int commitCode = run("git", "commit", "--message", message);
 
-    if (commitCode != 0)
+    if(commitCode != 0)
     {
       exit(commitCode, "error: git commit failed");
     }
@@ -359,14 +359,14 @@ class Git
 
     int pushCode = run("git", "push", "-u", REMOTE, branch, "--force-with-lease");
 
-    if (pushCode != 0)
+    if(pushCode != 0)
     {
       exit(pushCode, "error: git push --force-with-lease failed");
     }
 
     String status = capture("git", "status", "--short");
 
-    if (!status.isBlank())
+    if(!status.isBlank())
     {
       System.err.print(status);
       exit(1, "error: update completed, but the work tree is still dirty");
@@ -377,7 +377,7 @@ class Git
   {
     String status = capture("git", "status", "--short");
 
-    if (status.isBlank())
+    if(status.isBlank())
     {
       System.out.println("nothing uncommitted");
       return;
@@ -390,7 +390,7 @@ class Git
   {
     Cli cli = parse(args);
 
-    if (cli.command() == Command.HELP)
+    if(cli.command() == Command.HELP)
     {
       help();
       return;
@@ -398,7 +398,7 @@ class Git
 
     requireGitRepo();
 
-    switch (cli.command())
+    switch(cli.command())
     {
       case CLEAN -> clean();
       case UPDATE -> update(cli.message());

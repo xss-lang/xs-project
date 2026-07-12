@@ -16,7 +16,7 @@ static XsToken read_token(SyntaxParser *parser)
   do
   {
     token = xs_lexer_next(&parser->lexer);
-  } while (token.kind == XS_TOKEN_DOC_COMMENT || token.kind == XS_TOKEN_MODULE_COMMENT);
+  } while(token.kind == XS_TOKEN_DOC_COMMENT || token.kind == XS_TOKEN_MODULE_COMMENT);
   return token;
 }
 
@@ -29,7 +29,7 @@ void advance(SyntaxParser *parser)
 
 bool accept(SyntaxParser *parser, XsTokenKind kind)
 {
-  if (kind == XS_TOKEN_GREATER && parser->current.kind == XS_TOKEN_SHIFT_RIGHT)
+  if(kind == XS_TOKEN_GREATER && parser->current.kind == XS_TOKEN_SHIFT_RIGHT)
   {
     parser->previous =
         (XsToken){.kind = XS_TOKEN_GREATER, .span = {parser->current.span.start, parser->current.span.start + 1}};
@@ -37,7 +37,7 @@ bool accept(SyntaxParser *parser, XsTokenKind kind)
         (XsToken){.kind = XS_TOKEN_GREATER, .span = {parser->current.span.start + 1, parser->current.span.end}};
     return true;
   }
-  if (parser->current.kind != kind)
+  if(parser->current.kind != kind)
     return false;
   advance(parser);
   return true;
@@ -45,7 +45,7 @@ bool accept(SyntaxParser *parser, XsTokenKind kind)
 
 bool expect(SyntaxParser *parser, XsTokenKind kind, const char *message)
 {
-  if (accept(parser, kind))
+  if(accept(parser, kind))
     return true;
   xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, message);
   return false;
@@ -58,7 +58,7 @@ XsSyntaxNode *node(SyntaxParser *parser, XsSyntaxKind kind, XsSpan span)
 
 void finish_node(SyntaxParser *parser, XsSyntaxNode *value, size_t end)
 {
-  if (value == nullptr)
+  if(value == nullptr)
     return;
   XsSpan span = {.start = value->span.start_offset, .end = end};
   value->span = xs_source_span(parser->tree, span);
@@ -67,7 +67,7 @@ void finish_node(SyntaxParser *parser, XsSyntaxNode *value, size_t end)
 
 XsSyntaxNode *identifier(SyntaxParser *parser)
 {
-  if (!expect(parser, XS_TOKEN_IDENTIFIER, "expected identifier"))
+  if(!expect(parser, XS_TOKEN_IDENTIFIER, "expected identifier"))
     return nullptr;
   return node(parser, XS_SYNTAX_IDENTIFIER, parser->previous.span);
 }
@@ -77,13 +77,13 @@ XsSyntaxNode *parse_path(SyntaxParser *parser)
   size_t start = parser->current.span.start;
   XsSyntaxNode *path = node(parser, XS_SYNTAX_PATH, (XsSpan){start, start});
   XsSyntaxNode *segment = identifier(parser);
-  if (segment == nullptr)
+  if(segment == nullptr)
     return path;
   xs_syntax_node_add(parser->tree, path, segment);
-  while (accept(parser, XS_TOKEN_DOT))
+  while(accept(parser, XS_TOKEN_DOT))
   {
     segment = identifier(parser);
-    if (segment == nullptr)
+    if(segment == nullptr)
       break;
     xs_syntax_node_add(parser->tree, path, segment);
   }
@@ -96,46 +96,46 @@ Modifiers parse_modifiers(SyntaxParser *parser)
   Modifiers result = {.visibility = XS_SYNTAX_VISIBILITY_DEFAULT,
                       .span = {parser->current.span.start, parser->current.span.start}};
   bool progress = true;
-  while (progress)
+  while(progress)
   {
     progress = false;
     XsToken token = parser->current;
-    if (accept(parser, XS_TOKEN_KW_PUBLIC))
+    if(accept(parser, XS_TOKEN_KW_PUBLIC))
     {
       result.visibility = XS_SYNTAX_VISIBILITY_PUBLIC;
       progress = true;
     }
-    else if (accept(parser, XS_TOKEN_KW_PRIVATE))
+    else if(accept(parser, XS_TOKEN_KW_PRIVATE))
     {
       result.visibility = XS_SYNTAX_VISIBILITY_PRIVATE;
       progress = true;
     }
-    else if (accept(parser, XS_TOKEN_KW_PROTECTED))
+    else if(accept(parser, XS_TOKEN_KW_PROTECTED))
     {
       result.visibility = XS_SYNTAX_VISIBILITY_PROTECTED;
       progress = true;
     }
-    else if (accept(parser, XS_TOKEN_KW_INTERNAL))
+    else if(accept(parser, XS_TOKEN_KW_INTERNAL))
     {
       result.visibility = XS_SYNTAX_VISIBILITY_INTERNAL;
       progress = true;
     }
-    else if (accept(parser, XS_TOKEN_KW_ASYNC))
+    else if(accept(parser, XS_TOKEN_KW_ASYNC))
     {
       result.flags |= XS_SYNTAX_FLAG_ASYNC;
       progress = true;
     }
-    else if (accept(parser, XS_TOKEN_KW_STATIC))
+    else if(accept(parser, XS_TOKEN_KW_STATIC))
     {
       result.flags |= XS_SYNTAX_FLAG_STATIC;
       progress = true;
     }
-    else if (accept(parser, XS_TOKEN_KW_INCOMPLETE))
+    else if(accept(parser, XS_TOKEN_KW_INCOMPLETE))
     {
       result.flags |= XS_SYNTAX_FLAG_INCOMPLETE;
       progress = true;
     }
-    if (progress)
+    if(progress)
       result.span.end = token.span.end;
   }
   return result;
@@ -143,12 +143,12 @@ Modifiers parse_modifiers(SyntaxParser *parser)
 
 void attach_modifiers(SyntaxParser *parser, XsSyntaxNode *declaration, Modifiers modifiers)
 {
-  if (declaration == nullptr)
+  if(declaration == nullptr)
     return;
   declaration->visibility = modifiers.visibility;
   declaration->flags |= modifiers.flags;
   XsSyntaxNode *visibility = node(parser, XS_SYNTAX_VISIBILITY, modifiers.span);
-  if (visibility != nullptr)
+  if(visibility != nullptr)
     visibility->visibility = modifiers.visibility;
   xs_syntax_node_add(parser->tree, declaration, visibility);
 }
@@ -170,38 +170,38 @@ bool xs_syntax_parse(const XsSource *source, uint64_t file_id, XsDiagnostics *di
 
   bool seen_declaration = false;
   bool seen_module = false;
-  while (parser.current.kind != XS_TOKEN_EOF)
+  while(parser.current.kind != XS_TOKEN_EOF)
   {
     size_t before = parser.current.span.start;
     XsSyntaxNode *declaration = parse_declaration(&parser, true);
-    if (declaration != nullptr)
+    if(declaration != nullptr)
     {
-      if (declaration->kind == XS_SYNTAX_DECL_MODULE)
+      if(declaration->kind == XS_SYNTAX_DECL_MODULE)
       {
-        if (seen_declaration)
+        if(seen_declaration)
           xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
                              (XsSpan){declaration->span.start_offset, declaration->span.end_offset},
                              "module must be the first declaration in the file");
-        if (seen_module)
+        if(seen_module)
           xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
                              (XsSpan){declaration->span.start_offset, declaration->span.end_offset},
                              "only one module declaration is allowed per file");
         seen_module = true;
       }
-      if (declaration->kind == XS_SYNTAX_DECL_NAMESPACE && !seen_module)
+      if(declaration->kind == XS_SYNTAX_DECL_NAMESPACE && !seen_module)
         xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
                            (XsSpan){declaration->span.start_offset, declaration->span.end_offset},
                            "namespace must be declared under module");
       xs_syntax_node_add(tree, tree->root, declaration);
       seen_declaration = true;
     }
-    if (parser.current.span.start == before)
+    if(parser.current.span.start == before)
     {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, parser.current.span, "parser made no progress at top level");
       advance(&parser);
     }
   }
-  if (tree->allocation_failed)
+  if(tree->allocation_failed)
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
                        "compiler ran out of memory while building structural AST");
   return !xs_diagnostics_has_error(diagnostics);

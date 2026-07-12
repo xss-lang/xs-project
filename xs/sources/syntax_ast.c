@@ -23,11 +23,11 @@ static void *arena_allocate(XsSyntaxTree *tree, size_t size)
   const size_t alignment = alignof(max_align_t);
   size = (size + alignment - 1) & ~(alignment - 1);
   XsSyntaxArenaBlock *block = tree->arena;
-  if (block == nullptr || block->capacity - block->used < size)
+  if(block == nullptr || block->capacity - block->used < size)
   {
     size_t capacity = size > 4096 ? size : 4096;
     block = malloc(sizeof(*block) + capacity);
-    if (block == nullptr)
+    if(block == nullptr)
     {
       tree->allocation_failed = true;
       return nullptr;
@@ -51,7 +51,7 @@ void xs_syntax_tree_init(XsSyntaxTree *tree, const XsSource *source, uint64_t fi
 void xs_syntax_tree_free(XsSyntaxTree *tree)
 {
   XsSyntaxArenaBlock *block = tree->arena;
-  while (block != nullptr)
+  while(block != nullptr)
   {
     XsSyntaxArenaBlock *next = block->next;
     free(block);
@@ -64,11 +64,11 @@ static void line_column(const XsSource *source, size_t offset, size_t *line, siz
 {
   *line = 1;
   *column = 1;
-  if (offset > source->length)
+  if(offset > source->length)
     offset = source->length;
-  for (size_t i = 0; i < offset; ++i)
+  for(size_t i = 0; i < offset; ++i)
   {
-    if (source->text[i] == '\n')
+    if(source->text[i] == '\n')
     {
       ++*line;
       *column = 1;
@@ -95,7 +95,7 @@ XsSourceSpan xs_source_span(const XsSyntaxTree *tree, XsSpan span)
 XsSyntaxNode *xs_syntax_node_new(XsSyntaxTree *tree, XsSyntaxKind kind, XsSpan span)
 {
   XsSyntaxNode *node = arena_allocate(tree, sizeof(*node));
-  if (node == nullptr)
+  if(node == nullptr)
     return nullptr;
   node->kind = kind;
   node->span = xs_source_span(tree, span);
@@ -106,15 +106,15 @@ XsSyntaxNode *xs_syntax_node_new(XsSyntaxTree *tree, XsSyntaxKind kind, XsSpan s
 
 bool xs_syntax_node_add(XsSyntaxTree *tree, XsSyntaxNode *parent, XsSyntaxNode *child)
 {
-  if (parent == nullptr || child == nullptr)
+  if(parent == nullptr || child == nullptr)
     return false;
-  if (parent->child_count == parent->child_capacity)
+  if(parent->child_count == parent->child_capacity)
   {
     size_t capacity = parent->child_capacity == 0 ? 4 : parent->child_capacity * 2;
     XsSyntaxNode **children = arena_allocate(tree, capacity * sizeof(*children));
-    if (children == nullptr)
+    if(children == nullptr)
       return false;
-    if (parent->children != nullptr)
+    if(parent->children != nullptr)
       memcpy(children, parent->children, parent->child_count * sizeof(*children));
     parent->children = children;
     parent->child_capacity = capacity;
@@ -125,10 +125,10 @@ bool xs_syntax_node_add(XsSyntaxTree *tree, XsSyntaxNode *parent, XsSyntaxNode *
 
 XsSyntaxNode *xs_syntax_node_clone_shallow(XsSyntaxTree *tree, const XsSyntaxNode *node)
 {
-  if (tree == nullptr || node == nullptr)
+  if(tree == nullptr || node == nullptr)
     return nullptr;
   XsSyntaxNode *clone = arena_allocate(tree, sizeof(*clone));
-  if (clone == nullptr)
+  if(clone == nullptr)
     return nullptr;
   *clone = *node;
   clone->children = nullptr;
@@ -140,12 +140,12 @@ XsSyntaxNode *xs_syntax_node_clone_shallow(XsSyntaxTree *tree, const XsSyntaxNod
 XsSyntaxNode *xs_syntax_clone_subtree(XsSyntaxTree *tree, const XsSyntaxNode *node)
 {
   XsSyntaxNode *clone = xs_syntax_node_clone_shallow(tree, node);
-  if (clone == nullptr)
+  if(clone == nullptr)
     return nullptr;
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
   {
     XsSyntaxNode *child = xs_syntax_clone_subtree(tree, node->children[i]);
-    if (!xs_syntax_node_add(tree, clone, child))
+    if(!xs_syntax_node_add(tree, clone, child))
       return nullptr;
   }
   return clone;
@@ -153,14 +153,14 @@ XsSyntaxNode *xs_syntax_clone_subtree(XsSyntaxTree *tree, const XsSyntaxNode *no
 
 const XsSyntaxNode *xs_syntax_find_first(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
-  if (node == nullptr)
+  if(node == nullptr)
     return nullptr;
-  if (node->kind == kind)
+  if(node->kind == kind)
     return node;
-  for (size_t i = 0; i < node->child_count; ++i)
+  for(size_t i = 0; i < node->child_count; ++i)
   {
     const XsSyntaxNode *found = xs_syntax_find_first(node->children[i], kind);
-    if (found != nullptr)
+    if(found != nullptr)
       return found;
   }
   return nullptr;
@@ -267,7 +267,7 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "macro argument",
       "token",
   };
-  if ((size_t)kind >= sizeof(names) / sizeof(names[0]))
+  if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown syntax node";
   return names[kind];
 }

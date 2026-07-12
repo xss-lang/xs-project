@@ -9,7 +9,7 @@
 
 const char *xs_cli_output_extension(XsBuildOutput output)
 {
-  switch (output)
+  switch(output)
   {
   case XS_BUILD_OUTPUT_HIR:
     return ".xhir";
@@ -25,17 +25,17 @@ const char *xs_cli_output_extension(XsBuildOutput output)
 
 static bool parse_output_kind(const char *text, XsBuildOutput *output)
 {
-  if (strcmp(text, "hir") == 0)
+  if(strcmp(text, "hir") == 0)
   {
     *output = XS_BUILD_OUTPUT_HIR;
     return true;
   }
-  if (strcmp(text, "mir") == 0)
+  if(strcmp(text, "mir") == 0)
   {
     *output = XS_BUILD_OUTPUT_MIR;
     return true;
   }
-  if (strcmp(text, "xlil") == 0)
+  if(strcmp(text, "xlil") == 0)
   {
     *output = XS_BUILD_OUTPUT_XLIL;
     return true;
@@ -45,7 +45,7 @@ static bool parse_output_kind(const char *text, XsBuildOutput *output)
 
 static bool set_output(XsCliOptions *options, XsBuildOutput output)
 {
-  if (options->output != XS_BUILD_OUTPUT_NONE)
+  if(options->output != XS_BUILD_OUTPUT_NONE)
     return false;
   options->output = output;
   return true;
@@ -53,51 +53,51 @@ static bool set_output(XsCliOptions *options, XsBuildOutput output)
 
 static bool parse_output_flag(const char *flag, XsCliOptions *options)
 {
-  if (strcmp(flag, "--hir") == 0)
+  if(strcmp(flag, "--hir") == 0)
     return set_output(options, XS_BUILD_OUTPUT_HIR);
-  if (strcmp(flag, "--mir") == 0)
+  if(strcmp(flag, "--mir") == 0)
     return set_output(options, XS_BUILD_OUTPUT_MIR);
-  if (strcmp(flag, "--xlil") == 0)
+  if(strcmp(flag, "--xlil") == 0)
     return set_output(options, XS_BUILD_OUTPUT_XLIL);
   return false;
 }
 
 bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
 {
-  if (argc < 4)
+  if(argc < 4)
     return false;
-  if (strcmp(argv[1], "check") != 0 && strcmp(argv[1], "build") != 0 && strcmp(argv[1], "run") != 0)
+  if(strcmp(argv[1], "check") != 0 && strcmp(argv[1], "build") != 0 && strcmp(argv[1], "run") != 0)
     return false;
   *options = (XsCliOptions){.command = argv[1]};
-  for (int i = 2; i < argc; ++i)
+  for(int i = 2; i < argc; ++i)
   {
-    if (strcmp(argv[i], "-proj") == 0)
+    if(strcmp(argv[i], "-proj") == 0)
     {
-      if (++i >= argc || options->manifest_path != nullptr || options->file_path != nullptr)
+      if(++i >= argc || options->manifest_path != nullptr || options->file_path != nullptr)
         return false;
       options->manifest_path = argv[i];
     }
-    else if (strcmp(argv[i], "-file") == 0)
+    else if(strcmp(argv[i], "-file") == 0)
     {
-      if (++i >= argc || options->file_path != nullptr || options->manifest_path != nullptr)
+      if(++i >= argc || options->file_path != nullptr || options->manifest_path != nullptr)
         return false;
       options->file_path = argv[i];
     }
-    else if (strcmp(argv[i], "--output") == 0)
+    else if(strcmp(argv[i], "--output") == 0)
     {
-      if (++i >= argc || options->output != XS_BUILD_OUTPUT_NONE)
+      if(++i >= argc || options->output != XS_BUILD_OUTPUT_NONE)
         return false;
-      if (!parse_output_kind(argv[i], &options->output))
+      if(!parse_output_kind(argv[i], &options->output))
         return false;
     }
-    else if (!parse_output_flag(argv[i], options))
+    else if(!parse_output_flag(argv[i], options))
     {
       return false;
     }
   }
-  if (options->manifest_path == nullptr && options->file_path == nullptr)
+  if(options->manifest_path == nullptr && options->file_path == nullptr)
     return false;
-  if (options->file_path != nullptr)
+  if(options->file_path != nullptr)
     return strcmp(options->command, "build") == 0;
   return strcmp(options->command, "build") == 0 || options->output == XS_BUILD_OUTPUT_NONE;
 }

@@ -60,13 +60,14 @@ Today, plain `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can pr
 supported source slice:
 
 ```xs
-fn main() => Long { return 1 + 2 * 3; }
+fn main() => Long { return if (1 < 2) { 7; } else { 3; }; }
 ```
 
 The function must be top-level, named `main`, have no parameters, return `Long`, and have a body that is exactly
-one return statement. The supported return expression subset is i32-range integer literals plus `+`, `-`, and `*` over
-that same subset. The compiler lowers that source `Long` slice to the direct native process `i32` entry ABI. General
-source-level function body lowering is still incomplete.
+one return statement. The supported return expression subset is i32-range integer literals, `+`, `-`, `*`, and one
+top-level `if (...) { expr; } else { expr; }` expression whose condition is an i32 comparison. The compiler lowers that
+source `Long` slice to the direct native process `i32` entry ABI. General source-level function body lowering is still
+incomplete.
 
 `-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and
 `--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.
@@ -112,8 +113,8 @@ The direct file paths skip project manifests. Their final semantics depend on th
 - `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, lower the supported subset to LLVM IR, run the
   configured LLVM verification/optimization pipeline, emit an object file, and link a native executable when the target is
   the local host.
-- no output flag with `.xs`: check the source file and, for the first supported `main` slice, emit `.ll`, `.o`, and `.xse`
-  beside the input.
+- no output flag with `.xs`: check the source file and, for the first supported `main` slice, emit `.ll`, `.o`, and
+  `.xse` beside the input.
 
 The CLI recognizes the forms now; full production semantics are still being connected.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects

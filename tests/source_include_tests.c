@@ -16,17 +16,17 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static bool write_text_file(const char *path, const char *text)
 {
   FILE *file = fopen(path, "wb");
-  if (file == nullptr)
+  if(file == nullptr)
     return false;
   size_t length = strlen(text);
   bool success = fwrite(text, 1, length, file) == length;

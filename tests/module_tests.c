@@ -13,12 +13,12 @@ static int failures;
 #define CHECK(condition)                                                                                               \
   do                                                                                                                   \
   {                                                                                                                    \
-    if (!(condition))                                                                                                  \
+    if(!(condition))                                                                                                   \
     {                                                                                                                  \
       fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);                                    \
       ++failures;                                                                                                      \
     }                                                                                                                  \
-  } while (0)
+  } while(0)
 
 static void test_discovery_and_resolution(const char *root)
 {
@@ -55,7 +55,7 @@ static void test_duplicate_modules(const char *root)
 
 int main(int argc, char **argv)
 {
-  if (argc != 3)
+  if(argc != 3)
     return 2;
   test_discovery_and_resolution(argv[1]);
   test_duplicate_modules(argv[2]);
