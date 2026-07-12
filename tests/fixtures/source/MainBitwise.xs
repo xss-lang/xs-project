@@ -2,5 +2,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
 fn main() => Long {
-  return (6 & 3) | 4;
+  return (((6 & 3) | 4) << 1) >> 1;
 }

@@ -499,6 +499,8 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   XsMirValueId remainder = 0;
   XsMirValueId bit_and = 0;
   XsMirValueId bit_or = 0;
+  XsMirValueId shifted_left = 0;
+  XsMirValueId shifted_right = 0;
   CHECK(xs_mir_block_add_const_i32(entry, 1, &one, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_const_i32(entry, 2, &two, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_i32(entry, one, two, &sum, &error) == XS_MIR_OK);
@@ -507,7 +509,9 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   CHECK(xs_mir_block_rem_i32(entry, quotient, two, &remainder, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_and_i32(entry, sum, quotient, &bit_and, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_or_i32(entry, bit_and, remainder, &bit_or, &error) == XS_MIR_OK);
-  CHECK(xs_mir_block_set_return_value(entry, bit_or, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shl_i32(entry, bit_or, one, &shifted_left, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shr_i32(entry, shifted_left, one, &shifted_right, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return_value(entry, shifted_right, &error) == XS_MIR_OK);
   CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
 
   XsLilError lil_error = {0};
@@ -533,6 +537,8 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   CHECK(strstr(buffer, "%r5:i32 = rem.i32 %r4, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r6:i32 = and.i32 %r2, %r4\n") != nullptr);
   CHECK(strstr(buffer, "%r7:i32 = or.i32 %r6, %r5\n") != nullptr);
+  CHECK(strstr(buffer, "%r8:i32 = shl.i32 %r7, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r9:i32 = shr.i32 %r8, %r0\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(xlil);
   xs_mir_module_destroy(mir);

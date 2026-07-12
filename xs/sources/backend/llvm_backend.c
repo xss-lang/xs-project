@@ -449,6 +449,7 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
      kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
      kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_DIV_I32 ||
      kind == XS_LIL_INSTRUCTION_REM_I32 || kind == XS_LIL_INSTRUCTION_AND_I32 || kind == XS_LIL_INSTRUCTION_OR_I32 ||
+     kind == XS_LIL_INSTRUCTION_SHL_I32 || kind == XS_LIL_INSTRUCTION_SHR_I32 ||
      kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
      kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32)
   {
@@ -473,6 +474,10 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
       lowered = LLVMBuildAnd(builder, values[left], values[right], "and");
     else if(kind == XS_LIL_INSTRUCTION_OR_I32)
       lowered = LLVMBuildOr(builder, values[left], values[right], "or");
+    else if(kind == XS_LIL_INSTRUCTION_SHL_I32)
+      lowered = LLVMBuildShl(builder, values[left], values[right], "shl");
+    else if(kind == XS_LIL_INSTRUCTION_SHR_I32)
+      lowered = LLVMBuildAShr(builder, values[left], values[right], "shr");
     else if(kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32)
       lowered = LLVMBuildICmp(builder, LLVMIntEQ, values[left], values[right], "eq");
     else if(kind == XS_LIL_INSTRUCTION_NE_I32)

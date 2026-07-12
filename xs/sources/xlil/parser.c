@@ -331,6 +331,12 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
   case XS_LIL_INSTRUCTION_OR_I32:
     status = xs_lil_block_or_i32(block, left, right, &result, error);
     break;
+  case XS_LIL_INSTRUCTION_SHL_I32:
+    status = xs_lil_block_shl_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_SHR_I32:
+    status = xs_lil_block_shr_i32(block, left, right, &result, error);
+    break;
   case XS_LIL_INSTRUCTION_EQ_I32:
     status = xs_lil_block_eq_i32(block, left, right, &result, error);
     break;
@@ -395,6 +401,8 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"rem.i32 ", XS_LIL_INSTRUCTION_REM_I32, XS_LIL_TYPE_I32},
         {"and.i32 ", XS_LIL_INSTRUCTION_AND_I32, XS_LIL_TYPE_I32},
         {"or.i32 ", XS_LIL_INSTRUCTION_OR_I32, XS_LIL_TYPE_I32},
+        {"shl.i32 ", XS_LIL_INSTRUCTION_SHL_I32, XS_LIL_TYPE_I32},
+        {"shr.i32 ", XS_LIL_INSTRUCTION_SHR_I32, XS_LIL_TYPE_I32},
         {"eq.i32 ", XS_LIL_INSTRUCTION_EQ_I32, XS_LIL_TYPE_BOOL},
         {"ne.i32 ", XS_LIL_INSTRUCTION_NE_I32, XS_LIL_TYPE_BOOL},
         {"lt.i32 ", XS_LIL_INSTRUCTION_LT_I32, XS_LIL_TYPE_BOOL},

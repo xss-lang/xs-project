@@ -138,6 +138,22 @@ static XsMirStatus lower_instruction(const XsMirInstruction *instruction, XsLilB
                             &values[instruction->result], &lil_error);
     return map_lil_status(status, &lil_error, error);
   }
+  case XS_MIR_INSTRUCTION_SHL_I32:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_shl_i32(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
+  case XS_MIR_INSTRUCTION_SHR_I32:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_shr_i32(block, values[instruction->operand_left], values[instruction->operand_right],
+                             &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
   case XS_MIR_INSTRUCTION_EQ_I32:
   {
     XsLilError lil_error = {0};

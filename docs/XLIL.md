@@ -66,7 +66,7 @@ Format notes:
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
 - `%rN:i32 = const.i32 N` creates a signed 32-bit integer constant.
 - `%rN:i32 = add.i32 %rA, %rB`, `sub.i32`, `mul.i32`, `div.i32`, and `rem.i32` perform signed 32-bit integer arithmetic.
-- `%rN:i32 = and.i32 %rA, %rB` and `or.i32` perform bitwise 32-bit integer operations.
+- `%rN:i32 = and.i32 %rA, %rB`, `or.i32`, `shl.i32`, and arithmetic `shr.i32` perform bitwise 32-bit integer operations.
 - `%rN:bool = eq.i32 %rA, %rB` and `ne.i32` compare two `i32` values for equality or inequality.
 - `%rN:bool = lt.i32 %rA, %rB`, `le.i32`, `gt.i32`, and `ge.i32` perform signed `i32` comparisons.
 - `%rN:i64 = add.i64 %rA, %rB`, `sub.i64`, and `mul.i64` perform signed 64-bit integer arithmetic.

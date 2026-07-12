@@ -68,6 +68,8 @@ typedef enum
   XS_LIL_INSTRUCTION_REM_I32,
   XS_LIL_INSTRUCTION_AND_I32,
   XS_LIL_INSTRUCTION_OR_I32,
+  XS_LIL_INSTRUCTION_SHL_I32,
+  XS_LIL_INSTRUCTION_SHR_I32,
   XS_LIL_INSTRUCTION_EQ_I32,
   XS_LIL_INSTRUCTION_NE_I32,
   XS_LIL_INSTRUCTION_LT_I32,
@@ -140,6 +142,10 @@ XsLilStatus xs_lil_block_and_i32(XsLilBlock *block, XsLilValueId left, XsLilValu
                                  XsLilError *error);
 XsLilStatus xs_lil_block_or_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error);
+XsLilStatus xs_lil_block_shl_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
+XsLilStatus xs_lil_block_shr_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
+                                 XsLilError *error);
 XsLilStatus xs_lil_block_eq_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error);
 XsLilStatus xs_lil_block_ne_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,

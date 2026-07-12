@@ -401,9 +401,10 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
                       "  %r3:i32 = sub.i32 %r2, %r1\n  %r4:i32 = mul.i32 %r3, %r1\n"
                       "  %r5:i32 = div.i32 %r4, %r1\n  %r6:i32 = rem.i32 %r5, %r1\n"
                       "  %r7:i32 = and.i32 %r0, %r1\n  %r8:i32 = or.i32 %r7, %r1\n"
-                      "  %r9:bool = eq.i32 %r6, %r0\n  %r10:bool = ne.i32 %r6, %r1\n"
-                      "  %r11:bool = lt.i32 %r1, %r0\n  %r12:bool = le.i32 %r1, %r0\n"
-                      "  %r13:bool = gt.i32 %r0, %r1\n  %r14:bool = ge.i32 %r0, %r1\n  ret %r8\n.end\n";
+                      "  %r9:i32 = shl.i32 %r8, %r1\n  %r10:i32 = shr.i32 %r9, %r1\n"
+                      "  %r11:bool = eq.i32 %r6, %r0\n  %r12:bool = ne.i32 %r6, %r1\n"
+                      "  %r13:bool = lt.i32 %r1, %r0\n  %r14:bool = le.i32 %r1, %r0\n"
+                      "  %r15:bool = gt.i32 %r0, %r1\n  %r16:bool = ge.i32 %r0, %r1\n  ret %r10\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("arithmetic32.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
@@ -426,12 +427,14 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
   CHECK(strstr(buffer, "%r6:i32 = rem.i32 %r5, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r7:i32 = and.i32 %r0, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r8:i32 = or.i32 %r7, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r9:bool = eq.i32 %r6, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r10:bool = ne.i32 %r6, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r11:bool = lt.i32 %r1, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r12:bool = le.i32 %r1, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r13:bool = gt.i32 %r0, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r14:bool = ge.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r9:i32 = shl.i32 %r8, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r10:i32 = shr.i32 %r9, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r11:bool = eq.i32 %r6, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r12:bool = ne.i32 %r6, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r13:bool = lt.i32 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r14:bool = le.i32 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r15:bool = gt.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r16:bool = ge.i32 %r0, %r1\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
