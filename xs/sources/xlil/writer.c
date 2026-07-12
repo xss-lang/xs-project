@@ -70,6 +70,10 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:i64 = or.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL or.i64 instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_XOR_I64 &&
+       fprintf(stream, "  %%r%u:i64 = xor.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
+               instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL xor.i64 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_SHL_I64 &&
        fprintf(stream, "  %%r%u:i64 = shl.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)
@@ -130,6 +134,10 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:i32 = or.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL or.i32 instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_XOR_I32 &&
+       fprintf(stream, "  %%r%u:i32 = xor.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
+               instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL xor.i32 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_SHL_I32 &&
        fprintf(stream, "  %%r%u:i32 = shl.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)

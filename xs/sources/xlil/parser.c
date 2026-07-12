@@ -319,6 +319,9 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
   case XS_LIL_INSTRUCTION_OR_I64:
     status = xs_lil_block_or_i64(block, left, right, &result, error);
     break;
+  case XS_LIL_INSTRUCTION_XOR_I64:
+    status = xs_lil_block_xor_i64(block, left, right, &result, error);
+    break;
   case XS_LIL_INSTRUCTION_SHL_I64:
     status = xs_lil_block_shl_i64(block, left, right, &result, error);
     break;
@@ -363,6 +366,9 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
     break;
   case XS_LIL_INSTRUCTION_OR_I32:
     status = xs_lil_block_or_i32(block, left, right, &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_XOR_I32:
+    status = xs_lil_block_xor_i32(block, left, right, &result, error);
     break;
   case XS_LIL_INSTRUCTION_SHL_I32:
     status = xs_lil_block_shl_i32(block, left, right, &result, error);
@@ -430,6 +436,7 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"rem.i64 ", XS_LIL_INSTRUCTION_REM_I64, XS_LIL_TYPE_I64},
         {"and.i64 ", XS_LIL_INSTRUCTION_AND_I64, XS_LIL_TYPE_I64},
         {"or.i64 ", XS_LIL_INSTRUCTION_OR_I64, XS_LIL_TYPE_I64},
+        {"xor.i64 ", XS_LIL_INSTRUCTION_XOR_I64, XS_LIL_TYPE_I64},
         {"shl.i64 ", XS_LIL_INSTRUCTION_SHL_I64, XS_LIL_TYPE_I64},
         {"shr.i64 ", XS_LIL_INSTRUCTION_SHR_I64, XS_LIL_TYPE_I64},
         {"eq.i64 ", XS_LIL_INSTRUCTION_EQ_I64, XS_LIL_TYPE_BOOL},
@@ -445,6 +452,7 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"rem.i32 ", XS_LIL_INSTRUCTION_REM_I32, XS_LIL_TYPE_I32},
         {"and.i32 ", XS_LIL_INSTRUCTION_AND_I32, XS_LIL_TYPE_I32},
         {"or.i32 ", XS_LIL_INSTRUCTION_OR_I32, XS_LIL_TYPE_I32},
+        {"xor.i32 ", XS_LIL_INSTRUCTION_XOR_I32, XS_LIL_TYPE_I32},
         {"shl.i32 ", XS_LIL_INSTRUCTION_SHL_I32, XS_LIL_TYPE_I32},
         {"shr.i32 ", XS_LIL_INSTRUCTION_SHR_I32, XS_LIL_TYPE_I32},
         {"eq.i32 ", XS_LIL_INSTRUCTION_EQ_I32, XS_LIL_TYPE_BOOL},

@@ -412,6 +412,103 @@ XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char
   return status;
 }
 
+static bool is_lil_binary_integer(XsLilInstructionKind kind)
+{
+  return kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 ||
+         kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_DIV_I64 ||
+         kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_EQ_I64 ||
+         kind == XS_LIL_INSTRUCTION_AND_I64 || kind == XS_LIL_INSTRUCTION_OR_I64 ||
+         kind == XS_LIL_INSTRUCTION_XOR_I64 || kind == XS_LIL_INSTRUCTION_SHL_I64 ||
+         kind == XS_LIL_INSTRUCTION_SHR_I64 ||
+         kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_LT_I64 ||
+         kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 ||
+         kind == XS_LIL_INSTRUCTION_GE_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 ||
+         kind == XS_LIL_INSTRUCTION_SUB_I32 || kind == XS_LIL_INSTRUCTION_MUL_I32 ||
+         kind == XS_LIL_INSTRUCTION_DIV_I32 || kind == XS_LIL_INSTRUCTION_REM_I32 ||
+         kind == XS_LIL_INSTRUCTION_AND_I32 || kind == XS_LIL_INSTRUCTION_OR_I32 ||
+         kind == XS_LIL_INSTRUCTION_XOR_I32 || kind == XS_LIL_INSTRUCTION_SHL_I32 ||
+         kind == XS_LIL_INSTRUCTION_SHR_I32 ||
+         kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 ||
+         kind == XS_LIL_INSTRUCTION_LT_I32 || kind == XS_LIL_INSTRUCTION_LE_I32 ||
+         kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
+}
+
+static LLVMValueRef lower_lil_binary_integer_op(LLVMBuilderRef builder, XsLilInstructionKind kind, LLVMValueRef left,
+                                                LLVMValueRef right)
+{
+  switch(kind)
+  {
+  case XS_LIL_INSTRUCTION_ADD_I64:
+  case XS_LIL_INSTRUCTION_ADD_I32:
+    return LLVMBuildAdd(builder, left, right, "add");
+  case XS_LIL_INSTRUCTION_SUB_I64:
+  case XS_LIL_INSTRUCTION_SUB_I32:
+    return LLVMBuildSub(builder, left, right, "sub");
+  case XS_LIL_INSTRUCTION_MUL_I64:
+  case XS_LIL_INSTRUCTION_MUL_I32:
+    return LLVMBuildMul(builder, left, right, "mul");
+  case XS_LIL_INSTRUCTION_DIV_I64:
+  case XS_LIL_INSTRUCTION_DIV_I32:
+    return LLVMBuildSDiv(builder, left, right, "div");
+  case XS_LIL_INSTRUCTION_REM_I64:
+  case XS_LIL_INSTRUCTION_REM_I32:
+    return LLVMBuildSRem(builder, left, right, "rem");
+  case XS_LIL_INSTRUCTION_AND_I64:
+  case XS_LIL_INSTRUCTION_AND_I32:
+    return LLVMBuildAnd(builder, left, right, "and");
+  case XS_LIL_INSTRUCTION_OR_I64:
+  case XS_LIL_INSTRUCTION_OR_I32:
+    return LLVMBuildOr(builder, left, right, "or");
+  case XS_LIL_INSTRUCTION_XOR_I64:
+  case XS_LIL_INSTRUCTION_XOR_I32:
+    return LLVMBuildXor(builder, left, right, "xor");
+  case XS_LIL_INSTRUCTION_SHL_I64:
+  case XS_LIL_INSTRUCTION_SHL_I32:
+    return LLVMBuildShl(builder, left, right, "shl");
+  case XS_LIL_INSTRUCTION_SHR_I64:
+  case XS_LIL_INSTRUCTION_SHR_I32:
+    return LLVMBuildAShr(builder, left, right, "shr");
+  case XS_LIL_INSTRUCTION_EQ_I64:
+  case XS_LIL_INSTRUCTION_EQ_I32:
+    return LLVMBuildICmp(builder, LLVMIntEQ, left, right, "eq");
+  case XS_LIL_INSTRUCTION_NE_I64:
+  case XS_LIL_INSTRUCTION_NE_I32:
+    return LLVMBuildICmp(builder, LLVMIntNE, left, right, "ne");
+  case XS_LIL_INSTRUCTION_LT_I64:
+  case XS_LIL_INSTRUCTION_LT_I32:
+    return LLVMBuildICmp(builder, LLVMIntSLT, left, right, "lt");
+  case XS_LIL_INSTRUCTION_LE_I64:
+  case XS_LIL_INSTRUCTION_LE_I32:
+    return LLVMBuildICmp(builder, LLVMIntSLE, left, right, "le");
+  case XS_LIL_INSTRUCTION_GT_I64:
+  case XS_LIL_INSTRUCTION_GT_I32:
+    return LLVMBuildICmp(builder, LLVMIntSGT, left, right, "gt");
+  case XS_LIL_INSTRUCTION_GE_I64:
+  case XS_LIL_INSTRUCTION_GE_I32:
+    return LLVMBuildICmp(builder, LLVMIntSGE, left, right, "ge");
+  default:
+    return nullptr;
+  }
+}
+
+static XsBackendStatus lower_lil_binary_integer(LLVMBuilderRef builder, const XsLilBlock *block, size_t index,
+                                                LLVMValueRef *values, size_t value_count, XsBackendError *error)
+{
+  XsLilValueId result = xs_lil_block_instruction_result(block, index);
+  XsLilValueId left = xs_lil_block_instruction_left(block, index);
+  XsLilValueId right = xs_lil_block_instruction_right(block, index);
+  if((size_t)result >= value_count || (size_t)left >= value_count || (size_t)right >= value_count ||
+     values[left] == nullptr || values[right] == nullptr)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT,
+                     "XLIL binary integer instruction references an unavailable value");
+  LLVMValueRef lowered =
+      lower_lil_binary_integer_op(builder, xs_lil_block_instruction_kind(block, index), values[left], values[right]);
+  if(lowered == nullptr)
+    return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL binary integer instruction");
+  values[result] = lowered;
+  return XS_BACKEND_OK;
+}
+
 static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilderRef builder, const XsLilBlock *block,
                                              size_t index, LLVMValueRef *values, size_t value_count,
                                              XsBackendError *error)
@@ -445,59 +542,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     values[result] = LLVMConstInt(type, xs_lil_block_instruction_bool(block, index) ? 1 : 0, false);
     return XS_BACKEND_OK;
   }
-  if(kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_MUL_I64 ||
-     kind == XS_LIL_INSTRUCTION_DIV_I64 || kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_EQ_I64 ||
-     kind == XS_LIL_INSTRUCTION_AND_I64 || kind == XS_LIL_INSTRUCTION_OR_I64 || kind == XS_LIL_INSTRUCTION_SHL_I64 ||
-     kind == XS_LIL_INSTRUCTION_SHR_I64 || kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_LT_I64 ||
-     kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 || kind == XS_LIL_INSTRUCTION_GE_I64 ||
-     kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 || kind == XS_LIL_INSTRUCTION_MUL_I32 ||
-     kind == XS_LIL_INSTRUCTION_DIV_I32 || kind == XS_LIL_INSTRUCTION_REM_I32 || kind == XS_LIL_INSTRUCTION_AND_I32 ||
-     kind == XS_LIL_INSTRUCTION_OR_I32 || kind == XS_LIL_INSTRUCTION_SHL_I32 || kind == XS_LIL_INSTRUCTION_SHR_I32 ||
-     kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
-     kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32)
-  {
-    XsLilValueId left = xs_lil_block_instruction_left(block, index);
-    XsLilValueId right = xs_lil_block_instruction_right(block, index);
-    if((size_t)result >= value_count || (size_t)left >= value_count || (size_t)right >= value_count ||
-       values[left] == nullptr || values[right] == nullptr)
-      return set_error(error, XS_BACKEND_INVALID_ARGUMENT,
-                       "XLIL binary integer instruction references an unavailable value");
-    LLVMValueRef lowered = nullptr;
-    if(kind == XS_LIL_INSTRUCTION_ADD_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32)
-      lowered = LLVMBuildAdd(builder, values[left], values[right], "add");
-    else if(kind == XS_LIL_INSTRUCTION_SUB_I64 || kind == XS_LIL_INSTRUCTION_SUB_I32)
-      lowered = LLVMBuildSub(builder, values[left], values[right], "sub");
-    else if(kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_MUL_I32)
-      lowered = LLVMBuildMul(builder, values[left], values[right], "mul");
-    else if(kind == XS_LIL_INSTRUCTION_DIV_I64 || kind == XS_LIL_INSTRUCTION_DIV_I32)
-      lowered = LLVMBuildSDiv(builder, values[left], values[right], "div");
-    else if(kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_REM_I32)
-      lowered = LLVMBuildSRem(builder, values[left], values[right], "rem");
-    else if(kind == XS_LIL_INSTRUCTION_AND_I64 || kind == XS_LIL_INSTRUCTION_AND_I32)
-      lowered = LLVMBuildAnd(builder, values[left], values[right], "and");
-    else if(kind == XS_LIL_INSTRUCTION_OR_I64 || kind == XS_LIL_INSTRUCTION_OR_I32)
-      lowered = LLVMBuildOr(builder, values[left], values[right], "or");
-    else if(kind == XS_LIL_INSTRUCTION_SHL_I64 || kind == XS_LIL_INSTRUCTION_SHL_I32)
-      lowered = LLVMBuildShl(builder, values[left], values[right], "shl");
-    else if(kind == XS_LIL_INSTRUCTION_SHR_I64 || kind == XS_LIL_INSTRUCTION_SHR_I32)
-      lowered = LLVMBuildAShr(builder, values[left], values[right], "shr");
-    else if(kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_EQ_I32)
-      lowered = LLVMBuildICmp(builder, LLVMIntEQ, values[left], values[right], "eq");
-    else if(kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_NE_I32)
-      lowered = LLVMBuildICmp(builder, LLVMIntNE, values[left], values[right], "ne");
-    else if(kind == XS_LIL_INSTRUCTION_LT_I64 || kind == XS_LIL_INSTRUCTION_LT_I32)
-      lowered = LLVMBuildICmp(builder, LLVMIntSLT, values[left], values[right], "lt");
-    else if(kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_LE_I32)
-      lowered = LLVMBuildICmp(builder, LLVMIntSLE, values[left], values[right], "le");
-    else if(kind == XS_LIL_INSTRUCTION_GT_I64 || kind == XS_LIL_INSTRUCTION_GT_I32)
-      lowered = LLVMBuildICmp(builder, LLVMIntSGT, values[left], values[right], "gt");
-    else
-      lowered = LLVMBuildICmp(builder, LLVMIntSGE, values[left], values[right], "ge");
-    if(lowered == nullptr)
-      return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL binary integer instruction");
-    values[result] = lowered;
-    return XS_BACKEND_OK;
-  }
+  if(is_lil_binary_integer(kind))
+    return lower_lil_binary_integer(builder, block, index, values, value_count, error);
   if(kind == XS_LIL_INSTRUCTION_CALL)
   {
     const char *callee_name = xs_lil_block_instruction_callee(block, index);

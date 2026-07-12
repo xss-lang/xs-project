@@ -337,6 +337,7 @@ static void test_constant_optimizer_folds_i64_add(void)
   XsMirValueId remainder = 0;
   XsMirValueId bit_and = 0;
   XsMirValueId bit_or = 0;
+  XsMirValueId bit_xor = 0;
   XsMirValueId shifted_left = 0;
   XsMirValueId shifted_right = 0;
   XsMirValueId equal = 0;
@@ -420,6 +421,7 @@ static void test_constant_optimizer_folds_i32_family(void)
   XsMirValueId remainder = 0;
   XsMirValueId bit_and = 0;
   XsMirValueId bit_or = 0;
+  XsMirValueId bit_xor = 0;
   XsMirValueId shifted_left = 0;
   XsMirValueId shifted_right = 0;
   XsMirValueId equal = 0;
@@ -433,16 +435,17 @@ static void test_constant_optimizer_folds_i32_family(void)
   CHECK(xs_mir_block_rem_i32(entry, quotient, two, &remainder, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_and_i32(entry, sum, product, &bit_and, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_or_i32(entry, bit_and, sum, &bit_or, &error) == XS_MIR_OK);
-  CHECK(xs_mir_block_shl_i32(entry, bit_or, one, &shifted_left, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_xor_i32(entry, bit_or, sum, &bit_xor, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shl_i32(entry, bit_xor, one, &shifted_left, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_shr_i32(entry, shifted_left, one, &shifted_right, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_eq_i32(entry, shifted_right, sum, &equal, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_gt_i32(entry, shifted_right, two, &greater, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_set_return_value(entry, shifted_right, &error) == XS_MIR_OK);
   CHECK(xs_mir_optimize_module_constants(module, &error) == XS_MIR_OK);
-  for(size_t index = 2; index <= 10; ++index)
+  for(size_t index = 2; index <= 11; ++index)
     CHECK(xs_mir_block_instruction_kind(entry, index) == XS_MIR_INSTRUCTION_CONST_I32);
-  CHECK(xs_mir_block_instruction_kind(entry, 11) == XS_MIR_INSTRUCTION_CONST_BOOL);
   CHECK(xs_mir_block_instruction_kind(entry, 12) == XS_MIR_INSTRUCTION_CONST_BOOL);
+  CHECK(xs_mir_block_instruction_kind(entry, 13) == XS_MIR_INSTRUCTION_CONST_BOOL);
 
   FILE *stream = tmpfile();
   if(stream == nullptr)
@@ -457,8 +460,8 @@ static void test_constant_optimizer_folds_i32_family(void)
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "v2 = const.i32 3\n") != nullptr);
-  CHECK(strstr(buffer, "v10 = const.i32 3\n") != nullptr);
-  CHECK(strstr(buffer, "v11 = const.bool true\n") != nullptr);
+  CHECK(strstr(buffer, "v11 = const.i32 0\n") != nullptr);
+  CHECK(strstr(buffer, "v12 = const.bool false\n") != nullptr);
   fclose(stream);
   xs_mir_module_destroy(module);
 }
@@ -640,6 +643,7 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   XsMirValueId remainder = 0;
   XsMirValueId bit_and = 0;
   XsMirValueId bit_or = 0;
+  XsMirValueId bit_xor = 0;
   XsMirValueId shifted_left = 0;
   XsMirValueId shifted_right = 0;
   CHECK(xs_mir_block_add_const_i32(entry, 1, &one, &error) == XS_MIR_OK);
@@ -650,7 +654,8 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   CHECK(xs_mir_block_rem_i32(entry, quotient, two, &remainder, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_and_i32(entry, sum, quotient, &bit_and, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_or_i32(entry, bit_and, remainder, &bit_or, &error) == XS_MIR_OK);
-  CHECK(xs_mir_block_shl_i32(entry, bit_or, one, &shifted_left, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_xor_i32(entry, bit_or, sum, &bit_xor, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_shl_i32(entry, bit_xor, one, &shifted_left, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_shr_i32(entry, shifted_left, one, &shifted_right, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_set_return_value(entry, shifted_right, &error) == XS_MIR_OK);
   CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
@@ -678,8 +683,9 @@ static void test_xlil_body_lowering_for_i32_arithmetic_return(void)
   CHECK(strstr(buffer, "%r5:i32 = rem.i32 %r4, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r6:i32 = and.i32 %r2, %r4\n") != nullptr);
   CHECK(strstr(buffer, "%r7:i32 = or.i32 %r6, %r5\n") != nullptr);
-  CHECK(strstr(buffer, "%r8:i32 = shl.i32 %r7, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r9:i32 = shr.i32 %r8, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r8:i32 = xor.i32 %r7, %r2\n") != nullptr);
+  CHECK(strstr(buffer, "%r9:i32 = shl.i32 %r8, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r10:i32 = shr.i32 %r9, %r0\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(xlil);
   xs_mir_module_destroy(mir);

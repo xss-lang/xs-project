@@ -124,6 +124,11 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
                instruction->operand_right) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR or.i64 instruction");
     return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_XOR_I64:
+    if(fprintf(stream, "  v%u = xor.i64 v%u, v%u\n", instruction->result, instruction->operand_left,
+               instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR xor.i64 instruction");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_SHL_I64:
     if(fprintf(stream, "  v%u = shl.i64 v%u, v%u\n", instruction->result, instruction->operand_left,
                instruction->operand_right) < 0)
@@ -198,6 +203,11 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
     if(fprintf(stream, "  v%u = or.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
                instruction->operand_right) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR or.i32 instruction");
+    return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_XOR_I32:
+    if(fprintf(stream, "  v%u = xor.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
+               instruction->operand_right) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR xor.i32 instruction");
     return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_SHL_I32:
     if(fprintf(stream, "  v%u = shl.i32 v%u, v%u\n", instruction->result, instruction->operand_left,
