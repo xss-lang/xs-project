@@ -22,6 +22,7 @@ source-to-native executable pipeline.
   to remove the dead branch.
 - Source-native `if` expressions with a syntactically constant boolean condition now lower only the selected branch in the
   current narrow native slice.
+- Source-native `if` expressions with constant i32 literal/arithmetic comparisons now also lower only the selected branch.
 
 ### Changed
 

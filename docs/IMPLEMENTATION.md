@@ -95,7 +95,8 @@ The documented compilation order is preserved:
 - Plain source native builds support the first expression slice for top-level `fn main() => Long`: i32-range integer
   literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `<<`, `>>`, and one top-level `if` expression with a bool literal, unary `!`, or i32
   comparison condition. `!=` and unary `!` are represented by lowering the nested condition and swapping branch targets.
-  Syntactically constant bool conditions, such as `false` or `!true`, lower only the selected branch in this slice.
+  Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower only the
+  selected branch in this slice.
   This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse` linking.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
