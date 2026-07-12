@@ -93,8 +93,9 @@ The documented compilation order is preserved:
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
 - Plain source native builds support the first expression slice for top-level `fn main() => Long`: i32-range integer
-  literals, `+`, `-`, `*`, and one top-level `if` expression with an i32 comparison condition. This lowers through C MIR,
-  XLIL, LLVM IR, object emission, and native `.xse` linking.
+  literals, `+`, `-`, `*`, and one top-level `if` expression with an i32 comparison condition. `!=` is represented by
+  lowering equality and swapping branch targets. This lowers through C MIR, XLIL, LLVM IR, object emission, and native
+  `.xse` linking.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.

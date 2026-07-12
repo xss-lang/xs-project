@@ -153,8 +153,9 @@ static const XsSyntaxNode *single_block_expression(const XsSyntaxNode *block)
 }
 
 static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
-                                  XsMirValueId *result, XsMirError *error)
+                                  XsMirValueId *result, bool *invert, XsMirError *error)
 {
+  *invert = false;
   if(expression->kind == XS_SYNTAX_EXPR_BINARY && expression->child_count == 3)
   {
     XsMirValueId left = 0;
@@ -165,6 +166,9 @@ static bool lower_bool_expression(XsMirBlock *entry, const XsSyntaxNode *express
     switch(expression->token_kind)
     {
     case XS_TOKEN_EQUAL:
+      return xs_mir_block_eq_i32(entry, left, right, result, error) == XS_MIR_OK;
+    case XS_TOKEN_NOT_EQUAL:
+      *invert = true;
       return xs_mir_block_eq_i32(entry, left, right, result, error) == XS_MIR_OK;
     case XS_TOKEN_LESS:
       return xs_mir_block_lt_i32(entry, left, right, result, error) == XS_MIR_OK;
@@ -234,11 +238,13 @@ static bool lower_if_return(XsMirFunction *function, XsMirBlock *entry, const Xs
   XsMirBlock *then_block = nullptr;
   XsMirBlock *else_block = nullptr;
   XsMirValueId condition = 0;
-  if(!lower_bool_expression(entry, expression->children[0], diagnostics, &condition, error))
+  bool invert_condition = false;
+  if(!lower_bool_expression(entry, expression->children[0], diagnostics, &condition, &invert_condition, error))
     return false;
   if(xs_mir_function_append_block(function, "then", &then_block, error) != XS_MIR_OK ||
      xs_mir_function_append_block(function, "else", &else_block, error) != XS_MIR_OK ||
-     xs_mir_block_set_branch(entry, condition, then_block, else_block, error) != XS_MIR_OK)
+     xs_mir_block_set_branch(entry, condition, invert_condition ? else_block : then_block,
+                             invert_condition ? then_block : else_block, error) != XS_MIR_OK)
     return false;
   XsMirValueId then_value = 0;
   XsMirValueId else_value = 0;

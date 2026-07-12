@@ -94,8 +94,8 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainIf MissingMain NonLiteralMain OutOfRangeMain
-                       ParameterizedMain WrongReturnMain)
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainIf MainIfNotEqual MissingMain NonLiteralMain
+                       OutOfRangeMain ParameterizedMain WrongReturnMain)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -135,6 +135,15 @@ add_test(NAME source_native_if_artifacts COMMAND xs_xse_artifact_tests ${XS_SOUR
                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.o
                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xse 7)
 set_tests_properties(source_native_if_artifacts PROPERTIES DEPENDS source_native_if_build TIMEOUT 5)
+add_test(NAME source_native_if_not_equal_build COMMAND xs build -file
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfNotEqual.xs)
+set_tests_properties(source_native_if_not_equal_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_if_not_equal_artifacts COMMAND xs_xse_artifact_tests
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfNotEqual.ll
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfNotEqual.o
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfNotEqual.xse 7)
+set_tests_properties(source_native_if_not_equal_artifacts PROPERTIES DEPENDS source_native_if_not_equal_build TIMEOUT 5)
 add_test(NAME project_native_build COMMAND xs build -proj ${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj)
 set_tests_properties(project_native_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
