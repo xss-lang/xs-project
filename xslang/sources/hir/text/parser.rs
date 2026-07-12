@@ -307,6 +307,15 @@ impl Parser<'_>
                                        right: Box::new(right),
                                        span: span() });
     }
+    if rest == "propagate"
+    {
+      self.index += 1;
+      let value = self.expression()
+                      .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                       span: span() });
+      return Some(Expression::ResultPropagation { value: Box::new(value),
+                                                  span: span() });
+    }
     None
   }
 

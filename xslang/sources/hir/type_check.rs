@@ -89,6 +89,10 @@ pub enum Expression
     right: Box<Expression>,
     span: Span,
   },
+  ResultPropagation
+  {
+    value: Box<Expression>, span: Span
+  },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -127,6 +131,7 @@ pub enum DiagnosticCode
   ImmutableAssignment,
   UnknownLocal,
   BinaryTypeMismatch,
+  ResultPropagationUnsupported,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -240,6 +245,15 @@ impl TypeChecker
                                  span: *span });
         }
       }
+      Expression::ResultPropagation { value,
+                                      span, } =>
+      {
+        self.check_expression(value);
+        self.diagnostics
+            .push(Diagnostic { code: DiagnosticCode::ResultPropagationUnsupported,
+                               message: "Result propagation with '@' is not type-checked yet".to_string(),
+                               span: *span });
+      }
       Expression::Local { name,
                           span, } =>
       {
@@ -304,6 +318,7 @@ impl TypeChecker
         }
       }
       Expression::Assign { .. } => self.check_expression(expression),
+      Expression::ResultPropagation { .. } => self.check_expression(expression),
       Expression::Literal { .. } =>
       {}
     }
@@ -320,6 +335,7 @@ impl TypeChecker
                            left,
                            right,
                            .. } => self.binary_expression_type(*operator, left, right),
+      Expression::ResultPropagation { .. } => None,
     }
   }
 
@@ -576,5 +592,22 @@ mod tests
     let diagnostics = TypeChecker::new().check_function(&function);
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::BinaryTypeMismatch);
+  }
+
+  #[test]
+  fn rejects_result_propagation_until_semantics_exist()
+  {
+    let function = Function { name: "main".to_string(),
+                              return_type: None,
+                              locals: vec![local("work", primitive(PrimitiveType::Int), false)],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                    span: span(4, 8) }),
+                                span: span(4, 9),
+                              })] };
+
+    let diagnostics = TypeChecker::new().check_function(&function);
+
+    assert_eq!(diagnostics[0].code, DiagnosticCode::ResultPropagationUnsupported);
   }
 }

@@ -244,6 +244,11 @@ impl HirToMirLowerer
         self.unsupported_expression(expression);
         None
       }
+      Expression::ResultPropagation { .. } =>
+      {
+        self.unsupported_expression(expression);
+        None
+      }
     }
   }
 
@@ -440,7 +445,7 @@ impl HirToMirLowerer
         BinaryOperator::Greater |
         BinaryOperator::GreaterEqual => Some(XlilType::BOOL),
       },
-      Expression::Literal { .. } | Expression::Assign { .. } => None,
+      Expression::Literal { .. } | Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
 
@@ -614,7 +619,8 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Literal { span, .. } |
     Expression::Local { span, .. } |
     Expression::Assign { span, .. } |
-    Expression::Binary { span, .. } => *span,
+    Expression::Binary { span, .. } |
+    Expression::ResultPropagation { span, .. } => *span,
   }
 }
 
@@ -890,5 +896,24 @@ mod tests
 
     assert!(diagnostics.iter()
                        .any(|diagnostic| diagnostic.code == DiagnosticCode::UnsupportedType));
+  }
+
+  #[test]
+  fn rejects_result_propagation_until_lowering_exists()
+  {
+    let function = Function { name: "TryWork".to_string(),
+                              return_type: None,
+                              locals: vec![local("work", primitive(PrimitiveType::Int), false)],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                    span: span(4, 8) }),
+                                span: span(4, 9),
+                              })] };
+
+    let diagnostics = HirToMirLowerer::new().lower_function(&function)
+                                            .expect_err("Result propagation lowering is intentionally deferred");
+
+    assert!(diagnostics.iter()
+                       .any(|diagnostic| diagnostic.code == DiagnosticCode::UnsupportedExpression));
   }
 }

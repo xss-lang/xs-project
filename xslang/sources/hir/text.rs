@@ -237,6 +237,7 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::ImmutableAssignment => "immutable_assignment",
     TypeDiagnosticCode::UnknownLocal => "unknown_local",
     TypeDiagnosticCode::BinaryTypeMismatch => "binary_type_mismatch",
+    TypeDiagnosticCode::ResultPropagationUnsupported => "result_propagation_unsupported",
   }
 }
 
@@ -251,6 +252,7 @@ fn parse_type_diagnostic_code(name: &str,
     "immutable_assignment" => Some(TypeDiagnosticCode::ImmutableAssignment),
     "unknown_local" => Some(TypeDiagnosticCode::UnknownLocal),
     "binary_type_mismatch" => Some(TypeDiagnosticCode::BinaryTypeMismatch),
+    "result_propagation_unsupported" => Some(TypeDiagnosticCode::ResultPropagationUnsupported),
     _ =>
     {
       diagnostics.push(XhirParseDiagnostic { line,
@@ -388,6 +390,11 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       write_expression(output, left, indent + 2);
       let _ = writeln!(output, "{pad}  right");
       write_expression(output, right, indent + 2);
+    }
+    Expression::ResultPropagation { value, .. } =>
+    {
+      let _ = writeln!(output, "{pad}propagate");
+      write_expression(output, value, indent + 1);
     }
   }
 }
@@ -591,6 +598,28 @@ mod tests
                                                                                         BinaryOperator::LessEqual,
                                                                                       .. }),
                                                           .. }));
+  }
+
+  #[test]
+  fn roundtrips_result_propagation_expression()
+  {
+    let function = Function { name: "TryWork".to_string(),
+                              return_type: None,
+                              locals: vec![Local { name: "work".to_string(),
+                                                   ty: Type::Primitive(PrimitiveType::Int),
+                                                   mutable: false,
+                                                   span: span() }],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(),
+                                                                    span: span() }),
+                                span: span(),
+                              })] };
+
+    let text = function_to_xhir(&function);
+    let parsed = parse_xhir_function(&text).expect("propagation XHIR should parse");
+
+    assert!(text.contains("propagate"));
+    assert!(matches!(&parsed.body[0], Statement::Expr(Expression::ResultPropagation { .. })));
   }
 
   #[test]

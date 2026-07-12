@@ -21,6 +21,8 @@ source-to-native executable pipeline.
 - The C23 lexer/parser now accepts postfix `@` as a structural Result propagation expression; semantic checking and lowering
   are intentionally left for later Result work, and HIR expression checking reports that gap explicitly instead of silently
   accepting it.
+- Rust `xslang` XHIR now models and round-trips Result propagation with a `propagate` expression record; type checking and
+  HIR-to-MIR lowering report explicit unsupported diagnostics until Result semantics are implemented.
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the

@@ -102,6 +102,7 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                          left,
                          right,
                          .. } => infer_binary_expression_type(*operator, left, right, locals),
+    Expression::ResultPropagation { .. } => None,
   }
 }
 
