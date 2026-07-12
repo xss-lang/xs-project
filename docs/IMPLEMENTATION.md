@@ -274,6 +274,10 @@ as a pipeline ordering error and is rejected instead of becoming a backend primi
 For `xslang` propagation checking and desugaring, single-argument `Result<T>`/`Result.Result<T>` uses the standard
 `Result.Error` error type.
 
+The MIR lowerer has a separate `DesugaredFunction` entry point. It can lower desugared functions that contain only currently
+supported expression forms, but explicit ResultMatch nodes remain deferred until Result-aware MIR control-flow and return
+construction are implemented.
+
 ### Macro validation and scope resolution
 
 - Macro matcher variables, repetition depths, and expansion variables are validated.

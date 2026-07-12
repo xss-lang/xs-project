@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 
 use super::async_check::Span;
+use super::result_desugar::{DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::type_check::{BinaryOperator, Expression, Function, Literal, PrimitiveType, Statement, Type};
 use crate::mir;
 use crate::xlil::{Type as XlilType, TypeKind};
@@ -85,6 +86,93 @@ impl HirToMirLowerer
     else
     {
       Err(self.diagnostics)
+    }
+  }
+
+  pub fn lower_desugared_function(mut self, function: &DesugaredFunction) -> Result<mir::Function, Vec<Diagnostic>>
+  {
+    let mut body = Vec::with_capacity(function.body.len());
+    for statement in &function.body
+    {
+      if let Some(statement) = self.surface_statement_from_desugared(statement)
+      {
+        body.push(statement);
+      }
+    }
+    if !self.diagnostics.is_empty()
+    {
+      return Err(self.diagnostics);
+    }
+    let surface = Function { name: function.name.clone(),
+                             return_type: function.return_type.clone(),
+                             locals: function.locals.clone(),
+                             body };
+    self.lower_function(&surface)
+  }
+
+  fn surface_statement_from_desugared(&mut self, statement: &DesugaredStatement) -> Option<Statement>
+  {
+    match statement
+    {
+      DesugaredStatement::Let { local,
+                                initializer, } =>
+      {
+        let initializer = initializer.as_ref()
+                                     .and_then(|expression| self.surface_expression_from_desugared(expression));
+        Some(Statement::Let { local: local.clone(),
+                              initializer })
+      }
+      DesugaredStatement::Expr(expression) => self.surface_expression_from_desugared(expression).map(Statement::Expr),
+      DesugaredStatement::Return { value,
+                                   span, } =>
+      {
+        let value = value.as_ref()
+                         .and_then(|expression| self.surface_expression_from_desugared(expression));
+        Some(Statement::Return { value,
+                                 span: *span })
+      }
+      DesugaredStatement::Panic { span } => Some(Statement::Panic { span: *span }),
+    }
+  }
+
+  fn surface_expression_from_desugared(&mut self, expression: &DesugaredExpression) -> Option<Expression>
+  {
+    match expression
+    {
+      DesugaredExpression::Literal { literal,
+                                     span, } => Some(Expression::Literal { literal: literal.clone(),
+                                                                           span: *span }),
+      DesugaredExpression::Local { name,
+                                   span, } => Some(Expression::Local { name: name.clone(),
+                                                                       span: *span }),
+      DesugaredExpression::Assign { target,
+                                    value,
+                                    span, } =>
+      {
+        self.surface_expression_from_desugared(value)
+            .map(|value| Expression::Assign { target: target.clone(),
+                                              value: Box::new(value),
+                                              span: *span })
+      }
+      DesugaredExpression::Binary { operator,
+                                    left,
+                                    right,
+                                    span, } =>
+      {
+        let left = self.surface_expression_from_desugared(left)?;
+        let right = self.surface_expression_from_desugared(right)?;
+        Some(Expression::Binary { operator: *operator,
+                                  left: Box::new(left),
+                                  right: Box::new(right),
+                                  span: *span })
+      }
+      DesugaredExpression::ResultMatch { span, .. } =>
+      {
+        self.report(DiagnosticCode::UnsupportedExpression,
+                    "desugared Result match lowering awaits MIR Result control-flow support",
+                    *span);
+        None
+      }
     }
   }
 
@@ -625,6 +713,9 @@ const fn expression_span(expression: &Expression) -> Span
 }
 
 #[cfg(test)]
+mod desugar_tests;
+
+#[cfg(test)]
 mod tests
 {
   use super::*;
@@ -896,25 +987,5 @@ mod tests
 
     assert!(diagnostics.iter()
                        .any(|diagnostic| diagnostic.code == DiagnosticCode::UnsupportedType));
-  }
-
-  #[test]
-  fn rejects_surface_result_propagation_without_desugar()
-  {
-    let function = Function { name: "TryWork".to_string(),
-                              return_type: None,
-                              locals: vec![local("work", primitive(PrimitiveType::Int), false)],
-                              body: vec![Statement::Expr(Expression::ResultPropagation {
-                                value: Box::new(Expression::Local { name: "work".to_string(),
-                                                                    span: span(4, 8) }),
-                                span: span(4, 9),
-                              })] };
-
-    let diagnostics =
-      HirToMirLowerer::new().lower_function(&function)
-                            .expect_err("surface Result propagation must be desugared before MIR lowering");
-
-    assert!(diagnostics.iter()
-                       .any(|diagnostic| diagnostic.code == DiagnosticCode::UnsupportedExpression));
   }
 }

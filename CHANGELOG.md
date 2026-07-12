@@ -28,6 +28,8 @@ source-to-native executable pipeline.
 - Rust `xslang` now includes an explicit Result propagation desugar pass. Surface `value@` is translated into a
   Result-match/early-return intent model before MIR lowering work begins, so backend stages do not need to treat `@` as a
   primitive operation.
+- Rust `xslang` MIR lowering now exposes a `DesugaredFunction` entry point. Desugared functions without ResultMatch lower
+  through the existing HIR path, while explicit ResultMatch nodes are rejected until MIR Result control-flow lowering exists.
 - Rust `xslang` treats single-argument `Result<T>`/`Result.Result<T>` as using the standard `Result.Error` error type for
   propagation type checking and desugaring.
 - The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result.Result<T>`,
