@@ -93,7 +93,7 @@ The documented compilation order is preserved:
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
 - Plain source native builds support the first expression slice for top-level `fn main() => Long`: i32-range integer
-  literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, and one top-level `if` expression with a bool literal, unary `!`, or i32
+  literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, and one top-level `if` expression with a bool literal, unary `!`, or i32
   comparison condition. `!=` and unary `!` are represented by lowering the nested condition and swapping branch targets.
   This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse` linking.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
@@ -386,7 +386,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native `.xse` executable beside the input.
   Native direct XLIL requires exactly one defined
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
-  `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `eq.i32`, `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `add.i64`,
+  `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `eq.i32`, `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `add.i64`,
   `sub.i64`, `mul.i64`, `eq.i64`, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
   source slice: one top-level `main` returning `Long` with one return statement whose expression is built from i32-range

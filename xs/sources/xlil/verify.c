@@ -79,7 +79,8 @@ static bool is_binary_i32(XsLilInstructionKind kind)
 {
   return kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
          kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_DIV_I32 ||
-         kind == XS_LIL_INSTRUCTION_REM_I32 ||
+         kind == XS_LIL_INSTRUCTION_REM_I32 || kind == XS_LIL_INSTRUCTION_AND_I32 ||
+         kind == XS_LIL_INSTRUCTION_OR_I32 ||
          kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
          kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
 }

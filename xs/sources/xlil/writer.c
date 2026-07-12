@@ -78,6 +78,14 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:i32 = rem.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL rem.i32 instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_AND_I32 &&
+       fprintf(stream, "  %%r%u:i32 = and.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
+               instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL and.i32 instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_OR_I32 &&
+       fprintf(stream, "  %%r%u:i32 = or.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
+               instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL or.i32 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_EQ_I32 &&
        fprintf(stream, "  %%r%u:bool = eq.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)

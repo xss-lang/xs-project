@@ -168,7 +168,7 @@ static void test_function_body_branch_if_text_writer(void)
   }
   CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
-  char buffer[512] = {0};
+  char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "bb0.entry:\n  %r0:bool = const.bool true\n  br_if %r0, bb1, bb2\n") != nullptr);
@@ -294,7 +294,7 @@ static void test_text_parser_round_trips_branch_if_subset(void)
   }
   CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
-  char buffer[512] = {0};
+  char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "br_if %r0, bb1, bb2\nbb1.then:\n  ret\nbb2.else:\n  ret\n.end\n") != nullptr);
@@ -332,7 +332,7 @@ static void test_text_parser_round_trips_parameters_and_calls(void)
   }
   CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
-  char buffer[512] = {0};
+  char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, ".param %r0:i64\n") != nullptr);
@@ -359,7 +359,7 @@ static void test_text_parser_round_trips_binary_i64_instructions(void)
   }
   CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
-  char buffer[512] = {0};
+  char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "%r2:i64 = add.i64 %r0, %r1\n") != nullptr);
@@ -400,9 +400,10 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
                       "  %r0:i32 = const.i32 9\n  %r1:i32 = const.i32 3\n  %r2:i32 = add.i32 %r0, %r1\n"
                       "  %r3:i32 = sub.i32 %r2, %r1\n  %r4:i32 = mul.i32 %r3, %r1\n"
                       "  %r5:i32 = div.i32 %r4, %r1\n  %r6:i32 = rem.i32 %r5, %r1\n"
-                      "  %r7:bool = eq.i32 %r6, %r0\n  %r8:bool = ne.i32 %r6, %r1\n"
-                      "  %r9:bool = lt.i32 %r1, %r0\n  %r10:bool = le.i32 %r1, %r0\n"
-                      "  %r11:bool = gt.i32 %r0, %r1\n  %r12:bool = ge.i32 %r0, %r1\n  ret %r6\n.end\n";
+                      "  %r7:i32 = and.i32 %r0, %r1\n  %r8:i32 = or.i32 %r7, %r1\n"
+                      "  %r9:bool = eq.i32 %r6, %r0\n  %r10:bool = ne.i32 %r6, %r1\n"
+                      "  %r11:bool = lt.i32 %r1, %r0\n  %r12:bool = le.i32 %r1, %r0\n"
+                      "  %r13:bool = gt.i32 %r0, %r1\n  %r14:bool = ge.i32 %r0, %r1\n  ret %r8\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("arithmetic32.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
@@ -415,7 +416,7 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
   }
   CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
   CHECK(fseek(stream, 0, SEEK_SET) == 0);
-  char buffer[512] = {0};
+  char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, "%r2:i32 = add.i32 %r0, %r1\n") != nullptr);
@@ -423,12 +424,14 @@ static void test_text_parser_round_trips_binary_i32_instructions(void)
   CHECK(strstr(buffer, "%r4:i32 = mul.i32 %r3, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r5:i32 = div.i32 %r4, %r1\n") != nullptr);
   CHECK(strstr(buffer, "%r6:i32 = rem.i32 %r5, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r7:bool = eq.i32 %r6, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r8:bool = ne.i32 %r6, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r9:bool = lt.i32 %r1, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r10:bool = le.i32 %r1, %r0\n") != nullptr);
-  CHECK(strstr(buffer, "%r11:bool = gt.i32 %r0, %r1\n") != nullptr);
-  CHECK(strstr(buffer, "%r12:bool = ge.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r7:i32 = and.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r8:i32 = or.i32 %r7, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r9:bool = eq.i32 %r6, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r10:bool = ne.i32 %r6, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r11:bool = lt.i32 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r12:bool = le.i32 %r1, %r0\n") != nullptr);
+  CHECK(strstr(buffer, "%r13:bool = gt.i32 %r0, %r1\n") != nullptr);
+  CHECK(strstr(buffer, "%r14:bool = ge.i32 %r0, %r1\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }

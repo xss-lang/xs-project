@@ -28,6 +28,7 @@ source-to-native executable pipeline.
   first supported source-native entry slice: top-level `main` returning `Long` with i32-range literals, `+`, `-`, `*`, and
   one top-level `if` expression over i32 comparisons.
 - XLIL, MIR, LLVM lowering, and source-native `if` conditions now support signed `ne.i32` inequality.
+- XLIL, MIR, LLVM lowering, and source-native `Long` return expressions now support bitwise `and.i32` and `or.i32`.
 - C MIR to XLIL lowering now supports `const.bool`, and source-native `if` conditions accept `true`/`false`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `div.i32`.
 - XLIL, MIR, LLVM lowering, and the source-native slice now support signed `rem.i32`.
