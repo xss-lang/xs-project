@@ -149,9 +149,10 @@ The documented compilation order is preserved:
 - In data syntax, `set.field{value}` is represented as `XS_SYNTAX_EXPR_FIELD_SET`, while `value get.field` is represented as
   member access.
 - In stdio syntax, `[target]` I/O targets are represented as `XS_SYNTAX_EXPR_IO_TARGET`.
-- Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 frontend
-  keeps this as syntax plus explicit diagnostics for now; full propagation control-flow lowering is handled by later HIR/MIR
-  work.
+- Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 HIR
+  expression checker now requires an enclosing function whose return type is `Result.Result<T, E>` or shorthand
+  `Result<T, E>`. It does not yet prove that the propagated operand itself has a matching Result type; full propagation
+  control-flow lowering is handled by later HIR/MIR work.
 - `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
   `continue`, and `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous
   to Rust's `let _ = expression;`.
@@ -273,6 +274,10 @@ only inside async function bodies. `xslang` also carries the first Result propag
 type `T`, requires an enclosing `Result<_, E>` return type, and remains deferred at HIR-to-MIR lowering until error-return
 control-flow lowering exists. The crate is not wired into the C23 driver yet; integration will use a bulk structural syntax
 transfer boundary so one compiler layer is not split across C and Rust.
+
+The C23 HIR prototype mirrors only the enclosing-return part of that rule: `@` is accepted inside functions returning
+`Result.Result<T, E>`/`Result<T, E>` and rejected elsewhere. Operand success/error compatibility remains the Rust
+compiler-core direction and later C/Rust integration work.
 
 `@` is a surface-language sugar. In `xslang`, the Result desugar pass translates it into an explicit Result-match and
 early-return intent model before MIR lowering. If a raw `ResultPropagation` expression reaches MIR lowering, that is treated

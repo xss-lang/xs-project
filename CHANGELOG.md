@@ -19,6 +19,8 @@ source-to-native executable pipeline.
   value constructors canonically named `STD.Optional.None` and `STD.Optional.Some(...)`.
 - Legacy exception syntax is now deprecated. `throws`, `throw`, and `try` remain parseable but produce warnings; new code
   should use `Result.Result<T, E>` and postfix `@` propagation.
+- The C23 HIR expression checker now accepts postfix `@` inside functions returning `Result.Result<T, E>` or
+  `Result<T, E>` and rejects it outside Result-returning functions.
 
 ## 0.0.5 - 2026-07-12
 
