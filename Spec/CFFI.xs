@@ -12,13 +12,16 @@ imports CFFI;
 
 // extern function declarations
 
-#[LinkName("puts")]
-#[NoUnwind]
-extern "C" fn puts(text: CFFI.CStr) => Int;
+#[repr(C)]
+extern "C" {
+    #[LinkName("puts")]
+    #[NoUnwind]
+    fn puts(text: CFFI.CStr) => Int;
 
-#[LinkName("strlen")]
-#[NoUnwind]
-extern "C" fn strlen(text: CFFI.CStr) => ULong;
+    #[LinkName("strlen")]
+    #[NoUnwind]
+    fn strlen(text: CFFI.CStr) => ULong;
+}
 
 
 fn PrintLine(message: Str) => Result.Result<(), Result.Error> {
@@ -32,39 +35,48 @@ fn PrintLine(message: Str) => Result.Result<(), Result.Error> {
 
 #[LinkLibrary("c")]
 #[Header("stdio.h")]
-extern "C" fn printf(format: CFFI.CStr, args: CFFI.VarArgs) => Int;
+#[repr(C)]
+extern "C" {
+    fn printf(format: CFFI.CStr, args: CFFI.VarArgs) => Int;
+}
 
 #[LinkLibrary("m")]
 #[Header("math.h")]
-#[LinkName("cos")]
-extern "C" fn c_cos(value: Double) => Double;
+#[repr(C)]
+extern "C" {
+    #[LinkName("cos")]
+    fn c_cos(value: Double) => Double;
+}
 
 
 // explicit calling convention and symbol controls
 
 #[Abi("C")]
 #[CallingConvention(Cdecl)]
-#[ExportName("xs_plugin_init")]
-#[SymbolVisibility(Default)]
-extern "C" fn plugin_init() => Int;
+#[repr(C)]
+extern "C" {
+    #[ExportName("xs_plugin_init")]
+    #[SymbolVisibility(Default)]
+    fn plugin_init() => Int;
+}
 
 
 // C layout types
 
-#[Repr(C)]
+#[repr(C)]
 data CPoint {
     x: Double,
     y: Double,
 }
 
-#[Repr(C)]
-#[Packed(1)]
+#[repr(C)]
+#[packed(1)]
 data PackedHeader {
     tag: UShort,
     length: UInt,
 }
 
-#[Transparent]
+#[transparent]
 data FileDescriptor {
     value: Int,
 }
@@ -73,10 +85,12 @@ data FileDescriptor {
 // pointers, ownership, and unsafe boundaries
 
 #[Unsafe]
-extern "C" fn malloc(size: ULong) => CFFI.RawPtr<Void>;
+#[repr(C)]
+extern "C" {
+    fn malloc(size: ULong) => CFFI.RawPtr<Void>;
 
-#[Unsafe]
-extern "C" fn free(ptr: CFFI.RawPtr<Void>);
+    fn free(ptr: CFFI.RawPtr<Void>);
+}
 
 fn Allocate(size: ULong) => Result.Result<CFFI.RawPtr<Void>, Result.Error> {
     ptr: CFFI.RawPtr<Void> = malloc(size);
@@ -100,25 +114,31 @@ type CompareFn = fn(
     context: CFFI.RawPtr<CompareContext>,
 ) => Int;
 
-#[LinkName("qsort_r")]
-extern "C" fn qsort_r(
-    base: CFFI.RawPtr<Void>,
-    count: ULong,
-    width: ULong,
-    compare: CompareFn,
-    context: CFFI.RawPtr<CompareContext>,
-);
+#[repr(C)]
+extern "C" {
+    #[LinkName("qsort_r")]
+    fn qsort_r(
+        base: CFFI.RawPtr<Void>,
+        count: ULong,
+        width: ULong,
+        compare: CompareFn,
+        context: CFFI.RawPtr<CompareContext>,
+    );
+}
 
 
 // thread/async-aware FFI markers
 
-#[ForeignThreadSafe]
-#[NoCallbackIntoRuntime]
-extern "C" fn thread_safe_poll(handle: CFFI.RawPtr<Void>) => Int;
+#[repr(C)]
+extern "C" {
+    #[ForeignThreadSafe]
+    #[NoCallbackIntoRuntime]
+    fn thread_safe_poll(handle: CFFI.RawPtr<Void>) => Int;
 
-#[MayBlock]
-#[CancellationUnsafe]
-extern "C" fn blocking_read(fd: Int, buffer: CFFI.RawPtr<u8>, length: ULong) => Long;
+    #[MayBlock]
+    #[CancellationUnsafe]
+    fn blocking_read(fd: Int, buffer: CFFI.RawPtr<u8>, length: ULong) => Long;
+}
 
 
 // Strong CFFI surface model:

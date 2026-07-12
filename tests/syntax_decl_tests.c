@@ -339,14 +339,18 @@ static void test_generic_constraint_structure(void)
 static void test_extern_c_function_structure(void)
 {
   const char *text = "imports CFFI;\n"
-                     "#[LinkName(\"puts\")]\n"
-                     "extern \"C\" fn puts(text: CFFI.CStr) => Int;\n";
+                     "#[repr(C)]\n"
+                     "extern \"C\" {\n"
+                     "  #[LinkName(\"puts\")]\n"
+                     "  fn puts(text: CFFI.CStr) => Int;\n"
+                     "}\n";
   XsSource source = {.path = "ExternC.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 47, &diagnostics, &tree));
   const XsSyntaxNode *function = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_FUNCTION);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_EXTERN_BLOCK) != nullptr);
   CHECK(function != nullptr);
   CHECK(function == nullptr || (function->flags & XS_SYNTAX_FLAG_EXTERN) != 0);
   CHECK(function == nullptr || (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) != 0);
@@ -355,7 +359,7 @@ static void test_extern_c_function_structure(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *body = "extern \"C\" fn puts(text: CFFI.CStr) => Int {}\n";
+  const char *body = "extern \"C\" { fn puts(text: CFFI.CStr) => Int {} }\n";
   source = (XsSource){.path = "ExternCBodyInvalid.xs", .text = body, .length = strlen(body)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 48, &diagnostics, &tree));

@@ -39,6 +39,8 @@ static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKi
   return nullptr;
 }
 
+static void skip_forbidden_data_member(SyntaxParser *parser);
+
 static const XsSyntaxNode *enum_variant_payload(const XsSyntaxNode *variant)
 {
   return variant->child_count == 2 ? variant->children[1] : nullptr;
@@ -259,15 +261,20 @@ static XsSyntaxNode *parse_declaration_macro_call(SyntaxParser *parser, size_t s
   return declaration;
 }
 
-static XsSyntaxNode *parse_extern_function(SyntaxParser *parser, Modifiers modifiers, size_t start)
+static XsSyntaxNode *extern_abi_token(SyntaxParser *parser, XsSpan span)
+{
+  XsSyntaxNode *abi = node(parser, XS_SYNTAX_TOKEN, span);
+  if(abi != nullptr)
+    abi->token_kind = XS_TOKEN_STRING;
+  return abi;
+}
+
+static XsSyntaxNode *parse_extern_block(SyntaxParser *parser, Modifiers modifiers, size_t start)
 {
   expect(parser, XS_TOKEN_KW_EXTERN, "expected 'extern'");
-  XsSyntaxNode *abi = nullptr;
+  XsSpan abi_span = parser->current.span;
   if(parser->current.kind == XS_TOKEN_STRING)
   {
-    abi = node(parser, XS_SYNTAX_TOKEN, parser->current.span);
-    if(abi != nullptr)
-      abi->token_kind = parser->current.kind;
     advance(parser);
   }
   else
@@ -275,15 +282,41 @@ static XsSyntaxNode *parse_extern_function(SyntaxParser *parser, Modifiers modif
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
                        "expected ABI string after extern");
   }
-  expect(parser, XS_TOKEN_KW_FN, "expected 'fn' after extern ABI");
-  XsSyntaxNode *function = parse_function(parser, modifiers, start, true);
-  function->flags |= XS_SYNTAX_FLAG_EXTERN | XS_SYNTAX_FLAG_INCOMPLETE;
-  xs_syntax_node_add(parser->tree, function, abi);
-  if(xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK) != nullptr)
-    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
-                       (XsSpan){function->span.start_offset, function->span.end_offset},
-                       "extern functions must not have bodies");
-  return function;
+  XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_EXTERN_BLOCK, (XsSpan){start, parser->previous.span.end});
+  attach_modifiers(parser, declaration, modifiers);
+  xs_syntax_node_add(parser->tree, declaration, extern_abi_token(parser, abi_span));
+  expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' after extern ABI");
+  while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
+    size_t before = parser->current.span.start;
+    Modifiers member = parse_modifiers(parser);
+    if(accept(parser, XS_TOKEN_KW_FN))
+    {
+      XsSyntaxNode *function = parse_function(parser, member, before, true);
+      function->flags |= XS_SYNTAX_FLAG_EXTERN | XS_SYNTAX_FLAG_INCOMPLETE;
+      xs_syntax_node_add(parser->tree, function, extern_abi_token(parser, abi_span));
+      if(xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK) != nullptr)
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){function->span.start_offset, function->span.end_offset},
+                           "extern functions must not have bodies");
+      xs_syntax_node_add(parser->tree, declaration, function);
+    }
+    else
+    {
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "expected extern function declaration");
+      skip_forbidden_data_member(parser);
+    }
+    if(parser->current.span.start == before)
+    {
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "parser made no progress in extern block");
+      advance(parser);
+    }
+  }
+  expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after extern block");
+  finish_node(parser, declaration, parser->previous.span.end);
+  return declaration;
 }
 
 static XsSyntaxNode *parse_enum(SyntaxParser *parser, Modifiers modifiers, size_t start)
@@ -667,7 +700,7 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
   if(accept(parser, XS_TOKEN_KW_FROM))
     return parse_import(parser, true, start);
   if(parser->current.kind == XS_TOKEN_KW_EXTERN)
-    return parse_extern_function(parser, modifiers, start);
+    return parse_extern_block(parser, modifiers, start);
   if(accept(parser, XS_TOKEN_KW_FN))
     return parse_function(parser, modifiers, start, false);
   if(accept(parser, XS_TOKEN_KW_CLASS))

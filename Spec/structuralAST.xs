@@ -116,6 +116,7 @@ enum data Declaration {
     Data: DataDeclaration,
     Variable: VariableDeclaration,
     Macro: MacroDeclaration,
+    ExternBlock: ExternBlockDeclaration,
 }
 
 
@@ -275,6 +276,28 @@ data GenericParameter {
 // └── constraints
 //     ├── Runnable
 //     └── Printable
+
+
+// ============================================================
+// Extern declarations
+// ============================================================
+
+data ExternBlockDeclaration {
+    attributes: AttributeNode[]
+    abi: TokenNode
+    functions: FunctionDeclaration[]
+    span: SourceSpan
+}
+
+
+// Source form:
+//
+// #[repr(C)]
+// extern "C" {
+//     fn puts(text: CFFI.CStr) => Int;
+// }
+//
+// Functions inside an extern block are body-less external declarations.
 
 
 // ============================================================
