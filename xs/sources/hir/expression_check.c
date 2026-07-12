@@ -40,6 +40,7 @@ struct LocalScope
 struct CheckContext
 {
   LocalScope *scope;
+  const XsSyntaxNode *root;
   const XsHirPrimitiveInfo *return_type;
   const XsSyntaxNode *return_type_node;
 };
@@ -302,6 +303,13 @@ static bool expression_is_optional_some_callee(const XsSyntaxNode *expression)
     return false;
   const XsSyntaxNode *callee = expression->children[0];
   return expression_is_identifier_named(callee, "Some") || expression_is_std_optional_member(callee, "Some");
+}
+
+static const XsSyntaxNode *expression_identifier(const XsSyntaxNode *expression)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_IDENTIFIER || expression->child_count != 1)
+    return nullptr;
+  return expression->children[0]->kind == XS_SYNTAX_IDENTIFIER ? expression->children[0] : nullptr;
 }
 
 static bool report_optional_to_primitive_error(XsDiagnostics *diagnostics, const XsSyntaxNode *expression,
@@ -579,6 +587,43 @@ static const XsSyntaxNode *function_return_type(const XsSyntaxNode *function)
   return nullptr;
 }
 
+static const XsSyntaxNode *function_named_in_tree(const XsSyntaxNode *node, XsText name)
+{
+  if(node == nullptr)
+    return nullptr;
+  if(node->kind == XS_SYNTAX_DECL_FUNCTION)
+  {
+    const XsSyntaxNode *identifier = first_child_kind(node, XS_SYNTAX_IDENTIFIER);
+    if(identifier != nullptr && text_equal(identifier->text, name))
+      return node;
+  }
+  for(size_t i = 0; i < node->child_count; ++i)
+  {
+    const XsSyntaxNode *match = function_named_in_tree(node->children[i], name);
+    if(match != nullptr)
+      return match;
+  }
+  return nullptr;
+}
+
+static const XsSyntaxNode *direct_call_return_type(const XsSyntaxNode *expression, const CheckContext *context)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_CALL || expression->child_count == 0 ||
+     context == nullptr || context->root == nullptr)
+    return nullptr;
+  const XsSyntaxNode *callee = expression_identifier(expression->children[0]);
+  if(callee == nullptr)
+    return nullptr;
+  const XsSyntaxNode *function = function_named_in_tree(context->root, callee->text);
+  return function_return_type(function);
+}
+
+static bool report_result_operand_error(XsDiagnostics *diagnostics, const XsSyntaxNode *node)
+{
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
+                            "Result propagation operand must return Result.Result<T, E>");
+}
+
 static const XsSyntaxNode *assignment_identifier_target(const XsSyntaxNode *node)
 {
   if(node == nullptr || node->kind != XS_SYNTAX_EXPR_ASSIGNMENT || node->child_count < 1)
@@ -634,7 +679,13 @@ static bool check_result_propagation(const XsSyntaxNode *node, const CheckContex
                                      XsDiagnostics *diagnostics)
 {
   if(context != nullptr && type_is_result(context->return_type_node))
+  {
+    const XsSyntaxNode *operand = node->child_count == 0 ? nullptr : node->children[0];
+    const XsSyntaxNode *operand_return = direct_call_return_type(operand, context);
+    if(operand_return != nullptr && !type_is_result(operand_return))
+      return report_result_operand_error(diagnostics, operand);
     return true;
+  }
   xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
                      "Result propagation with '@' requires an enclosing function returning Result.Result<T, E>");
   return false;
@@ -697,6 +748,7 @@ static bool check_scoped_node(const XsSyntaxNode *node, const XsMacroDeclaration
   const XsSyntaxNode *return_type_node = function_return_type(node);
   CheckContext context = {
       .scope = &scope,
+      .root = parent.root,
       .return_type = return_type == nullptr ? parent.return_type : return_type,
       .return_type_node = return_type_node == nullptr ? parent.return_type_node : return_type_node,
   };
@@ -749,7 +801,7 @@ bool xs_hir_check_expression_types_with_macros(const XsSyntaxTree *tree,
 {
   if(tree == nullptr || tree->root == nullptr || diagnostics == nullptr)
     return false;
-  return check_node(tree->root, macro_declarations, macro_statements, (CheckContext){0}, diagnostics) &&
+  return check_node(tree->root, macro_declarations, macro_statements, (CheckContext){.root = tree->root}, diagnostics) &&
          !xs_diagnostics_has_error(diagnostics);
 }
 

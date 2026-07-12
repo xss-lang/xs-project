@@ -20,7 +20,8 @@ source-to-native executable pipeline.
 - Legacy exception syntax is now deprecated. `throws`, `throw`, and `try` remain parseable but produce warnings; new code
   should use `Result.Result<T, E>` and postfix `@` propagation.
 - The C23 HIR expression checker now accepts postfix `@` inside functions returning `Result.Result<T, E>` or
-  `Result<T, E>` and rejects it outside Result-returning functions.
+  `Result<T, E>` and rejects it outside Result-returning functions. Direct same-file function call operands are now also
+  checked to return a Result type.
 
 ## 0.0.5 - 2026-07-12
 

@@ -275,9 +275,10 @@ type `T`, requires an enclosing `Result<_, E>` return type, and remains deferred
 control-flow lowering exists. The crate is not wired into the C23 driver yet; integration will use a bulk structural syntax
 transfer boundary so one compiler layer is not split across C and Rust.
 
-The C23 HIR prototype mirrors only the enclosing-return part of that rule: `@` is accepted inside functions returning
-`Result.Result<T, E>`/`Result<T, E>` and rejected elsewhere. Operand success/error compatibility remains the Rust
-compiler-core direction and later C/Rust integration work.
+The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
+`Result.Result<T, E>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
+callee must also return a Result type. Imported calls, method calls, local function values, and full success/error
+compatibility remain the Rust compiler-core direction and later C/Rust integration work.
 
 `@` is a surface-language sugar. In `xslang`, the Result desugar pass translates it into an explicit Result-match and
 early-return intent model before MIR lowering. If a raw `ResultPropagation` expression reaches MIR lowering, that is treated

@@ -229,6 +229,9 @@ static void test_result_propagation_requires_result_return(void)
   CHECK(check_single_source_expressions(valid));
   CHECK(check_single_source_expressions(
       "module App;\nfn Main() => Result<Int, Result.Error> { DoWork()@; return Result.Ok(1); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Count() => Int { return 1; }\n"
+                                         "fn Main() => Result.Result<Int, Result.Error> { Count()@; return "
+                                         "Result.Ok(1); }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn DoWork() => Result.Result<Int, Result.Error> { return "
                                          "Result.Ok(1); }\nfn Main() { DoWork()@; }\n"));
 }
