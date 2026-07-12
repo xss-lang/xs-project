@@ -501,10 +501,11 @@ static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, con
                                  ? declaration->children[1]
                                  : nullptr;
   const XsSyntaxNode *initializer = variable_initializer(declaration);
-  if(name == nullptr || !node_text_equals(type, "Long") || initializer == nullptr)
+  bool inferred = declaration != nullptr && (declaration->flags & XS_SYNTAX_FLAG_INFERRED_TYPE) != 0;
+  if(name == nullptr || (!inferred && !node_text_equals(type, "Long")) || initializer == nullptr)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                              "native source local declarations support only explicit Long bindings with initializers "
-                              "for now") &&
+                              "native source local declarations support only Long or inferred i32-compatible bindings "
+                              "with initializers for now") &&
            false;
   XsMirValueId value = 0;
   if(!lower_i32_expression(entry, context, initializer, diagnostics, &value, error))

@@ -64,11 +64,11 @@ fn main() => Long { return if (1 < 2) { 7; } else { 3; }; }
 ```
 
 The function must be top-level, named `main`, have no parameters, and return `Long`. The body may contain explicit
-`Long` local bindings with initializers followed by one return statement. The supported return expression subset is
-i32-range integer literals, local identifiers, unary `-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `<<`, `>>`, and one top-level
-`if (...) { expr; } else { expr; }` expression whose condition is a bool literal, unary `!`, or an i32 comparison,
-including `==`, `!=`, `<`, `<=`, `>`, and `>=`. The compiler lowers that source `Long` slice to the direct native process
-`i32` entry ABI. General source-level function body lowering is still incomplete.
+`Long` local bindings or inferred `:=` local bindings with i32-compatible initializers followed by one return statement.
+The supported return expression subset is i32-range integer literals, local identifiers, unary `-`, `+`, `-`, `*`, `/`,
+`%`, `&`, `|`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression whose condition is a bool
+literal, unary `!`, or an i32 comparison, including `==`, `!=`, `<`, `<=`, `>`, and `>=`. The compiler lowers that source
+`Long` slice to the direct native process `i32` entry ABI. General source-level function body lowering is still incomplete.
 
 `-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and
 `--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.

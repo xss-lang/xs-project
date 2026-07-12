@@ -38,8 +38,8 @@ source-to-native executable pipeline.
   `Result.Result<T, E>`, shorthand `Result<T, E>`, and `Result.Error` without requiring a user-defined project symbol.
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
-- Plain source native builds now accept explicit `Long` local bindings before the final `return`, and those locals can be
-  returned or used by the current i32 expression/condition lowering slice.
+- Plain source native builds now accept explicit `Long` and inferred i32-compatible local bindings before the final
+  `return`, and those locals can be returned or used by the current i32 expression/condition lowering slice.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the
   current source-native `Long` slice.
 - C MIR constant folding now turns `branch_if` with a known `const.bool` condition into a direct `goto`, allowing CFG cleanup

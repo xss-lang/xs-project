@@ -114,8 +114,9 @@ endforeach()
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
 foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainNegative MainPositive
-                       MainBitwise MainLocal MainIf MainIfNot MainIfFalse MainIfNotEqual MissingMain NonLiteralMain
-                       OutOfRangeMain ParameterizedMain WrongReturnMain)
+                       MainBitwise MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfNot
+                       MainIfFalse MainIfNotEqual MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain
+                       WrongReturnMain)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -196,6 +197,36 @@ add_test(NAME source_native_local_artifacts COMMAND xs_xse_artifact_tests
                                              ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocal.o
                                              ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocal.xse 7 "ret i32 7")
 set_tests_properties(source_native_local_artifacts PROPERTIES DEPENDS source_native_local_build TIMEOUT 5)
+add_test(NAME source_native_local_arithmetic_build COMMAND xs build -file
+                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalArithmetic.xs)
+set_tests_properties(source_native_local_arithmetic_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_local_arithmetic_artifacts COMMAND xs_xse_artifact_tests
+                                                        ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalArithmetic.ll
+                                                        ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalArithmetic.o
+                                                        ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalArithmetic.xse 7
+                                                        "ret i32 7")
+set_tests_properties(source_native_local_arithmetic_artifacts PROPERTIES DEPENDS source_native_local_arithmetic_build
+                                                                         TIMEOUT 5)
+add_test(NAME source_native_local_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalIf.xs)
+set_tests_properties(source_native_local_if_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_local_if_artifacts COMMAND xs_xse_artifact_tests
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalIf.ll
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalIf.o
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalIf.xse 7)
+set_tests_properties(source_native_local_if_artifacts PROPERTIES DEPENDS source_native_local_if_build TIMEOUT 5)
+add_test(NAME source_native_inferred_local_build COMMAND xs build -file
+                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainInferredLocal.xs)
+set_tests_properties(source_native_inferred_local_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_inferred_local_artifacts COMMAND xs_xse_artifact_tests
+                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainInferredLocal.ll
+                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainInferredLocal.o
+                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainInferredLocal.xse 7
+                                                     "ret i32 7")
+set_tests_properties(source_native_inferred_local_artifacts PROPERTIES DEPENDS source_native_inferred_local_build
+                                                                       TIMEOUT 5)
 add_test(NAME source_native_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xs)
 set_tests_properties(source_native_if_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
