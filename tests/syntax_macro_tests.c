@@ -527,20 +527,33 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
                       "  eprint!(\"error\");\n"
                       "  eprintln!();\n"
                       "  eprintln!(\"{:?}\", value);\n"
+                      "  eprintln!(\"{:#?}\", value);\n"
+                      "  println!(\"{0:?} {name:#?}\", value, name);\n"
                       "  format!(\"{}\", value);\n"
+                      "  format!(\"{:08x}\", value);\n"
+                      "  format!(\"{:_>8}\", value);\n"
+                      "  format!(\"{:#x?}\", value);\n"
+                      "  format!(\"{:X?}\", value);\n"
                       "  format_args!(\"{}\", value);\n"
+                      "  write!(STD.Stdout, \"{}\", value);\n"
+                      "  writeln!(STD.Stdout);\n"
+                      "  writeln!(STD.Stdout, \"{:#?}\", value);\n"
                       "}\n";
   XsSource source = {.path = "StdioMacros.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 37, &diagnostics, &tree));
-  CHECK(xs_macro_validate(&tree, &diagnostics));
+  bool valid_macros = xs_macro_validate(&tree, &diagnostics);
+  if(!valid_macros)
+    xs_diagnostics_print(&diagnostics, &source, stderr);
+  CHECK(valid_macros);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *selected = "from Stdio imports println, format_args;\n"
-                         "fn Main(value: Long) { println!(); format_args!(\"{}\", value); }\n";
+  const char *selected = "from Stdio imports println, write, writeln;\n"
+                         "fn Main(value: Long) { println!(); format_args!(\"{}\", value); "
+                         "write!(STD.Stdout, \"{}\", value); writeln!(STD.Stdout); }\n";
   source = (XsSource){.path = "SelectedStdioMacros.xs", .text = selected, .length = strlen(selected)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 38, &diagnostics, &tree));
@@ -555,15 +568,31 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
   CHECK(!xs_macro_validate(&tree, &diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
+
+  const char *builtin = "fn Main(value: Long) { format_args!(\"{:#?}\", value); }\n";
+  source = (XsSource){.path = "BuiltinFormatArgs.xs", .text = builtin, .length = strlen(builtin)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 40, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
 }
 
 static void test_imported_stdio_macros_reject_invalid_forms(void)
 {
   const char *invalid_cases[] = {
-      "imports Stdio;\nfn Main() { print!(); }\n",          "imports Stdio;\nfn Main() { eprint!(); }\n",
-      "imports Stdio;\nfn Main() { println!(10); }\n",      "imports Stdio;\nfn Main() { println!(\"value\", 10); }\n",
-      "imports Stdio;\nfn Main() { println!(\"{}\",); }\n", "imports Stdio;\nfn Main() { format_args!(); }\n",
+      "imports Stdio;\nfn Main() { print!(); }\n",
+      "imports Stdio;\nfn Main() { eprint!(); }\n",
+      "imports Stdio;\nfn Main() { println!(10); }\n",
+      "imports Stdio;\nfn Main() { println!(\"value\", 10); }\n",
+      "imports Stdio;\nfn Main() { println!(\"{}\",); }\n",
+      "fn Main() { format_args!(); }\n",
       "imports Stdio;\nfn Main() { println!(\"{\"); }\n",
+      "imports Stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
+      "imports Stdio;\nfn Main() { write!(); }\n",
+      "imports Stdio;\nfn Main() { write!(STD.Stdout); }\n",
+      "imports Stdio;\nfn Main() { write!(STD.Stdout, 10); }\n",
+      "imports Stdio;\nfn Main() { writeln!(STD.Stdout, \"{}\",); }\n",
   };
   for(size_t index = 0; index < sizeof(invalid_cases) / sizeof(invalid_cases[0]); ++index)
   {

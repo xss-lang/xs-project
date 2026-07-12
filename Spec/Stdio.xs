@@ -4,10 +4,12 @@
 // Stdio module:
 
 //
-// Stdio provides formatted text output macros and standard stream handles.
-// print!, println!, eprint!, eprintln!, format! and format_args! are exported
-// Stdio macros.
+// Stdio provides formatted text output macros, formatted writer macros, and
+// standard stream handles.
+// print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
+// exported Stdio macros.
 // They are available through `imports Stdio`, not as compiler built-ins.
+// format_args! is a built-in macro, not a Stdio export.
 //
 // Stdio does not provide filesystem operations.
 // Filesystem operations belong to the FS module.
@@ -48,6 +50,19 @@ fn ErrorNewlineOnly() throws IOException {
     eprintln!();
 }
 
+// writer macros
+
+fn WriteToStream() throws IOException {
+    write!(STD.Stdout, "Hello");
+}
+
+fn WriteLineToStream() throws IOException {
+    writeln!(STD.Stdout, "{} is {}", "Alpha", 26);
+}
+
+fn WriteNewlineOnlyToStream() throws IOException {
+    writeln!(STD.Stdout);
+}
 
 // formatting
 
@@ -58,16 +73,23 @@ fn FormatValues() throws IOException {
     println!("{} is {}", user, age);
 }
 
-// print!, eprint!, format! and format_args! require a Str format template as
-// the first argument.
+// print!, eprint!, and format! require a Str format template as the first
+// argument.
 //
 // println! and eprintln! either take no arguments or use the same format
 // template form as print!/eprint!. With no arguments they write exactly one
 // newline. With arguments they append exactly one newline after the formatted
 // text. This matches Rust 1.57 output macro behavior.
 //
+// write! requires a destination expression followed by a Str format template.
+// writeln! either takes only a destination expression or a destination followed
+// by the same format template form. With only a destination it writes exactly
+// one newline. With a template it appends exactly one newline after the
+// formatted text. This matches Rust 1.57 writer macro behavior.
+//
 // "{}" formats one value with the Display formatter.
 // "{:?}" formats one value with the Debug formatter.
+// "{:#?}" formats one value with the pretty Debug formatter.
 // "{{" emits "{".
 // "}}" emits "}".
 //
@@ -75,8 +97,8 @@ fn FormatValues() throws IOException {
 
 
 // format! returns Str and does not write to a stream.
-// format_args! returns the Stdio formatting argument value used by output
-// macros and does not write to a stream.
+// Built-in format_args! returns the formatting argument value used by output
+// and writer macros and does not write to a stream.
 
 fn BuildMessage() {
     user1: Str = "Alpha";
@@ -177,4 +199,4 @@ fn InvalidEmptyFormatArgs() {
     format_args!();
 }
 
-// INVALID: format_args! requires a Str format template.
+// INVALID: built-in format_args! requires a Str format template.

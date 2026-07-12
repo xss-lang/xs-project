@@ -28,7 +28,8 @@ valueUInteger: UInteger = 340'000'000'000'000'000'000;
 valueSFloat: SFloat = 1.0;
 valueFloat: Float = 1.0;
 
-// Optional<T> is a prelude wrapper.
+// Optional<T> is resolved as if the compiler had inserted `imports Optional`
+// and brought STD.Optional.Optional<T> into scope as Optional<T>.
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
 // There is no nullable T? type operator.

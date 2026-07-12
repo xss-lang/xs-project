@@ -223,13 +223,15 @@ validation does not decide dispatch, override, or overload selection.
 - `Str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
 - Semantically, `Str` is the UTF-16 X# counterpart of Rust's immutable static string reference; its runtime layout remains
   deferred and it is not yet lowered to XLIL storage.
-- `Optional<T>` is a prelude wrapper type, not an enum lowering. `None`, `Some(...)`, `?.`, `??`, `??=`, and postfix `!`
-  are represented syntactically; `Optional<T>` has automatic unboxing to `T`, which can throw
-  `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full flow-sensitive Optional
-  semantics are later HIR work. There is no nullable `T?` type operator.
+- `Optional<T>` resolves as if the compiler had inserted `imports Optional` and brought `STD.Optional.Optional<T>` into
+  scope as `Optional<T>`. It is not an enum lowering. `None`, `Some(...)`, `?.`, `??`, `??=`, and postfix `!` are
+  represented syntactically; `Optional<T>` has automatic unboxing to `T`, which can throw `OptionalUnboxingException` for
+  `None`. Runtime Optional failures use `OptionalException`; full flow-sensitive Optional semantics are later HIR work.
+  There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `Result.Result<T>`,
-  `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result.Error`. This is name and arity
-  validation only; constructors, method calls, and propagation lowering are still handled by later semantic passes.
+  `STD.Optional.Optional<T>`, `Result.Result<T>`, `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error
+  type `Result.Error`. This is name and arity validation only; constructors, method calls, and propagation lowering are
+  still handled by later semantic passes.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.
@@ -294,10 +296,14 @@ complete.
 - Macro calls before textual definition in the same scope are accepted.
 - Macros defined in an inner scope cannot be called from an outer scope.
 - Calls are checked to resolve to a visible macro definition.
+- `include!` and `format_args!` are built-in macros. `format_args!` uses the same Rust 1.57-style format string validation
+  as Stdio formatting macros.
 - Imported `Stdio` macros are treated as external macros, not built-ins. The validator recognizes `print!`, `println!`,
-  `eprint!`, `eprintln!`, `format!`, and `format_args!` through `imports Stdio` or selected imports. `println!()` and
-  `eprintln!()` accept the Rust 1.57 newline-only form; the other Stdio formatting macros require a string literal format
-  template and matching placeholder argument count.
+  `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` through `imports Stdio` or selected imports. `println!()`
+  and `eprintln!()` accept the Rust 1.57 newline-only form, while `writeln!(destination)` accepts the destination-only
+  newline form. The other Stdio formatting forms require a string literal format template and matching placeholder argument
+  count. Rust 1.57-style debug/pretty-debug and common formatting specs such as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}`
+  are accepted by the validator.
 - Full token matcher rules and empty matcher rules can be matched.
 - Single-token fragment matchers that can be validated precisely (`tt`, `ident`, `literal`, `lifetime`, and `vis`) are matched
   against call tokens.

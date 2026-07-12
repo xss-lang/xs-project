@@ -45,17 +45,22 @@
 //
 // include!() cannot include packages, modules or libraries.
 // It is only for local source files.
+//
+// format_args!() is a built-in formatting macro.
+// It uses the Rust 1.57 format string grammar and returns the formatting
+// argument value used by Stdio writer/output macros. It is not resolved
+// through Stdio.
 
 imports Stdio;
 
-// print!, println!, eprint!, eprintln!, format!, and format_args! are normal macros
-// exported by Stdio. They are not compiler built-ins.
+// print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
+// normal macros exported by Stdio. They are not compiler built-ins.
 //
 // assert!, assert_eq!, assert_ne!, debug_assert!, debug_assert_eq!, and
 // panic! are normal macros exported by Panic. They are not compiler
 // built-ins.
 //
-// include! is the only built-in macro currently specified here.
+// include! and format_args! are the currently specified built-in macros.
 
 
 // ============================================================
@@ -885,7 +890,9 @@ fn InvalidUnmatchedMacroCall() {
 //
 // Module-exported macros:
 //
-//     Stdio exports print!, println!, eprint!, eprintln!, format!
+//     Built-in macros include include! and format_args!
+//     Stdio exports print!, println!, eprint!, eprintln!, write!, writeln!,
+//     format!
 //     Panic exports assert!, assert_eq!, assert_ne!, debug_assert!,
 //     debug_assert_eq!, panic!
 //

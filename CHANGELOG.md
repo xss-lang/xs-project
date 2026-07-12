@@ -12,12 +12,17 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+- `format_args!` is now validated as a built-in macro instead of a Stdio export.
+- Stdio macro validation now accepts Rust 1.57-style `write!` and `writeln!` forms plus common Rust formatting specs such
+  as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` while still checking placeholder counts.
+- `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `STD.Optional.Optional<T>`.
+
 ## 0.0.5 - 2026-07-12
 
 ### Added
 
-- Imported `Stdio` macros now include `format_args!`; `print!`, `println!`, `eprint!`, `eprintln!`, `format!`, and
-  `format_args!` are validated through `imports Stdio` with Rust 1.57-style newline-only `println!()`/`eprintln!()` forms.
+- Imported `Stdio` macros now include `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`, with Rust 1.57-style
+  newline-only `println!()`/`eprintln!()` forms.
 - `Spec/Stdio.xs` now documents `std.Stdin()` line input examples, and `Spec/Result.xs` documents the explicit `Result`
   model, postfix `@` propagation, `expect`, and `unwrap`.
 - The C23 lexer/parser now accepts postfix `@` as a structural Result propagation expression; semantic checking and lowering

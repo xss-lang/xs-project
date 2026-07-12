@@ -5,6 +5,7 @@
 
 #include "internal.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -232,12 +233,33 @@ static bool text_is_cstr(XsText text, const char *value)
 static bool is_stdio_macro(XsText name)
 {
   return text_is_cstr(name, "print") || text_is_cstr(name, "println") || text_is_cstr(name, "eprint") ||
-         text_is_cstr(name, "eprintln") || text_is_cstr(name, "format") || text_is_cstr(name, "format_args");
+         text_is_cstr(name, "eprintln") || text_is_cstr(name, "format") || text_is_cstr(name, "write") ||
+         text_is_cstr(name, "writeln");
+}
+
+static bool is_builtin_macro(XsText name)
+{
+  return text_is_cstr(name, "include") || text_is_cstr(name, "format_args");
+}
+
+static bool is_format_args_macro(XsText name)
+{
+  return text_is_cstr(name, "format_args");
 }
 
 static bool stdio_macro_allows_empty(XsText name)
 {
   return text_is_cstr(name, "println") || text_is_cstr(name, "eprintln");
+}
+
+static bool is_stdio_write_macro(XsText name)
+{
+  return text_is_cstr(name, "write") || text_is_cstr(name, "writeln");
+}
+
+static bool stdio_write_macro_allows_destination_only(XsText name)
+{
+  return text_is_cstr(name, "writeln");
 }
 
 static bool token_changes_depth(XsTokenKind kind, int *depth)
@@ -256,14 +278,14 @@ static bool token_changes_depth(XsTokenKind kind, int *depth)
   return false;
 }
 
-static size_t count_stdio_format_arguments(const XsSyntaxNode *call)
+static size_t count_stdio_format_arguments_after(const XsSyntaxNode *call, size_t comma_index)
 {
-  if(call->child_count <= 2 || call->children[2]->token_kind != XS_TOKEN_COMMA)
+  if(call->child_count <= comma_index || call->children[comma_index]->token_kind != XS_TOKEN_COMMA)
     return 0;
   size_t count = 0;
   bool saw_argument = false;
   int depth = 0;
-  for(size_t index = 3; index < call->child_count; ++index)
+  for(size_t index = comma_index + 1; index < call->child_count; ++index)
   {
     XsTokenKind kind = call->children[index]->token_kind;
     if(token_changes_depth(kind, &depth))
@@ -289,6 +311,148 @@ static size_t count_stdio_format_arguments(const XsSyntaxNode *call)
   return count;
 }
 
+static size_t count_stdio_format_arguments(const XsSyntaxNode *call)
+{
+  return count_stdio_format_arguments_after(call, 2);
+}
+
+static bool find_top_level_comma(const XsSyntaxNode *call, size_t start, size_t *comma)
+{
+  int depth = 0;
+  for(size_t index = start; index < call->child_count; ++index)
+  {
+    XsTokenKind kind = call->children[index]->token_kind;
+    if(token_changes_depth(kind, &depth))
+      continue;
+    if(depth == 0 && kind == XS_TOKEN_COMMA)
+    {
+      *comma = index;
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool is_format_identifier_start(char character)
+{
+  unsigned char value = (unsigned char)character;
+  return character == '_' || isalpha(value) != 0;
+}
+
+static bool is_format_identifier_continue(char character)
+{
+  unsigned char value = (unsigned char)character;
+  return character == '_' || isalnum(value) != 0;
+}
+
+static bool is_format_type(char character)
+{
+  return character == 'x' || character == 'X' || character == 'o' || character == 'b' || character == 'p' ||
+         character == 'e' || character == 'E';
+}
+
+static bool parse_format_count(XsText literal, size_t end, size_t *index, bool precision)
+{
+  if(*index >= end)
+    return false;
+  if(precision && literal.data[*index] == '*')
+  {
+    ++*index;
+    return true;
+  }
+  if(isdigit((unsigned char)literal.data[*index]) != 0)
+  {
+    while(*index < end && isdigit((unsigned char)literal.data[*index]) != 0)
+      ++*index;
+    if(*index < end && literal.data[*index] == '$')
+      ++*index;
+    return true;
+  }
+  if(is_format_identifier_start(literal.data[*index]))
+  {
+    while(*index < end && is_format_identifier_continue(literal.data[*index]))
+      ++*index;
+    if(*index < end && literal.data[*index] == '$')
+    {
+      ++*index;
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+static bool format_count_starts(XsText literal, size_t index, size_t end)
+{
+  if(index >= end)
+    return false;
+  if(isdigit((unsigned char)literal.data[index]) != 0)
+    return true;
+  if(!is_format_identifier_start(literal.data[index]))
+    return false;
+  while(index < end && is_format_identifier_continue(literal.data[index]))
+    ++index;
+  return index < end && literal.data[index] == '$';
+}
+
+static bool validate_stdio_format_spec(XsText literal, size_t start, size_t end)
+{
+  size_t index = start;
+  if(index >= end)
+    return true;
+  if(index + 1 < end &&
+     (literal.data[index + 1] == '<' || literal.data[index + 1] == '^' || literal.data[index + 1] == '>'))
+    index += 2;
+  else if(literal.data[index] == '<' || literal.data[index] == '^' || literal.data[index] == '>')
+    ++index;
+  if(index < end && (literal.data[index] == '+' || literal.data[index] == '-'))
+    ++index;
+  if(index < end && literal.data[index] == '#')
+    ++index;
+  if(index < end && literal.data[index] == '0')
+    ++index;
+  if(format_count_starts(literal, index, end))
+  {
+    if(!parse_format_count(literal, end, &index, false))
+      return false;
+  }
+  if(index < end && literal.data[index] == '.')
+  {
+    ++index;
+    if(!parse_format_count(literal, end, &index, true))
+      return false;
+  }
+  if(index >= end)
+    return true;
+  if(literal.data[index] == '?')
+    return index + 1 == end;
+  if((literal.data[index] == 'x' || literal.data[index] == 'X') && index + 1 < end && literal.data[index + 1] == '?')
+    return index + 2 == end;
+  if(is_format_type(literal.data[index]))
+    return index + 1 == end;
+  return false;
+}
+
+static bool validate_stdio_placeholder(XsText literal, size_t start, size_t end)
+{
+  size_t index = start;
+  if(index < end && isdigit((unsigned char)literal.data[index]) != 0)
+  {
+    while(index < end && isdigit((unsigned char)literal.data[index]) != 0)
+      ++index;
+  }
+  else if(index < end && is_format_identifier_start(literal.data[index]))
+  {
+    while(index < end && is_format_identifier_continue(literal.data[index]))
+      ++index;
+  }
+  if(index == end)
+    return true;
+  if(literal.data[index] != ':')
+    return false;
+  return validate_stdio_format_spec(literal, index + 1, end);
+}
+
 static bool count_stdio_placeholders(XsText literal, size_t *count)
 {
   *count = 0;
@@ -306,9 +470,12 @@ static bool count_stdio_placeholders(XsText literal, size_t *count)
         continue;
       }
       ++*count;
+      size_t placeholder_start = index + 1;
       while(index + 1 < literal.length && literal.data[index] != '}')
         ++index;
       if(index + 1 >= literal.length)
+        return false;
+      if(!validate_stdio_placeholder(literal, placeholder_start, index))
         return false;
       continue;
     }
@@ -327,9 +494,55 @@ static bool count_stdio_placeholders(XsText literal, size_t *count)
 
 static void validate_stdio_macro_call(const XsSyntaxNode *call, XsText name, XsDiagnostics *diagnostics)
 {
-  if(!is_stdio_macro(name))
+  if(!is_stdio_macro(name) && !is_format_args_macro(name))
     return;
   XsSpan span = {.start = call->span.start_offset, .end = call->span.end_offset};
+  if(is_stdio_write_macro(name))
+  {
+    if(call->child_count == 1)
+    {
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "stdio write macro requires a destination argument");
+      return;
+    }
+    size_t destination_comma = 0;
+    if(!find_top_level_comma(call, 1, &destination_comma))
+    {
+      if(!stdio_write_macro_allows_destination_only(name))
+        xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                           "stdio write macro requires a format string argument");
+      return;
+    }
+    size_t format_index = destination_comma + 1;
+    if(call->child_count <= format_index || call->children[format_index]->token_kind != XS_TOKEN_STRING)
+    {
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                         "stdio write macro format argument must be a string literal");
+      return;
+    }
+    size_t format_comma = format_index + 1;
+    if(call->child_count > format_comma && call->children[format_comma]->token_kind != XS_TOKEN_COMMA)
+    {
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                         "stdio write macro format string must be followed by ',' before arguments");
+      return;
+    }
+    size_t placeholders = 0;
+    if(!count_stdio_placeholders(call->children[format_index]->text, &placeholders))
+    {
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "stdio write macro format string is malformed");
+      return;
+    }
+    size_t arguments = count_stdio_format_arguments_after(call, format_comma);
+    if(placeholders != arguments)
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                         "stdio write macro placeholder count must match the number of format arguments");
+    return;
+  }
+  if(is_format_args_macro(name) && call->child_count == 1)
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "format_args macro requires a format string argument");
+    return;
+  }
   if(call->child_count == 1)
   {
     if(!stdio_macro_allows_empty(name))
@@ -443,7 +656,7 @@ static void validate_node_calls(const XsSyntaxTree *tree, const XsSyntaxNode *no
     XsText name = macro_call_name(node);
     const XsSyntaxNode *macro = resolve_macro(visible, name);
     XsSpan span = {.start = node->span.start_offset, .end = node->span.end_offset};
-    if(macro == nullptr && !xs_macro_external_import_resolves(tree, name))
+    if(macro == nullptr && !is_builtin_macro(name) && !xs_macro_external_import_resolves(tree, name))
     {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not resolve in this scope");
       return;

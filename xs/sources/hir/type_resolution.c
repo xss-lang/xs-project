@@ -26,7 +26,7 @@ struct StandardTypeInfo
 };
 
 static const StandardTypeInfo standard_types[] = {
-    {.name = "Optional", .min_arity = 1, .max_arity = 1},
+    {.name = "STD.Optional.Optional", .min_arity = 1, .max_arity = 1},
     {.name = "Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Error", .min_arity = 0, .max_arity = 0},
@@ -149,6 +149,8 @@ static char *path_to_string(const XsSyntaxNode *path)
 
 static const StandardTypeInfo *find_standard_type(const char *name)
 {
+  if(strcmp(name, "Optional") == 0)
+    name = "STD.Optional.Optional";
   for(size_t i = 0; i < sizeof(standard_types) / sizeof(standard_types[0]); ++i)
   {
     if(strcmp(standard_types[i].name, name) == 0)

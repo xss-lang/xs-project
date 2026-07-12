@@ -118,6 +118,7 @@ static void test_standard_generic_types(void)
 {
   const char *valid = "module App;\n"
                       "fn Read() => Optional<Str> { return None; }\n"
+                      "fn ReadCanonical() => STD.Optional.Optional<Str> { return None; }\n"
                       "fn Save() => Result.Result<Int> { return Result.Ok(1); }\n"
                       "fn Load() => Result.Result<Int, Result.Error> { return Result.Ok(1); }\n"
                       "fn Compact() => Result<Int, Result.Error> { return Result.Ok(1); }\n";
