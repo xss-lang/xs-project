@@ -69,10 +69,9 @@ static bool is_i32_fold_candidate(XsMirInstructionKind kind)
          kind == XS_MIR_INSTRUCTION_MUL_I32 || kind == XS_MIR_INSTRUCTION_DIV_I32 ||
          kind == XS_MIR_INSTRUCTION_REM_I32 || kind == XS_MIR_INSTRUCTION_AND_I32 ||
          kind == XS_MIR_INSTRUCTION_OR_I32 || kind == XS_MIR_INSTRUCTION_XOR_I32 ||
-         kind == XS_MIR_INSTRUCTION_SHL_I32 ||
-         kind == XS_MIR_INSTRUCTION_SHR_I32 || kind == XS_MIR_INSTRUCTION_EQ_I32 || kind == XS_MIR_INSTRUCTION_NE_I32 ||
-         kind == XS_MIR_INSTRUCTION_LT_I32 || kind == XS_MIR_INSTRUCTION_LE_I32 || kind == XS_MIR_INSTRUCTION_GT_I32 ||
-         kind == XS_MIR_INSTRUCTION_GE_I32;
+         kind == XS_MIR_INSTRUCTION_SHL_I32 || kind == XS_MIR_INSTRUCTION_SHR_I32 ||
+         kind == XS_MIR_INSTRUCTION_EQ_I32 || kind == XS_MIR_INSTRUCTION_NE_I32 || kind == XS_MIR_INSTRUCTION_LT_I32 ||
+         kind == XS_MIR_INSTRUCTION_LE_I32 || kind == XS_MIR_INSTRUCTION_GT_I32 || kind == XS_MIR_INSTRUCTION_GE_I32;
 }
 
 static bool is_i32_bool_result(XsMirInstructionKind kind)
@@ -146,11 +145,10 @@ static void fold_function_constants(XsMirFunction *function)
          instruction->kind != XS_MIR_INSTRUCTION_MUL_I64 && instruction->kind != XS_MIR_INSTRUCTION_DIV_I64 &&
          instruction->kind != XS_MIR_INSTRUCTION_REM_I64 && instruction->kind != XS_MIR_INSTRUCTION_AND_I64 &&
          instruction->kind != XS_MIR_INSTRUCTION_OR_I64 && instruction->kind != XS_MIR_INSTRUCTION_XOR_I64 &&
-         instruction->kind != XS_MIR_INSTRUCTION_SHL_I64 &&
-         instruction->kind != XS_MIR_INSTRUCTION_SHR_I64 && instruction->kind != XS_MIR_INSTRUCTION_EQ_I64 &&
-         instruction->kind != XS_MIR_INSTRUCTION_NE_I64 && instruction->kind != XS_MIR_INSTRUCTION_LT_I64 &&
-         instruction->kind != XS_MIR_INSTRUCTION_LE_I64 && instruction->kind != XS_MIR_INSTRUCTION_GT_I64 &&
-         instruction->kind != XS_MIR_INSTRUCTION_GE_I64)
+         instruction->kind != XS_MIR_INSTRUCTION_SHL_I64 && instruction->kind != XS_MIR_INSTRUCTION_SHR_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_EQ_I64 && instruction->kind != XS_MIR_INSTRUCTION_NE_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_LT_I64 && instruction->kind != XS_MIR_INSTRUCTION_LE_I64 &&
+         instruction->kind != XS_MIR_INSTRUCTION_GT_I64 && instruction->kind != XS_MIR_INSTRUCTION_GE_I64)
         continue;
       int64_t left = 0;
       int64_t right = 0;
@@ -191,6 +189,18 @@ static void fold_function_constants(XsMirFunction *function)
                            : kind == XS_MIR_INSTRUCTION_GE_I64  ? left >= right
                                                                 : 0,
       };
+    }
+    for(size_t instruction = 0; instruction < block->instruction_count; ++instruction)
+    {
+      XsMirInstruction *current = &block->instructions[instruction];
+      if(current->kind != XS_MIR_INSTRUCTION_NOT_BOOL)
+        continue;
+      bool value = false;
+      if(find_const_bool(function, current->operand_left, &value))
+      {
+        current->kind = XS_MIR_INSTRUCTION_CONST_BOOL;
+        current->immediate_i64 = !value;
+      }
     }
     if(block->terminator.kind == XS_MIR_TERMINATOR_BRANCH)
     {

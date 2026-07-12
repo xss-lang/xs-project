@@ -419,18 +419,15 @@ static bool is_lil_binary_integer(XsLilInstructionKind kind)
          kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_EQ_I64 ||
          kind == XS_LIL_INSTRUCTION_AND_I64 || kind == XS_LIL_INSTRUCTION_OR_I64 ||
          kind == XS_LIL_INSTRUCTION_XOR_I64 || kind == XS_LIL_INSTRUCTION_SHL_I64 ||
-         kind == XS_LIL_INSTRUCTION_SHR_I64 ||
-         kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_LT_I64 ||
-         kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 ||
-         kind == XS_LIL_INSTRUCTION_GE_I64 || kind == XS_LIL_INSTRUCTION_ADD_I32 ||
-         kind == XS_LIL_INSTRUCTION_SUB_I32 || kind == XS_LIL_INSTRUCTION_MUL_I32 ||
-         kind == XS_LIL_INSTRUCTION_DIV_I32 || kind == XS_LIL_INSTRUCTION_REM_I32 ||
-         kind == XS_LIL_INSTRUCTION_AND_I32 || kind == XS_LIL_INSTRUCTION_OR_I32 ||
-         kind == XS_LIL_INSTRUCTION_XOR_I32 || kind == XS_LIL_INSTRUCTION_SHL_I32 ||
-         kind == XS_LIL_INSTRUCTION_SHR_I32 ||
-         kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 ||
-         kind == XS_LIL_INSTRUCTION_LT_I32 || kind == XS_LIL_INSTRUCTION_LE_I32 ||
-         kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
+         kind == XS_LIL_INSTRUCTION_SHR_I64 || kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_LT_I64 ||
+         kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 || kind == XS_LIL_INSTRUCTION_GE_I64 ||
+         kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
+         kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_DIV_I32 ||
+         kind == XS_LIL_INSTRUCTION_REM_I32 || kind == XS_LIL_INSTRUCTION_AND_I32 ||
+         kind == XS_LIL_INSTRUCTION_OR_I32 || kind == XS_LIL_INSTRUCTION_XOR_I32 ||
+         kind == XS_LIL_INSTRUCTION_SHL_I32 || kind == XS_LIL_INSTRUCTION_SHR_I32 ||
+         kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
+         kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
 }
 
 static LLVMValueRef lower_lil_binary_integer_op(LLVMBuilderRef builder, XsLilInstructionKind kind, LLVMValueRef left,
@@ -540,6 +537,16 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     if(status != XS_BACKEND_OK)
       return status;
     values[result] = LLVMConstInt(type, xs_lil_block_instruction_bool(block, index) ? 1 : 0, false);
+    return XS_BACKEND_OK;
+  }
+  if(kind == XS_LIL_INSTRUCTION_NOT_BOOL)
+  {
+    XsLilValueId operand = xs_lil_block_instruction_left(block, index);
+    if((size_t)operand >= value_count || values[operand] == nullptr)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL not.bool references an unavailable value");
+    values[result] = LLVMBuildNot(builder, values[operand], "not");
+    if(values[result] == nullptr)
+      return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL not.bool instruction");
     return XS_BACKEND_OK;
   }
   if(is_lil_binary_integer(kind))

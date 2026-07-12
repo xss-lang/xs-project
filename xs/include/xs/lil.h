@@ -89,6 +89,7 @@ typedef enum
   XS_LIL_INSTRUCTION_LE_I32,
   XS_LIL_INSTRUCTION_GT_I32,
   XS_LIL_INSTRUCTION_GE_I32,
+  XS_LIL_INSTRUCTION_NOT_BOOL,
   XS_LIL_INSTRUCTION_CALL,
 } XsLilInstructionKind;
 
@@ -197,6 +198,7 @@ XsLilStatus xs_lil_block_gt_i32(XsLilBlock *block, XsLilValueId left, XsLilValue
                                 XsLilError *error);
 XsLilStatus xs_lil_block_ge_i32(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                 XsLilError *error);
+XsLilStatus xs_lil_block_not_bool(XsLilBlock *block, XsLilValueId operand, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_call(XsLilBlock *block, const char *callee, XsLilType return_type,
                                   const XsLilValueId *arguments, size_t argument_count, XsLilValueId *result,
                                   XsLilError *error);

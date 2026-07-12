@@ -96,10 +96,10 @@ The documented compilation order is preserved:
   `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, local
   identifier returns, i32-range integer literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `<<`, `>>`, and one
   top-level `if` expression with a bool literal, `Bool` local, unary `!`, or i32 comparison condition. `!=` and unary `!`
-  are represented by lowering the nested condition and swapping branch targets. Syntactically constant conditions, such as
-  `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower only the selected branch in this slice. Unary `!` in a
-  `Bool` local initializer is still deferred because this slice does not yet materialize boolean negation as a value.
-  This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse` linking.
+  can either swap branch targets for condition-only control flow or materialize as a `not.bool` value for supported
+  `Bool` local initializers. Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like
+  `1 < 2`, lower only the selected branch in this slice. This lowers through C MIR, XLIL, LLVM IR, object emission, and
+  native `.xse` linking.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -420,8 +420,8 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   Native direct XLIL requires exactly one defined
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
-  `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, signed i64 arithmetic/bitwise/shift/comparison instructions, `call`,
-  `br`, `br_if`, `ret`, and `ret %rN`.
+  `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison
+  instructions, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
   source slice: one top-level `main` returning `Long` with optional explicit `Long`/`Bool` or inferred local bindings
   followed by one return statement whose expression is built from locals, i32-range integer literals, unary `+`/`-`,

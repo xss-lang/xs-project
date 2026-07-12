@@ -501,6 +501,31 @@ XsMirStatus xs_mir_block_ge_i32(XsMirBlock *block, XsMirValueId left, XsMirValue
                         error);
 }
 
+XsMirStatus xs_mir_block_not_bool(XsMirBlock *block, XsMirValueId operand, XsMirValueId *result, XsMirError *error)
+{
+  if(result != nullptr)
+    *result = 0;
+  if(block == nullptr || block->owner == nullptr || (size_t)operand >= block->owner->value_count ||
+     block->owner->values[operand].type.kind != XS_LIL_TYPE_BOOL)
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR not.bool operand must be bool");
+  XsMirValueId value = 0;
+  XsMirStatus status = xs_mir_function_add_value(block->owner, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, &value, error);
+  if(status != XS_MIR_OK)
+    return status;
+  status = append_instruction(block,
+                              (XsMirInstruction){
+                                  .kind = XS_MIR_INSTRUCTION_NOT_BOOL,
+                                  .result = value,
+                                  .operand_left = operand,
+                              },
+                              error);
+  if(status != XS_MIR_OK)
+    return status;
+  if(result != nullptr)
+    *result = value;
+  return XS_MIR_OK;
+}
+
 XsMirStatus xs_mir_block_add_load(XsMirBlock *block, const XsMirPlace *place, XsMirType result_type,
                                   XsMirValueId *result, XsMirError *error)
 {

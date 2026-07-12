@@ -302,6 +302,38 @@ static void test_text_parser_round_trips_branch_if_subset(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_bool_not_subset(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Flip : () -> bool\nbb0.entry:\n"
+                      "  %r0:bool = const.bool false\n  %r1:bool = not.bool %r0\n  ret %r1\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("not_bool.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  const XsLilFunction *function = xs_lil_module_function_at(module, 0);
+  CHECK(function != nullptr);
+  const XsLilBlock *block = xs_lil_function_block_at(function, 0);
+  CHECK(block != nullptr);
+  CHECK(xs_lil_block_instruction_kind(block, 1) == XS_LIL_INSTRUCTION_NOT_BOOL);
+  CHECK(xs_lil_function_value_type(function, 1).kind == XS_LIL_TYPE_BOOL);
+  FILE *stream = tmpfile();
+  if(stream == nullptr)
+  {
+    ++failures;
+    xs_lil_module_destroy(module);
+    return;
+  }
+  CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+  CHECK(fseek(stream, 0, SEEK_SET) == 0);
+  char buffer[512] = {0};
+  size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
+  buffer[read] = '\0';
+  CHECK(strstr(buffer, "%r1:bool = not.bool %r0\n  ret %r1\n") != nullptr);
+  fclose(stream);
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_round_trips_parameters_and_calls(void)
 {
   const char text[] = ".xlil version 0\n.xlil module App\n.func Forward : (i64) -> i64\n.param %r0:i64\nbb0.entry:\n"
@@ -480,6 +512,8 @@ static void test_text_parser_rejects_invalid_inputs(void)
       "  %r0:void = call Sink()\n  ret\n.end\n",
       ".xlil version 0\n.xlil module App\n.extern Import : () -> i64\n.func Bad : () -> void\nbb0.entry:\n"
       "  call Import()\n  ret\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> bool\nbb0.entry:\n"
+      "  %r0:i64 = const 1\n  %r1:bool = not.bool %r0\n  ret %r1\n.end\n",
   };
   for(size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
@@ -504,6 +538,7 @@ int main(void)
   test_text_parser_round_trips_supported_body_subset();
   test_text_parser_round_trips_branch_subset();
   test_text_parser_round_trips_branch_if_subset();
+  test_text_parser_round_trips_bool_not_subset();
   test_text_parser_round_trips_parameters_and_calls();
   test_text_parser_round_trips_binary_i64_instructions();
   test_text_parser_round_trips_i32_constant();

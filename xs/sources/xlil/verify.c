@@ -75,10 +75,9 @@ static bool is_binary_i64(XsLilInstructionKind kind)
          kind == XS_LIL_INSTRUCTION_MUL_I64 || kind == XS_LIL_INSTRUCTION_DIV_I64 ||
          kind == XS_LIL_INSTRUCTION_REM_I64 || kind == XS_LIL_INSTRUCTION_AND_I64 ||
          kind == XS_LIL_INSTRUCTION_OR_I64 || kind == XS_LIL_INSTRUCTION_XOR_I64 ||
-         kind == XS_LIL_INSTRUCTION_SHL_I64 ||
-         kind == XS_LIL_INSTRUCTION_SHR_I64 || kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_NE_I64 ||
-         kind == XS_LIL_INSTRUCTION_LT_I64 || kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 ||
-         kind == XS_LIL_INSTRUCTION_GE_I64;
+         kind == XS_LIL_INSTRUCTION_SHL_I64 || kind == XS_LIL_INSTRUCTION_SHR_I64 ||
+         kind == XS_LIL_INSTRUCTION_EQ_I64 || kind == XS_LIL_INSTRUCTION_NE_I64 || kind == XS_LIL_INSTRUCTION_LT_I64 ||
+         kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 || kind == XS_LIL_INSTRUCTION_GE_I64;
 }
 
 static bool is_binary_i32(XsLilInstructionKind kind)
@@ -87,10 +86,9 @@ static bool is_binary_i32(XsLilInstructionKind kind)
          kind == XS_LIL_INSTRUCTION_MUL_I32 || kind == XS_LIL_INSTRUCTION_DIV_I32 ||
          kind == XS_LIL_INSTRUCTION_REM_I32 || kind == XS_LIL_INSTRUCTION_AND_I32 ||
          kind == XS_LIL_INSTRUCTION_OR_I32 || kind == XS_LIL_INSTRUCTION_XOR_I32 ||
-         kind == XS_LIL_INSTRUCTION_SHL_I32 ||
-         kind == XS_LIL_INSTRUCTION_SHR_I32 || kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 ||
-         kind == XS_LIL_INSTRUCTION_LT_I32 || kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 ||
-         kind == XS_LIL_INSTRUCTION_GE_I32;
+         kind == XS_LIL_INSTRUCTION_SHL_I32 || kind == XS_LIL_INSTRUCTION_SHR_I32 ||
+         kind == XS_LIL_INSTRUCTION_EQ_I32 || kind == XS_LIL_INSTRUCTION_NE_I32 || kind == XS_LIL_INSTRUCTION_LT_I32 ||
+         kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
 }
 
 static bool is_bool_result_integer(XsLilInstructionKind kind)
@@ -113,6 +111,16 @@ static XsLilStatus verify_binary_integer(const XsLilFunction *function, const Xs
   if(function->values[instruction->result].type.kind != expected)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
                             "XLIL binary integer instruction has an invalid result type");
+  return XS_LIL_OK;
+}
+
+static XsLilStatus verify_not_bool(const XsLilFunction *function, const XsLilInstruction *instruction,
+                                   XsLilError *error)
+{
+  if((size_t)instruction->left >= function->value_count || (size_t)instruction->result >= function->value_count ||
+     function->values[instruction->left].type.kind != XS_LIL_TYPE_BOOL ||
+     function->values[instruction->result].type.kind != XS_LIL_TYPE_BOOL)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL not.bool instruction has invalid operands");
   return XS_LIL_OK;
 }
 
@@ -146,6 +154,12 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(is_binary_i64(current->kind) || is_binary_i32(current->kind))
         {
           status = verify_binary_integer(function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_NOT_BOOL)
+        {
+          status = verify_not_bool(function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

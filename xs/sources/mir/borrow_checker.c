@@ -142,6 +142,12 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
   case XS_MIR_INSTRUCTION_GT_I32:
   case XS_MIR_INSTRUCTION_GE_I32:
     return check_i32_binary(function, instruction, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, error);
+  case XS_MIR_INSTRUCTION_NOT_BOOL:
+    if(!value_exists(function, instruction->operand_left) || !value_exists(function, instruction->result) ||
+       !type_equal(function->values[instruction->operand_left].type, (XsMirType){.kind = XS_LIL_TYPE_BOOL}) ||
+       !type_equal(function->values[instruction->result].type, (XsMirType){.kind = XS_LIL_TYPE_BOOL}))
+      return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR not.bool instruction has invalid operands");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_LOAD:
   {
     const XsMirPlace *place = nullptr;

@@ -643,6 +643,32 @@ XsLilStatus xs_lil_block_ge_i32(XsLilBlock *block, XsLilValueId left, XsLilValue
                             (XsLilType){.kind = XS_LIL_TYPE_BOOL}, result, error);
 }
 
+XsLilStatus xs_lil_block_not_bool(XsLilBlock *block, XsLilValueId operand, XsLilValueId *result, XsLilError *error)
+{
+  xs_lil_clear_error(error);
+  if(result != nullptr)
+    *result = UINT32_MAX;
+  if(block == nullptr || block->owner == nullptr || (size_t)operand >= block->owner->value_count ||
+     block->owner->values[operand].type.kind != XS_LIL_TYPE_BOOL)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL not.bool operand must be bool");
+  XsLilValueId value_id = 0;
+  XsLilStatus status = add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &value_id, error);
+  if(status != XS_LIL_OK)
+    return status;
+  status = append_instruction(block,
+                              (XsLilInstruction){
+                                  .kind = XS_LIL_INSTRUCTION_NOT_BOOL,
+                                  .result = value_id,
+                                  .left = operand,
+                              },
+                              error);
+  if(status != XS_LIL_OK)
+    return status;
+  if(result != nullptr)
+    *result = value_id;
+  return XS_LIL_OK;
+}
+
 static XsLilStatus add_call(XsLilBlock *block, const char *callee, XsLilType return_type, const XsLilValueId *arguments,
                             size_t argument_count, bool has_result, XsLilValueId *result, XsLilError *error)
 {

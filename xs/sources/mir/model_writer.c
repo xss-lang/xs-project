@@ -249,6 +249,10 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
                instruction->operand_right) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR ge.i32 instruction");
     return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_NOT_BOOL:
+    if(fprintf(stream, "  v%u = not.bool v%u\n", instruction->result, instruction->operand_left) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR not.bool instruction");
+    return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_LOAD:
     if(fprintf(stream, "  v%u = load place%u\n", instruction->result, instruction->place) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR load instruction");

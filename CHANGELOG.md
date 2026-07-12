@@ -44,6 +44,8 @@ source-to-native executable pipeline.
   `return`, and those locals can be returned or used by the current i32 expression/condition lowering slice.
 - Plain source native builds now accept explicit and inferred `Bool` local bindings for the current `if` condition lowering
   slice.
+- C MIR, XLIL, LLVM lowering, and the source-native slice now support materialized boolean negation through `not.bool`, so
+  `Bool` local initializers can use unary `!` in the current native path.
 - C MIR constant folding now covers the i32 arithmetic, bitwise, shift, equality, and signed comparison family used by the
   current source-native `Long` slice.
 - C MIR constant folding now turns `branch_if` with a known `const.bool` condition into a direct `goto`, allowing CFG cleanup

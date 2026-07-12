@@ -475,6 +475,21 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
   if((size_t)(line + length - colon) >= 7U && span_equals(colon, 7, ":bool ="))
   {
     const char *operation = skip_space(colon + 7, line + length);
+    static const char not_bool_prefix[] = "not.bool %r";
+    if((size_t)(line + length - operation) > sizeof(not_bool_prefix) - 1U &&
+       strncmp(operation, not_bool_prefix, sizeof(not_bool_prefix) - 1U) == 0)
+    {
+      uint32_t operand = 0;
+      if(!parse_u32_after_prefix(operation, (size_t)(line + length - operation), not_bool_prefix, &operand))
+        return parse_error(parser, error, "unsupported XLIL instruction");
+      XsLilValueId actual = 0;
+      XsLilStatus status = xs_lil_block_not_bool(block, operand, &actual, error);
+      if(status != XS_LIL_OK)
+        return status;
+      if(actual != result)
+        return parse_error(parser, error, "XLIL value ids must be sequential");
+      return XS_LIL_OK;
+    }
     const char *true_text = "const.bool true";
     const char *false_text = "const.bool false";
     bool value = false;

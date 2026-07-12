@@ -170,6 +170,9 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:bool = ge.i32 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL ge.i32 instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_NOT_BOOL &&
+       fprintf(stream, "  %%r%u:bool = not.bool %%r%u\n", instruction->result, instruction->left) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL not.bool instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_CALL)
     {
       if(instruction->result != UINT32_MAX &&

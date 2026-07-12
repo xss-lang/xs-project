@@ -541,9 +541,12 @@ static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, con
     if(!lower_bool_expression(entry, context, initializer, diagnostics, &value, &invert, error))
       return false;
     if(invert)
-      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(initializer),
-                                "native source Bool local initializer does not materialize unary ! yet") &&
-             false;
+    {
+      XsMirValueId inverted = 0;
+      if(xs_mir_block_not_bool(entry, value, &inverted, error) != XS_MIR_OK)
+        return false;
+      value = inverted;
+    }
     return context_add(context, name->text, value, XS_LIL_TYPE_BOOL, diagnostics, node_span(name));
   }
   if(!lower_i32_expression(entry, context, initializer, diagnostics, &value, error))
