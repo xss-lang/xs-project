@@ -86,7 +86,7 @@ nums: Int[3] = {1, 2, 3, 4, 5};
 // {1, 2, 3, 4}
 
 
-// string defaults
+// Str defaults
 
 names: Str[3] = {"Leitewolf"};
 

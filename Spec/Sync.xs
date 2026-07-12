@@ -597,10 +597,10 @@ fn AtomicCreation() {
 // Int
 // Integer
 //
-// Uint16
-// Uint32
-// Uint
-// Uint128
+// UShort
+// ULong
+// UInt
+// UInteger
 //
 // Bool
 //

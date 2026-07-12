@@ -13,8 +13,8 @@
 // - Http.response<T>
 // - URI.create(...)
 // - Request builder methods
-// - String request bodies
-// - String response body handlers
+// - Str request bodies
+// - Str response body handlers
 // - Synchronous send(...)
 // - Asynchronous sendAsync(...)
 // - NetworkException
@@ -78,10 +78,10 @@ fn BuildGetRequest() {
 
 
 // ============================================================
-// String request body
+// Str request body
 // ============================================================
 
-fn StringRequestBody() {
+fn StrRequestBody() {
     request: Http.request = new()
         .uri(URI.create("https://httpbin.org/post"))
         .header("Content-Type", "application/json")
@@ -183,12 +183,12 @@ fn ReadResponseBody(
 // Body handlers
 // ============================================================
 
-fn StringBodyHandler() {
+fn StrBodyHandler() {
     handler = HttpResponse.BodyHandlers.ofstr();
 }
 
 
-// Confirmed string body-handler spellings appearing in HTTP code:
+// Confirmed Str body-handler spellings appearing in HTTP code:
 //
 // - HttpResponse.BodyHandlers.ofstr()
 // - Http.Response.BodyHandlers.ofstr()
