@@ -198,6 +198,11 @@ static void test_control_flow_return_expression_types(void)
       "module App;\nfn Flag() => Bool { return match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
 }
 
+static void test_result_propagation_requires_semantic_support(void)
+{
+  CHECK(!check_single_source_expressions("module App;\nfn DoWork() => Int { return 1; }\nfn Main() { DoWork()@; }\n"));
+}
+
 static void test_macro_literal_initializer_expression_errors(void)
 {
   const char *main = "module App;\n"
@@ -249,6 +254,7 @@ int main(void)
   test_control_flow_assignment_expression_types();
   test_return_literal_expression_types();
   test_control_flow_return_expression_types();
+  test_result_propagation_requires_semantic_support();
   test_macro_literal_initializer_expression_errors();
   test_macro_binding_reassignment_errors();
   test_macro_static_runtime_initializer_errors();

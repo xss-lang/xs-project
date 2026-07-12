@@ -441,6 +441,13 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
   return success;
 }
 
+static bool check_result_propagation(const XsSyntaxNode *node, XsDiagnostics *diagnostics)
+{
+  xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
+                     "Result propagation with '@' is parsed but type checking is not implemented yet");
+  return false;
+}
+
 static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,
                        const XsMacroStatementExpansionSet *macro_statements, CheckContext context,
                        XsDiagnostics *diagnostics);
@@ -528,6 +535,8 @@ static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansi
   }
   if(node->kind == XS_SYNTAX_EXPR_ASSIGNMENT)
     success = check_assignment(node, &context, diagnostics) && success;
+  if(node->kind == XS_SYNTAX_EXPR_RESULT_PROPAGATION)
+    success = check_result_propagation(node, diagnostics) && success;
   if(node->kind == XS_SYNTAX_STMT_RETURN)
     success = check_return_statement(node, &context, diagnostics) && success;
   if(macro_declarations != nullptr && has_child_kind(node, XS_SYNTAX_DECL_MACRO_CALL))
