@@ -132,6 +132,20 @@ pub enum Statement
     else_block: Option<Block>,
     span: Span,
   },
+  While
+  {
+    condition: Expression,
+    body: Block,
+    span: Span,
+  },
+  Break
+  {
+    span: Span,
+  },
+  Continue
+  {
+    span: Span,
+  },
   Panic
   {
     span: Span,
@@ -167,6 +181,8 @@ pub enum DiagnosticCode
   ResultPropagationReturnMismatch,
   ConditionTypeMismatch,
   MissingBlockValue,
+  BreakOutsideLoop,
+  ContinueOutsideLoop,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -184,6 +200,7 @@ pub struct TypeChecker
   diagnostics: Vec<Diagnostic>,
   return_type: Option<Type>,
   scope_starts: Vec<usize>,
+  loop_depth: usize,
 }
 
 impl TypeChecker
@@ -261,6 +278,31 @@ impl TypeChecker
           self.check_block(else_block, None);
         }
       }
+      Statement::While { condition,
+                         body,
+                         span, } =>
+      {
+        self.check_condition(condition, *span);
+        self.loop_depth += 1;
+        self.check_block(body, None);
+        self.loop_depth -= 1;
+      }
+      Statement::Break { span } if self.loop_depth == 0 =>
+      {
+        self.diagnostics
+            .push(Diagnostic { code: DiagnosticCode::BreakOutsideLoop,
+                               message: "break may only appear inside a loop".to_string(),
+                               span: *span });
+      }
+      Statement::Continue { span } if self.loop_depth == 0 =>
+      {
+        self.diagnostics
+            .push(Diagnostic { code: DiagnosticCode::ContinueOutsideLoop,
+                               message: "continue may only appear inside a loop".to_string(),
+                               span: *span });
+      }
+      Statement::Break { .. } | Statement::Continue { .. } =>
+      {}
       Statement::Panic { .. } =>
       {}
     }

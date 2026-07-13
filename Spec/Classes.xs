@@ -9,7 +9,7 @@
 //
 // Fields are supported.
 // Field initializers are optional.
-// C#-style properties use getter and setter accessors.
+// Properties use getter and setter accessors.
 //
 // Constructors are supported.
 // Constructor name must match the class name.
@@ -25,9 +25,19 @@
 // Method merging is not supported.
 // Two methods with the same name and the same parameter type list are a duplicate declaration error.
 //
-// Single inheritance and interfaces use a C#-style base list.
-// The first class type in the list is the base class; interface types are implemented interfaces.
-// Multiple interface implementation is supported.
+// Inheritance and interface implementation use one `:` base list.
+// A class may inherit from multiple classes and implement multiple interfaces.
+// Interfaces may inherit any number of interfaces, but no other type category.
+// Base-list order is significant and is preserved in HIR for layout and dispatch planning.
+// Base entries may carry public, protected, private, internal, and virtual inheritance modifiers.
+// Omitted base access is internal.
+// `extends` and `implements` are not separate declaration forms.
+//
+// Dispatch modifiers:
+// - virtual introduces an overridable class method.
+// - override verifies that a method replaces compatible inherited virtual slots; `virtual override` is valid.
+// - sealed class prevents further inheritance.
+// - sealed override prevents further overriding of that method slot.
 //
 // Visibility modifiers:
 // - public
@@ -35,11 +45,12 @@
 // - protected
 // - internal
 //
-// Visibility follows the C# access model:
+// Visibility rules:
 // - public: visible from any module that can name the type/member.
 // - private: visible only inside the declaring type or source scope.
 // - protected: visible inside the declaring type and derived classes.
 // - internal: visible inside the current project/package assembly boundary.
+// - omitted: internal for declarations, members, and base entries.
 //
 // Class construction uses `new Type(...)`.
 // Method calls use the dot operator.
@@ -143,6 +154,16 @@ class Animal {
 class Dog : Animal {
 }
 
+class Audited {
+    virtual fn audit() {
+    }
+}
+
+class WorkingDog : public Animal, public virtual Audited {
+    override fn audit() {
+    }
+}
+
 // interface
 interface Runnable {
     fn run();
@@ -243,6 +264,9 @@ class Math {
 
 // VALID
 class Program : Runnable, Closeable {
+}
+
+sealed class FinalProgram : Program, Runnable, Closeable {
 }
 
 

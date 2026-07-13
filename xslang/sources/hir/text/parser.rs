@@ -226,6 +226,9 @@ impl Parser<'_>
       "expression" => Some(self.expression_statement()),
       "return" => Some(self.return_statement()),
       "if" => Some(self.if_statement()),
+      "while" => Some(self.while_statement()),
+      "break" => Some(self.break_statement()),
+      "continue" => Some(self.continue_statement()),
       "panic" => Some(self.panic_statement()),
       _ => None,
     }
@@ -277,6 +280,18 @@ impl Parser<'_>
     Statement::Panic { span: span() }
   }
 
+  fn break_statement(&mut self) -> Statement
+  {
+    self.index += 1;
+    Statement::Break { span: span() }
+  }
+
+  fn continue_statement(&mut self) -> Statement
+  {
+    self.index += 1;
+    Statement::Continue { span: span() }
+  }
+
   fn if_statement(&mut self) -> Statement
   {
     self.index += 1;
@@ -297,6 +312,19 @@ impl Parser<'_>
                     then_block,
                     else_block,
                     span: span() }
+  }
+
+  fn while_statement(&mut self) -> Statement
+  {
+    self.index += 1;
+    self.consume_expression_field("condition");
+    let condition = self.expression()
+                        .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                         span: span() });
+    let body = self.named_block("body");
+    Statement::While { condition,
+                       body,
+                       span: span() }
   }
 
   fn named_block(&mut self, name: &str) -> Block

@@ -269,6 +269,7 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "macro expansion repetition",
       "macro argument",
       "token",
+      "base specifier",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown syntax node";

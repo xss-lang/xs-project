@@ -144,7 +144,7 @@ XsSyntaxNode *parse_inner_attribute(SyntaxParser *parser)
 
 Modifiers parse_modifiers(SyntaxParser *parser)
 {
-  Modifiers result = {.visibility = XS_SYNTAX_VISIBILITY_DEFAULT,
+  Modifiers result = {.visibility = XS_SYNTAX_VISIBILITY_INTERNAL,
                       .span = {parser->current.span.start, parser->current.span.start}};
   bool progress = true;
   while(progress)
@@ -198,6 +198,21 @@ Modifiers parse_modifiers(SyntaxParser *parser)
     else if(accept(parser, XS_TOKEN_KW_INCOMPLETE))
     {
       result.flags |= XS_SYNTAX_FLAG_INCOMPLETE;
+      progress = true;
+    }
+    else if(accept(parser, XS_TOKEN_KW_VIRTUAL))
+    {
+      result.flags |= XS_SYNTAX_FLAG_VIRTUAL;
+      progress = true;
+    }
+    else if(accept(parser, XS_TOKEN_KW_OVERRIDE))
+    {
+      result.flags |= XS_SYNTAX_FLAG_OVERRIDE;
+      progress = true;
+    }
+    else if(accept(parser, XS_TOKEN_KW_SEALED))
+    {
+      result.flags |= XS_SYNTAX_FLAG_SEALED;
       progress = true;
     }
     if(progress)

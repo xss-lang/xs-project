@@ -142,12 +142,13 @@ static XsSyntaxVisibility declaration_visibility(const XsSyntaxNode *node, bool 
 {
   if(node->visibility != XS_SYNTAX_VISIBILITY_DEFAULT)
     return node->visibility;
-  return public_namespace ? XS_SYNTAX_VISIBILITY_PUBLIC : XS_SYNTAX_VISIBILITY_INTERNAL;
+  (void)public_namespace;
+  return XS_SYNTAX_VISIBILITY_INTERNAL;
 }
 
 static XsSyntaxVisibility member_visibility(const XsSyntaxNode *node)
 {
-  return node->visibility == XS_SYNTAX_VISIBILITY_DEFAULT ? XS_SYNTAX_VISIBILITY_PRIVATE : node->visibility;
+  return node->visibility == XS_SYNTAX_VISIBILITY_DEFAULT ? XS_SYNTAX_VISIBILITY_INTERNAL : node->visibility;
 }
 
 static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const char *namespace_name,
@@ -207,8 +208,8 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
 static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_name, bool public_namespace,
                                 XsHirSymbolTable *table, XsDiagnostics *diagnostics)
 {
-  return collect_declaration_with_visibility(node, namespace_name, declaration_visibility(node, public_namespace), table,
-                                             diagnostics);
+  return collect_declaration_with_visibility(node, namespace_name, declaration_visibility(node, public_namespace),
+                                             table, diagnostics);
 }
 
 static bool collect_extern_block(const XsSyntaxNode *node, const char *namespace_name, bool public_namespace,
@@ -220,8 +221,9 @@ static bool collect_extern_block(const XsSyntaxNode *node, const char *namespace
     const XsSyntaxNode *child = node->children[i];
     if(child->kind != XS_SYNTAX_DECL_FUNCTION && child->kind != XS_SYNTAX_DECL_VARIABLE)
       continue;
-    XsSyntaxVisibility child_visibility =
-        child->visibility == XS_SYNTAX_VISIBILITY_DEFAULT ? block_visibility : declaration_visibility(child, public_namespace);
+    XsSyntaxVisibility child_visibility = child->visibility == XS_SYNTAX_VISIBILITY_DEFAULT
+                                              ? block_visibility
+                                              : declaration_visibility(child, public_namespace);
     if(!collect_declaration_with_visibility(child, namespace_name, child_visibility, table, diagnostics))
       return false;
   }

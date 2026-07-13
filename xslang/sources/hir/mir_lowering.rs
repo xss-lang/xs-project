@@ -36,6 +36,7 @@ pub struct HirToMirLowerer
   locals: HashMap<String, mir::LocalId>,
   next_local: u32,
   current_block: mir::BlockId,
+  loop_targets: Vec<(mir::BlockId, mir::BlockId)>,
 }
 
 impl HirToMirLowerer
@@ -104,6 +105,16 @@ impl HirToMirLowerer
                                                    .and_then(|block| self.surface_block_from_desugared(block)),
                              span: *span })
       }
+      DesugaredStatement::While { condition,
+                                  body,
+                                  span, } =>
+      {
+        Some(Statement::While { condition: self.surface_expression_from_desugared(condition)?,
+                                body: self.surface_block_from_desugared(body)?,
+                                span: *span })
+      }
+      DesugaredStatement::Break { span } => Some(Statement::Break { span: *span }),
+      DesugaredStatement::Continue { span } => Some(Statement::Continue { span: *span }),
       DesugaredStatement::Panic { span } => Some(Statement::Panic { span: *span }),
     }
   }
@@ -223,6 +234,9 @@ impl HirToMirLowerer
       Statement::Return { value,
                           span, } => self.lower_return(value.as_ref(), *span, lowered),
       Statement::If { .. } => self.lower_if_statement(statement, lowered),
+      Statement::While { .. } => self.lower_while_statement(statement, lowered),
+      Statement::Break { span } => self.lower_loop_jump(false, *span, lowered),
+      Statement::Continue { span } => self.lower_loop_jump(true, *span, lowered),
       Statement::Panic { span } => self.lower_panic(*span, lowered),
     }
   }

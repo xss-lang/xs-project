@@ -62,6 +62,9 @@ static const Keyword keywords[] = {
     {"using", XS_TOKEN_KW_USING},
     {"val", XS_TOKEN_KW_VAL},
     {"while", XS_TOKEN_KW_WHILE},
+    {"virtual", XS_TOKEN_KW_VIRTUAL},
+    {"override", XS_TOKEN_KW_OVERRIDE},
+    {"sealed", XS_TOKEN_KW_SEALED},
 };
 
 XsTokenKind xs_token_keyword(const char *text, size_t length)
@@ -187,6 +190,9 @@ const char *xs_token_kind_name(XsTokenKind kind)
       "using",
       "val",
       "while",
+      "virtual",
+      "override",
+      "sealed",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown token";

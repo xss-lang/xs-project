@@ -85,7 +85,10 @@ fn statement_calls(statement: &Statement, name: &str) -> bool
       block_calls(then_block, name) ||
       else_block.as_ref().is_some_and(|block| block_calls(block, name))
     }
-    Statement::Panic { .. } => false,
+    Statement::While { condition,
+                       body,
+                       .. } => expression_calls(condition, name) || block_calls(body, name),
+    Statement::Break { .. } | Statement::Continue { .. } | Statement::Panic { .. } => false,
   }
 }
 

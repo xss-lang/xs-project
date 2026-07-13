@@ -18,6 +18,8 @@
 // - Typed variants with the same name may be overloaded when their payload types differ.
 // - Non-typed variants cannot be overloaded.
 // - Regular enum variant names must be unique.
+// - enum data may inherit any number of enum data types, but no other type category.
+// - Regular enum cannot inherit.
 //
 // Visibility modifiers:
 // - public
@@ -68,6 +70,18 @@ enum data Value {
     Color: Color,
 }
 
+enum data TaggedValue {
+    Tag: Int,
+}
+
+enum data ValueMetadata {
+    Source: Str,
+}
+
+enum data RichValue : TaggedValue, ValueMetadata, Value {
+    Number: Long,
+}
+
 
 // data enum overload selection
 //
@@ -110,6 +124,13 @@ enum Color {
     Green,
     Blue,
 }
+
+
+// INVALID
+enum DerivedColor : Color {
+    Red,
+}
+// Regular enums cannot have base types.
 
 enum Color {
     Red,

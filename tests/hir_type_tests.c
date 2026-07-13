@@ -192,11 +192,11 @@ static void test_imported_user_type(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_public_namespace_exports_default_type(void)
+static void test_public_namespace_exports_explicit_public_type(void)
 {
   const char *library = "module Model;\n"
                         "public namespace Records;\n"
-                        "data User { name: Str; }\n";
+                        "public data User { name: Str; }\n";
   const char *main = "module App;\n"
                      "imports Model::Records;\n"
                      "fn Main(value: Model::Records::User) {}\n";
@@ -440,7 +440,7 @@ int main(void)
   test_standard_cffi_types();
   test_duplicate_generic_parameter_names();
   test_imported_user_type();
-  test_public_namespace_exports_default_type();
+  test_public_namespace_exports_explicit_public_type();
   test_public_qualified_type_requires_import();
   test_private_qualified_type_visibility();
   test_private_same_namespace_type_visibility();

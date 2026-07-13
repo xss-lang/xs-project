@@ -119,12 +119,12 @@ static void test_data_callables_and_overloads(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid_inheritance = "data User : Person { name: Str; }\n";
-  source = (XsSource){
-      .path = "DataInheritanceInvalid.xs", .text = invalid_inheritance, .length = strlen(invalid_inheritance)};
+  const char *data_inheritance = "data User : Person { name: Str; }\n";
+  source = (XsSource){.path = "DataInheritance.xs", .text = data_inheritance, .length = strlen(data_inheritance)};
   xs_diagnostics_init(&diagnostics);
-  CHECK(!xs_syntax_parse(&source, 29, &diagnostics, &tree));
-  CHECK(xs_diagnostics_has_error(&diagnostics));
+  CHECK(xs_syntax_parse(&source, 29, &diagnostics, &tree));
+  CHECK(!xs_diagnostics_has_error(&diagnostics));
+  CHECK(count_kind(tree.root, XS_SYNTAX_BASE_SPECIFIER) == 1);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -262,8 +262,7 @@ static void test_class_inheritance_rules(void)
   xs_diagnostics_free(&diagnostics);
 
   const char *old_extends = "class Program { extends Animal; }\n";
-  source =
-      (XsSource){.path = "OldExtendsInvalid.xs", .text = old_extends, .length = strlen(old_extends)};
+  source = (XsSource){.path = "OldExtendsInvalid.xs", .text = old_extends, .length = strlen(old_extends)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 47, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
@@ -271,8 +270,7 @@ static void test_class_inheritance_rules(void)
   xs_diagnostics_free(&diagnostics);
 
   const char *old_implements = "class Program { implements Runnable; }\n";
-  source =
-      (XsSource){.path = "OldImplementsInvalid.xs", .text = old_implements, .length = strlen(old_implements)};
+  source = (XsSource){.path = "OldImplementsInvalid.xs", .text = old_implements, .length = strlen(old_implements)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 48, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
@@ -464,6 +462,42 @@ static void test_using_declaration_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_dispatch_and_multiple_inheritance_modifiers(void)
+{
+  const char *valid = "class Root { public virtual fn Run() -> Long { return 1; } }\n"
+                      "class Left : public virtual Root { public virtual override fn Run() -> Long { return 2; } }\n"
+                      "class Right { public virtual fn Close() {} }\n"
+                      "interface Printable { fn Print(); }\n"
+                      "sealed class Leaf : public Left, protected Right, Printable { "
+                      "public sealed override fn Run() -> Long { return 3; } }\n";
+  XsSource source = {.path = "DispatchModifiers.xs", .text = valid, .length = strlen(valid)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 65, &diagnostics, &tree));
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_FUNCTION, XS_SYNTAX_FLAG_VIRTUAL) == 3);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_FUNCTION, XS_SYNTAX_FLAG_OVERRIDE) == 2);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_FUNCTION, XS_SYNTAX_FLAG_SEALED) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_CLASS, XS_SYNTAX_FLAG_SEALED) == 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *invalid[] = {
+      "virtual fn TopLevel() {}\n",           "class Bad { static virtual fn Run() {} }\n",
+      "class Bad { sealed fn Run() {} }\n",   "sealed incomplete class Bad {}\n",
+      "sealed interface Bad { fn Run(); }\n", "class Bad { virtual value: Long; }\n",
+  };
+  for(size_t index = 0; index < sizeof(invalid) / sizeof(invalid[0]); ++index)
+  {
+    source = (XsSource){.path = "InvalidDispatchModifier.xs", .text = invalid[index], .length = strlen(invalid[index])};
+    xs_diagnostics_init(&diagnostics);
+    CHECK(!xs_syntax_parse(&source, 66 + index, &diagnostics, &tree));
+    CHECK(xs_diagnostics_has_error(&diagnostics));
+    xs_syntax_tree_free(&tree);
+    xs_diagnostics_free(&diagnostics);
+  }
+}
+
 int main(void)
 {
   test_top_level_variable_declaration_structure();
@@ -479,5 +513,6 @@ int main(void)
   test_generic_constraint_structure();
   test_extern_c_function_structure();
   test_using_declaration_structure();
+  test_dispatch_and_multiple_inheritance_modifiers();
   return failures == 0 ? 0 : 1;
 }

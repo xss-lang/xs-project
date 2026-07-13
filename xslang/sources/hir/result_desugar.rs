@@ -96,6 +96,20 @@ pub enum DesugaredStatement
     else_block: Option<DesugaredBlock>,
     span: Span,
   },
+  While
+  {
+    condition: DesugaredExpression,
+    body: DesugaredBlock,
+    span: Span,
+  },
+  Break
+  {
+    span: Span,
+  },
+  Continue
+  {
+    span: Span,
+  },
   Panic
   {
     span: Span,
@@ -187,6 +201,13 @@ impl ResultDesugar
                                                           else_block:
                                                             else_block.as_ref().map(|block| self.desugar_block(block)),
                                                           span: *span },
+      Statement::While { condition,
+                         body,
+                         span, } => DesugaredStatement::While { condition: self.desugar_expression(condition),
+                                                                body: self.desugar_block(body),
+                                                                span: *span },
+      Statement::Break { span } => DesugaredStatement::Break { span: *span },
+      Statement::Continue { span } => DesugaredStatement::Continue { span: *span },
       Statement::Panic { span } => DesugaredStatement::Panic { span: *span },
     }
   }

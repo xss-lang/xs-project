@@ -5,6 +5,7 @@
 
 #include "parser_internal.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static bool syntax_text_equal(XsText left, XsText right)
@@ -40,6 +41,7 @@ static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKi
 }
 
 static void skip_forbidden_data_member(SyntaxParser *parser);
+static void parse_base_list(SyntaxParser *parser, XsSyntaxNode *declaration);
 
 static const XsSyntaxNode *enum_variant_payload(const XsSyntaxNode *variant)
 {
@@ -156,6 +158,52 @@ static bool token_is_overloadable_operator(XsTokenKind kind)
   default:
     return false;
   }
+}
+
+static uint32_t dispatch_modifier_flags(const XsSyntaxNode *declaration)
+{
+  return declaration->flags & (XS_SYNTAX_FLAG_VIRTUAL | XS_SYNTAX_FLAG_OVERRIDE | XS_SYNTAX_FLAG_SEALED);
+}
+
+static void reject_dispatch_modifiers(SyntaxParser *parser, const XsSyntaxNode *declaration, const char *context)
+{
+  if(dispatch_modifier_flags(declaration) == 0)
+    return;
+  char message[160];
+  snprintf(message, sizeof(message), "virtual, override, and sealed are not valid on %s", context);
+  xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                     (XsSpan){declaration->span.start_offset, declaration->span.end_offset}, message);
+}
+
+static void validate_method_dispatch_modifiers(SyntaxParser *parser, const XsSyntaxNode *function, bool class_method,
+                                               bool interface_method)
+{
+  uint32_t flags = dispatch_modifier_flags(function);
+  if(flags == 0)
+    return;
+  XsSpan span = {function->span.start_offset, function->span.end_offset};
+  if(!class_method || interface_method)
+  {
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                       "explicit virtual, override, and sealed modifiers are only valid on class methods");
+    return;
+  }
+  if((function->flags & XS_SYNTAX_FLAG_STATIC) != 0)
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                       "static methods cannot be virtual, override, or sealed");
+  if((flags & XS_SYNTAX_FLAG_SEALED) != 0 && (flags & XS_SYNTAX_FLAG_OVERRIDE) == 0)
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, span, "a sealed method must also be an override");
+}
+
+static void validate_type_dispatch_modifiers(SyntaxParser *parser, const XsSyntaxNode *declaration, bool interface)
+{
+  XsSpan span = {declaration->span.start_offset, declaration->span.end_offset};
+  if((declaration->flags & (XS_SYNTAX_FLAG_VIRTUAL | XS_SYNTAX_FLAG_OVERRIDE)) != 0 ||
+     (interface && (declaration->flags & XS_SYNTAX_FLAG_SEALED) != 0))
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                       "only classes may use the sealed type modifier; virtual and override apply to methods");
+  if((declaration->flags & XS_SYNTAX_FLAG_SEALED) != 0 && (declaration->flags & XS_SYNTAX_FLAG_INCOMPLETE) != 0)
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, span, "a class cannot be both sealed and incomplete");
 }
 
 static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, size_t start, bool signature_allowed,
@@ -353,6 +401,7 @@ static XsSyntaxNode *parse_extern_block(SyntaxParser *parser, Modifiers modifier
   }
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_EXTERN_BLOCK, (XsSpan){start, parser->previous.span.end});
   attach_modifiers(parser, declaration, modifiers);
+  reject_dispatch_modifiers(parser, declaration, "extern blocks");
   xs_syntax_node_add(parser->tree, declaration, extern_abi_token(parser, abi_span));
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' after extern ABI");
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
@@ -363,6 +412,7 @@ static XsSyntaxNode *parse_extern_block(SyntaxParser *parser, Modifiers modifier
     {
       bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
       XsSyntaxNode *function = parse_function(parser, member, before, true, referential_transparent);
+      validate_method_dispatch_modifiers(parser, function, false, false);
       function->flags |= XS_SYNTAX_FLAG_EXTERN | XS_SYNTAX_FLAG_INCOMPLETE;
       xs_syntax_node_add(parser->tree, function, extern_abi_token(parser, abi_span));
       if(xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK) != nullptr)
@@ -400,11 +450,20 @@ static XsSyntaxNode *parse_enum(SyntaxParser *parser, Modifiers modifiers, size_
 {
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_ENUM, (XsSpan){start, parser->previous.span.end});
   attach_modifiers(parser, declaration, modifiers);
+  reject_dispatch_modifiers(parser, declaration, "enum declarations");
   bool data_enum = accept(parser, XS_TOKEN_KW_DATA);
   if(data_enum)
     declaration->flags |= XS_SYNTAX_FLAG_DATA_ENUM;
   xs_syntax_node_add(parser->tree, declaration, identifier(parser));
   parse_generics(parser, declaration);
+  if(data_enum)
+    parse_base_list(parser, declaration);
+  else if(parser->current.kind == XS_TOKEN_COLON)
+  {
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                       "regular enum declarations cannot have base types");
+    parse_base_list(parser, declaration);
+  }
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before enum variants");
   bool has_payload_variant = false;
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
@@ -549,8 +608,10 @@ static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_
 {
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_DATA, (XsSpan){start, parser->previous.span.end});
   attach_modifiers(parser, declaration, modifiers);
+  reject_dispatch_modifiers(parser, declaration, "data declarations");
   xs_syntax_node_add(parser->tree, declaration, identifier(parser));
   parse_generics(parser, declaration);
+  parse_base_list(parser, declaration);
   const XsSyntaxNode *data_name = first_child_kind(declaration, XS_SYNTAX_IDENTIFIER);
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before data members");
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
@@ -560,8 +621,9 @@ static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_
     if(accept(parser, XS_TOKEN_KW_FN) || accept(parser, XS_TOKEN_KW_OP))
     {
       bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
-      xs_syntax_node_add(parser->tree, declaration,
-                         parse_function(parser, member, before, false, referential_transparent));
+      XsSyntaxNode *function = parse_function(parser, member, before, false, referential_transparent);
+      validate_method_dispatch_modifiers(parser, function, false, false);
+      xs_syntax_node_add(parser->tree, declaration, function);
     }
     else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN)
     {
@@ -573,6 +635,7 @@ static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_
                            (XsSpan){constructor_name->span.start_offset, constructor_name->span.end_offset},
                            "constructor name must match the data name");
       attach_modifiers(parser, constructor, member);
+      reject_dispatch_modifiers(parser, constructor, "constructors");
       xs_syntax_node_add(parser->tree, constructor, constructor_name);
       parse_parameters(parser, constructor);
       xs_syntax_node_add(parser->tree, constructor, parse_block(parser));
@@ -584,6 +647,7 @@ static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_
       size_t start_field = parser->current.span.start;
       XsSyntaxNode *field = node(parser, XS_SYNTAX_DATA_FIELD, (XsSpan){start_field, start_field});
       attach_modifiers(parser, field, member);
+      reject_dispatch_modifiers(parser, field, "data fields");
       xs_syntax_node_add(parser->tree, field, identifier(parser));
       expect(parser, XS_TOKEN_COLON, "expected ':' after data field name");
       xs_syntax_node_add(parser->tree, field, parse_type(parser));
@@ -616,7 +680,60 @@ static void parse_base_list(SyntaxParser *parser, XsSyntaxNode *declaration)
     return;
   do
   {
-    xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
+    size_t start = parser->current.span.start;
+    XsSyntaxNode *base = node(parser, XS_SYNTAX_BASE_SPECIFIER, (XsSpan){start, start});
+    bool saw_access = false;
+    bool saw_virtual = false;
+    while(true)
+    {
+      if(accept(parser, XS_TOKEN_KW_VIRTUAL))
+      {
+        if(saw_virtual)
+          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                             "duplicate virtual inheritance modifier");
+        base->flags |= XS_SYNTAX_FLAG_VIRTUAL;
+        saw_virtual = true;
+      }
+      else if(accept(parser, XS_TOKEN_KW_PUBLIC))
+      {
+        if(saw_access)
+          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                             "base type may have only one access modifier");
+        base->visibility = XS_SYNTAX_VISIBILITY_PUBLIC;
+        saw_access = true;
+      }
+      else if(accept(parser, XS_TOKEN_KW_PROTECTED))
+      {
+        if(saw_access)
+          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                             "base type may have only one access modifier");
+        base->visibility = XS_SYNTAX_VISIBILITY_PROTECTED;
+        saw_access = true;
+      }
+      else if(accept(parser, XS_TOKEN_KW_PRIVATE))
+      {
+        if(saw_access)
+          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                             "base type may have only one access modifier");
+        base->visibility = XS_SYNTAX_VISIBILITY_PRIVATE;
+        saw_access = true;
+      }
+      else if(accept(parser, XS_TOKEN_KW_INTERNAL))
+      {
+        if(saw_access)
+          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                             "base type may have only one access modifier");
+        base->visibility = XS_SYNTAX_VISIBILITY_INTERNAL;
+        saw_access = true;
+      }
+      else
+        break;
+    }
+    if(!saw_access)
+      base->visibility = XS_SYNTAX_VISIBILITY_INTERNAL;
+    xs_syntax_node_add(parser->tree, base, parse_type(parser));
+    finish_node(parser, base, parser->previous.span.end);
+    xs_syntax_node_add(parser->tree, declaration, base);
   } while(accept(parser, XS_TOKEN_COMMA));
 }
 
@@ -625,6 +742,7 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
   XsSyntaxNode *declaration = node(parser, interface ? XS_SYNTAX_DECL_INTERFACE : XS_SYNTAX_DECL_CLASS,
                                    (XsSpan){start, parser->previous.span.end});
   attach_modifiers(parser, declaration, modifiers);
+  validate_type_dispatch_modifiers(parser, declaration, interface);
   XsSyntaxNode *class_name = identifier(parser);
   xs_syntax_node_add(parser->tree, declaration, class_name);
   parse_generics(parser, declaration);
@@ -636,13 +754,13 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
     if(accept(parser, XS_TOKEN_KW_EXTENDS))
     {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                         "use C#-style ':' base lists instead of extends");
+                         "use the canonical ':' base-list syntax instead of extends");
       skip_forbidden_data_member(parser);
     }
     else if(accept(parser, XS_TOKEN_KW_IMPLEMENTS))
     {
       xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                         "use C#-style ':' base lists instead of implements");
+                         "use the canonical ':' base-list syntax instead of implements");
       skip_forbidden_data_member(parser);
     }
     else
@@ -652,6 +770,7 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
       {
         bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
         XsSyntaxNode *function = parse_function(parser, member, before, interface, referential_transparent);
+        validate_method_dispatch_modifiers(parser, function, true, interface);
         if(interface && (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) == 0)
         {
           XsSpan function_span = {function->span.start_offset, function->span.end_offset};
@@ -681,6 +800,7 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
         XsSyntaxNode *field = parse_variable(parser, true);
         field->kind = XS_SYNTAX_CLASS_FIELD;
         attach_modifiers(parser, field, member);
+        reject_dispatch_modifiers(parser, field, "fields and properties");
         xs_syntax_node_add(parser->tree, declaration, field);
       }
       else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN)
@@ -688,6 +808,7 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
         XsSyntaxNode *constructor =
             node(parser, XS_SYNTAX_CLASS_CONSTRUCTOR, (XsSpan){before, parser->current.span.end});
         attach_modifiers(parser, constructor, member);
+        reject_dispatch_modifiers(parser, constructor, "constructors");
         XsSyntaxNode *constructor_name = identifier(parser);
         XsSpan constructor_span = constructor_name == nullptr ? parser->previous.span
                                                               : (XsSpan){constructor_name->span.start_offset,
@@ -706,6 +827,7 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
       {
         XsSyntaxNode *destructor = node(parser, XS_SYNTAX_CLASS_DESTRUCTOR, (XsSpan){before, parser->current.span.end});
         attach_modifiers(parser, destructor, member);
+        reject_dispatch_modifiers(parser, destructor, "destructors");
         xs_syntax_node_add(parser->tree, destructor, identifier(parser));
         expect(parser, XS_TOKEN_DOT, "expected '.' in destructor declaration");
         if(parser->current.kind != XS_TOKEN_IDENTIFIER || !token_text_is(parser, parser->current, "Drop"))
@@ -762,7 +884,9 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
   if(accept(parser, XS_TOKEN_KW_FN) || accept(parser, XS_TOKEN_KW_OP))
   {
     bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
-    return parse_function(parser, modifiers, start, false, referential_transparent);
+    XsSyntaxNode *function = parse_function(parser, modifiers, start, false, referential_transparent);
+    validate_method_dispatch_modifiers(parser, function, false, false);
+    return function;
   }
   if(accept(parser, XS_TOKEN_KW_CLASS))
     return parse_class(parser, modifiers, start, false);

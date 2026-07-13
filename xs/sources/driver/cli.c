@@ -13,6 +13,7 @@
 #include "xs/compiler_core.h"
 #include "xs/diagnostic.h"
 #include "xs/hir/cffi.h"
+#include "xs/hir/inheritance.h"
 #include "xs/hir/expression_check.h"
 #include "xs/hir/module_registry.h"
 #include "xs/hir/symbol_table.h"
@@ -416,6 +417,7 @@ static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolT
   success = xs_hir_resolve_types_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements, symbols,
                                              &unit->imports, &unit->diagnostics) &&
             success;
+  success = xs_hir_validate_inheritance(&unit->tree, symbols, &unit->imports, &unit->diagnostics) && success;
   return xs_hir_check_expression_types_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
                                                    &unit->diagnostics) &&
          success;

@@ -53,9 +53,9 @@ static void test_class_member_symbols(void)
   const XsHirMemberSymbol *name = xs_hir_member_symbol_table_find(&members, "App.User", "name");
   const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "get_name");
   CHECK(name != nullptr && name->kind == XS_HIR_MEMBER_FIELD);
-  CHECK(name != nullptr && name->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
+  CHECK(name != nullptr && name->visibility == XS_SYNTAX_VISIBILITY_INTERNAL);
   CHECK(method != nullptr && method->kind == XS_HIR_MEMBER_METHOD);
-  CHECK(method != nullptr && method->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
+  CHECK(method != nullptr && method->visibility == XS_SYNTAX_VISIBILITY_INTERNAL);
   CHECK(method != nullptr && strcmp(method->qualified_name, "App.User.get_name") == 0);
   xs_hir_member_symbol_table_free(&members);
   xs_hir_symbol_table_free(&symbols);

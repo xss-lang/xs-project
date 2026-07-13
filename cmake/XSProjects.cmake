@@ -74,6 +74,7 @@ add_library(xs_compiler
   xs/sources/hir/module_model.c
   xs/sources/hir/module_registry.c
   xs/sources/hir/import_resolver.c
+  xs/sources/hir/inheritance.c
   xs/sources/hir/name_resolution.c
   xs/sources/hir/symbol_table.c
   xs/sources/hir/syntax_helpers.c

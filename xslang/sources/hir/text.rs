@@ -17,9 +17,11 @@ mod block_writer;
 mod call_tests;
 #[cfg(test)]
 mod conditional_tests;
+mod statement_writer;
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
 pub use parser::{XhirParseDiagnostic, parse_xhir_function, parse_xhir_module_symbols};
+use statement_writer::{write_desugared_statement, write_statement};
 
 pub const SUPPORTED_XHIR_VERSION: u32 = 0;
 
@@ -272,6 +274,8 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::ResultPropagationReturnMismatch => "result_propagation_return_mismatch",
     TypeDiagnosticCode::ConditionTypeMismatch => "condition_type_mismatch",
     TypeDiagnosticCode::MissingBlockValue => "missing_block_value",
+    TypeDiagnosticCode::BreakOutsideLoop => "break_outside_loop",
+    TypeDiagnosticCode::ContinueOutsideLoop => "continue_outside_loop",
   }
 }
 
@@ -291,6 +295,8 @@ fn parse_type_diagnostic_code(name: &str,
     "result_propagation_return_mismatch" => Some(TypeDiagnosticCode::ResultPropagationReturnMismatch),
     "condition_type_mismatch" => Some(TypeDiagnosticCode::ConditionTypeMismatch),
     "missing_block_value" => Some(TypeDiagnosticCode::MissingBlockValue),
+    "break_outside_loop" => Some(TypeDiagnosticCode::BreakOutsideLoop),
+    "continue_outside_loop" => Some(TypeDiagnosticCode::ContinueOutsideLoop),
     _ =>
     {
       diagnostics.push(XhirParseDiagnostic { line,
@@ -351,121 +357,6 @@ fn parse_span(text: &str) -> Option<crate::hir::async_check::Span>
   let (file_id, rest) = text.split_once(':')?;
   let (start, end) = rest.split_once("..")?;
   Some(crate::hir::async_check::Span::new(file_id.parse().ok()?, start.parse().ok()?, end.parse().ok()?))
-}
-
-fn write_statement(output: &mut String, statement: &Statement, indent: usize)
-{
-  let pad = "  ".repeat(indent);
-  match statement
-  {
-    Statement::Let { local,
-                     initializer, } =>
-    {
-      let mutability = if local.mutable
-      {
-        "mutable"
-      }
-      else
-      {
-        "immutable"
-      };
-      let _ = writeln!(output, "{pad}let {}", local.name);
-      let _ = writeln!(output, "{pad}  type {}", type_name(&local.ty));
-      let _ = writeln!(output, "{pad}  mutability {mutability}");
-      if let Some(initializer) = initializer
-      {
-        let _ = writeln!(output, "{pad}  initializer");
-        write_expression(output, initializer, indent + 2);
-      }
-    }
-    Statement::Expr(expression) =>
-    {
-      let _ = writeln!(output, "{pad}expression");
-      write_expression(output, expression, indent + 1);
-    }
-    Statement::Return { value, .. } =>
-    {
-      let _ = writeln!(output, "{pad}return");
-      if let Some(value) = value
-      {
-        write_expression(output, value, indent + 1);
-      }
-    }
-    Statement::If { condition,
-                    then_block,
-                    else_block,
-                    .. } =>
-    {
-      let _ = writeln!(output, "{pad}if");
-      let _ = writeln!(output, "{pad}  condition");
-      write_expression(output, condition, indent + 2);
-      let _ = writeln!(output, "{pad}  then");
-      write_block(output, then_block, indent + 2);
-      if let Some(else_block) = else_block
-      {
-        let _ = writeln!(output, "{pad}  else");
-        write_block(output, else_block, indent + 2);
-      }
-    }
-    Statement::Panic { .. } =>
-    {
-      let _ = writeln!(output, "{pad}panic");
-    }
-  }
-}
-
-fn write_desugared_statement(output: &mut String, statement: &DesugaredStatement, indent: usize)
-{
-  let pad = "  ".repeat(indent);
-  match statement
-  {
-    DesugaredStatement::Let { local,
-                              initializer, } =>
-    {
-      let mutability = mutability_name(local.mutable);
-      let _ = writeln!(output, "{pad}let {}", local.name);
-      let _ = writeln!(output, "{pad}  type {}", type_name(&local.ty));
-      let _ = writeln!(output, "{pad}  mutability {mutability}");
-      if let Some(initializer) = initializer
-      {
-        let _ = writeln!(output, "{pad}  initializer");
-        write_desugared_expression(output, initializer, indent + 2);
-      }
-    }
-    DesugaredStatement::Expr(expression) =>
-    {
-      let _ = writeln!(output, "{pad}expression");
-      write_desugared_expression(output, expression, indent + 1);
-    }
-    DesugaredStatement::Return { value, .. } =>
-    {
-      let _ = writeln!(output, "{pad}return");
-      if let Some(value) = value
-      {
-        write_desugared_expression(output, value, indent + 1);
-      }
-    }
-    DesugaredStatement::If { condition,
-                             then_block,
-                             else_block,
-                             .. } =>
-    {
-      let _ = writeln!(output, "{pad}if");
-      let _ = writeln!(output, "{pad}  condition");
-      write_desugared_expression(output, condition, indent + 2);
-      let _ = writeln!(output, "{pad}  then");
-      write_desugared_block(output, then_block, indent + 2);
-      if let Some(else_block) = else_block
-      {
-        let _ = writeln!(output, "{pad}  else");
-        write_desugared_block(output, else_block, indent + 2);
-      }
-    }
-    DesugaredStatement::Panic { .. } =>
-    {
-      let _ = writeln!(output, "{pad}panic");
-    }
-  }
 }
 
 fn write_expression(output: &mut String, expression: &Expression, indent: usize)

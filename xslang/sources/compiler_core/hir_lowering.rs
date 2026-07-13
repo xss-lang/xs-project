@@ -28,6 +28,9 @@ const STMT_VARIABLE: u32 = 40;
 const STMT_RETURN: u32 = 41;
 const STMT_IF: u32 = 42;
 const STMT_ELSE_IF: u32 = 43;
+const STMT_WHILE: u32 = 46;
+const STMT_BREAK: u32 = 49;
+const STMT_CONTINUE: u32 = 50;
 const EXPR_IDENTIFIER: u32 = 56;
 const EXPR_LITERAL: u32 = 57;
 const EXPR_BINARY: u32 = 58;
@@ -384,6 +387,9 @@ fn lower_statement_node(tree: &SyntaxTree,
     }
     STMT_VARIABLE => lower_local(tree, statement, signatures, locals),
     STMT_IF => lower_if_statement(tree, statement, signatures, locals, return_type),
+    STMT_WHILE => lower_while_statement(tree, statement, signatures, locals, return_type),
+    STMT_BREAK => Some(Statement::Break { span: span(statement)? }),
+    STMT_CONTINUE => Some(Statement::Continue { span: span(statement)? }),
     _ => None,
   }
 }
@@ -490,6 +496,30 @@ fn lower_if_statement(tree: &SyntaxTree,
                        then_block,
                        else_block,
                        span: span(statement)? })
+}
+
+fn lower_while_statement(tree: &SyntaxTree,
+                         statement: &SyntaxNode,
+                         signatures: &HashMap<String, CallSignature>,
+                         locals: &HashMap<String, Type>,
+                         return_type: Option<&Type>)
+                         -> Option<Statement>
+{
+  let condition = lower_expression(tree,
+                                   tree.nodes.get(*statement.children.first()?)?,
+                                   signatures,
+                                   locals,
+                                   Some(&Type::Primitive(PrimitiveType::Bool)))?;
+  let mut body_locals = locals.clone();
+  let body = lower_hir_block(tree,
+                             tree.nodes.get(*statement.children.get(1)?)?,
+                             signatures,
+                             &mut body_locals,
+                             return_type,
+                             None)?;
+  Some(Statement::While { condition,
+                          body,
+                          span: span(statement)? })
 }
 
 fn lower_body(tree: &SyntaxTree,

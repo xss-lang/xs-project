@@ -166,20 +166,22 @@ The documented compilation order is preserved:
   `Result<T, E>` and postfix `@` propagation.
 - `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
   constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
-  diagnostic. Data destructors, inheritance, and interface members remain invalid.
+  diagnostic. Data destructors remain invalid.
 - Class constructor names must match the class name. Constructors may be overloaded by parameter type list; duplicate
   parameter type lists produce parser diagnostics.
 - Interface declaration bodies accept only body-less function declaration signatures.
-- Classes and interfaces use a C#-style `:` base list. The parser stores the base/interface entries as type children; HIR
-  resolves which entry is the class base and which entries are interfaces. Legacy `extends` and `implements` spellings
-  produce parser diagnostics.
+- Nominal types use one `:` base list. Each structural base-specifier retains its access and virtual-inheritance modifiers.
+  Classes accept multiple class bases and implemented interfaces. Interfaces inherit only interfaces, data types inherit
+  only data types, and `enum data` types inherit only other `enum data` types; each category has no base-count limit.
+  Payload-free `enum` declarations cannot inherit.
+  Legacy `extends` and `implements` spellings produce parser diagnostics.
 - Class fields may carry `getter` and `setter` property accessors. Accessors are represented as
   `XS_SYNTAX_PROPERTY_ACCESSOR` children; accessor bodies are parsed as ordinary blocks when present. Properties use the
   canonical X# field spelling, for example `public Name: Str { getter; setter; }`.
-- Visibility modifiers use C# meanings: `public` is externally visible, `private` is limited to the declaring scope,
+- Visibility modifiers are explicit: `public` is externally visible, `private` is limited to the declaring scope,
   `protected` is available to derived classes, and `internal` is limited to the current project/package boundary. Current HIR
-  symbol collection applies C# defaults: top-level declarations are `internal` unless made public by a `public namespace`
-  rule or an explicit modifier, while type members are `private` unless explicitly marked otherwise. Current HIR visibility
+  symbol collection applies one default everywhere: declarations, members, and base entries are `internal` unless an
+  explicit modifier says otherwise. Current HIR visibility
   checks fully enforce public/private module access; protected/internal member enforcement remains part of later
   member-resolution work.
 - The C23 HIR expression checker performs the first property validation slice: duplicate accessors are rejected, getter
@@ -225,14 +227,12 @@ This layer lives under the HIR directory.
 - During project checking, direct sources and sources discovered through the import graph are collected into one shared HIR
   symbol table.
 - File-level `module` and `namespace` declarations determine the active HIR namespace path.
-- If a file uses `public namespace`, top-level declarations without an explicit visibility modifier are treated as public in
-  HIR.
-- `public namespace` does not override explicit `private`, `internal`, or `protected` visibility modifiers.
+- `public namespace` does not promote contained declarations; omitted declaration visibility remains `internal`.
 - Top-level `fn`, `class`, `interface`, `enum`, `data`, and `macro_rules!` declarations are collected into the symbol table.
 - `macro_rules!` rules use `matcher -> { expansion };`; the older `matcher: { expansion };` spelling is not accepted.
 - `extern "ABI"` block functions are collected as function symbols, while `static` foreign globals are collected as
-  `extern global` symbols. Visibility on the extern block is inherited by contained declarations unless a contained
-  declaration has its own explicit visibility.
+  `extern global` symbols. Contained declarations also default to `internal`; an outer visibility does not silently promote
+  them.
 - HIR CFFI validation runs after import resolution. Version 0 currently requires C ABI extern blocks to be written as
   `#[repr(C)] extern "C" { ... }`; this keeps the ABI/layout intent explicit before backend CFFI lowering exists.
 - The same pass validates the first standard CFFI attribute shapes and scopes: block metadata such as `LinkLibrary` and
@@ -374,6 +374,10 @@ explicit merge when control can continue. A returned `if` expression lowers each
 MIR return terminator, avoiding an implicit target-specific phi representation. The same verified CFG lowers to XLIL
 `br_if`; arbitrary conditional values used by local initialization or assignment still await the general MIR place/merge
 model.
+`while`, `break`, and `continue` now cross the same compiler-core boundary. Rust HIR requires a `Bool` loop condition and
+rejects loop jumps outside a loop. MIR lowering creates explicit header, body, and exit blocks; `continue` targets the
+header and `break` targets the exit. The resulting target-independent CFG is verified and lowered to XLIL `br`/`br_if`
+records before entering the existing backend path.
 For supported single-unit builds, this Rust path no longer stops at an internal MIR count. The session borrow-checks and
 optimizes each lowered function, lowers the module to XLIL v0 text, and exposes that text through a borrowed C ABI view. The
 C23 driver parses it with the public `xs/lil.h` API, verifies the reconstructed module, and reuses the established LLVM IR,

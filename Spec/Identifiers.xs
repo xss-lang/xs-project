@@ -247,7 +247,7 @@ octal_value: Str = "77";
 
 // Apostrophe is used as the digit separator.
 //
-// Its behavior follows the C++ digit-separator model.
+// Separators do not change the numeric value or inferred literal type.
 
 
 // Valid:

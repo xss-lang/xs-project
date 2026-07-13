@@ -38,6 +38,7 @@ static void test_materialized_syntax_packet(void)
                      "make!();\n"
                      "fn add(a: Long, b: Long) -> Long { return a + b; }\n"
                      "fn choose(flag: Bool) -> Long { return if (flag) { 1 } else { 2 }; }\n"
+                     "fn loop_once(flag: Bool) -> Long { while (flag) { break; } return 9; }\n"
                      "fn main() -> Long { if (true) { return add(3, 4); } else { return choose(false); } }\n";
   XsSource source = {.path = "Bridge.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -61,8 +62,8 @@ static void test_materialized_syntax_packet(void)
   XsCompilerCoreSession *session = nullptr;
   CHECK(packet == nullptr || xslang_compiler_core_session_create(packet, &session) == XS_COMPILER_CORE_FFI_OK);
   CHECK(packet == nullptr || xslang_compiler_core_session_syntax_node_count(session) == packet->node_count);
-  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 4);
-  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 3);
+  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 5);
+  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 4);
   uint64_t xlil_length = 0;
   const uint8_t *xlil_text = xslang_compiler_core_session_xlil_text(session, &xlil_length);
   CHECK(packet == nullptr || xlil_text != nullptr);
@@ -72,7 +73,7 @@ static void test_materialized_syntax_packet(void)
   CHECK(packet == nullptr || xs_lil_module_parse_text("Bridge.xlil", (const char *)xlil_text, (size_t)xlil_length,
                                                       &xlil, &xlil_error) == XS_LIL_OK);
   CHECK(packet == nullptr || xs_lil_module_verify(xlil, &xlil_error) == XS_LIL_OK);
-  CHECK(packet == nullptr || xs_lil_module_function_count(xlil) == 4);
+  CHECK(packet == nullptr || xs_lil_module_function_count(xlil) == 5);
   xs_lil_module_destroy(xlil);
   if(packet != nullptr)
   {

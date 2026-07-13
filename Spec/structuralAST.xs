@@ -365,9 +365,16 @@ data ClassDeclaration {
 
     generic_parameters: GenericParameter[]
 
-    base_types: TypeNode[]
+    base_specifiers: BaseSpecifier[]
 
     members: ClassMember[]
+    span: SourceSpan
+}
+
+data BaseSpecifier {
+    access: VisibilityNode
+    is_virtual: Bool
+    base_type: TypeNode
     span: SourceSpan
 }
 
@@ -448,6 +455,7 @@ data InterfaceDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
     generic_parameters: GenericParameter[]
+    base_specifiers: BaseSpecifier[]
     members: FunctionDeclaration[]
     span: SourceSpan
 }
@@ -462,6 +470,7 @@ data EnumDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
     is_data_enum: Bool
+    base_specifiers: BaseSpecifier[]
     variants: EnumVariant[]
     span: SourceSpan
 }
@@ -484,6 +493,8 @@ data EnumVariant {
 // Typed variants with distinct payload types may share a name.
 // is_overload is false for the first variant in that overload set and true for later variants.
 // Regular enum variants and non-typed enum data variants have unique names.
+// base_specifiers must be empty for a regular enum.
+// An enum data declaration may contain any number of enum data bases.
 
 
 // Example:
@@ -509,6 +520,7 @@ data DataDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
     generic_parameters: GenericParameter[]
+    base_specifiers: BaseSpecifier[]
     fields: DataField[]
     constructors: ConstructorDeclaration[]
     methods: FunctionDeclaration[]
@@ -524,7 +536,7 @@ data DataField {
 }
 
 
-// data declarations may contain fields, constructors, and methods.
+// data declarations may contain fields, constructors, methods, and any number of data bases.
 // Constructors and methods may be overloaded by parameter type list.
 // Operator overloads are FunctionDeclaration nodes whose name is operator
 // and whose operator token identifies the overload target.

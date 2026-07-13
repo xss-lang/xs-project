@@ -7,6 +7,72 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_while_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
+  {
+    let Statement::While { condition,
+                           body,
+                           span, } = statement
+    else
+    {
+      return;
+    };
+    if self.current_is_terminated(lowered)
+    {
+      return;
+    }
+    let preheader = self.current_block;
+    let header = self.append_block(*span, lowered);
+    let body_id = self.append_block(body.span, lowered);
+    let exit = self.append_block(*span, lowered);
+    self.switch_to(preheader);
+    self.set_terminator(mir::Terminator::Goto(header), *span, lowered);
+
+    self.switch_to(header);
+    let Some(condition) = self.lower_expression_to_local(condition, XlilType::BOOL, lowered)
+    else
+    {
+      return;
+    };
+    self.set_terminator(mir::Terminator::BranchIf { condition,
+                                                    then_block: body_id,
+                                                    else_block: exit },
+                        *span,
+                        lowered);
+
+    let outer_locals = self.locals.clone();
+    self.loop_targets.push((header, exit));
+    self.switch_to(body_id);
+    self.lower_block_statements(body, lowered);
+    if !self.current_is_terminated(lowered)
+    {
+      self.set_terminator(mir::Terminator::Goto(header), body.span, lowered);
+    }
+    self.loop_targets.pop();
+    self.locals = outer_locals;
+    self.switch_to(exit);
+  }
+
+  pub(super) fn lower_loop_jump(&mut self, is_continue: bool, span: Span, lowered: &mut mir::Function)
+  {
+    let Some((header, exit)) = self.loop_targets.last().copied()
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedExpression,
+                  "loop jump appears outside a loop",
+                  span);
+      return;
+    };
+    let target = if is_continue
+    {
+      header
+    }
+    else
+    {
+      exit
+    };
+    self.set_terminator(mir::Terminator::Goto(target), span, lowered);
+  }
+
   pub(super) fn lower_if_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
   {
     let Statement::If { condition,

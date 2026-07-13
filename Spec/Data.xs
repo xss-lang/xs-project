@@ -18,7 +18,8 @@
 // fn operator +(right: Type) -> Type { }
 //
 // A duplicate constructor or method parameter type list is an error.
-// Data types do not support destructors, inheritance, or interfaces.
+// Data types do not support destructors.
+// A data type may inherit any number of data types, but no other type category.
 //
 // Data types support generics.
 //
@@ -96,6 +97,20 @@ class Program {
 data Pair<T, U> {
     first: T
     second: U
+}
+
+// multiple value-type bases
+
+data Named {
+    label: Str
+}
+
+data Tagged {
+    tag: Int
+}
+
+data NamedPair<T, U> : Named, Pair<T, U>, Tagged {
+    label: Str
 }
 
 
@@ -188,30 +203,13 @@ data User {
 // Destructors are not allowed.
 
 
-// INVALID
-
-data User : Runnable {
-}
-
-
-// Interfaces are not allowed.
-
-
-// INVALID
-
-data User : Person {
-}
-
-
-// Inheritance is not allowed.
-
-
 // summary
 
 //
 // Data types are nominal containers with fields, constructors, and methods.
 // Constructors, methods, and operators may be overloaded by parameter type list.
-// Data does not support destructors, inheritance, or interfaces.
+// Data does not support destructors.
+// A data type may have any number of data bases.
 //
 // Data supports generics.
 //

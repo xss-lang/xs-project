@@ -19,7 +19,7 @@
 // namespace declarations are chained.
 //
 // public namespace is file-scoped.
-// If public namespace is used, top-level declarations in that file are public.
+// It does not promote contained declarations; omitted visibility remains internal.
 //
 // Non-public members are not visible from other modules.
 //
@@ -50,7 +50,7 @@ module math;
 
 public namespace advanced;
 
-fn add(a: Int, b: Int) -> Int {
+public fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 

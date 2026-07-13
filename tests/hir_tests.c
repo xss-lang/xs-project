@@ -287,7 +287,7 @@ static void test_import_resolution(void)
 {
   const char *library = "module Math;\n"
                         "public fn Add() {}\n"
-                        "public extern \"C\" { static errno: Int; }\n"
+                        "public extern \"C\" { public static errno: Int; }\n"
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
                      "imports Math;\n"
@@ -329,11 +329,11 @@ static void test_import_resolution(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_public_namespace_exports_default_symbols(void)
+static void test_public_namespace_exports_explicit_public_symbols(void)
 {
   const char *library = "module Math;\n"
                         "public namespace Advanced;\n"
-                        "fn Add() {}\n"
+                        "public fn Add() {}\n"
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
                      "imports Math::Advanced;\n"
@@ -687,7 +687,7 @@ int main(void)
   test_cffi_validation_rejects_block_attribute_on_function();
   test_same_name_in_different_namespace();
   test_import_resolution();
-  test_public_namespace_exports_default_symbols();
+  test_public_namespace_exports_explicit_public_symbols();
   test_import_errors();
   test_name_use_resolution();
   test_name_use_errors();

@@ -12,6 +12,24 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.3 - 2026-07-13
+
+### Added
+
+- Rust compiler-core HIR now imports `while`, `break`, and `continue`, verifies loop conditions and jump placement, and
+  lowers loops through target-independent MIR and XLIL control-flow graphs.
+- Class declarations now retain multiple base specifiers with per-base access and virtual-inheritance metadata. HIR
+  validates duplicate bases, cycles, sealed bases, and compatible `virtual`/`override`/`sealed` method slots.
+- Interface, data, and `enum data` declarations now accept unlimited same-category inheritance; cross-category inheritance
+  and payload-free enum base lists are rejected.
+
+### Changed
+
+- Omitted declaration, member, and base visibility is consistently `internal`, including declarations nested in public
+  namespaces and external blocks.
+- XHIR statement writing is split into a dedicated module and v0 text round-trips structured loop records with explicit
+  `.end` block markers.
+
 ## 0.1.2 - 2026-07-13
 
 ### Added
@@ -108,12 +126,8 @@ source-to-native executable pipeline.
 - `macro_rules!` definitions now use `->` between a matcher and its expansion block, matching the current X# macro syntax
   direction.
 - Class properties now use canonical X# name-first declarations such as `public Name: Str { getter; setter; }`.
-- HIR symbol collection now applies C#-style visibility defaults: top-level declarations default to `internal`, and type
-  members default to `private`.
 - X# source syntax now follows Rust-style semicolon value rules: `expression;` discards to unit, while a final block
   expression without `;` remains value-producing and feeds implicit-return desugaring.
-- Class inheritance/interface syntax now uses a C#-style `:` base list. Legacy `extends` and `implements` spellings are
-  rejected with parser diagnostics.
 - Class property declarations now use `getter` and `setter` accessors. Plain `get` and `set` remain available as ordinary
   identifiers.
 - Source examples now use `()` as the written unit type instead of source-level `void`; XLIL `void` and

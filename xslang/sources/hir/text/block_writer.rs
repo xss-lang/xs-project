@@ -5,9 +5,8 @@
 
 use std::fmt::Write;
 
-use super::{
-  Block, DesugaredBlock, write_desugared_expression, write_desugared_statement, write_expression, write_statement,
-};
+use super::statement_writer::{write_desugared_statement, write_statement};
+use super::{Block, DesugaredBlock, write_desugared_expression, write_expression};
 
 pub(super) fn write_block(output: &mut String, block: &Block, indent: usize)
 {

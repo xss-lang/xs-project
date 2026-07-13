@@ -70,3 +70,30 @@ fn rejects_non_bool_if_condition()
   assert!(diagnostics.iter()
                      .any(|diagnostic| diagnostic.code == DiagnosticCode::ConditionTypeMismatch));
 }
+
+#[test]
+fn roundtrips_while_break_and_continue_records()
+{
+  let function = Function { name: "control".to_string(),
+                            return_type: None,
+                            locals: Vec::new(),
+                            body: vec![Statement::While { condition: Expression::Literal { literal:
+                                                                                             Literal::Bool(true),
+                                                                                           span: span() },
+                                                          body: Block { statements:
+                                                                          vec![Statement::Continue { span: span() },
+                                                                               Statement::Break { span: span() }],
+                                                                        tail: None,
+                                                                        span: span() },
+                                                          span: span() }] };
+
+  let text = function_to_xhir(&function);
+  let parsed = parse_xhir_function(&text).expect("loop XHIR should parse");
+
+  assert!(text.contains("while\n"));
+  assert!(text.contains("body\n"));
+  assert!(text.contains("continue\n"));
+  assert!(text.contains("break\n"));
+  assert!(matches!(&parsed.body[0], Statement::While { body, .. }
+    if matches!(body.statements.as_slice(), [Statement::Continue { .. }, Statement::Break { .. }])));
+}

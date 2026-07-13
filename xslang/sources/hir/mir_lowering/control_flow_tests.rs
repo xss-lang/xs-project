@@ -119,3 +119,51 @@ fn block_local_can_shadow_without_replacing_outer_mir_binding()
              .any(|block| { matches!(block.terminator, Some(mir::Terminator::Return(Some(mir::LocalId(0))))) }));
   assert!(verify_function(&mir).is_empty());
 }
+
+#[test]
+fn lowers_while_break_to_verified_mir_and_xlil_control_flow()
+{
+  let function =
+    Function { name: "loop_once".to_string(),
+               return_type: Some(Type::Primitive(PrimitiveType::Long)),
+               locals: Vec::new(),
+               body: vec![Statement::While { condition: Expression::Literal { literal: Literal::Bool(true),
+                                                                              span: span() },
+                                             body: Block { statements: vec![Statement::Break { span: span() }],
+                                                           tail: None,
+                                                           span: span() },
+                                             span: span() },
+                          Statement::Return { value: Some(literal("7")),
+                                              span: span() }] };
+
+  assert!(crate::hir::type_check::TypeChecker::new().check_function(&function)
+                                                    .is_empty());
+  let mir = HirToMirLowerer::new().lower_function(&function)
+                                  .expect("while should lower");
+  assert_eq!(mir.blocks.len(), 4);
+  assert!(matches!(mir.blocks[0].terminator, Some(mir::Terminator::Goto(_))));
+  assert!(matches!(mir.blocks[1].terminator, Some(mir::Terminator::BranchIf { .. })));
+  assert!(matches!(mir.blocks[2].terminator, Some(mir::Terminator::Goto(_))));
+  assert!(matches!(mir.blocks[3].terminator, Some(mir::Terminator::Return(Some(_)))));
+  assert!(verify_function(&mir).is_empty());
+
+  let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                           .expect("loop MIR should lower to XLIL");
+  assert!(matches!(xlil.blocks[1].terminator,
+                   Some(crate::xlil::Terminator::BranchIf { .. })));
+}
+
+#[test]
+fn rejects_loop_jumps_outside_loop()
+{
+  let function = Function { name: "invalid".to_string(),
+                            return_type: None,
+                            locals: Vec::new(),
+                            body: vec![Statement::Break { span: span() }, Statement::Continue { span: span() }] };
+  let diagnostics = crate::hir::type_check::TypeChecker::new().check_function(&function);
+  assert_eq!(diagnostics.len(), 2);
+  assert_eq!(diagnostics[0].code,
+             crate::hir::type_check::DiagnosticCode::BreakOutsideLoop);
+  assert_eq!(diagnostics[1].code,
+             crate::hir::type_check::DiagnosticCode::ContinueOutsideLoop);
+}
