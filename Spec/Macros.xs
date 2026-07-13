@@ -50,6 +50,8 @@
 // It validates the Rust 1.57 formatting grammar, which is the exact X# format
 // syntax contract, and returns the formatting argument value used by
 // writer/output macros. It is not resolved through Stdio.
+// format_args_nl!() is also built in and applies the same grammar while
+// appending one newline to the formatted argument sequence.
 
 imports stdio;
 
@@ -63,8 +65,8 @@ imports stdio;
 // panic! are normal macros exported by Panic. They are not compiler
 // built-ins.
 //
-// include!, format_args!, write!, and writeln! are the currently specified
-// built-in macros.
+// include!, format_args!, format_args_nl!, write!, and writeln! are the
+// currently specified built-in macros.
 // The conceptual AST expansions and evaluation-order contracts of Stdio and
 // Panic macros are specified in Stdio.xs and Panic.xs respectively.
 
@@ -894,7 +896,8 @@ fn invalid_unmatched_macro_call() {
 //
 // Module-exported macros:
 //
-//     Built-in macros include include!, format_args!, write!, and writeln!
+//     Built-in macros include include!, format_args!, format_args_nl!, write!,
+//     and writeln!
 //     Stdio exports print!, println!, eprint!, eprintln!, and format!
 //     Panic exports assert!, assert_eq!, assert_ne!, debug_assert!,
 //     debug_assert_eq!, panic!

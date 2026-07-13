@@ -12,6 +12,10 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- `format_args_nl!` is now a source-callable built-in macro and shares format-string validation with `format_args!`.
+
 ### Fixed
 
 - Fresh checkouts no longer require the intentionally untracked `xslang/Cargo.lock` as a Ninja input; the pinned Rust

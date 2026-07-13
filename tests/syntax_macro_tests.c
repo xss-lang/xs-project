@@ -569,7 +569,8 @@ static void test_formatting_macros_accept_output_forms(void)
   xs_diagnostics_free(&diagnostics);
 
   const char *builtin = "fn Main(value: Long) { format_args!(\"{:#?}\", value); "
-                        "write!(std::stdout(), \"{}\", value); writeln!(std::stdout()); }\n";
+                        "format_args_nl!(\"{}\", value); write!(std::stdout(), \"{}\", value); "
+                        "writeln!(std::stdout()); }\n";
   source = (XsSource){.path = "BuiltinFormattingMacros.xs", .text = builtin, .length = strlen(builtin)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 40, &diagnostics, &tree));
@@ -587,6 +588,7 @@ static void test_formatting_macros_reject_invalid_forms(void)
       "imports stdio;\nfn Main() { println!(\"value\", 10); }\n",
       "imports stdio;\nfn Main() { println!(\"{}\",); }\n",
       "fn Main() { format_args!(); }\n",
+      "fn Main() { format_args_nl!(); }\n",
       "imports stdio;\nfn Main() { println!(\"{\"); }\n",
       "imports stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
       "fn Main() { write!(); }\n",

@@ -238,13 +238,13 @@ static bool is_stdio_macro(XsText name)
 
 static bool is_builtin_macro(XsText name)
 {
-  return text_is_cstr(name, "include") || text_is_cstr(name, "format_args") || text_is_cstr(name, "write") ||
-         text_is_cstr(name, "writeln");
+  return text_is_cstr(name, "include") || text_is_cstr(name, "format_args") || text_is_cstr(name, "format_args_nl") ||
+         text_is_cstr(name, "write") || text_is_cstr(name, "writeln");
 }
 
 static bool is_format_args_macro(XsText name)
 {
-  return text_is_cstr(name, "format_args");
+  return text_is_cstr(name, "format_args") || text_is_cstr(name, "format_args_nl");
 }
 
 static bool stdio_macro_allows_empty(XsText name)
@@ -539,7 +539,8 @@ static void validate_formatting_macro_call(const XsSyntaxNode *call, XsText name
   }
   if(is_format_args_macro(name) && call->child_count == 1)
   {
-    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "format_args macro requires a format string argument");
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                       "format argument macro requires a format string argument");
     return;
   }
   if(call->child_count == 1)

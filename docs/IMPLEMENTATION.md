@@ -311,7 +311,7 @@ validation does not decide dispatch, override, or overload selection.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` require
-  `imports stdio;` or `using namespace stdio;`. `format_args!`, `write!`, and `writeln!` are built in.
+  `imports stdio;` or `using namespace stdio;`. `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built in.
 - The C23 HIR type resolver also recognizes the initial standard CFFI family: `std::cffi::CStr`, `std::cffi::CString`,
   `std::cffi::RawPtr<T>`, `std::cffi::NonNull<T>`, `std::cffi::Slice<T>`, `std::cffi::Handle<T>`, `std::cffi::Owned<T>`, `std::cffi::Borrowed<T>`,
   `std::cffi::Out<T>`, `std::cffi::DynamicLibrary`, `std::cffi::Symbol<T>`, `std::cffi::File`, and `std::cffi::VarArgs`.
@@ -422,16 +422,16 @@ complete.
 - Macro calls before textual definition in the same scope are accepted.
 - Macros defined in an inner scope cannot be called from an outer scope.
 - Calls are checked to resolve to a visible macro definition.
-- `include!`, `format_args!`, `write!`, and `writeln!` are built-in macros. They use the same format string validation as
-  the Stdio output macros where applicable.
+- `include!`, `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built-in macros. They use the same format
+  string validation as the Stdio output macros where applicable.
 - Imported `Stdio` macros are treated as external macros, not built-ins. The validator recognizes `print!`, `println!`,
   `eprint!`, `eprintln!`, and `format!` through `imports stdio` or `using namespace stdio;`. `println!()` and `eprintln!()`
   accept the newline-only form. Built-in `writeln!(destination)` accepts the destination-only newline form. Other
   formatting forms require a string literal format template and matching placeholder argument count. Debug, pretty-debug,
   hexadecimal, padding, and alignment specs such as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` are accepted by the validator.
 - The formatting grammar and the `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` expansion structures are
-  versioned against Rust 1.57. Newer implicit-capture syntax is not part of this contract. The internal newline-format
-  intrinsic used by line macros is not source-callable.
+  versioned against Rust 1.57. Newer implicit-capture syntax is not part of this contract. `format_args_nl!` is the
+  source-callable built-in newline-format variant used by line macros.
 - Full token matcher rules and empty matcher rules can be matched.
 - Single-token fragment matchers that can be validated precisely (`tt`, `ident`, `literal`, `lifetime`, and `vis`) are matched
   against call tokens.

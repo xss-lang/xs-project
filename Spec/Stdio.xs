@@ -7,8 +7,8 @@
 // Stdio provides formatted text output macros and standard stream functions.
 // print!, println!, eprint!, eprintln!, and format! are exported Stdio macros.
 // They are available through `imports stdio`, not as compiler built-ins.
-// format_args!, write!, and writeln! are built-in macros and do not require
-// Stdio to be imported.
+// format_args!, format_args_nl!, write!, and writeln! are built-in macros and
+// do not require Stdio to be imported.
 //
 // Stdio does not provide filesystem operations.
 // Filesystem operations belong to the FS module.
@@ -126,10 +126,9 @@ fn format_values() {
 // format!(arguments...)
 //   -> { result := std::fmt::format(format_args!(arguments...)); result }
 //
-// format_args_nl! is a compiler-internal newline variant. It is not a
-// source-callable built-in and does not enter macro scope. std::_print and
-// std::_eprint are internal output boundaries. std::fmt::format materializes
-// the formatted UTF-16 Str.
+// format_args_nl! is the built-in newline variant of format_args!. std::_print
+// and std::_eprint are internal output boundaries. std::fmt::format
+// materializes the formatted UTF-16 Str.
 //
 // A destination expression is evaluated exactly once. Format arguments are
 // evaluated exactly once from left to right after the destination, and before
@@ -142,8 +141,9 @@ fn format_values() {
 // format! returns Str and does not write to a stream. The temporary `result`
 // binding in its conceptual expansion is hygienic.
 // Built-in format_args! returns the formatting argument value used by output
-// and writer macros and does not write to a stream. Built-in write! and
-// writeln! accept any compatible destination without importing Stdio.
+// and writer macros and does not write to a stream. format_args_nl! returns the
+// same value with one trailing newline. Built-in write! and writeln! accept any
+// compatible destination without importing Stdio.
 
 fn build_message() {
     user1: Str = "Alpha";
