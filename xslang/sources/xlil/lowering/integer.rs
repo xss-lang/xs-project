@@ -64,4 +64,35 @@ impl MirToXlilLowerer
                           span),
     }
   }
+
+  #[allow(clippy::too_many_arguments)]
+  pub(super) fn lower_binary_integer(&mut self,
+                                     result: mir::LocalId,
+                                     left: mir::LocalId,
+                                     right: mir::LocalId,
+                                     value_type: Type,
+                                     operation: IntegerBinaryOperation,
+                                     span: Span,
+                                     block: BlockId,
+                                     values: &mut HashMap<mir::LocalId, ValueId>,
+                                     function: &mut Function)
+  {
+    let (Some(left_value), Some(right_value)) = (values.get(&left).copied(), values.get(&right).copied())
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  "MIR integer operation references a local without an XLIL value",
+                  span);
+      return;
+    };
+    let Some(value) = function.binary_integer(block, operation, value_type, left_value, right_value)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedLocalType,
+                  "MIR integer operation operands do not match its XLIL type",
+                  span);
+      return;
+    };
+    values.insert(result, value);
+  }
 }

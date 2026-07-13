@@ -62,6 +62,19 @@ impl Type
       _ => None,
     }
   }
+
+  #[must_use]
+  pub const fn is_integer(self) -> bool
+  {
+    self.integer_width().is_some()
+  }
+
+  #[must_use]
+  pub const fn is_signed_integer(self) -> bool
+  {
+    matches!(self.kind,
+             TypeKind::I8 | TypeKind::I16 | TypeKind::I32 | TypeKind::I64 | TypeKind::I128)
+  }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -716,6 +716,43 @@ static void test_public_integer_constant_api(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_integer_operation_api_and_text(void)
+{
+  static const char text[] =
+      ".xlil version 0\n.xlil module IntegerOperations\n.func add : (u8, u8) -> u8\n.param %r0:u8\n"
+      ".param %r1:u8\nbb0.entry:\n  %r2:u8 = add.u8 %r0, %r1\n  ret %r2\n.end\n"
+      ".func less : (u128, u128) -> bool\n.param %r0:u128\n.param %r1:u128\nbb0.entry:\n"
+      "  %r2:bool = lt.u128 %r0, %r1\n  ret %r2\n.end\n"
+      ".func shift : (i128, i128) -> i128\n.param %r0:i128\n.param %r1:i128\nbb0.entry:\n"
+      "  %r2:i128 = shr.i128 %r0, %r1\n  ret %r2\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("integer_operations.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  if(module == nullptr)
+    return;
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  const XsLilBlock *add = xs_lil_function_block_at(xs_lil_module_function_at(module, 0), 0);
+  CHECK(xs_lil_block_instruction_kind(add, 0) == XS_LIL_INSTRUCTION_BINARY_INTEGER);
+  CHECK(xs_lil_block_instruction_integer_operation(add, 0) == XS_LIL_INTEGER_ADD);
+  CHECK(xs_lil_block_instruction_integer_type(add, 0).kind == XS_LIL_TYPE_U8);
+  const XsLilBlock *less = xs_lil_function_block_at(xs_lil_module_function_at(module, 1), 0);
+  CHECK(xs_lil_block_instruction_integer_operation(less, 0) == XS_LIL_INTEGER_LESS);
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char output[2048] = {0};
+    size_t read = fread(output, 1, sizeof(output) - 1U, stream);
+    output[read] = '\0';
+    CHECK(strcmp(output, text) == 0);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
@@ -740,6 +777,7 @@ int main(void)
   test_text_parser_round_trips_explicit_utf16_strings();
   test_text_parser_round_trips_u16_constant();
   test_public_integer_constant_api();
+  test_integer_operation_api_and_text();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

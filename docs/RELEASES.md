@@ -12,7 +12,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 
 ## Current status
 
-- Current project version: `0.1.5`.
+- Current project version: `0.1.6`.
 - `xs --version` reports the configured compiler version.
 - The root [../CHANGELOG.md](../CHANGELOG.md) file keeps `Unreleased` for work after the current numbered line.
 - Numbered `0.0.x` entries are development snapshots, not stable language releases.
@@ -22,7 +22,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 The root `release.java` source-file tool checks release metadata without using shell scripts:
 
 ```text
-java --source=21 release.java check 0.1.5
+java --source=21 release.java check 0.1.6
 ```
 
 It validates the CMake project version, changelog heading, release documentation, CLI version documentation, and the built
@@ -30,6 +30,9 @@ It validates the CMake project version, changelog heading, release documentation
 
 ## Version line
 
+- `0.1.6` carries every fixed-width integer operation through typed HIR, verified and optimized MIR, XLIL, signed or
+  unsigned LLVM lowering, object emission, and native `.xse` execution. The public C23 XLIL API exposes the same typed
+  operation model.
 - `0.1.5` moves classic `for` control flow into the Rust compiler core and makes `write!`/`writeln!` built-in writer
   macros that do not require a Stdio import.
 - `0.1.4` adds Rust compiler-core statement-match CFG lowering and explicit MIR local storage that reaches XLIL stack

@@ -12,8 +12,13 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.6 - 2026-07-13
+
 ### Added
 
+- Arithmetic, division/remainder, bitwise operations, shifts, equality, and ordering now preserve every fixed integer
+  width through XHIR, verified XMIR, optimized XLIL, signed/unsigned LLVM lowering, object emission, and native `.xse`
+  builds. The public C23 XLIL API exposes the same typed operation model to third-party producers.
 - The complete fixed-width integer literal family now lowers through typed HIR, decimal XMIR constants, fixed-width XLIL
   hexadecimal bit patterns, LLVM IR, object emission, and native `.xse` builds. Range checking includes signed minimum
   values and full u128 values. Public C23 `XsUInt128`/`XsInt128` types use two 64-bit words; no `__int128` extension is used.

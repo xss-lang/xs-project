@@ -98,6 +98,15 @@ pub enum Statement
   {
     local: LocalId, value: bool, span: Span
   },
+  BinaryInteger
+  {
+    operation: crate::xlil::IntegerBinaryOperation,
+    value_type: Type,
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
   BinaryFloat
   {
     operation: FloatBinaryOperation,
@@ -453,6 +462,11 @@ impl BorrowChecker
                                 result,
                                 span,
                                 .. } |
+      Statement::BinaryInteger { left,
+                                 right,
+                                 result,
+                                 span,
+                                 .. } |
       Statement::AddI32 { left,
                           right,
                           result,

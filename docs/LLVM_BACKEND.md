@@ -74,7 +74,7 @@ Borrow-checked and optimized MIR
 
 XLIL function body lowering currently covers explicit body parameters, every documented fixed-width integer constant,
 exact-bit f32/f64 constants, and
-boolean and explicit-endian UTF-16 string constants, i32/i64 arithmetic/bitwise/shift/comparison instructions, f32/f64
+boolean and explicit-endian UTF-16 string constants, fixed-width integer arithmetic/bitwise/shift/comparison instructions, f32/f64
 arithmetic and ordered comparisons,
 direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
 typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated in the LLVM entry block and remain eligible
@@ -87,6 +87,9 @@ become an `fmod`/`fmodf` runtime call.
 
 Integer constants from 8 through 64 bits lower with `LLVMConstInt`. The project-owned two-word C23 representation carries
 u128/i128 constants into `LLVMConstIntOfArbitraryPrecision`; no compiler-specific C integer extension is involved.
+Integer operations retain their declared width. Signed types select LLVM signed division, remainder, arithmetic right
+shift, and signed predicates; unsigned types select their unsigned/logical counterparts. No LLVM `nsw` or `nuw` flag is
+attached to modular add, subtract, or multiply.
 
 The source-native bridge lowers supported `if`, `while`, classic `for`, and statement-level `match` control flow into MIR
 branches before XLIL and LLVM lowering. A supported `match` over `Long` or `Bool` becomes ordered literal tests and branch

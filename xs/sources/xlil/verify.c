@@ -168,6 +168,23 @@ static XsLilStatus verify_binary_integer(const XsLilFunction *function, const Xs
   return XS_LIL_OK;
 }
 
+static XsLilStatus verify_generic_integer(const XsLilFunction *function, const XsLilInstruction *instruction,
+                                          XsLilError *error)
+{
+  XsLilTypeKind operand = instruction->integer_type.kind;
+  bool integer = (operand >= XS_LIL_TYPE_U8 && operand <= XS_LIL_TYPE_I128);
+  if(!integer || xs_lil_integer_operation_name(instruction->integer_operation) == nullptr ||
+     (size_t)instruction->left >= function->value_count || (size_t)instruction->right >= function->value_count ||
+     (size_t)instruction->result >= function->value_count || function->values[instruction->left].type.kind != operand ||
+     function->values[instruction->right].type.kind != operand)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL integer operation has invalid operands");
+  XsLilTypeKind expected =
+      xs_lil_integer_operation_is_comparison(instruction->integer_operation) ? XS_LIL_TYPE_BOOL : operand;
+  if(function->values[instruction->result].type.kind != expected)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL integer operation has an invalid result type");
+  return XS_LIL_OK;
+}
+
 static XsLilStatus verify_not_bool(const XsLilFunction *function, const XsLilInstruction *instruction,
                                    XsLilError *error)
 {
@@ -238,6 +255,12 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(is_binary_i64(current->kind) || is_binary_i32(current->kind))
         {
           status = verify_binary_integer(function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_BINARY_INTEGER)
+        {
+          status = verify_generic_integer(function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

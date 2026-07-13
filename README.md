@@ -111,7 +111,7 @@ example today.
 
 ## Release policy
 
-The project is now in the `0.1.5` development period. Supported source functions cross the C23 structural-AST boundary into
+The project is now in the `0.1.6` development period. Supported source functions cross the C23 structural-AST boundary into
 Rust HIR (coordinated THIR and XHIR sides), verified and optimized MIR, and XLIL before the public C23 XLIL model drives
 LLVM native `.xse` emission.
 Rust compiler-core control flow now includes conditional loops, post-test `do`/`while` sugar, loop jumps, and statement
@@ -125,7 +125,9 @@ that the complete X# language is executable yet. Earlier releases are compiler i
 The integer widths are fixed from `Byte`/`SByte` through `UInteger`/`Integer`. Context-typed literals for every width,
 including signed minimum values and full u128 values, now use the same Rust compiler-core route through XHIR, XMIR, XLIL,
 and LLVM native emission. The public C23 boundary carries 128-bit values with project-owned two-word types instead of a
-compiler extension. Unary `+`/`-` for supported signed literals and logical `!` for `Bool` use this route.
+compiler extension. Arithmetic, bitwise, shifts, equality, and ordering now preserve every fixed integer width through
+native `.xse` emission, including signed/unsigned LLVM selection. Unary `+`/`-` for supported signed literals and logical
+`!` for `Bool` use this route.
 Same-module `Int` helper functions also remain i64 through this route, including arithmetic, bitwise, signed-shift, and
 ordered-comparison operations. Native process entry remains `fn main() -> Long`.
 
@@ -150,6 +152,9 @@ xs run -proj MyApp.xsproj
 
 The `-proj` forms run through a project manifest. The `-file` forms are reserved for direct single-file/intermediate input
 flows; they are accepted by the CLI and may intentionally emit diagnostics until the corresponding pipeline is connected.
+The public C23 `.xsproj` parser and existing compiler path remain supported and tested, but the format is feature-frozen.
+Future programmable project features are assigned to `xs.project.kts`; `.xsproj` consumers keep their current API and
+build behavior without receiving those new project-language features.
 Intermediate output extensions:
 
 - `.xhir`: human-readable XHIR text, intended for direct semantic inspection and review

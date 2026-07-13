@@ -538,8 +538,9 @@ semantics.
 - `xs/mir/optimizer.h` contains the initial MIR optimization API.
 - The CFG cleanup pass removes blocks unreachable from the entry block and rewrites remaining block ids plus `goto`/`branch`
   targets.
-- Constant folding lowers safe i32/i64 arithmetic, bitwise, and shift instructions with two matching constants to a
-  constant result, and lowers i32/i64 comparisons with two matching constants to a `const.bool` result.
+- Constant folding lowers fixed-width integer arithmetic, bitwise, and shift instructions with two matching constants to
+  a constant result, and lowers fixed-width comparisons to a `const.bool` result. Arithmetic wraps to the declared width;
+  division by zero, signed minimum divided by `-1`, and out-of-range shifts remain unchanged instead of being folded.
 - Constant folding also lowers a MIR `branch_if` whose condition resolves to a known `const.bool` into a direct `goto`;
   CFG cleanup can then remove the dead target block.
 - Source-native builds run C MIR borrow checking, constant folding, CFG cleanup, and a second borrow-check pass before
@@ -563,6 +564,9 @@ semantics.
   Positive values are range-checked against their declared type; negative literal forms cover every signed width,
   including the exact i8/i16/i32/i64/i128 minimum values. XMIR keeps semantic decimal values while XLIL uses exact
   fixed-width hexadecimal bit patterns for the newly added widths.
+- Fixed-width integer operations use one target-independent typed operation model across MIR and XLIL. Signedness controls
+  division, remainder, right shift, and ordered comparisons; comparisons produce `bool`. The text readers, writers,
+  verifiers, optimizer, MIR-to-XLIL lowering, public C23 XLIL model, and LLVM lowering share this contract.
 - The same Rust bridge lowers `Long` division, remainder, bitwise AND/OR/XOR, and signed shifts to target-independent
   `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `xor.i32`, `shl.i32`, and arithmetic `shr.i32` records. Their model,
   XHIR/XMIR/XLIL text readers and writers, verifiers, MIR-to-XLIL lowering, and native compiler-core bridge are tested
@@ -586,7 +590,8 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - `xs build --xlil -file <input.xlil>` parses and verifies XLIL v0 text through `xs_lil_module_parse_text`, then lowers to
   LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native `.xse` executable beside the input.
   Native direct XLIL requires exactly one defined
-  `.func main : () -> i32`; its supported body subset includes `.param`, all fixed-width integer constants, `const.f32`,
+  `.func main : () -> i32`; its supported body subset includes `.param`, all fixed-width integer constants and operations,
+  `const.f32`,
   `const.f64`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison

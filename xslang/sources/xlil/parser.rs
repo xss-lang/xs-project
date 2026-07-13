@@ -11,6 +11,7 @@ use crate::xlil::{
 
 mod float;
 mod i64;
+mod integer_operation;
 mod scalar;
 mod string;
 
@@ -472,6 +473,10 @@ impl Parser<'_>
       {
         return self.binary_i32(function, result, operands, instruction, line);
       }
+    }
+    if let Some(instruction) = self.integer_operation(function, text, line)
+    {
+      return Some(instruction);
     }
     for value_type in [Type::F32, Type::F64]
     {

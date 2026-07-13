@@ -16,7 +16,7 @@ use crate::xlil::{Type as XlilType, TypeKind};
 
 use binary_operations::{
   binary_float_operation, binary_i32_operation, binary_i64_operation, comparison_float_operation,
-  comparison_i64_operation,
+  comparison_i64_operation, integer_operation,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -52,6 +52,8 @@ pub struct HirToMirLowerer
 mod float_tests;
 #[cfg(test)]
 mod for_tests;
+#[cfg(test)]
+mod integer_operator_tests;
 #[cfg(test)]
 mod integer_width_tests;
 #[cfg(test)]
@@ -515,6 +517,35 @@ impl HirToMirLowerer
                                                left,
                                                right,
                                                span });
+      }
+      (operator, value_type, operand_type)
+        if value_type == operand_type && value_type.is_integer() && integer_operation(operator).is_some() =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::BinaryInteger { operation: integer_operation(operator).expect("guarded integer \
+                                                                                                 operation must \
+                                                                                                 exist"),
+                                                  value_type,
+                                                  result: target,
+                                                  left,
+                                                  right,
+                                                  span });
+      }
+      (operator, XlilType::BOOL, operand_type)
+        if operand_type.is_integer() &&
+           integer_operation(operator).is_some_and(|operation| operation.is_comparison()) =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::BinaryInteger { operation: integer_operation(operator).expect("guarded integer \
+                                                                                                 comparison must \
+                                                                                                 exist"),
+                                                  value_type: operand_type,
+                                                  result: target,
+                                                  left,
+                                                  right,
+                                                  span });
       }
       (operator, value_type, operand_type)
         if value_type == operand_type &&

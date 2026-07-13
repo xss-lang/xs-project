@@ -16,6 +16,86 @@ pub enum I32BinaryOperation
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IntegerBinaryOperation
+{
+  Add,
+  Sub,
+  Mul,
+  Div,
+  Rem,
+  BitAnd,
+  BitOr,
+  BitXor,
+  ShiftLeft,
+  ShiftRight,
+  Equal,
+  NotEqual,
+  Less,
+  LessEqual,
+  Greater,
+  GreaterEqual,
+}
+
+impl IntegerBinaryOperation
+{
+  #[must_use]
+  pub const fn text_stem(self) -> &'static str
+  {
+    match self
+    {
+      Self::Add => "add",
+      Self::Sub => "sub",
+      Self::Mul => "mul",
+      Self::Div => "div",
+      Self::Rem => "rem",
+      Self::BitAnd => "and",
+      Self::BitOr => "or",
+      Self::BitXor => "xor",
+      Self::ShiftLeft => "shl",
+      Self::ShiftRight => "shr",
+      Self::Equal => "eq",
+      Self::NotEqual => "ne",
+      Self::Less => "lt",
+      Self::LessEqual => "le",
+      Self::Greater => "gt",
+      Self::GreaterEqual => "ge",
+    }
+  }
+
+  #[must_use]
+  pub fn parse_text_stem(name: &str) -> Option<Self>
+  {
+    Some(match name
+    {
+      "add" => Self::Add,
+      "sub" => Self::Sub,
+      "mul" => Self::Mul,
+      "div" => Self::Div,
+      "rem" => Self::Rem,
+      "and" => Self::BitAnd,
+      "or" => Self::BitOr,
+      "xor" => Self::BitXor,
+      "shl" => Self::ShiftLeft,
+      "shr" => Self::ShiftRight,
+      "eq" => Self::Equal,
+      "ne" => Self::NotEqual,
+      "lt" => Self::Less,
+      "le" => Self::LessEqual,
+      "gt" => Self::Greater,
+      "ge" => Self::GreaterEqual,
+      _ => return None,
+    })
+  }
+
+  #[must_use]
+  pub const fn is_comparison(self) -> bool
+  {
+    matches!(self,
+             Self::Equal | Self::NotEqual | Self::Less | Self::LessEqual | Self::Greater | Self::GreaterEqual)
+  }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum I64BinaryOperation
 {
   Div,
@@ -216,6 +296,42 @@ use super::{BlockId, Function, Instruction, Type, Value, ValueId};
 
 impl Function
 {
+  pub fn binary_integer(&mut self,
+                        block: BlockId,
+                        operation: IntegerBinaryOperation,
+                        value_type: Type,
+                        left: ValueId,
+                        right: ValueId)
+                        -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !value_type.is_integer() ||
+       !self.value(left).is_some_and(|value| value.value_type == value_type) ||
+       !self.value(right).is_some_and(|value| value.value_type == value_type)
+    {
+      return None;
+    }
+    let result_type = if operation.is_comparison()
+    {
+      Type::BOOL
+    }
+    else
+    {
+      value_type
+    };
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: result_type });
+    self.block_mut(block)?
+        .instructions
+        .push(Instruction::BinaryInteger { operation,
+                                           value_type,
+                                           result,
+                                           left,
+                                           right });
+    Some(result)
+  }
+
   pub fn binary_float(&mut self,
                       block: BlockId,
                       operation: FloatBinaryOperation,

@@ -647,6 +647,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
   }
   if(is_lil_binary_integer(kind))
     return lower_lil_binary_integer(builder, block, index, values, value_count, error);
+  if(kind == XS_LIL_INSTRUCTION_BINARY_INTEGER)
+    return xs_llvm_lower_integer_operation(builder, block, index, values, value_count, error);
   if(is_lil_binary_float(kind))
     return lower_lil_binary_float(builder, block, index, values, value_count, error);
   if(kind == XS_LIL_INSTRUCTION_CALL)

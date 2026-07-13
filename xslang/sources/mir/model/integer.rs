@@ -100,4 +100,28 @@ impl IntegerConstant
       Self::I128(value) => value as u128,
     }
   }
+
+  #[must_use]
+  pub fn from_bits(value_type: Type, bits: u128) -> Option<Self>
+  {
+    let width = value_type.integer_width()?;
+    if width < 128 && bits >= (1_u128 << width)
+    {
+      return None;
+    }
+    Some(match value_type
+    {
+      Type::U8 => Self::U8(bits as u8),
+      Type::I8 => Self::I8(bits as u8 as i8),
+      Type::U16 => Self::U16(bits as u16),
+      Type::I16 => Self::I16(bits as u16 as i16),
+      Type::U32 => Self::U32(bits as u32),
+      Type::I32 => Self::I32(bits as u32 as i32),
+      Type::U64 => Self::U64(bits as u64),
+      Type::I64 => Self::I64(bits as u64 as i64),
+      Type::U128 => Self::U128(bits),
+      Type::I128 => Self::I128(bits as i128),
+      _ => return None,
+    })
+  }
 }

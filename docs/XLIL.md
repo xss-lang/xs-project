@@ -88,6 +88,12 @@ Format notes:
 - `%rN:bool = lt.i32 %rA, %rB`, `le.i32`, `gt.i32`, and `ge.i32` perform signed `i32` comparisons.
 - `%rN:i64 = add.i64 %rA, %rB`, `sub.i64`, `mul.i64`, `div.i64`, and `rem.i64` perform signed 64-bit integer arithmetic.
 - `%rN:i64 = and.i64 %rA, %rB`, `or.i64`, `shl.i64`, and arithmetic `shr.i64` perform bitwise 64-bit integer operations.
+- The same `add`, `sub`, `mul`, `div`, `rem`, `and`, `or`, `xor`, `shl`, and `shr` records are available for every
+  fixed-width integer type. For example, `%rN:u8 = add.u8 %rA, %rB` and
+  `%rN:i128 = shr.i128 %rA, %rB` preserve their operand width. Add, subtract, and multiply are modular at that width.
+  Division, remainder, right shift, and ordered comparisons use signed semantics for `i*` types and unsigned semantics
+  for `u*` types. Shift counts must be smaller than the operand width.
+- `eq.T`, `ne.T`, `lt.T`, `le.T`, `gt.T`, and `ge.T` produce `bool` for every fixed-width integer operand type `T`.
 - `%rN:bool = eq.i64 %rA, %rB` and `ne.i64` compare two `i64` values for equality or inequality.
 - `%rN:bool = lt.i64 %rA, %rB`, `le.i64`, `gt.i64`, and `ge.i64` perform signed `i64` comparisons.
 - `%rN:bool = not.bool %rA` negates a boolean SSA value.
@@ -154,6 +160,8 @@ optimized LLVM IR, an object file, and a native `.xse` executable for the suppor
 
 The public [integer support header](../include/xs/int128.h) defines `XsUInt128` and `XsInt128` as explicit high/low
 64-bit words. XLIL uses those project-owned C23 types for u128/i128 constants; GNU `__int128` is neither required nor used.
+The public model exposes one typed integer-operation constructor and read-only operation/type accessors, so third-party
+XLIL producers do not need a separate C entry point for every width.
 
 ## Direct native entry point
 

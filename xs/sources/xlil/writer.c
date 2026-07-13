@@ -123,6 +123,20 @@ static XsLilStatus write_integer_constant(FILE *stream, const XsLilInstruction *
   return XS_LIL_OK;
 }
 
+static XsLilStatus write_integer_operation(FILE *stream, const XsLilInstruction *instruction, XsLilError *error)
+{
+  if(instruction->kind != XS_LIL_INSTRUCTION_BINARY_INTEGER)
+    return XS_LIL_OK;
+  const char *operation = xs_lil_integer_operation_name(instruction->integer_operation);
+  const char *operand_type = xs_lil_type_name(instruction->integer_type);
+  const char *result_type =
+      xs_lil_integer_operation_is_comparison(instruction->integer_operation) ? "bool" : operand_type;
+  if(operation == nullptr || fprintf(stream, "  %%r%u:%s = %s.%s %%r%u, %%r%u\n", instruction->result, result_type,
+                                     operation, operand_type, instruction->left, instruction->right) < 0)
+    return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL integer operation");
+  return XS_LIL_OK;
+}
+
 static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock *block)
 {
   if(fprintf(stream, "bb%u.%s:\n", block->id, block->label) < 0)
@@ -171,6 +185,8 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.f64 instruction");
     if(float_instruction_name(instruction->kind) != nullptr &&
        write_float_instruction(stream, instruction, error) != XS_LIL_OK)
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
+    if(write_integer_operation(stream, instruction, error) != XS_LIL_OK)
       return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     if(instruction->kind == XS_LIL_INSTRUCTION_ADD_I64 &&
        fprintf(stream, "  %%r%u:i64 = add.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,

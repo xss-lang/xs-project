@@ -121,6 +121,25 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
                                                      crate::text_utf16::format_encoded(encoding, units)),
     Instruction::ConstBool { result,
                              value, } => writeln!(output, "  %r{}:bool = const.bool {}", result.0, value),
+    Instruction::BinaryInteger { operation,
+                                 value_type,
+                                 result,
+                                 left,
+                                 right, } => writeln!(output,
+                                                      "  %r{}:{} = {}.{} %r{}, %r{}",
+                                                      result.0,
+                                                      if operation.is_comparison()
+                                                      {
+                                                        "bool"
+                                                      }
+                                                      else
+                                                      {
+                                                        type_name(value_type)
+                                                      },
+                                                      operation.text_stem(),
+                                                      type_name(value_type),
+                                                      left.0,
+                                                      right.0),
     Instruction::BinaryFloat { operation,
                                value_type,
                                result,

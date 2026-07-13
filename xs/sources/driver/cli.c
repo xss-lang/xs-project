@@ -13,8 +13,8 @@
 #include "xs/compiler_core.h"
 #include "xs/diagnostic.h"
 #include "xs/hir/cffi.h"
-#include "xs/hir/inheritance.h"
 #include "xs/hir/expression_check.h"
+#include "xs/hir/inheritance.h"
 #include "xs/hir/module_registry.h"
 #include "xs/hir/symbol_table.h"
 #include "xs/hir/type_resolution.h"
@@ -31,7 +31,7 @@
 #include <string.h>
 
 #ifndef XS_PROJECT_VERSION
-#define XS_PROJECT_VERSION "0.1.1"
+#define XS_PROJECT_VERSION "0.1.6"
 #endif
 
 static char *copy_text(const char *text)

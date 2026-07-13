@@ -7,7 +7,9 @@ use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::mir;
-use crate::xlil::{BlockId, Function, I32BinaryOperation, IntegerConstant, SlotId, Type, Utf16Encoding, ValueId};
+use crate::xlil::{
+  BlockId, Function, I32BinaryOperation, IntegerBinaryOperation, IntegerConstant, SlotId, Type, Utf16Encoding, ValueId,
+};
 
 mod integer;
 
@@ -166,6 +168,15 @@ impl MirToXlilLowerer
                                          span, } = *statement
       {
         self.lower_const_bool(local, value, span, xlil_block, local_types, values, lowered);
+      }
+      if let mir::Statement::BinaryInteger { operation,
+                                             value_type,
+                                             result,
+                                             left,
+                                             right,
+                                             span, } = *statement
+      {
+        self.lower_binary_integer(result, left, right, value_type, operation, span, xlil_block, values, lowered);
       }
       if let mir::Statement::BinaryFloat { operation,
                                            value_type,

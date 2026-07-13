@@ -137,6 +137,30 @@ impl Verifier
       Instruction::ConstF64 { result, .. } => self.typed_value(function, result, Type::F64, "XLIL const.f64 result"),
       Instruction::ConstStr { result, .. } => self.typed_value(function, result, Type::STR, "XLIL const.str result"),
       Instruction::ConstBool { result, .. } => self.bool_value(function, result, "XLIL const.bool result"),
+      Instruction::BinaryInteger { operation,
+                                   value_type,
+                                   result,
+                                   left,
+                                   right, } =>
+      {
+        let name = format!("{}.{}", operation.text_stem(), crate::xlil::type_name(value_type));
+        if !value_type.is_integer()
+        {
+          self.report(DiagnosticCode::InstructionResultUnknown,
+                      &format!("XLIL {name} declares a non-integer operand type"));
+          return;
+        }
+        if operation.is_comparison()
+        {
+          self.bool_value(function, result, &format!("XLIL {name} result"));
+        }
+        else
+        {
+          self.typed_value(function, result, value_type, &format!("XLIL {name} result"));
+        }
+        self.typed_value(function, left, value_type, &format!("XLIL {name} left operand"));
+        self.typed_value(function, right, value_type, &format!("XLIL {name} right operand"));
+      }
       Instruction::BinaryFloat { operation,
                                  value_type,
                                  result,

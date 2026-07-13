@@ -99,7 +99,17 @@ impl TypeChecker
 
 const fn is_supported_integer(primitive: PrimitiveType) -> bool
 {
-  matches!(primitive, PrimitiveType::Long | PrimitiveType::Int)
+  matches!(primitive,
+           PrimitiveType::Byte |
+           PrimitiveType::SByte |
+           PrimitiveType::Short |
+           PrimitiveType::Long |
+           PrimitiveType::Int |
+           PrimitiveType::Integer |
+           PrimitiveType::UShort |
+           PrimitiveType::ULong |
+           PrimitiveType::UInt |
+           PrimitiveType::UInteger)
 }
 
 const fn is_supported_float(primitive: PrimitiveType) -> bool

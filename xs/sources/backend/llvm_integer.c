@@ -75,3 +75,96 @@ XsBackendStatus xs_llvm_lower_integer_constant(XsLlvmBackend *backend, const XsL
   }
   return XS_BACKEND_OK;
 }
+
+static XsBackendStatus integer_error(XsBackendError *error, XsBackendStatus status, const char *message)
+{
+  if(error != nullptr)
+  {
+    error->status = status;
+    snprintf(error->message, sizeof(error->message), "%s", message);
+  }
+  return status;
+}
+
+static bool is_signed_integer(XsLilTypeKind type)
+{
+  return type == XS_LIL_TYPE_I8 || type == XS_LIL_TYPE_I16 || type == XS_LIL_TYPE_I32 || type == XS_LIL_TYPE_I64 ||
+         type == XS_LIL_TYPE_I128;
+}
+
+static LLVMValueRef lower_comparison(LLVMBuilderRef builder, XsLilIntegerBinaryOperation operation, bool is_signed,
+                                     LLVMValueRef left, LLVMValueRef right)
+{
+  LLVMIntPredicate predicate = LLVMIntEQ;
+  switch(operation)
+  {
+  case XS_LIL_INTEGER_EQUAL:
+    predicate = LLVMIntEQ;
+    break;
+  case XS_LIL_INTEGER_NOT_EQUAL:
+    predicate = LLVMIntNE;
+    break;
+  case XS_LIL_INTEGER_LESS:
+    predicate = is_signed ? LLVMIntSLT : LLVMIntULT;
+    break;
+  case XS_LIL_INTEGER_LESS_EQUAL:
+    predicate = is_signed ? LLVMIntSLE : LLVMIntULE;
+    break;
+  case XS_LIL_INTEGER_GREATER:
+    predicate = is_signed ? LLVMIntSGT : LLVMIntUGT;
+    break;
+  case XS_LIL_INTEGER_GREATER_EQUAL:
+    predicate = is_signed ? LLVMIntSGE : LLVMIntUGE;
+    break;
+  default:
+    return nullptr;
+  }
+  return LLVMBuildICmp(builder, predicate, left, right, "icmp");
+}
+
+static LLVMValueRef lower_operation(LLVMBuilderRef builder, XsLilIntegerBinaryOperation operation, bool is_signed,
+                                    LLVMValueRef left, LLVMValueRef right)
+{
+  switch(operation)
+  {
+  case XS_LIL_INTEGER_ADD:
+    return LLVMBuildAdd(builder, left, right, "add");
+  case XS_LIL_INTEGER_SUB:
+    return LLVMBuildSub(builder, left, right, "sub");
+  case XS_LIL_INTEGER_MUL:
+    return LLVMBuildMul(builder, left, right, "mul");
+  case XS_LIL_INTEGER_DIV:
+    return is_signed ? LLVMBuildSDiv(builder, left, right, "div") : LLVMBuildUDiv(builder, left, right, "div");
+  case XS_LIL_INTEGER_REM:
+    return is_signed ? LLVMBuildSRem(builder, left, right, "rem") : LLVMBuildURem(builder, left, right, "rem");
+  case XS_LIL_INTEGER_BIT_AND:
+    return LLVMBuildAnd(builder, left, right, "and");
+  case XS_LIL_INTEGER_BIT_OR:
+    return LLVMBuildOr(builder, left, right, "or");
+  case XS_LIL_INTEGER_BIT_XOR:
+    return LLVMBuildXor(builder, left, right, "xor");
+  case XS_LIL_INTEGER_SHIFT_LEFT:
+    return LLVMBuildShl(builder, left, right, "shl");
+  case XS_LIL_INTEGER_SHIFT_RIGHT:
+    return is_signed ? LLVMBuildAShr(builder, left, right, "shr") : LLVMBuildLShr(builder, left, right, "shr");
+  default:
+    return lower_comparison(builder, operation, is_signed, left, right);
+  }
+}
+
+XsBackendStatus xs_llvm_lower_integer_operation(LLVMBuilderRef builder, const XsLilBlock *block, size_t index,
+                                                LLVMValueRef *values, size_t value_count, XsBackendError *error)
+{
+  XsLilValueId result = xs_lil_block_instruction_result(block, index);
+  XsLilValueId left = xs_lil_block_instruction_left(block, index);
+  XsLilValueId right = xs_lil_block_instruction_right(block, index);
+  if((size_t)result >= value_count || (size_t)left >= value_count || (size_t)right >= value_count ||
+     values[left] == nullptr || values[right] == nullptr)
+    return integer_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL integer operation references an unavailable value");
+  XsLilType type = xs_lil_block_instruction_integer_type(block, index);
+  values[result] = lower_operation(builder, xs_lil_block_instruction_integer_operation(block, index),
+                                   is_signed_integer(type.kind), values[left], values[right]);
+  if(values[result] == nullptr)
+    return integer_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL integer operation");
+  return XS_BACKEND_OK;
+}

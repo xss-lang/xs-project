@@ -134,7 +134,28 @@ typedef enum
   XS_LIL_INSTRUCTION_CONST_U64,
   XS_LIL_INSTRUCTION_CONST_U128,
   XS_LIL_INSTRUCTION_CONST_I128,
+  XS_LIL_INSTRUCTION_BINARY_INTEGER,
 } XsLilInstructionKind;
+
+typedef enum
+{
+  XS_LIL_INTEGER_ADD,
+  XS_LIL_INTEGER_SUB,
+  XS_LIL_INTEGER_MUL,
+  XS_LIL_INTEGER_DIV,
+  XS_LIL_INTEGER_REM,
+  XS_LIL_INTEGER_BIT_AND,
+  XS_LIL_INTEGER_BIT_OR,
+  XS_LIL_INTEGER_BIT_XOR,
+  XS_LIL_INTEGER_SHIFT_LEFT,
+  XS_LIL_INTEGER_SHIFT_RIGHT,
+  XS_LIL_INTEGER_EQUAL,
+  XS_LIL_INTEGER_NOT_EQUAL,
+  XS_LIL_INTEGER_LESS,
+  XS_LIL_INTEGER_LESS_EQUAL,
+  XS_LIL_INTEGER_GREATER,
+  XS_LIL_INTEGER_GREATER_EQUAL,
+} XsLilIntegerBinaryOperation;
 
 typedef enum
 {
@@ -206,6 +227,8 @@ XsLilStatus xs_lil_block_add_const_u32(XsLilBlock *block, uint32_t value, XsLilV
 XsLilStatus xs_lil_block_add_const_u64(XsLilBlock *block, uint64_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_u128(XsLilBlock *block, XsUInt128 value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_i128(XsLilBlock *block, XsInt128 value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_binary_integer(XsLilBlock *block, XsLilIntegerBinaryOperation operation, XsLilType type,
+                                        XsLilValueId left, XsLilValueId right, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_str(XsLilBlock *block, XsLilUtf16Encoding encoding, const uint16_t *units,
                                        size_t unit_count, XsLilValueId *result, XsLilError *error);
@@ -301,6 +324,8 @@ XsLilValueId xs_lil_block_instruction_result(const XsLilBlock *block, size_t ind
 int64_t xs_lil_block_instruction_i64(const XsLilBlock *block, size_t index);
 uint16_t xs_lil_block_instruction_u16(const XsLilBlock *block, size_t index);
 XsUInt128 xs_lil_block_instruction_integer_bits(const XsLilBlock *block, size_t index);
+XsLilIntegerBinaryOperation xs_lil_block_instruction_integer_operation(const XsLilBlock *block, size_t index);
+XsLilType xs_lil_block_instruction_integer_type(const XsLilBlock *block, size_t index);
 uint64_t xs_lil_block_instruction_float_bits(const XsLilBlock *block, size_t index);
 bool xs_lil_block_instruction_bool(const XsLilBlock *block, size_t index);
 XsLilUtf16Encoding xs_lil_block_instruction_utf16_encoding(const XsLilBlock *block, size_t index);

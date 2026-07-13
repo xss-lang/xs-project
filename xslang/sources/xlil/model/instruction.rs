@@ -5,6 +5,7 @@
 
 use crate::xlil::{
   FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation,
+  IntegerBinaryOperation,
 };
 
 use super::{IntegerConstant, SlotId, Type, Utf16Encoding, ValueId};
@@ -45,6 +46,14 @@ pub enum Instruction
   ConstBool
   {
     result: ValueId, value: bool
+  },
+  BinaryInteger
+  {
+    operation: IntegerBinaryOperation,
+    value_type: Type,
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
   },
   BinaryFloat
   {

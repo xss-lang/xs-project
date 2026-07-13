@@ -535,6 +535,11 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         return status;
       return actual == result ? XS_LIL_OK : parse_error(parser, error, "XLIL value ids must be sequential");
     }
+    bool integer_operation_matched = false;
+    XsLilStatus integer_operation_status = xs_lil_parse_integer_operation(
+        block, result_type, operation, operation_length, result, &integer_operation_matched, error);
+    if(integer_operation_matched)
+      return integer_operation_status;
     static const struct
     {
       const char *name;

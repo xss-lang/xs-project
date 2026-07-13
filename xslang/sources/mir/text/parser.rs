@@ -10,7 +10,9 @@ use crate::xlil::{I64BinaryOperation, I64ComparisonOperation, Type, type_from_na
 use super::{SUPPORTED_XMIR_VERSION, is_supported_xmir_version};
 
 mod float;
+mod i32;
 mod i64;
+mod integer_operation;
 mod scalar;
 mod string;
 
@@ -274,6 +276,10 @@ impl Parser<'_>
         "const.i32" => block.statements.push(self.const_i32_statement()),
         "const.u16" => block.statements.push(self.const_u16_statement()),
         kind if scalar::is_integer_constant(kind) => block.statements.push(self.integer_constant_statement(kind)),
+        kind if integer_operation::is_integer_operation(kind) =>
+        {
+          block.statements.push(self.integer_operation_statement(kind));
+        }
         "const.f32" => block.statements.push(self.const_f32_statement()),
         "const.f64" => block.statements.push(self.const_f64_statement()),
         "const.str" => block.statements.push(self.const_str_statement()),
@@ -736,60 +742,6 @@ impl Parser<'_>
                        left,
                        right,
                        span: span() }
-  }
-
-  fn i32_statement(&mut self, instruction: &str) -> Statement
-  {
-    let result = self.binary_local(instruction, "result");
-    let left = self.binary_local(instruction, "left");
-    let right = self.binary_local(instruction, "right");
-    match instruction
-    {
-      "add.i32" => Statement::AddI32 { result,
-                                       left,
-                                       right,
-                                       span: span() },
-      "sub.i32" => Statement::SubI32 { result,
-                                       left,
-                                       right,
-                                       span: span() },
-      "mul.i32" => Statement::MulI32 { result,
-                                       left,
-                                       right,
-                                       span: span() },
-      name if crate::xlil::I32BinaryOperation::parse_text(name).is_some() =>
-      {
-        Statement::BinaryI32 { operation: crate::xlil::I32BinaryOperation::parse_text(name).expect("guarded i32 \
-                                                                                                    operation must \
-                                                                                                    parse"),
-                               result,
-                               left,
-                               right,
-                               span: span() }
-      }
-      "eq.i32" => Statement::EqI32 { result,
-                                     left,
-                                     right,
-                                     span: span() },
-      "lt.i32" => Statement::LtI32 { result,
-                                     left,
-                                     right,
-                                     span: span() },
-      "le.i32" => Statement::LeI32 { result,
-                                     left,
-                                     right,
-                                     span: span() },
-      "gt.i32" => Statement::GtI32 { result,
-                                     left,
-                                     right,
-                                     span: span() },
-      "ge.i32" => Statement::GeI32 { result,
-                                     left,
-                                     right,
-                                     span: span() },
-      _ => Statement::Use { local: result,
-                            span: span() },
-    }
   }
 
   fn not_bool_statement(&mut self) -> Statement

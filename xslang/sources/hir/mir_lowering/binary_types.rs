@@ -17,6 +17,7 @@ impl HirToMirLowerer
   {
     match (operator, target_type)
     {
+      (operator, value_type) if value_type.is_integer() && integer_operation(operator).is_some() => Some(value_type),
       (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I32) => Some(XlilType::I32),
       (operator, XlilType::I32) if binary_i32_operation(operator).is_some() => Some(XlilType::I32),
       (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I64) => Some(XlilType::I64),
