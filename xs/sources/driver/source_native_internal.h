@@ -45,6 +45,12 @@ typedef struct
   size_t count;
 } NativeProgram;
 
+typedef struct
+{
+  const XsMirBlock *continue_target;
+  const XsMirBlock *break_target;
+} NativeLoopTargets;
+
 XsSpan xs_source_native_node_span(const XsSyntaxNode *node);
 bool xs_source_native_text_equals(XsText left, XsText right);
 bool xs_source_native_node_text_equals(const XsSyntaxNode *node, const char *text);

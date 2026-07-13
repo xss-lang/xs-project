@@ -108,8 +108,9 @@ The documented compilation order is preserved:
   also lowers statement-level `if` blocks with one or more assignments in each branch and a merge before the final return.
   `Long` local assignments include `=`, arithmetic, and bitwise compound assignment forms already represented by the
   structural parser. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
-  assignment-only body lowers to a MIR loop header, body, and exit. `break`, `continue`, arbitrary statement blocks, and
-  general CFG lowering remain deferred.
+  assignment-only body lowers to a MIR loop header, body, and exit. `break` and `continue` target that loop's exit and
+  header, including when written in a nested supported conditional. Arbitrary statement blocks and general CFG lowering
+  remain deferred.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.

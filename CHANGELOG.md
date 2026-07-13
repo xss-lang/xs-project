@@ -27,6 +27,8 @@ source-to-native executable pipeline.
   statement lowering and program/native-module construction units to keep the C23 implementation modular.
 - Source-native `while` now lowers a supported Bool condition, assignment-only body, and loop exit through MIR CFG,
   XLIL branches, and LLVM IR.
+- Source-native `break` and `continue` now target the nearest supported `while` exit and header, including from nested
+  conditional blocks.
 
 ## 0.0.8 - 2026-07-13
 
