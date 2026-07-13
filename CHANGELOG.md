@@ -14,6 +14,8 @@ source-to-native executable pipeline.
 
 ### Changed
 
+- `Str` is documented as the X# UTF-16LE/UTF-16BE counterpart of Rust `&'static str`, while `Optional<Str>` is documented
+  as the owned optional string case corresponding to Rust `Option<String>`.
 - `macro_rules!` definitions now use `->` between a matcher and its expansion block, matching the current X# macro syntax
   direction.
 - Class properties now accept C#-style type-first declarations such as `public Str Name { getter; setter; }`.

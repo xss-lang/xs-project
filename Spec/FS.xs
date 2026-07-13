@@ -42,7 +42,7 @@ fn ReadBytes() -> Result<(), IOException> {
     println!("file size: {}", bytes.length());
 }
 
-// std::fs::read_to_str(path-or-stream) reads UTF-16 text into Str.
+// std::fs::read_to_str(path-or-stream) reads UTF-16LE/UTF-16BE text into Str.
 // std::fs::read(path-or-stream) reads raw bytes into std::collections::vector<Byte>.
 
 

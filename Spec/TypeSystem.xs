@@ -6,7 +6,8 @@
 // Primitive type names are nominal language types.
 // Even when two user-defined types have the same fields, type identity is
 // based on the declared name.
-// Str is an immutable UTF-16 static-string-reference counterpart.
+// Str is an immutable UTF-16LE/UTF-16BE static string reference, like Rust &'static str.
+// Optional<Str> is an owned optional string value, like Rust Option<String>.
 
 valueStr: Str = "text";
 valueBool: Bool = true;
@@ -35,6 +36,8 @@ valueFloat: Float = 1.0;
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
 // There is no nullable T? type operator.
+// Optional<Str> owns the optional string payload instead of being an optional
+// borrowed/static Str reference.
 
 name: Optional<Str> = None;
 name = Some("Leitwolf");

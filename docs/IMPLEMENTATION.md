@@ -265,16 +265,19 @@ validation does not decide dispatch, override, or overload selection.
 - `Char` is a 16-bit UTF-16 code-unit type.
 - Signed integer widths are `Short`/`Long`/`Int`/`Integer` = i16/i32/i64/i128; unsigned widths are
   `UShort`/`ULong`/`UInt`/`UInteger` = u16/u32/u64/u128. `SFloat` and `Float` map to f32 and f64.
-- `Str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
-- Semantically, `Str` is the UTF-16 X# counterpart of Rust's immutable static string reference; its runtime layout remains
-  deferred and it is not yet lowered to XLIL storage.
+- `Str` is encoded as UTF-16LE or UTF-16BE; its length is considered unbounded except by the representation allowed by
+  UTF-16.
+- Semantically, `Str` is the UTF-16LE/UTF-16BE X# counterpart of Rust's `&'static str`: an immutable static string
+  reference. Its runtime layout remains deferred and it is not yet lowered to XLIL storage.
 - `Optional<T>` resolves as if the compiler had inserted `imports optional; using namespace std::optional;`, making
   `std::optional::Optional<T>` available as `Optional<T>`. Optional value constructors are canonically
   `std::optional::None` and `std::optional::Some(...)`, with `None` and `Some(...)` available through that implicit
   namespace using. It is not an enum
   lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
-  `T`, which can throw `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full
-  flow-sensitive Optional semantics are later HIR work.
+  `T`, and failed unboxing is modeled through the standard `Result`/`Error` direction rather than the deprecated exception
+  system. `Optional<Str>` is special at the language model level: it behaves like Rust's `Option<String>`, meaning the
+  optional string payload is owned/dynamic instead of an optional borrowed/static `Str` reference. Full flow-sensitive
+  Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
   `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand `Result<T, E>`, and the standard error type

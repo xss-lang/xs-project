@@ -39,8 +39,11 @@ waits for the full frontend/HIR/MIR path to produce complete XLIL.
 
 `Str` is not lowered to an LLVM storage type yet:
 
-- `Str` is UTF-16.
+- `Str` is UTF-16LE or UTF-16BE.
 - `Str` length is unbounded except by the representation allowed by UTF-16/runtime/platform limits.
+- Semantically, `Str` corresponds to Rust's `&'static str`.
+- `Optional<Str>` corresponds to Rust's `Option<String>` at the language model level, so it will need an owned string
+  payload representation when Optional/String lowering reaches the backend.
 - Ownership, length-field type, and runtime value layout are not fully implemented in code yet.
 
 `Bool` is resolved as a 1-bit primitive in HIR and lowered to `i1` by the LLVM backend.
