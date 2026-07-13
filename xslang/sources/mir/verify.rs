@@ -162,6 +162,12 @@ impl<'a> Verifier<'a>
       Statement::ConstBool { local,
                              span,
                              .. } => self.verify_const_bool(local, span),
+      Statement::StoreLocal { local,
+                              value,
+                              span, } => self.verify_local_storage(local, value, "store.local", span),
+      Statement::LoadLocal { result,
+                             local,
+                             span, } => self.verify_local_storage(local, result, "load.local", span),
       Statement::AddI64 { result,
                           left,
                           right,
@@ -266,6 +272,41 @@ impl<'a> Verifier<'a>
                   format!("block id {} is not declared in this function", block.0),
                   span);
     }
+  }
+
+  fn verify_local_storage(&mut self, local: LocalId, value: LocalId, instruction: &str, span: Span)
+  {
+    self.verify_local(local, span);
+    self.verify_local(value, span);
+    let local_type = self.local_type(local);
+    let value_type = self.local_type(value);
+    match (local_type, value_type)
+    {
+      (Some(local_type), Some(value_type)) if local_type == value_type =>
+      {}
+      (Some(_), Some(_)) => self.report(DiagnosticCode::LocalTypeMismatch,
+                                        format!("{instruction} local and value types must match"),
+                                        span),
+      _ => self.report(DiagnosticCode::MissingLocalType,
+                       format!("{instruction} requires typed locals"),
+                       span),
+    }
+  }
+
+  fn local_type(&self, id: LocalId) -> Option<crate::xlil::Type>
+  {
+    self.function
+        .parameters
+        .iter()
+        .find(|parameter| parameter.local == id)
+        .map(|parameter| parameter.value_type)
+        .or_else(|| {
+          self.function
+              .locals
+              .iter()
+              .find(|local| local.id == id)
+              .and_then(|local| local.value_type)
+        })
   }
 
   fn verify_const_i64(&mut self, local: LocalId, span: Span)
@@ -783,5 +824,35 @@ mod tests
     let diagnostics = verify_function(&function);
 
     assert_eq!(diagnostics[0].code, DiagnosticCode::DuplicateParameter);
+  }
+
+  #[test]
+  fn verifies_local_storage_types()
+  {
+    let mut function =
+      Function { name: "storage".to_string(),
+                 parameters: vec![],
+                 return_type: Type::I32,
+                 locals: vec![typed_local(0, Type::I32),
+                              typed_local(1, Type::I32),
+                              typed_local(2, Type::I32)],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstI32 { local: LocalId(1),
+                                                                                  value: 7,
+                                                                                  span: span(0, 1) },
+                                                            Statement::StoreLocal { local: LocalId(0),
+                                                                                    value: LocalId(1),
+                                                                                    span: span(1, 2) },
+                                                            Statement::LoadLocal { result: LocalId(2),
+                                                                                   local: LocalId(0),
+                                                                                   span: span(2, 3) }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(2)))),
+                                           span: span(0, 3) }] };
+    assert!(verify_function(&function).is_empty());
+
+    function.locals[2].value_type = Some(Type::BOOL);
+    let diagnostics = verify_function(&function);
+    assert!(diagnostics.iter()
+                       .any(|value| value.code == DiagnosticCode::LocalTypeMismatch));
   }
 }

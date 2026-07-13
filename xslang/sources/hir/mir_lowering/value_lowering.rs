@@ -92,6 +92,7 @@ impl HirToMirLowerer
                                      mutable,
                                      span });
     self.locals.insert(name, id);
+    self.storage_locals.insert(id);
     id
   }
 

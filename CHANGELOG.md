@@ -12,6 +12,27 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.4 - 2026-07-13
+
+### Added
+
+- Rust compiler-core HIR now imports statement `match` with typed `Long`/`Bool` selectors, literal arms, and a required
+  final `else`; HIR verification rejects mismatched, duplicate, and incomplete arm sets.
+- HIR `match` lowers into explicit MIR test/body/merge blocks and continues through XLIL `eq.i32`/`br_if`, LLVM IR,
+  object emission, and native `.xse` linking.
+- Rust MIR now carries `store.local` and `load.local` statements. XMIR parser/writer, MIR verifier and borrow checker,
+  MIR-to-XLIL lowering, XLIL stack slots, and regression tests cover the new storage path.
+- Source syntax now accepts `do { ... } while (condition);`. The frontend marks it as post-test loop sugar and lowers it
+  through the existing loop, conditional-break, MIR CFG, XLIL, and native backend path.
+- Prefix `++value`/`--value` and postfix `value++`/`value--` are distinct value expressions: prefix produces the updated
+  value, postfix produces the previous value, and both lower mutation through the existing local storage path.
+
+### Changed
+
+- HIR local initializers and assignments now compute into temporary MIR values and store into stable local storage. Reads
+  load fresh values, preserving mutation across branches, loops, and match merges.
+- Existing native match and mutable-loop fixtures now use the Rust compiler-core pipeline without losing local updates.
+
 ## 0.1.3 - 2026-07-13
 
 ### Added

@@ -9,6 +9,8 @@ use super::optimizer::{OptimizationPass, OptimizationReport};
 use super::verify::{Diagnostic as VerifyDiagnostic, DiagnosticCode as VerifyDiagnosticCode};
 
 pub mod parser;
+#[cfg(test)]
+mod storage_tests;
 mod writer;
 
 pub use parser::{XmirParseDiagnostic, parse_xmir_function};

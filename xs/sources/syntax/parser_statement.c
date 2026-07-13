@@ -275,6 +275,23 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     return parse_match(parser, start);
   if(accept(parser, XS_TOKEN_KW_TRY))
     return parse_try(parser, start);
+  if(accept(parser, XS_TOKEN_KW_DO))
+  {
+    XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_WHILE, (XsSpan){start, parser->previous.span.end});
+    statement->flags |= XS_SYNTAX_FLAG_POST_TEST_LOOP;
+    ++parser->loop_depth;
+    XsSyntaxNode *body = parse_block(parser);
+    --parser->loop_depth;
+    expect(parser, XS_TOKEN_KW_WHILE, "expected 'while' after do block");
+    expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after while");
+    XsSyntaxNode *condition = parse_expression(parser, 1);
+    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after do-while condition");
+    expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after do-while statement");
+    xs_syntax_node_add(parser->tree, statement, condition);
+    xs_syntax_node_add(parser->tree, statement, body);
+    finish_node(parser, statement, parser->previous.span.end);
+    return statement;
+  }
   if(accept(parser, XS_TOKEN_KW_WHILE))
   {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_WHILE, (XsSpan){start, parser->previous.span.end});

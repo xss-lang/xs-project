@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::mir;
-use crate::xlil::{BlockId, Function, Type, ValueId};
+use crate::xlil::{BlockId, Function, SlotId, Type, ValueId};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -52,6 +52,7 @@ impl MirToXlilLowerer
     let mut lowered = Function::definition(function.name.clone(), function.return_type, parameters);
     let mut blocks = HashMap::new();
     let mut values = HashMap::new();
+    let mut slots = HashMap::new();
     for (index, parameter) in function.parameters.iter().enumerate()
     {
       local_types.insert(parameter.local, Some(parameter.value_type));
@@ -65,10 +66,20 @@ impl MirToXlilLowerer
       let xlil_block = lowered.append_block(format!("bb{}", block.id.0));
       blocks.insert(block.id, xlil_block);
     }
+    let storage = storage_locals(function);
+    for local in &function.locals
+    {
+      if storage.contains(&local.id) &&
+         let Some(value_type) = local.value_type &&
+         let Some(slot) = lowered.add_slot(value_type)
+      {
+        slots.insert(local.id, slot);
+      }
+    }
     for block in &function.blocks
     {
       let xlil_block = blocks[&block.id];
-      self.lower_statements(block, xlil_block, &local_types, &mut values, &mut lowered);
+      self.lower_statements(block, xlil_block, &local_types, &slots, &mut values, &mut lowered);
       self.lower_terminator(block, xlil_block, &blocks, &local_types, &values, &mut lowered);
     }
     if self.diagnostics.is_empty()
@@ -85,6 +96,7 @@ impl MirToXlilLowerer
                       block: &mir::BasicBlock,
                       xlil_block: BlockId,
                       local_types: &HashMap<mir::LocalId, Option<Type>>,
+                      slots: &HashMap<mir::LocalId, SlotId>,
                       values: &mut HashMap<mir::LocalId, ValueId>,
                       lowered: &mut Function)
   {
@@ -107,6 +119,55 @@ impl MirToXlilLowerer
                                          span, } = *statement
       {
         self.lower_const_bool(local, value, span, xlil_block, local_types, values, lowered);
+      }
+      if let mir::Statement::StoreLocal { local,
+                                          value,
+                                          span, } = *statement
+      {
+        let Some(slot) = slots.get(&local).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR store.local target has no XLIL stack slot",
+                      span);
+          continue;
+        };
+        let Some(value) = values.get(&value).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR store.local value has not been lowered",
+                      span);
+          continue;
+        };
+        if !lowered.add_store(xlil_block, slot, value)
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR store.local could not lower to XLIL",
+                      span);
+        }
+      }
+      if let mir::Statement::LoadLocal { result,
+                                         local,
+                                         span, } = *statement
+      {
+        let Some(slot) = slots.get(&local).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR load.local source has no XLIL stack slot",
+                      span);
+          continue;
+        };
+        let Some(value) = lowered.add_load(xlil_block, slot)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR load.local could not lower to XLIL",
+                      span);
+          continue;
+        };
+        values.insert(result, value);
       }
       if let mir::Statement::AddI64 { result,
                                       left,
@@ -609,6 +670,19 @@ fn local_types(function: &mir::Function) -> HashMap<mir::LocalId, Option<Type>>
   function.locals
           .iter()
           .map(|local| (local.id, local.value_type))
+          .collect()
+}
+
+fn storage_locals(function: &mir::Function) -> std::collections::HashSet<mir::LocalId>
+{
+  function.blocks
+          .iter()
+          .flat_map(|block| &block.statements)
+          .filter_map(|statement| match statement
+          {
+            mir::Statement::StoreLocal { local, .. } | mir::Statement::LoadLocal { local, .. } => Some(*local),
+            _ => None,
+          })
           .collect()
 }
 

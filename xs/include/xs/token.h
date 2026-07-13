@@ -124,6 +124,7 @@ typedef enum
   XS_TOKEN_KW_VIRTUAL,
   XS_TOKEN_KW_OVERRIDE,
   XS_TOKEN_KW_SEALED,
+  XS_TOKEN_KW_DO,
 } XsTokenKind;
 
 typedef struct

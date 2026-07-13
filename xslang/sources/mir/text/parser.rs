@@ -268,6 +268,8 @@ impl Parser<'_>
         "const.i64" => block.statements.push(self.const_i64_statement()),
         "const.i32" => block.statements.push(self.const_i32_statement()),
         "const.bool" => block.statements.push(self.const_bool_statement()),
+        "store.local" => block.statements.push(self.store_local_statement()),
+        "load.local" => block.statements.push(self.load_local_statement()),
         "add.i64" => block.statements.push(self.add_i64_statement()),
         "sub.i64" => block.statements.push(self.sub_i64_statement()),
         "mul.i64" => block.statements.push(self.mul_i64_statement()),
@@ -512,6 +514,42 @@ impl Parser<'_>
     Statement::ConstI32 { local,
                           value,
                           span: span() }
+  }
+
+  fn store_local_statement(&mut self) -> Statement
+  {
+    let local = self.named_local("target local ");
+    let value = self.named_local("value local ");
+    Statement::StoreLocal { local,
+                            value,
+                            span: span() }
+  }
+
+  fn load_local_statement(&mut self) -> Statement
+  {
+    let result = self.named_local("result local ");
+    let local = self.named_local("source local ");
+    Statement::LoadLocal { result,
+                           local,
+                           span: span() }
+  }
+
+  fn named_local(&mut self, prefix: &str) -> LocalId
+  {
+    let Some(line) = self.current()
+    else
+    {
+      self.report(format!("missing {prefix}record"));
+      return LocalId(0);
+    };
+    self.index += 1;
+    let Some(value) = line.strip_prefix(prefix)
+    else
+    {
+      self.report(format!("expected {prefix}record"));
+      return LocalId(0);
+    };
+    self.local_id(value)
   }
 
   fn const_i32_value(&mut self) -> i32

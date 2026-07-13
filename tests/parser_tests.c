@@ -69,11 +69,13 @@ static void test_nested_braces(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_postfix_updates(void)
+static void test_increment_and_decrement_updates(void)
 {
   XsAst ast;
   XsDiagnostics diagnostics;
-  CHECK(parse("fn Main() { value: Long = 0; value++; value--; for (i: Long = 0; i < 3; i++) {} }", &ast, &diagnostics));
+  CHECK(parse("fn Main() { value: Long = 0; value++; value--; ++value; --value; "
+              "for (i: Long = 0; i < 3; i++) {} }",
+              &ast, &diagnostics));
   CHECK(!xs_diagnostics_has_error(&diagnostics));
   xs_ast_free(&ast);
   xs_diagnostics_free(&diagnostics);
@@ -144,7 +146,7 @@ int main(void)
 {
   test_top_level_declarations();
   test_nested_braces();
-  test_postfix_updates();
+  test_increment_and_decrement_updates();
   test_top_level_execution_rejected();
   test_class_parentheses_rejected();
   test_macro_definition();

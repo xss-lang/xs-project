@@ -40,7 +40,7 @@ usage: xs --version
 
 ## `xs --version`
 
-`xs --version` prints the compiler version, such as `xs 0.1.3`.
+`xs --version` prints the compiler version, such as `xs 0.1.4`.
 
 ## `xs check`
 

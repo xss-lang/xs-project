@@ -33,6 +33,21 @@ static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
   return count;
 }
 
+static const XsSyntaxNode *find_kind_with_flag(const XsSyntaxNode *node, XsSyntaxKind kind, uint32_t flag)
+{
+  if(node == nullptr)
+    return nullptr;
+  if(node->kind == kind && (node->flags & flag) != 0)
+    return node;
+  for(size_t index = 0; index < node->child_count; ++index)
+  {
+    const XsSyntaxNode *found = find_kind_with_flag(node->children[index], kind, flag);
+    if(found != nullptr)
+      return found;
+  }
+  return nullptr;
+}
+
 static void test_function_tree(void)
 {
   const char *text = "fn Add(a: Int, b: Int) -> Int {\n    result: Int = a + b;\n    return result;\n}\n";
@@ -113,6 +128,7 @@ static void test_control_flow_structure(void)
   const char *text = "fn Flow(value: Int) {\n"
                      "  for (i: Int = 0; i < 3; i = i + 1) { continue; }\n"
                      "  while (value > 0) { break; }\n"
+                     "  do { continue; } while (false);\n"
                      "  match (value) { 0 -> { return; }, else -> { throw IOException(\"x\"); }, }\n"
                      "  try {} catch (error: IOException) {} finally {}\n"
                      "}\n";
@@ -123,6 +139,9 @@ static void test_control_flow_structure(void)
   CHECK(xs_syntax_parse(&source, 9, &diagnostics, &tree));
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_FOR) != nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_WHILE) != nullptr);
+  const XsSyntaxNode *post_test = find_kind_with_flag(tree.root, XS_SYNTAX_STMT_WHILE, XS_SYNTAX_FLAG_POST_TEST_LOOP);
+  CHECK(post_test != nullptr);
+  CHECK(post_test == nullptr || post_test->child_count == 2);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MATCH) != nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_TRY) != nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_CATCH) != nullptr);

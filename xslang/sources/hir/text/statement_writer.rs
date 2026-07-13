@@ -6,8 +6,8 @@
 use std::fmt::Write;
 
 use super::{
-  DesugaredStatement, Statement, mutability_name, type_name, write_block, write_desugared_block,
-  write_desugared_expression, write_expression,
+  DesugaredStatement, MatchPattern, Statement, literal_name, mutability_name, type_name, write_block,
+  write_desugared_block, write_desugared_expression, write_expression,
 };
 
 pub(super) fn write_statement(output: &mut String, statement: &Statement, indent: usize)
@@ -56,6 +56,32 @@ pub(super) fn write_statement(output: &mut String, statement: &Statement, indent
       write_expression(output, condition, indent + 2);
       let _ = writeln!(output, "{pad}  body");
       write_block(output, body, indent + 2);
+    }
+    Statement::Match { selector,
+                       selector_type,
+                       arms,
+                       .. } =>
+    {
+      let _ = writeln!(output, "{pad}match {}", type_name(selector_type));
+      let _ = writeln!(output, "{pad}  selector");
+      write_expression(output, selector, indent + 2);
+      for arm in arms
+      {
+        match &arm.pattern
+        {
+          MatchPattern::Literal(literal) =>
+          {
+            let _ = writeln!(output, "{pad}  arm literal {}", literal_name(literal));
+          }
+          MatchPattern::Else =>
+          {
+            let _ = writeln!(output, "{pad}  arm else");
+          }
+        }
+        let _ = writeln!(output, "{pad}    body");
+        write_block(output, &arm.body, indent + 3);
+      }
+      let _ = writeln!(output, "{pad}.end");
     }
     Statement::Break { .. } =>
     {
@@ -146,6 +172,32 @@ pub(super) fn write_desugared_statement(output: &mut String, statement: &Desugar
       write_desugared_expression(output, condition, indent + 2);
       let _ = writeln!(output, "{pad}  body");
       write_desugared_block(output, body, indent + 2);
+    }
+    DesugaredStatement::Match { selector,
+                                selector_type,
+                                arms,
+                                .. } =>
+    {
+      let _ = writeln!(output, "{pad}match {}", type_name(selector_type));
+      let _ = writeln!(output, "{pad}  selector");
+      write_desugared_expression(output, selector, indent + 2);
+      for arm in arms
+      {
+        match &arm.pattern
+        {
+          MatchPattern::Literal(literal) =>
+          {
+            let _ = writeln!(output, "{pad}  arm literal {}", literal_name(literal));
+          }
+          MatchPattern::Else =>
+          {
+            let _ = writeln!(output, "{pad}  arm else");
+          }
+        }
+        let _ = writeln!(output, "{pad}    body");
+        write_desugared_block(output, &arm.body, indent + 3);
+      }
+      let _ = writeln!(output, "{pad}.end");
     }
     DesugaredStatement::Break { .. } =>
     {

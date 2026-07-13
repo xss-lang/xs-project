@@ -12,7 +12,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 
 ## Current status
 
-- Current project version: `0.1.3`.
+- Current project version: `0.1.4`.
 - `xs --version` reports the configured compiler version.
 - The root [../CHANGELOG.md](../CHANGELOG.md) file keeps `Unreleased` for work after the current numbered line.
 - Numbered `0.0.x` entries are development snapshots, not stable language releases.
@@ -22,7 +22,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 The root `release.java` source-file tool checks release metadata without using shell scripts:
 
 ```text
-java --source=21 release.java check 0.1.3
+java --source=21 release.java check 0.1.4
 ```
 
 It validates the CMake project version, changelog heading, release documentation, CLI version documentation, and the built
@@ -30,6 +30,9 @@ It validates the CMake project version, changelog heading, release documentation
 
 ## Version line
 
+- `0.1.4` adds Rust compiler-core statement-match CFG lowering and explicit MIR local storage that reaches XLIL stack
+  slots, LLVM memory operations, and native `.xse` execution. It also adds post-test `do`/`while` sugar and distinct
+  prefix/postfix increment/decrement values.
 - `0.1.3` adds Rust compiler-core loop CFG lowering and validated same-category multiple-inheritance graphs for nominal
   types.
 - `0.1.2` connects supported compiler-core sessions back to native emission. Typed Rust HIR lowers through verified and

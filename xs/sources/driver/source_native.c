@@ -229,6 +229,9 @@ static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context
                                  XsText current_function, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
                                  XsMirValueId *result, XsMirError *error)
 {
+  if(expression->kind == XS_SYNTAX_EXPR_UNARY &&
+     (expression->token_kind == XS_TOKEN_PLUS_PLUS || expression->token_kind == XS_TOKEN_MINUS_MINUS))
+    return xs_source_native_lower_update_value(entry, context, expression, diagnostics, result, error);
   if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_MINUS &&
      expression->child_count == 1)
   {
@@ -507,26 +510,8 @@ static bool lower_update_expression(XsMirBlock *entry, const NativeContext *cont
 {
   if(expression != nullptr && expression->kind == XS_SYNTAX_EXPR_ASSIGNMENT)
     return lower_assignment_expression(entry, context, program, current_function, expression, diagnostics, error);
-  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_UNARY || expression->child_count != 1 ||
-     (expression->token_kind != XS_TOKEN_PLUS_PLUS && expression->token_kind != XS_TOKEN_MINUS_MINUS) ||
-     expression->children[0]->kind != XS_SYNTAX_EXPR_IDENTIFIER)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
-                              "native source update must be assignment or postfix increment/decrement") &&
-           false;
-  const XsSyntaxNode *target = expression->children[0];
-  XsMirValueId current = 0;
-  XsMirValueId one = 0;
-  XsMirValueId updated = 0;
-  if(!context_read(context, entry, target->text, XS_LIL_TYPE_I32, &current, error) ||
-     xs_mir_block_add_const_i32(entry, 1, &one, error) != XS_MIR_OK)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target),
-                              "native source postfix update requires a Long local") &&
-           false;
-  XsMirStatus status = expression->token_kind == XS_TOKEN_PLUS_PLUS
-                           ? xs_mir_block_add_i32(entry, current, one, &updated, error)
-                           : xs_mir_block_sub_i32(entry, current, one, &updated, error);
-  return status == XS_MIR_OK &&
-         context_assign(context, entry, target->text, XS_LIL_TYPE_I32, updated, diagnostics, node_span(target), error);
+  XsMirValueId unused = 0;
+  return xs_source_native_lower_update_value(entry, context, expression, diagnostics, &unused, error);
 }
 
 static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
@@ -863,23 +848,29 @@ static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current,
   XsMirBlock *header = nullptr;
   XsMirBlock *body = nullptr;
   XsMirBlock *exit = nullptr;
+  bool post_test = (statement->flags & XS_SYNTAX_FLAG_POST_TEST_LOOP) != 0;
+  XsMirBlock *condition_block = nullptr;
   if(xs_mir_function_append_block(function, "while.header", &header, error) != XS_MIR_OK ||
      xs_mir_function_append_block(function, "while.body", &body, error) != XS_MIR_OK ||
      xs_mir_function_append_block(function, "while.exit", &exit, error) != XS_MIR_OK ||
-     xs_mir_block_set_goto(*current, header, error) != XS_MIR_OK)
+     (post_test && xs_mir_function_append_block(function, "do.condition", &condition_block, error) != XS_MIR_OK) ||
+     xs_mir_block_set_goto(*current, header, error) != XS_MIR_OK ||
+     (post_test && xs_mir_block_set_goto(header, body, error) != XS_MIR_OK))
     return false;
   XsMirValueId condition = 0;
   bool invert = false;
-  if(!lower_bool_expression(header, context, program, current_function, statement->children[0], diagnostics, &condition,
+  XsMirBlock *test = post_test ? condition_block : header;
+  XsMirBlock *repeat = post_test ? header : body;
+  if(!lower_bool_expression(test, context, program, current_function, statement->children[0], diagnostics, &condition,
                             &invert, error) ||
-     xs_mir_block_set_branch(header, condition, invert ? exit : body, invert ? body : exit, error) != XS_MIR_OK)
+     xs_mir_block_set_branch(test, condition, invert ? exit : repeat, invert ? repeat : exit, error) != XS_MIR_OK)
     return false;
   XsMirBlock *body_current = body;
   NativeLoopTargets loop = {.continue_target = header, .break_target = exit};
   if(!lower_statement_block(function, &body_current, context, program, current_function, statement->children[1],
                             return_kind, &loop, diagnostics, error) ||
      (xs_mir_block_terminator_kind(body_current) == XS_MIR_TERMINATOR_NONE &&
-      xs_mir_block_set_goto(body_current, header, error) != XS_MIR_OK))
+      xs_mir_block_set_goto(body_current, post_test ? condition_block : header, error) != XS_MIR_OK))
     return false;
   *current = exit;
   return true;

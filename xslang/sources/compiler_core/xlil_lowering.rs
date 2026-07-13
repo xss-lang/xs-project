@@ -88,6 +88,9 @@ fn statement_calls(statement: &Statement, name: &str) -> bool
     Statement::While { condition,
                        body,
                        .. } => expression_calls(condition, name) || block_calls(body, name),
+    Statement::Match { selector,
+                       arms,
+                       .. } => expression_calls(selector, name) || arms.iter().any(|arm| block_calls(&arm.body, name)),
     Statement::Break { .. } | Statement::Continue { .. } | Statement::Panic { .. } => false,
   }
 }

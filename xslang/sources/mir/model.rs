@@ -68,6 +68,16 @@ pub enum Statement
   {
     local: LocalId, value: bool, span: Span
   },
+  StoreLocal
+  {
+    local: LocalId, value: LocalId, span: Span
+  },
+  LoadLocal
+  {
+    result: LocalId,
+    local: LocalId,
+    span: Span,
+  },
   AddI64
   {
     result: LocalId,
@@ -303,6 +313,13 @@ impl BorrowChecker
                              .. } |
       Statement::Drop { local,
                         span, } => self.require_live(local, span),
+      Statement::StoreLocal { local,
+                              value,
+                              span, } =>
+      {
+        self.require_live(value, span);
+        let _ = self.state(local, span);
+      }
       Statement::AddI64 { left,
                           right,
                           result,
@@ -372,6 +389,13 @@ impl BorrowChecker
                         ref arguments,
                         span,
                         .. } => self.call(result, arguments, span),
+      Statement::LoadLocal { result,
+                             local,
+                             span, } =>
+      {
+        self.require_live(local, span);
+        let _ = self.state(result, span);
+      }
       Statement::Move { local,
                         span, } => self.move_local(local, span),
       Statement::BorrowShared { local,

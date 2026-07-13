@@ -24,6 +24,7 @@ static const Keyword keywords[] = {
     {"const", XS_TOKEN_KW_CONST},
     {"continue", XS_TOKEN_KW_CONTINUE},
     {"data", XS_TOKEN_KW_DATA},
+    {"do", XS_TOKEN_KW_DO},
     {"else", XS_TOKEN_KW_ELSE},
     {"enum", XS_TOKEN_KW_ENUM},
     {"extends", XS_TOKEN_KW_EXTENDS},
@@ -193,6 +194,7 @@ const char *xs_token_kind_name(XsTokenKind kind)
       "virtual",
       "override",
       "sealed",
+      "do",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown token";

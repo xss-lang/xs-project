@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::async_check::Span;
+use super::match_model::{MatchArm, MatchPattern};
 use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::type_check::{BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type};
 use crate::mir;
@@ -37,6 +38,7 @@ pub struct HirToMirLowerer
   next_local: u32,
   current_block: mir::BlockId,
   loop_targets: Vec<(mir::BlockId, mir::BlockId)>,
+  storage_locals: HashSet<mir::LocalId>,
 }
 
 impl HirToMirLowerer
@@ -111,6 +113,23 @@ impl HirToMirLowerer
       {
         Some(Statement::While { condition: self.surface_expression_from_desugared(condition)?,
                                 body: self.surface_block_from_desugared(body)?,
+                                span: *span })
+      }
+      DesugaredStatement::Match { selector,
+                                  selector_type,
+                                  arms,
+                                  span, } =>
+      {
+        let arms = arms.iter()
+                       .map(|arm| {
+                         Some(MatchArm { pattern: arm.pattern.clone(),
+                                         body: self.surface_block_from_desugared(&arm.body)?,
+                                         span: arm.span })
+                       })
+                       .collect::<Option<Vec<_>>>()?;
+        Some(Statement::Match { selector: self.surface_expression_from_desugared(selector)?,
+                                selector_type: selector_type.clone(),
+                                arms,
                                 span: *span })
       }
       DesugaredStatement::Break { span } => Some(Statement::Break { span: *span }),
@@ -235,6 +254,7 @@ impl HirToMirLowerer
                           span, } => self.lower_return(value.as_ref(), *span, lowered),
       Statement::If { .. } => self.lower_if_statement(statement, lowered),
       Statement::While { .. } => self.lower_while_statement(statement, lowered),
+      Statement::Match { .. } => self.lower_match_statement(statement, lowered),
       Statement::Break { span } => self.lower_loop_jump(false, *span, lowered),
       Statement::Continue { span } => self.lower_loop_jump(true, *span, lowered),
       Statement::Panic { span } => self.lower_panic(*span, lowered),
@@ -254,17 +274,24 @@ impl HirToMirLowerer
 
   fn lower_assignment(&mut self, target: mir::LocalId, expression: &Expression, lowered: &mut mir::Function)
   {
-    match expression
+    let Some(value_type) = self.local_value_type(target, lowered)
+    else
     {
-      Expression::Literal { literal,
-                            span, } => self.lower_literal_into(target, literal, *span, lowered),
-      Expression::Binary { operator,
-                           left,
-                           right,
-                           span, } => self.lower_binary_into(target, *operator, left, right, *span, lowered),
-      Expression::Call { .. } => self.lower_call_into(target, expression, lowered),
-      _ => self.unsupported_expression(expression),
-    }
+      self.report(DiagnosticCode::UnsupportedType,
+                  "assignment target has no MIR value type",
+                  expression_span(expression));
+      return;
+    };
+    let Some(value) = self.lower_expression_to_local(expression, value_type, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::StoreLocal { local: target,
+                                           value,
+                                           span: expression_span(expression) });
   }
 
   fn lower_return(&mut self, value: Option<&Expression>, span: Span, lowered: &mut mir::Function)
@@ -276,53 +303,6 @@ impl HirToMirLowerer
     let terminator = match value
     {
       None => mir::Terminator::Return(None),
-      Some(Expression::Local { name,
-                               span, }) =>
-      {
-        let Some(local) = self.locals.get(name).copied()
-        else
-        {
-          self.report(DiagnosticCode::UnknownLocal,
-                      format!("unknown HIR local '{name}'"),
-                      *span);
-          return;
-        };
-        mir::Terminator::Return(Some(local))
-      }
-      Some(Expression::Literal { literal,
-                                 span, }) =>
-      {
-        let Some(local) = self.declare_temp(lowered.return_type, *span, lowered)
-        else
-        {
-          return;
-        };
-        self.lower_literal_into(local, literal, *span, lowered);
-        mir::Terminator::Return(Some(local))
-      }
-      Some(Expression::Binary { operator,
-                                left,
-                                right,
-                                span, }) =>
-      {
-        let Some(local) = self.declare_temp(lowered.return_type, *span, lowered)
-        else
-        {
-          return;
-        };
-        self.lower_binary_into(local, *operator, left, right, *span, lowered);
-        mir::Terminator::Return(Some(local))
-      }
-      Some(expression @ Expression::Call { span, .. }) =>
-      {
-        let Some(local) = self.declare_temp(lowered.return_type, *span, lowered)
-        else
-        {
-          return;
-        };
-        self.lower_call_into(local, expression, lowered);
-        mir::Terminator::Return(Some(local))
-      }
       Some(expression @ Expression::If { .. }) =>
       {
         self.lower_if_return(expression, span, lowered);
@@ -330,8 +310,12 @@ impl HirToMirLowerer
       }
       Some(expression) =>
       {
-        self.unsupported_expression(expression);
-        return;
+        let Some(local) = self.lower_expression_to_local(expression, lowered.return_type, lowered)
+        else
+        {
+          return;
+        };
+        mir::Terminator::Return(Some(local))
       }
     };
     let block = self.current_block_mut(lowered);
@@ -365,7 +349,20 @@ impl HirToMirLowerer
                       *span);
           return None;
         }
-        Some(local)
+        if self.storage_locals.contains(&local)
+        {
+          let result = self.declare_temp(expected_type, *span, lowered)?;
+          self.current_block_mut(lowered)
+              .statements
+              .push(mir::Statement::LoadLocal { result,
+                                                local,
+                                                span: *span });
+          Some(result)
+        }
+        else
+        {
+          Some(local)
+        }
       }
       Expression::Literal { literal,
                             span, } =>
@@ -700,6 +697,8 @@ mod control_flow_tests;
 #[cfg(test)]
 mod desugar_tests;
 mod function_lowering;
+#[cfg(test)]
+mod match_tests;
 mod value_lowering;
 #[cfg(test)]
 mod value_tests;
@@ -857,10 +856,18 @@ mod tests
                                     .expect("local Int return should lower");
 
     assert_eq!(mir.locals[0].name, "answer");
-    assert!(matches!(mir.blocks[0].statements[0], mir::Statement::ConstI64 { value: 1024,
-                                                                             .. }));
-    assert_eq!(mir.blocks[0].terminator,
-               Some(mir::Terminator::Return(Some(mir::LocalId(0)))));
+    assert!(mir.blocks[0].statements
+                         .iter()
+                         .any(|statement| matches!(statement, mir::Statement::ConstI64 { value: 1024,
+                                                                                         .. })));
+    assert!(mir.blocks[0].statements
+                         .iter()
+                         .any(|statement| matches!(statement, mir::Statement::StoreLocal { local: mir::LocalId(0),
+                                                                                           .. })));
+    assert!(mir.blocks[0].statements
+                         .iter()
+                         .any(|statement| matches!(statement, mir::Statement::LoadLocal { local: mir::LocalId(0),
+                                                                                          .. })));
     assert!(verify_function(&mir).is_empty());
   }
 
@@ -893,18 +900,27 @@ mod tests
     let mir = HirToMirLowerer::new().lower_function(&function)
                                     .expect("Long add should lower");
 
-    assert!(matches!(mir.blocks[0].statements[2], mir::Statement::AddI32 { result:
-                                                                             mir::LocalId(2),
-                                                                           left:
-                                                                             mir::LocalId(0),
-                                                                           right:
-                                                                             mir::LocalId(1),
-                                                                           .. }));
+    assert_eq!(mir.blocks[0].statements
+                            .iter()
+                            .filter(|statement| matches!(statement, mir::Statement::StoreLocal { .. }))
+                            .count(),
+               2);
+    assert_eq!(mir.blocks[0].statements
+                            .iter()
+                            .filter(|statement| matches!(statement, mir::Statement::LoadLocal { .. }))
+                            .count(),
+               2);
+    assert!(mir.blocks[0].statements
+                         .iter()
+                         .any(|statement| matches!(statement, mir::Statement::AddI32 { .. })));
     assert!(verify_function(&mir).is_empty());
 
     let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
                                                              .expect("Long add MIR should lower to XLIL");
-    assert!(matches!(xlil.blocks[0].instructions[2], crate::xlil::Instruction::AddI32 { .. }));
+    assert_eq!(xlil.slots.len(), 2);
+    assert!(xlil.blocks[0].instructions
+                          .iter()
+                          .any(|instruction| matches!(instruction, crate::xlil::Instruction::AddI32 { .. })));
   }
 
   #[test]
@@ -936,17 +952,16 @@ mod tests
     let mir = HirToMirLowerer::new().lower_function(&function)
                                     .expect("Long comparison should lower");
 
-    assert!(matches!(mir.blocks[0].statements[2], mir::Statement::LtI32 { result:
-                                                                            mir::LocalId(2),
-                                                                          left:
-                                                                            mir::LocalId(0),
-                                                                          right:
-                                                                            mir::LocalId(1),
-                                                                          .. }));
+    assert!(mir.blocks[0].statements
+                         .iter()
+                         .any(|statement| matches!(statement, mir::Statement::LtI32 { .. })));
     assert!(verify_function(&mir).is_empty());
 
     let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
                                                              .expect("Long comparison MIR should lower to XLIL");
-    assert!(matches!(xlil.blocks[0].instructions[2], crate::xlil::Instruction::LtI32 { .. }));
+    assert_eq!(xlil.slots.len(), 2);
+    assert!(xlil.blocks[0].instructions
+                          .iter()
+                          .any(|instruction| matches!(instruction, crate::xlil::Instruction::LtI32 { .. })));
   }
 }

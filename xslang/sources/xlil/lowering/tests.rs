@@ -653,3 +653,47 @@ fn lowers_branch_if_terminator()
                                          then_block: crate::xlil::BlockId(1),
                                          else_block: crate::xlil::BlockId(2) }));
 }
+
+#[test]
+fn lowers_mir_local_storage_to_xlil_stack_slot()
+{
+  let function =
+    MirFunction { name: "Storage".to_string(),
+                  parameters: vec![],
+                  return_type: Type::I32,
+                  locals: vec![Local { id: LocalId(0),
+                                       name: "value".to_string(),
+                                       value_type: Some(Type::I32),
+                                       mutable: true,
+                                       span: span(0, 1) },
+                               Local { id: LocalId(1),
+                                       name: "$tmp1".to_string(),
+                                       value_type: Some(Type::I32),
+                                       mutable: false,
+                                       span: span(1, 2) },
+                               Local { id: LocalId(2),
+                                       name: "$tmp2".to_string(),
+                                       value_type: Some(Type::I32),
+                                       mutable: false,
+                                       span: span(2, 3) }],
+                  blocks: vec![BasicBlock { id: MirBlockId(0),
+                                            statements: vec![mir::Statement::ConstI32 { local: LocalId(1),
+                                                                                        value: 7,
+                                                                                        span: span(1, 2) },
+                                                             mir::Statement::StoreLocal { local: LocalId(0),
+                                                                                          value: LocalId(1),
+                                                                                          span: span(2, 3) },
+                                                             mir::Statement::LoadLocal { result: LocalId(2),
+                                                                                         local: LocalId(0),
+                                                                                         span: span(3, 4) }],
+                                            terminator: Some(mir::Terminator::Return(Some(LocalId(2)))),
+                                            span: span(0, 4) }] };
+
+  let lowered = MirToXlilLowerer::new().lower_function(&function)
+                                       .expect("storage lowering should succeed");
+
+  assert_eq!(lowered.slots.len(), 1);
+  assert!(matches!(lowered.blocks[0].instructions[1], Instruction::Store { .. }));
+  assert!(matches!(lowered.blocks[0].instructions[2], Instruction::Load { .. }));
+  assert!(matches!(lowered.blocks[0].terminator, Some(Terminator::Return(Some(_)))));
+}

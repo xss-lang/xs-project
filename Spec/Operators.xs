@@ -27,6 +27,16 @@
 // ??=
 // !
 //
+// Increment and Decrement Operators:
+// ++value
+// --value
+// value++
+// value--
+//
+// Prefix update expressions produce the updated value. Postfix update
+// expressions produce the value from before the update. All four forms still
+// update their mutable operand exactly once.
+//
 
 fn main() {
     a: Int = 10;
@@ -78,6 +88,13 @@ fn main() {
 
     // optional-forgiving unboxing
     forced_name: Str = maybe_name!;
+
+    // prefix and postfix update values
+    counter: Int = 5;
+    before_increment: Int = counter++;
+    after_increment: Int = ++counter;
+    before_decrement: Int = counter--;
+    after_decrement: Int = --counter;
 }
 
 
@@ -125,3 +142,9 @@ name ??= std::optional::Some("fallback");
 
 // VALID
 forced: Str = name!;
+
+
+// VALID
+value: Int = 1;
+old_value: Int = value++;
+new_value: Int = ++value;

@@ -67,7 +67,8 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - `function <name>` with `signature`, `locals`, and `body`
 - explicit `.end` section markers and `.program end` document marker
 - primitive and named type records
-- literal, local, assignment, typed direct-call, conditional block, `propagate`, let, expression, and return records
+- literal, local, assignment, typed direct-call, conditional block, loop, statement-match, `propagate`, let, expression,
+  and return records
 - `analysis typecheck` records for type-check diagnostics, spans, and messages
 
 The version header is part of the `xs build` input contract. It tells the compiler which XHIR text grammar version it is
@@ -88,6 +89,25 @@ call add : (Long, Long) -> Long
 ```
 
 Parameter types are part of checked HIR. Commas inside nested generic types do not split the outer parameter list.
+
+Statement match records retain the checked selector type and semantic arms. A final `else` arm is required:
+
+```text
+match Long
+  selector
+    local value
+  arm literal integer 2
+    body
+      return
+        literal integer 7
+    .end
+  arm else
+    body
+      return
+        literal integer 3
+    .end
+.end
+```
 
 Conditional expressions retain semantic blocks and their checked result type:
 

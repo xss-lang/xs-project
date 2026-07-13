@@ -366,6 +366,8 @@ static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
   case XS_TOKEN_BANG:
   case XS_TOKEN_PLUS:
   case XS_TOKEN_MINUS:
+  case XS_TOKEN_PLUS_PLUS:
+  case XS_TOKEN_MINUS_MINUS:
     kind = XS_SYNTAX_EXPR_UNARY;
     break;
   case XS_TOKEN_STAR:
@@ -411,6 +413,8 @@ static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
     kind = XS_SYNTAX_EXPR_MUTABLE_BORROW;
   XsSyntaxNode *expression = node(parser, kind, (XsSpan){start, parser->previous.span.end});
   expression->token_kind = operator_kind;
+  if(operator_kind == XS_TOKEN_PLUS_PLUS || operator_kind == XS_TOKEN_MINUS_MINUS)
+    expression->flags |= XS_SYNTAX_FLAG_PREFIX_UPDATE;
   xs_syntax_node_add(parser->tree, expression, parse_prefix(parser));
   finish_node(parser, expression, parser->previous.span.end);
   return expression;

@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 
 use crate::hir::{
+  MatchArm, MatchPattern,
   async_check::Span,
   declarations,
   type_check::{BinaryOperator, Block, Expression, Literal, PrimitiveType, Statement, Type},
@@ -29,6 +30,8 @@ const STMT_RETURN: u32 = 41;
 const STMT_IF: u32 = 42;
 const STMT_ELSE_IF: u32 = 43;
 const STMT_WHILE: u32 = 46;
+const STMT_MATCH: u32 = 47;
+const MATCH_ARM: u32 = 48;
 const STMT_BREAK: u32 = 49;
 const STMT_CONTINUE: u32 = 50;
 const EXPR_IDENTIFIER: u32 = 56;
@@ -37,6 +40,8 @@ const EXPR_BINARY: u32 = 58;
 const EXPR_ASSIGNMENT: u32 = 60;
 const EXPR_CALL: u32 = 61;
 const EXPR_IF: u32 = 81;
+const PATTERN_LITERAL: u32 = 85;
+const PATTERN_ELSE: u32 = 88;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_EQUAL: u32 = 25;
 const TOKEN_GREATER: u32 = 32;
@@ -53,6 +58,7 @@ const STATIC_CONSTANT: u32 = 1 << 6;
 const RETURN_TYPE: u32 = 1 << 11;
 const INFERRED_TYPE: u32 = 1 << 12;
 const DISCARDED: u32 = 1 << 21;
+const POST_TEST_LOOP: u32 = 1 << 25;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LoweringError
@@ -311,6 +317,34 @@ fn lower_expression(tree: &SyntaxTree,
   }
 }
 
+fn expression_type(tree: &SyntaxTree,
+                   value: &SyntaxNode,
+                   signatures: &HashMap<String, CallSignature>,
+                   locals: &HashMap<String, Type>)
+                   -> Option<Type>
+{
+  match value.kind
+  {
+    EXPR_LITERAL if value.text == "true" || value.text == "false" => Some(Type::Primitive(PrimitiveType::Bool)),
+    EXPR_LITERAL if value.token_kind == TOKEN_INTEGER => Some(Type::Primitive(PrimitiveType::Long)),
+    EXPR_IDENTIFIER => locals.get(&path_text(tree, value)).cloned(),
+    EXPR_CALL =>
+    {
+      let callee = tree.nodes.get(*value.children.first()?)?;
+      signatures.get(&path_text(tree, callee))
+                .map(|signature| signature.return_type.clone())
+    }
+    EXPR_BINARY
+      if matches!(value.token_kind,
+                  TOKEN_EQUAL | TOKEN_GREATER | TOKEN_GREATER_EQUAL | TOKEN_LESS | TOKEN_LESS_EQUAL) =>
+    {
+      Some(Type::Primitive(PrimitiveType::Bool))
+    }
+    EXPR_BINARY => Some(Type::Primitive(PrimitiveType::Long)),
+    _ => None,
+  }
+}
+
 fn lower_local(tree: &SyntaxTree,
                statement: &SyntaxNode,
                signatures: &HashMap<String, CallSignature>,
@@ -388,6 +422,7 @@ fn lower_statement_node(tree: &SyntaxTree,
     STMT_VARIABLE => lower_local(tree, statement, signatures, locals),
     STMT_IF => lower_if_statement(tree, statement, signatures, locals, return_type),
     STMT_WHILE => lower_while_statement(tree, statement, signatures, locals, return_type),
+    STMT_MATCH => lower_match_statement(tree, statement, signatures, locals, return_type),
     STMT_BREAK => Some(Statement::Break { span: span(statement)? }),
     STMT_CONTINUE => Some(Statement::Continue { span: span(statement)? }),
     _ => None,
@@ -511,14 +546,89 @@ fn lower_while_statement(tree: &SyntaxTree,
                                    locals,
                                    Some(&Type::Primitive(PrimitiveType::Bool)))?;
   let mut body_locals = locals.clone();
-  let body = lower_hir_block(tree,
-                             tree.nodes.get(*statement.children.get(1)?)?,
-                             signatures,
-                             &mut body_locals,
-                             return_type,
-                             None)?;
+  let mut body = lower_hir_block(tree,
+                                 tree.nodes.get(*statement.children.get(1)?)?,
+                                 signatures,
+                                 &mut body_locals,
+                                 return_type,
+                                 None)?;
+  let condition = if statement.flags & POST_TEST_LOOP != 0
+  {
+    let loop_span = span(statement)?;
+    body.statements.push(Statement::If { condition,
+                                         then_block: Block { statements: Vec::new(),
+                                                             tail: None,
+                                                             span: loop_span },
+                                         else_block: Some(Block { statements:
+                                                                    vec![Statement::Break { span: loop_span }],
+                                                                  tail: None,
+                                                                  span: loop_span }),
+                                         span: loop_span });
+    Expression::Literal { literal: Literal::Bool(true),
+                          span: span(statement)? }
+  }
+  else
+  {
+    condition
+  };
   Some(Statement::While { condition,
                           body,
+                          span: span(statement)? })
+}
+
+fn lower_match_statement(tree: &SyntaxTree,
+                         statement: &SyntaxNode,
+                         signatures: &HashMap<String, CallSignature>,
+                         locals: &HashMap<String, Type>,
+                         return_type: Option<&Type>)
+                         -> Option<Statement>
+{
+  let selector_node = tree.nodes.get(*statement.children.first()?)?;
+  let selector_type = expression_type(tree, selector_node, signatures, locals)?;
+  let selector = lower_expression(tree, selector_node, signatures, locals, Some(&selector_type))?;
+  let arms =
+    statement.children[1..].iter()
+                           .map(|index| {
+                             let arm = tree.nodes.get(*index)?;
+                             if arm.kind != MATCH_ARM || arm.children.len() != 2
+                             {
+                               return None;
+                             }
+                             let pattern_node = tree.nodes.get(arm.children[0])?;
+                             let pattern = if pattern_node.kind == PATTERN_ELSE
+                             {
+                               MatchPattern::Else
+                             }
+                             else if pattern_node.kind == PATTERN_LITERAL
+                             {
+                               let literal_node = tree.nodes.get(*pattern_node.children.first()?)?;
+                               let Expression::Literal { literal, .. } =
+                                 lower_expression(tree, literal_node, signatures, locals, Some(&selector_type))?
+                               else
+                               {
+                                 return None;
+                               };
+                               MatchPattern::Literal(literal)
+                             }
+                             else
+                             {
+                               return None;
+                             };
+                             let mut arm_locals = locals.clone();
+                             let body = lower_hir_block(tree,
+                                                        tree.nodes.get(arm.children[1])?,
+                                                        signatures,
+                                                        &mut arm_locals,
+                                                        return_type,
+                                                        None)?;
+                             Some(MatchArm { pattern,
+                                             body,
+                                             span: span(arm)? })
+                           })
+                           .collect::<Option<Vec<_>>>()?;
+  Some(Statement::Match { selector,
+                          selector_type,
+                          arms,
                           span: span(statement)? })
 }
 

@@ -111,11 +111,11 @@ static void test_keywords(void)
       XS_TOKEN_KW_INTERFACE, XS_TOKEN_KW_DATA,      XS_TOKEN_KW_ENUM,    XS_TOKEN_KW_ASYNC,  XS_TOKEN_KW_AWAIT,
       XS_TOKEN_KW_MOVE,      XS_TOKEN_KW_MUT,       XS_TOKEN_KW_OP,      XS_TOKEN_KW_TRY,    XS_TOKEN_KW_CATCH,
       XS_TOKEN_KW_FINALLY,   XS_TOKEN_KW_THROW,     XS_TOKEN_KW_THROWS,  XS_TOKEN_KW_EXTERN, XS_TOKEN_KW_NONE,
-      XS_TOKEN_KW_VIRTUAL,   XS_TOKEN_KW_OVERRIDE,  XS_TOKEN_KW_SEALED,  XS_TOKEN_EOF,
+      XS_TOKEN_KW_VIRTUAL,   XS_TOKEN_KW_OVERRIDE,  XS_TOKEN_KW_SEALED,  XS_TOKEN_KW_DO,     XS_TOKEN_EOF,
   };
   expect_tokens(
       "module namespace imports using class interface data enum async await move mut op try catch finally throw "
-      "throws extern None virtual override sealed",
+      "throws extern None virtual override sealed do",
       expected, sizeof(expected) / sizeof(expected[0]));
 }
 

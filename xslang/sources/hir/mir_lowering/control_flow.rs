@@ -7,6 +7,127 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_match_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
+  {
+    let Statement::Match { selector,
+                           selector_type,
+                           arms,
+                           span, } = statement
+    else
+    {
+      return;
+    };
+    if !matches!(arms.last().map(|arm| &arm.pattern), Some(MatchPattern::Else))
+    {
+      self.report(DiagnosticCode::UnsupportedExpression,
+                  "MIR match lowering requires a final else arm",
+                  *span);
+      return;
+    }
+    let selector_type = match selector_type
+    {
+      Type::Primitive(PrimitiveType::Bool) => XlilType::BOOL,
+      Type::Primitive(PrimitiveType::Long) => XlilType::I32,
+      _ =>
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    "MIR match lowering currently supports Bool and Long selectors",
+                    *span);
+        return;
+      }
+    };
+    let Some(selector) = self.lower_expression_to_local(selector, selector_type, lowered)
+    else
+    {
+      return;
+    };
+    let merge = self.append_block(*span, lowered);
+    let outer_locals = self.locals.clone();
+    let mut test = self.current_block;
+    let mut has_open_arm = false;
+    let mut final_arm_end = self.current_block;
+    for arm in arms
+    {
+      self.locals.clone_from(&outer_locals);
+      self.switch_to(test);
+      match &arm.pattern
+      {
+        MatchPattern::Literal(literal) =>
+        {
+          let body = self.append_block(arm.body.span, lowered);
+          let next = self.append_block(arm.span, lowered);
+          let condition = if selector_type == XlilType::BOOL
+          {
+            selector
+          }
+          else
+          {
+            let Some(pattern) = self.declare_temp(XlilType::I32, arm.span, lowered)
+            else
+            {
+              return;
+            };
+            self.lower_literal_into(pattern, literal, arm.span, lowered);
+            let Some(condition) = self.declare_temp(XlilType::BOOL, arm.span, lowered)
+            else
+            {
+              return;
+            };
+            self.current_block_mut(lowered)
+                .statements
+                .push(mir::Statement::EqI32 { result: condition,
+                                              left: selector,
+                                              right: pattern,
+                                              span: arm.span });
+            condition
+          };
+          let (then_block, else_block) = if matches!(literal, Literal::Bool(false))
+          {
+            (next, body)
+          }
+          else
+          {
+            (body, next)
+          };
+          self.set_terminator(mir::Terminator::BranchIf { condition,
+                                                          then_block,
+                                                          else_block },
+                              arm.span,
+                              lowered);
+          self.switch_to(body);
+          self.lower_block_statements(&arm.body, lowered);
+          final_arm_end = self.current_block;
+          if !self.current_is_terminated(lowered)
+          {
+            self.set_terminator(mir::Terminator::Goto(merge), arm.span, lowered);
+            has_open_arm = true;
+          }
+          test = next;
+        }
+        MatchPattern::Else =>
+        {
+          self.lower_block_statements(&arm.body, lowered);
+          final_arm_end = self.current_block;
+          if !self.current_is_terminated(lowered)
+          {
+            self.set_terminator(mir::Terminator::Goto(merge), arm.span, lowered);
+            has_open_arm = true;
+          }
+        }
+      }
+    }
+    self.locals = outer_locals;
+    if has_open_arm
+    {
+      self.switch_to(merge);
+    }
+    else
+    {
+      lowered.blocks.retain(|block| block.id != merge);
+      self.switch_to(final_arm_end);
+    }
+  }
+
   pub(super) fn lower_while_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
   {
     let Statement::While { condition,

@@ -50,6 +50,7 @@ add_library(xs_compiler
   xs/sources/driver/options.c
   xs/sources/driver/source_native.c
   xs/sources/driver/source_native_static.c
+  xs/sources/driver/source_native_update.c
   xs/sources/driver/source_native_program.c
   xs/sources/driver/source_native_utils.c
   xs/sources/lexer.c

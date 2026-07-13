@@ -13,6 +13,7 @@
 // - else
 // - for
 // - while
+// - do/while
 // - break
 // - continue
 // - match
@@ -70,6 +71,10 @@ fn main() {
     while (x < 10) {
         x = x + 1;
     }
+
+    do {
+        x = x + 1;
+    } while (x < 10);
 
     match (x) {
         0 -> {
@@ -185,6 +190,18 @@ fn test_while() {
     while (x < 10) {
         x = x + 1;
     }
+}
+
+
+// VALID
+// A do/while body executes before its condition is tested. The construct is
+// syntax sugar for an unconditional loop with a conditional break at its tail.
+fn test_do_while() {
+    x: Int = 10;
+
+    do {
+        x = x + 1;
+    } while (x < 10);
 }
 
 

@@ -112,11 +112,18 @@ fn block_local_can_shadow_without_replacing_outer_mir_binding()
   let mir = HirToMirLowerer::new().lower_function(&function)
                                   .expect("shadowing should lower");
 
-  assert!(mir.locals.iter().any(|value| value.id == mir::LocalId(0)));
-  assert!(mir.locals.iter().any(|value| value.id == mir::LocalId(2)));
-  assert!(mir.blocks
-             .iter()
-             .any(|block| { matches!(block.terminator, Some(mir::Terminator::Return(Some(mir::LocalId(0))))) }));
+  let bindings = mir.locals
+                    .iter()
+                    .filter(|value| value.name == "value")
+                    .collect::<Vec<_>>();
+  assert_eq!(bindings.len(), 2);
+  let outer = bindings[0].id;
+  assert!(mir.blocks.iter().any(|block| {
+                             block.statements.iter().any(|statement| {
+                                                      matches!(statement,
+                                                            mir::Statement::LoadLocal { local, .. } if *local == outer)
+                                                    })
+                           }));
   assert!(verify_function(&mir).is_empty());
 }
 

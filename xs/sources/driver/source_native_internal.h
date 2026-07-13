@@ -74,6 +74,9 @@ const XsSyntaxNode *xs_source_native_first_child_kind(const XsSyntaxNode *node, 
 size_t xs_source_native_child_count_kind(const XsSyntaxNode *node, XsSyntaxKind kind);
 bool xs_source_native_parse_i32_literal(const XsSyntaxNode *literal, int32_t *value);
 bool xs_source_native_static_condition(const XsSyntaxNode *expression, bool *value);
+bool xs_source_native_lower_update_value(XsMirBlock *block, const NativeContext *context,
+                                         const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
+                                         XsMirValueId *result, XsMirError *error);
 const NativeFunction *xs_source_native_program_find_function(const NativeProgram *program, XsText name);
 bool xs_source_native_collect_program(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, NativeProgram *program);
 bool xs_source_native_lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,

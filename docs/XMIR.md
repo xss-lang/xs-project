@@ -78,7 +78,8 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `control_flow`
 - explicit `.end` section markers and `.program end` document marker
 - `block`
-- local-use, move, borrow, end-borrow, `const.i64`, `const.i32`, `const.bool`, arithmetic, compare, `call`, and drop statements
+- local-use, move, borrow, end-borrow, `const.i64`, `const.i32`, `const.bool`, `store.local`, `load.local`, arithmetic,
+  compare, `call`, and drop statements
 - `return`, `goto`, `branch_if`, `unreachable`, and `missing` terminators
 - optional local return values, goto targets, and named `branch_if` condition/then/else fields
 - `analysis optimizer` records for optimization pass reports and removed item counts
@@ -90,6 +91,7 @@ without changing the structured, human-readable format direction.
 
 Parsed XMIR can be passed to the Rust MIR structural verifier. The current verifier checks duplicate local/block ids,
 missing terminators, unknown local references, and unknown block targets before borrow checking.
+Typed `store.local`/`load.local` records preserve source-local storage across CFG edges and lower to XLIL stack slots.
 The verified optimizer API uses the same structural verifier before and after MIR optimization.
 
 Place projections, exception edges, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.

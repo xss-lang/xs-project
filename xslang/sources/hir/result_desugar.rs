@@ -4,6 +4,7 @@
  */
 
 use super::async_check::Span;
+use super::match_model::MatchPattern;
 use super::type_check::{
   BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, result_type_parts,
 };
@@ -102,6 +103,13 @@ pub enum DesugaredStatement
     body: DesugaredBlock,
     span: Span,
   },
+  Match
+  {
+    selector: DesugaredExpression,
+    selector_type: Type,
+    arms: Vec<DesugaredMatchArm>,
+    span: Span,
+  },
   Break
   {
     span: Span,
@@ -114,6 +122,14 @@ pub enum DesugaredStatement
   {
     span: Span,
   },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DesugaredMatchArm
+{
+  pub pattern: MatchPattern,
+  pub body: DesugaredBlock,
+  pub span: Span,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -206,6 +222,20 @@ impl ResultDesugar
                          span, } => DesugaredStatement::While { condition: self.desugar_expression(condition),
                                                                 body: self.desugar_block(body),
                                                                 span: *span },
+      Statement::Match { selector,
+                         selector_type,
+                         arms,
+                         span, } =>
+      {
+        DesugaredStatement::Match { selector: self.desugar_expression(selector),
+                                    selector_type: selector_type.clone(),
+                                    arms: arms.iter()
+                                              .map(|arm| DesugaredMatchArm { pattern: arm.pattern.clone(),
+                                                                             body: self.desugar_block(&arm.body),
+                                                                             span: arm.span })
+                                              .collect(),
+                                    span: *span }
+      }
       Statement::Break { span } => DesugaredStatement::Break { span: *span },
       Statement::Continue { span } => DesugaredStatement::Continue { span: *span },
       Statement::Panic { span } => DesugaredStatement::Panic { span: *span },

@@ -109,9 +109,12 @@ The documented compilation order is preserved:
   also lowers statement-level `if`/`else if` blocks with one or more assignments in each branch and a merge before the
   final return.
   `Long` local assignments include `=`, arithmetic, and bitwise compound assignment forms already represented by the
-  structural parser. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
+  structural parser. Prefix increment/decrement returns the updated local value; postfix increment/decrement returns its
+  prior value. Both perform one checked mutable-local store. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
   assignment-only body lowers to a MIR loop header, body, and exit. Supported conditional and loop blocks also accept
-  `Long`/`Bool` local declarations with lexical lifetime in the source-native context. Inner scopes may shadow enclosing
+  `Long`/`Bool` local declarations with lexical lifetime in the source-native context. `do { ... } while (condition);`
+  is post-test syntax sugar: its body executes once before the first condition test and it uses the existing loop CFG
+  rather than introducing a MIR or XLIL instruction. Inner scopes may shadow enclosing
   bindings; duplicates remain invalid within one lexical scope. `break` and `continue` target that loop's exit and header,
   including when written in a nested supported
   conditional. Supported early return expressions lower to direct MIR return terminators from nested conditionals and loop
@@ -374,10 +377,15 @@ explicit merge when control can continue. A returned `if` expression lowers each
 MIR return terminator, avoiding an implicit target-specific phi representation. The same verified CFG lowers to XLIL
 `br_if`; arbitrary conditional values used by local initialization or assignment still await the general MIR place/merge
 model.
-`while`, `break`, and `continue` now cross the same compiler-core boundary. Rust HIR requires a `Bool` loop condition and
+`while`, post-test `do`/`while` sugar, `break`, and `continue` now cross the same compiler-core boundary. Rust HIR requires a `Bool` loop condition and
 rejects loop jumps outside a loop. MIR lowering creates explicit header, body, and exit blocks; `continue` targets the
 header and `break` targets the exit. The resulting target-independent CFG is verified and lowered to XLIL `br`/`br_if`
 records before entering the existing backend path.
+Statement `match` now crosses this boundary for checked `Long` and `Bool` selectors, literal patterns, and a final `else`
+arm. HIR lowers each pattern to ordered MIR test/body blocks and a merge when an arm can continue. Source locals are stable
+MIR storage locations: initializers and assignments emit `store.local`, reads emit `load.local`, and MIR-to-XLIL allocates
+typed stack slots. This keeps mutations visible after conditionals, loops, and match arms before LLVM emits memory and branch
+instructions.
 For supported single-unit builds, this Rust path no longer stops at an internal MIR count. The session borrow-checks and
 optimizes each lowered function, lowers the module to XLIL v0 text, and exposes that text through a borrowed C ABI view. The
 C23 driver parses it with the public `xs/lil.h` API, verifies the reconstructed module, and reuses the established LLVM IR,

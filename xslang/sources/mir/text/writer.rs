@@ -142,6 +142,22 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        target local {}", local.0);
       let _ = writeln!(output, "        value {value}");
     }
+    Statement::StoreLocal { local,
+                            value,
+                            .. } =>
+    {
+      let _ = writeln!(output, "      statement store.local");
+      let _ = writeln!(output, "        target local {}", local.0);
+      let _ = writeln!(output, "        value local {}", value.0);
+    }
+    Statement::LoadLocal { result,
+                           local,
+                           .. } =>
+    {
+      let _ = writeln!(output, "      statement load.local");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        source local {}", local.0);
+    }
     Statement::AddI64 { result,
                         left,
                         right,

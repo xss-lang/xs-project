@@ -8,6 +8,7 @@ use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
 use crate::hir::type_check::{
   BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type,
 };
+use crate::hir::{MatchArm, MatchPattern};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
@@ -227,6 +228,7 @@ impl Parser<'_>
       "return" => Some(self.return_statement()),
       "if" => Some(self.if_statement()),
       "while" => Some(self.while_statement()),
+      line if line.starts_with("match ") => Some(self.match_statement()),
       "break" => Some(self.break_statement()),
       "continue" => Some(self.continue_statement()),
       "panic" => Some(self.panic_statement()),
@@ -324,6 +326,50 @@ impl Parser<'_>
     let body = self.named_block("body");
     Statement::While { condition,
                        body,
+                       span: span() }
+  }
+
+  fn match_statement(&mut self) -> Statement
+  {
+    let line = self.current().unwrap_or_default();
+    let selector_type = line.strip_prefix("match ")
+                            .and_then(|name| self.parse_type(name))
+                            .unwrap_or(Type::Named(String::new()));
+    self.index += 1;
+    self.consume_expression_field("selector");
+    let selector = self.expression()
+                       .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                        span: span() });
+    let mut arms = Vec::new();
+    while let Some(line) = self.current()
+    {
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      let pattern = if line == "arm else"
+      {
+        MatchPattern::Else
+      }
+      else if let Some(literal) = line.strip_prefix("arm literal ")
+      {
+        MatchPattern::Literal(self.literal(literal))
+      }
+      else
+      {
+        self.report(format!("invalid match arm record '{line}'"));
+        self.index += 1;
+        continue;
+      };
+      self.index += 1;
+      arms.push(MatchArm { pattern,
+                           body: self.named_block("body"),
+                           span: span() });
+    }
+    Statement::Match { selector,
+                       selector_type,
+                       arms,
                        span: span() }
   }
 

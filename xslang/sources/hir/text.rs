@@ -5,6 +5,7 @@
 
 use std::fmt::Write;
 
+use super::match_model::MatchPattern;
 use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::symbols::{Import, Module, SymbolKind, Visibility};
 use super::type_check::{BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type};
@@ -17,6 +18,8 @@ mod block_writer;
 mod call_tests;
 #[cfg(test)]
 mod conditional_tests;
+#[cfg(test)]
+mod match_tests;
 mod statement_writer;
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
@@ -276,6 +279,8 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::MissingBlockValue => "missing_block_value",
     TypeDiagnosticCode::BreakOutsideLoop => "break_outside_loop",
     TypeDiagnosticCode::ContinueOutsideLoop => "continue_outside_loop",
+    TypeDiagnosticCode::MatchRequiresFinalElse => "match_requires_final_else",
+    TypeDiagnosticCode::DuplicateMatchPattern => "duplicate_match_pattern",
   }
 }
 
@@ -297,6 +302,8 @@ fn parse_type_diagnostic_code(name: &str,
     "missing_block_value" => Some(TypeDiagnosticCode::MissingBlockValue),
     "break_outside_loop" => Some(TypeDiagnosticCode::BreakOutsideLoop),
     "continue_outside_loop" => Some(TypeDiagnosticCode::ContinueOutsideLoop),
+    "match_requires_final_else" => Some(TypeDiagnosticCode::MatchRequiresFinalElse),
+    "duplicate_match_pattern" => Some(TypeDiagnosticCode::DuplicateMatchPattern),
     _ =>
     {
       diagnostics.push(XhirParseDiagnostic { line,
