@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Concurrently checks HTTP endpoints and prints a compact health report.
 
-module Programs.HttpHealthMonitor;
+module Programs::HttpHealthMonitor;
 
 imports http, std, collections, thread, sync, result;
 
@@ -26,13 +26,13 @@ data HealthResult {
 }
 
 interface HealthReporter {
-    fn Report(result: HealthResult) => Result.Result<Void, IOException>;
+    fn Report(result: HealthResult) -> Result::Result<Void, IOException>;
 }
 
 class ConsoleReporter {
     implements HealthReporter;
 
-    fn Report(result: HealthResult) => Result.Result<Void, IOException> {
+    fn Report(result: HealthResult) -> Result::Result<Void, IOException> {
         state: Str = if (result.ok) {
             "OK";
         }
@@ -46,24 +46,24 @@ class ConsoleReporter {
             result.statusCode,
             result.bodyPreview
         );
-        return Result.Ok();
+        return Result::Ok();
     }
 }
 
 class HealthClient {
-    client: Http.client;
+    client: Http::client;
 
     HealthClient() {
         this.client = new();
     }
 
-    async fn Check(endpoint: Endpoint) => Task<Result.Result<HealthResult, HealthError>> {
+    async fn Check(endpoint: Endpoint) -> Task<Result::Result<HealthResult, HealthError>> {
         request: Http.request = new()
             .uri(URI.create(endpoint.url))
             .header("Accept", "text/plain")
             .build();
 
-        response: Http.response<Str> =
+        response: Http::response<Str> =
             await this.client.sendAsync(
                 request,
                 HttpResponse.BodyHandlers.ofstr()
@@ -77,7 +77,7 @@ class HealthClient {
             body;
         };
 
-        return Result.Ok(HealthResult {
+        return Result::Ok(HealthResult {
             endpoint: endpoint,
             ok: response.statusCode() >= 200 && response.statusCode() < 300,
             statusCode: response.statusCode(),
@@ -87,11 +87,11 @@ class HealthClient {
 }
 
 async fn CheckAll(
-    endpoints: std.collections.vector<Endpoint>,
+    endpoints: std::collections::vector<Endpoint>,
     reporter: HealthReporter
-) => Task<Result.Result<Int, Result.Error>> {
+) -> Task<Result::Result<Int, Result::Error>> {
     client: HealthClient = new();
-    tasks: std.collections.vector<Task<Result.Result<HealthResult, HealthError>>> = std.collections.vector<Task<Result.Result<HealthResult, HealthError>>>.new();
+    tasks: std::collections::vector<Task<Result::Result<HealthResult, HealthError>>> = std::collections::vector<Task<Result::Result<HealthResult, HealthError>>>.new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));
@@ -107,11 +107,11 @@ async fn CheckAll(
         }
     }
 
-    return Result.Ok(failures);
+    return Result::Ok(failures);
 }
 
-fn DefaultEndpoints() => std.collections.vector<Endpoint> {
-    endpoints: std.collections.vector<Endpoint> = std.collections.vector<Endpoint>.new();
+fn DefaultEndpoints() -> std::collections::vector<Endpoint> {
+    endpoints: std::collections::vector<Endpoint> = std::collections::vector<Endpoint>.new();
 
     endpoints.push(Endpoint {
         name: "example",
@@ -131,12 +131,12 @@ fn DefaultEndpoints() => std.collections.vector<Endpoint> {
     return endpoints;
 }
 
-async fn Main() => Task<Int> {
+async fn Main() -> Task<Int> {
     reporter: ConsoleReporter = new();
 
-    result: Result.Result<Int, Result.Error> = await CheckAll(DefaultEndpoints(), reporter);
+    result: Result::Result<Int, Result::Error> = await CheckAll(DefaultEndpoints(), reporter);
     match (result) {
-        Result.Ok(failures) -> {
+        Result::Ok(failures) -> {
             if (failures == 0) {
                 println!("All endpoints are healthy.");
             } else {
@@ -144,7 +144,7 @@ async fn Main() => Task<Int> {
             }
             return failures;
         },
-        Result.Error(error) -> {
+        Result::Error(error) -> {
             eprintln!("Health check failed: {}", error.ToString());
             return 1;
         },

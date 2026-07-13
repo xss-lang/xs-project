@@ -158,10 +158,13 @@ static bool token_is_overloadable_operator(XsTokenKind kind)
   }
 }
 
-static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, size_t start, bool signature_allowed)
+static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, size_t start, bool signature_allowed,
+                                    bool referential_transparent)
 {
   XsSyntaxNode *function = node(parser, XS_SYNTAX_DECL_FUNCTION, (XsSpan){start, parser->previous.span.end});
   attach_modifiers(parser, function, modifiers);
+  if(referential_transparent)
+    function->flags |= XS_SYNTAX_FLAG_REFERENTIAL_TRANSPARENT;
   XsSyntaxNode *name = identifier(parser);
   xs_syntax_node_add(parser->tree, function, name);
   if(name != nullptr && syntax_text_equal(name->text, (XsText){.data = "operator", .length = 8}))
@@ -180,7 +183,7 @@ static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, s
   }
   parse_generics(parser, function);
   parse_parameters(parser, function);
-  if(accept(parser, XS_TOKEN_FAT_ARROW))
+  if(accept(parser, XS_TOKEN_ARROW))
   {
     XsSyntaxNode *return_type = parse_type(parser);
     return_type->flags |= XS_SYNTAX_FLAG_RETURN_TYPE;
@@ -213,6 +216,17 @@ static XsSyntaxNode *parse_function(SyntaxParser *parser, Modifiers modifiers, s
   return function;
 }
 
+static bool accept_trailing_glob(SyntaxParser *parser)
+{
+  if(parser->current.kind != XS_TOKEN_STAR &&
+     ((parser->current.kind != XS_TOKEN_DOUBLE_COLON && parser->current.kind != XS_TOKEN_DOT) ||
+      parser->next.kind != XS_TOKEN_STAR))
+    return false;
+  if(parser->current.kind != XS_TOKEN_STAR)
+    advance(parser);
+  return accept(parser, XS_TOKEN_STAR);
+}
+
 static XsSyntaxNode *parse_import(SyntaxParser *parser, bool selected, size_t start)
 {
   XsSyntaxNode *import = node(parser, XS_SYNTAX_DECL_IMPORT, (XsSpan){start, parser->previous.span.end});
@@ -220,7 +234,7 @@ static XsSyntaxNode *parse_import(SyntaxParser *parser, bool selected, size_t st
   {
     xs_syntax_node_add(parser->tree, import, parse_path(parser));
     expect(parser, XS_TOKEN_KW_IMPORTS, "expected imports after module path");
-    if(accept(parser, XS_TOKEN_STAR))
+    if(accept_trailing_glob(parser))
     {
       import->flags |= XS_SYNTAX_FLAG_WILDCARD;
     }
@@ -256,8 +270,10 @@ static XsSyntaxNode *parse_using(SyntaxParser *parser, size_t start)
 {
   XsSyntaxNode *using_decl = node(parser, XS_SYNTAX_DECL_IMPORT, (XsSpan){start, parser->previous.span.end});
   using_decl->flags |= XS_SYNTAX_FLAG_USING;
+  bool namespace_using = false;
   if(accept(parser, XS_TOKEN_KW_NAMESPACE))
   {
+    namespace_using = true;
     using_decl->flags |= XS_SYNTAX_FLAG_WILDCARD;
     xs_syntax_node_add(parser->tree, using_decl, parse_path(parser));
   }
@@ -272,9 +288,11 @@ static XsSyntaxNode *parse_using(SyntaxParser *parser, size_t start)
   {
     xs_syntax_node_add(parser->tree, using_decl, parse_path(parser));
   }
-  if(accept(parser, XS_TOKEN_STAR))
+  if(accept_trailing_glob(parser))
+    using_decl->flags |= XS_SYNTAX_FLAG_WILDCARD;
+  if((using_decl->flags & XS_SYNTAX_FLAG_WILDCARD) != 0 && !namespace_using)
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                       "using does not support glob imports");
+                       "using does not support glob imports; use 'using namespace' instead");
   expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after using declaration");
   finish_node(parser, using_decl, parser->previous.span.end);
   return using_decl;
@@ -341,9 +359,10 @@ static XsSyntaxNode *parse_extern_block(SyntaxParser *parser, Modifiers modifier
   {
     size_t before = parser->current.span.start;
     Modifiers member = parse_modifiers(parser);
-    if(accept(parser, XS_TOKEN_KW_FN))
+    if(accept(parser, XS_TOKEN_KW_FN) || accept(parser, XS_TOKEN_KW_OP))
     {
-      XsSyntaxNode *function = parse_function(parser, member, before, true);
+      bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
+      XsSyntaxNode *function = parse_function(parser, member, before, true, referential_transparent);
       function->flags |= XS_SYNTAX_FLAG_EXTERN | XS_SYNTAX_FLAG_INCOMPLETE;
       xs_syntax_node_add(parser->tree, function, extern_abi_token(parser, abi_span));
       if(xs_syntax_find_first(function, XS_SYNTAX_STMT_BLOCK) != nullptr)
@@ -538,9 +557,11 @@ static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_
   {
     size_t before = parser->current.span.start;
     Modifiers member = parse_modifiers(parser);
-    if(accept(parser, XS_TOKEN_KW_FN))
+    if(accept(parser, XS_TOKEN_KW_FN) || accept(parser, XS_TOKEN_KW_OP))
     {
-      xs_syntax_node_add(parser->tree, declaration, parse_function(parser, member, before, false));
+      bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
+      xs_syntax_node_add(parser->tree, declaration,
+                         parse_function(parser, member, before, false, referential_transparent));
     }
     else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN)
     {
@@ -646,9 +667,10 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
     else
     {
       Modifiers member = parse_modifiers(parser);
-      if(accept(parser, XS_TOKEN_KW_FN))
+      if(accept(parser, XS_TOKEN_KW_FN) || accept(parser, XS_TOKEN_KW_OP))
       {
-        XsSyntaxNode *function = parse_function(parser, member, before, interface);
+        bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
+        XsSyntaxNode *function = parse_function(parser, member, before, interface, referential_transparent);
         if(interface && (function->flags & XS_SYNTAX_FLAG_INCOMPLETE) == 0)
         {
           XsSpan function_span = {function->span.start_offset, function->span.end_offset};
@@ -759,8 +781,11 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
     return parse_using(parser, start);
   if(parser->current.kind == XS_TOKEN_KW_EXTERN)
     return parse_extern_block(parser, modifiers, start);
-  if(accept(parser, XS_TOKEN_KW_FN))
-    return parse_function(parser, modifiers, start, false);
+  if(accept(parser, XS_TOKEN_KW_FN) || accept(parser, XS_TOKEN_KW_OP))
+  {
+    bool referential_transparent = parser->previous.kind == XS_TOKEN_KW_OP;
+    return parse_function(parser, modifiers, start, false, referential_transparent);
+  }
   if(accept(parser, XS_TOKEN_KW_CLASS))
     return parse_class(parser, modifiers, start, false);
   if(accept(parser, XS_TOKEN_KW_INTERFACE))

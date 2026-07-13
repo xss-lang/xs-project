@@ -60,7 +60,7 @@ Today, plain `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can pr
 supported source slice:
 
 ```xs
-fn main() => Long { return if (1 < 2) { 7; } else { 3; }; }
+fn main() -> Long { return if (1 < 2) { 7; } else { 3; }; }
 ```
 
 The function must be top-level, named `main`, have no parameters, and return `Long`. The body may contain explicit

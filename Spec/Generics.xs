@@ -135,9 +135,9 @@ strBox: Box<Str>;
 
 // generic collections
 
-users: std.collections.vector<Str>;
+users: std::collections::vector<Str>;
 
-scores: std.collections.hash_map<Str, Int>;
+scores: std::collections::hash_map<Str, Int>;
 
 
 // generic enum data
@@ -150,7 +150,7 @@ enum data Result<T> {
 
 // generic return type
 
-fn CreateBox<T>(value: T) => Box<T> {
+fn CreateBox<T>(value: T) -> Box<T> {
 
     box: Box<T>;
 

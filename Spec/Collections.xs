@@ -30,7 +30,7 @@
 // - Str -> None
 //
 // Vector:
-// - std.collections.vector<T>
+// - std::collections::vector<T>
 // - Dynamic size.
 // - Supports push().
 // - Supports pop().
@@ -41,7 +41,7 @@
 // - Supports new().
 //
 // HashMap:
-// - std.collections.hash_map<K, V>
+// - std::collections::hash_map<K, V>
 // - Supports new().
 // - Supports insert().
 // - Supports get().
@@ -114,7 +114,7 @@ nums[0] = 5;
 
 // vectors
 
-users: std.collections.vector<Str> = {
+users: std::collections::vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -122,34 +122,34 @@ users: std.collections.vector<Str> = {
 
 // vector constructor
 
-users: std.collections.vector<Str> =
-    std.collections.vector.new();
+users: std::collections::vector<Str> =
+    std::collections::vector.new();
 
 
 // vector push
 
-std.collections.vector.push(users, "Friedrich");
+std::collections::vector.push(users, "Friedrich");
 
 
 // vector pop by value
 
-std.collections.vector.pop(users, "Leitewolf");
+std::collections::vector.pop(users, "Leitewolf");
 
 
 // vector pop by index
 
-std.collections.vector.pop(users[1]);
+std::collections::vector.pop(users[1]);
 
 
 // vector get
 
 name: Str =
-    std.collections.vector.get(users[0]);
+    std::collections::vector.get(users[0]);
 
 
 // vector update
 
-std.collections.vector.adjust(
+std::collections::vector.adjust(
     users[1],
     "Friedrich"
 );
@@ -158,24 +158,24 @@ std.collections.vector.adjust(
 // vector length
 
 count: Int =
-    std.collections.vector.length(users);
+    std::collections::vector.length(users);
 
 
 // hashmaps
 
-scores: std.collections.hash_map<Str, Int> =
-    std.collections.hash_map.new();
+scores: std::collections::hash_map<Str, Int> =
+    std::collections::hash_map.new();
 
 
 // insert
 
-std.collections.hash_map.insert(
+std::collections::hash_map.insert(
     scores,
     "Alpha",
     90
 );
 
-std.collections.hash_map.insert(
+std::collections::hash_map.insert(
     scores,
     "Leitewolf",
     50
@@ -185,7 +185,7 @@ std.collections.hash_map.insert(
 // get
 
 score: Int =
-    std.collections.hash_map.get(
+    std::collections::hash_map.get(
         scores,
         "Alpha"
     );
@@ -193,7 +193,7 @@ score: Int =
 
 // delete
 
-std.collections.hash_map.delete(
+std::collections::hash_map.delete(
     scores,
     "Alpha"
 );
@@ -203,26 +203,26 @@ std.collections.hash_map.delete(
 
 imports collections, std, format;
 
-scores: std.collections.hash_map<Str, Int> =
-    std.collections.hash_map.new();
+scores: std::collections::hash_map<Str, Int> =
+    std::collections::hash_map.new();
 
-std.collections.hash_map.insert(
+std::collections::hash_map.insert(
     scores,
     "Alpha",
     90
 );
 
-std.collections.hash_map.insert(
+std::collections::hash_map.insert(
     scores,
     "Leitewolf",
     50
 );
 
-println!("{}", std.collections.hash_map.get(scores, "Alpha"));
+println!("{}", std::collections::hash_map.get(scores, "Alpha"));
 
 println!(
     "Leitewolf's score: {}",
-    std.collections.hash_map.get(scores, "Leitewolf")
+    std::collections::hash_map.get(scores, "Leitewolf")
 );
 
 
@@ -238,13 +238,13 @@ nums: Int[3] = {1, 2};
 
 // VALID
 
-users: std.collections.vector<Str> =
-    std.collections.vector.new();
+users: std::collections::vector<Str> =
+    std::collections::vector.new();
 
 
 // VALID
 
-std.collections.vector.push(
+std::collections::vector.push(
     users,
     "Friedrich"
 );
@@ -252,14 +252,14 @@ std.collections.vector.push(
 
 // VALID
 
-std.collections.vector.get(
+std::collections::vector.get(
     users[0]
 );
 
 
 // VALID
 
-std.collections.vector.adjust(
+std::collections::vector.adjust(
     users[1],
     "Friedrich"
 );
@@ -267,13 +267,13 @@ std.collections.vector.adjust(
 
 // VALID
 
-scores: std.collections.hash_map<Str, Int> =
-    std.collections.hash_map.new();
+scores: std::collections::hash_map<Str, Int> =
+    std::collections::hash_map.new();
 
 
 // VALID
 
-std.collections.hash_map.insert(
+std::collections::hash_map.insert(
     scores,
     "Alpha",
     90
@@ -282,7 +282,7 @@ std.collections.hash_map.insert(
 
 // VALID
 
-std.collections.hash_map.get(
+std::collections::hash_map.get(
     scores,
     "Alpha"
 );
@@ -290,7 +290,7 @@ std.collections.hash_map.get(
 
 // VALID
 
-std.collections.hash_map.delete(
+std::collections::hash_map.delete(
     scores,
     "Alpha"
 );
@@ -298,7 +298,7 @@ std.collections.hash_map.delete(
 
 // INVALID
 
-std.collections.vector.get(
+std::collections::vector.get(
     users,
     0
 );
@@ -311,14 +311,14 @@ scores["Alpha"];
 
 // INVALID
 
-scores: std.collections.hash_map<Str, Int> = {
+scores: std::collections::hash_map<Str, Int> = {
     "Alpha": 90,
 };
 
 
 // INVALID
 
-std.collections.vector.push(
+std::collections::vector.push(
     nums,
     5
 );
@@ -326,7 +326,7 @@ std.collections.vector.push(
 
 // INVALID
 
-std.collections.vector.pop(
+std::collections::vector.pop(
     nums,
     0
 );

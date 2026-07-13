@@ -11,12 +11,12 @@
 
 imports stdio, result;
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
   return a + b;
 }
 
-// => declares the return type.
-// If => is omitted, the function returns void.
+// -> declares the return type.
+// If -> is omitted, the function returns void.
 // There is no separate void keyword.
 
 class Program {
@@ -27,7 +27,7 @@ class Program {
 // INVALID EXAMPLE:
 // Top-level execution is not supported. This snippet is intentionally invalid
 // and is not part of the valid declarations above.
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
   return a + b;
 }
 
@@ -37,19 +37,19 @@ Add(1, 2);
 fn Main() {
 }
 
-// VALID: omitted => means void.
+// VALID: omitted -> means void.
 fn Test() {
 }
 
 // INVALID EXAMPLE:
-// `=> void` is not valid. Omit `=>` for a void-returning function.
-fn Test() => void {
+// `-> void` is not valid. Omit `->` for a void-returning function.
+fn Test() -> void {
 }
 
 
 // named and inferred helper examples
 
-fn Clamp(value: Int, minimum: Int, maximum: Int) => Int {
+fn Clamp(value: Int, minimum: Int, maximum: Int) -> Int {
   if (value < minimum) {
     return minimum;
   }
@@ -61,11 +61,11 @@ fn Clamp(value: Int, minimum: Int, maximum: Int) => Int {
   return value;
 }
 
-fn DescribeUser(name: Str, age: Int) => Str {
+fn DescribeUser(name: Str, age: Int) -> Str {
   return format!("{} ({})", name, age);
 }
 
-fn TryParseId(text: Str) => Result.Result<Int, Result.Error> {
+fn TryParseId(text: Str) -> Result::Result<Int, Result::Error> {
   parsed: Int = Int.Parse(text);
-  return Result.Ok(parsed);
+  return Result::Ok(parsed);
 }

@@ -29,7 +29,7 @@ fn OldMain() {
 }
 
 #[MustUse("the returned status must be checked")]
-fn MakeStatus() => Long {
+fn MakeStatus() -> Long {
     return 0;
 }
 
@@ -40,7 +40,7 @@ data Version {
 }
 
 #[Inline(Always)]
-fn FastAdd(left: Long, right: Long) => Long {
+fn FastAdd(left: Long, right: Long) -> Long {
     return left + right;
 }
 
@@ -58,8 +58,8 @@ data SharedCounter {
 
 #[AsyncEntry]
 #[CancellationSafe]
-fn RunAsync() => Result.Result<(), Result.Error> {
-    return Result.Ok(());
+fn RunAsync() -> Result::Result<(), Result::Error> {
+    return Result::Ok(());
 }
 
 // Rust compatibility names exposed by the standard Attrs module:

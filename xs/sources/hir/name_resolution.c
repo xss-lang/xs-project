@@ -68,6 +68,9 @@ static char *expression_path(const XsSyntaxNode *node)
     return nullptr;
   if(node->kind == XS_SYNTAX_EXPR_IDENTIFIER)
   {
+    const XsSyntaxNode *path = xs_hir_first_child_kind(node, XS_SYNTAX_PATH);
+    if(path != nullptr)
+      return xs_hir_path_to_string(path);
     const XsSyntaxNode *identifier = xs_hir_first_child_kind(node, XS_SYNTAX_IDENTIFIER);
     return identifier == nullptr ? nullptr : xs_hir_copy_text(identifier->text);
   }

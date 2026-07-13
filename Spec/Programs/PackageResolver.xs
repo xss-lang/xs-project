@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Resolves package dependencies with a topological order and cycle diagnostics.
 
-module Programs.PackageResolver;
+module Programs::PackageResolver;
 
 imports collections, std, process, result;
 
@@ -22,18 +22,18 @@ enum VisitState {
 data Package {
     name: Str;
     version: Str;
-    dependencies: std.collections.vector<Str>;
+    dependencies: std::collections::vector<Str>;
 }
 
 class PackageGraph {
-    packages: std.collections.hash_map<Str, Package>;
-    states: std.collections.hash_map<Str, VisitState>;
-    ordered: std.collections.vector<Package>;
+    packages: std::collections::hash_map<Str, Package>;
+    states: std::collections::hash_map<Str, VisitState>;
+    ordered: std::collections::vector<Package>;
 
     PackageGraph() {
-        this.packages = std.collections.hash_map<Str, Package>.new();
-        this.states = std.collections.hash_map<Str, VisitState>.new();
-        this.ordered = std.collections.vector<Package>.new();
+        this.packages = std::collections::hash_map<Str, Package>.new();
+        this.states = std::collections::hash_map<Str, VisitState>.new();
+        this.ordered = std::collections::vector<Package>.new();
     }
 
     fn Add(package: Package) {
@@ -41,14 +41,14 @@ class PackageGraph {
         this.states[package.name] = VisitState.White;
     }
 
-    fn Resolve(root: Str) => Result.Result<std.collections.vector<Package>, ResolveError> {
+    fn Resolve(root: Str) -> Result::Result<std::collections::vector<Package>, ResolveError> {
         this.Visit(root)@;
-        return Result.Ok(this.ordered);
+        return Result::Ok(this.ordered);
     }
 
-    fn Visit(name: Str) => Result.Result<Void, ResolveError> {
+    fn Visit(name: Str) -> Result::Result<Void, ResolveError> {
         if (!this.packages.contains(name)) {
-            return Result.Error(ResolveError.UnknownPackage(name));
+            return Result::Error(ResolveError.UnknownPackage(name));
         }
 
         state: VisitState = this.states[name];
@@ -57,7 +57,7 @@ class PackageGraph {
                 return;
             },
             VisitState.Gray -> {
-                return Result.Error(ResolveError.Cycle(name));
+                return Result::Error(ResolveError.Cycle(name));
             },
             VisitState.White -> {
             },
@@ -72,11 +72,11 @@ class PackageGraph {
 
         this.states[name] = VisitState.Black;
         this.ordered.push(package);
-        return Result.Ok();
+        return Result::Ok();
     }
 }
 
-fn PackageOf(name: Str, version: Str, dependencies: std.collections.vector<Str>) => Package {
+fn PackageOf(name: Str, version: Str, dependencies: std::collections::vector<Str>) -> Package {
     return Package {
         name: name,
         version: version,
@@ -84,17 +84,17 @@ fn PackageOf(name: Str, version: Str, dependencies: std.collections.vector<Str>)
     };
 }
 
-fn Main() => Result.Result<Int, Result.Error> {
+fn Main() -> Result::Result<Int, Result::Error> {
     graph: PackageGraph = new();
 
-    graph.Add(PackageOf("app", "1.0.0", std.collections.vector<Str>.of("net", "json")));
-    graph.Add(PackageOf("net", "2.1.0", std.collections.vector<Str>.of("runtime")));
-    graph.Add(PackageOf("json", "3.0.0", std.collections.vector<Str>.of("runtime")));
-    graph.Add(PackageOf("runtime", "1.4.0", std.collections.vector<Str>.new()));
+    graph.Add(PackageOf("app", "1.0.0", std::collections::vector<Str>.of("net", "json")));
+    graph.Add(PackageOf("net", "2.1.0", std::collections::vector<Str>.of("runtime")));
+    graph.Add(PackageOf("json", "3.0.0", std::collections::vector<Str>.of("runtime")));
+    graph.Add(PackageOf("runtime", "1.4.0", std::collections::vector<Str>.new()));
 
     for (package: Package in graph.Resolve("app")@) {
         println!("{}@{}", package.name, package.version);
     }
 
-    return Result.Ok(0);
+    return Result::Ok(0);
 }

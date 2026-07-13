@@ -23,50 +23,50 @@ imports stdio, fs, collections, result;
 
 // standard output macros
 
-fn PrintWithoutNewline() => Result.Result<Void, IOException> {
+fn PrintWithoutNewline() -> Result::Result<Void, IOException> {
     print!("Hello");
 }
 
-fn PrintWithNewline() => Result.Result<Void, IOException> {
+fn PrintWithNewline() -> Result::Result<Void, IOException> {
     println!("Hello");
 }
 
-fn PrintNewlineOnly() => Result.Result<Void, IOException> {
+fn PrintNewlineOnly() -> Result::Result<Void, IOException> {
     println!();
 }
 
 
 // standard error macros
 
-fn ErrorWithoutNewline() => Result.Result<Void, IOException> {
+fn ErrorWithoutNewline() -> Result::Result<Void, IOException> {
     eprint!("error");
 }
 
-fn ErrorWithNewline() => Result.Result<Void, IOException> {
+fn ErrorWithNewline() -> Result::Result<Void, IOException> {
     eprintln!("error");
 }
 
-fn ErrorNewlineOnly() => Result.Result<Void, IOException> {
+fn ErrorNewlineOnly() -> Result::Result<Void, IOException> {
     eprintln!();
 }
 
 // writer macros
 
-fn WriteToStream() => Result.Result<Void, IOException> {
-    write!(std.stdout, "Hello");
+fn WriteToStream() -> Result::Result<Void, IOException> {
+    write!(std::stdout, "Hello");
 }
 
-fn WriteLineToStream() => Result.Result<Void, IOException> {
-    writeln!(std.stdout, "{} is {}", "Alpha", 26);
+fn WriteLineToStream() -> Result::Result<Void, IOException> {
+    writeln!(std::stdout, "{} is {}", "Alpha", 26);
 }
 
-fn WriteNewlineOnlyToStream() => Result.Result<Void, IOException> {
-    writeln!(std.stdout);
+fn WriteNewlineOnlyToStream() -> Result::Result<Void, IOException> {
+    writeln!(std::stdout);
 }
 
 // formatting
 
-fn FormatValues() => Result.Result<Void, IOException> {
+fn FormatValues() -> Result::Result<Void, IOException> {
     user: Str = "Alpha";
     age: Int = 26;
 
@@ -115,38 +115,38 @@ fn BuildMessage() {
     hexAge: Str = format!("{:#x}", 26);
 }
 
-fn WriteReportLine(name: Str, score: Int) => Result.Result<Void, IOException> {
-    writeln!(std.stdout, "{:<16} {:>4}", name, score);
+fn WriteReportLine(name: Str, score: Int) -> Result::Result<Void, IOException> {
+    writeln!(std::stdout, "{:<16} {:>4}", name, score);
 }
 
-fn WriteDebugReport<T>(value: T) => Result.Result<Void, IOException> {
-    write!(std.stderr, "{:#?}", value);
-    writeln!(std.stderr);
+fn WriteDebugReport<T>(value: T) -> Result::Result<Void, IOException> {
+    write!(std::stderr, "{:#?}", value);
+    writeln!(std::stderr);
 }
 
 
 // standard stream handles
 
-fn StandardHandles() => Result.Result<Void, IOException> {
-    std.fs.write(std.stdout, "stdout text\n");
-    std.fs.write(std.stderr, "stderr text\n");
+fn StandardHandles() -> Result::Result<Void, IOException> {
+    std::fs::write(std::stdout, "stdout text\n");
+    std::fs::write(std::stderr, "stderr text\n");
 
-    text: Str = std.fs.read_to_str(std.stdin());
+    text: Str = std::fs::read_to_str(std::stdin());
     println!("{}", text);
 }
 
-// std.stdout and std.stderr are stream handles.
-// std.stdin() returns the standard input stream handle.
-// Raw reading and writing through these handles is provided by std.fs.
-// Stdio macros use std.stdout and std.stderr internally.
+// std::stdout and std::stderr are stream handles.
+// std::stdin() returns the standard input stream handle.
+// Raw reading and writing through these handles is provided by std::fs::
+// Stdio macros use std::stdout and std::stderr internally.
 
 
 // line input
 
 fn ReadLine() {
-    input: Optional<Str> = std.optional.Some("");
+    input: Optional<Str> = std::optional::Some("");
 
-    std.stdin()
+    std::stdin()
         .read_line(&mut input)
         .expect("input could not be read");
 
@@ -154,9 +154,9 @@ fn ReadLine() {
 }
 
 fn ReadNumber() {
-    input: Optional<Str> = std.optional.Some("");
+    input: Optional<Str> = std::optional::Some("");
 
-    std.stdin()
+    std::stdin()
         .read_line(&mut input)
         .expect("input could not be read");
 
@@ -165,13 +165,13 @@ fn ReadNumber() {
 }
 
 fn ReadManyNumbers() {
-    input: Optional<Str> = std.optional.Some("");
+    input: Optional<Str> = std::optional::Some("");
 
-    std.stdin()
+    std::stdin()
         .read_line(&mut input)
         .unwrap();
 
-    numbers: std.collections.vector<Int> = input
+    numbers: std::collections::vector<Int> = input
         .split_whitespace()
         .map(fn(value) {
             return value.parse().expect("invalid number");
@@ -183,28 +183,28 @@ fn ReadManyNumbers() {
 
 // invalid examples
 
-fn InvalidNonStringTemplate() => Result.Result<Void, IOException> {
+fn InvalidNonStringTemplate() -> Result::Result<Void, IOException> {
     println!(10);
 }
 
 // INVALID: println! expects a Str format template as its first argument.
 
 
-fn InvalidMissingPlaceholder() => Result.Result<Void, IOException> {
+fn InvalidMissingPlaceholder() -> Result::Result<Void, IOException> {
     println!("value", 10);
 }
 
 // INVALID: one argument is supplied but the template has no placeholder.
 
 
-fn InvalidMissingArgument() => Result.Result<Void, IOException> {
+fn InvalidMissingArgument() -> Result::Result<Void, IOException> {
     println!("{}",);
 }
 
 // INVALID: the template has one placeholder but no value argument.
 
 
-fn InvalidEmptyPrint() => Result.Result<Void, IOException> {
+fn InvalidEmptyPrint() -> Result::Result<Void, IOException> {
     print!();
 }
 

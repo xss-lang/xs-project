@@ -73,7 +73,7 @@ fn Main() {
 
 // methods
 class User {
-    fn GetName() => Str {
+    fn GetName() -> Str {
         return "Alpha";
     }
 }
@@ -92,7 +92,7 @@ class Math {
 
 // static method
 class Math {
-    static fn Add(a: Int, b: Int) => Int {
+    static fn Add(a: Int, b: Int) -> Int {
         return a + b;
     }
 }
@@ -155,18 +155,18 @@ incomplete class Animal {
 
 // method merging
 class Math {
-    fn Add(a: Int) => Int {
+    fn Add(a: Int) -> Int {
         x: Int = 1;
     }
 
-    fn Add(a: Int, b: Int) => Int {
+    fn Add(a: Int, b: Int) -> Int {
         y: Int = 2;
     }
 }
 
 // equivalent
 class Math {
-    fn Add(a: Int, b: Int) => Int {
+    fn Add(a: Int, b: Int) -> Int {
         x: Int = 1;
         y: Int = 2;
     }

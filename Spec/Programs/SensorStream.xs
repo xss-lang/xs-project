@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Aggregates asynchronous sensor readings with Optional values and cancellation.
 
-module Programs.SensorStream;
+module Programs::SensorStream;
 
 imports collections, std, thread, sync, result;
 
@@ -34,10 +34,10 @@ class Sensor {
         this.unit = unit;
     }
 
-    async fn Read() => Task<Result.Result<Optional<Reading>, SensorError>> {
+    async fn Read() -> Task<Result::Result<Optional<Reading>, SensorError>> {
         sample: Optional<Float> = await Hardware.readFloat(this.id);
 
-        return Result.Ok(sample?.Map(fn(value: Float) => Reading {
+        return Result::Ok(sample?.Map(fn(value: Float) -> Reading {
             sensorId: this.id,
             value: value,
             unit: this.unit,
@@ -46,12 +46,12 @@ class Sensor {
 }
 
 class Aggregator {
-    totals: std.collections.hash_map<Str, Float>;
-    counts: std.collections.hash_map<Str, Int>;
+    totals: std::collections::hash_map<Str, Float>;
+    counts: std::collections::hash_map<Str, Int>;
 
     Aggregator() {
-        this.totals = std.collections.hash_map<Str, Float>.new();
-        this.counts = std.collections.hash_map<Str, Int>.new();
+        this.totals = std::collections::hash_map<Str, Float>.new();
+        this.counts = std::collections::hash_map<Str, Int>.new();
     }
 
     fn Add(reading: Reading) {
@@ -59,8 +59,8 @@ class Aggregator {
         this.counts[reading.sensorId] = (this.counts[reading.sensorId] ?? 0) + 1;
     }
 
-    fn Averages() => std.collections.vector<Average> {
-        result: std.collections.vector<Average> = std.collections.vector<Average>.new();
+    fn Averages() -> std::collections::vector<Average> {
+        result: std::collections::vector<Average> = std::collections::vector<Average>.new();
 
         for ((sensorId, total): (Str, Float) in this.totals) {
             count: Int = this.counts[sensorId]!;
@@ -75,8 +75,8 @@ class Aggregator {
     }
 }
 
-async fn Main() => Task<Result.Result<Int, Result.Error>> {
-    sensors: std.collections.vector<Sensor> = std.collections.vector<Sensor>.of(
+async fn Main() -> Task<Result::Result<Int, Result::Error>> {
+    sensors: std::collections::vector<Sensor> = std::collections::vector<Sensor>.of(
         Sensor.new("temperature", "C"),
         Sensor.new("humidity", "%"),
         Sensor.new("pressure", "Pa")
@@ -97,5 +97,5 @@ async fn Main() => Task<Result.Result<Int, Result.Error>> {
         println!("{} average={}", average.sensorId, average.value);
     }
 
-    return Result.Ok(0);
+    return Result::Ok(0);
 }

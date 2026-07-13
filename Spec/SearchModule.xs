@@ -102,7 +102,7 @@ fn Main() {
 
 module Math;
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -114,14 +114,14 @@ fn Add(a: Int, b: Int) => Int {
 
 module Math;
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
 
 // Invalid:
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -323,7 +323,7 @@ imports Math;
 
 module Math;
 
-public fn Add(a: Int, b: Int) => Int {
+public fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -333,7 +333,7 @@ public fn Add(a: Int, b: Int) => Int {
 imports Math;
 
 fn Main() {
-    value: Int = Math.Add(2, 3);
+    value: Int = Math::Add(2, 3);
 }
 
 
@@ -582,12 +582,12 @@ imports math;
 
 // Example:
 
-module Math.Advanced.Algebra;
+module Math::Advanced::Algebra;
 
 
 // Import:
 
-imports Math.Advanced.Algebra;
+imports Math::Advanced::Algebra;
 
 
 // The physical directory structure does not need to match the
@@ -601,7 +601,7 @@ imports Math.Advanced.Algebra;
 
 // Contents:
 
-module Math.Advanced.Algebra;
+module Math::Advanced::Algebra;
 
 
 // Resolution still uses the declared module path.
@@ -625,7 +625,7 @@ namespace Algebra;
 
 // Effective namespace path:
 //
-// Math.Advanced.Algebra
+// Math::Advanced::Algebra
 
 
 // imports resolves the module name:

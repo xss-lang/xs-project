@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Runs a configurable text-processing pipeline through nominal plugin types.
 
-module Programs.PluginPipeline;
+module Programs::PluginPipeline;
 
 imports collections, std, process, result;
 
@@ -14,31 +14,31 @@ enum data PipelineError {
 }
 
 interface TextPlugin {
-    fn Name() => Str;
-    fn Run(input: Str) => Result.Result<Str, PipelineError>;
+    fn Name() -> Str;
+    fn Run(input: Str) -> Result::Result<Str, PipelineError>;
 }
 
 class TrimPlugin {
     implements TextPlugin;
 
-    fn Name() => Str {
+    fn Name() -> Str {
         return "trim";
     }
 
-    fn Run(input: Str) => Result.Result<Str, PipelineError> {
-        return Result.Ok(input.trim());
+    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
+        return Result::Ok(input.trim());
     }
 }
 
 class UppercasePlugin {
     implements TextPlugin;
 
-    fn Name() => Str {
+    fn Name() -> Str {
         return "upper";
     }
 
-    fn Run(input: Str) => Result.Result<Str, PipelineError> {
-        return Result.Ok(input.uppercase());
+    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
+        return Result::Ok(input.uppercase());
     }
 }
 
@@ -53,38 +53,38 @@ class ReplacePlugin {
         this.toText = toText;
     }
 
-    fn Name() => Str {
+    fn Name() -> Str {
         return "replace";
     }
 
-    fn Run(input: Str) => Result.Result<Str, PipelineError> {
-        return Result.Ok(input.replace(this.fromText, this.toText));
+    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
+        return Result::Ok(input.replace(this.fromText, this.toText));
     }
 }
 
 class Pipeline {
-    stages: std.collections.vector<TextPlugin>;
+    stages: std::collections::vector<TextPlugin>;
 
     Pipeline() {
-        this.stages = std.collections.vector<TextPlugin>.new();
+        this.stages = std::collections::vector<TextPlugin>.new();
     }
 
     fn Add(stage: TextPlugin) {
         this.stages.push(stage);
     }
 
-    fn Run(input: Str) => Result.Result<Str, PipelineError> {
+    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
         output: Str = input;
 
         for (stage: TextPlugin in this.stages) {
             output = stage.Run(output)@;
         }
 
-        return Result.Ok(output);
+        return Result::Ok(output);
     }
 }
 
-fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
+fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Error> {
     input: Str = if (args.length() > 1) {
         args[1];
     }
@@ -98,5 +98,5 @@ fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
     pipeline.Add(UppercasePlugin.new());
 
     println!("{}", pipeline.Run(input)@);
-    return Result.Ok(0);
+    return Result::Ok(0);
 }

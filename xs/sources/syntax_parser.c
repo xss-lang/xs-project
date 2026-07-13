@@ -80,8 +80,9 @@ XsSyntaxNode *parse_path(SyntaxParser *parser)
   if(segment == nullptr)
     return path;
   xs_syntax_node_add(parser->tree, path, segment);
-  while(accept(parser, XS_TOKEN_DOT))
+  while(parser->current.kind == XS_TOKEN_DOUBLE_COLON && parser->next.kind == XS_TOKEN_IDENTIFIER)
   {
+    advance(parser);
     segment = identifier(parser);
     if(segment == nullptr)
       break;

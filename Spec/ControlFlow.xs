@@ -114,7 +114,7 @@ fn TestElseIf(x: Int) {
 
 
 // VALID
-fn TestIfExpression(x: Int) => Int {
+fn TestIfExpression(x: Int) -> Int {
     return if (x > 0) {
         1;
     }
@@ -126,7 +126,7 @@ fn TestIfExpression(x: Int) => Int {
 
 // match expression
 
-fn HttpStatusText(status: Int) => Str {
+fn HttpStatusText(status: Int) -> Str {
     return match (status) {
         200 -> {
             "ok";
@@ -146,7 +146,7 @@ fn HttpStatusText(status: Int) => Str {
 
 // if expression used in a local binding
 
-fn SelectPort(debug: Bool) => Int {
+fn SelectPort(debug: Bool) -> Int {
     port: Int = if (debug) {
         8080;
     }
@@ -204,7 +204,7 @@ fn TestMatch(x: Int) {
 
 
 // VALID
-fn TestMatchExpression(x: Int) => Int {
+fn TestMatchExpression(x: Int) -> Int {
     return match (x) {
         0 -> {
             10;
@@ -233,7 +233,7 @@ fn InvalidContinue() {
 
 
 // INVALID
-fn InvalidIfExpression(x: Int) => Int {
+fn InvalidIfExpression(x: Int) -> Int {
     return if (x > 0) {
         1;
     };

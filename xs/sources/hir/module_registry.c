@@ -147,7 +147,7 @@ char *scan_path(ModuleScanner *scanner, size_t *start, size_t *end)
   size_t length = *end - *start;
   char *result = copy_span(scanner->source, scanner->current.span);
   scanner_advance(scanner);
-  while(scanner->current.kind == XS_TOKEN_DOT)
+  while(scanner->current.kind == XS_TOKEN_DOT || scanner->current.kind == XS_TOKEN_DOUBLE_COLON)
   {
     scanner_advance(scanner);
     if(scanner->current.kind != XS_TOKEN_IDENTIFIER)

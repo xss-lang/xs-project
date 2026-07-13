@@ -15,7 +15,7 @@
 // Constructors and methods may be overloaded by parameter type list.
 // Operator overload declarations use the method form:
 //
-// fn operator +(right: Type) => Type { }
+// fn operator +(right: Type) -> Type { }
 //
 // A duplicate constructor or method parameter type list is an error.
 // Data types do not support destructors, inheritance, or interfaces.
@@ -58,7 +58,7 @@ data Point {
     fn Translate(dx: Int, dy: Int) { }
     fn Translate(offset: Point) { }
 
-    fn operator +(right: Point) => Point {
+    fn operator +(right: Point) -> Point {
         return right;
     }
 }

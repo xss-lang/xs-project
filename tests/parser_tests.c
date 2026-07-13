@@ -35,13 +35,13 @@ static bool parse(const char *text, XsAst *ast, XsDiagnostics *diagnostics)
 static void test_top_level_declarations(void)
 {
   const char *text = "module Math; namespace Advanced; imports stdio, Math; "
-                     "using namespace stdio; using Sum = Math.Add; "
+                     "using namespace stdio; using Sum = Math::Add; "
                      "public class Box<T> { value: T; } "
                      "interface Printable { fn Print(); } "
                      "data Pair<T, U> { first: T second: U } "
                      "enum Color { Red, Green, Blue } "
                      "enum data Result<T> { Ok: T, Error: Str } "
-                     "async fn Work() => Task<()> { return; }";
+                     "async fn Work() -> Task<()> { return; }";
   XsAst ast;
   XsDiagnostics diagnostics;
   CHECK(parse(text, &ast, &diagnostics));
@@ -93,7 +93,7 @@ static void test_macro_definition(void)
 {
   XsAst ast;
   XsDiagnostics diagnostics;
-  CHECK(parse("macro_rules! say { ($x:expr): { std.cout << $x; }; } fn Main() {}", &ast, &diagnostics));
+  CHECK(parse("macro_rules! say { ($x:expr): { $x; }; } fn Main() {}", &ast, &diagnostics));
   CHECK(ast.count == 2);
   CHECK(ast.items[0].kind == XS_AST_MACRO);
   xs_ast_free(&ast);

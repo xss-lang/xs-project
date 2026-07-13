@@ -128,21 +128,21 @@ static void test_control_flow_initializer_expression_types(void)
 static void test_optional_expression_types(void)
 {
   const char *valid = "module App;\n"
-                      "fn Read() => Optional<Str> {\n"
+                      "fn Read() -> Optional<Str> {\n"
                       "  value: Optional<Str> = None;\n"
-                      "  value = std.optional.Some(\"xs\");\n"
-                      "  other: std.optional.Optional<Str> = std.optional.None;\n"
+                      "  value = std::optional::Some(\"xs\");\n"
+                      "  other: std::optional::Optional<Str> = std::optional::None;\n"
                       "  return Some(\"ok\");\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
   CHECK(check_single_source_expressions(
-      "module App;\nfn Read(flag: Bool) => Optional<Str> { return if (flag) { Some(\"ok\"); } else { None; }; }\n"));
+      "module App;\nfn Read(flag: Bool) -> Optional<Str> { return if (flag) { Some(\"ok\"); } else { None; }; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = None; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = std.optional.None; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = std::optional::None; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = Some(1); }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Optional<Int> = 1; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Optional<Int> = Some(); }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Read() => Optional<Int> { return 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Read() -> Optional<Int> { return 1; }\n"));
 }
 
 static void test_binding_reassignment_errors(void)
@@ -161,11 +161,11 @@ static void test_constant_initializer_errors(void)
 {
   CHECK(check_single_source_expressions("module App;\nfn Main() { const value: Int = 1 + 2; }\n"));
   CHECK(check_single_source_expressions("module App;\nfn Main() { static value: Str = \"xs\"; }\n"));
-  CHECK(check_single_source_expressions("module App;\nfn RuntimeValue() => Int { return 1; }\nfn Main() { const "
+  CHECK(check_single_source_expressions("module App;\nfn RuntimeValue() -> Int { return 1; }\nfn Main() { const "
                                         "value: Int = RuntimeValue(); }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { const value: Int; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { static value: Int; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn RuntimeValue() => Int { return 1; }\nfn Main() { static "
+  CHECK(!check_single_source_expressions("module App;\nfn RuntimeValue() -> Int { return 1; }\nfn Main() { static "
                                          "value: Int = RuntimeValue(); }\n"));
 }
 
@@ -198,42 +198,42 @@ static void test_control_flow_assignment_expression_types(void)
 
 static void test_return_literal_expression_types(void)
 {
-  CHECK(check_single_source_expressions("module App;\nfn Count() => Int { return 1; }\n"));
-  CHECK(check_single_source_expressions("module App;\nfn Flag() => Bool { return true; }\n"));
-  CHECK(check_single_source_expressions("module App;\nfn Name() => Str { return \"xs\"; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Count() -> Int { return 1; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Flag() -> Bool { return true; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Name() -> Str { return \"xs\"; }\n"));
   CHECK(check_single_source_expressions("module App;\nfn Main() throws Int { return \"not checked yet\"; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Count() => Int { return \"bad\"; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Flag() => Bool { return 1; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Name() => Str { return 'x'; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Count() -> Int { return \"bad\"; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Flag() -> Bool { return 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Name() -> Str { return 'x'; }\n"));
 }
 
 static void test_control_flow_return_expression_types(void)
 {
-  CHECK(check_single_source_expressions("module App;\nfn Count() => Int { return if (true) { 1; } else { 2; }; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Count() -> Int { return if (true) { 1; } else { 2; }; }\n"));
   CHECK(check_single_source_expressions(
-      "module App;\nfn Name() => Str { return match (1) { 0 -> { \"zero\"; }, else -> { \"many\"; }, }; }\n"));
+      "module App;\nfn Name() -> Str { return match (1) { 0 -> { \"zero\"; }, else -> { \"many\"; }, }; }\n"));
   CHECK(!check_single_source_expressions(
-      "module App;\nfn Count() => Int { return if (true) { 1; } else { \"bad\"; }; }\n"));
+      "module App;\nfn Count() -> Int { return if (true) { 1; } else { \"bad\"; }; }\n"));
   CHECK(!check_single_source_expressions(
-      "module App;\nfn Flag() => Bool { return match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
+      "module App;\nfn Flag() -> Bool { return match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
 }
 
 static void test_result_propagation_requires_result_return(void)
 {
   const char *valid = "module App;\n"
-                      "fn DoWork() => Result.Result<Int, Result.Error> { return Result.Ok(1); }\n"
-                      "fn Main() => Result.Result<Int, Result.Error> {\n"
+                      "fn DoWork() -> Result::Result<Int, Result::Error> { return Result::Ok(1); }\n"
+                      "fn Main() -> Result::Result<Int, Result::Error> {\n"
                       "  DoWork()@;\n"
-                      "  return Result.Ok(1);\n"
+                      "  return Result::Ok(1);\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
   CHECK(check_single_source_expressions(
-      "module App;\nfn Main() => Result<Int, Result.Error> { DoWork()@; return Result.Ok(1); }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Count() => Int { return 1; }\n"
-                                         "fn Main() => Result.Result<Int, Result.Error> { Count()@; return "
-                                         "Result.Ok(1); }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn DoWork() => Result.Result<Int, Result.Error> { return "
-                                         "Result.Ok(1); }\nfn Main() { DoWork()@; }\n"));
+      "module App;\nfn Main() -> Result<Int, Result::Error> { DoWork()@; return Result::Ok(1); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Count() -> Int { return 1; }\n"
+                                         "fn Main() -> Result::Result<Int, Result::Error> { Count()@; return "
+                                         "Result::Ok(1); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn DoWork() -> Result::Result<Int, Result::Error> { return "
+                                         "Result::Ok(1); }\nfn Main() { DoWork()@; }\n"));
 }
 
 static void test_macro_literal_initializer_expression_errors(void)
@@ -255,7 +255,7 @@ static void test_macro_binding_reassignment_errors(void)
 static void test_macro_static_runtime_initializer_errors(void)
 {
   const char *main = "module App;\n"
-                     "fn RuntimeValue() => Int { return 1; }\n"
+                     "fn RuntimeValue() -> Int { return 1; }\n"
                      "macro_rules! bad { (): { static value: Int = RuntimeValue(); }; }\n"
                      "fn Main() { bad!(); }\n";
   CHECK(check_macro_expression_error(main, 100));
@@ -273,8 +273,21 @@ static void test_macro_return_literal_expression_errors(void)
 {
   const char *main = "module App;\n"
                      "macro_rules! bad { (): { return \"bad\"; }; }\n"
-                     "fn Main() => Int { bad!(); }\n";
+                     "fn Main() -> Int { bad!(); }\n";
   CHECK(check_macro_expression_error(main, 99));
+}
+
+static void test_op_referential_transparency_rules(void)
+{
+  CHECK(
+      check_single_source_expressions("module App;\nop Add(left: Int, right: Int) -> Int { return left + right; }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nfn Read() -> Int { return 1; }\nop Bad() -> Int { return Read(); }\n"));
+  CHECK(
+      !check_single_source_expressions("module App;\nop Bad() -> Int { value: Int = 1; value = 2; return value; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nop Bad() -> User { return new(); }\n"));
+  CHECK(
+      !check_single_source_expressions("module App;\nmacro_rules! bad { (): { 1 }; }\nop Bad() -> Int { bad!(); }\n"));
 }
 
 int main(void)
@@ -294,5 +307,6 @@ int main(void)
   test_macro_static_runtime_initializer_errors();
   test_macro_assignment_literal_expression_errors();
   test_macro_return_literal_expression_errors();
+  test_op_referential_transparency_rules();
   return failures == 0 ? 0 : 1;
 }

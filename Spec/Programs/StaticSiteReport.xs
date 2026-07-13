@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Scans a content directory and emits a small static-site health report.
 
-module Programs.StaticSiteReport;
+module Programs::StaticSiteReport;
 
 imports collections, fs, optional, stdio, process, result;
 
@@ -20,49 +20,49 @@ data PageInfo {
 }
 
 class Markdown {
-    static fn Title(path: Str, text: Str) => Result.Result<Str, SiteError> {
+    static fn Title(path: Str, text: Str) -> Result::Result<Str, SiteError> {
         for (line: Str in text.lines()) {
             if (line.startsWith("# ")) {
-                return Result.Ok(line.trimStart("# ").trim());
+                return Result::Ok(line.trimStart("# ").trim());
             }
         }
 
-        return Result.Error(SiteError.MissingTitle(path));
+        return Result::Error(SiteError.MissingTitle(path));
     }
 
-    static fn CountWords(text: Str) => Int {
+    static fn CountWords(text: Str) -> Int {
         return text.split_whitespace().length();
     }
 }
 
 class SiteReport {
-    pages: std.collections.vector<PageInfo>;
+    pages: std::collections::vector<PageInfo>;
 
     SiteReport() {
-        this.pages = std.collections.vector<PageInfo>.new();
+        this.pages = std::collections::vector<PageInfo>.new();
     }
 
-    fn AddMarkdown(path: Str) => Result.Result<Void, Result.Error> {
-        text: Str = std.fs.read_to_str(path);
+    fn AddMarkdown(path: Str) -> Result::Result<Void, Result::Error> {
+        text: Str = std::fs::read_to_str(path);
         this.pages.push(PageInfo {
             path: path,
             title: Markdown.Title(path, text)@,
             wordCount: Markdown.CountWords(text),
         });
-        return Result.Ok();
+        return Result::Ok();
     }
 
-    fn Print() => Result.Result<Void, IOException> {
+    fn Print() -> Result::Result<Void, IOException> {
         println!("pages: {}", this.pages.length());
 
         for (page: PageInfo in this.pages) {
             println!("{:<32} {:>6} {}", page.title, page.wordCount, page.path);
         }
-        return Result.Ok();
+        return Result::Ok();
     }
 }
 
-fn Main(args: std.Process.Args) => Result.Result<Int, Result.Error> {
+fn Main(args: std::process::Args) -> Result::Result<Int, Result::Error> {
     root: Str = if (args.length() == 2) {
         args[1];
     }
@@ -71,12 +71,12 @@ fn Main(args: std.Process.Args) => Result.Result<Int, Result.Error> {
     };
 
     report: SiteReport = new();
-    for (path: Str in std.fs.walk(root)) {
+    for (path: Str in std::fs::walk(root)) {
         if (path.endsWith(".md")) {
             report.AddMarkdown(path)@;
         }
     }
 
     report.Print()@;
-    return Result.Ok(0);
+    return Result::Ok(0);
 }

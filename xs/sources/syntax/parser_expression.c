@@ -9,6 +9,61 @@
 
 static XsSyntaxNode *parse_literal(SyntaxParser *parser);
 
+static bool token_can_continue_expression_path(XsTokenKind kind)
+{
+  return kind == XS_TOKEN_IDENTIFIER || kind == XS_TOKEN_KW_NONE;
+}
+
+static XsSyntaxNode *expression_path_segment(SyntaxParser *parser)
+{
+  if(token_can_continue_expression_path(parser->current.kind))
+  {
+    XsToken token = parser->current;
+    advance(parser);
+    return node(parser, XS_SYNTAX_IDENTIFIER, token.span);
+  }
+  xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected identifier");
+  return nullptr;
+}
+
+static XsSyntaxNode *parse_expression_path(SyntaxParser *parser)
+{
+  size_t start = parser->current.span.start;
+  XsSyntaxNode *path = node(parser, XS_SYNTAX_PATH, (XsSpan){start, start});
+  XsSyntaxNode *segment = identifier(parser);
+  if(segment == nullptr)
+    return path;
+  xs_syntax_node_add(parser->tree, path, segment);
+  while(parser->current.kind == XS_TOKEN_DOUBLE_COLON && token_can_continue_expression_path(parser->next.kind))
+  {
+    advance(parser);
+    segment = expression_path_segment(parser);
+    if(segment == nullptr)
+      break;
+    xs_syntax_node_add(parser->tree, path, segment);
+  }
+  finish_node(parser, path, parser->previous.span.end);
+  return path;
+}
+
+static void skip_turbofish_arguments(SyntaxParser *parser)
+{
+  if(!accept(parser, XS_TOKEN_DOUBLE_COLON))
+    return;
+  if(!expect(parser, XS_TOKEN_LESS, "expected '<' after '::' in turbofish"))
+    return;
+  size_t depth = 1;
+  while(depth != 0 && parser->current.kind != XS_TOKEN_EOF)
+  {
+    if(accept(parser, XS_TOKEN_LESS))
+      ++depth;
+    else if(accept(parser, XS_TOKEN_GREATER))
+      --depth;
+    else
+      advance(parser);
+  }
+}
+
 static XsSyntaxNode *parse_member_identifier(SyntaxParser *parser)
 {
   if(parser->current.kind == XS_TOKEN_IDENTIFIER || parser->current.kind == XS_TOKEN_KW_NONE)
@@ -111,7 +166,7 @@ static XsSyntaxNode *parse_function_expression(SyntaxParser *parser, size_t star
   if(move_capture)
     function->flags |= XS_SYNTAX_FLAG_MOVE_CAPTURE;
   parse_expression_parameters(parser, function);
-  if(accept(parser, XS_TOKEN_FAT_ARROW))
+  if(accept(parser, XS_TOKEN_ARROW))
   {
     XsSyntaxNode *return_type = parse_type(parser);
     return_type->flags |= XS_SYNTAX_FLAG_RETURN_TYPE;
@@ -154,7 +209,7 @@ XsSyntaxNode *parse_pattern(SyntaxParser *parser)
   if(parser->current.kind == XS_TOKEN_IDENTIFIER)
   {
     XsToken first = parser->current;
-    XsSyntaxNode *path = parse_path(parser);
+    XsSyntaxNode *path = parse_expression_path(parser);
     if(path->child_count == 1 && token_text_is(parser, first, "_"))
       return node(parser, XS_SYNTAX_PATTERN_WILDCARD, first.span);
     if(parser->current.kind == XS_TOKEN_LEFT_PAREN || path->child_count > 1)
@@ -261,7 +316,7 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
   case XS_TOKEN_IDENTIFIER:
   {
     XsToken name = parser->current;
-    advance(parser);
+    XsSyntaxNode *path = parse_expression_path(parser);
     if(parser->current.kind == XS_TOKEN_BANG && parser->next.kind == XS_TOKEN_LEFT_PAREN)
     {
       advance(parser);
@@ -289,8 +344,13 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
       finish_node(parser, call, parser->previous.span.end);
       return call;
     }
-    XsSyntaxNode *expression = node(parser, XS_SYNTAX_EXPR_IDENTIFIER, name.span);
-    xs_syntax_node_add(parser->tree, expression, node(parser, XS_SYNTAX_IDENTIFIER, name.span));
+    skip_turbofish_arguments(parser);
+    XsSyntaxNode *expression =
+        node(parser, XS_SYNTAX_EXPR_IDENTIFIER, (XsSpan){path->span.start_offset, path->span.end_offset});
+    if(path->child_count == 1 && path->children[0]->kind == XS_SYNTAX_IDENTIFIER)
+      xs_syntax_node_add(parser->tree, expression, path->children[0]);
+    else
+      xs_syntax_node_add(parser->tree, expression, path);
     return expression;
   }
   case XS_TOKEN_LEFT_PAREN:
@@ -316,15 +376,6 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
   }
   case XS_TOKEN_LEFT_BRACE:
     return parse_brace_literal(parser);
-  case XS_TOKEN_LEFT_BRACKET:
-  {
-    advance(parser);
-    XsSyntaxNode *target = node(parser, XS_SYNTAX_EXPR_IO_TARGET, (XsSpan){start, parser->previous.span.end});
-    xs_syntax_node_add(parser->tree, target, parse_expression(parser, 1));
-    expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after I/O target expression");
-    finish_node(parser, target, parser->previous.span.end);
-    return target;
-  }
   case XS_TOKEN_KW_FN:
     return parse_function_expression(parser, start, false);
   case XS_TOKEN_KW_IF:
@@ -542,8 +593,6 @@ static unsigned precedence(XsTokenKind kind)
     return 9;
   case XS_TOKEN_SHIFT_LEFT:
   case XS_TOKEN_SHIFT_RIGHT:
-  case XS_TOKEN_SWITCH_INPUT:
-  case XS_TOKEN_SWITCH_OUTPUT:
     return 10;
   case XS_TOKEN_PLUS:
   case XS_TOKEN_MINUS:

@@ -35,7 +35,7 @@ static size_t count_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 
 static void test_function_tree(void)
 {
-  const char *text = "fn Add(a: Int, b: Int) => Int {\n    result: Int = a + b;\n    return result;\n}\n";
+  const char *text = "fn Add(a: Int, b: Int) -> Int {\n    result: Int = a + b;\n    return result;\n}\n";
   XsSource source = {.path = "Add.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -70,7 +70,7 @@ static void test_function_tree(void)
 
 static void test_module_import_and_macro(void)
 {
-  const char *text = "module App.Core;\nimports Math.Advanced;\n"
+  const char *text = "module App::Core;\nimports Math::Advanced;\n"
                      "macro_rules! identity { ($value:expr): { $value }; }\n"
                      "fn Main() { identity!(42); }\n";
   XsSource source = {.path = "Main.xs", .text = text, .length = strlen(text)};
@@ -132,7 +132,7 @@ static void test_control_flow_structure(void)
 
 static void test_control_flow_expression_structure(void)
 {
-  const char *text = "fn Choose(value: Int) => Int {\n"
+  const char *text = "fn Choose(value: Int) -> Int {\n"
                      "  selected: Int = if (value > 0) { 1; } else { 0; };\n"
                      "  return match (selected) { 0 -> { 10; }, else -> { 20; }, };\n"
                      "}\n";
@@ -149,7 +149,7 @@ static void test_control_flow_expression_structure(void)
 
 static void test_if_expression_requires_else(void)
 {
-  const char *text = "fn Choose(value: Int) => Int {\n"
+  const char *text = "fn Choose(value: Int) -> Int {\n"
                      "  return if (value > 0) { 1; };\n"
                      "}\n";
   XsSource source = {.path = "InvalidIfExpression.xs", .text = text, .length = strlen(text)};
@@ -165,8 +165,8 @@ static void test_if_expression_requires_else(void)
 static void test_function_expression_structure(void)
 {
   const char *text = "fn Spawn() {\n"
-                     "  Thread.spawn(move fn() => Int { return 42; });\n"
-                     "  mapper: Mapper = fn(value: Int) => Int { return value + 1; };\n"
+                     "  Thread.spawn(move fn() -> Int { return 42; });\n"
+                     "  mapper: Mapper = fn(value: Int) -> Int { return value + 1; };\n"
                      "}\n";
   XsSource source = {.path = "ThreadClosure.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -188,7 +188,7 @@ static void test_new_expression_structure(void)
 {
   const char *text = "fn Main() {\n"
                      "  user: User = new();\n"
-                     "  client: Http.client = new();\n"
+                     "  client: Http::client = new();\n"
                      "}\n";
   XsSource source = {.path = "NewExpression.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -252,8 +252,8 @@ static void test_data_field_set_and_get_structure(void)
 static void test_function_type_structure(void)
 {
   const char *text = "fn Main() {\n"
-                     "  mapper: fn(Int, Str) => Bool = fn(value: Int, name: Str) => Bool { return true; };\n"
-                     "  done: fn() => () = fn() { return; };\n"
+                     "  mapper: fn(Int, Str) -> Bool = fn(value: Int, name: Str) -> Bool { return true; };\n"
+                     "  done: fn() -> () = fn() { return; };\n"
                      "}\n";
   XsSource source = {.path = "FunctionTypes.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -263,24 +263,6 @@ static void test_function_type_structure(void)
   CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_FUNCTION) == 2);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_UNIT) != nullptr);
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_FUNCTION) == 2);
-  xs_syntax_tree_free(&tree);
-  xs_diagnostics_free(&diagnostics);
-}
-
-static void test_io_target_expression_structure(void)
-{
-  const char *text = "fn Io(openedFile: file) {\n"
-                     "  std.fout << [stdout] << \"Hello\";\n"
-                     "  std.fout << [openedFile] <<< [stderr];\n"
-                     "  std.fin >> [stdin] >> value;\n"
-                     "}\n";
-  XsSource source = {.path = "IoTargets.xs", .text = text, .length = strlen(text)};
-  XsDiagnostics diagnostics;
-  XsSyntaxTree tree;
-  xs_diagnostics_init(&diagnostics);
-  CHECK(xs_syntax_parse(&source, 23, &diagnostics, &tree));
-  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_IO_TARGET) == 4);
-  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_BINARY) >= 4);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -307,7 +289,8 @@ static void test_optional_operator_structure(void)
 {
   const char *text = "fn Main(user: Optional<User>, fallback: Str) {\n"
                      "  name: Optional<Str> = user?.Name;\n"
-                     "  name = std.optional.None;\n"
+                     "  direct: Str = user.Name;\n"
+                     "  name = std::optional::None;\n"
                      "  display: Str = name ?? fallback;\n"
                      "  name ?"
                      "?= Some(\"guest\");\n"
@@ -322,7 +305,24 @@ static void test_optional_operator_structure(void)
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_OPTIONAL_FORGIVING) == 1);
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_BINARY) >= 1);
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_ASSIGNMENT) >= 1);
-  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS) >= 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS) >= 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_expression_turbofish_structure(void)
+{
+  const char *text = "fn Main() {\n"
+                     "  value: Int = Factory::<Int>();\n"
+                     "  name: Optional<Str> = std::optional::Some::<Str>(\"xs\");\n"
+                     "}\n";
+  XsSource source = {.path = "Turbofish.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 60, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_CALL) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_IDENTIFIER) >= 2);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -397,7 +397,7 @@ static void test_attribute_structure(void)
 {
   const char *text = "#![NoMain]\n"
                      "#[Deprecated(\"use NewMain\")]\n"
-                     "#[Derive(std.Attrs.Ord, std.Attrs.Partial)]\n"
+                     "#[Derive(std::attrs::Ord, std::attrs::Partial)]\n"
                      "fn Main() {}\n";
   XsSource source = {.path = "Attributes.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -430,9 +430,9 @@ int main(void)
   test_top_level_execution_stays_invalid();
   test_data_field_set_and_get_structure();
   test_function_type_structure();
-  test_io_target_expression_structure();
   test_character_literal_structure();
   test_optional_operator_structure();
+  test_expression_turbofish_structure();
   test_exception_syntax_is_deprecated();
   test_result_propagation_structure();
   test_lifetime_type_structure();

@@ -90,7 +90,7 @@ The documented compilation order is preserved:
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
-- Plain source native builds support the first expression/local slice for top-level `fn main() => Long`: explicit
+- Plain source native builds support the first expression/local slice for top-level `fn main() -> Long`: explicit
   `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, local
   identifier returns, i32-range integer literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and
   one top-level `if` expression with a bool literal, `Bool` local, unary `!`, or i32 comparison condition. `!=` and unary
@@ -117,26 +117,29 @@ The documented compilation order is preserved:
 - Declaration, type, statement, expression, pattern, and macro node families are represented.
 - Outer `#[...]` attributes are parsed before declarations and declaration members into `XS_SYNTAX_ATTRIBUTE` nodes.
   File-level inner `#![...]` attributes are parsed before declarations. Attribute syntax is built in, but official X#
-  attribute names live under `std.Attrs.*`; semantic validation of each attribute remains a HIR/name-resolution step.
+  attribute names live under `std::attrs::*`; semantic validation of each attribute remains a HIR/name-resolution step.
 - In top-level and class-member contexts, `name!();` macro calls are represented as `XS_SYNTAX_DECL_MACRO_CALL` declaration
   nodes. This node is the entry point for item/declaration-producing macro expansion; inserting produced items as real AST
   replacements in scope is a later macro-expansion step.
-- Named, generic, array, fixed array, pointer, reference, tuple, unit, and `fn(...) => T` function type nodes are parsed into
+- Named, generic, array, fixed array, pointer, reference, tuple, unit, and `fn(...) -> T` function type nodes are parsed into
   the structural AST.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Lifetime spellings in reference types follow Rust base forms (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`) and are carried
   into the AST as `XS_SYNTAX_LIFETIME` nodes. Lifetime elision and validation are left to the borrow-checker stage.
 - Function parameters, return type, deprecated `throws` types, and function bodies are structural nodes; bodies are not
-  stored as raw ranges. The `=>` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not
+  stored as raw ranges. The `->` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not
   interpreted as return types.
+- `op Name(...) -> Type` is parsed as a distinct referentially transparent operation declaration. The current C23 AST stores
+  it on the function-shaped declaration node with `XS_SYNTAX_FLAG_REFERENTIAL_TRANSPARENT`, but the semantic category is
+  separate from ordinary `fn`.
 - Top-level `extern "ABI" { fn ...; static ...; }` blocks are parsed as external declaration blocks. The structural AST
   stores the ABI string token on the block and on each contained function/static symbol. Functions are marked
   external/incomplete, and static foreign globals are marked external/static. HIR currently accepts the first explicit C ABI
   shape, `#[repr(C)] extern "C"`, and rejects unsupported ABI strings or missing/non-C representation attributes. Library
   resolution, symbol binding, and backend lowering remain HIR/backend work.
 - Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated. The
-  parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result.Result<T, E>` and postfix `@`
+  parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result::Result<T, E>` and postfix `@`
   propagation.
 - `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
   constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
@@ -150,15 +153,14 @@ The documented compilation order is preserved:
 - Regular enum variants cannot contain payload types and must have unique names. `enum data` requires at least one typed
   variant, rejects tuple payloads, and permits same-name typed variants only when their payload types differ. Constructor
   overload selection remains a later HIR type-checking responsibility.
-- `fn(...) { ... }`, `fn(...) => T { ... }`, and `move fn(...) { ... }` function expression/closure forms are represented as
+- `fn(...) { ... }`, `fn(...) -> T { ... }`, and `move fn(...) { ... }` function expression/closure forms are represented as
   `XS_SYNTAX_EXPR_FUNCTION` nodes. `move` capture is a separate AST flag.
 - `new()` object creation is represented as `XS_SYNTAX_EXPR_NEW`; when the constructed type is not written in source, HIR will
   resolve it from context.
 - In data syntax, `set.field{value}` is represented as `XS_SYNTAX_EXPR_FIELD_SET`, while `value get.field` is represented as
   member access.
-- In stdio syntax, `[target]` I/O targets are represented as `XS_SYNTAX_EXPR_IO_TARGET`.
 - Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 HIR
-  expression checker now requires an enclosing function whose return type is `Result.Result<T, E>` or shorthand
+  expression checker now requires an enclosing function whose return type is `Result::Result<T, E>` or shorthand
   `Result<T, E>`. It does not yet prove that the propagated operand itself has a matching Result type; full propagation
   control-flow lowering is handled by later HIR/MIR work.
 - `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
@@ -207,10 +209,13 @@ This layer lives under the HIR directory.
 - The same short name may be used under different namespaces.
 - `imports Module;` records that the module is usable through its qualified name. It does not place public symbols into the
   local import scope.
-- `using Module.Name;` and `using Alias = Module.Name;` open one public top-level symbol into the local import scope.
+- Source syntax uses Rust-style qualified paths: `Module::Name` and `Module::Type::Item` are namespace/type paths, while
+  `value.member` remains value member access. Expression generic arguments use turbofish, for example
+  `Factory::<Int>()`. HIR still stores canonical qualified names with `.` internally.
+- `using Module::Name;` and `using Alias = Module::Name;` open one public top-level symbol into the local import scope.
 - `using namespace Module;` opens public top-level symbols from that namespace into the local import scope.
 - Non-public symbols are not opened through external module imports.
-- Qualified external names and types require a matching `imports Module;` or `imports Module.Namespace;` declaration unless
+- Qualified external names and types require a matching `imports Module;` or `imports Module::Namespace;` declaration unless
   they share the same root module as the current namespace.
 - Direct call targets in function bodies are resolved through same-namespace symbols and the import scope.
 - Fully qualified call targets through another namespace/module resolve only to public symbols.
@@ -243,26 +248,26 @@ validation does not decide dispatch, override, or overload selection.
 - `Str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
 - Semantically, `Str` is the UTF-16 X# counterpart of Rust's immutable static string reference; its runtime layout remains
   deferred and it is not yet lowered to XLIL storage.
-- `Optional<T>` resolves as if the compiler had inserted `imports optional` and brought `std.optional.Optional<T>` into
-  scope as `Optional<T>`. Optional value constructors are canonically `std.optional.None` and
-  `std.optional.Some(...)`, with `None` and `Some(...)` available through that implicit import. It is not an enum
+- `Optional<T>` resolves as if the compiler had inserted `imports optional` and brought `std::optional::Optional<T>` into
+  scope as `Optional<T>`. Optional value constructors are canonically `std::optional::None` and
+  `std::optional::Some(...)`, with `None` and `Some(...)` available through that implicit import. It is not an enum
   lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
   `T`, which can throw `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full
   flow-sensitive Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
-- The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std.optional.Optional<T>`,
-  `Result.Result<T>`, `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result.Error`. This
+- The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
+  `Result::Result<T>`, `Result::Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result::Error`. This
   is name and arity validation only; constructors, method calls, and propagation lowering are still handled by later
   semantic passes.
 - `Result` is treated as an implicit standard import and shorthand scope entry for `Result<T, E>`. That exception does not
-  make general `std.*` modules scope-imported.
+  make general `std::*` modules scope-imported.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`
   still require `imports stdio;` or `using namespace stdio;`. `format_args!` remains built in.
-- The C23 HIR type resolver also recognizes the initial standard CFFI family: `std.cffi.CStr`, `std.cffi.CString`,
-  `std.cffi.RawPtr<T>`, `std.cffi.NonNull<T>`, `std.cffi.Slice<T>`, `std.cffi.Handle<T>`, `std.cffi.Owned<T>`, `std.cffi.Borrowed<T>`,
-  `std.cffi.Out<T>`, `std.cffi.DynamicLibrary`, `std.cffi.Symbol<T>`, `std.cffi.File`, and `std.cffi.VarArgs`.
+- The C23 HIR type resolver also recognizes the initial standard CFFI family: `std::cffi::CStr`, `std::cffi::CString`,
+  `std::cffi::RawPtr<T>`, `std::cffi::NonNull<T>`, `std::cffi::Slice<T>`, `std::cffi::Handle<T>`, `std::cffi::Owned<T>`, `std::cffi::Borrowed<T>`,
+  `std::cffi::Out<T>`, `std::cffi::DynamicLibrary`, `std::cffi::Symbol<T>`, `std::cffi::File`, and `std::cffi::VarArgs`.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.
@@ -288,6 +293,9 @@ validation does not decide dispatch, override, or overload selection.
 - The same HIR expression-check stage reports diagnostics for direct identifier assignment to `val`, `const`, and `static`
   immutable declarations inside local block/function scopes. Field, index, dereference, alias/borrow-based mutability rules
   are deferred to later borrow/type-check stages.
+- `op` bodies are checked for the first referential-transparency slice. Calls, method calls, assignment, macro calls, `new`,
+  `await`, result propagation, mutable borrow, field-set expressions, and legacy exception syntax
+  are rejected inside `op` until a fuller effect/purity model can classify them precisely.
 - `xs_hir_resolve_types_expanded`, when given a statement macro replacement set, traverses direct statement child lists
   through the `xs_macro_expand_child_statements` expanded view. This validates type uses produced after macro expansion
   against the HIR symbol/import scope.
@@ -303,7 +311,7 @@ control-flow lowering exists. The crate is not wired into the C23 driver yet; in
 transfer boundary so one compiler layer is not split across C and Rust.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
-`Result.Result<T, E>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
+`Result::Result<T, E>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
 callee must also return a Result type. Imported calls, method calls, local function values, and full success/error
 compatibility remain the Rust compiler-core direction and later C/Rust integration work.
 
@@ -311,8 +319,8 @@ compatibility remain the Rust compiler-core direction and later C/Rust integrati
 early-return intent model before MIR lowering. If a raw `ResultPropagation` expression reaches MIR lowering, that is treated
 as a pipeline ordering error and is rejected instead of becoming a backend primitive.
 
-For `xslang` propagation checking and desugaring, single-argument `Result<T>`/`Result.Result<T>` uses the standard
-`Result.Error` error type.
+For `xslang` propagation checking and desugaring, single-argument `Result<T>`/`Result::Result<T>` uses the standard
+`Result::Error` error type.
 
 The MIR lowerer has a separate `DesugaredFunction` entry point. It can lower desugared functions that contain only currently
 supported expression forms, but explicit ResultMatch nodes remain deferred until Result-aware MIR control-flow and return

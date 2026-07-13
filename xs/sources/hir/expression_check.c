@@ -43,6 +43,7 @@ struct CheckContext
   const XsSyntaxNode *root;
   const XsHirPrimitiveInfo *return_type;
   const XsSyntaxNode *return_type_node;
+  bool inside_referential_op;
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
@@ -269,8 +270,24 @@ static bool expression_is_identifier_named(const XsSyntaxNode *expression, const
          text_matches_cstr(expression->children[0]->text, name);
 }
 
+static bool path_is_std_optional_member(const XsSyntaxNode *path, const char *name)
+{
+  return path != nullptr && path->kind == XS_SYNTAX_PATH && path->child_count == 3 &&
+         text_matches_cstr(path->children[0]->text, "std") && text_matches_cstr(path->children[1]->text, "optional") &&
+         text_matches_cstr(path->children[2]->text, name);
+}
+
+static bool expression_is_path_named(const XsSyntaxNode *expression, const char *name)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_IDENTIFIER || expression->child_count != 1)
+    return false;
+  return path_is_std_optional_member(expression->children[0], name);
+}
+
 static bool expression_is_std_optional_member(const XsSyntaxNode *expression, const char *name)
 {
+  if(expression_is_path_named(expression, name))
+    return true;
   if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_MEMBER_ACCESS || expression->child_count != 2)
     return false;
   if(expression->children[1]->kind != XS_SYNTAX_IDENTIFIER || !text_matches_cstr(expression->children[1]->text, name))
@@ -691,6 +708,40 @@ static bool check_result_propagation(const XsSyntaxNode *node, const CheckContex
   return false;
 }
 
+static bool node_breaks_referential_transparency(const XsSyntaxNode *node)
+{
+  if(node == nullptr)
+    return false;
+  switch(node->kind)
+  {
+  case XS_SYNTAX_DECL_EXTERN_BLOCK:
+  case XS_SYNTAX_DECL_MACRO_CALL:
+  case XS_SYNTAX_STMT_MACRO_CALL:
+  case XS_SYNTAX_EXPR_ASSIGNMENT:
+  case XS_SYNTAX_EXPR_CALL:
+  case XS_SYNTAX_EXPR_METHOD_CALL:
+  case XS_SYNTAX_EXPR_OPTIONAL_METHOD_CALL:
+  case XS_SYNTAX_EXPR_RESULT_PROPAGATION:
+  case XS_SYNTAX_EXPR_NEW:
+  case XS_SYNTAX_EXPR_AWAIT:
+  case XS_SYNTAX_EXPR_MUTABLE_BORROW:
+  case XS_SYNTAX_EXPR_FIELD_SET:
+  case XS_SYNTAX_STMT_THROW:
+  case XS_SYNTAX_STMT_TRY:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static bool check_referential_op_node(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
+{
+  if(context == nullptr || !context->inside_referential_op || !node_breaks_referential_transparency(node))
+    return true;
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
+                            "op declarations must be referentially transparent; this operation is not allowed");
+}
+
 static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,
                        const XsMacroStatementExpansionSet *macro_statements, CheckContext context,
                        XsDiagnostics *diagnostics);
@@ -751,8 +802,14 @@ static bool check_scoped_node(const XsSyntaxNode *node, const XsMacroDeclaration
       .root = parent.root,
       .return_type = return_type == nullptr ? parent.return_type : return_type,
       .return_type_node = return_type_node == nullptr ? parent.return_type_node : return_type_node,
+      .inside_referential_op = parent.inside_referential_op,
   };
+  if(node->kind == XS_SYNTAX_DECL_FUNCTION)
+    context.inside_referential_op = (node->flags & XS_SYNTAX_FLAG_REFERENTIAL_TRANSPARENT) != 0;
+  else if(node->kind == XS_SYNTAX_EXPR_FUNCTION)
+    context.inside_referential_op = false;
   bool success = true;
+  success = check_referential_op_node(node, &context, diagnostics) && success;
   if(macro_declarations != nullptr && has_child_kind(node, XS_SYNTAX_DECL_MACRO_CALL))
     success = check_expanded_declaration_children(node, macro_declarations, macro_statements, context, diagnostics);
   else if(macro_statements != nullptr && has_child_kind(node, XS_SYNTAX_STMT_MACRO_CALL))
@@ -774,6 +831,7 @@ static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansi
   if(node->kind == XS_SYNTAX_DECL_FUNCTION || node->kind == XS_SYNTAX_EXPR_FUNCTION ||
      node->kind == XS_SYNTAX_STMT_BLOCK)
     return check_scoped_node(node, macro_declarations, macro_statements, context, diagnostics);
+  success = check_referential_op_node(node, &context, diagnostics) && success;
   if(node->kind == XS_SYNTAX_DECL_VARIABLE)
   {
     success = check_variable_initializer(node, diagnostics) && success;

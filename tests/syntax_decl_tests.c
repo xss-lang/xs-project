@@ -79,7 +79,7 @@ static void test_inferred_variable_declaration_structure(void)
 static void test_data_callables_and_overloads(void)
 {
   const char *valid = "data User { name: Str; User(name: Str) {} User(name: Str, age: Int) {} "
-                      "fn Get(value: Int) {} fn Get(value: Str) {} fn operator +(right: User) => User {} }\n";
+                      "fn Get(value: Int) {} fn Get(value: Str) {} fn operator +(right: User) -> User {} }\n";
   XsSource source = {.path = "DataOverloads.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -117,6 +117,21 @@ static void test_data_callables_and_overloads(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 29, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_op_declaration_structure(void)
+{
+  const char *text = "op Add(left: Int, right: Int) -> Int { return left + right; }\n";
+  XsSource source = {.path = "Ops.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 61, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_FUNCTION) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_FUNCTION, XS_SYNTAX_FLAG_REFERENTIAL_TRANSPARENT) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_FUNCTION, XS_SYNTAX_FLAG_OPERATOR) == 0);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -342,7 +357,7 @@ static void test_extern_c_function_structure(void)
                      "#[repr(C)]\n"
                      "extern \"C\" {\n"
                      "  #[LinkName(\"puts\")]\n"
-                     "  fn puts(text: std.cffi.CStr) => Int;\n"
+                     "  fn puts(text: std::cffi::CStr) -> Int;\n"
                      "  #[ThreadLocal]\n"
                      "  static errno: Int;\n"
                      "}\n";
@@ -363,7 +378,7 @@ static void test_extern_c_function_structure(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *body = "extern \"C\" { fn puts(text: std.cffi.CStr) => Int {} }\n";
+  const char *body = "extern \"C\" { fn puts(text: std::cffi::CStr) -> Int {} }\n";
   source = (XsSource){.path = "ExternCBodyInvalid.xs", .text = body, .length = strlen(body)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 48, &diagnostics, &tree));
@@ -382,9 +397,9 @@ static void test_extern_c_function_structure(void)
 
 static void test_using_declaration_structure(void)
 {
-  const char *text = "using namespace Math.Advanced;\n"
-                     "using Math.Add;\n"
-                     "using Sum = Math.Add;\n";
+  const char *text = "using namespace Math::Advanced;\n"
+                     "using Math::Add;\n"
+                     "using Sum = Math::Add;\n";
   XsSource source = {.path = "Using.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -411,6 +426,7 @@ int main(void)
   test_top_level_variable_declaration_structure();
   test_inferred_variable_declaration_structure();
   test_data_callables_and_overloads();
+  test_op_declaration_structure();
   test_class_constructor_rules();
   test_interface_member_rules();
   test_class_inheritance_rules();

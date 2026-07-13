@@ -295,7 +295,7 @@ data ExternBlockDeclaration {
 //
 // #[repr(C)]
 // extern "C" {
-//     fn puts(text: std.CFFI.CStr) => Int;
+//     fn puts(text: std::cffi::CStr) -> Int;
 //     static errno: Int;
 // }
 //
@@ -333,7 +333,7 @@ data FunctionDeclaration {
 
 
 // returnType may be None when the function has no explicit
-// `=> Type` declaration.
+// `-> Type` declaration.
 // operatorToken may be None. When present, name is operator and the token
 // identifies the overloaded operator.
 //
@@ -638,7 +638,7 @@ data UnitTypeNode {
 // Example:
 //
 // Arc<Mutex<Str>>
-// fn(Int, Str) => Bool
+// fn(Int, Str) -> Bool
 
 // GenericTypeNode
 // ├── baseType: Arc
@@ -902,7 +902,6 @@ enum data Expression {
     ArrayLiteral: ArrayLiteralExpression,
     ObjectLiteral: ObjectLiteralExpression,
     FieldSet: FieldSetExpression,
-    IoTarget: IoTargetExpression,
     Tuple: TupleExpression,
     If: IfExpression,
     Match: MatchExpression,
@@ -1127,7 +1126,7 @@ enum FunctionCaptureKind {
 
 // Examples:
 //
-// fn(value: Int) => Int {
+// fn(value: Int) -> Int {
 //     return value + 1;
 // }
 //
@@ -1225,17 +1224,6 @@ data FieldSetExpression {
 // set.name{"Alpha"}
 
 
-// ============================================================
-// I/O target expressions
-// ============================================================
-
-data IoTargetExpression {
-    target: Expression
-    span: SourceSpan
-}
-
-
-// Example:
 //
 // println!("Hello")
 
@@ -1600,7 +1588,7 @@ data TokenNode {
 
 // Source:
 //
-// fn Add(a: Int, b: Int) => Int {
+// fn Add(a: Int, b: Int) -> Int {
 //     return a + b;
 // }
 

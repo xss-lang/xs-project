@@ -42,7 +42,7 @@ namespace Advanced;
 namespace Algebra;
 
 // equivalent full path:
-// Math.Advanced.Algebra
+// Math::Advanced::Algebra
 
 
 // public namespace
@@ -50,7 +50,7 @@ module Math;
 
 public namespace Advanced;
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -61,7 +61,7 @@ fn Add(a: Int, b: Int) => Int {
 imports Math;
 
 fn Main() {
-    result: Int = Math.Add(1, 2);
+    result: Int = Math::Add(1, 2);
 }
 
 
@@ -79,7 +79,7 @@ fn Main() {
 
 // using declaration
 // using declarations place one selected public name in local scope.
-using Math.Add;
+using Math::Add;
 
 fn Main() {
     result: Int = Add(1, 2);
@@ -87,8 +87,8 @@ fn Main() {
 
 
 // multiple using declarations
-using Math.Add;
-using Math.Subtract;
+using Math::Add;
+using Math::Subtract;
 
 fn Main() {
     a: Int = Add(1, 2);
@@ -97,7 +97,7 @@ fn Main() {
 
 
 // using alias declaration
-using Sum = Math.Add;
+using Sum = Math::Add;
 
 fn Main() {
     result: Int = Sum(1, 2);
@@ -108,7 +108,7 @@ fn Main() {
 imports Math;
 
 fn Main() {
-    color: Math.Color = Math.Color.Red;
+    color: Math::Color = Math::Color::Red;
 }
 
 
@@ -116,7 +116,7 @@ fn Main() {
 imports Math;
 
 fn Main() {
-    color: Math.Advanced.Color = Math.Advanced.Color.Red;
+    color: Math::Advanced::Color = Math::Advanced::Color::Red;
 }
 
 
@@ -129,7 +129,7 @@ fn Main() {
 
 
 // direct enum access after using declaration
-using Math.Color;
+using Math::Color;
 
 fn Main() {
     color: Color = Color.Red;
@@ -142,19 +142,19 @@ imports Math;
 
 imports Math, Math;
 
-using Math.Add;
-using Math.Add;
+using Math::Add;
+using Math::Add;
 
 // Duplicate imports are valid and treated as one import.
 
 
 // using name collision
-using Math.Add;
-using Utils.Add;
+using Math::Add;
+using Utils::Add;
 
 fn Main() {
-    Math.Add(1, 2);
-    Utils.Add(1, 2);
+    Math::Add(1, 2);
+    Utils::Add(1, 2);
 }
 
 // If the same local name is opened from multiple modules,
@@ -164,7 +164,7 @@ fn Main() {
 // VALID
 module Calculator;
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -197,7 +197,7 @@ fn Add() {
 
 
 // INVALID
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -233,6 +233,6 @@ fn InternalHelper() {
 }
 
 // from another file:
-using Math.InternalHelper;
+using Math::InternalHelper;
 
 // Non-public members are not visible from other modules.

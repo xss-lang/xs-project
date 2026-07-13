@@ -28,7 +28,7 @@ static XsSyntaxNode *parse_function_type(SyntaxParser *parser, size_t start)
     } while(accept(parser, XS_TOKEN_COMMA));
   }
   expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after function type parameters");
-  expect(parser, XS_TOKEN_FAT_ARROW, "expected '=>' before function type return type");
+  expect(parser, XS_TOKEN_ARROW, "expected '->' before function type return type");
   xs_syntax_node_add(parser->tree, function, parse_type(parser));
   finish_node(parser, function, parser->previous.span.end);
   return function;
@@ -82,7 +82,10 @@ XsSyntaxNode *parse_type(SyntaxParser *parser)
   xs_syntax_node_add(parser->tree, named, parse_path(parser));
   finish_node(parser, named, parser->previous.span.end);
   XsSyntaxNode *result = named;
-  if(accept(parser, XS_TOKEN_LESS))
+  bool turbofish = accept(parser, XS_TOKEN_DOUBLE_COLON);
+  if(turbofish)
+    expect(parser, XS_TOKEN_LESS, "expected '<' after '::' in turbofish type arguments");
+  if(turbofish || accept(parser, XS_TOKEN_LESS))
   {
     XsSyntaxNode *generic = node(parser, XS_SYNTAX_TYPE_GENERIC, (XsSpan){start, start});
     xs_syntax_node_add(parser->tree, generic, named);

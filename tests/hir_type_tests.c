@@ -79,7 +79,7 @@ static void test_primitive_and_generic_types(void)
   const char *text = "module App;\n"
                      "fn Keep<T>(a: Str, b: Bool, c: Byte, d: SByte, e: Char, f: Short, g: Long, h: Int,\n"
                      "           i: Integer, j: UShort, k: ULong, l: UInt, m: UInteger,\n"
-                     "           n: SFloat, o: Float, p: T) => T { return p; }\n";
+                     "           n: SFloat, o: Float, p: T) -> T { return p; }\n";
   CHECK(check_single_source(text));
   CHECK(!check_single_source("module App;\nfn Main(value: Float16) {}\n"));
   CHECK(!check_single_source("module App;\nfn Main(value: double) {}\n"));
@@ -117,43 +117,43 @@ static void test_generic_type_arity(void)
 static void test_standard_generic_types(void)
 {
   const char *valid = "module App;\n"
-                      "fn Read() => Optional<Str> { return None; }\n"
-                      "fn ReadCanonical() => std.optional.Optional<Str> { return None; }\n"
-                      "fn Save() => Result.Result<Int> { return Result.Ok(1); }\n"
-                      "fn Load() => Result.Result<Int, Result.Error> { return Result.Ok(1); }\n"
-                      "fn Compact() => Result<Int, Result.Error> { return Result.Ok(1); }\n";
+                      "fn Read() -> Optional<Str> { return None; }\n"
+                      "fn ReadCanonical() -> std::optional::Optional<Str> { return None; }\n"
+                      "fn Save() -> Result::Result<Int> { return Result::Ok(1); }\n"
+                      "fn Load() -> Result::Result<Int, Result::Error> { return Result::Ok(1); }\n"
+                      "fn Compact() -> Result<Int, Result::Error> { return Result::Ok(1); }\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nfn Missing() => Optional { return None; }\n"));
-  CHECK(!check_single_source("module App;\nfn Missing() => Result.Result { return Result.Ok(1); }\n"));
-  CHECK(!check_single_source("module App;\nfn TooMany() => Result.Result<Int, Result.Error, Int> { return "
-                             "Result.Ok(1); }\n"));
-  CHECK(!check_single_source("module App;\nfn BadError() => Result.Error<Int> { return Result.Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn Missing() -> Optional { return None; }\n"));
+  CHECK(!check_single_source("module App;\nfn Missing() -> Result::Result { return Result::Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn TooMany() -> Result::Result<Int, Result::Error, Int> { return "
+                             "Result::Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn BadError() -> Result::Error<Int> { return Result::Ok(1); }\n"));
 }
 
 static void test_standard_cffi_types(void)
 {
   const char *valid = "module App;\n"
                       "imports cffi;\n"
-                      "data NativeLibrary { handle: std.cffi.Handle<NativeLibrary>; }\n"
+                      "data NativeLibrary { handle: std::cffi::Handle<NativeLibrary>; }\n"
                       "#[repr(C)]\n"
                       "extern \"C\" {\n"
-                      "  fn puts(text: std.cffi.CStr) => Int;\n"
-                      "  fn free(ptr: std.cffi.RawPtr<Byte>);\n"
-                      "  fn read(out: std.cffi.Out<Int>) => Int;\n"
-                      "  static stdin_handle: std.cffi.RawPtr<std.cffi.File>;\n"
+                      "  fn puts(text: std::cffi::CStr) -> Int;\n"
+                      "  fn free(ptr: std::cffi::RawPtr<Byte>);\n"
+                      "  fn read(out: std::cffi::Out<Int>) -> Int;\n"
+                      "  static stdin_handle: std::cffi::RawPtr<std::cffi::File>;\n"
                       "}\n"
-                      "fn Load(symbol: std.cffi.Symbol<fn() => Int>, library: std.cffi.DynamicLibrary) {}\n";
+                      "fn Load(symbol: std::cffi::Symbol<fn() -> Int>, library: std::cffi::DynamicLibrary) {}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std.cffi.RawPtr); }\n"));
-  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std.cffi.CStr<Int>); }\n"));
-  CHECK(!check_single_source("module App;\nfn Bad(ptr: std.cffi.CStr) {}\n"));
+  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std::cffi::RawPtr); }\n"));
+  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std::cffi::CStr<Int>); }\n"));
+  CHECK(!check_single_source("module App;\nfn Bad(ptr: std::cffi::CStr) {}\n"));
 }
 
 static void test_duplicate_generic_parameter_names(void)
 {
   CHECK(!check_single_source("module App;\nclass Box<T, T> { value: T; }\n"));
   CHECK(!check_single_source("module App;\ninterface Reader<T, T> { fn Read(value: T); }\n"));
-  CHECK(!check_single_source("module App;\nfn Keep<T, T>(value: T) => T { return value; }\n"));
+  CHECK(!check_single_source("module App;\nfn Keep<T, T>(value: T) -> T { return value; }\n"));
 }
 
 static void test_imported_user_type(void)
@@ -161,7 +161,7 @@ static void test_imported_user_type(void)
   const char *library = "module Model;\n"
                         "public data User { name: Str; }\n";
   const char *main = "module App;\n"
-                     "using Model.User;\n"
+                     "using Model::User;\n"
                      "fn Main(value: User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -188,8 +188,8 @@ static void test_public_namespace_exports_default_type(void)
                         "public namespace Records;\n"
                         "data User { name: Str; }\n";
   const char *main = "module App;\n"
-                     "imports Model.Records;\n"
-                     "fn Main(value: Model.Records.User) {}\n";
+                     "imports Model::Records;\n"
+                     "fn Main(value: Model::Records::User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -216,7 +216,7 @@ static void test_public_qualified_type_requires_import(void)
   const char *library = "module Model;\n"
                         "public data User { name: Str; }\n";
   const char *main = "module App;\n"
-                     "fn Main(value: Model.User) {}\n";
+                     "fn Main(value: Model::User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -242,7 +242,7 @@ static void test_private_qualified_type_visibility(void)
   const char *library = "module Model;\n"
                         "private data Secret { value: Int; }\n";
   const char *main = "module App;\n"
-                     "fn Main(value: Model.Secret) {}\n";
+                     "fn Main(value: Model::Secret) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -267,7 +267,7 @@ static void test_private_same_namespace_type_visibility(void)
 {
   const char *text = "module Model;\n"
                      "private data Secret { value: Int; }\n"
-                     "fn Main(value: Model.Secret) {}\n";
+                     "fn Main(value: Model::Secret) {}\n";
   CHECK(check_single_source(text));
 }
 
@@ -276,7 +276,7 @@ static void test_private_same_namespace_different_file_type_visibility(void)
   const char *library = "module Model;\n"
                         "private data Secret { value: Int; }\n";
   const char *main = "module Model;\n"
-                     "fn Main(value: Model.Secret) {}\n";
+                     "fn Main(value: Model::Secret) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -327,7 +327,7 @@ static void test_imported_generic_constraint(void)
   const char *library = "module Contract;\n"
                         "public interface Runnable { fn Run(); }\n";
   const char *main = "module App;\n"
-                     "using Contract.Runnable;\n"
+                     "using Contract::Runnable;\n"
                      "fn Execute<T: Runnable>(value: T) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;

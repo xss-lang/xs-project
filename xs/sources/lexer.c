@@ -328,6 +328,11 @@ XsToken xs_lexer_next(XsLexer *lexer)
   case ';':
     return token(XS_TOKEN_SEMICOLON, start, lexer->cursor);
   case ':':
+    if(peek(lexer, 0) == ':')
+    {
+      ++lexer->cursor;
+      return token(XS_TOKEN_DOUBLE_COLON, start, lexer->cursor);
+    }
     if(peek(lexer, 0) == '=')
     {
       ++lexer->cursor;
@@ -342,11 +347,6 @@ XsToken xs_lexer_next(XsLexer *lexer)
     }
     return token(XS_TOKEN_DOT, start, lexer->cursor);
   case '=':
-    if(peek(lexer, 0) == '>')
-    {
-      ++lexer->cursor;
-      return token(XS_TOKEN_FAT_ARROW, start, lexer->cursor);
-    }
     return one_or_two(lexer, start, '=', XS_TOKEN_ASSIGN, XS_TOKEN_EQUAL);
   case '!':
     return one_or_two(lexer, start, '=', XS_TOKEN_BANG, XS_TOKEN_NOT_EQUAL);
@@ -368,11 +368,6 @@ XsToken xs_lexer_next(XsLexer *lexer)
     }
     return token(XS_TOKEN_QUESTION, start, lexer->cursor);
   case '>':
-    if(starts_with(lexer, ">>", 2))
-    {
-      lexer->cursor += 2;
-      return token(XS_TOKEN_SWITCH_INPUT, start, lexer->cursor);
-    }
     if(peek(lexer, 0) == '>')
     {
       ++lexer->cursor;
@@ -380,11 +375,6 @@ XsToken xs_lexer_next(XsLexer *lexer)
     }
     return one_or_two(lexer, start, '=', XS_TOKEN_GREATER, XS_TOKEN_GREATER_EQUAL);
   case '<':
-    if(starts_with(lexer, "<<", 2))
-    {
-      lexer->cursor += 2;
-      return token(XS_TOKEN_SWITCH_OUTPUT, start, lexer->cursor);
-    }
     if(peek(lexer, 0) == '<')
     {
       ++lexer->cursor;

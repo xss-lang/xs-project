@@ -47,11 +47,11 @@ static void test_function(void)
   static const XsTokenKind expected[] = {
       XS_TOKEN_KW_FN,       XS_TOKEN_IDENTIFIER, XS_TOKEN_LEFT_PAREN, XS_TOKEN_IDENTIFIER, XS_TOKEN_COLON,
       XS_TOKEN_IDENTIFIER,  XS_TOKEN_COMMA,      XS_TOKEN_IDENTIFIER, XS_TOKEN_COLON,      XS_TOKEN_IDENTIFIER,
-      XS_TOKEN_RIGHT_PAREN, XS_TOKEN_FAT_ARROW,  XS_TOKEN_IDENTIFIER, XS_TOKEN_LEFT_BRACE, XS_TOKEN_KW_RETURN,
+      XS_TOKEN_RIGHT_PAREN, XS_TOKEN_ARROW,      XS_TOKEN_IDENTIFIER, XS_TOKEN_LEFT_BRACE, XS_TOKEN_KW_RETURN,
       XS_TOKEN_IDENTIFIER,  XS_TOKEN_PLUS,       XS_TOKEN_IDENTIFIER, XS_TOKEN_SEMICOLON,  XS_TOKEN_RIGHT_BRACE,
       XS_TOKEN_EOF,
   };
-  expect_tokens("fn Add(a: Int, b: Int) => Int { return a + b; }", expected, sizeof(expected) / sizeof(expected[0]));
+  expect_tokens("fn Add(a: Int, b: Int) -> Int { return a + b; }", expected, sizeof(expected) / sizeof(expected[0]));
 }
 
 static void test_comments_and_strings(void)
@@ -75,19 +75,23 @@ static void test_documented_operators(void)
       XS_TOKEN_LESS_EQUAL,
       XS_TOKEN_LOGICAL_AND,
       XS_TOKEN_LOGICAL_OR,
+      XS_TOKEN_DOUBLE_COLON,
       XS_TOKEN_INFER_ASSIGN,
       XS_TOKEN_BANG,
       XS_TOKEN_AMPERSAND,
       XS_TOKEN_PIPE,
       XS_TOKEN_SHIFT_LEFT,
-      XS_TOKEN_SWITCH_OUTPUT,
+      XS_TOKEN_SHIFT_LEFT,
+      XS_TOKEN_LESS,
       XS_TOKEN_SHIFT_RIGHT,
-      XS_TOKEN_SWITCH_INPUT,
+      XS_TOKEN_SHIFT_RIGHT,
+      XS_TOKEN_GREATER,
       XS_TOKEN_CARET,
       XS_TOKEN_CARET_ASSIGN,
       XS_TOKEN_HASH,
       XS_TOKEN_ARROW,
-      XS_TOKEN_FAT_ARROW,
+      XS_TOKEN_ASSIGN,
+      XS_TOKEN_GREATER,
       XS_TOKEN_QUESTION,
       XS_TOKEN_QUESTION_DOT,
       XS_TOKEN_QUESTION_QUESTION,
@@ -95,7 +99,7 @@ static void test_documented_operators(void)
       XS_TOKEN_AT,
       XS_TOKEN_EOF,
   };
-  expect_tokens("== != > < >= <= && || := ! & | << <<< >> >>> ^ ^= # -> => ? ?. ?? ?"
+  expect_tokens("== != > < >= <= && || :: := ! & | << <<< >> >>> ^ ^= # -> => ? ?. ?? ?"
                 "?= @",
                 expected, sizeof(expected) / sizeof(expected[0]));
 }
@@ -103,14 +107,16 @@ static void test_documented_operators(void)
 static void test_keywords(void)
 {
   static const XsTokenKind expected[] = {
-      XS_TOKEN_KW_MODULE,    XS_TOKEN_KW_NAMESPACE, XS_TOKEN_KW_IMPORTS, XS_TOKEN_KW_USING, XS_TOKEN_KW_CLASS,
-      XS_TOKEN_KW_INTERFACE, XS_TOKEN_KW_DATA,      XS_TOKEN_KW_ENUM,    XS_TOKEN_KW_ASYNC, XS_TOKEN_KW_AWAIT,
-      XS_TOKEN_KW_MOVE,      XS_TOKEN_KW_MUT,       XS_TOKEN_KW_TRY,     XS_TOKEN_KW_CATCH, XS_TOKEN_KW_FINALLY,
-      XS_TOKEN_KW_THROW,     XS_TOKEN_KW_THROWS,    XS_TOKEN_KW_EXTERN,  XS_TOKEN_KW_NONE,  XS_TOKEN_EOF,
+      XS_TOKEN_KW_MODULE,    XS_TOKEN_KW_NAMESPACE, XS_TOKEN_KW_IMPORTS, XS_TOKEN_KW_USING,  XS_TOKEN_KW_CLASS,
+      XS_TOKEN_KW_INTERFACE, XS_TOKEN_KW_DATA,      XS_TOKEN_KW_ENUM,    XS_TOKEN_KW_ASYNC,  XS_TOKEN_KW_AWAIT,
+      XS_TOKEN_KW_MOVE,      XS_TOKEN_KW_MUT,       XS_TOKEN_KW_OP,      XS_TOKEN_KW_TRY,    XS_TOKEN_KW_CATCH,
+      XS_TOKEN_KW_FINALLY,   XS_TOKEN_KW_THROW,     XS_TOKEN_KW_THROWS,  XS_TOKEN_KW_EXTERN, XS_TOKEN_KW_NONE,
+      XS_TOKEN_EOF,
   };
-  expect_tokens("module namespace imports using class interface data enum async await move mut try catch finally throw "
-                "throws extern None",
-                expected, sizeof(expected) / sizeof(expected[0]));
+  expect_tokens(
+      "module namespace imports using class interface data enum async await move mut op try catch finally throw "
+      "throws extern None",
+      expected, sizeof(expected) / sizeof(expected[0]));
 }
 
 static void test_identifiers_and_numbers(void)

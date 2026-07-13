@@ -15,7 +15,7 @@
 // - Cooperative yielding
 // - Single-sender, single-receiver channels
 //
-// Thread synchronization failures use SyncException through Result.Error.
+// Thread synchronization failures use SyncException through Result::Error.
 //
 // Thread values and channel endpoints follow the language's ownership,
 // move and Send rules.
@@ -41,8 +41,8 @@ fn SpawnThread() {
 // thread with result
 
 fn SpawnThreadWithResult() {
-    thread: Thread.handle<Int> =
-        Thread.spawn(move fn() => Int {
+    thread: Thread::handle<Int> =
+        Thread.spawn(move fn() -> Int {
             return 42;
         });
 
@@ -53,7 +53,7 @@ fn SpawnThreadWithResult() {
 // resultless thread handle
 
 fn ResultlessThreadHandle() {
-    thread: Thread.handle<()> =
+    thread: Thread::handle<()> =
         Thread.spawn(move fn() {
             return;
         });
@@ -67,8 +67,8 @@ fn ResultlessThreadHandle() {
 // - Creates a native thread.
 // - Accepts a move closure.
 // - Moves captured values into the new thread.
-// - Returns Thread.handle<T> when the closure returns T.
-// - Returns Thread.handle<()> when the closure returns no value.
+// - Returns Thread::handle<T> when the closure returns T.
+// - Returns Thread::handle<()> when the closure returns no value.
 // - Begins execution immediately.
 // - The closure must satisfy the required Send rules.
 
@@ -80,7 +80,7 @@ fn ResultlessThreadHandle() {
 fn MoveValueToThread() {
     value: Str = "Alpha";
 
-    thread: Thread.handle<()> =
+    thread: Thread::handle<()> =
         Thread.spawn(move fn() {
             localValue: Str = value;
         });
@@ -116,12 +116,12 @@ fn InvalidNonSendCapture() {
 // ============================================================
 
 fn MoveThreadHandle() {
-    first: Thread.handle<Int> =
-        Thread.spawn(move fn() => Int {
+    first: Thread::handle<Int> =
+        Thread.spawn(move fn() -> Int {
             return 42;
         });
 
-    second: Thread.handle<Int> = first;
+    second: Thread::handle<Int> = first;
 
     value: Int = second.join();
 
@@ -129,7 +129,7 @@ fn MoveThreadHandle() {
 }
 
 
-// Thread.handle<T>:
+// Thread::handle<T>:
 //
 // - Is move-only.
 // - Cannot be copied.
@@ -140,8 +140,8 @@ fn MoveThreadHandle() {
 // Trait rules:
 //
 //
-// Thread.handle<T>: Send if T: Send
-// Thread.handle<T>: not Sync
+// Thread::handle<T>: Send if T: Send
+// Thread::handle<T>: not Sync
 //
 
 
@@ -150,8 +150,8 @@ fn MoveThreadHandle() {
 // ============================================================
 
 fn JoinThread() {
-    thread: Thread.handle<Int> =
-        Thread.spawn(move fn() => Int {
+    thread: Thread::handle<Int> =
+        Thread.spawn(move fn() -> Int {
             return 42;
         });
 
@@ -161,18 +161,18 @@ fn JoinThread() {
 // join():
 //
 // - Blocks until the thread finishes.
-// - Returns Result.Result<T, ThreadError>.
-// - Consumes the Thread.handle<T>.
+// - Returns Result::Result<T, ThreadError>.
+// - Consumes the Thread::handle<T>.
 // - May only be called once.
-// - Carries thread failure through Result.Error.
-// - Returns Result.Error(SyncException) for invalid runtime join operations.
+// - Carries thread failure through Result::Error.
+// - Returns Result::Error(SyncException) for invalid runtime join operations.
 
 
 // invalid second join
 
 fn InvalidSecondJoin() {
-    thread: Thread.handle<Int> =
-        Thread.spawn(move fn() => Int {
+    thread: Thread::handle<Int> =
+        Thread.spawn(move fn() -> Int {
             return 42;
         });
 
@@ -186,7 +186,7 @@ fn InvalidSecondJoin() {
 
 // self join
 
-// A thread attempting to join itself returns Result.Error(SyncException).
+// A thread attempting to join itself returns Result::Error(SyncException).
 
 
 // ============================================================
@@ -194,18 +194,18 @@ fn InvalidSecondJoin() {
 // ============================================================
 
 fn JoinedThreadFailure() {
-    thread: Thread.handle<Result.Result<Int, IOException>> =
-        Thread.spawn(move fn() => Result.Result<Int, IOException> {
-            return Result.Error(IOException());
+    thread: Thread::handle<Result::Result<Int, IOException>> =
+        Thread.spawn(move fn() -> Result::Result<Int, IOException> {
+            return Result::Error(IOException());
         });
 
-    result: Result.Result<Int, IOException> = thread.join()@;
+    result: Result::Result<Int, IOException> = thread.join()@;
     if (result.isError()) {
         eprintln!("thread failed");
     }
 }
 
-// If a joined thread returns Result.Error:
+// If a joined thread returns Result::Error:
 //
 // - The error is stored by the thread runtime.
 // - join() transfers that error to the joining thread.
@@ -215,12 +215,12 @@ fn JoinedThreadFailure() {
 // detached thread failure
 
 fn DetachedThreadFailure() {
-    Thread.spawn(move fn() => Result.Result<Void, IOException> {
-        return Result.Error(IOException());
+    Thread.spawn(move fn() -> Result::Result<Void, IOException> {
+        return Result::Error(IOException());
     });
 }
 
-// If a detached thread returns Result.Error:
+// If a detached thread returns Result::Error:
 //
 // - Only that thread is terminated.
 // - The runtime emits a diagnostic.
@@ -353,7 +353,7 @@ fn MoveReceiverToThread() {
     (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
-    receiverThread: Thread.handle<()> =
+    receiverThread: Thread::handle<()> =
         Thread.spawn(move fn() {
             value: Int = rx.recv();
         });
@@ -370,7 +370,7 @@ fn MoveSenderToThread() {
     (tx, rx): Thread.channel<Int> =
         Thread.channel();
 
-    senderThread: Thread.handle<()> =
+    senderThread: Thread::handle<()> =
         Thread.spawn(move fn() {
             tx.send(42);
         });
@@ -421,7 +421,7 @@ imports mutex, rw_lock, arc;
 fn MoveMutexIntoThread() {
     mutex: Mutex<Int> = Mutex.new(42);
 
-    thread: Thread.handle<()> =
+    thread: Thread::handle<()> =
         Thread.spawn(move fn() {
             guard: Mutex<Int> = mutex.lock();
             *guard += 1;
@@ -440,7 +440,7 @@ fn ShareMutexBetweenThreads() {
     worker: Arc<Mutex<Int>> =
         Arc.clone(&shared);
 
-    thread: Thread.handle<()> =
+    thread: Thread::handle<()> =
         Thread.spawn(move fn() {
             guard: Mutex<Int> = worker.lock();
             *guard += 1;
@@ -461,7 +461,7 @@ fn ShareRwLockBetweenThreads() {
     worker: Arc<RwLock<Int>> =
         Arc.clone(&shared);
 
-    thread: Thread.handle<()> =
+    thread: Thread::handle<()> =
         Thread.spawn(move fn() {
             reader: RwLock<Int> = worker.read();
             value: Int = *reader;

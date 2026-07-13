@@ -671,7 +671,7 @@ fn Main() {
 
 module Math;
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -683,14 +683,14 @@ fn Add(a: Int, b: Int) => Int {
 
 module Math;
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
 
 // Invalid:
 
-fn Add(a: Int, b: Int) => Int {
+fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }
 

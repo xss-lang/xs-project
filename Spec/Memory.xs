@@ -75,7 +75,7 @@ fn Main() {
 
 // move by return
 
-fn CreateUser() => User {
+fn CreateUser() -> User {
     user: User = new();
 
     return user;
@@ -170,7 +170,7 @@ fn Main() {
 
 // INVALID
 
-fn GetUser() => &User {
+fn GetUser() -> &User {
     user: User = new();
 
     return &user;
@@ -259,7 +259,7 @@ point: Point = Point(10, 20);
 
 // escape analysis
 
-fn CreatePoint() => Point {
+fn CreatePoint() -> Point {
     point: Point = Point(10, 20);
 
     return point;
@@ -278,8 +278,8 @@ iter: Iterator<Int> = numbers.Iterator();
 // VALID
 // allocation is explicit
 
-users: std.collections.vector<User> =
-    std.collections.vector.new();
+users: std::collections::vector<User> =
+    std::collections::vector.new();
 
 
 // INVALID DESIGN

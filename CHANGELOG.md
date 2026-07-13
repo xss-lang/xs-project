@@ -35,17 +35,17 @@ source-to-native executable pipeline.
 - `format_args!` is now validated as a built-in macro instead of a Stdio export.
 - Stdio macro validation now accepts Rust 1.57-style `write!` and `writeln!` forms plus common Rust formatting specs such
   as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` while still checking placeholder counts.
-- `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `STD.Optional.Optional<T>`, with
-  value constructors canonically named `STD.Optional.None` and `STD.Optional.Some(...)`.
+- `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `std::optional::Optional<T>`, with
+  value constructors canonically named `std::optional::None` and `std::optional::Some(...)`.
 
 ### Deprecated
 
 - Legacy exception syntax is now deprecated. `throws`, `throw`, and `try` remain parseable but produce warnings; new code
-  should use `Result.Result<T, E>` and postfix `@` propagation.
+  should use `Result::Result<T, E>` and postfix `@` propagation.
 
 ### Fixed
 
-- The C23 HIR expression checker now accepts postfix `@` inside functions returning `Result.Result<T, E>` or
+- The C23 HIR expression checker now accepts postfix `@` inside functions returning `Result::Result<T, E>` or
   `Result<T, E>` and rejects it outside Result-returning functions. Direct same-file function call operands are now also
   checked to return a Result type.
 - `Spec/` examples now use Result-style error handling for active examples. Legacy `throws`/`throw`/`try`/`catch` syntax is
@@ -57,7 +57,7 @@ source-to-native executable pipeline.
 
 - Imported `Stdio` macros now include `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`, with Rust 1.57-style
   newline-only `println!()`/`eprintln!()` forms.
-- `Spec/Stdio.xs` now documents `std.Stdin()` line input examples, and `Spec/Result.xs` documents the explicit `Result`
+- `Spec/Stdio.xs` now documents `std::stdin()` line input examples, and `Spec/Result.xs` documents the explicit `Result`
   model, postfix `@` propagation, `expect`, and `unwrap`.
 - The C23 lexer/parser now accepts postfix `@` as a structural Result propagation expression; semantic checking and lowering
   are intentionally left for later Result work, and HIR expression checking reports that gap explicitly instead of silently
@@ -73,10 +73,10 @@ source-to-native executable pipeline.
   through the existing HIR path, while explicit ResultMatch nodes are rejected until MIR Result control-flow lowering exists.
 - Rust `xslang` XHIR text writing can now emit desugared functions, including explicit `result_match` records for `@`
   desugar output.
-- Rust `xslang` treats single-argument `Result<T>`/`Result.Result<T>` as using the standard `Result.Error` error type for
+- Rust `xslang` treats single-argument `Result<T>`/`Result::Result<T>` as using the standard `Result::Error` error type for
   propagation type checking and desugaring.
-- The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result.Result<T>`,
-  `Result.Result<T, E>`, shorthand `Result<T, E>`, and `Result.Error` without requiring a user-defined project symbol.
+- The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result::Result<T>`,
+  `Result::Result<T, E>`, shorthand `Result<T, E>`, and `Result::Error` without requiring a user-defined project symbol.
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
 - Plain source native builds now accept explicit `Long` and inferred i32-compatible local bindings before the final

@@ -38,7 +38,7 @@ static void test_class_member_symbols(void)
   const char *text = "module App;\n"
                      "class User {\n"
                      "  name: Str;\n"
-                     "  fn GetName() => Str { return name; }\n"
+                     "  fn GetName() -> Str { return name; }\n"
                      "}\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
@@ -68,7 +68,7 @@ static void test_data_member_symbols_and_method_resolution(void)
                      "  name: Str;\n"
                      "  User(name: Str) {}\n"
                      "  User(name: Str, age: Int) {}\n"
-                     "  fn GetName() => Str { return name; }\n"
+                     "  fn GetName() -> Str { return name; }\n"
                      "}\n"
                      "fn Main() { user: User = new(); user.GetName(); }\n";
   XsSyntaxTree tree;

@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Recursively copies changed files from one directory into a backup directory.
 
-module Programs.FileBackup;
+module Programs::FileBackup;
 
 imports collections, stdio, fs, process, result;
 
@@ -23,58 +23,58 @@ data FileEntry {
 class BackupPlan {
     sourceRoot: Str;
     targetRoot: Str;
-    files: std.collections.vector<FileEntry>;
+    files: std::collections::vector<FileEntry>;
 
     BackupPlan(sourceRoot: Str, targetRoot: Str) {
         this.sourceRoot = sourceRoot;
         this.targetRoot = targetRoot;
-        this.files = std.collections.vector<FileEntry>.new();
+        this.files = std::collections::vector<FileEntry>.new();
     }
 
-    fn Discover() => Result.Result<Void, BackupError> {
-        if (!std.fs.is_dir(this.sourceRoot)) {
-            return Result.Error(BackupError.InvalidSource(this.sourceRoot));
+    fn Discover() -> Result::Result<Void, BackupError> {
+        if (!std::fs::is_dir(this.sourceRoot)) {
+            return Result::Error(BackupError.InvalidSource(this.sourceRoot));
         }
 
-        for (path: Str in std.fs.walk_dir(this.sourceRoot)) {
-            if (std.fs.is_dir(path)) {
+        for (path: Str in std::fs::walk_dir(this.sourceRoot)) {
+            if (std::fs::is_dir(path)) {
                 continue;
             }
 
-            relative: Str = std.fs.relative_path(this.sourceRoot, path);
+            relative: Str = std::fs::relative_path(this.sourceRoot, path);
             this.files.push(FileEntry {
                 path: path,
                 relative: relative,
-                bytes: std.fs.size(path),
-                modified_ticks: std.fs.modified_ticks(path),
+                bytes: std::fs::size(path),
+                modified_ticks: std::fs::modified_ticks(path),
             });
         }
-        return Result.Ok();
+        return Result::Ok();
     }
 
-    fn Execute() => Result.Result<Void, IOException> {
+    fn Execute() -> Result::Result<Void, IOException> {
         for (entry: FileEntry in this.files) {
-            destination: Str = std.fs.join_path(this.targetRoot, entry.relative);
+            destination: Str = std::fs::join_path(this.targetRoot, entry.relative);
 
             if (this.ShouldCopy(entry, destination)) {
-                std.fs.create_dir(std.fs.parent_dir(destination));
-                std.fs.copy_file(entry.path, destination);
+                std::fs::create_dir(std::fs::parent_dir(destination));
+                std::fs::copy_file(entry.path, destination);
                 println!("copied {}", entry.relative);
             }
         }
-        return Result.Ok();
+        return Result::Ok();
     }
 
-    fn ShouldCopy(entry: FileEntry, destination: Str) => Bool {
-        if (!std.fs.exists(destination)) {
+    fn ShouldCopy(entry: FileEntry, destination: Str) -> Bool {
+        if (!std::fs::exists(destination)) {
             return true;
         }
 
-        return std.fs.size(destination) != entry.bytes || std.fs.modified_ticks(destination) < entry.modified_ticks;
+        return std::fs::size(destination) != entry.bytes || std::fs::modified_ticks(destination) < entry.modified_ticks;
     }
 }
 
-fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
+fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Error> {
     if (args.length() != 3) {
         eprintln!("usage: backup <source> <target>");
         return 2;
@@ -83,5 +83,5 @@ fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
     plan: BackupPlan = new(args[1], args[2]);
     plan.Discover()@;
     plan.Execute()@;
-    return Result.Ok(0);
+    return Result::Ok(0);
 }

@@ -66,7 +66,7 @@ fn Main() {
 
 // move by return
 
-fn CreateUser() => User {
+fn CreateUser() -> User {
     user: User = new();
 
     return user;
@@ -260,7 +260,7 @@ fn Main() {
 
 // lifetime checking is performed at compile time
 
-fn GetUser() => &User {
+fn GetUser() -> &User {
     user: User = new();
 
     return &user;

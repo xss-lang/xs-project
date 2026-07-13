@@ -50,7 +50,7 @@ for (num in nums.iter()) {
 
 // vector iteration
 
-users: std.collections.vector<Str> = {
+users: std::collections::vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -63,8 +63,8 @@ for (user in users.iter()) {
 
 // empty collection iteration
 
-users: std.collections.vector<Str> =
-    std.collections.vector.new();
+users: std::collections::vector<Str> =
+    std::collections::vector.new();
 
 for (user in users.iter()) {
 
@@ -76,7 +76,7 @@ for (user in users.iter()) {
 
 // indexed iteration
 
-users: std.collections.vector<Str> = {
+users: std::collections::vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -145,7 +145,7 @@ for (user in users.iter()) {
 }
 
 count: Int =
-    std.collections.vector.length(users);
+    std::collections::vector.length(users);
 
 
 // VALID

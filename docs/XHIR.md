@@ -34,7 +34,7 @@ The exact grammar will be tightened as HIR stabilizes, but the intended shape is
 module App
 
 imports
-  import std.io
+  import std::io
 .end
 
 declarations
@@ -49,7 +49,7 @@ declarations
         let message
           type Str
           value string "Hello from X#"
-        call std.io.println
+        call std::io.println
           arguments [message]
 .end
 .program end

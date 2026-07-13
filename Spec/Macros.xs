@@ -436,7 +436,7 @@ fn RepetitionCalls() {
 //
 // - semicolon
 // - vertical bar
-// - =>
+// - ->
 // - any token other than comma
 
 
@@ -789,9 +789,9 @@ macro_rules! invalid_second {
 // Fragment follow restrictions use the Rust declarative-macro rules,
 // limited to tokens and fragments that exist in X#:
 //
-// - expr and stmt may be followed by =>, comma or semicolon.
-// - pat may be followed by =>, comma, =, if or in.
-// - path and ty may be followed by =>, comma, =, |, semicolon,
+// - expr and stmt may be followed by ->, comma or semicolon.
+// - pat may be followed by ->, comma, =, if or in.
+// - path and ty may be followed by ->, comma, =, |, semicolon,
 //   colon, >, >>, [, {, as or a block fragment.
 // - vis may be followed by comma, an identifier, a token that begins
 //   a type, or an ident, ty or path fragment.

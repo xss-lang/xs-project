@@ -29,8 +29,8 @@ valueSFloat: SFloat = 1.0;
 valueFloat: Float = 1.0;
 
 // Optional<T> is resolved as if the compiler had inserted `imports optional`
-// and brought std.optional.Optional<T> into scope as Optional<T>.
-// The value constructors are std.optional.None and std.optional.Some(...).
+// and brought std::optional::Optional<T> into scope as Optional<T>.
+// The value constructors are std::optional::None and std::optional::Some(...).
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
 // There is no nullable T? type operator.
@@ -40,19 +40,19 @@ name = Some("Leitwolf");
 
 // Result is also special. The compiler behaves as if `imports result;` existed
 // and brings the short Result<T, E> wrapper name into scope. Most other STD
-// modules still require qualified std.* names or explicit using declarations.
+// modules still require qualified std::* names or explicit using declarations.
 
-status: Result<Int, Result.Error> = Result.Ok(0);
+status: Result<Int, Result::Error> = Result::Ok(0);
 
-emptyCanonical: std.optional.Optional<Str> = std.optional.None;
-canonicalName: std.optional.Optional<Str> = std.optional.Some("Leitwolf");
+emptyCanonical: std::optional::Optional<Str> = std::optional::None;
+canonicalName: std::optional::Optional<Str> = std::optional::Some("Leitwolf");
 shortName: Optional<Str> = canonicalName;
 
 display: Str = name ?? "guest";
-name ??= std.optional.Some("guest");
+name ??= std::optional::Some("guest");
 
 // Automatic unboxing from Optional<T> to T may fail. New code models that as
-// Result.Error rather than legacy exceptions.
+// Result::Error rather than legacy exceptions.
 
 unboxedName: Str = name;
 forcedName: Str = name!;
@@ -60,12 +60,12 @@ forcedName: Str = name!;
 user: Optional<User> = None;
 city: Optional<Str> = user?.Address?.City;
 
-fn NormalizeOptionalName(value: Optional<Str>) => Result.Result<Str, Result.Error> {
+fn NormalizeOptionalName(value: Optional<Str>) -> Result::Result<Str, Result::Error> {
     if (value == None) {
-        return Result.Error(Result.Error {
+        return Result::Error(Result::Error {
             message: "name is missing",
         });
     }
 
-    return Result.Ok(value!);
+    return Result::Ok(value!);
 }

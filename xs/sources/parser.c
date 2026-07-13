@@ -278,7 +278,7 @@ static bool parse_item(XsParser *parser, XsAst *ast)
     XsAstItem item = {.span = {start, import_span.end}, .body = import_span, .visibility = visibility};
     return xs_ast_push(ast, (XsAstNode){.kind = XS_AST_IMPORT, .item = item});
   }
-  if(accept(parser, XS_TOKEN_KW_FN))
+  if(accept(parser, XS_TOKEN_KW_FN) || accept(parser, XS_TOKEN_KW_OP))
     return parse_function(parser, ast, visibility, is_async, incomplete, start);
   if(accept(parser, XS_TOKEN_KW_MACRO_RULES))
     return parse_macro(parser, ast, start);
@@ -310,6 +310,7 @@ static void synchronize(XsParser *parser)
     case XS_TOKEN_KW_IMPORTS:
     case XS_TOKEN_KW_USING:
     case XS_TOKEN_KW_FN:
+    case XS_TOKEN_KW_OP:
     case XS_TOKEN_KW_CLASS:
     case XS_TOKEN_KW_INTERFACE:
     case XS_TOKEN_KW_DATA:

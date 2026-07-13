@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-module Math.Advanced;
+module Math::Advanced;
 
-public fn Add(a: Int, b: Int) => Int {
+public fn Add(a: Int, b: Int) -> Int {
     return a + b;
 }

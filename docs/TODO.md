@@ -14,7 +14,7 @@ implementation notes and internal design logs are not part of the public documen
 - Finish macro expansion from matched token fragments into AST declarations and statements.
 - Complete HIR symbol, type, generic, method, operator, and interface checks.
 - Complete expression type checking, mutability validation, and async/await validation.
-- Continue the error-handling transition away from deprecated exception syntax toward `Result.Result<T, E>` and `@`
+- Continue the error-handling transition away from deprecated exception syntax toward `Result::Result<T, E>` and `@`
   propagation.
 
 ## Middle end

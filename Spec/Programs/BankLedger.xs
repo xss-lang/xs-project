@@ -4,7 +4,7 @@
 // Complete-language example program:
 // A small two-sided ledger with nominal money and audit records.
 
-module Programs.BankLedger;
+module Programs::BankLedger;
 
 imports collections, std, process, result;
 
@@ -33,12 +33,12 @@ data Transfer {
 }
 
 class Ledger {
-    accounts: std.collections.hash_map<Str, Account>;
-    audit: std.collections.vector<Transfer>;
+    accounts: std::collections::hash_map<Str, Account>;
+    audit: std::collections::vector<Transfer>;
 
     Ledger() {
-        this.accounts = std.collections.hash_map<Str, Account>.new();
-        this.audit = std.collections.vector<Transfer>.new();
+        this.accounts = std::collections::hash_map<Str, Account>.new();
+        this.audit = std::collections::vector<Transfer>.new();
     }
 
     fn Open(id: Str, owner: Str, balance: Money) {
@@ -49,40 +49,40 @@ class Ledger {
         };
     }
 
-    fn Apply(transfer: Transfer) => Result.Result<Void, LedgerError> {
+    fn Apply(transfer: Transfer) -> Result::Result<Void, LedgerError> {
         if (transfer.amount.cents <= 0) {
-            return Result.Error(LedgerError.InvalidAmount(transfer.amount.cents));
+            return Result::Error(LedgerError.InvalidAmount(transfer.amount.cents));
         }
 
         fromAccount: &mut Account = this.AccountMut(transfer.sourceAccount)@;
         toAccount: &mut Account = this.AccountMut(transfer.targetAccount)@;
 
         if (fromAccount.balance.cents < transfer.amount.cents) {
-            return Result.Error(LedgerError.InsufficientFunds(fromAccount.id));
+            return Result::Error(LedgerError.InsufficientFunds(fromAccount.id));
         }
 
         fromAccount.balance.cents -= transfer.amount.cents;
         toAccount.balance.cents += transfer.amount.cents;
         this.audit.push(transfer);
-        return Result.Ok();
+        return Result::Ok();
     }
 
-    fn AccountMut(id: Str) => Result.Result<&mut Account, LedgerError> {
+    fn AccountMut(id: Str) -> Result::Result<&mut Account, LedgerError> {
         if (!this.accounts.contains(id)) {
-            return Result.Error(LedgerError.UnknownAccount(id));
+            return Result::Error(LedgerError.UnknownAccount(id));
         }
-        return Result.Ok(&mut this.accounts[id]);
+        return Result::Ok(&mut this.accounts[id]);
     }
 
-    fn Print() => Result.Result<Void, IOException> {
+    fn Print() -> Result::Result<Void, IOException> {
         for ((id, account): (Str, Account) in this.accounts) {
             println!("{} {} {}", id, account.owner, account.balance.cents);
         }
-        return Result.Ok();
+        return Result::Ok();
     }
 }
 
-fn Main() => Result.Result<Int, Result.Error> {
+fn Main() -> Result::Result<Int, Result::Error> {
     ledger: Ledger = new();
 
     ledger.Open("checking", "Ada", Money {
@@ -101,9 +101,9 @@ fn Main() => Result.Result<Int, Result.Error> {
             cents: 12'500,
             currency: "USD",
         },
-        memo: std.optional.Some("monthly savings"),
+        memo: std::optional::Some("monthly savings"),
     })@;
 
     ledger.Print()@;
-    return Result.Ok(0);
+    return Result::Ok(0);
 }

@@ -83,7 +83,7 @@ static void test_extern_block_symbols(void)
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
                      "extern \"C\" {\n"
-                     "  fn puts(text: std.cffi.CStr) => Int;\n"
+                     "  fn puts(text: std::cffi::CStr) -> Int;\n"
                      "  static errno: Int;\n"
                      "}\n";
   XsSyntaxTree tree;
@@ -103,7 +103,7 @@ static void test_extern_block_duplicate_symbol_errors(void)
 {
   const char *text = "module App;\n"
                      "fn puts() {}\n"
-                     "extern \"C\" { fn puts() => Int; }\n";
+                     "extern \"C\" { fn puts() -> Int; }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsDiagnostics diagnostics;
@@ -137,7 +137,7 @@ static void test_cffi_validation_accepts_repr_c_extern_block(void)
                      "extern \"C\" {\n"
                      "  #[LinkName(\"puts\")]\n"
                      "  #[NoUnwind]\n"
-                     "  fn puts(text: std.cffi.CStr) => Int;\n"
+                     "  fn puts(text: std::cffi::CStr) -> Int;\n"
                      "  #[ThreadLocal]\n"
                      "  #[LinkName(\"errno\")]\n"
                      "  static errno: Int;\n"
@@ -168,7 +168,7 @@ static void test_cffi_validation_accepts_repr_c_extern_block(void)
 static void test_cffi_validation_rejects_missing_repr_c(void)
 {
   const char *text = "module App;\n"
-                     "extern \"C\" { fn puts(text: std.cffi.CStr) => Int; }\n";
+                     "extern \"C\" { fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -181,7 +181,7 @@ static void test_cffi_validation_rejects_unsupported_abi(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"stdcall\" { fn puts(text: std.cffi.CStr) => Int; }\n";
+                     "extern \"stdcall\" { fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -194,7 +194,7 @@ static void test_cffi_validation_rejects_non_c_repr(void)
 {
   const char *text = "module App;\n"
                      "#[repr(Rust)]\n"
-                     "extern \"C\" { fn puts(text: std.cffi.CStr) => Int; }\n";
+                     "extern \"C\" { fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -207,7 +207,7 @@ static void test_cffi_validation_rejects_invalid_link_name(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"C\" { #[LinkName(puts)] fn puts(text: std.cffi.CStr) => Int; }\n";
+                     "extern \"C\" { #[LinkName(puts)] fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -220,7 +220,7 @@ static void test_cffi_validation_rejects_thread_local_function(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"C\" { #[ThreadLocal] fn puts(text: std.cffi.CStr) => Int; }\n";
+                     "extern \"C\" { #[ThreadLocal] fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -246,7 +246,7 @@ static void test_cffi_validation_rejects_block_attribute_on_function(void)
 {
   const char *text = "module App;\n"
                      "#[repr(C)]\n"
-                     "extern \"C\" { #[LinkLibrary(\"c\")] fn puts(text: std.cffi.CStr) => Int; }\n";
+                     "extern \"C\" { #[LinkLibrary(\"c\")] fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
   CHECK(!parse_and_validate_cffi(text, &tree, &diagnostics));
@@ -289,8 +289,8 @@ static void test_import_resolution(void)
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
                      "imports Math;\n"
-                     "using Sum = Math.Add;\n"
-                     "using Math.errno;\n"
+                     "using Sum = Math::Add;\n"
+                     "using Math::errno;\n"
                      "fn Main() {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -329,9 +329,9 @@ static void test_public_namespace_exports_default_symbols(void)
                         "fn Add() {}\n"
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
-                     "imports Math.Advanced;\n"
-                     "using Math.Advanced.Add;\n"
-                     "fn Main() { Math.Advanced.Add(); Add(); }\n";
+                     "imports Math::Advanced;\n"
+                     "using Math::Advanced::Add;\n"
+                     "fn Main() { Math::Advanced::Add(); Add(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -363,7 +363,7 @@ static void test_import_errors(void)
   const char *library = "module Math;\n"
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
-                     "using Math.Hidden;\n";
+                     "using Math::Hidden;\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -385,13 +385,13 @@ static void test_import_errors(void)
 
 static void test_name_use_resolution(void)
 {
-  const char *library = "module Math.Advanced;\n"
-                        "public fn Add(a: Int, b: Int) => Int { return a + b; }\n";
+  const char *library = "module Math::Advanced;\n"
+                        "public fn Add(a: Int, b: Int) -> Int { return a + b; }\n";
   const char *main = "module App;\n"
-                     "imports Math.Advanced;\n"
-                     "using Sum = Math.Advanced.Add;\n"
+                     "imports Math::Advanced;\n"
+                     "using Sum = Math::Advanced::Add;\n"
                      "fn Main() {\n"
-                     "  first: Int = Math.Advanced.Add(1, 2);\n"
+                     "  first: Int = Math::Advanced::Add(1, 2);\n"
                      "  second: Int = Sum(3, 4);\n"
                      "}\n";
   XsSyntaxTree library_tree;
@@ -439,7 +439,7 @@ static void test_qualified_external_name_requires_import(void)
   const char *library = "module Math;\n"
                         "public fn Add() {}\n";
   const char *main = "module App;\n"
-                     "fn Main() { Math.Add(); }\n";
+                     "fn Main() { Math::Add(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -596,7 +596,7 @@ static void test_private_qualified_name_visibility(void)
   const char *library = "module Math;\n"
                         "private fn Hidden() {}\n";
   const char *main = "module App;\n"
-                     "fn Main() { Math.Hidden(); }\n";
+                     "fn Main() { Math::Hidden(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
@@ -621,7 +621,7 @@ static void test_private_same_namespace_name_visibility(void)
 {
   const char *text = "module Math;\n"
                      "private fn Hidden() {}\n"
-                     "fn Main() { Math.Hidden(); }\n";
+                     "fn Main() { Math::Hidden(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirImportScope imports;
@@ -643,7 +643,7 @@ static void test_private_same_namespace_different_file_name_visibility(void)
   const char *library = "module Math;\n"
                         "private fn Hidden() {}\n";
   const char *main = "module Math;\n"
-                     "fn Main() { Math.Hidden(); }\n";
+                     "fn Main() { Math::Hidden(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
