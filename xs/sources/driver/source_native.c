@@ -118,10 +118,12 @@ static bool validate_shape(const XsSyntaxNode *function, bool is_main, XsDiagnos
            false;
   for(size_t i = 0; i + 1 < block->child_count; ++i)
   {
-    if(block->children[i]->kind != XS_SYNTAX_STMT_VARIABLE && block->children[i]->kind != XS_SYNTAX_STMT_EXPRESSION)
-      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block->children[i]),
-                                "native source main body supports only local declarations and assignments before "
-                                "return for now") &&
+    if(block->children[i]->kind != XS_SYNTAX_STMT_VARIABLE && block->children[i]->kind != XS_SYNTAX_STMT_EXPRESSION &&
+       block->children[i]->kind != XS_SYNTAX_STMT_IF)
+      return xs_diagnostics_add(
+                 diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block->children[i]),
+                 "native source main body supports only local declarations, assignments, and if statements before "
+                 "return for now") &&
              false;
   }
   const XsSyntaxNode *statement = block->children[block->child_count - 1];
@@ -762,45 +764,95 @@ static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *c
   return context_assign(context, entry, target->text, type, value, diagnostics, node_span(target), error);
 }
 
+static bool lower_assignment_block(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                   XsText current_function, const XsSyntaxNode *block, XsDiagnostics *diagnostics,
+                                   XsMirError *error)
+{
+  if(block == nullptr || block->kind != XS_SYNTAX_STMT_BLOCK || block->child_count != 1)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block),
+                              "native source if branches must contain exactly one assignment statement for now") &&
+           false;
+  return lower_assignment_statement(entry, context, program, current_function, block->children[0], diagnostics, error);
+}
+
+static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+                               const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                               XsDiagnostics *diagnostics, XsMirError *error)
+{
+  if(statement->child_count < 2 || statement->child_count > 3)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+                              "native source if statements do not support else if in this compiler slice") &&
+           false;
+  XsMirValueId condition = 0;
+  bool invert = false;
+  if(!lower_bool_expression(*current, context, program, current_function, statement->children[0], diagnostics,
+                            &condition, &invert, error))
+    return false;
+  XsMirBlock *then_block = nullptr;
+  XsMirBlock *else_block = nullptr;
+  XsMirBlock *merge_block = nullptr;
+  if(xs_mir_function_append_block(function, "then", &then_block, error) != XS_MIR_OK ||
+     xs_mir_function_append_block(function, "else", &else_block, error) != XS_MIR_OK ||
+     xs_mir_function_append_block(function, "merge", &merge_block, error) != XS_MIR_OK ||
+     xs_mir_block_set_branch(*current, condition, invert ? else_block : then_block, invert ? then_block : else_block,
+                             error) != XS_MIR_OK)
+    return false;
+  if(!lower_assignment_block(then_block, context, program, current_function, statement->children[1], diagnostics,
+                             error) ||
+     xs_mir_block_set_goto(then_block, merge_block, error) != XS_MIR_OK)
+    return false;
+  if(statement->child_count == 3 && !lower_assignment_block(else_block, context, program, current_function,
+                                                            statement->children[2], diagnostics, error))
+    return false;
+  if(xs_mir_block_set_goto(else_block, merge_block, error) != XS_MIR_OK)
+    return false;
+  *current = merge_block;
+  return true;
+}
+
 static bool lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,
                                 const NativeProgram *program, XsDiagnostics *diagnostics, XsMirError *error)
 {
   NativeContext context = {0};
   context_init_parameters(&context, native->function);
+  XsMirBlock *current = entry;
   for(size_t i = 0; i + 1 < native->body->child_count; ++i)
   {
     const XsSyntaxNode *statement = native->body->children[i];
     bool lowered =
         statement->kind == XS_SYNTAX_STMT_VARIABLE
-            ? lower_local_statement(function, entry, &context, program, native->name->text, statement, diagnostics,
+            ? lower_local_statement(function, current, &context, program, native->name->text, statement, diagnostics,
                                     error)
-            : lower_assignment_statement(entry, &context, program, native->name->text, statement, diagnostics, error);
+        : statement->kind == XS_SYNTAX_STMT_IF
+            ? lower_if_statement(function, &current, &context, program, native->name->text, statement, diagnostics,
+                                 error)
+            : lower_assignment_statement(current, &context, program, native->name->text, statement, diagnostics, error);
     if(!lowered)
       return false;
   }
   const XsSyntaxNode *statement = native->body->children[native->body->child_count - 1];
   const XsSyntaxNode *expression = statement->children[0];
   if(expression->kind == XS_SYNTAX_EXPR_IF)
-    return lower_if_return(function, entry, &context, program, native->name->text, expression, diagnostics, error);
+    return lower_if_return(function, current, &context, program, native->name->text, expression, diagnostics, error);
   if(native->return_kind == XS_LIL_TYPE_BOOL)
   {
     XsMirValueId value = 0;
     bool invert = false;
-    if(!lower_bool_expression(entry, &context, program, native->name->text, expression, diagnostics, &value, &invert,
+    if(!lower_bool_expression(current, &context, program, native->name->text, expression, diagnostics, &value, &invert,
                               error))
       return false;
     if(invert)
     {
       XsMirValueId inverted = 0;
-      if(xs_mir_block_not_bool(entry, value, &inverted, error) != XS_MIR_OK)
+      if(xs_mir_block_not_bool(current, value, &inverted, error) != XS_MIR_OK)
         return false;
       value = inverted;
     }
-    return xs_mir_block_set_return_value(entry, value, error) == XS_MIR_OK;
+    return xs_mir_block_set_return_value(current, value, error) == XS_MIR_OK;
   }
   XsMirValueId value = 0;
-  return lower_i32_expression(entry, &context, program, native->name->text, expression, diagnostics, &value, error) &&
-         xs_mir_block_set_return_value(entry, value, error) == XS_MIR_OK;
+  return lower_i32_expression(current, &context, program, native->name->text, expression, diagnostics, &value, error) &&
+         xs_mir_block_set_return_value(current, value, error) == XS_MIR_OK;
 }
 
 static bool build_native_module(const char *input_path, const NativeProgram *program, XsDiagnostics *diagnostics)

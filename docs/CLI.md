@@ -67,7 +67,8 @@ fn main() -> Long { return Add(2, 5); }
 The entry function must be top-level, named `main`, have no parameters, and return `Long`. Same-module helper functions may
 take `Long` parameters and return `Long` or `Bool`. Supported bodies may contain explicit `Long`/`Bool` local bindings or
 inferred `:=` local bindings with i32-compatible or bool-compatible initializers, simple assignments to mutable locals,
-and then one return statement. `val`, `const`, and `static` locals can be initialized but not reassigned. The
+and then one return statement. A statement-level `if` may contain one simple assignment in each branch; the local may be
+read after the branches merge. `val`, `const`, and `static` locals can be initialized but not reassigned. The
 supported return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary
 `-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression
 whose condition is a bool literal, a `Bool` local, a direct same-module `Bool` helper call, unary `!`, or an i32 comparison,

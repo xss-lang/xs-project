@@ -78,6 +78,10 @@ typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated 
 for normal LLVM promotion and scalar optimization. The current source-native bridge uses this path for `Long` and `Bool`
 local initialization, reads, and simple mutable reassignment. `panic` emits an `llvm.trap` call followed by LLVM
 `unreachable`.
+
+The source-native bridge can also lower a statement-level conditional assignment into LLVM conditional branch and merge
+blocks before loading the local for the later return. This remains a narrow source slice; loops, arbitrary branch bodies,
+and general statement lowering are not implemented yet.
 Parameter values are read from the declared
 LLVM function; calls use declarations emitted for the same XLIL registry module. The backend emits declarations from the
 public C API and direct `.xlil` files after they are parsed into the XLIL C model, can write verified LLVM IR text for the

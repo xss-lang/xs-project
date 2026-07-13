@@ -18,6 +18,9 @@ source-to-native executable pipeline.
   `alloca`/`store`/`load`; simple assignments update mutable locals through the same target-independent memory path.
 - MIR borrow validation now distinguishes the first initialization store of an immutable local from a rejected
   reassignment.
+- Source-native builds now lower a statement-level `if` with one simple assignment per branch and a post-branch local
+  read through MIR branch/merge blocks. Immutable initialization uses CFG-aware path state, so assignments on mutually
+  exclusive branches do not spuriously conflict.
 
 ## 0.0.8 - 2026-07-13
 

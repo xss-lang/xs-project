@@ -103,7 +103,9 @@ The documented compilation order is preserved:
   linking.
 - Source-native locals use C MIR local/place records rather than remaining SSA aliases. Their initialization and later
   reads/assignments lower to XLIL slots and LLVM stack operations. MIR validation permits one initialization store for an
-  immutable local and rejects a second store as reassignment.
+  immutable local and rejects a second store as reassignment. The initialization check follows CFG reachability, so two
+  mutually exclusive branch initializations are not treated as sequential reassignment. The current source-native slice
+  also lowers statement-level `if` blocks with one simple assignment in each branch and a merge before the final return.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.

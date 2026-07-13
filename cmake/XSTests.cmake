@@ -127,7 +127,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
-                       MainMutableLocal MainMutableBoolLocal ImmutableLocalReassignment
+                       MainMutableLocal MainMutableBoolLocal MainIfAssignment ImmutableLocalReassignment
                        MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
                        BoolCallAsLongMain)
@@ -268,6 +268,15 @@ add_test(NAME source_native_mutable_bool_local_artifacts COMMAND xs_xse_artifact
                                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainMutableBoolLocal.xse 7)
 set_tests_properties(source_native_mutable_bool_local_artifacts PROPERTIES
                      DEPENDS source_native_mutable_bool_local_build TIMEOUT 5)
+add_test(NAME source_native_if_assignment_build COMMAND xs build -file
+                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.xs)
+set_tests_properties(source_native_if_assignment_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_if_assignment_artifacts COMMAND xs_xse_artifact_tests
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.ll
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.o
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.xse 7 "br i1")
+set_tests_properties(source_native_if_assignment_artifacts PROPERTIES DEPENDS source_native_if_assignment_build TIMEOUT 5)
 add_test(NAME source_native_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xs)
 set_tests_properties(source_native_if_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
@@ -415,6 +424,7 @@ xs_add_c_test(hir_types tests/hir_type_tests.c xs_compiler)
 xs_add_c_test(hir_expressions tests/hir_expression_tests.c xs_compiler)
 xs_add_c_test(xlil tests/xlil_tests.c xs_compiler)
 xs_add_c_test(mir tests/mir_tests.c xs_compiler)
+xs_add_c_test(mir_flow tests/mir_flow_tests.c xs_compiler)
 xs_add_c_test(syntax_ast tests/syntax_ast_tests.c xs_compiler)
 xs_add_c_test(syntax_decl tests/syntax_decl_tests.c xs_compiler)
 xs_add_c_test(syntax_macro tests/syntax_macro_tests.c xs_compiler)
