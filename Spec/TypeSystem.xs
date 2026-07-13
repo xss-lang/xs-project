@@ -6,7 +6,8 @@
 // Primitive type names are nominal language types.
 // Even when two user-defined types have the same fields, type identity is
 // based on the declared name.
-// Str is an immutable UTF-16LE/UTF-16BE static string reference, like Rust &'static str.
+// Str is an immutable UTF-16 static string reference, like Rust &'static str.
+// The compiler selects UTF-16LE or UTF-16BE automatically for the target/runtime situation.
 // Optional<Str> is an owned optional string value, like Rust Option<String>.
 
 valueStr: Str = "text";

@@ -50,8 +50,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
   before C foreign-function declarations and the canonical helper types under `std::cffi::*`.
 - `Optional<T>` is available as if the compiler had inserted `imports optional; using namespace std::optional;`, making
   `std::optional::Optional<T>` available as `Optional<T>`.
-- `Str` is the X# UTF-16LE/UTF-16BE equivalent of Rust's `&'static str`, while `Optional<Str>` is modeled like Rust's
-  `Option<String>` with an owned optional string payload.
+- `Str` is the X# UTF-16 equivalent of Rust's `&'static str`; the compiler/runtime selects UTF-16LE or UTF-16BE
+  automatically for the target/runtime situation. `Optional<Str>` is modeled like Rust's `Option<String>` with an owned
+  optional string payload.
 - X# uses `else` for placeholder/default positions. Type and lifetime placeholders are written as `Type<else, Foo>` and
   `&'else T`; Rust-style `_` placeholders are not canonical X# syntax.
 - Statement/expression separation follows Rust: `expression;` evaluates and discards the value, while the final expression

@@ -265,10 +265,10 @@ validation does not decide dispatch, override, or overload selection.
 - `Char` is a 16-bit UTF-16 code-unit type.
 - Signed integer widths are `Short`/`Long`/`Int`/`Integer` = i16/i32/i64/i128; unsigned widths are
   `UShort`/`ULong`/`UInt`/`UInteger` = u16/u32/u64/u128. `SFloat` and `Float` map to f32 and f64.
-- `Str` is encoded as UTF-16LE or UTF-16BE; its length is considered unbounded except by the representation allowed by
-  UTF-16.
-- Semantically, `Str` is the UTF-16LE/UTF-16BE X# counterpart of Rust's `&'static str`: an immutable static string
-  reference. Its runtime layout remains deferred and it is not yet lowered to XLIL storage.
+- `Str` is encoded as UTF-16; the compiler/runtime selects UTF-16LE or UTF-16BE automatically for the target/runtime
+  situation. Its length is considered unbounded except by the representation allowed by UTF-16.
+- Semantically, `Str` is the X# counterpart of Rust's `&'static str`: an immutable static string reference. Its runtime
+  layout remains deferred and it is not yet lowered to XLIL storage.
 - `Optional<T>` resolves as if the compiler had inserted `imports optional; using namespace std::optional;`, making
   `std::optional::Optional<T>` available as `Optional<T>`. Optional value constructors are canonically
   `std::optional::None` and `std::optional::Some(...)`, with `None` and `Some(...)` available through that implicit
