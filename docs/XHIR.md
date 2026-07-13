@@ -67,7 +67,7 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - `function <name>` with `signature`, `locals`, and `body`
 - explicit `.end` section markers and `.program end` document marker
 - primitive and named type records
-- literal, local, assignment, typed direct-call, conditional block, loop, statement-match, `propagate`, let, expression,
+- literal, local, assignment, typed direct-call, conditional block, loop, classic-for, statement-match, `propagate`, let, expression,
   and return records
 - `analysis typecheck` records for type-check diagnostics, spans, and messages
 
@@ -126,6 +126,38 @@ if_expression Long
 ```
 
 The `.end` records, rather than indentation, delimit each branch.
+
+Classic `for` records retain the semantic header positions instead of encoding them through indentation:
+
+```text
+for
+  initializer
+    let index
+      type Long
+      mutability mutable
+      initializer
+        literal integer 0
+  condition
+    binary lt
+      left
+        local index
+      right
+        literal integer 3
+  update
+    assign index
+      binary add
+        left
+          local index
+        right
+          literal integer 1
+  body
+    expression
+      local index
+  .end
+.end
+```
+
+Any omitted initializer, condition, or update section is absent from the record. The body and final `.end` remain required.
 
 ## Non-goals
 

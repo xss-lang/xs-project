@@ -233,13 +233,13 @@ static bool text_is_cstr(XsText text, const char *value)
 static bool is_stdio_macro(XsText name)
 {
   return text_is_cstr(name, "print") || text_is_cstr(name, "println") || text_is_cstr(name, "eprint") ||
-         text_is_cstr(name, "eprintln") || text_is_cstr(name, "format") || text_is_cstr(name, "write") ||
-         text_is_cstr(name, "writeln");
+         text_is_cstr(name, "eprintln") || text_is_cstr(name, "format");
 }
 
 static bool is_builtin_macro(XsText name)
 {
-  return text_is_cstr(name, "include") || text_is_cstr(name, "format_args");
+  return text_is_cstr(name, "include") || text_is_cstr(name, "format_args") || text_is_cstr(name, "write") ||
+         text_is_cstr(name, "writeln");
 }
 
 static bool is_format_args_macro(XsText name)
@@ -252,12 +252,12 @@ static bool stdio_macro_allows_empty(XsText name)
   return text_is_cstr(name, "println") || text_is_cstr(name, "eprintln");
 }
 
-static bool is_stdio_write_macro(XsText name)
+static bool is_writer_macro(XsText name)
 {
   return text_is_cstr(name, "write") || text_is_cstr(name, "writeln");
 }
 
-static bool stdio_write_macro_allows_destination_only(XsText name)
+static bool writer_macro_allows_destination_only(XsText name)
 {
   return text_is_cstr(name, "writeln");
 }
@@ -492,50 +492,49 @@ static bool count_stdio_placeholders(XsText literal, size_t *count)
   return true;
 }
 
-static void validate_stdio_macro_call(const XsSyntaxNode *call, XsText name, XsDiagnostics *diagnostics)
+static void validate_formatting_macro_call(const XsSyntaxNode *call, XsText name, XsDiagnostics *diagnostics)
 {
-  if(!is_stdio_macro(name) && !is_format_args_macro(name))
+  if(!is_stdio_macro(name) && !is_format_args_macro(name) && !is_writer_macro(name))
     return;
   XsSpan span = {.start = call->span.start_offset, .end = call->span.end_offset};
-  if(is_stdio_write_macro(name))
+  if(is_writer_macro(name))
   {
     if(call->child_count == 1)
     {
-      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "stdio write macro requires a destination argument");
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "writer macro requires a destination argument");
       return;
     }
     size_t destination_comma = 0;
     if(!find_top_level_comma(call, 1, &destination_comma))
     {
-      if(!stdio_write_macro_allows_destination_only(name))
-        xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                           "stdio write macro requires a format string argument");
+      if(!writer_macro_allows_destination_only(name))
+        xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "writer macro requires a format string argument");
       return;
     }
     size_t format_index = destination_comma + 1;
     if(call->child_count <= format_index || call->children[format_index]->token_kind != XS_TOKEN_STRING)
     {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                         "stdio write macro format argument must be a string literal");
+                         "writer macro format argument must be a string literal");
       return;
     }
     size_t format_comma = format_index + 1;
     if(call->child_count > format_comma && call->children[format_comma]->token_kind != XS_TOKEN_COMMA)
     {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                         "stdio write macro format string must be followed by ',' before arguments");
+                         "writer macro format string must be followed by ',' before arguments");
       return;
     }
     size_t placeholders = 0;
     if(!count_stdio_placeholders(call->children[format_index]->text, &placeholders))
     {
-      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "stdio write macro format string is malformed");
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "writer macro format string is malformed");
       return;
     }
     size_t arguments = count_stdio_format_arguments_after(call, format_comma);
     if(placeholders != arguments)
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                         "stdio write macro placeholder count must match the number of format arguments");
+                         "writer macro placeholder count must match the number of format arguments");
     return;
   }
   if(is_format_args_macro(name) && call->child_count == 1)
@@ -663,7 +662,7 @@ static void validate_node_calls(const XsSyntaxTree *tree, const XsSyntaxNode *no
     }
     if(macro == nullptr)
     {
-      validate_stdio_macro_call(node, name, diagnostics);
+      validate_formatting_macro_call(node, name, diagnostics);
       return;
     }
     MatchStatus status = macro_matches_call(macro, node);

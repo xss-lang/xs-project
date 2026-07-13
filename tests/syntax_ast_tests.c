@@ -137,7 +137,12 @@ static void test_control_flow_structure(void)
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 9, &diagnostics, &tree));
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_FOR) != nullptr);
+  const XsSyntaxNode *classic_for = xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_FOR);
+  CHECK(classic_for != nullptr);
+  CHECK(classic_for == nullptr ||
+        (classic_for->flags &
+         (XS_SYNTAX_FLAG_FOR_INITIALIZER | XS_SYNTAX_FLAG_FOR_CONDITION | XS_SYNTAX_FLAG_FOR_UPDATE)) ==
+            (XS_SYNTAX_FLAG_FOR_INITIALIZER | XS_SYNTAX_FLAG_FOR_CONDITION | XS_SYNTAX_FLAG_FOR_UPDATE));
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_WHILE) != nullptr);
   const XsSyntaxNode *post_test = find_kind_with_flag(tree.root, XS_SYNTAX_STMT_WHILE, XS_SYNTAX_FLAG_POST_TEST_LOOP);
   CHECK(post_test != nullptr);

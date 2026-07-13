@@ -15,10 +15,8 @@ imports fs, stdio;
 
 // result data model
 
-enum data Result<T, E> {
-    Ok: T,
-    Error: E,
-}
+// The compiler provides Result<T, E> and its Ok(T)/Error(E) variants. User
+// source does not redeclare that enum data type.
 
 data Error {
     message: Str,
@@ -26,6 +24,9 @@ data Error {
 
 // Result<T> is the canonical shorthand for Result<T, Error>.
 // Unit success is written as Result<()>, not Result<(), Error>.
+// Result is not the default return type. A function with no written return type
+// returns unit. Other functions may declare another type. A body that uses postfix `@`, constructs
+// `Ok(...)`, or constructs `Error(...)` must declare a Result return type.
 
 
 // success construction
@@ -59,7 +60,7 @@ fn read_file_explicit(path: Str) -> Result<Optional<Str>, Error> {
         Error(error) -> return Error(error),
     };
 
-    content: Optional<Str> = std::optional::Some("");
+    content: Optional<Str> = Some("");
 
     match (file.read_to_string(&mut content)) {
         Ok(else) -> {},
@@ -74,7 +75,7 @@ fn read_file_explicit(path: Str) -> Result<Optional<Str>, Error> {
 
 fn read_file(path: Str) -> Result<Optional<Str>, Error> {
     file = std::fs::File::open(path)@;
-    content: Optional<Str> = std::optional::Some("");
+    content: Optional<Str> = Some("");
     file.read_to_string(&mut content)@;
     return Ok(content);
 }
@@ -83,7 +84,7 @@ fn read_file(path: Str) -> Result<Optional<Str>, Error> {
 // expect and unwrap
 
 fn read_required_line() -> Str {
-    line: Optional<Str> = std::optional::Some("");
+    line: Optional<Str> = Some("");
 
     std::stdin()
         .read_line(&mut line)

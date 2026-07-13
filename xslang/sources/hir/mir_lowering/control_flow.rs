@@ -173,6 +173,85 @@ impl HirToMirLowerer
     self.switch_to(exit);
   }
 
+  pub(super) fn lower_for_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
+  {
+    let Statement::For { initializer,
+                         condition,
+                         update,
+                         body,
+                         span, } = statement
+    else
+    {
+      return;
+    };
+    if self.current_is_terminated(lowered)
+    {
+      return;
+    }
+
+    let outer_locals = self.locals.clone();
+    if let Some(initializer) = initializer
+    {
+      self.lower_statement(initializer, lowered);
+    }
+    let loop_locals = self.locals.clone();
+    let preheader = self.current_block;
+    let header = self.append_block(*span, lowered);
+    let body_id = self.append_block(body.span, lowered);
+    let update_id = self.append_block(*span, lowered);
+    let exit = self.append_block(*span, lowered);
+    self.switch_to(preheader);
+    self.set_terminator(mir::Terminator::Goto(header), *span, lowered);
+
+    self.switch_to(header);
+    let condition = match condition
+    {
+      Some(condition) => self.lower_expression_to_local(condition, XlilType::BOOL, lowered),
+      None =>
+      {
+        let result = self.declare_temp(XlilType::BOOL, *span, lowered);
+        if let Some(result) = result
+        {
+          self.lower_literal_into(result, &Literal::Bool(true), *span, lowered);
+        }
+        result
+      }
+    };
+    let Some(condition) = condition
+    else
+    {
+      return;
+    };
+    self.set_terminator(mir::Terminator::BranchIf { condition,
+                                                    then_block: body_id,
+                                                    else_block: exit },
+                        *span,
+                        lowered);
+
+    self.loop_targets.push((update_id, exit));
+    self.switch_to(body_id);
+    self.lower_block_statements(body, lowered);
+    if !self.current_is_terminated(lowered)
+    {
+      self.set_terminator(mir::Terminator::Goto(update_id), body.span, lowered);
+    }
+    self.loop_targets.pop();
+
+    self.locals.clone_from(&loop_locals);
+    self.switch_to(update_id);
+    if let Some(update) = update
+    {
+      self.lower_statement(&Statement::Expr(update.clone()), lowered);
+    }
+    if !self.current_is_terminated(lowered)
+    {
+      self.set_terminator(mir::Terminator::Goto(header), *span, lowered);
+    }
+
+    self.locals = outer_locals;
+    self.switch_to(exit);
+  }
+
   pub(super) fn lower_loop_jump(&mut self, is_continue: bool, span: Span, lowered: &mut mir::Function)
   {
     let Some((header, exit)) = self.loop_targets.last().copied()

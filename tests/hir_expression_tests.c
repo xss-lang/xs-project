@@ -236,6 +236,9 @@ static void test_result_propagation_requires_result_return(void)
                                          "Ok(1); }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn DoWork() -> Result<Int, Error> { return "
                                          "Ok(1); }\nfn Main() { DoWork()@; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Plain() { return; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() -> Int { return Ok(1); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() -> () { Error(Error { message: \"x\" }); }\n"));
 }
 
 static void test_macro_literal_initializer_expression_errors(void)

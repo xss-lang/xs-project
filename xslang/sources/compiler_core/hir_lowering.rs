@@ -29,6 +29,7 @@ const STMT_VARIABLE: u32 = 40;
 const STMT_RETURN: u32 = 41;
 const STMT_IF: u32 = 42;
 const STMT_ELSE_IF: u32 = 43;
+const STMT_FOR: u32 = 44;
 const STMT_WHILE: u32 = 46;
 const STMT_MATCH: u32 = 47;
 const MATCH_ARM: u32 = 48;
@@ -37,6 +38,7 @@ const STMT_CONTINUE: u32 = 50;
 const EXPR_IDENTIFIER: u32 = 56;
 const EXPR_LITERAL: u32 = 57;
 const EXPR_BINARY: u32 = 58;
+const EXPR_UNARY: u32 = 59;
 const EXPR_ASSIGNMENT: u32 = 60;
 const EXPR_CALL: u32 = 61;
 const EXPR_IF: u32 = 81;
@@ -49,8 +51,13 @@ const TOKEN_GREATER_EQUAL: u32 = 33;
 const TOKEN_LESS: u32 = 35;
 const TOKEN_LESS_EQUAL: u32 = 36;
 const TOKEN_PLUS: u32 = 38;
+const TOKEN_PLUS_PLUS: u32 = 39;
+const TOKEN_PLUS_ASSIGN: u32 = 40;
 const TOKEN_MINUS: u32 = 41;
+const TOKEN_MINUS_MINUS: u32 = 42;
+const TOKEN_MINUS_ASSIGN: u32 = 43;
 const TOKEN_STAR: u32 = 44;
+const TOKEN_STAR_ASSIGN: u32 = 45;
 const TOKEN_ASSIGN: u32 = 24;
 const IMMUTABLE: u32 = 1 << 4;
 const CONSTANT: u32 = 1 << 5;
@@ -59,6 +66,9 @@ const RETURN_TYPE: u32 = 1 << 11;
 const INFERRED_TYPE: u32 = 1 << 12;
 const DISCARDED: u32 = 1 << 21;
 const POST_TEST_LOOP: u32 = 1 << 25;
+const FOR_INITIALIZER: u32 = 1 << 27;
+const FOR_CONDITION: u32 = 1 << 28;
+const FOR_UPDATE: u32 = 1 << 29;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LoweringError
@@ -238,7 +248,7 @@ fn lower_expression(tree: &SyntaxTree,
                                 right: Box::new(right),
                                 span: source_span })
     }
-    EXPR_ASSIGNMENT if value.token_kind == TOKEN_ASSIGN && value.children.len() == 3 =>
+    EXPR_ASSIGNMENT if value.children.len() == 3 =>
     {
       let target = tree.nodes.get(value.children[0])?;
       if target.kind != EXPR_IDENTIFIER
@@ -251,6 +261,26 @@ fn lower_expression(tree: &SyntaxTree,
                                       signatures,
                                       locals,
                                       locals.get(&target))?;
+      let assigned = match value.token_kind
+      {
+        TOKEN_ASSIGN => assigned,
+        TOKEN_PLUS_ASSIGN | TOKEN_MINUS_ASSIGN | TOKEN_STAR_ASSIGN =>
+        {
+          let operator = match value.token_kind
+          {
+            TOKEN_PLUS_ASSIGN => BinaryOperator::Add,
+            TOKEN_MINUS_ASSIGN => BinaryOperator::Sub,
+            TOKEN_STAR_ASSIGN => BinaryOperator::Mul,
+            _ => return None,
+          };
+          Expression::Binary { operator,
+                               left: Box::new(Expression::Local { name: target.clone(),
+                                                                  span: source_span }),
+                               right: Box::new(assigned),
+                               span: source_span }
+        }
+        _ => return None,
+      };
       Some(Expression::Assign { target,
                                 value: Box::new(assigned),
                                 span: source_span })
@@ -317,6 +347,49 @@ fn lower_expression(tree: &SyntaxTree,
   }
 }
 
+fn lower_discarded_expression(tree: &SyntaxTree,
+                              value: &SyntaxNode,
+                              signatures: &HashMap<String, CallSignature>,
+                              locals: &HashMap<String, Type>,
+                              expected_type: Option<&Type>)
+                              -> Option<Expression>
+{
+  if value.kind == EXPR_UNARY &&
+     matches!(value.token_kind, TOKEN_PLUS_PLUS | TOKEN_MINUS_MINUS) &&
+     value.children.len() == 1
+  {
+    let target = tree.nodes.get(value.children[0])?;
+    if target.kind != EXPR_IDENTIFIER ||
+       locals.get(&path_text(tree, target)) != Some(&Type::Primitive(PrimitiveType::Long))
+    {
+      return None;
+    }
+    let target = path_text(tree, target);
+    let source_span = span(value)?;
+    let operator = if value.token_kind == TOKEN_PLUS_PLUS
+    {
+      BinaryOperator::Add
+    }
+    else
+    {
+      BinaryOperator::Sub
+    };
+    return Some(Expression::Assign {
+      target: target.clone(),
+      value: Box::new(Expression::Binary {
+        operator,
+        left: Box::new(Expression::Local { name: target,
+                                           span: source_span }),
+        right: Box::new(Expression::Literal { literal: Literal::Integer("1".to_string()),
+                                              span: source_span }),
+        span: source_span,
+      }),
+      span: source_span,
+    });
+  }
+  lower_expression(tree, value, signatures, locals, expected_type)
+}
+
 fn expression_type(tree: &SyntaxTree,
                    value: &SyntaxNode,
                    signatures: &HashMap<String, CallSignature>,
@@ -351,7 +424,14 @@ fn lower_local(tree: &SyntaxTree,
                locals: &mut HashMap<String, Type>)
                -> Option<Statement>
 {
-  let declaration = first_child_kind(tree, statement, DECL_VARIABLE)?;
+  let declaration = if statement.kind == DECL_VARIABLE
+  {
+    statement
+  }
+  else
+  {
+    first_child_kind(tree, statement, DECL_VARIABLE)?
+  };
   if declaration.flags & INFERRED_TYPE != 0
   {
     return None;
@@ -417,10 +497,11 @@ fn lower_statement_node(tree: &SyntaxTree,
       {
         None
       };
-      lower_expression(tree, expression, signatures, locals, expected).map(Statement::Expr)
+      lower_discarded_expression(tree, expression, signatures, locals, expected).map(Statement::Expr)
     }
     STMT_VARIABLE => lower_local(tree, statement, signatures, locals),
     STMT_IF => lower_if_statement(tree, statement, signatures, locals, return_type),
+    STMT_FOR => lower_for_statement(tree, statement, signatures, locals, return_type),
     STMT_WHILE => lower_while_statement(tree, statement, signatures, locals, return_type),
     STMT_MATCH => lower_match_statement(tree, statement, signatures, locals, return_type),
     STMT_BREAK => Some(Statement::Break { span: span(statement)? }),
@@ -574,6 +655,75 @@ fn lower_while_statement(tree: &SyntaxTree,
   Some(Statement::While { condition,
                           body,
                           span: span(statement)? })
+}
+
+fn lower_for_statement(tree: &SyntaxTree,
+                       statement: &SyntaxNode,
+                       signatures: &HashMap<String, CallSignature>,
+                       locals: &HashMap<String, Type>,
+                       return_type: Option<&Type>)
+                       -> Option<Statement>
+{
+  let body_node = statement.children.last().and_then(|index| tree.nodes.get(*index))?;
+  if body_node.kind != STMT_BLOCK
+  {
+    return None;
+  }
+  let mut for_locals = locals.clone();
+  let mut cursor = 0usize;
+  let initializer = if statement.flags & FOR_INITIALIZER != 0
+  {
+    let node = tree.nodes.get(*statement.children.get(cursor)?)?;
+    cursor += 1;
+    let lowered = if node.kind == DECL_VARIABLE
+    {
+      lower_local(tree, node, signatures, &mut for_locals)?
+    }
+    else
+    {
+      Statement::Expr(lower_discarded_expression(tree, node, signatures, &for_locals, None)?)
+    };
+    Some(Box::new(lowered))
+  }
+  else
+  {
+    None
+  };
+  let condition = if statement.flags & FOR_CONDITION != 0
+  {
+    let node = tree.nodes.get(*statement.children.get(cursor)?)?;
+    cursor += 1;
+    Some(lower_expression(tree,
+                          node,
+                          signatures,
+                          &for_locals,
+                          Some(&Type::Primitive(PrimitiveType::Bool)))?)
+  }
+  else
+  {
+    None
+  };
+  let update = if statement.flags & FOR_UPDATE != 0
+  {
+    let node = tree.nodes.get(*statement.children.get(cursor)?)?;
+    cursor += 1;
+    Some(lower_discarded_expression(tree, node, signatures, &for_locals, None)?)
+  }
+  else
+  {
+    None
+  };
+  if statement.children.get(cursor).copied() != statement.children.last().copied()
+  {
+    return None;
+  }
+  let mut body_locals = for_locals;
+  let body = lower_hir_block(tree, body_node, signatures, &mut body_locals, return_type, None)?;
+  Some(Statement::For { initializer,
+                        condition,
+                        update,
+                        body,
+                        span: span(statement)? })
 }
 
 fn lower_match_statement(tree: &SyntaxTree,

@@ -12,7 +12,7 @@
 //
 // After a move, the source value becomes invalid.
 //
-// Borrowing follows Rust-style rules.
+// Borrowing follows the X# ownership rules below.
 //
 // Immutable borrow:
 // &T

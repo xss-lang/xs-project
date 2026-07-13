@@ -19,6 +19,8 @@ mod call_tests;
 #[cfg(test)]
 mod conditional_tests;
 #[cfg(test)]
+mod for_tests;
+#[cfg(test)]
 mod match_tests;
 mod statement_writer;
 

@@ -4,12 +4,11 @@
 // Stdio module:
 
 //
-// Stdio provides formatted text output macros, formatted writer macros, and
-// standard stream functions.
-// print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
-// exported Stdio macros.
+// Stdio provides formatted text output macros and standard stream functions.
+// print!, println!, eprint!, eprintln!, and format! are exported Stdio macros.
 // They are available through `imports stdio`, not as compiler built-ins.
-// format_args! is a built-in macro, not a Stdio export.
+// format_args!, write!, and writeln! are built-in macros and do not require
+// Stdio to be imported.
 //
 // Stdio does not provide filesystem operations.
 // Filesystem operations belong to the FS module.
@@ -18,55 +17,55 @@
 // Formatted output uses placeholder-based formatting.
 //
 
-imports stdio, fs, collections, result;
+imports stdio, fs, collections;
 
 
 // standard output macros
 
-fn print_without_newline() -> Result<()> {
+fn print_without_newline() {
     print!("Hello");
 }
 
-fn print_with_newline() -> Result<()> {
+fn print_with_newline() {
     println!("Hello");
 }
 
-fn print_newline_only() -> Result<()> {
+fn print_newline_only() {
     println!();
 }
 
 
 // standard error macros
 
-fn error_without_newline() -> Result<()> {
+fn error_without_newline() {
     eprint!("error");
 }
 
-fn error_with_newline() -> Result<()> {
+fn error_with_newline() {
     eprintln!("error");
 }
 
-fn error_newline_only() -> Result<()> {
+fn error_newline_only() {
     eprintln!();
 }
 
 // writer macros
 
-fn write_to_stream() -> Result<()> {
+fn write_to_stream() {
     write!(std::stdout(), "Hello");
 }
 
-fn write_line_to_stream() -> Result<()> {
+fn write_line_to_stream() {
     writeln!(std::stdout(), "{} is {}", "Alpha", 26);
 }
 
-fn write_newline_only_to_stream() -> Result<()> {
+fn write_newline_only_to_stream() {
     writeln!(std::stdout());
 }
 
 // formatting
 
-fn format_values() -> Result<()> {
+fn format_values() {
     user: Str = "Alpha";
     age: Int = 26;
 
@@ -83,13 +82,13 @@ fn format_values() -> Result<()> {
 // println! and eprintln! either take no arguments or use the same format
 // template form as print!/eprint!. With no arguments they write exactly one
 // newline. With arguments they append exactly one newline after the formatted
-// text. This matches Rust 1.57 output macro behavior.
+// text.
 //
 // write! requires a destination expression followed by a Str format template.
 // writeln! either takes only a destination expression or a destination followed
 // by the same format template form. With only a destination it writes exactly
 // one newline. With a template it appends exactly one newline after the
-// formatted text. This matches Rust 1.57 writer macro behavior.
+// formatted text.
 //
 // "{}" formats one value with the Display formatter.
 // "{:?}" formats one value with the Debug formatter.
@@ -100,9 +99,56 @@ fn format_values() -> Result<()> {
 // Placeholder count must match the number of following arguments.
 
 
+// conceptual macro expansion
+
+// Stdio macros and built-in writer macros expand during AST macro expansion,
+// before HIR construction.
+// The following calls describe their semantic result; implementations may use
+// equivalent compiler/runtime intrinsics without exposing those intrinsics as
+// source-level macros:
+//
+// print!(template, values...)
+//   -> write!(std::stdout(), template, values...)
+// println!(template, values...)
+//   -> writeln!(std::stdout(), template, values...)
+// println!()
+//   -> writeln!(std::stdout())
+// eprint!(template, values...)
+//   -> write!(std::stderr(), template, values...)
+// eprintln!(template, values...)
+//   -> writeln!(std::stderr(), template, values...)
+// eprintln!()
+//   -> writeln!(std::stderr())
+// write!(destination, template, values...)
+//   -> std::write_format(destination, format_args!(template, values...))
+// writeln!(destination, template, values...)
+//   -> std::write_format_line(destination, format_args!(template, values...))
+// writeln!(destination)
+//   -> std::write_format_line(destination, format_args!(""))
+// format!(template, values...)
+//   -> std::format(format_args!(template, values...))
+//
+// Therefore print!/println!/eprint!/eprintln! delegate to the built-in
+// write!/writeln! macros. They do not independently bypass the writer macros
+// and call the runtime formatting boundary.
+//
+// std::write_format and std::write_format_line consume a FormatArguments value
+// and return Result<>. The line form appends exactly one target newline after
+// the formatted content. std::format materializes the formatted UTF-16 Str.
+// These functions are the conceptual Stdio runtime boundary.
+//
+// A destination expression is evaluated exactly once. Format arguments are
+// evaluated exactly once from left to right after the destination, and before
+// the runtime write begins. The template is validated at compile time.
+// Expansion introduces hygienic temporary bindings when required; those names
+// cannot collide with user declarations. A macro invocation must still match
+// exactly one rule.
+
+
 // format! returns Str and does not write to a stream.
 // Built-in format_args! returns the formatting argument value used by output
-// and writer macros and does not write to a stream.
+// and writer macros and does not write to a stream. Built-in write! and
+// writeln! accept any compatible destination without importing Stdio.
 
 fn build_message() {
     user1: Str = "Alpha";
@@ -115,11 +161,11 @@ fn build_message() {
     hex_age: Str = format!("{:#x}", 26);
 }
 
-fn write_report_line(name: Str, score: Int) -> Result<()> {
+fn write_report_line(name: Str, score: Int) {
     writeln!(std::stdout(), "{:<16} {:>4}", name, score);
 }
 
-fn write_debug_report<T>(value: T) -> Result<()> {
+fn write_debug_report<T>(value: T) {
     write!(std::stderr(), "{:#?}", value);
     writeln!(std::stderr());
 }
@@ -127,7 +173,7 @@ fn write_debug_report<T>(value: T) -> Result<()> {
 
 // standard stream functions
 
-fn standard_handles() -> Result<()> {
+fn standard_handles() {
     std::fs::write(std::stdout(), "stdout text\n");
     std::fs::write(std::stderr(), "stderr text\n");
 
@@ -144,7 +190,7 @@ fn standard_handles() -> Result<()> {
 // line input
 
 fn read_line() {
-    input: Optional<Str> = std::optional::Some("");
+    input: Optional<Str> = Some("");
 
     std::stdin()
         .read_line(&mut input)
@@ -154,7 +200,7 @@ fn read_line() {
 }
 
 fn read_number() {
-    input: Optional<Str> = std::optional::Some("");
+    input: Optional<Str> = Some("");
 
     std::stdin()
         .read_line(&mut input)
@@ -165,7 +211,7 @@ fn read_number() {
 }
 
 fn read_many_numbers() {
-    input: Optional<Str> = std::optional::Some("");
+    input: Optional<Str> = Some("");
 
     std::stdin()
         .read_line(&mut input)
@@ -183,28 +229,28 @@ fn read_many_numbers() {
 
 // invalid examples
 
-fn invalid_non_string_template() -> Result<()> {
+fn invalid_non_string_template() {
     println!(10);
 }
 
 // INVALID: println! expects a Str format template as its first argument.
 
 
-fn invalid_missing_placeholder() -> Result<()> {
+fn invalid_missing_placeholder() {
     println!("value", 10);
 }
 
 // INVALID: one argument is supplied but the template has no placeholder.
 
 
-fn invalid_missing_argument() -> Result<()> {
+fn invalid_missing_argument() {
     println!("{}",);
 }
 
 // INVALID: the template has one placeholder but no value argument.
 
 
-fn invalid_empty_print() -> Result<()> {
+fn invalid_empty_print() {
     print!();
 }
 

@@ -391,7 +391,7 @@ set_tests_properties(source_native_for_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
 add_test(NAME source_native_for_artifacts COMMAND xs_xse_artifact_tests ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFor.ll
                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFor.o
-                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFor.xse 8 "for.update")
+                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFor.xse 8 "icmp slt i32")
 set_tests_properties(source_native_for_artifacts PROPERTIES DEPENDS source_native_for_build TIMEOUT 5)
 add_test(NAME source_native_postfix_decrement_build COMMAND xs build -file
                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainPostfixDecrement.xs)

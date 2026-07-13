@@ -88,6 +88,20 @@ fn statement_calls(statement: &Statement, name: &str) -> bool
     Statement::While { condition,
                        body,
                        .. } => expression_calls(condition, name) || block_calls(body, name),
+    Statement::For { initializer,
+                     condition,
+                     update,
+                     body,
+                     .. } =>
+    {
+      initializer.as_deref()
+                 .is_some_and(|statement| statement_calls(statement, name)) ||
+      condition.as_ref()
+               .is_some_and(|expression| expression_calls(expression, name)) ||
+      update.as_ref()
+            .is_some_and(|expression| expression_calls(expression, name)) ||
+      block_calls(body, name)
+    }
     Statement::Match { selector,
                        arms,
                        .. } => expression_calls(selector, name) || arms.iter().any(|arm| block_calls(&arm.body, name)),

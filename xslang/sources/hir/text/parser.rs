@@ -228,6 +228,7 @@ impl Parser<'_>
       "return" => Some(self.return_statement()),
       "if" => Some(self.if_statement()),
       "while" => Some(self.while_statement()),
+      "for" => Some(self.for_statement()),
       line if line.starts_with("match ") => Some(self.match_statement()),
       "break" => Some(self.break_statement()),
       "continue" => Some(self.continue_statement()),
@@ -327,6 +328,44 @@ impl Parser<'_>
     Statement::While { condition,
                        body,
                        span: span() }
+  }
+
+  fn for_statement(&mut self) -> Statement
+  {
+    self.index += 1;
+    let initializer = if self.current().as_deref() == Some("initializer")
+    {
+      self.index += 1;
+      self.statement().map(Box::new)
+    }
+    else
+    {
+      None
+    };
+    let condition = if self.current().as_deref() == Some("condition")
+    {
+      self.index += 1;
+      self.expression()
+    }
+    else
+    {
+      None
+    };
+    let update = if self.current().as_deref() == Some("update")
+    {
+      self.index += 1;
+      self.expression()
+    }
+    else
+    {
+      None
+    };
+    let body = self.named_block("body");
+    Statement::For { initializer,
+                     condition,
+                     update,
+                     body,
+                     span: span() }
   }
 
   fn match_statement(&mut self) -> Statement

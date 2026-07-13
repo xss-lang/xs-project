@@ -209,7 +209,7 @@ The documented compilation order is preserved:
 - `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
   `continue`, and `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous
   to a Rust discard binding, but X# spells the discard/default position as `else`.
-- Expression statements follow Rust's semicolon split: `expression;` is marked with `XS_SYNTAX_FLAG_DISCARDED`, while a
+- Expression statements distinguish discarded and tail values: `expression;` is marked with `XS_SYNTAX_FLAG_DISCARDED`, while a
   final block expression without `;` stays value-producing and is the input for implicit-return desugaring.
 
 ### Module discovery and import graph
@@ -252,7 +252,7 @@ This layer lives under the HIR directory.
 - The same short name may be used under different namespaces.
 - `imports Module;` records that the module is usable through its qualified name. It does not place public symbols into the
   local import scope.
-- Source syntax uses Rust-style qualified paths: `Module::Name` and `Module::Type::Item` are namespace/type paths, while
+- Source syntax uses qualified paths: `Module::Name` and `Module::Type::Item` are namespace/type paths, while
   `value.member` remains value member access. Expression generic arguments use turbofish, for example
   `Factory::<Int>()`. HIR still stores canonical qualified names with `.` internally.
 - `using Module::Name;` and `using Alias = Module::Name;` open one public top-level symbol into the local import scope.
@@ -306,11 +306,12 @@ validation does not decide dispatch, override, or overload selection.
   `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand `Result<T>`, and the standard error type `Error`.
   The compiler treats the `std::result` namespace as implicitly usable, so `imports result;` is optional for `Result<T>`,
   `Result<T, E>`, `Ok(...)`, and `Error(...)`. Unit success is canonically written as `Result<()>`. This is name and
-  arity validation only; constructors, method calls, and propagation lowering are still handled by later semantic passes.
+  arity validation only. Postfix `@` and direct `Ok(...)`/`Error(...)` constructor use require an enclosing function with
+  a Result return type; constructor payload checking and complete propagation lowering remain later semantic work.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
-- `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`
-  still require `imports stdio;` or `using namespace stdio;`. `format_args!` remains built in.
+- `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` require
+  `imports stdio;` or `using namespace stdio;`. `format_args!`, `write!`, and `writeln!` are built in.
 - The C23 HIR type resolver also recognizes the initial standard CFFI family: `std::cffi::CStr`, `std::cffi::CString`,
   `std::cffi::RawPtr<T>`, `std::cffi::NonNull<T>`, `std::cffi::Slice<T>`, `std::cffi::Handle<T>`, `std::cffi::Owned<T>`, `std::cffi::Borrowed<T>`,
   `std::cffi::Out<T>`, `std::cffi::DynamicLibrary`, `std::cffi::Symbol<T>`, `std::cffi::File`, and `std::cffi::VarArgs`.
@@ -421,14 +422,13 @@ complete.
 - Macro calls before textual definition in the same scope are accepted.
 - Macros defined in an inner scope cannot be called from an outer scope.
 - Calls are checked to resolve to a visible macro definition.
-- `include!` and `format_args!` are built-in macros. `format_args!` uses the same Rust 1.57-style format string validation
-  as Stdio formatting macros.
+- `include!`, `format_args!`, `write!`, and `writeln!` are built-in macros. They use the same format string validation as
+  the Stdio output macros where applicable.
 - Imported `Stdio` macros are treated as external macros, not built-ins. The validator recognizes `print!`, `println!`,
-  `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` through `imports stdio` or `using namespace stdio;`. `println!()`
-  and `eprintln!()` accept the Rust 1.57 newline-only form, while `writeln!(destination)` accepts the destination-only
-  newline form. The other Stdio formatting forms require a string literal format template and matching placeholder argument
-  count. Rust 1.57-style debug/pretty-debug and common formatting specs such as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}`
-  are accepted by the validator.
+  `eprint!`, `eprintln!`, and `format!` through `imports stdio` or `using namespace stdio;`. `println!()` and `eprintln!()`
+  accept the newline-only form. Built-in `writeln!(destination)` accepts the destination-only newline form. Other
+  formatting forms require a string literal format template and matching placeholder argument count. Debug, pretty-debug,
+  hexadecimal, padding, and alignment specs such as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` are accepted by the validator.
 - Full token matcher rules and empty matcher rules can be matched.
 - Single-token fragment matchers that can be validated precisely (`tt`, `ident`, `literal`, `lifetime`, and `vis`) are matched
   against call tokens.

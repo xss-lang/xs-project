@@ -47,20 +47,25 @@
 // It is only for local source files.
 //
 // format_args!() is a built-in formatting macro.
-// It uses the Rust 1.57 format string grammar and returns the formatting
-// argument value used by Stdio writer/output macros. It is not resolved
-// through Stdio.
+// It validates the X# formatting grammar and returns the formatting argument
+// value used by writer/output macros. It is not resolved through Stdio.
 
 imports stdio;
 
-// print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
-// normal macros exported by Stdio. They are not compiler built-ins.
+// print!, println!, eprint!, eprintln!, and format! are normal macros exported
+// by Stdio. They are not compiler built-ins.
+//
+// write! and writeln! are built-in writer macros. They are available without
+// importing Stdio.
 //
 // assert!, assert_eq!, assert_ne!, debug_assert!, debug_assert_eq!, and
 // panic! are normal macros exported by Panic. They are not compiler
 // built-ins.
 //
-// include! and format_args! are the currently specified built-in macros.
+// include!, format_args!, write!, and writeln! are the currently specified
+// built-in macros.
+// The conceptual AST expansions and evaluation-order contracts of Stdio and
+// Panic macros are specified in Stdio.xs and Panic.xs respectively.
 
 
 // ============================================================
@@ -747,11 +752,11 @@ macro_rules! invalid_second {
 
 
 // ============================================================
-// Rust-derived fallback rules
+// Declarative macro fallback rules
 // ============================================================
 
-// Macro behavior not otherwise defined by this file follows Rust's
-// declarative macro rules.
+// Macro behavior not otherwise defined by this file follows the declarative
+// matching rules below.
 //
 // Explicit X# rules in this file always take precedence.
 // In particular, X# keeps these differences:
@@ -888,9 +893,8 @@ fn invalid_unmatched_macro_call() {
 //
 // Module-exported macros:
 //
-//     Built-in macros include include! and format_args!
-//     Stdio exports print!, println!, eprint!, eprintln!, write!, writeln!,
-//     format!
+//     Built-in macros include include!, format_args!, write!, and writeln!
+//     Stdio exports print!, println!, eprint!, eprintln!, and format!
 //     Panic exports assert!, assert_eq!, assert_ne!, debug_assert!,
 //     debug_assert_eq!, panic!
 //

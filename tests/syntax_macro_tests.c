@@ -515,7 +515,7 @@ static void test_imported_panic_macros_resolve_without_expansion(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_imported_stdio_macros_match_rust_output_forms(void)
+static void test_formatting_macros_accept_output_forms(void)
 {
   const char *valid = "imports stdio;\n"
                       "fn Main(value: Long) {\n"
@@ -568,8 +568,9 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *builtin = "fn Main(value: Long) { format_args!(\"{:#?}\", value); }\n";
-  source = (XsSource){.path = "BuiltinFormatArgs.xs", .text = builtin, .length = strlen(builtin)};
+  const char *builtin = "fn Main(value: Long) { format_args!(\"{:#?}\", value); "
+                        "write!(std::stdout(), \"{}\", value); writeln!(std::stdout()); }\n";
+  source = (XsSource){.path = "BuiltinFormattingMacros.xs", .text = builtin, .length = strlen(builtin)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 40, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
@@ -577,7 +578,7 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_imported_stdio_macros_reject_invalid_forms(void)
+static void test_formatting_macros_reject_invalid_forms(void)
 {
   const char *invalid_cases[] = {
       "imports stdio;\nfn Main() { print!(); }\n",
@@ -588,10 +589,10 @@ static void test_imported_stdio_macros_reject_invalid_forms(void)
       "fn Main() { format_args!(); }\n",
       "imports stdio;\nfn Main() { println!(\"{\"); }\n",
       "imports stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
-      "imports stdio;\nfn Main() { write!(); }\n",
-      "imports stdio;\nfn Main() { write!(std::stdout()); }\n",
-      "imports stdio;\nfn Main() { write!(std::stdout(), 10); }\n",
-      "imports stdio;\nfn Main() { writeln!(std::stdout(), \"{}\",); }\n",
+      "fn Main() { write!(); }\n",
+      "fn Main() { write!(std::stdout()); }\n",
+      "fn Main() { write!(std::stdout(), 10); }\n",
+      "fn Main() { writeln!(std::stdout(), \"{}\",); }\n",
   };
   for(size_t index = 0; index < sizeof(invalid_cases) / sizeof(invalid_cases[0]); ++index)
   {
@@ -622,7 +623,7 @@ int main(void)
   test_pattern_fragment_expansion();
   test_declaration_macro_expansion();
   test_imported_panic_macros_resolve_without_expansion();
-  test_imported_stdio_macros_match_rust_output_forms();
-  test_imported_stdio_macros_reject_invalid_forms();
+  test_formatting_macros_accept_output_forms();
+  test_formatting_macros_reject_invalid_forms();
   return failures == 0 ? 0 : 1;
 }

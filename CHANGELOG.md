@@ -12,6 +12,21 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.5 - 2026-07-13
+
+### Added
+
+- Classic `for` statements now cross the C23 structural-AST boundary into checked HIR, target-independent MIR control
+  flow, XLIL, LLVM IR, and native `.xse` emission for the supported source subset.
+- XHIR v0 can read and write explicit `for` records with optional initializer, condition, and update sections.
+
+### Changed
+
+- `write!` and `writeln!` are built-in writer macros and no longer require `imports stdio;`. Stdio continues to export
+  `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`, whose output forms delegate to the built-in writer macros.
+- Result is no longer implied by ordinary output examples. Functions using postfix `@`, `Ok(...)`, or `Error(...)` must
+  declare a Result return type; ordinary functions remain free to return unit or another declared type.
+
 ## 0.1.4 - 2026-07-13
 
 ### Added
@@ -147,7 +162,7 @@ source-to-native executable pipeline.
 - `macro_rules!` definitions now use `->` between a matcher and its expansion block, matching the current X# macro syntax
   direction.
 - Class properties now use canonical X# name-first declarations such as `public Name: Str { getter; setter; }`.
-- X# source syntax now follows Rust-style semicolon value rules: `expression;` discards to unit, while a final block
+- X# source syntax now distinguishes discarded and tail values: `expression;` discards to unit, while a final block
   expression without `;` remains value-producing and feeds implicit-return desugaring.
 - Class property declarations now use `getter` and `setter` accessors. Plain `get` and `set` remain available as ordinary
   identifiers.
@@ -198,7 +213,7 @@ source-to-native executable pipeline.
 ### Changed
 
 - `format_args!` is now validated as a built-in macro instead of a Stdio export.
-- Stdio macro validation now accepts Rust 1.57-style `write!` and `writeln!` forms plus common Rust formatting specs such
+- Formatting macro validation now accepts `write!` and `writeln!` forms plus common debug and alignment specs such
   as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` while still checking placeholder counts.
 - `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `std::optional::Optional<T>`, with
   value constructors canonically named `std::optional::None` and `std::optional::Some(...)`.
@@ -220,7 +235,7 @@ source-to-native executable pipeline.
 
 ### Added
 
-- Imported `Stdio` macros now include `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`, with Rust 1.57-style
+- Imported `Stdio` macros now include `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`, with
   newline-only `println!()`/`eprintln!()` forms.
 - `Spec/Stdio.xs` now documents `std::stdin()` line input examples, and `Spec/Result.xs` documents the explicit `Result`
   model, postfix `@` propagation, `expect`, and `unwrap`.

@@ -180,6 +180,7 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
   {
     if(parser->current.kind != XS_TOKEN_SEMICOLON)
     {
+      statement->flags |= XS_SYNTAX_FLAG_FOR_INITIALIZER;
       if(parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||
          parser->current.kind == XS_TOKEN_KW_STATIC || parser->current.kind == XS_TOKEN_KW_ATOMIC ||
          (parser->current.kind == XS_TOKEN_IDENTIFIER &&
@@ -190,10 +191,16 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
     }
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after for initializer");
     if(parser->current.kind != XS_TOKEN_SEMICOLON)
+    {
+      statement->flags |= XS_SYNTAX_FLAG_FOR_CONDITION;
       xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
+    }
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after for condition");
     if(parser->current.kind != XS_TOKEN_RIGHT_PAREN)
+    {
+      statement->flags |= XS_SYNTAX_FLAG_FOR_UPDATE;
       xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
+    }
     expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after for increment");
   }
   ++parser->loop_depth;

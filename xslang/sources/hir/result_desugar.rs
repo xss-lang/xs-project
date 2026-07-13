@@ -6,7 +6,8 @@
 use super::async_check::Span;
 use super::match_model::MatchPattern;
 use super::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, result_type_parts,
+  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, literal_matches_type,
+  result_type_parts,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -100,6 +101,14 @@ pub enum DesugaredStatement
   While
   {
     condition: DesugaredExpression,
+    body: DesugaredBlock,
+    span: Span,
+  },
+  For
+  {
+    initializer: Option<Box<DesugaredStatement>>,
+    condition: Option<DesugaredExpression>,
+    update: Option<DesugaredExpression>,
     body: DesugaredBlock,
     span: Span,
   },
@@ -222,6 +231,25 @@ impl ResultDesugar
                          span, } => DesugaredStatement::While { condition: self.desugar_expression(condition),
                                                                 body: self.desugar_block(body),
                                                                 span: *span },
+      Statement::For { initializer,
+                       condition,
+                       update,
+                       body,
+                       span, } =>
+      {
+        let local_count = self.locals.len();
+        let initializer = initializer.as_ref()
+                                     .map(|statement| Box::new(self.desugar_statement(statement)));
+        let condition = condition.as_ref().map(|expression| self.desugar_expression(expression));
+        let body = self.desugar_block(body);
+        let update = update.as_ref().map(|expression| self.desugar_expression(expression));
+        self.locals.truncate(local_count);
+        DesugaredStatement::For { initializer,
+                                  condition,
+                                  update,
+                                  body,
+                                  span: *span }
+      }
       Statement::Match { selector,
                          selector_type,
                          arms,
@@ -413,8 +441,21 @@ impl ResultDesugar
   fn binary_expression_type(&mut self, operator: BinaryOperator, left: &Expression, right: &Expression)
                             -> Option<Type>
   {
-    let left_type = self.expression_type(left)?;
-    let right_type = self.expression_type(right)?;
+    let mut left_type = self.expression_type(left)?;
+    let mut right_type = self.expression_type(right)?;
+    if left_type != right_type
+    {
+      if let Expression::Literal { literal, .. } = left &&
+         literal_matches_type(literal, &right_type)
+      {
+        left_type = right_type.clone();
+      }
+      else if let Expression::Literal { literal, .. } = right &&
+                literal_matches_type(literal, &left_type)
+      {
+        right_type = left_type.clone();
+      }
+    }
     if left_type != right_type
     {
       return None;

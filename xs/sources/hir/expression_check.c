@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "xs/hir/expression_check.h"
+#include "expression_check_internal.h"
 
 #include "xs/hir/type_info.h"
 
@@ -18,10 +18,8 @@ typedef struct
   const XsSyntaxNode *type_node;
   bool immutable;
 } LocalBinding;
-
 typedef struct LocalScope LocalScope;
 typedef struct CheckContext CheckContext;
-
 typedef enum
 {
   LITERAL_CONTEXT_INITIALIZER,
@@ -966,6 +964,9 @@ static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansi
     success = check_assignment(node, &context, diagnostics) && success;
   if(node->kind == XS_SYNTAX_EXPR_RESULT_PROPAGATION)
     success = check_result_propagation(node, &context, diagnostics) && success;
+  if(node->kind == XS_SYNTAX_EXPR_CALL)
+    success =
+        xs_hir_check_result_constructor_call(node, type_is_result(context.return_type_node), diagnostics) && success;
   if(node->kind == XS_SYNTAX_STMT_RETURN)
     success = check_return_statement(node, &context, diagnostics) && success;
   if(member_access_is_active_property(node, &context))

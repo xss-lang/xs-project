@@ -26,7 +26,7 @@ syntax takes priority over ad-hoc implementation shortcuts.
 
 - Macro names are snake_case and are not under `STD`.
 - Standard modules use `std::<module>` names, such as `std::fs` and `std::collections`.
-- X# follows the Rust-style path/member split: `::` separates modules, namespaces, types, associated items, and
+- `::` separates modules, namespaces, types, associated items, and
   constructors; `.` is reserved for value member access and method calls. Generic arguments in expression paths use
   turbofish, for example `std::optional::Some::<Str>("value")`.
 - Instance members use `self` as the receiver name inside constructors, methods, and property accessors.
@@ -41,8 +41,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
   local scope. For example, `imports fs;` keeps file APIs qualified as `std::fs::File::open(...)`; users may add
   `using namespace std::fs;` when they want `File::open(...)`. Use `using Module::Name;`, `using Alias = Module::Name;`,
   or `using namespace Module;` when short names are desired.
-- `format_args!` and `include!` are built-in macros.
-- `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` come from `Stdio`.
+- `include!`, `format_args!`, `write!`, and `writeln!` are built-in macros.
+- `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` come from `Stdio`.
 - Attribute delimiter syntax is built in: `#[...]` applies to the following declaration/member, and `#![...]` applies to the
   enclosing file/module form. Official X# attributes live under `std::attrs::*`; the compiler brings those names into
   attribute scope automatically, so `imports attrs;` is optional.
@@ -54,7 +54,7 @@ syntax takes priority over ad-hoc implementation shortcuts.
   automatically for the target/runtime situation. `Optional<Str>` is modeled like Rust's `Option<String>` with an owned
   optional string payload.
 - X# uses `else` for placeholder/default positions. Type and lifetime placeholders are written as `Type<else, Foo>` and
-  `&'else T`; Rust-style `_` placeholders are not canonical X# syntax.
+  `&'else T`; `_` placeholders are not canonical X# syntax.
 - Statement/expression separation follows Rust: `expression;` evaluates and discards the value, while the final expression
   in a block may omit `;` and becomes the block value. Function tail expressions are desugared as implicit returns when the
   function return type expects a value.
@@ -63,12 +63,13 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - `Result` is a special standard namespace: `imports result;` is optional, and the compiler behaves as if
   `using namespace std::result;` existed for `Result<T>`, `Result<T, E>`, `Ok(...)`, and `Error(...)`. Most other `std::*` modules are
   not automatically placed in local scope. `Result<T>` uses the standard `Error` channel; unit success is written as
-  `Result<()>`.
+  `Result<()>`. Result is not a default function return: a function must declare it when its body uses `@`, `Ok(...)`, or
+  `Error(...)`.
 - `Panic` is also an implicit standard import for assertion and panic macros. `assert!`, `assert_eq!`, `assert_ne!`,
   `debug_assert!`, `debug_assert_eq!`, and `panic!` are available without an explicit import, but they are still library
   macros rather than compiler built-ins.
-- `Stdio` is not prelude and is not implicit. Its macros require `imports stdio;` or `using namespace stdio;`, except
-  `format_args!`, which is built in.
+- `Stdio` is not prelude and is not implicit. Its `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` macros require
+  `imports stdio;` or `using namespace stdio;`. The writer and formatting-argument built-ins do not.
 - Legacy exception syntax is deprecated and scheduled for removal in X# 2.0.0. Active examples should prefer
   `Result<T>`/`Result<T, E>` plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only in
   explicitly marked legacy notes.

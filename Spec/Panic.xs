@@ -31,6 +31,43 @@
 // Stdio formatting. Runtime formatting and unwinding ABI are implementation
 // details of the Panic runtime.
 
+
+// conceptual macro expansion
+
+// Panic macros expand during AST macro expansion, before HIR construction.
+// Their semantic runtime boundary is std::panic::begin(FormatArguments), which
+// never returns. Implementations may lower this boundary to equivalent MIR and
+// runtime intrinsics.
+//
+// panic!()
+//   -> std::panic::begin(format_args!("explicit panic"))
+// panic!(template, values...)
+//   -> std::panic::begin(format_args!(template, values...))
+// assert!(condition)
+//   -> evaluate condition once; when false, panic with the failed expression
+// assert!(condition, template, values...)
+//   -> evaluate condition once; when false, panic with the formatted message
+// assert_eq!(left, right)
+//   -> evaluate left then right exactly once; compare them with ==; when false,
+//      panic with hygienically retained Debug views of both values
+// assert_ne!(left, right)
+//   -> evaluate left then right exactly once; compare them with !=; when false,
+//      panic with hygienically retained Debug views of both values
+// debug_assert!(...) and debug_assert_eq!(...)
+//   -> use the corresponding assertion expansion when debug assertions are
+//      enabled; otherwise expand to no runtime evaluation
+//
+// Assertion forms that accept a custom template pass it through format_args!.
+// Compiler-generated temporary bindings are hygienic and preserve ownership:
+// comparison and diagnostic formatting do not evaluate or move either operand
+// a second time. Panic expansion produces a diverging expression, so control
+// flow after std::panic::begin is unreachable.
+//
+// Each invocation must match exactly one exported Panic macro rule. These are
+// normal imported macros even though the compiler supplies the implicit Panic
+// import; format_args! in their expansions is a built-in macro. The built-in
+// writer macros are separate and are not used by panic expansion directly.
+
 // imports panic; is optional.
 
 

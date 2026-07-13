@@ -139,6 +139,14 @@ pub enum Statement
     body: Block,
     span: Span,
   },
+  For
+  {
+    initializer: Option<Box<Statement>>,
+    condition: Option<Expression>,
+    update: Option<Expression>,
+    body: Block,
+    span: Span,
+  },
   Match
   {
     selector: Expression,
@@ -297,6 +305,16 @@ impl TypeChecker
         self.check_block(body, None);
         self.loop_depth -= 1;
       }
+      Statement::For { initializer,
+                       condition,
+                       update,
+                       body,
+                       span, } => self.check_for_statement(initializer.as_deref(),
+                                                           condition.as_ref(),
+                                                           update.as_ref(),
+                                                           body,
+                                                           *span,
+                                                           return_type),
       Statement::Match { selector,
                          selector_type,
                          arms,
@@ -613,8 +631,21 @@ impl TypeChecker
 
   fn binary_expression_type(&self, operator: BinaryOperator, left: &Expression, right: &Expression) -> Option<Type>
   {
-    let left_type = self.expression_type(left)?;
-    let right_type = self.expression_type(right)?;
+    let mut left_type = self.expression_type(left)?;
+    let mut right_type = self.expression_type(right)?;
+    if left_type != right_type
+    {
+      if let Expression::Literal { literal, .. } = left &&
+         literal_matches_type(literal, &right_type)
+      {
+        left_type = right_type.clone();
+      }
+      else if let Expression::Literal { literal, .. } = right &&
+                literal_matches_type(literal, &left_type)
+      {
+        right_type = left_type.clone();
+      }
+    }
     if left_type != right_type
     {
       return None;
@@ -650,6 +681,7 @@ impl TypeChecker
   }
 }
 
+mod for_check;
 mod match_check;
 mod result_type;
 

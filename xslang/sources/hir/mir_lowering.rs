@@ -41,6 +41,9 @@ pub struct HirToMirLowerer
   storage_locals: HashSet<mir::LocalId>,
 }
 
+#[cfg(test)]
+mod for_tests;
+
 impl HirToMirLowerer
 {
   #[must_use]
@@ -114,6 +117,30 @@ impl HirToMirLowerer
         Some(Statement::While { condition: self.surface_expression_from_desugared(condition)?,
                                 body: self.surface_block_from_desugared(body)?,
                                 span: *span })
+      }
+      DesugaredStatement::For { initializer,
+                                condition,
+                                update,
+                                body,
+                                span, } =>
+      {
+        Some(Statement::For { initializer: match initializer
+                              {
+                                Some(statement) => Some(Box::new(self.surface_statement_from_desugared(statement)?)),
+                                None => None,
+                              },
+                              condition: match condition
+                              {
+                                Some(expression) => Some(self.surface_expression_from_desugared(expression)?),
+                                None => None,
+                              },
+                              update: match update
+                              {
+                                Some(expression) => Some(self.surface_expression_from_desugared(expression)?),
+                                None => None,
+                              },
+                              body: self.surface_block_from_desugared(body)?,
+                              span: *span })
       }
       DesugaredStatement::Match { selector,
                                   selector_type,
@@ -254,6 +281,7 @@ impl HirToMirLowerer
                           span, } => self.lower_return(value.as_ref(), *span, lowered),
       Statement::If { .. } => self.lower_if_statement(statement, lowered),
       Statement::While { .. } => self.lower_while_statement(statement, lowered),
+      Statement::For { .. } => self.lower_for_statement(statement, lowered),
       Statement::Match { .. } => self.lower_match_statement(statement, lowered),
       Statement::Break { span } => self.lower_loop_jump(false, *span, lowered),
       Statement::Continue { span } => self.lower_loop_jump(true, *span, lowered),

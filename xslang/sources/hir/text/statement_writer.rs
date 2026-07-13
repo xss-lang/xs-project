@@ -57,6 +57,31 @@ pub(super) fn write_statement(output: &mut String, statement: &Statement, indent
       let _ = writeln!(output, "{pad}  body");
       write_block(output, body, indent + 2);
     }
+    Statement::For { initializer,
+                     condition,
+                     update,
+                     body,
+                     .. } =>
+    {
+      let _ = writeln!(output, "{pad}for");
+      if let Some(initializer) = initializer
+      {
+        let _ = writeln!(output, "{pad}  initializer");
+        write_statement(output, initializer, indent + 2);
+      }
+      if let Some(condition) = condition
+      {
+        let _ = writeln!(output, "{pad}  condition");
+        write_expression(output, condition, indent + 2);
+      }
+      if let Some(update) = update
+      {
+        let _ = writeln!(output, "{pad}  update");
+        write_expression(output, update, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}  body");
+      write_block(output, body, indent + 2);
+    }
     Statement::Match { selector,
                        selector_type,
                        arms,
@@ -170,6 +195,31 @@ pub(super) fn write_desugared_statement(output: &mut String, statement: &Desugar
       let _ = writeln!(output, "{pad}while");
       let _ = writeln!(output, "{pad}  condition");
       write_desugared_expression(output, condition, indent + 2);
+      let _ = writeln!(output, "{pad}  body");
+      write_desugared_block(output, body, indent + 2);
+    }
+    DesugaredStatement::For { initializer,
+                              condition,
+                              update,
+                              body,
+                              .. } =>
+    {
+      let _ = writeln!(output, "{pad}for");
+      if let Some(initializer) = initializer
+      {
+        let _ = writeln!(output, "{pad}  initializer");
+        write_desugared_statement(output, initializer, indent + 2);
+      }
+      if let Some(condition) = condition
+      {
+        let _ = writeln!(output, "{pad}  condition");
+        write_desugared_expression(output, condition, indent + 2);
+      }
+      if let Some(update) = update
+      {
+        let _ = writeln!(output, "{pad}  update");
+        write_desugared_expression(output, update, indent + 2);
+      }
       let _ = writeln!(output, "{pad}  body");
       write_desugared_block(output, body, indent + 2);
     }
