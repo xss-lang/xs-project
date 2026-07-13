@@ -30,19 +30,19 @@ data Error {
 
 // success construction
 
-fn Succeed() -> Result<()> {
+fn succeed() -> Result<()> {
     return Ok(());
 }
 
 
 // propagation
 
-fn Propagate() -> Result<()> {
-    DoWork()@;
+fn propagate() -> Result<()> {
+    do_work()@;
     return Ok(());
 }
 
-fn DoWork() -> Result<()> {
+fn do_work() -> Result<()> {
     return Ok(());
 }
 
@@ -53,7 +53,7 @@ fn DoWork() -> Result<()> {
 
 // explicit match without @
 
-fn ReadFileExplicit(path: Str) -> Result<Optional<Str>, Error> {
+fn read_file_explicit(path: Str) -> Result<Optional<Str>, Error> {
     file = match (std::fs::File::open(path)) {
         Ok(value) -> value,
         Error(error) -> return Error(error),
@@ -72,7 +72,7 @@ fn ReadFileExplicit(path: Str) -> Result<Optional<Str>, Error> {
 
 // propagation with @
 
-fn ReadFile(path: Str) -> Result<Optional<Str>, Error> {
+fn read_file(path: Str) -> Result<Optional<Str>, Error> {
     file = std::fs::File::open(path)@;
     content: Optional<Str> = std::optional::Some("");
     file.read_to_string(&mut content)@;
@@ -82,7 +82,7 @@ fn ReadFile(path: Str) -> Result<Optional<Str>, Error> {
 
 // expect and unwrap
 
-fn ReadRequiredLine() -> Str {
+fn read_required_line() -> Str {
     line: Optional<Str> = std::optional::Some("");
 
     std::stdin()

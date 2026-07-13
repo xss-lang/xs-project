@@ -35,9 +35,9 @@ class Box<T> {
 
 // generic class usage
 
-numberBox: Box<Int>;
+number_box: Box<Int>;
 
-textBox: Box<Str>;
+text_box: Box<Str>;
 
 
 // generic class with multiple parameters
@@ -53,7 +53,7 @@ pair: Pair<Str, Int>;
 
 // generic function
 
-fn Print<T>(value: T) {
+fn print<T>(value: T) {
 }
 
 
@@ -67,7 +67,7 @@ Print<Str>("Hello");
 // generic class constraint
 
 interface Printable {
-    fn Print();
+    fn print();
 }
 
 class Box<T: Printable> {
@@ -78,29 +78,29 @@ class Box<T: Printable> {
 // generic function constraint
 
 interface Runnable {
-    fn Run();
+    fn run();
 }
 
-fn Execute<T: Runnable>(value: T) {
-    value.Run();
+fn execute<T: Runnable>(value: T) {
+    value.run();
 }
 
 
 // multiple constraints
 
 interface Runnable {
-    fn Run();
+    fn run();
 }
 
 interface Printable {
-    fn Print();
+    fn print();
 }
 
-fn Execute<T: Runnable, Printable>(value: T) {
+fn execute<T: Runnable, Printable>(value: T) {
 
-    value.Run();
+    value.run();
 
-    value.Print();
+    value.print();
 }
 
 
@@ -120,9 +120,9 @@ class Box<T> {
     value: T;
 }
 
-intBox: Box<Int>;
+int_box: Box<Int>;
 
-strBox: Box<Str>;
+str_box: Box<Str>;
 
 
 // Compiler generates separate specializations.
@@ -137,7 +137,7 @@ strBox: Box<Str>;
 
 users: std::collections::Vector<Str>;
 
-scores: std::collections::hash_map<Str, Int>;
+scores: std::collections::HashMap<Str, Int>;
 
 
 // generic enum data
@@ -150,7 +150,7 @@ enum data Result<T> {
 
 // generic return type
 
-fn CreateBox<T>(value: T) -> Box<T> {
+fn create_box<T>(value: T) -> Box<T> {
 
     box: Box<T>;
 
@@ -177,19 +177,19 @@ class Pair<T, U> {
 
 // VALID
 
-fn Print<T>(value: T) {
+fn print<T>(value: T) {
 }
 
 
 // VALID
 
-fn Execute<T: Runnable>(value: T) {
+fn execute<T: Runnable>(value: T) {
 }
 
 
 // VALID
 
-fn Execute<T: Runnable, Printable>(value: T) {
+fn execute<T: Runnable, Printable>(value: T) {
 }
 
 
@@ -211,7 +211,7 @@ class Box<T = Str> {
 
 // INVALID
 
-fn Print<T = Str>(value: T) {
+fn print<T = Str>(value: T) {
 }
 
 

@@ -64,7 +64,7 @@ for (user in users.iter()) {
 // empty collection iteration
 
 users: std::collections::Vector<Str> =
-    std::collections::vector::new();
+    std::collections::Vector::new();
 
 for (user in users.iter()) {
 
@@ -145,7 +145,7 @@ for (user in users.iter()) {
 }
 
 count: Int =
-    std::collections::vector.length(users);
+    std::collections::Vector.length(users);
 
 
 // VALID

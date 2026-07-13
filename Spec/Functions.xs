@@ -11,7 +11,7 @@
 
 imports stdio, result;
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
   return a + b;
 }
 
@@ -20,35 +20,35 @@ fn Add(a: Int, b: Int) -> Int {
 // Use `-> ()` when the unit return type must be written explicitly.
 
 class Program {
-  fn Test() {
+  fn test() {
   }
 }
 
 // INVALID EXAMPLE:
 // Top-level execution is not supported. This snippet is intentionally invalid
 // and is not part of the valid declarations above.
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
   return a + b;
 }
 
-Add(1, 2);
+add(1, 2);
 
 // VALID: top-level functions are allowed.
-fn Main() {
+fn main() {
 }
 
 // VALID: omitted -> means unit.
-fn Test() {
+fn test() {
 }
 
 // VALID: explicit unit return.
-fn TestExplicitUnit() -> () {
+fn test_explicit_unit() -> () {
 }
 
 
 // named and inferred helper examples
 
-fn Clamp(value: Int, minimum: Int, maximum: Int) -> Int {
+fn clamp(value: Int, minimum: Int, maximum: Int) -> Int {
   if (value < minimum) {
     return minimum;
   }
@@ -60,11 +60,19 @@ fn Clamp(value: Int, minimum: Int, maximum: Int) -> Int {
   return value;
 }
 
-fn DescribeUser(name: Str, age: Int) -> Str {
+fn describe_user(name: Str, age: Int) -> Str {
   return format!("{} ({})", name, age);
 }
 
-fn TryParseId(text: Str) -> Result<Int, Error> {
-  parsed: Int = Int::Parse(text);
+fn try_parse_id(text: Str) -> Result<Int, Error> {
+  parsed: Int = Int::parse(text);
   return Ok(parsed);
+}
+
+
+// lambdas infer parameter and return types from context
+
+fn lambda_example() {
+  add_values: fn(Int, Int) -> Int = fn(a, b) { a + b };
+  println!("{}", add_values(2, 3));
 }

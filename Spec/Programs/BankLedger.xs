@@ -4,9 +4,9 @@
 // Complete-language example program:
 // A small two-sided ledger with nominal money and audit records.
 
-module Programs::BankLedger;
+module programs::bank_ledger;
 
-imports collections, std, process;
+imports collections, process;
 
 enum data LedgerError {
     UnknownAccount: Str,
@@ -26,8 +26,8 @@ data Account {
 }
 
 data Transfer {
-    sourceAccount: Str;
-    targetAccount: Str;
+    source_account: Str;
+    target_account: Str;
     amount: Money;
     memo: Optional<Str>;
 }
@@ -41,7 +41,7 @@ class Ledger {
         self.audit = std::collections::Vector<Transfer>::new();
     }
 
-    fn Open(id: Str, owner: Str, balance: Money) {
+    fn open(id: Str, owner: Str, balance: Money) {
         self.accounts[id] = Account {
             id: id,
             owner: owner,
@@ -49,29 +49,29 @@ class Ledger {
         };
     }
 
-    fn Apply(transfer: Transfer) -> Result<()> {
+    fn apply(transfer: Transfer) -> Result<()> {
         if (transfer.amount.cents <= 0) {
             return Error(Error {
                 message: "invalid transfer amount",
             });
         }
 
-        fromAccount: &mut Account = self.AccountMut(transfer.sourceAccount)@;
-        toAccount: &mut Account = self.AccountMut(transfer.targetAccount)@;
+        from_account: &mut Account = self.account_mut(transfer.source_account)@;
+        to_account: &mut Account = self.account_mut(transfer.target_account)@;
 
-        if (fromAccount.balance.cents < transfer.amount.cents) {
+        if (from_account.balance.cents < transfer.amount.cents) {
             return Error(Error {
                 message: "insufficient funds",
             });
         }
 
-        fromAccount.balance.cents -= transfer.amount.cents;
-        toAccount.balance.cents += transfer.amount.cents;
+        from_account.balance.cents -= transfer.amount.cents;
+        to_account.balance.cents += transfer.amount.cents;
         self.audit.push(transfer);
         return Ok();
     }
 
-    fn AccountMut(id: Str) -> Result<&mut Account, Error> {
+    fn account_mut(id: Str) -> Result<&mut Account, Error> {
         if (!self.accounts.contains(id)) {
             return Error(Error {
                 message: "unknown account",
@@ -80,7 +80,7 @@ class Ledger {
         return Ok(&mut self.accounts[id]);
     }
 
-    fn Print() -> Result<()> {
+    fn print() -> Result<()> {
         for ((id, account): (Str, Account) in self.accounts) {
             println!("{} {} {}", id, account.owner, account.balance.cents);
         }
@@ -88,21 +88,21 @@ class Ledger {
     }
 }
 
-fn Main() -> Result<Int, Error> {
+fn main() -> Result<Int, Error> {
     ledger := new Ledger();
 
-    ledger.Open("checking", "Ada", Money {
+    ledger.open("checking", "Ada", Money {
         cents: 50'000,
         currency: "USD",
     });
-    ledger.Open("savings", "Ada", Money {
+    ledger.open("savings", "Ada", Money {
         cents: 0,
         currency: "USD",
     });
 
-    ledger.Apply(Transfer {
-        sourceAccount: "checking",
-        targetAccount: "savings",
+    ledger.apply(Transfer {
+        source_account: "checking",
+        target_account: "savings",
         amount: Money {
             cents: 12'500,
             currency: "USD",
@@ -110,6 +110,6 @@ fn Main() -> Result<Int, Error> {
         memo: std::optional::Some("monthly savings"),
     })@;
 
-    ledger.Print()@;
+    ledger.print()@;
     return Ok(0);
 }

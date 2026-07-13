@@ -42,6 +42,12 @@ source-to-native executable pipeline.
   in the same scope; leaving the block restores the enclosing binding.
 - Postfix `++` and `--` are now represented by the structural AST and lower for supported mutable `Long` locals, including
   canonical `for (...; i++)` updates.
+- Function expressions now use the inferred `fn(a, b) { a + b }` form; written lambda parameter and return types are
+  rejected while function type annotations remain typed.
+- Class construction now requires `new Type(...)`. The untyped `new()` spelling is restricted to the dedicated `else:`
+  discard form.
+- Specification declarations and examples now consistently use snake_case for modules, namespaces, functions, methods,
+  fields, and local bindings while preserving PascalCase for types and enum variants.
 
 ## 0.0.8 - 2026-07-13
 

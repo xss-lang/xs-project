@@ -30,21 +30,21 @@
 //
 // Canonical path shape:
 //
-//     PascalCase::PascalCase.snake_case.lowercase().camelCase()
+//     PascalCase::PascalCase.snake_case.lowercase().camel_case()
 //
 // Standard-library examples:
 //
-//     std::collections::hash_map.get(scores, "Alpha")
+//     std::collections::HashMap.get(scores, "Alpha")
 //     std::stdin().read_line(&mut input)
 //
 // Segment roles:
 //
-// - STD is the standard-library root.
+// - std is the standard-library root.
 // - PascalCase is used for public modules, namespaces, and nominal types.
 // - Short public acronyms may stay fully uppercase, for example std::fs::
 // - snake_case is used for registry-like families such as collection kinds.
 // - lowercase is used for short free functions such as get().
-// - camelCase is used for methods and longer function names such as read_line().
+// - camel_case is used for methods and longer function names such as read_line().
 //
 // This is a style and standard-library naming rule. It does not make
 // differently cased identifiers equivalent.
@@ -73,7 +73,7 @@
 // Valid identifiers:
 
 user
-userName
+user_name
 UserName
 _value
 value2
@@ -172,7 +172,7 @@ None: Int = 8;
 
 // Four hexadecimal digits:
 
-"\uFFFF"
+"\u_ffff"
 
 
 // Eight hexadecimal digits:
@@ -182,7 +182,7 @@ None: Int = 8;
 
 // Hexadecimal character escape:
 
-"\xFF"
+"\x_ff"
 
 
 // These are character escapes.
@@ -221,9 +221,9 @@ None: Int = 8;
 
 // Such values may be represented as strings when needed:
 
-hexValue: Str = "FF";
-binaryValue: Str = "1010";
-octalValue: Str = "77";
+hex_value: Str = "FF";
+binary_value: Str = "1010";
+octal_value: Str = "77";
 
 
 // ============================================================
@@ -379,14 +379,14 @@ octalValue: Str = "77";
 // Valid examples
 // ============================================================
 
-fn ValidIdentifiers() {
+fn valid_identifiers() {
     value: Int = 42;
     value2: Int = 1'000;
     _privateValue: Int = 3;
 
-    floatingValue: Float = 3.141'592;
-    smallValue: Float = 0.000'001;
-    scientificValue: Float = 1.234'567e-8;
+    floating_value: Float = 3.141'592;
+    small_value: Float = 0.000'001;
+    scientific_value: Float = 1.234'567e-8;
 }
 
 
@@ -394,7 +394,7 @@ fn ValidIdentifiers() {
 // Invalid examples
 // ============================================================
 
-fn InvalidIdentifiers() {
+fn invalid_identifiers() {
     user-name: Int = 1;
     number_name: Int = 2;
     1value: Int = 3;
@@ -402,7 +402,7 @@ fn InvalidIdentifiers() {
 }
 
 
-fn InvalidNumericLiterals() {
+fn invalid_numeric_literals() {
     first: Int = 1_000;
     second: Int = '100;
     third: Int = 100';
@@ -443,7 +443,7 @@ fn InvalidNumericLiterals() {
 //
 // Escape forms:
 //
-//     \uFFFF
+//     \u_ffff
 //     \U000FFFFF
-//     \xFF
+//     \x_ff
 //

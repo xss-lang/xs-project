@@ -31,8 +31,8 @@ imports thread, result;
 
 // thread without result
 
-fn SpawnThread() {
-    Thread.spawn(move fn() {
+fn spawn_thread() {
+    std::thread::spawn(move fn() {
         // Thread body
     });
 }
@@ -40,9 +40,9 @@ fn SpawnThread() {
 
 // thread with result
 
-fn SpawnThreadWithResult() {
+fn spawn_thread_with_result() {
     thread: Thread::handle<Int> =
-        Thread.spawn(move fn() -> Int {
+        std::thread::spawn(move fn() {
             return 42;
         });
 
@@ -52,9 +52,9 @@ fn SpawnThreadWithResult() {
 
 // resultless thread handle
 
-fn ResultlessThreadHandle() {
+fn resultless_thread_handle() {
     thread: Thread::handle<()> =
-        Thread.spawn(move fn() {
+        std::thread::spawn(move fn() {
             return;
         });
 
@@ -62,7 +62,7 @@ fn ResultlessThreadHandle() {
 }
 
 
-// Thread.spawn():
+// std::thread::spawn():
 //
 // - Creates a native thread.
 // - Accepts a move closure.
@@ -77,12 +77,12 @@ fn ResultlessThreadHandle() {
 // Move captures
 // ============================================================
 
-fn MoveValueToThread() {
+fn move_value_to_thread() {
     value: Str = "Alpha";
 
     thread: Thread::handle<()> =
-        Thread.spawn(move fn() {
-            localValue: Str = value;
+        std::thread::spawn(move fn() {
+            local_value: Str = value;
         });
 
     thread.join();
@@ -100,10 +100,10 @@ fn MoveValueToThread() {
 
 // invalid non-Send capture
 
-fn InvalidNonSendCapture() {
+fn invalid_non_send_capture() {
     value: NonSendType = NonSendType::new();
 
-    Thread.spawn(move fn() {
+    std::thread::spawn(move fn() {
         Use(value);
     });
 }
@@ -115,9 +115,9 @@ fn InvalidNonSendCapture() {
 // Thread handles
 // ============================================================
 
-fn MoveThreadHandle() {
+fn move_thread_handle() {
     first: Thread::handle<Int> =
-        Thread.spawn(move fn() -> Int {
+        std::thread::spawn(move fn() {
             return 42;
         });
 
@@ -149,9 +149,9 @@ fn MoveThreadHandle() {
 // Joining
 // ============================================================
 
-fn JoinThread() {
+fn join_thread() {
     thread: Thread::handle<Int> =
-        Thread.spawn(move fn() -> Int {
+        std::thread::spawn(move fn() {
             return 42;
         });
 
@@ -170,14 +170,14 @@ fn JoinThread() {
 
 // invalid second join
 
-fn InvalidSecondJoin() {
+fn invalid_second_join() {
     thread: Thread::handle<Int> =
-        Thread.spawn(move fn() -> Int {
+        std::thread::spawn(move fn() {
             return 42;
         });
 
     value: Int = thread.join();
-    secondValue: Int = thread.join();
+    second_value: Int = thread.join();
 }
 
 // The second join() is a compile-time error because join()
@@ -193,14 +193,14 @@ fn InvalidSecondJoin() {
 // Thread Result failures
 // ============================================================
 
-fn JoinedThreadFailure() {
+fn joined_thread_failure() {
     thread: Thread::handle<Result<Int, Error>> =
-        Thread.spawn(move fn() -> Result<Int, Error> {
+        std::thread::spawn(move fn() {
             return Error(Error { message: "I/O error" });
         });
 
     result: Result<Int, Error> = thread.join()@;
-    if (result.isError()) {
+    if (result.is_error()) {
         eprintln!("thread failed");
     }
 }
@@ -214,8 +214,8 @@ fn JoinedThreadFailure() {
 
 // detached thread failure
 
-fn DetachedThreadFailure() {
-    Thread.spawn(move fn() -> Result<()> {
+fn detached_thread_failure() {
+    std::thread::spawn(move fn() {
         return Error(Error { message: "I/O error" });
     });
 }
@@ -231,8 +231,8 @@ fn DetachedThreadFailure() {
 // Detached threads
 // ============================================================
 
-fn DetachedThread() {
-    Thread.spawn(move fn() {
+fn detached_thread() {
+    std::thread::spawn(move fn() {
         // Continues independently.
     });
 }
@@ -251,11 +251,11 @@ fn DetachedThread() {
 // Sleeping and yielding
 // ============================================================
 
-fn SleepThread() {
-    Thread.sleep(1000);
+fn sleep_thread() {
+    std::thread::sleep(1000);
 }
 
-// Thread.sleep(milliseconds):
+// std::thread::sleep(milliseconds):
 //
 // - Suspends the current native thread.
 // - Uses milliseconds.
@@ -265,11 +265,11 @@ fn SleepThread() {
 
 // cooperative yield
 
-fn YieldThread() {
-    Thread.yield();
+fn yield_thread() {
+    std::thread::yield();
 }
 
-// Thread.yield():
+// std::thread::yield():
 //
 // - Voluntarily gives the scheduler an opportunity to run
 //   another ready thread.
@@ -284,11 +284,11 @@ fn YieldThread() {
 
 // basic channel
 
-fn ChannelExample() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn channel_example() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    Thread.spawn(move fn() {
+    std::thread::spawn(move fn() {
         tx.send(42);
     });
 
@@ -296,7 +296,7 @@ fn ChannelExample() {
 }
 
 
-// Thread.channel<T>:
+// std::thread::Channel<T>:
 //
 // - Creates one sender endpoint and one receiver endpoint.
 // - Uses a single-sender, single-receiver model.
@@ -307,9 +307,9 @@ fn ChannelExample() {
 
 // sending
 
-fn SendChannelValue() {
-    (tx, rx): Thread.channel<Str> =
-        Thread.channel();
+fn send_channel_value() {
+    (tx, rx): std::thread::Channel<Str> =
+        std::thread::channel();
 
     message: Str = "Alpha";
 
@@ -327,11 +327,11 @@ fn SendChannelValue() {
 
 // receiving
 
-fn ReceiveChannelValue() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn receive_channel_value() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    Thread.spawn(move fn() {
+    std::thread::spawn(move fn() {
         tx.send(42);
     });
 
@@ -349,46 +349,46 @@ fn ReceiveChannelValue() {
 
 // moving receiver to another thread
 
-fn MoveReceiverToThread() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn move_receiver_to_thread() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    receiverThread: Thread::handle<()> =
-        Thread.spawn(move fn() {
+    receiver_thread: Thread::handle<()> =
+        std::thread::spawn(move fn() {
             value: Int = rx.recv();
         });
 
     tx.send(42);
 
-    receiverThread.join();
+    receiver_thread.join();
 }
 
 
 // moving sender to another thread
 
-fn MoveSenderToThread() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn move_sender_to_thread() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    senderThread: Thread::handle<()> =
-        Thread.spawn(move fn() {
+    sender_thread: Thread::handle<()> =
+        std::thread::spawn(move fn() {
             tx.send(42);
         });
 
     value: Int = rx.recv();
 
-    senderThread.join();
+    sender_thread.join();
 }
 
 
 // invalid sender clone
 
-fn InvalidSenderClone() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn invalid_sender_clone() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    otherTx: Thread.channel<Int> =
-        Thread.channel.clone(&tx);
+    other_tx: std::thread::Channel<Int> =
+        std::thread::Channel::clone(&tx);
 }
 
 // Channel endpoints cannot be cloned.
@@ -397,12 +397,12 @@ fn InvalidSenderClone() {
 
 // invalid receiver clone
 
-fn InvalidReceiverClone() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn invalid_receiver_clone() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    otherRx: Thread.channel<Int> =
-        Thread.channel.clone(&rx);
+    other_rx: std::thread::Channel<Int> =
+        std::thread::Channel::clone(&rx);
 }
 
 // Channel endpoints cannot be cloned.
@@ -418,11 +418,11 @@ imports mutex, rw_lock, arc;
 
 // moving a mutex into a thread
 
-fn MoveMutexIntoThread() {
+fn move_mutex_into_thread() {
     mutex: Mutex<Int> = Mutex::new(42);
 
     thread: Thread::handle<()> =
-        Thread.spawn(move fn() {
+        std::thread::spawn(move fn() {
             guard: Mutex<Int> = mutex.lock();
             *guard += 1;
         });
@@ -433,7 +433,7 @@ fn MoveMutexIntoThread() {
 
 // sharing a mutex between threads
 
-fn ShareMutexBetweenThreads() {
+fn share_mutex_between_threads() {
     shared: Arc<Mutex<Int>> =
         Arc::new(Mutex::new(42));
 
@@ -441,7 +441,7 @@ fn ShareMutexBetweenThreads() {
         Arc::clone(&shared);
 
     thread: Thread::handle<()> =
-        Thread.spawn(move fn() {
+        std::thread::spawn(move fn() {
             guard: Mutex<Int> = worker.lock();
             *guard += 1;
         });
@@ -454,7 +454,7 @@ fn ShareMutexBetweenThreads() {
 
 // sharing an rwlock between threads
 
-fn ShareRwLockBetweenThreads() {
+fn share_rw_lock_between_threads() {
     shared: Arc<RwLock<Int>> =
         Arc::new(RwLock::new(42));
 
@@ -462,7 +462,7 @@ fn ShareRwLockBetweenThreads() {
         Arc::clone(&shared);
 
     thread: Thread::handle<()> =
-        Thread.spawn(move fn() {
+        std::thread::spawn(move fn() {
             reader: RwLock<Int> = worker.read();
             value: Int = *reader;
         });
@@ -477,7 +477,7 @@ fn ShareRwLockBetweenThreads() {
 // - RwLock reader guards cannot move to another thread.
 // - RwLock writer guards cannot move to another thread.
 //
-// Moving such a guard into Thread.spawn() is a compile-time error.
+// Moving such a guard into std::thread::spawn() is a compile-time error.
 
 
 // ============================================================

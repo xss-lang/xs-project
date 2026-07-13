@@ -75,7 +75,7 @@ enum data Value {
 // The argument type must identify exactly one variant in the overload set.
 
 value: Value = Value::Number(42);
-largeValue: Value = Value::Number(2'000'000'000);
+large_value: Value = Value::Number(2'000'000'000);
 
 
 // visibility
@@ -119,7 +119,7 @@ enum Color {
 
 
 // pattern matching
-fn Parse(token: Token) {
+fn parse(token: Token) {
     match (token) {
         Token::Identifier(value) -> {
         },

@@ -60,13 +60,13 @@
 // Every AST node stores its source location.
 
 data SourceSpan {
-    fileId: UInt
-    startOffset: UInt
-    endOffset: UInt
-    startLine: UInt
-    startColumn: UInt
-    endLine: UInt
-    endColumn: UInt
+    file_id: UInt
+    start_offset: UInt
+    end_offset: UInt
+    start_line: UInt
+    start_column: UInt
+    end_line: UInt
+    end_column: UInt
 }
 
 
@@ -85,15 +85,15 @@ data SourceSpan {
 // ============================================================
 
 data AstFile {
-    innerAttributes: AttributeNode[]
-    moduleDeclaration: ModuleDeclaration
+    inner_attributes: AttributeNode[]
+    module_declaration: ModuleDeclaration
     imports: ImportDeclaration[]
     declarations: Declaration[]
     span: SourceSpan
 }
 
 
-// moduleDeclaration may be None.
+// module_declaration may be None.
 //
 // A file without a module declaration may still be a direct
 // build-graph source.
@@ -127,7 +127,7 @@ enum data Declaration {
 data AttributeNode {
     path: PathNode
     arguments: AttributeArgument[]
-    isInner: Bool
+    is_inner: Bool
     span: SourceSpan
 }
 
@@ -175,8 +175,8 @@ data ModuleDeclaration {
 data ImportDeclaration {
     attributes: AttributeNode[]
     kind: ImportKind
-    modulePath: PathNode
-    importedNames: ImportName[]
+    module_path: PathNode
+    imported_names: ImportName[]
     alias: IdentifierNode
     span: SourceSpan
 }
@@ -313,28 +313,28 @@ data FunctionDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
 
-    operatorToken: TokenNode
+    operator_token: TokenNode
 
-    isAsync: Bool
-    isStatic: Bool
-    isIncomplete: Bool
-    isExtern: Bool
-    externAbi: TokenNode
+    is_async: Bool
+    is_static: Bool
+    is_incomplete: Bool
+    is_extern: Bool
+    extern_abi: TokenNode
 
-    genericParameters: GenericParameter[]
+    generic_parameters: GenericParameter[]
     parameters: ParameterDeclaration[]
 
-    returnType: TypeNode
-    throwsTypes: TypeNode[]
+    return_type: TypeNode
+    throws_types: TypeNode[]
 
     body: BlockStatement
     span: SourceSpan
 }
 
 
-// returnType may be None when the function has no explicit
+// return_type may be None when the function has no explicit
 // `-> Type` declaration.
-// operatorToken may be None. When present, name is operator and the token
+// operator_token may be None. When present, name is operator and the token
 // identifies the overloaded operator.
 //
 // A function without an explicit return type returns no value.
@@ -347,7 +347,7 @@ data FunctionDeclaration {
 data ParameterDeclaration {
     attributes: AttributeNode[]
     name: IdentifierNode
-    parameterType: TypeNode
+    parameter_type: TypeNode
     span: SourceSpan
 }
 
@@ -361,11 +361,11 @@ data ClassDeclaration {
     name: IdentifierNode
     visibility: VisibilityNode
 
-    isIncomplete: Bool
+    is_incomplete: Bool
 
-    genericParameters: GenericParameter[]
+    generic_parameters: GenericParameter[]
 
-    baseTypes: TypeNode[]
+    base_types: TypeNode[]
 
     members: ClassMember[]
     span: SourceSpan
@@ -391,11 +391,11 @@ enum data ClassMember {
 data FieldDeclaration {
     attributes: AttributeNode[]
     name: IdentifierNode
-    fieldType: TypeNode
+    field_type: TypeNode
     initializer: Expression
     visibility: VisibilityNode
-    isStatic: Bool
-    isImmutable: Bool
+    is_static: Bool
+    is_immutable: Bool
     span: SourceSpan
 }
 
@@ -409,7 +409,7 @@ data FieldDeclaration {
 
 data ConstructorDeclaration {
     attributes: AttributeNode[]
-    className: IdentifierNode
+    class_name: IdentifierNode
     parameters: ParameterDeclaration[]
     body: BlockStatement
     visibility: VisibilityNode
@@ -427,7 +427,7 @@ data ConstructorDeclaration {
 
 data DestructorDeclaration {
     attributes: AttributeNode[]
-    className: IdentifierNode
+    class_name: IdentifierNode
     body: BlockStatement
     span: SourceSpan
 }
@@ -447,7 +447,7 @@ data InterfaceDeclaration {
     attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
-    genericParameters: GenericParameter[]
+    generic_parameters: GenericParameter[]
     members: FunctionDeclaration[]
     span: SourceSpan
 }
@@ -461,7 +461,7 @@ data EnumDeclaration {
     attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
-    isDataEnum: Bool
+    is_data_enum: Bool
     variants: EnumVariant[]
     span: SourceSpan
 }
@@ -470,19 +470,19 @@ data EnumDeclaration {
 data EnumVariant {
     attributes: AttributeNode[]
     name: IdentifierNode
-    payloadType: TypeNode
-    isOverload: Bool
+    payload_type: TypeNode
+    is_overload: Bool
     span: SourceSpan
 }
 
 
-// payloadType may be None.
+// payload_type may be None.
 //
 // Regular enum variants do not carry values.
 //
 // enum data variants may carry at most one payload.
 // Typed variants with distinct payload types may share a name.
-// isOverload is false for the first variant in that overload set and true for later variants.
+// is_overload is false for the first variant in that overload set and true for later variants.
 // Regular enum variants and non-typed enum data variants have unique names.
 
 
@@ -508,7 +508,7 @@ data DataDeclaration {
     attributes: AttributeNode[]
     name: IdentifierNode
     visibility: VisibilityNode
-    genericParameters: GenericParameter[]
+    generic_parameters: GenericParameter[]
     fields: DataField[]
     constructors: ConstructorDeclaration[]
     methods: FunctionDeclaration[]
@@ -519,7 +519,7 @@ data DataDeclaration {
 data DataField {
     attributes: AttributeNode[]
     name: IdentifierNode
-    fieldType: TypeNode
+    field_type: TypeNode
     span: SourceSpan
 }
 
@@ -545,10 +545,10 @@ enum VariableBindingKind {
 data VariableDeclaration {
     attributes: AttributeNode[]
     name: IdentifierNode
-    variableType: TypeNode?
+    variable_type: TypeNode?
     initializer: Expression
-    bindingKind: VariableBindingKind
-    isTypeInferred: Bool
+    binding_kind: VariableBindingKind
+    is_type_inferred: Bool
     span: SourceSpan
 }
 
@@ -578,54 +578,54 @@ data NamedTypeNode {
 
 
 data GenericTypeNode {
-    baseType: TypeNode
+    base_type: TypeNode
     arguments: TypeNode[]
     span: SourceSpan
 }
 
 
 data ArrayTypeNode {
-    elementType: TypeNode
+    element_type: TypeNode
     span: SourceSpan
 }
 
 
 data FixedArrayTypeNode {
-    elementType: TypeNode
-    maximumIndex: Expression
+    element_type: TypeNode
+    maximum_index: Expression
     span: SourceSpan
 }
 
 
 data PointerTypeNode {
-    pointeeType: TypeNode
+    pointee_type: TypeNode
     span: SourceSpan
 }
 
 
 data ReferenceTypeNode {
-    referencedType: TypeNode
+    referenced_type: TypeNode
     lifetime: LifetimeNode
     span: SourceSpan
 }
 
 
 data MutableReferenceTypeNode {
-    referencedType: TypeNode
+    referenced_type: TypeNode
     lifetime: LifetimeNode
     span: SourceSpan
 }
 
 
 data TupleTypeNode {
-    elementTypes: TypeNode[]
+    element_types: TypeNode[]
     span: SourceSpan
 }
 
 
 data FunctionTypeNode {
-    parameterTypes: TypeNode[]
-    returnType: TypeNode
+    parameter_types: TypeNode[]
+    return_type: TypeNode
     span: SourceSpan
 }
 
@@ -641,10 +641,10 @@ data UnitTypeNode {
 // fn(Int, Str) -> Bool
 
 // GenericTypeNode
-// ├── baseType: Arc
+// ├── base_type: Arc
 // └── arguments
 //     └── GenericTypeNode
-//         ├── baseType: Mutex
+//         ├── base_type: Mutex
 //         └── arguments
 //             └── NamedTypeNode(Str)
 
@@ -706,12 +706,12 @@ data BlockStatement {
 
 data ExpressionStatement {
     expression: Expression
-    isDiscarded: Bool
+    is_discarded: Bool
     span: SourceSpan
 }
 
-// `expression;` sets isDiscarded to true.
-// A final block expression without `;` sets isDiscarded to false and may be
+// `expression;` sets is_discarded to true.
+// A final block expression without `;` sets is_discarded to false and may be
 // desugared into the block/function value, like Rust tail expressions.
 
 
@@ -759,9 +759,9 @@ data ReturnStatement {
 
 data IfStatement {
     condition: Expression
-    thenBlock: BlockStatement
-    elseIfBranches: ElseIfBranch[]
-    elseBlock: BlockStatement
+    then_block: BlockStatement
+    else_if_branches: ElseIfBranch[]
+    else_block: BlockStatement
     span: SourceSpan
 }
 
@@ -773,7 +773,7 @@ data ElseIfBranch {
 }
 
 
-// elseBlock may be None.
+// else_block may be None.
 
 
 // ============================================================
@@ -855,22 +855,22 @@ data ContinueStatement {
 // ============================================================
 
 data TryStatement {
-    tryBlock: BlockStatement
+    try_block: BlockStatement
     catches: CatchClause[]
-    finallyBlock: BlockStatement
+    finally_block: BlockStatement
     span: SourceSpan
 }
 
 
 data CatchClause {
-    variableName: IdentifierNode
-    exceptionType: TypeNode
+    variable_name: IdentifierNode
+    exception_type: TypeNode
     body: BlockStatement
     span: SourceSpan
 }
 
 
-// finallyBlock may be None.
+// finally_block may be None.
 
 
 // ============================================================
@@ -940,12 +940,12 @@ enum LiteralKind {
 
 data LiteralExpression {
     kind: LiteralKind
-    sourceText: Str
+    source_text: Str
     span: SourceSpan
 }
 
 
-// sourceText preserves the original spelling.
+// source_text preserves the original spelling.
 //
 // Examples:
 //
@@ -1044,7 +1044,7 @@ data CallExpression {
 
 // Example:
 //
-// Add(1, 2)
+// add(1, 2)
 
 
 // ============================================================
@@ -1053,7 +1053,7 @@ data CallExpression {
 
 data MethodCallExpression {
     receiver: Expression
-    methodName: IdentifierNode
+    method_name: IdentifierNode
     arguments: Expression[]
     span: SourceSpan
 }
@@ -1066,7 +1066,7 @@ data MethodCallExpression {
 
 // MethodCallExpression
 // ├── receiver: client
-// ├── methodName: send
+// ├── method_name: send
 // └── arguments
 //     ├── request
 //     └── handler
@@ -1078,7 +1078,7 @@ data MethodCallExpression {
 
 data MemberAccessExpression {
     receiver: Expression
-    memberName: IdentifierNode
+    member_name: IdentifierNode
     span: SourceSpan
 }
 
@@ -1099,15 +1099,13 @@ data IndexExpression {
 // ============================================================
 
 data NewExpression {
-    constructedType: TypeNode
+    constructed_type: TypeNode
     arguments: Expression[]
     span: SourceSpan
 }
 
 
-// `constructedType` may be None when the source spelling is `new()`.
-// In that form HIR resolves the constructed type from the assignment,
-// argument or return context.
+// Class construction always spells its type explicitly as `new Type(...)`.
 
 
 // ============================================================
@@ -1115,10 +1113,9 @@ data NewExpression {
 // ============================================================
 
 data FunctionExpression {
-    parameters: ParameterNode[]
-    returnType: TypeNode
+    parameters: Identifier[]
     body: BlockStatement
-    captureKind: FunctionCaptureKind
+    capture_kind: FunctionCaptureKind
     span: SourceSpan
 }
 
@@ -1131,12 +1128,10 @@ enum FunctionCaptureKind {
 
 // Examples:
 //
-// fn(value: Int) -> Int {
-//     return value + 1;
-// }
+// fn(a, b) { a + b }
 //
 // move fn() {
-//     Thread.yield();
+//     std::thread::yield();
 // }
 
 
@@ -1232,8 +1227,8 @@ data TupleExpression {
 
 data IfExpression {
     condition: Expression
-    thenBlock: BlockStatement
-    elseBlock: BlockStatement
+    then_block: BlockStatement
+    else_block: BlockStatement
     span: SourceSpan
 }
 
@@ -1343,14 +1338,14 @@ enum data MacroMatcherElement {
 
 
 data MacroTokenMatcher {
-    tokenText: Str
+    token_text: Str
     span: SourceSpan
 }
 
 
 data MacroFragmentMatcher {
-    variableName: IdentifierNode
-    fragmentKind: MacroFragmentKind
+    variable_name: IdentifierNode
+    fragment_kind: MacroFragmentKind
     span: SourceSpan
 }
 
@@ -1381,7 +1376,7 @@ enum MacroRepetitionKind {
 data MacroRepetitionMatcher {
     elements: MacroMatcherElement[]
     separator: MacroSeparator
-    repetitionKind: MacroRepetitionKind
+    repetition_kind: MacroRepetitionKind
     span: SourceSpan
 }
 
@@ -1413,20 +1408,20 @@ enum data MacroExpansionElement {
 
 
 data MacroExpansionToken {
-    tokenText: Str
+    token_text: Str
     span: SourceSpan
 }
 
 
 data MacroExpansionVariable {
-    variableName: IdentifierNode
+    variable_name: IdentifierNode
     span: SourceSpan
 }
 
 
 data MacroExpansionRepetition {
     elements: MacroExpansionElement[]
-    repetitionKind: MacroRepetitionKind
+    repetition_kind: MacroRepetitionKind
     span: SourceSpan
 }
 
@@ -1436,7 +1431,7 @@ data MacroExpansionRepetition {
 // ============================================================
 
 data MacroCallExpression {
-    macroName: IdentifierNode
+    macro_name: IdentifierNode
     arguments: MacroArgument[]
     span: SourceSpan
 }
@@ -1463,7 +1458,7 @@ data MacroArgument {
 
 data TokenNode {
     kind: TokenKind
-    sourceText: Str
+    source_text: Str
     span: SourceSpan
 }
 
@@ -1570,7 +1565,7 @@ data TokenNode {
 
 // Source:
 //
-// fn Add(a: Int, b: Int) -> Int {
+// fn add(a: Int, b: Int) -> Int {
 //     return a + b;
 // }
 
@@ -1587,7 +1582,7 @@ data TokenNode {
 //     │   └── ParameterDeclaration
 //     │       ├── name: b
 //     │       └── type: Int
-//     ├── returnType: Int
+//     ├── return_type: Int
 //     └── body
 //         └── BlockStatement
 //             └── ReturnStatement

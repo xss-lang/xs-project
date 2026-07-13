@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Recursively copies changed files from one directory into a backup directory.
 
-module Programs::FileBackup;
+module programs::file_backup;
 
 imports collections, stdio, fs, process;
 
@@ -21,29 +21,29 @@ data FileEntry {
 }
 
 class BackupPlan {
-    sourceRoot: Str;
-    targetRoot: Str;
+    source_root: Str;
+    target_root: Str;
     files: std::collections::Vector<FileEntry>;
 
-    BackupPlan(sourceRoot: Str, targetRoot: Str) {
-        self.sourceRoot = sourceRoot;
-        self.targetRoot = targetRoot;
+    BackupPlan(source_root: Str, target_root: Str) {
+        self.source_root = source_root;
+        self.target_root = target_root;
         self.files = std::collections::Vector<FileEntry>::new();
     }
 
-    fn Discover() -> Result<()> {
-        if (!std::fs::is_dir(self.sourceRoot)) {
+    fn discover() -> Result<()> {
+        if (!std::fs::is_dir(self.source_root)) {
             return Error(Error {
                 message: "invalid backup source",
             });
         }
 
-        for (path: Str in std::fs::walk_dir(self.sourceRoot)) {
+        for (path: Str in std::fs::walk_dir(self.source_root)) {
             if (std::fs::is_dir(path)) {
                 continue;
             }
 
-            relative: Str = std::fs::relative_path(self.sourceRoot, path);
+            relative: Str = std::fs::relative_path(self.source_root, path);
             self.files.push(FileEntry {
                 path: path,
                 relative: relative,
@@ -54,11 +54,11 @@ class BackupPlan {
         return Ok();
     }
 
-    fn Execute() -> Result<()> {
+    fn execute() -> Result<()> {
         for (entry: FileEntry in self.files) {
-            destination: Str = std::fs::join_path(self.targetRoot, entry.relative);
+            destination: Str = std::fs::join_path(self.target_root, entry.relative);
 
-            if (self.ShouldCopy(entry, destination)) {
+            if (self.should_copy(entry, destination)) {
                 std::fs::create_dir(std::fs::parent_dir(destination));
                 std::fs::copy_file(entry.path, destination);
                 println!("copied {}", entry.relative);
@@ -67,7 +67,7 @@ class BackupPlan {
         return Ok();
     }
 
-    fn ShouldCopy(entry: FileEntry, destination: Str) -> Bool {
+    fn should_copy(entry: FileEntry, destination: Str) -> Bool {
         if (!std::fs::exists(destination)) {
             return true;
         }
@@ -76,14 +76,14 @@ class BackupPlan {
     }
 }
 
-fn Main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
+fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     if (args.length() != 3) {
         eprintln!("usage: backup <source> <target>");
         return 2;
     }
 
-    plan: BackupPlan = new(args[1], args[2]);
-    plan.Discover()@;
-    plan.Execute()@;
+    plan: BackupPlan = new BackupPlan(args[1], args[2]);
+    plan.discover()@;
+    plan.execute()@;
     return Ok(0);
 }

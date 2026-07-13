@@ -91,7 +91,7 @@
 
 // Valid direct source without module:
 
-fn Main() {
+fn main() {
 }
 
 
@@ -100,9 +100,9 @@ fn Main() {
 
 // Importable source:
 
-module Math;
+module math;
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -112,20 +112,20 @@ fn Add(a: Int, b: Int) -> Int {
 
 // Valid:
 
-module Math;
+module math;
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
 
 // Invalid:
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
-module Math;
+module math;
 
 
 // A file without a module declaration cannot be resolved as an
@@ -146,12 +146,12 @@ module Math;
 
 // Contents:
 
-module Math;
+module math;
 
 
 // Import:
 
-imports Math;
+imports math;
 
 
 // This is valid.
@@ -162,14 +162,14 @@ imports Math;
 
 // Recommended:
 //
-// File: Math.xs
+// File: math.xs
 //
-// module Math;
+// module math;
 
 
 // Import resolution uses:
 //
-// module Math;
+// module math;
 //
 // It does not use:
 //
@@ -187,8 +187,8 @@ imports Math;
 // Conceptual discovered-module record:
 
 data DiscoveredModule {
-    moduleName: Str
-    sourcePath: Str
+    module_name: Str
+    source_path: Str
 }
 
 
@@ -201,13 +201,13 @@ data DiscoveredModule {
 
 // Declaration:
 
-module Math;
+module math;
 
 
 // Registry entry:
 //
-// moduleName: "Math"
-// sourcePath: "modules/math/MathUtils.xs"
+// module_name: "math"
+// source_path: "modules/math/MathUtils.xs"
 
 
 // Files without module declarations are not added to the module
@@ -223,26 +223,26 @@ module Math;
 
 // Valid:
 
-// File: modules/Math.xs
+// File: modules/math.xs
 
-module Math;
+module math;
 
 
-// File: modules/IO.xs
+// File: modules/io.xs
 
-module IO;
+module io;
 
 
 // Invalid duplicate module name:
 
-// File: first/Math.xs
+// File: first/math.xs
 
-module Math;
+module math;
 
 
 // File: second/OtherFile.xs
 
-module Math;
+module math;
 
 
 // Duplicate module names produce a compile-time error.
@@ -255,7 +255,7 @@ module Math;
 // Import declarations
 // ============================================================
 
-imports Math;
+imports math;
 
 
 // imports resolves the declared module name.
@@ -266,7 +266,7 @@ imports Math;
 // - Resolve by source file name
 // - Copy source text
 // - Behave like #include
-// - Automatically add a file to addFiles
+// - Automatically add a file to add_files
 // - Create a textual translation unit
 
 
@@ -274,7 +274,7 @@ imports Math;
 //
 // - Find the module in the discovered-module registry
 // - Make the module available for name resolution
-// - Add a dependency edge to the HIR dependency graph
+// - add a dependency edge to the HIR dependency graph
 // - Make accessible declarations available according to
 //   visibility rules
 
@@ -321,29 +321,29 @@ imports Math;
 
 // libraries/math/MathUtils.xs:
 
-module Math;
+module math;
 
-public fn Add(a: Int, b: Int) -> Int {
+public fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
 
 // source/Main.xs:
 
-imports Math;
+imports math;
 
-fn Main() {
-    value: Int = Math::Add(2, 3);
+fn main() {
+    value: Int = math::add(2, 3);
 }
 
 
 // Resolution:
 //
-// imports Math
+// imports math
 //     ↓
 // recursive module registry lookup
 //     ↓
-// module Math
+// module math
 //     ↓
 // libraries/math/MathUtils.xs
 
@@ -352,9 +352,9 @@ fn Main() {
 // Missing module
 // ============================================================
 
-// Invalid when no recursively discovered .xs file declares Math:
+// Invalid when no recursively discovered .xs file declares math:
 
-imports Math;
+imports math;
 
 
 // Result:
@@ -364,23 +364,23 @@ imports Math;
 // - No file-name guessing is performed
 
 
-// A file named Math.xs is not enough by itself.
+// A file named math.xs is not enough by itself.
 //
 // It must declare:
 
-module Math;
+module math;
 
 
 // ============================================================
 // Direct build sources
 // ============================================================
 
-// Files listed in .xsproj addFiles are direct build-graph sources.
+// Files listed in .xsproj add_files are direct build-graph sources.
 
 
 // Example:
 
-addFiles {
+add_files {
     entry: "source/Main.xs"
 
     [
@@ -401,21 +401,21 @@ addFiles {
 // Imported sources
 // ============================================================
 
-// A source file does not need to appear in addFiles to be imported.
+// A source file does not need to appear in add_files to be imported.
 
 
 // Example:
 //
-// modules/Math.xs is not listed in addFiles.
+// modules/math.xs is not listed in add_files.
 //
 // It declares:
 //
-// module Math;
+// module math;
 
 
 // A direct source may use:
 
-imports Math;
+imports math;
 
 
 // The compiler finds it through recursive project-root module
@@ -424,7 +424,7 @@ imports Math;
 
 // Therefore:
 //
-// addFiles
+// add_files
 //     Explicit direct build-graph inputs.
 //
 // imports
@@ -466,16 +466,16 @@ imports Math;
 // Parser result:
 
 // ImportDeclaration
-// └── modulePath: Math
+// └── module_path: math
 
 
 // HIR resolves:
 
-// ImportDeclaration(Math)
+// ImportDeclaration(math)
 //     ↓
-// ModuleSymbol(Math)
+// ModuleSymbol(math)
 //     ↓
-// SourceFile(modules/Math.xs)
+// SourceFile(modules/math.xs)
 
 
 // HIR dependency graph tracks:
@@ -491,7 +491,7 @@ imports Math;
 // Example dependency edge:
 
 // Main module
-//     ──imports──> Math module
+//     ──imports──> math module
 
 
 // ============================================================
@@ -558,17 +558,17 @@ imports Math;
 
 // These are different names:
 
-module Math;
+module math;
 
 module math;
 
 
 // Import must match the declared module name exactly:
 
-imports Math;
+imports math;
 
 
-// This does not resolve module Math:
+// This does not resolve module math:
 
 imports math;
 
@@ -582,12 +582,12 @@ imports math;
 
 // Example:
 
-module Math::Advanced::Algebra;
+module math::advanced::algebra;
 
 
 // Import:
 
-imports Math::Advanced::Algebra;
+imports math::advanced::algebra;
 
 
 // The physical directory structure does not need to match the
@@ -601,7 +601,7 @@ imports Math::Advanced::Algebra;
 
 // Contents:
 
-module Math::Advanced::Algebra;
+module math::advanced::algebra;
 
 
 // Resolution still uses the declared module path.
@@ -618,19 +618,19 @@ module Math::Advanced::Algebra;
 
 // Example:
 
-module Math;
-namespace Advanced;
-namespace Algebra;
+module math;
+namespace advanced;
+namespace algebra;
 
 
 // Effective namespace path:
 //
-// Math::Advanced::Algebra
+// math::advanced::algebra
 
 
 // imports resolves the module name:
 
-imports Math;
+imports math;
 
 
 // Namespace resolution is performed after module resolution in HIR.
@@ -755,7 +755,7 @@ imports Math;
 //
 //     Compile-time error.
 //
-// addFiles:
+// add_files:
 //
 //     Adds direct build-graph sources.
 //

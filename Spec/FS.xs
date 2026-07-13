@@ -15,7 +15,7 @@ imports fs, stdio, collections, result;
 
 // raw writes
 
-fn WriteText() -> Result<()> {
+fn write_text() -> Result<()> {
     std::fs::write("log.txt", "hello\n");
     std::fs::write(std::stdout(), "stdout\n");
     std::fs::write(std::stderr(), "stderr\n");
@@ -32,12 +32,12 @@ fn WriteText() -> Result<()> {
 
 // raw reads
 
-fn ReadText() -> Result<()> {
+fn read_text() -> Result<()> {
     content: Str = std::fs::read_to_str("log.txt");
     println!("{}", content);
 }
 
-fn ReadBytes() -> Result<()> {
+fn read_bytes() -> Result<()> {
     bytes: std::collections::Vector<Byte> = std::fs::read("image.png");
     println!("file size: {}", bytes.length());
 }
@@ -49,7 +49,7 @@ fn ReadBytes() -> Result<()> {
 
 // create paths
 
-fn CreatePaths() -> Result<()> {
+fn create_paths() -> Result<()> {
     std::fs::create_dir("data/backups");
     std::fs::create_file("data/backups/log.txt");
 }
@@ -69,7 +69,7 @@ fn CreatePaths() -> Result<()> {
 
 // move, copy and remove
 
-fn MoveCopyRemove() -> Result<()> {
+fn move_copy_remove() -> Result<()> {
     std::fs::copy_file("data/source.txt", "data/copy.txt");
     std::fs::move("data/copy.txt", "data/backups/copy.txt");
     std::fs::remove_file("data/source.txt");
@@ -84,7 +84,7 @@ fn MoveCopyRemove() -> Result<()> {
 
 // list directory
 
-fn ListDirectory() -> Result<()> {
+fn list_directory() -> Result<()> {
     for (entry: Str in std::fs::list_dir(".")) {
         println!("{}", entry.trim());
     }
@@ -96,7 +96,7 @@ fn ListDirectory() -> Result<()> {
 
 // metadata and path helpers
 
-fn InspectPath(path: Str) -> Result<()> {
+fn inspect_path(path: Str) -> Result<()> {
     if (std::fs::exists(path) && std::fs::is_dir(path)) {
         for (entry: Str in std::fs::walk_dir(path)) {
             relative: Str = std::fs::relative_path(path, entry);
@@ -105,7 +105,7 @@ fn InspectPath(path: Str) -> Result<()> {
     }
 }
 
-fn BuildPath(root: Str, name: Str) -> Str {
+fn build_path(root: Str, name: Str) -> Str {
     path: Str = std::fs::join_path(root, name);
     return std::fs::parent_dir(path);
 }
@@ -124,7 +124,7 @@ fn BuildPath(root: Str, name: Str) -> Str {
 
 // file handles and open options
 
-fn OpenWithOptions() -> Result<()> {
+fn open_with_options() -> Result<()> {
     file: std::fs::File = std::fs::OpenOptions::new()
         .create(true)
         .append(true)

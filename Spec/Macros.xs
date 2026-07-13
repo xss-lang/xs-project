@@ -78,7 +78,7 @@ say!("hello");
 
 // Equivalent expansion:
 
-fn ExpandedMain() {
+fn expanded_main() {
     println!("{}", "Alpha");
 }
 
@@ -188,7 +188,7 @@ macro_rules! describe {
     };
 }
 
-fn InvalidMultipleMatchingRules() {
+fn invalid_multiple_matching_rules() {
     describe!(value);
 }
 
@@ -238,8 +238,8 @@ macro_rules! identifier_macro {
 // Type:
 
 macro_rules! type_macro {
-    ($typeValue:ty) -> {
-        value: $typeValue;
+    ($type_value:ty) -> {
+        value: $type_value;
     };
 }
 
@@ -247,8 +247,8 @@ macro_rules! type_macro {
 // Path:
 
 macro_rules! path_macro {
-    ($modulePath:path) -> {
-        $modulePath;
+    ($module_path:path) -> {
+        $module_path;
     };
 }
 
@@ -256,9 +256,9 @@ macro_rules! path_macro {
 // Pattern:
 
 macro_rules! pattern_macro {
-    ($patternValue:pat) -> {
+    ($pattern_value:pat) -> {
         match (value) {
-            $patternValue -> {
+            $pattern_value -> {
             },
         }
     };
@@ -268,8 +268,8 @@ macro_rules! pattern_macro {
 // Statement:
 
 macro_rules! statement_macro {
-    ($statementValue:stmt) -> {
-        $statementValue
+    ($statement_value:stmt) -> {
+        $statement_value
     };
 }
 
@@ -277,8 +277,8 @@ macro_rules! statement_macro {
 // Block:
 
 macro_rules! block_macro {
-    ($blockValue:block) -> {
-        $blockValue
+    ($block_value:block) -> {
+        $block_value
     };
 }
 
@@ -286,8 +286,8 @@ macro_rules! block_macro {
 // Item:
 
 macro_rules! item_macro {
-    ($itemValue:item) -> {
-        $itemValue
+    ($item_value:item) -> {
+        $item_value
     };
 }
 
@@ -295,8 +295,8 @@ macro_rules! item_macro {
 // Literal:
 
 macro_rules! literal_macro {
-    ($literalValue:literal) -> {
-        print!("{}", $literalValue);
+    ($literal_value:literal) -> {
+        print!("{}", $literal_value);
     };
 }
 
@@ -304,8 +304,8 @@ macro_rules! literal_macro {
 // Metadata:
 
 macro_rules! metadata_macro {
-    ($metadataValue:meta) -> {
-        $metadataValue
+    ($metadata_value:meta) -> {
+        $metadata_value
     };
 }
 
@@ -313,8 +313,8 @@ macro_rules! metadata_macro {
 // Token tree:
 
 macro_rules! token_tree_macro {
-    ($tokenValue:tt) -> {
-        $tokenValue
+    ($token_value:tt) -> {
+        $token_value
     };
 }
 
@@ -322,8 +322,8 @@ macro_rules! token_tree_macro {
 // Lifetime:
 
 macro_rules! lifetime_macro {
-    ($lifetimeValue:lifetime) -> {
-        $lifetimeValue
+    ($lifetime_value:lifetime) -> {
+        $lifetime_value
     };
 }
 
@@ -331,8 +331,8 @@ macro_rules! lifetime_macro {
 // Visibility:
 
 macro_rules! visibility_macro {
-    ($visibilityValue:vis) -> {
-        $visibilityValue fn Generated() {
+    ($visibility_value:vis) -> {
+        $visibility_value fn generated() {
         }
     };
 }
@@ -420,7 +420,7 @@ macro_rules! comma_separated_required {
 
 // Valid:
 
-fn RepetitionCalls() {
+fn repetition_calls() {
     comma_separated!();
     comma_separated!(1);
     comma_separated!(1, 2, 3);
@@ -494,10 +494,10 @@ macro_rules! invalid_duplicate_with_repetition {
 // Valid: every matcher variable has a unique name.
 
 macro_rules! unique_variables {
-    ($expressionValue:expr) -> {
+    ($expression_value:expr) -> {
     };
 
-    ($identifierValue:ident) -> {
+    ($identifier_value:ident) -> {
     };
 }
 
@@ -520,7 +520,7 @@ macro_rules! global_macro {
 
 // A macro may also be declared inside a scope.
 
-fn LocalMacroScope() {
+fn local_macro_scope() {
     macro_rules! local_macro {
         () -> {
             println!("local");
@@ -536,7 +536,7 @@ fn LocalMacroScope() {
 
 // Nested scopes may use a macro from an enclosing scope.
 
-fn OuterScope() {
+fn outer_scope() {
     macro_rules! outer_macro {
         () -> {
             println!("outer");
@@ -560,7 +560,7 @@ fn OuterScope() {
 // A macro may be called before its textual declaration in the
 // same scope.
 
-fn CallBeforeDefinition() {
+fn call_before_definition() {
     local_macro!();
 
     macro_rules! local_macro {
@@ -584,14 +584,14 @@ fn CallBeforeDefinition() {
 
 macro_rules! create_value {
     () -> {
-        generatedValue: Int = 42;
+        generated_value: Int = 42;
     };
 }
 
-fn GeneratedVariable() {
+fn generated_variable() {
     create_value!();
 
-    print!("{}", generatedValue);
+    print!("{}", generated_value);
 }
 
 
@@ -605,8 +605,8 @@ macro_rules! create_type {
     };
 }
 
-fn GeneratedTypeBeforeCall() {
-    user: GeneratedUser = new();
+fn generated_type_before_call() {
+    user: GeneratedUser = new GeneratedUser();
 
     create_type!();
 }
@@ -640,7 +640,7 @@ macro_rules! create_conflicting_value {
     };
 }
 
-fn InvalidGeneratedNameConflict() {
+fn invalid_generated_name_conflict() {
     value: Int = 1;
 
     create_conflicting_value!();
@@ -664,12 +664,12 @@ macro_rules! inner_macro {
 }
 
 macro_rules! outer_macro {
-    ($outerValue:expr) -> {
-        inner_macro!($outerValue);
+    ($outer_value:expr) -> {
+        inner_macro!($outer_value);
     };
 }
 
-fn NestedMacroCall() {
+fn nested_macro_call() {
     outer_macro!("Alpha");
 }
 
@@ -806,7 +806,7 @@ macro_rules! only_literal {
     };
 }
 
-fn InvalidUnmatchedMacroCall() {
+fn invalid_unmatched_macro_call() {
     only_literal!(first + second);
 }
 

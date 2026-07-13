@@ -55,8 +55,8 @@ data Point {
         self.y = value;
     }
 
-    fn Translate(dx: Int, dy: Int) { }
-    fn Translate(offset: Point) { }
+    fn translate(dx: Int, dy: Int) { }
+    fn translate(offset: Point) { }
 
     fn operator +(right: Point) -> Point {
         return right;

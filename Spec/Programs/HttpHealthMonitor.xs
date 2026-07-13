@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Concurrently checks HTTP endpoints and prints a compact health report.
 
-module Programs::HttpHealthMonitor;
+module programs::http_health_monitor;
 
-imports http, std, collections, thread, sync;
+imports http, collections, thread, sync;
 
 enum data HealthError {
     Network: Error,
@@ -21,17 +21,17 @@ data Endpoint {
 data HealthResult {
     endpoint: Endpoint;
     ok: Bool;
-    statusCode: Int;
-    bodyPreview: Str;
+    status_code: Int;
+    body_preview: Str;
 }
 
 interface HealthReporter {
-    fn Report(result: HealthResult) -> Result<()>;
+    fn report(result: HealthResult) -> Result<()>;
 }
 
 class ConsoleReporter : HealthReporter {
 
-    fn Report(result: HealthResult) -> Result<()> {
+    fn report(result: HealthResult) -> Result<()> {
         state: Str = if (result.ok) {
             "OK";
         }
@@ -42,30 +42,30 @@ class ConsoleReporter : HealthReporter {
             "{} {} status={} preview=\"{}\"",
             state,
             result.endpoint.name,
-            result.statusCode,
-            result.bodyPreview
+            result.status_code,
+            result.body_preview
         );
         return Ok();
     }
 }
 
 class HealthClient {
-    client: Http::client;
+    client: std::http::Client;
 
     HealthClient() {
-        self.client = new();
+        self.client = new std::http::Client();
     }
 
-    async fn Check(endpoint: Endpoint) -> Task<Result<HealthResult, Error>> {
-        request: Http.request = new()
-            .uri(URI.create(endpoint.url))
+    async fn check(endpoint: Endpoint) -> Task<Result<HealthResult, Error>> {
+        request: std::http::Request = std::http::Request::builder()
+            .uri(std::http::Uri::create(endpoint.url))
             .header("Accept", "text/plain")
             .build();
 
-        response: Http::response<Str> =
-            await self.client.sendAsync(
+        response: std::http::Response<Str> =
+            await self.client.send_async(
                 request,
-                HttpResponse::BodyHandlers.ofstr()
+                std::http::BodyHandlers::of_str()
             );
 
         body: Str = response.body();
@@ -78,28 +78,28 @@ class HealthClient {
 
         return Ok(HealthResult {
             endpoint: endpoint,
-            ok: response.statusCode() >= 200 && response.statusCode() < 300,
-            statusCode: response.statusCode(),
-            bodyPreview: preview,
+            ok: response.status_code() >= 200 && response.status_code() < 300,
+            status_code: response.status_code(),
+            body_preview: preview,
         });
     }
 }
 
-async fn CheckAll(
+async fn check_all(
     endpoints: std::collections::Vector<Endpoint>,
     reporter: HealthReporter
 ) -> Task<Result<Int, Error>> {
-    client: HealthClient = new();
+    client: HealthClient = new HealthClient();
     tasks: std::collections::Vector<Task<Result<HealthResult, Error>>> = std::collections::Vector<Task<Result<HealthResult, Error>>>::new();
 
     for (endpoint: Endpoint in endpoints) {
-        tasks.push(client.Check(endpoint));
+        tasks.push(client.check(endpoint));
     }
 
     failures: Int = 0;
     for (task: Task<HealthResult> in tasks) {
         result: HealthResult = await task@;
-        reporter.Report(result)@;
+        reporter.report(result)@;
 
         if (!result.ok) {
             failures += 1;
@@ -109,7 +109,7 @@ async fn CheckAll(
     return Ok(failures);
 }
 
-fn DefaultEndpoints() -> std::collections::Vector<Endpoint> {
+fn default_endpoints() -> std::collections::Vector<Endpoint> {
     endpoints: std::collections::Vector<Endpoint> = std::collections::Vector<Endpoint>::new();
 
     endpoints.push(Endpoint {
@@ -130,10 +130,10 @@ fn DefaultEndpoints() -> std::collections::Vector<Endpoint> {
     return endpoints;
 }
 
-async fn Main() -> Task<Int> {
-    reporter: ConsoleReporter = new();
+async fn main() -> Task<Int> {
+    reporter: ConsoleReporter = new ConsoleReporter();
 
-    result: Result<Int, Error> = await CheckAll(DefaultEndpoints(), reporter);
+    result: Result<Int, Error> = await check_all(default_endpoints(), reporter);
     match (result) {
         Ok(failures) -> {
             if (failures == 0) {
@@ -144,7 +144,7 @@ async fn Main() -> Task<Int> {
             return failures;
         },
         Error(error) -> {
-            eprintln!("Health check failed: {}", error.ToString());
+            eprintln!("Health check failed: {}", error.to_string());
             return 1;
         },
     }

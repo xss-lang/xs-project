@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Reads CSV sales records, groups them by region, and prints totals.
 
-module Programs::CsvAnalytics;
+module programs::csv_analytics;
 
 imports collections, stdio, fs, process;
 
@@ -27,7 +27,7 @@ data RegionTotal {
 }
 
 class CsvParser {
-    static fn ParseLine(line: Str) -> Result<Sale, Error> {
+    static fn parse_line(line: Str) -> Result<Sale, Error> {
         fields: std::collections::Vector<Str> = line.split(",");
         if (fields.length() != 4) {
             return Error(Error {
@@ -38,20 +38,20 @@ class CsvParser {
         return Ok(Sale {
             region: fields[0],
             product: fields[1],
-            quantity: Int::Parse(fields[2]),
-            revenue: Float::Parse(fields[3]),
+            quantity: Int::parse(fields[2]),
+            revenue: Float::parse(fields[3]),
         });
     }
 }
 
 class Analytics {
-    totals: std::collections::hash_map<Str, RegionTotal>;
+    totals: std::collections::HashMap<Str, RegionTotal>;
 
     Analytics() {
-        self.totals = std::collections::hash_map<Str, RegionTotal>::new();
+        self.totals = std::collections::HashMap<Str, RegionTotal>::new();
     }
 
-    fn Add(sale: Sale) {
+    fn add(sale: Sale) {
         if (!self.totals.contains(sale.region)) {
             self.totals[sale.region] = RegionTotal {
                 region: sale.region,
@@ -64,7 +64,7 @@ class Analytics {
         self.totals[sale.region].revenue += sale.revenue;
     }
 
-    fn Print() -> Result<()> {
+    fn print() -> Result<()> {
         for ((else, total): (Str, RegionTotal) in self.totals) {
             println!(
                 "{}: units={} revenue={}",
@@ -77,7 +77,7 @@ class Analytics {
     }
 }
 
-fn LoadSales(path: Str) -> Result<std::collections::Vector<Sale>, Error> {
+fn load_sales(path: Str) -> Result<std::collections::Vector<Sale>, Error> {
     rows: std::collections::Vector<Sale> = std::collections::Vector<Sale>::new();
     content: Str = std::fs::read_to_str(path);
 
@@ -85,25 +85,25 @@ fn LoadSales(path: Str) -> Result<std::collections::Vector<Sale>, Error> {
         if (line.length() == 0) {
             continue;
         }
-        rows.push(CsvParser::ParseLine(line)@);
+        rows.push(CsvParser::parse_line(line)@);
     }
 
     return Ok(rows);
 }
 
-fn Main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
+fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     path: Str = if (args.length() > 1) {
         args[1];
     }
     else {
         "sales.csv";
     };
-    analytics: Analytics = new();
+    analytics: Analytics = new Analytics();
 
-    for (sale: Sale in LoadSales(path)@) {
-        analytics.Add(sale);
+    for (sale: Sale in load_sales(path)@) {
+        analytics.add(sale);
     }
 
-    analytics.Print()@;
+    analytics.print()@;
     return Ok(0);
 }

@@ -8,35 +8,35 @@
 //
 // Confirmed features:
 //
-// - Http::client
-// - Http.request
-// - Http::response<T>
-// - URI.create(...)
+// - std::http::Client
+// - std::http::Request
+// - std::http::Response<T>
+// - std::http::Uri::create(...)
 // - Request builder methods
 // - Str request bodies
 // - Str response body handlers
 // - Synchronous send(...)
-// - Asynchronous sendAsync(...)
+// - Asynchronous send_async(...)
 // - Error payloads through Result
 //
 // No additional HTTP API is defined in this file.
 //
 
-imports http, std, result;
+imports http, result;
 
 
 // ============================================================
 // Synchronous request
 // ============================================================
 
-fn Main() -> Result<()> {
-    client: Http::client = new();
+fn main() -> Result<()> {
+    client: std::http::Client = new std::http::Client();
 
-    request: Http.request = new()
-        .uri(URI.create("https://httpbin.org/post"))
+    request: std::http::Request = std::http::Request::builder()
+        .uri(std::http::Uri::create("https://httpbin.org/post"))
         .header("Content-Type", "application/json")
-        .POST(
-            HttpRequest::BodyPublishers.ofstr(
+        .post(
+            std::http::BodyPublishers::of_str(
                 """
                 {
                     "name": "Alpha"
@@ -46,10 +46,10 @@ fn Main() -> Result<()> {
         )
         .build();
 
-    response: Http::response<Str> =
+    response: std::http::Response<Str> =
         client.send(
             request,
-            HttpResponse::BodyHandlers.ofstr()
+            std::http::BodyHandlers::of_str()
         )@;
 
     print!("{}", response.body());
@@ -61,9 +61,9 @@ fn Main() -> Result<()> {
 // Request builder
 // ============================================================
 
-fn BuildGetRequest() {
-    request: Http.request = new()
-        .uri(URI.create("https://example.com"))
+fn build_get_request() {
+    request: std::http::Request = std::http::Request::builder()
+        .uri(std::http::Uri::create("https://example.com"))
         .build();
 }
 
@@ -82,12 +82,12 @@ fn BuildGetRequest() {
 // Str request body
 // ============================================================
 
-fn StrRequestBody() {
-    request: Http.request = new()
-        .uri(URI.create("https://httpbin.org/post"))
+fn str_request_body() {
+    request: std::http::Request = std::http::Request::builder()
+        .uri(std::http::Uri::create("https://httpbin.org/post"))
         .header("Content-Type", "application/json")
-        .POST(
-            HttpRequest::BodyPublishers.ofstr(
+        .post(
+            std::http::BodyPublishers::of_str(
                 """
                 {
                     "name": "Alpha"
@@ -99,7 +99,7 @@ fn StrRequestBody() {
 }
 
 
-// HttpRequest::BodyPublishers.ofstr(...):
+// std::http::BodyPublishers::of_str(...):
 //
 // - Creates a request body from Str.
 // - May receive a multiline string.
@@ -109,17 +109,17 @@ fn StrRequestBody() {
 // Synchronous send
 // ============================================================
 
-fn SendRequest() -> Result<()> {
-    client: Http::client = new();
+fn send_request() -> Result<()> {
+    client: std::http::Client = new std::http::Client();
 
-    request: Http.request = new()
-        .uri(URI.create("https://example.com"))
+    request: std::http::Request = std::http::Request::builder()
+        .uri(std::http::Uri::create("https://example.com"))
         .build();
 
-    response: Http::response<Str> =
+    response: std::http::Response<Str> =
         client.send(
             request,
-            HttpResponse::BodyHandlers.ofstr()
+            std::http::BodyHandlers::of_str()
         )@;
 
     body: Str = response.body();
@@ -131,7 +131,7 @@ fn SendRequest() -> Result<()> {
 //
 // - Sends the request synchronously.
 // - Blocks until a response is available.
-// - Returns Http::response<Str> when used with ofstr().
+// - Returns std::http::Response<Str> when used with of_str().
 // - Returns the standard Error payload on network failure.
 
 
@@ -139,27 +139,27 @@ fn SendRequest() -> Result<()> {
 // Asynchronous send
 // ============================================================
 
-async fn SendRequestAsync() -> Task<()> {
-    client: Http::client = new();
+async fn send_request_async() -> Task<()> {
+    client: std::http::Client = new std::http::Client();
 
-    request: Http.request = new()
-        .uri(URI.create("https://example.com"))
+    request: std::http::Request = std::http::Request::builder()
+        .uri(std::http::Uri::create("https://example.com"))
         .build();
 
-    response: Http::response<Str> =
-        await client.sendAsync(
+    response: std::http::Response<Str> =
+        await client.send_async(
             request,
-            Http::Response.BodyHandlers.ofstr()
+            std::http::BodyHandlers::of_str()
         );
 
     print!("{}", response.body());
 }
 
 
-// client.sendAsync(...):
+// client.send_async(...):
 //
 // - Sends the request asynchronously.
-// - Returns Task<Http::response<Str>> when used with ofstr().
+// - Returns Task<std::http::Response<Str>> when used with of_str().
 // - Must be awaited according to Task<T> rules.
 // - A network failure is represented as the standard Error payload.
 
@@ -168,14 +168,14 @@ async fn SendRequestAsync() -> Task<()> {
 // Response
 // ============================================================
 
-fn ReadResponseBody(
-    response: Http::response<Str>
+fn read_response_body(
+    response: std::http::Response<Str>
 ) -> Str {
     return response.body();
 }
 
 
-// Http::response<T>:
+// std::http::Response<T>:
 //
 // - Represents an HTTP response.
 // - body() returns the response body as T.
@@ -185,35 +185,29 @@ fn ReadResponseBody(
 // Body handlers
 // ============================================================
 
-fn StrBodyHandler() {
-    handler = HttpResponse::BodyHandlers.ofstr();
+fn str_body_handler() {
+    handler = std::http::BodyHandlers::of_str();
 }
 
 
-// Confirmed Str body-handler spellings appearing in HTTP code:
-//
-// - HttpResponse::BodyHandlers.ofstr()
-// - Http::Response.BodyHandlers.ofstr()
-//
-// This file preserves both spellings exactly as provided.
-// No equivalence rule is inferred.
+// The canonical Str body handler is std::http::BodyHandlers::of_str().
 
 
 // ============================================================
 // Result error handling
 // ============================================================
 
-fn HandleNetworkError() -> Result<()> {
-    client: Http::client = new();
+fn handle_network_error() -> Result<()> {
+    client: std::http::Client = new std::http::Client();
 
-    request: Http.request = new()
-        .uri(URI.create("https://example.com"))
+    request: std::http::Request = std::http::Request::builder()
+        .uri(std::http::Uri::create("https://example.com"))
         .build();
 
-    result: Result<Http::response<Str>, Error> =
+    result: Result<std::http::Response<Str>, Error> =
         client.send(
             request,
-            HttpResponse::BodyHandlers.ofstr()
+            std::http::BodyHandlers::of_str()
         );
 
     match (result) {
@@ -242,9 +236,9 @@ fn HandleNetworkError() -> Result<()> {
 // ============================================================
 
 //
-// Http::client
-// Http.request
-// Http::response<T>
-// Task<Http::response<Str>>
+// std::http::Client
+// std::http::Request
+// std::http::Response<T>
+// Task<std::http::Response<Str>>
 // Network failure
 //

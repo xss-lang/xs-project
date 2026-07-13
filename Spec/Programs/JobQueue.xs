@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Demonstrates a small async job queue with Result and Optional values.
 
-module Programs::JobQueue;
+module programs::job_queue;
 
-imports collections, optional, process, std, sync;
+imports collections, optional, process, sync;
 
 enum data JobError {
     EmptyQueue,
@@ -26,11 +26,11 @@ class Queue {
         self.jobs = std::collections::Vector<Job>::new();
     }
 
-    fn Push(job: Job) {
+    fn push(job: Job) {
         self.jobs.push(job);
     }
 
-    fn Pop() -> Optional<Job> {
+    fn pop() -> Optional<Job> {
         if (self.jobs.length() == 0) {
             return std::optional::None;
         }
@@ -40,23 +40,23 @@ class Queue {
 }
 
 class Worker {
-    async fn Run(queue: &mut Queue) -> Result<Int, Error> {
+    async fn run(queue: &mut Queue) -> Result<Int, Error> {
         completed: Int = 0;
 
         loop {
-            maybeJob: Optional<Job> = queue.Pop();
-            if (maybeJob == None) {
+            maybe_job: Optional<Job> = queue.pop();
+            if (maybe_job == None) {
                 return Ok(completed);
             }
 
-            job: Job = maybeJob!;
-            result: Result<()> = await Worker::Execute(job);
+            job: Job = maybe_job!;
+            result: Result<()> = await Worker::execute(job);
             result@;
             completed += 1;
         }
     }
 
-    static async fn Execute(job: Job) -> Result<()> {
+    static async fn execute(job: Job) -> Result<()> {
         status: Int = await std::process::run(job.command);
         if (status != 0) {
             return Error(Error {
@@ -68,12 +68,12 @@ class Worker {
     }
 }
 
-fn Main() -> Result<Int, Error> {
-    queue: Queue = new();
-    queue.Push(Job { id: 1, command: "compile", retries: 0 });
-    queue.Push(Job { id: 2, command: "test", retries: 0 });
+fn main() -> Result<Int, Error> {
+    queue: Queue = new Queue();
+    queue.push(Job { id: 1, command: "compile", retries: 0 });
+    queue.push(Job { id: 2, command: "test", retries: 0 });
 
-    completed: Int = await Worker::Run(&mut queue)@;
+    completed: Int = await Worker::run(&mut queue)@;
     println!("completed {} jobs", completed);
     return Ok(0);
 }

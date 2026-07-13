@@ -42,7 +42,7 @@
 
 // move by assignment
 
-user: User = new();
+user: User = new User();
 
 user2: User = user;
 
@@ -52,13 +52,13 @@ user2: User = user;
 
 // move by function call
 
-fn Consume(user: User) {
+fn consume(user: User) {
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    Consume(user);
+    consume(user);
 
     // user is now invalid
 }
@@ -66,20 +66,20 @@ fn Main() {
 
 // move by return
 
-fn CreateUser() -> User {
-    user: User = new();
+fn create_user() -> User {
+    user: User = new User();
 
     return user;
 }
 
-fn Main() {
-    user: User = CreateUser();
+fn main() {
+    user: User = create_user();
 }
 
 
 // immutable borrow
 
-user: User = new();
+user: User = new User();
 
 borrow1: &User = &user;
 borrow2: &User = &user;
@@ -87,39 +87,39 @@ borrow2: &User = &user;
 
 // immutable borrow function
 
-fn Print(user: &User) {
+fn print(user: &User) {
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    Print(&user);
-    Print(&user);
+    print(&user);
+    print(&user);
 }
 
 
 // mutable borrow
 
-user: User = new();
+user: User = new User();
 
 borrow: &mut User = &mut user;
 
 
 // mutable borrow function
 
-fn Rename(user: &mut User) {
+fn rename(user: &mut User) {
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    Rename(&mut user);
+    rename(&mut user);
 }
 
 
 // VALID
 
-user: User = new();
+user: User = new User();
 
 a: &User = &user;
 b: &User = &user;
@@ -127,7 +127,7 @@ b: &User = &user;
 
 // VALID
 
-user: User = new();
+user: User = new User();
 
 a: &User = &user;
 b: &User = &user;
@@ -136,16 +136,16 @@ c: &User = &user;
 
 // VALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 
 
 // VALID
 
-user: User = new();
+user: User = new User();
 
-Rename(&mut user);
+rename(&mut user);
 
 
 // VALID
@@ -158,26 +158,26 @@ if (user == None) {
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 user2: User = user;
 
-user.GetName();
+user.get_name();
 
 // user was moved
 
 
 // INVALID
 
-fn Consume(user: User) {
+fn consume(user: User) {
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    Consume(user);
+    consume(user);
 
-    user.GetName();
+    user.get_name();
 }
 
 // user was moved
@@ -185,7 +185,7 @@ fn Main() {
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &User = &user;
 b: &mut User = &mut user;
@@ -195,7 +195,7 @@ b: &mut User = &mut user;
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 b: &User = &user;
@@ -205,7 +205,7 @@ b: &User = &user;
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 b: &mut User = &mut user;
@@ -215,53 +215,53 @@ b: &mut User = &mut user;
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &User = &user;
 
-user = new();
+user = new User();
 
 // value is immutably borrowed
 
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 
-user.GetName();
+user.get_name();
 
 // value is mutably borrowed
 
 
 // VALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 
 // borrow ends here
 
-user.GetName();
+user.get_name();
 
 
 // lifetime example
 
-fn Print(user: &User) {
+fn print(user: &User) {
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    Print(&user);
+    print(&user);
 }
 
 
 // lifetime checking is performed at compile time
 
-fn GetUser() -> &User {
-    user: User = new();
+fn get_user() -> &User {
+    user: User = new User();
 
     return &user;
 }

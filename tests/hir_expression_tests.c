@@ -120,8 +120,8 @@ static void test_control_flow_initializer_expression_types(void)
   CHECK(check_single_source_expressions(valid_if));
   CHECK(check_single_source_expressions(valid_match));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = if (true) { 1; } else { 2 }; }\n"));
-  CHECK(!check_single_source_expressions(
-      "module App;\nfn Main() { value: Int = if (true) { \"bad\" } else { 1 }; }\n"));
+  CHECK(
+      !check_single_source_expressions("module App;\nfn Main() { value: Int = if (true) { \"bad\" } else { 1 }; }\n"));
   CHECK(!check_single_source_expressions(
       "module App;\nfn Main() { value: Bool = match (1) { 0 -> { true }, else -> { 1 }, }; }\n"));
 }
@@ -287,9 +287,9 @@ static void test_op_referential_transparency_rules(void)
       "module App;\nfn Read() -> Int { return 1; }\nop Bad() -> Int { return Read(); }\n"));
   CHECK(
       !check_single_source_expressions("module App;\nop Bad() -> Int { value: Int = 1; value = 2; return value; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nop Bad() -> User { return new(); }\n"));
-  CHECK(
-      !check_single_source_expressions("module App;\nmacro_rules! bad { () -> { 1 }; }\nop Bad() -> Int { bad!(); }\n"));
+  CHECK(!check_single_source_expressions("module app;\nop bad() -> User { return new User(); }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nmacro_rules! bad { () -> { 1 }; }\nop Bad() -> Int { bad!(); }\n"));
 }
 
 static void test_property_accessor_expression_rules(void)
@@ -301,14 +301,11 @@ static void test_property_accessor_expression_rules(void)
                       "}\n";
   CHECK(check_single_source_expressions(valid));
   CHECK(!check_single_source_expressions("module App;\nclass User { age: Int { getter; getter; } }\n"));
-  CHECK(!check_single_source_expressions(
-      "module App;\nclass User { age: Int { getter { return \"bad\"; } } }\n"));
+  CHECK(!check_single_source_expressions("module App;\nclass User { age: Int { getter { return \"bad\"; } } }\n"));
   CHECK(!check_single_source_expressions(
       "module App;\nclass User { age: Int { setter { copy: Int = value; copy = \"bad\"; } } }\n"));
-  CHECK(!check_single_source_expressions(
-      "module App;\nclass User { age: Int { getter { return self.age; } } }\n"));
-  CHECK(!check_single_source_expressions(
-      "module App;\nclass User { age: Int { setter { self.age = value; } } }\n"));
+  CHECK(!check_single_source_expressions("module App;\nclass User { age: Int { getter { return self.age; } } }\n"));
+  CHECK(!check_single_source_expressions("module App;\nclass User { age: Int { setter { self.age = value; } } }\n"));
 }
 
 int main(void)

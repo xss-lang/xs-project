@@ -28,29 +28,29 @@
 //
 
 // module declaration
-module Math;
+module math;
 
 // namespace
-module Math;
+module math;
 
-namespace Advanced;
+namespace advanced;
 
 // chained namespace
-module Math;
+module math;
 
-namespace Advanced;
-namespace Algebra;
+namespace advanced;
+namespace algebra;
 
 // equivalent full path:
-// Math::Advanced::Algebra
+// math::advanced::algebra
 
 
 // public namespace
-module Math;
+module math;
 
-public namespace Advanced;
+public namespace advanced;
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -58,103 +58,103 @@ fn Add(a: Int, b: Int) -> Int {
 // normal import
 // imports makes the module usable through its qualified name.
 // It does not place the module's public symbols directly in local scope.
-imports Math;
+imports math;
 
-fn Main() {
-    result: Int = Math::Add(1, 2);
+fn main() {
+    result: Int = math::add(1, 2);
 }
 
 
 // multiple imports
-imports stdio, Math, collections;
+imports stdio, math, collections;
 
 
 // namespace using declaration
-using namespace Math;
+using namespace math;
 
-fn Main() {
-    result: Int = Add(1, 2);
+fn main() {
+    result: Int = add(1, 2);
 }
 
 
 // using declaration
 // using declarations place one selected public name in local scope.
-using Math::Add;
+using math::add;
 
-fn Main() {
-    result: Int = Add(1, 2);
+fn main() {
+    result: Int = add(1, 2);
 }
 
 
 // multiple using declarations
-using Math::Add;
-using Math::Subtract;
+using math::add;
+using math::subtract;
 
-fn Main() {
-    a: Int = Add(1, 2);
-    b: Int = Subtract(5, 3);
+fn main() {
+    a: Int = add(1, 2);
+    b: Int = subtract(5, 3);
 }
 
 
 // using alias declaration
-using Sum = Math::Add;
+using sum = math::add;
 
-fn Main() {
-    result: Int = Sum(1, 2);
+fn main() {
+    result: Int = sum(1, 2);
 }
 
 
 // fully qualified enum access
-imports Math;
+imports math;
 
-fn Main() {
-    color: Math::Color = Math::Color::Red;
+fn main() {
+    color: math::Color = math::Color::Red;
 }
 
 
 // fully qualified namespace enum access
-imports Math;
+imports math;
 
-fn Main() {
-    color: Math::Advanced::Color = Math::Advanced::Color::Red;
+fn main() {
+    color: math::advanced::Color = math::advanced::Color::Red;
 }
 
 
 // direct enum access after namespace using
-using namespace Math;
+using namespace math;
 
-fn Main() {
+fn main() {
     color: Color = Color::Red;
 }
 
 
 // direct enum access after using declaration
-using Math::Color;
+using math::Color;
 
-fn Main() {
+fn main() {
     color: Color = Color::Red;
 }
 
 
 // duplicate imports
-imports Math;
-imports Math;
+imports math;
+imports math;
 
-imports Math, Math;
+imports math, math;
 
-using Math::Add;
-using Math::Add;
+using math::add;
+using math::add;
 
 // Duplicate imports are valid and treated as one import.
 
 
 // using name collision
-using Math::Add;
-using Utils::Add;
+using math::add;
+using utils::add;
 
-fn Main() {
-    Math::Add(1, 2);
-    Utils::Add(1, 2);
+fn main() {
+    math::add(1, 2);
+    utils::add(1, 2);
 }
 
 // If the same local name is opened from multiple modules,
@@ -162,42 +162,42 @@ fn Main() {
 
 
 // VALID
-module Calculator;
+module calculator;
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
-// This module is imported as Calculator.
+// This module is imported as calculator.
 
 
 // VALID
-imports Calculator;
+imports calculator;
 
-fn Main() {
-    result: Int = Calculator::Add(1, 2);
+fn main() {
+    result: Int = calculator::add(1, 2);
 }
 
 
 // VALID
-fn Main() {
+fn main() {
 }
 
 // module is optional if the file is not imported.
 
 
 // VALID
-module Math;
+module math;
 
-namespace Advanced;
-namespace Algebra;
+namespace advanced;
+namespace algebra;
 
-fn Add() {
+fn add() {
 }
 
 
 // INVALID
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -205,34 +205,34 @@ fn Add(a: Int, b: Int) -> Int {
 
 
 // INVALID
-module Math;
-module Utils;
+module math;
+module utils;
 
 // Only one module declaration is allowed per file.
 
 
 // INVALID
-namespace Advanced;
+namespace advanced;
 
-module Math;
+module math;
 
 // namespace must be declared under module.
 
 
 // INVALID
-namespace Advanced {
+namespace advanced {
 }
 
 // namespace does not use braces.
 
 
 // INVALID
-module Math;
+module math;
 
-fn InternalHelper() {
+fn internal_helper() {
 }
 
 // from another file:
-using Math::InternalHelper;
+using math::internal_helper;
 
 // Non-public members are not visible from other modules.

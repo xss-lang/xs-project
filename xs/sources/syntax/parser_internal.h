@@ -22,6 +22,7 @@ typedef struct
   XsToken current;
   XsToken next;
   size_t loop_depth;
+  bool allow_untyped_new;
 } SyntaxParser;
 
 typedef struct

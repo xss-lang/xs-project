@@ -4,9 +4,9 @@
 // Complete-language example program:
 // A small in-memory order service using ownership, Arc, Mutex, channels and generics.
 
-module Programs::InventoryService;
+module programs::inventory_service;
 
-imports collections, std, thread, sync;
+imports collections, thread, sync;
 
 enum data ServiceError {
     UnknownProduct: Str,
@@ -31,25 +31,25 @@ data Order {
 }
 
 data Receipt {
-    orderId: Int;
+    order_id: Int;
     accepted: Bool;
     message: Str;
 }
 
 interface Repository<K, V> {
-    fn Get(key: K) -> Result<&V, Error>;
-    fn Put(key: K, value: V);
+    fn get(key: K) -> Result<&V, Error>;
+    fn put(key: K, value: V);
 }
 
 class InventoryRepository : Repository<Str, Product> {
 
-    products: std::collections::hash_map<Str, Product>;
+    products: std::collections::HashMap<Str, Product>;
 
     InventoryRepository() {
-        self.products = std::collections::hash_map<Str, Product>::new();
+        self.products = std::collections::HashMap<Str, Product>::new();
     }
 
-    fn Get(key: Str) -> Result<&Product, Error> {
+    fn get(key: Str) -> Result<&Product, Error> {
         if (!self.products.contains(key)) {
             return Error(Error {
                 message: "unknown product",
@@ -58,11 +58,11 @@ class InventoryRepository : Repository<Str, Product> {
         return Ok(&self.products[key]);
     }
 
-    fn Put(key: Str, value: Product) {
+    fn put(key: Str, value: Product) {
         self.products[key] = value;
     }
 
-    fn Reserve(line: OrderLine) -> Result<()> {
+    fn reserve(line: OrderLine) -> Result<()> {
         product: &mut Product = &mut self.products[line.sku];
 
         if (product.stock < line.quantity) {
@@ -83,41 +83,41 @@ class OrderWorker {
         self.inventory = inventory;
     }
 
-    fn Process(order: Order) -> Receipt {
+    fn process(order: Order) -> Receipt {
         guard: Mutex<InventoryRepository> = self.inventory.lock();
 
         for (line: OrderLine in order.lines) {
-            result: Result<()> = (*guard).Reserve(line);
+            result: Result<()> = (*guard).reserve(line);
             match (result) {
                 Ok(else) -> {},
                 Error(error) -> {
                     return Receipt {
-                        orderId: order.id,
+                        order_id: order.id,
                         accepted: false,
-                        message: error.ToString(),
+                        message: error.to_string(),
                     };
                 },
             }
         }
 
         return Receipt {
-            orderId: order.id,
+            order_id: order.id,
             accepted: true,
             message: "accepted",
         };
     }
 }
 
-fn SeedInventory() -> Arc<Mutex<InventoryRepository>> {
-    repository: InventoryRepository = new();
+fn seed_inventory() -> Arc<Mutex<InventoryRepository>> {
+    repository: InventoryRepository = new InventoryRepository();
 
-    repository.Put("book", Product {
+    repository.put("book", Product {
         sku: "book",
         name: "X# Handbook",
         stock: 10,
     });
 
-    repository.Put("mug", Product {
+    repository.put("mug", Product {
         sku: "mug",
         name: "Compiler Mug",
         stock: 5,
@@ -126,7 +126,7 @@ fn SeedInventory() -> Arc<Mutex<InventoryRepository>> {
     return Arc::new(Mutex::new(repository));
 }
 
-fn MakeOrder(id: Int, sku: Str, quantity: Int) -> Order {
+fn make_order(id: Int, sku: Str, quantity: Int) -> Order {
     lines: std::collections::Vector<OrderLine> = std::collections::Vector<OrderLine>::new();
     lines.push(OrderLine {
         sku: sku,
@@ -139,40 +139,40 @@ fn MakeOrder(id: Int, sku: Str, quantity: Int) -> Order {
     };
 }
 
-fn Main() -> Result<()> {
-    inventory: Arc<Mutex<InventoryRepository>> = SeedInventory();
+fn main() -> Result<()> {
+    inventory: Arc<Mutex<InventoryRepository>> = seed_inventory();
 
-    (orders, receipts): Thread.channel<Order> = Thread.channel<Order>();
-    (results, resultReader): Thread.channel<Receipt> = Thread.channel<Receipt>();
+    (orders, receipts): std::thread::Channel<Order> = std::thread::channel::<Order>();
+    (results, result_reader): std::thread::Channel<Receipt> = std::thread::channel::<Receipt>();
 
-    workerInventory: Arc<Mutex<InventoryRepository>> = Arc::clone(&inventory);
+    worker_inventory: Arc<Mutex<InventoryRepository>> = Arc::clone(&inventory);
 
-    Thread.spawn(move fn() {
-        worker: OrderWorker = new(workerInventory);
+    std::thread::spawn(move fn() {
+        worker: OrderWorker = new OrderWorker(worker_inventory);
 
         while (true) {
-            maybeOrder: Result<Order, SyncException> = receipts.recv();
-            if (maybeOrder.isError()) {
+            maybe_order: Result<Order, SyncException> = receipts.recv();
+            if (maybe_order.is_error()) {
                 break;
             }
-            receipt: Receipt = worker.Process(maybeOrder.unwrap());
+            receipt: Receipt = worker.process(maybe_order.unwrap());
             results.send(receipt)@;
         }
     });
 
-    orders.send(MakeOrder(1, "book", 2));
-    orders.send(MakeOrder(2, "mug", 8));
+    orders.send(make_order(1, "book", 2));
+    orders.send(make_order(2, "mug", 8));
     orders.close();
 
     while (true) {
-        maybeReceipt: Result<Receipt, SyncException> = resultReader.recv();
-        if (maybeReceipt.isError()) {
+        maybe_receipt: Result<Receipt, SyncException> = result_reader.recv();
+        if (maybe_receipt.is_error()) {
             break;
         }
-        receipt: Receipt = maybeReceipt.unwrap();
+        receipt: Receipt = maybe_receipt.unwrap();
         println!(
             "order #{} accepted={} message={}",
-            receipt.orderId,
+            receipt.order_id,
             receipt.accepted,
             receipt.message
         );

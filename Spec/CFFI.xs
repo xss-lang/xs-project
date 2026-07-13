@@ -24,7 +24,7 @@ extern "C" {
 }
 
 
-fn PrintLine(message: Str) -> Result<()> {
+fn print_line(message: Str) -> Result<()> {
     c_text: std::cffi::CString = std::cffi::CString::from_str(message)@;
     else: puts(c_text.as_c_str());
     return Ok(());
@@ -101,7 +101,7 @@ data NativeLibrary {
 
 #[DynamicLibrary]
 #[NoUnwind]
-fn OpenLibrary(path: Str) -> Result<NativeLibrary, Error> {
+fn open_library(path: Str) -> Result<NativeLibrary, Error> {
     return std::cffi::DynamicLibrary::open(path);
 }
 
@@ -116,7 +116,7 @@ extern "C" {
     fn free(ptr: std::cffi::RawPtr<std::cffi::Void>);
 }
 
-fn Allocate(size: ULong) -> Result<std::cffi::RawPtr<std::cffi::Void>, Error> {
+fn allocate(size: ULong) -> Result<std::cffi::RawPtr<std::cffi::Void>, Error> {
     ptr: std::cffi::RawPtr<std::cffi::Void> = malloc(size);
     if (ptr.is_null()) {
         return Error({ message: "allocation failed" });

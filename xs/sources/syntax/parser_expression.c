@@ -137,8 +137,6 @@ static void parse_expression_parameters(SyntaxParser *parser, XsSyntaxNode *func
       size_t start = parser->current.span.start;
       XsSyntaxNode *parameter = node(parser, XS_SYNTAX_PARAMETER, (XsSpan){start, start});
       xs_syntax_node_add(parser->tree, parameter, identifier(parser));
-      expect(parser, XS_TOKEN_COLON, "expected ':' after parameter name");
-      xs_syntax_node_add(parser->tree, parameter, parse_type(parser));
       finish_node(parser, parameter, parser->previous.span.end);
       xs_syntax_node_add(parser->tree, function, parameter);
     } while(accept(parser, XS_TOKEN_COMMA));
@@ -153,12 +151,6 @@ static XsSyntaxNode *parse_function_expression(SyntaxParser *parser, size_t star
   if(move_capture)
     function->flags |= XS_SYNTAX_FLAG_MOVE_CAPTURE;
   parse_expression_parameters(parser, function);
-  if(accept(parser, XS_TOKEN_ARROW))
-  {
-    XsSyntaxNode *return_type = parse_type(parser);
-    return_type->flags |= XS_SYNTAX_FLAG_RETURN_TYPE;
-    xs_syntax_node_add(parser->tree, function, return_type);
-  }
   xs_syntax_node_add(parser->tree, function, parse_block(parser));
   finish_node(parser, function, parser->previous.span.end);
   return function;
@@ -394,6 +386,11 @@ static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
   case XS_TOKEN_KW_NEW:
     advance(parser);
     XsSyntaxNode *created = node(parser, XS_SYNTAX_EXPR_NEW, (XsSpan){start, parser->previous.span.end});
+    if(parser->current.kind != XS_TOKEN_LEFT_PAREN)
+      xs_syntax_node_add(parser->tree, created, parse_type(parser));
+    else if(!parser->allow_untyped_new)
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "expected constructed type after 'new'");
     expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after new");
     if(parser->current.kind != XS_TOKEN_RIGHT_PAREN)
     {

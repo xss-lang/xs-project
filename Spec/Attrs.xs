@@ -25,11 +25,11 @@
 #![NoMain]
 
 #[Deprecated("use NewMain")]
-fn OldMain() {
+fn old_main() {
 }
 
 #[MustUse("the returned status must be checked")]
-fn MakeStatus() -> Long {
+fn make_status() -> Long {
     return 0;
 }
 
@@ -40,13 +40,13 @@ data Version {
 }
 
 #[Inline(Always)]
-fn FastAdd(left: Long, right: Long) -> Long {
+fn fast_add(left: Long, right: Long) -> Long {
     return left + right;
 }
 
 #[Test]
 #[Ignore("example-only fixture")]
-fn SkippedTest() {
+fn skipped_test() {
 }
 
 #[ThreadSafe]
@@ -58,7 +58,7 @@ data SharedCounter {
 
 #[AsyncEntry]
 #[CancellationSafe]
-fn RunAsync() -> Result<()> {
+fn run_async() -> Result<()> {
     return Ok(());
 }
 

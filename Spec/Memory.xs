@@ -51,7 +51,7 @@
 
 // ownership
 
-user: User = new();
+user: User = new User();
 
 user2: User = user;
 
@@ -61,13 +61,13 @@ user2: User = user;
 
 // move by function call
 
-fn Consume(user: User) {
+fn consume(user: User) {
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    Consume(user);
+    consume(user);
 
     // user invalid
 }
@@ -75,20 +75,20 @@ fn Main() {
 
 // move by return
 
-fn CreateUser() -> User {
-    user: User = new();
+fn create_user() -> User {
+    user: User = new User();
 
     return user;
 }
 
-fn Main() {
-    user: User = CreateUser();
+fn main() {
+    user: User = create_user();
 }
 
 
 // immutable borrow
 
-user: User = new();
+user: User = new User();
 
 a: &User = &user;
 b: &User = &user;
@@ -96,7 +96,7 @@ b: &User = &user;
 
 // mutable borrow
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 
@@ -118,7 +118,7 @@ a: &mut User = &mut user;
 
 // VALID
 
-user: User = new();
+user: User = new User();
 
 a: &User = &user;
 b: &User = &user;
@@ -126,14 +126,14 @@ b: &User = &user;
 
 // VALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 b: &mut User = &mut user;
@@ -141,7 +141,7 @@ b: &mut User = &mut user;
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &User = &user;
 b: &mut User = &mut user;
@@ -149,29 +149,29 @@ b: &mut User = &mut user;
 
 // INVALID
 
-user: User = new();
+user: User = new User();
 
 a: &mut User = &mut user;
 
-user.GetName();
+user.get_name();
 
 
 // lifetime example
 
-fn Print(user: &User) {
+fn print(user: &User) {
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    Print(&user);
+    print(&user);
 }
 
 
 // INVALID
 
-fn GetUser() -> &User {
-    user: User = new();
+fn get_user() -> &User {
+    user: User = new User();
 
     return &user;
 }
@@ -190,15 +190,15 @@ class File {
 
 // destructor execution
 
-fn Main() {
-    file: File = new();
+fn main() {
+    file: File = new File();
 
 } // File::Drop() runs here
 
 
 // moved values
 
-file: File = new();
+file: File = new File();
 
 file2: File = file;
 
@@ -208,17 +208,17 @@ file2: File = file;
 
 // LIFO destruction order
 
-fn Main() {
-    a: File = new();
-    b: File = new();
-    c: File = new();
+fn main() {
+    a: File = new File();
+    b: File = new File();
+    c: File = new File();
 }
 
 // destruction order:
 //
-// c.Drop()
-// b.Drop()
-// a.Drop()
+// c.drop()
+// b.drop()
+// a.drop()
 
 
 // None values
@@ -259,7 +259,7 @@ point: Point = Point(10, 20);
 
 // escape analysis
 
-fn CreatePoint() -> Point {
+fn create_point() -> Point {
     point: Point = Point(10, 20);
 
     return point;
@@ -270,7 +270,7 @@ fn CreatePoint() -> Point {
 
 // zero-cost abstractions
 
-iter: Iterator<Int> = numbers.Iterator();
+iter: Iterator<Int> = numbers.iterator();
 
 
 // no hidden allocation
@@ -279,7 +279,7 @@ iter: Iterator<Int> = numbers.Iterator();
 // allocation is explicit
 
 users: std::collections::Vector<User> =
-    std::collections::vector::new();
+    std::collections::Vector::new();
 
 
 // INVALID DESIGN

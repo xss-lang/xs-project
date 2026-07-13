@@ -4,9 +4,9 @@
 // Complete-language example program:
 // A tiny multi-room chat server using async sockets and channels.
 
-module Programs::ChatServer;
+module programs::chat_server;
 
-imports collections, std, sync, thread, net;
+imports collections, sync, thread, net;
 
 enum data ChatError {
     Io: Error,
@@ -26,48 +26,48 @@ data Message {
 
 class Room {
     name: Str;
-    members: std::collections::HashMap<ClientId, Thread.sender<Message>>;
+    members: std::collections::HashMap<ClientId, std::thread::Sender<Message>>;
 
     Room(name: Str) {
         self.name = name;
-        self.members = std::collections::HashMap<ClientId, Thread.sender<Message>>::new();
+        self.members = std::collections::HashMap<ClientId, std::thread::Sender<Message>>::new();
     }
 
-    fn Join(id: ClientId, sender: Thread.sender<Message>) {
+    fn join(id: ClientId, sender: std::thread::Sender<Message>) {
         self.members[id] = sender;
     }
 
-    fn Leave(id: ClientId) {
+    fn leave(id: ClientId) {
         self.members.remove(id);
     }
 
-    fn Broadcast(message: Message) {
-        for ((else, sender): (ClientId, Thread.sender<Message>) in self.members) {
+    fn broadcast(message: Message) {
+        for ((else, sender): (ClientId, std::thread::Sender<Message>) in self.members) {
             sender.send(message);
         }
     }
 }
 
 class ChatHub {
-    nextId: Atomic<Int>;
-    rooms: Arc<Mutex<std::collections::HashMap<Str, Room>>>;
+    next_id: std::sync::Atomic<Int>;
+    rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>>;
 
     ChatHub() {
-        self.nextId = Atomic::new(1);
-        self.rooms = Arc::new(Mutex::new(std::collections::HashMap<Str, Room>::new()));
+        self.next_id = std::sync::Atomic::new(1);
+        self.rooms = std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap<Str, Room>::new()));
     }
 
-    async fn Serve(listener: Net.tcpListener) -> Task<Result<()>> {
+    async fn serve(listener: std::net::TcpListener) -> Task<Result<()>> {
         while (true) {
-            socket: Net.tcpStream = await listener.accept()@;
+            socket: std::net::TcpStream = await listener.accept()@;
             id: ClientId = ClientId {
-                value: self.nextId.fetchAdd(1),
+                value: self.next_id.fetch_add(1),
             };
-            rooms: Arc<Mutex<std::collections::HashMap<Str, Room>>> = Arc::clone(&self.rooms);
+            rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>> = std::sync::Arc::clone(&self.rooms);
 
-            Thread.spawn(move async fn() {
-                session: ClientSession = new(id, socket, rooms);
-                await session.Run()@;
+            std::thread::spawn(move async fn() {
+                session: ClientSession = new ClientSession(id, socket, rooms);
+                await session.run()@;
             });
         }
     }
@@ -75,66 +75,66 @@ class ChatHub {
 
 class ClientSession {
     id: ClientId;
-    socket: Net.tcpStream;
-    rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>>;
+    socket: std::net::TcpStream;
+    rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>>;
 
-    ClientSession(id: ClientId, socket: Net.tcpStream, rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>>) {
+    ClientSession(id: ClientId, socket: std::net::TcpStream, rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>>) {
         self.id = id;
         self.socket = socket;
         self.rooms = rooms;
     }
 
-    async fn Run() -> Task<Result<()>> {
-        currentRoom: Str = "lobby";
-        outbound: Thread.channel<Message> = Thread.channel<Message>();
-        self.Join(currentRoom, outbound.sender());
+    async fn run() -> Task<Result<()>> {
+        current_room: Str = "lobby";
+        outbound: std::thread::Channel<Message> = std::thread::channel::<Message>();
+        self.join(current_room, outbound.sender());
 
         while (true) {
             line: Optional<Str> = await self.socket.read_line();
             command: Str = line ?? "/quit";
 
             if (command == "/quit") {
-                self.Leave(currentRoom);
+                self.leave(current_room);
                 return Ok();
             }
 
-            if (command.startsWith("/join ")) {
-                self.Leave(currentRoom);
-                currentRoom = command.substring(6);
-                self.Join(currentRoom, outbound.sender());
+            if (command.starts_with("/join ")) {
+                self.leave(current_room);
+                current_room = command.substring(6);
+                self.join(current_room, outbound.sender());
                 continue;
             }
 
-            self.Broadcast(Message {
-                room: currentRoom,
+            self.broadcast(Message {
+                room: current_room,
                 sender: self.id,
                 body: command,
             });
         }
     }
 
-    fn Join(roomName: Str, sender: Thread.sender<Message>) {
-        guard: Mutex<std::collections::hash_map<Str, Room>> = self.rooms.lock();
-        if (!(*guard).contains(roomName)) {
-            (*guard)[roomName] = Room::new(roomName);
+    fn join(room_name: Str, sender: std::thread::Sender<Message>) {
+        guard: std::sync::Mutex<std::collections::HashMap<Str, Room>> = self.rooms.lock();
+        if (!(*guard).contains(room_name)) {
+            (*guard)[room_name] = new Room(room_name);
         }
-        (*guard)[roomName].Join(self.id, sender);
+        (*guard)[room_name].join(self.id, sender);
     }
 
-    fn Leave(roomName: Str) {
-        guard: Mutex<std::collections::hash_map<Str, Room>> = self.rooms.lock();
-        (*guard)[roomName].Leave(self.id);
+    fn leave(room_name: Str) {
+        guard: std::sync::Mutex<std::collections::HashMap<Str, Room>> = self.rooms.lock();
+        (*guard)[room_name].leave(self.id);
     }
 
-    fn Broadcast(message: Message) {
-        guard: Mutex<std::collections::hash_map<Str, Room>> = self.rooms.lock();
-        (*guard)[message.room].Broadcast(message);
+    fn broadcast(message: Message) {
+        guard: std::sync::Mutex<std::collections::HashMap<Str, Room>> = self.rooms.lock();
+        (*guard)[message.room].broadcast(message);
     }
 }
 
-async fn Main() -> Task<Result<Int, Error>> {
-    listener: Net.tcpListener = await Net.listen("127.0.0.1:9000")@;
-    hub: ChatHub = new();
-    await hub.Serve(listener)@;
+async fn main() -> Task<Result<Int, Error>> {
+    listener: std::net::TcpListener = await std::net::listen("127.0.0.1:9000")@;
+    hub: ChatHub = new ChatHub();
+    await hub.serve(listener)@;
     return Ok(0);
 }

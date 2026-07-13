@@ -36,14 +36,14 @@ imports mutex, result;
 
 // mutex creation
 
-fn MutexCreation() {
+fn mutex_creation() {
     counter: Mutex<Long> = Mutex::new(0);
 }
 
 
 // locking
 
-fn MutexLock() {
+fn mutex_lock() {
     counter: Mutex<Long> = Mutex::new(0);
 
     value: Mutex<Long> = counter.lock();
@@ -55,7 +55,7 @@ fn MutexLock() {
 //
 // - Waits until the mutex can be acquired.
 // - Does not return None.
-// - Does not provide tryLock().
+// - Does not provide try_lock().
 // - Returns Mutex<T>.
 // - The returned Mutex<T> acts as the lock guard.
 // - The guard provides mutable access through *guard.
@@ -65,7 +65,7 @@ fn MutexLock() {
 
 // automatic unlocking
 
-fn MutexAutomaticUnlock() {
+fn mutex_automatic_unlock() {
     counter: Mutex<Long> = Mutex::new(0);
 
     {
@@ -75,23 +75,23 @@ fn MutexAutomaticUnlock() {
 
     // The lock has been released.
 
-    secondValue: Mutex<Long> = counter.lock();
-    *secondValue += 1;
+    second_value: Mutex<Long> = counter.lock();
+    *second_value += 1;
 }
 
 
 // same-thread guard movement
 
-fn MoveMutexGuard() {
+fn move_mutex_guard() {
     counter: Mutex<Long> = Mutex::new(0);
 
-    firstGuard: Mutex<Long> = counter.lock();
-    secondGuard: Mutex<Long> = firstGuard;
+    first_guard: Mutex<Long> = counter.lock();
+    second_guard: Mutex<Long> = first_guard;
 
-    *secondGuard += 1;
+    *second_guard += 1;
 }
 
-// After the move, firstGuard can no longer be used.
+// After the move, first_guard can no longer be used.
 //
 // A Mutex guard may move inside the same thread.
 // A Mutex guard may not move to another thread.
@@ -99,12 +99,12 @@ fn MoveMutexGuard() {
 
 // non-reentrant mutex
 
-fn InvalidRecursiveMutexLock() {
+fn invalid_recursive_mutex_lock() {
     counter: Mutex<Long> = Mutex::new(0);
 
-    firstGuard: Mutex<Long> = counter.lock();
+    first_guard: Mutex<Long> = counter.lock();
 
-    secondGuard: Mutex<Long> = counter.lock();
+    second_guard: Mutex<Long> = counter.lock();
 }
 
 // The second lock() is a compile-time error because the
@@ -123,7 +123,7 @@ fn InvalidRecursiveMutexLock() {
 
 // poisoned mutex recovery
 
-fn RecoverPoisonedMutex() {
+fn recover_poisoned_mutex() {
     counter: Mutex<Long> = Mutex::new(0);
 
     result: Result<Mutex<Long>, SyncException> = counter.lock();
@@ -167,10 +167,10 @@ fn RecoverPoisonedMutex() {
 
 imports thread;
 
-fn MoveMutexToThread() {
+fn move_mutex_to_thread() {
     counter: Mutex<Long> = Mutex::new(42);
 
-    Thread.spawn(move fn() {
+    std::thread::spawn(move fn() {
         value: Mutex<Long> = counter.lock();
         *value += 1;
     });
@@ -188,14 +188,14 @@ imports rw_lock;
 
 // rwlock creation
 
-fn RwLockCreation() {
+fn rw_lock_creation() {
     value: RwLock<Int> = RwLock::new(42);
 }
 
 
 // read lock
 
-fn RwLockRead() {
+fn rw_lock_read() {
     value: RwLock<Int> = RwLock::new(42);
 
     reader: RwLock<Int> = value.read();
@@ -215,7 +215,7 @@ fn RwLockRead() {
 
 // invalid reader mutation
 
-fn InvalidReaderMutation() {
+fn invalid_reader_mutation() {
     value: RwLock<Int> = RwLock::new(42);
 
     reader: RwLock<Int> = value.read();
@@ -228,7 +228,7 @@ fn InvalidReaderMutation() {
 
 // write lock
 
-fn RwLockWrite() {
+fn rw_lock_write() {
     value: RwLock<Int> = RwLock::new(42);
 
     writer: RwLock<Int> = value.write();
@@ -248,7 +248,7 @@ fn RwLockWrite() {
 
 // multiple readers
 
-fn MultipleReaders() {
+fn multiple_readers() {
     value: RwLock<Int> = RwLock::new(42);
 
     reader1: RwLock<Int> = value.read();
@@ -273,11 +273,11 @@ fn MultipleReaders() {
 
 // reader and writer guard movement
 
-fn MoveRwLockGuards() {
+fn move_rw_lock_guards() {
     value: RwLock<Int> = RwLock::new(42);
 
     reader: RwLock<Int> = value.read();
-    otherReader: RwLock<Int> = reader;
+    other_reader: RwLock<Int> = reader;
 
     // reader can no longer be used.
 }
@@ -290,7 +290,7 @@ fn MoveRwLockGuards() {
 
 // non-reentrant rwlock
 
-fn InvalidReadToWriteUpgrade() {
+fn invalid_read_to_write_upgrade() {
     value: RwLock<Int> = RwLock::new(42);
 
     reader: RwLock<Int> = value.read();
@@ -303,13 +303,13 @@ fn InvalidReadToWriteUpgrade() {
 
 // invalid writer reentry
 
-fn InvalidWriterReentry() {
+fn invalid_writer_reentry() {
     value: RwLock<Int> = RwLock::new(42);
 
     writer: RwLock<Int> = value.write();
 
     reader: RwLock<Int> = value.read();
-    secondWriter: RwLock<Int> = value.write();
+    second_writer: RwLock<Int> = value.write();
 }
 
 // Both operations are invalid.
@@ -329,7 +329,7 @@ fn InvalidWriterReentry() {
 
 // poisoned rwlock recovery
 
-fn RecoverPoisonedRwLock() {
+fn recover_poisoned_rw_lock() {
     value: RwLock<Int> = RwLock::new(42);
 
     result: Result<RwLock<Int>, SyncException> = value.write();
@@ -405,14 +405,14 @@ imports arc;
 
 // arc creation
 
-fn ArcCreation() {
+fn arc_creation() {
     value: Arc<Str> = Arc::new("Alpha");
 }
 
 
 // arc cloning
 
-fn ArcCloning() {
+fn arc_cloning() {
     value: Arc<Str> = Arc::new("Alpha");
 
     second: Arc<Str> = Arc::clone(&value);
@@ -429,7 +429,7 @@ fn ArcCloning() {
 
 // arc access
 
-fn ArcRead() {
+fn arc_read() {
     strong: Arc<Int> = Arc::new(42);
 
     value: Int = *strong;
@@ -440,7 +440,7 @@ fn ArcRead() {
 
 // invalid arc mutation
 
-fn InvalidArcMutation() {
+fn invalid_arc_mutation() {
     strong: Arc<Int> = Arc::new(42);
 
     *strong = 50;
@@ -469,7 +469,7 @@ fn InvalidArcMutation() {
 
 // shared mutex
 
-fn SharedMutex() {
+fn shared_mutex() {
     shared: Arc<Mutex<Str>> =
         Arc::new(Mutex::new("Alpha"));
 
@@ -484,7 +484,7 @@ fn SharedMutex() {
 
 // shared rwlock
 
-fn SharedRwLock() {
+fn shared_rw_lock() {
     shared: Arc<RwLock<Int>> =
         Arc::new(RwLock::new(42));
 
@@ -504,7 +504,7 @@ imports WeakControl;
 
 // weak creation
 
-fn WeakCreation() {
+fn weak_creation() {
     strong: Arc<Str> = Arc::new("Alpha");
 
     weak: Weak<Str> = Arc.downgrade(&strong);
@@ -520,11 +520,11 @@ fn WeakCreation() {
 
 // weak cloning
 
-fn WeakCloning() {
+fn weak_cloning() {
     strong: Arc<Str> = Arc::new("Alpha");
     weak: Weak<Str> = Arc.downgrade(&strong);
 
-    otherWeak: Weak<Str> =
+    other_weak: Weak<Str> =
         WeakControl.clone(&weak);
 }
 
@@ -537,11 +537,11 @@ fn WeakCloning() {
 
 // weak upgrade
 
-fn WeakUpgrade() {
+fn weak_upgrade() {
     strong: Arc<Str> = Arc::new("Alpha");
     weak: Weak<Str> = Arc.downgrade(&strong);
 
-    strongAgain: Arc<Str> =
+    strong_again: Arc<Str> =
         WeakControl.upgrade(&weak);
 }
 
@@ -583,7 +583,7 @@ imports atomic;
 
 // atomic creation
 
-fn AtomicCreation() {
+fn atomic_creation() {
     Atomic counter: Int = Atomic::new(42);
     Atomic flag: Bool = Atomic::new(false);
 }
@@ -621,7 +621,7 @@ fn AtomicCreation() {
 
 // atomic load
 
-fn AtomicLoad() {
+fn atomic_load() {
     Atomic counter: Int = Atomic::new(42);
 
     value: Int =
@@ -631,7 +631,7 @@ fn AtomicLoad() {
 
 // atomic store
 
-fn AtomicStore() {
+fn atomic_store() {
     Atomic counter: Int = Atomic::new(42);
 
     counter.store(
@@ -643,10 +643,10 @@ fn AtomicStore() {
 
 // atomic exchange
 
-fn AtomicExchange() {
+fn atomic_exchange() {
     Atomic counter: Int = Atomic::new(42);
 
-    oldValue: Int =
+    old_value: Int =
         counter.exchange(
             50,
             Atomic.ordering.SeqCst
@@ -658,41 +658,41 @@ fn AtomicExchange() {
 
 // atomic addition
 
-fn AtomicFetchAdd() {
+fn atomic_fetch_add() {
     Atomic counter: Int = Atomic::new(42);
 
-    oldValue: Int =
-        counter.fetchAdd(
+    old_value: Int =
+        counter.fetch_add(
             1,
             Atomic.ordering.SeqCst
         );
 }
 
-// fetchAdd() returns the previous value.
+// fetch_add() returns the previous value.
 
 
 // atomic subtraction
 
-fn AtomicFetchSub() {
+fn atomic_fetch_sub() {
     Atomic counter: Int = Atomic::new(42);
 
-    oldValue: Int =
-        counter.fetchSub(
+    old_value: Int =
+        counter.fetch_sub(
             1,
             Atomic.ordering.SeqCst
         );
 }
 
-// fetchSub() returns the previous value.
+// fetch_sub() returns the previous value.
 
 
 // compare and exchange
 
-fn AtomicCompareExchange() {
+fn atomic_compare_exchange() {
     Atomic counter: Int = Atomic::new(42);
 
-    oldValue: Int =
-        counter.compareExchange(
+    old_value: Int =
+        counter.compare_exchange(
             42,
             43,
             Atomic.ordering.SeqCst,
@@ -700,7 +700,7 @@ fn AtomicCompareExchange() {
         );
 }
 
-// compareExchange():
+// compare_exchange():
 //
 // - First argument: expected value.
 // - Second argument: replacement value.
@@ -711,7 +711,7 @@ fn AtomicCompareExchange() {
 
 // Bool atomic operations
 
-fn AtomicBool() {
+fn atomic_bool() {
     Atomic flag: Bool = Atomic::new(false);
 
     current: Bool =
@@ -728,8 +728,8 @@ fn AtomicBool() {
             Atomic.ordering.SeqCst
         );
 
-    oldValue: Bool =
-        flag.compareExchange(
+    old_value: Bool =
+        flag.compare_exchange(
             false,
             true,
             Atomic.ordering.SeqCst,
@@ -742,17 +742,17 @@ fn AtomicBool() {
 // - load
 // - store
 // - exchange
-// - compareExchange
+// - compare_exchange
 //
 // Atomic<Bool> does not support:
 //
-// - fetchAdd
-// - fetchSub
+// - fetch_add
+// - fetch_sub
 
 
 // invalid direct atomic read
 
-fn InvalidDirectAtomicRead() {
+fn invalid_direct_atomic_read() {
     Atomic counter: Int = Atomic::new(42);
 
     value: Int = counter;
@@ -764,7 +764,7 @@ fn InvalidDirectAtomicRead() {
 
 // invalid direct atomic assignment
 
-fn InvalidDirectAtomicAssignment() {
+fn invalid_direct_atomic_assignment() {
     Atomic counter: Int = Atomic::new(42);
 
     counter = 50;
@@ -776,7 +776,7 @@ fn InvalidDirectAtomicAssignment() {
 
 // invalid atomic initial value
 
-fn InvalidRuntimeAtomicInitialization() {
+fn invalid_runtime_atomic_initialization() {
     value: Int = GetRuntimeValue();
 
     Atomic counter: Int = Atomic::new(value);
@@ -787,7 +787,7 @@ fn InvalidRuntimeAtomicInitialization() {
 
 // atomic movement
 
-fn MoveAtomic() {
+fn move_atomic() {
     Atomic first: Int = Atomic::new(42);
 
     Atomic second: Int = first;
@@ -802,7 +802,7 @@ fn MoveAtomic() {
 
 // shared atomic
 
-fn SharedAtomic() {
+fn shared_atomic() {
     shared: Arc<Atomic<Int>> =
         Arc::new(Atomic::new(0));
 }
@@ -810,7 +810,7 @@ fn SharedAtomic() {
 
 // ordering validation
 
-fn InvalidLoadOrdering() {
+fn invalid_load_ordering() {
     Atomic counter: Int = Atomic::new(42);
 
     value: Int =
@@ -821,7 +821,7 @@ fn InvalidLoadOrdering() {
 // This is a compile-time error.
 
 
-fn InvalidStoreOrdering() {
+fn invalid_store_ordering() {
     Atomic counter: Int = Atomic::new(42);
 
     counter.store(
@@ -834,10 +834,10 @@ fn InvalidStoreOrdering() {
 // This is a compile-time error.
 
 
-// compareExchange failure ordering
+// compare_exchange failure ordering
 
 // Release and AcqRel may not be used as the failure ordering
-// of compareExchange().
+// of compare_exchange().
 //
 // Invalid ordering combinations are compile-time errors.
 
@@ -846,9 +846,9 @@ fn InvalidStoreOrdering() {
 
 // Atomic does not provide:
 //
-// - fetchAnd
-// - fetchOr
-// - fetchXor
+// - fetch_and
+// - fetch_or
+// - fetch_xor
 // - Other bitwise fetch operations
 
 
@@ -859,14 +859,14 @@ fn InvalidStoreOrdering() {
 
 // async result
 
-async fn GetValue() -> Task<Int> {
+async fn get_value() -> Task<Int> {
     return 42;
 }
 
 
 // async unit result
 
-async fn RunUnitTask() -> Task<()> {
+async fn run_unit_task() -> Task<()> {
     return;
 }
 
@@ -877,8 +877,8 @@ async fn RunUnitTask() -> Task<()> {
 
 // awaiting
 
-async fn AwaitValue() -> Task<()> {
-    value: Int = await GetValue();
+async fn await_value() -> Task<()> {
+    value: Int = await get_value();
 }
 
 // await:
@@ -891,8 +891,8 @@ async fn AwaitValue() -> Task<()> {
 
 // lazy execution
 
-async fn LazyTask() -> Task<()> {
-    task: Task<Int> = GetValue();
+async fn lazy_task() -> Task<()> {
+    task: Task<Int> = get_value();
 
     // GetValue has not started yet.
 
@@ -904,8 +904,8 @@ async fn LazyTask() -> Task<()> {
 
 // mandatory await
 
-async fn InvalidUnawaitedTask() -> Task<()> {
-    task: Task<Int> = GetValue();
+async fn invalid_unawaited_task() -> Task<()> {
+    task: Task<Int> = get_value();
 }
 
 // Every created Task<T> must be awaited at least once.
@@ -914,8 +914,8 @@ async fn InvalidUnawaitedTask() -> Task<()> {
 
 // repeated sequential await
 
-async fn RepeatedAwait() -> Task<()> {
-    task: Task<Int> = GetValue();
+async fn repeated_await() -> Task<()> {
+    task: Task<Int> = get_value();
 
     first: Int = await task;
     second: Int = await task;
@@ -935,17 +935,17 @@ async fn RepeatedAwait() -> Task<()> {
 
 // task movement
 
-async fn MoveTask() -> Task<()> {
-    firstTask: Task<Int> = GetValue();
-    secondTask: Task<Int> = firstTask;
+async fn move_task() -> Task<()> {
+    first_task: Task<Int> = get_value();
+    second_task: Task<Int> = first_task;
 
-    value: Int = await secondTask;
+    value: Int = await second_task;
 }
 
 // Task<T> is move-only.
 // It cannot be copied.
 //
-// After movement, firstTask can no longer be used.
+// After movement, first_task can no longer be used.
 
 
 // task thread rule
@@ -962,7 +962,7 @@ async fn MoveTask() -> Task<()> {
 
 // async Result handling
 
-async fn AsyncResultHandling() -> Task<Result<()>> {
+async fn async_result_handling() -> Task<Result<()>> {
     value: Int = await FailingTask()@;
     return Ok();
 }
@@ -994,16 +994,16 @@ async fn AsyncResultHandling() -> Task<Result<()>> {
 // Thread channels
 // ============================================================
 
-imports thread, std;
+imports thread;
 
 
 // channel creation and communication
 
-fn ChannelExample() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn channel_example() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    Thread.spawn(move fn() {
+    std::thread::spawn(move fn() {
         tx.send(42);
     });
 
@@ -1012,7 +1012,7 @@ fn ChannelExample() {
     println!("{}", value);
 }
 
-// Thread.channel<T>:
+// std::thread::Channel<T>:
 //
 // - Creates one sender endpoint and one receiver endpoint.
 // - Uses a single-sender, single-receiver model.
@@ -1022,9 +1022,9 @@ fn ChannelExample() {
 
 // sending
 
-fn ChannelSendMovesValue() {
-    (tx, rx): Thread.channel<Str> =
-        Thread.channel();
+fn channel_send_moves_value() {
+    (tx, rx): std::thread::Channel<Str> =
+        std::thread::channel();
 
     message: Str = "Alpha";
 
@@ -1038,11 +1038,11 @@ fn ChannelSendMovesValue() {
 
 // receiving
 
-fn ChannelReceive() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn channel_receive() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    Thread.spawn(move fn() {
+    std::thread::spawn(move fn() {
         tx.send(42);
     });
 
@@ -1058,11 +1058,11 @@ fn ChannelReceive() {
 
 // receiver movement
 
-fn MoveReceiverToThread() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn move_receiver_to_thread() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    Thread.spawn(move fn() {
+    std::thread::spawn(move fn() {
         value: Int = rx.recv();
     });
 
@@ -1074,12 +1074,12 @@ fn MoveReceiverToThread() {
 
 // invalid sender cloning
 
-fn InvalidSenderClone() {
-    (tx, rx): Thread.channel<Int> =
-        Thread.channel();
+fn invalid_sender_clone() {
+    (tx, rx): std::thread::Channel<Int> =
+        std::thread::channel();
 
-    secondSender: Thread.channel<Int> =
-        Thread.channel.clone(&tx);
+    second_sender: std::thread::Channel<Int> =
+        std::thread::Channel::clone(&tx);
 }
 
 // Channel endpoints cannot be cloned.
@@ -1090,11 +1090,11 @@ fn InvalidSenderClone() {
 // SyncException
 // ============================================================
 
-fn CatchSyncException() {
+fn catch_sync_exception() {
     mutex: Mutex<Int> = Mutex::new(42);
 
     result: Result<Mutex<Int>, SyncException> = mutex.lock();
-    if (result.isError()) {
+    if (result.is_error()) {
         println!("sync failure");
     }
 }

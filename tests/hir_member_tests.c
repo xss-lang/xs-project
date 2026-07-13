@@ -38,7 +38,7 @@ static void test_class_member_symbols(void)
   const char *text = "module App;\n"
                      "class User {\n"
                      "  name: Str;\n"
-                     "  fn GetName() -> Str { return name; }\n"
+                     "  fn get_name() -> Str { return name; }\n"
                      "}\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
@@ -51,12 +51,12 @@ static void test_class_member_symbols(void)
   CHECK(xs_hir_collect_member_symbols(user, nullptr, &members, &diagnostics));
   CHECK(members.count == 2);
   const XsHirMemberSymbol *name = xs_hir_member_symbol_table_find(&members, "App.User", "name");
-  const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "GetName");
+  const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "get_name");
   CHECK(name != nullptr && name->kind == XS_HIR_MEMBER_FIELD);
   CHECK(name != nullptr && name->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
   CHECK(method != nullptr && method->kind == XS_HIR_MEMBER_METHOD);
   CHECK(method != nullptr && method->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
-  CHECK(method != nullptr && strcmp(method->qualified_name, "App.User.GetName") == 0);
+  CHECK(method != nullptr && strcmp(method->qualified_name, "App.User.get_name") == 0);
   xs_hir_member_symbol_table_free(&members);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
@@ -98,9 +98,9 @@ static void test_data_member_symbols_and_method_resolution(void)
                      "  name: Str;\n"
                      "  User(name: Str) {}\n"
                      "  User(name: Str, age: Int) {}\n"
-                     "  fn GetName() -> Str { return name; }\n"
+                     "  fn get_name() -> Str { return name; }\n"
                      "}\n"
-                     "fn Main() { user: User = new(); user.GetName(); }\n";
+                     "fn main() { user: User = new User(); user.get_name(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirMemberSymbolTable members;
@@ -114,7 +114,7 @@ static void test_data_member_symbols_and_method_resolution(void)
   CHECK(xs_hir_member_symbol_table_find(&members, "App.User", "name") != nullptr);
   const XsHirMemberSymbol *constructor = xs_hir_member_symbol_table_find(&members, "App.User", "User");
   CHECK(constructor != nullptr && constructor->kind == XS_HIR_MEMBER_CONSTRUCTOR);
-  const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "GetName");
+  const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "get_name");
   CHECK(method != nullptr && method->kind == XS_HIR_MEMBER_METHOD);
   xs_hir_import_scope_init(&imports);
   CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
@@ -269,8 +269,8 @@ static void test_macro_generated_member_conflicts_with_method(void)
 static void test_explicit_local_method_call_resolution(void)
 {
   const char *text = "module App;\n"
-                     "class User { incomplete fn GetName(); }\n"
-                     "fn Main() { user: User = new(); user.GetName(); }\n";
+                     "class User { incomplete fn get_name(); }\n"
+                     "fn main() { user: User = new User(); user.get_name(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirImportScope imports;
@@ -288,8 +288,8 @@ static void test_explicit_local_method_call_resolution(void)
 static void test_missing_explicit_local_method_call_errors(void)
 {
   const char *text = "module App;\n"
-                     "class User { incomplete fn GetName(); }\n"
-                     "fn Main() { user: User = new(); user.Missing(); }\n";
+                     "class User { incomplete fn get_name(); }\n"
+                     "fn main() { user: User = new User(); user.missing(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirImportScope imports;
@@ -309,10 +309,10 @@ static void test_macro_generated_method_call_resolution(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
+                     "  macro_rules! make { () -> { incomplete fn generated(); }; }\n"
                      "  make!();\n"
                      "}\n"
-                     "fn Main() { user: User = new(); user.Generated(); }\n";
+                     "fn main() { user: User = new User(); user.generated(); }\n";
   XsSource source = {.path = "MacroMethodCall.xs", .text = text, .length = strlen(text)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;

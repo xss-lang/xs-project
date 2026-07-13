@@ -189,10 +189,11 @@ The documented compilation order is preserved:
 - Regular enum variants cannot contain payload types and must have unique names. `enum data` requires at least one typed
   variant, rejects tuple payloads, and permits same-name typed variants only when their payload types differ. Constructor
   overload selection remains a later HIR type-checking responsibility.
-- `fn(...) { ... }`, `fn(...) -> T { ... }`, and `move fn(...) { ... }` function expression/closure forms are represented as
-  `XS_SYNTAX_EXPR_FUNCTION` nodes. `move` capture is a separate AST flag.
-- `new()` object creation is represented as `XS_SYNTAX_EXPR_NEW`; when the constructed type is not written in source, HIR will
-  resolve it from context.
+- Function expressions use inferred signatures: `fn(a, b) { a + b }` and `move fn() { work() }` are represented as
+  `XS_SYNTAX_EXPR_FUNCTION` nodes. Parameter and return types are supplied by context rather than written on the lambda;
+  `move` capture is a separate AST flag.
+- Class construction uses `new Type(...)` and is represented as `XS_SYNTAX_EXPR_NEW` with an explicit type child. The
+  otherwise-untyped `new()` spelling is accepted only inside the dedicated `else: expression;` discard form.
 - Data object initialization uses normal object field literals, and field access uses ordinary member access.
 - Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 HIR
   expression checker now requires an enclosing function whose return type is `Result<T, E>` or shorthand

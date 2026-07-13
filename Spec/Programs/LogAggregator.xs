@@ -4,7 +4,7 @@
 // Complete-language example program:
 // Reads an application log and prints level counts plus the newest error line.
 
-module Programs::LogAggregator;
+module programs::log_aggregator;
 
 imports collections, fs, optional, stdio, process;
 
@@ -19,7 +19,7 @@ data LogEntry {
 }
 
 class LogParser {
-    static fn Parse(line: Str) -> Result<LogEntry, Error> {
+    static fn parse(line: Str) -> Result<LogEntry, Error> {
         parts: std::collections::Vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
             return Error(Error {
@@ -35,43 +35,43 @@ class LogParser {
 }
 
 class Report {
-    counts: std::collections::hash_map<Str, Int>;
-    newestError: Optional<Str>;
+    counts: std::collections::HashMap<Str, Int>;
+    newest_error: Optional<Str>;
 
-    Report() {
-        self.counts = std::collections::hash_map<Str, Int>::new();
-        self.newestError = std::optional::None;
+    report() {
+        self.counts = std::collections::HashMap<Str, Int>::new();
+        self.newest_error = std::optional::None;
     }
 
-    fn Add(entry: LogEntry) {
-        current: Int = self.counts.get(entry.level).unwrapOr(0);
+    fn add(entry: LogEntry) {
+        current: Int = self.counts.get(entry.level).unwrap_or(0);
         self.counts[entry.level] = current + 1;
 
         if (entry.level == "ERROR") {
-            self.newestError = std::optional::Some(entry.message);
+            self.newest_error = std::optional::Some(entry.message);
         }
     }
 
-    fn Print() -> Result<()> {
+    fn print() -> Result<()> {
         for ((level, count): (Str, Int) in self.counts) {
             println!("{:<8} {}", level, count);
         }
 
-        if (self.newestError != None) {
-            println!("newest error: {}", self.newestError!);
+        if (self.newest_error != None) {
+            println!("newest error: {}", self.newest_error!);
         }
 
         return Ok();
     }
 }
 
-fn Main(args: std::process::Args) -> Result<Int, Error> {
+fn main(args: std::process::Args) -> Result<Int, Error> {
     if (args.length() != 2) {
         eprintln!("usage: log-aggregator <log-file>");
         return 2;
     }
 
-    report: Report = new();
+    report: Report = new Report();
     content: Str = std::fs::read_to_str(args[1]);
 
     for (line: Str in content.lines()) {
@@ -79,9 +79,9 @@ fn Main(args: std::process::Args) -> Result<Int, Error> {
             continue;
         }
 
-        report.Add(LogParser::Parse(line)@);
+        report.add(LogParser::parse(line)@);
     }
 
-    report.Print()@;
+    report.print()@;
     return Ok(0);
 }

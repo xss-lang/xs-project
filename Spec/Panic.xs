@@ -34,29 +34,29 @@
 // imports panic; is optional.
 
 
-fn ValidatePositive(value: Long) {
+fn validate_positive(value: Long) {
     assert!(value > 0);
 }
 
 
-fn ValidatePair(left: Long, right: Long) {
+fn validate_pair(left: Long, right: Long) {
     assert_eq!(left, right);
     assert_ne!(left, 0);
 }
 
 
-fn DebugValidate(index: Long, length: Long) {
+fn debug_validate(index: Long, length: Long) {
     debug_assert!(index >= 0);
     debug_assert_eq!(length, length);
 }
 
 
-fn StopNow() {
+fn stop_now() {
     panic!();
 }
 
 
-fn StopWithMessage(name: Str) {
+fn stop_with_message(name: Str) {
     panic!("invalid name: {}", name);
 }
 
@@ -65,7 +65,7 @@ fn StopWithMessage(name: Str) {
 
 using namespace panic;
 
-fn SelectedPanicMacros(value: Long) {
+fn selected_panic_macros(value: Long) {
     assert!(value != 0);
     panic!("namespace using example");
 }

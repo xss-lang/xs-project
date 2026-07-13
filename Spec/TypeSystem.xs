@@ -10,25 +10,25 @@
 // The compiler selects UTF-16LE or UTF-16BE automatically for the target/runtime situation.
 // Optional<Str> is an owned optional string value, like Rust Option<String>.
 
-valueStr: Str = "text";
-valueBool: Bool = true;
+value_str: Str = "text";
+value_bool: Bool = true;
 
-valueByte: Byte = 255;
-valueSByte: SByte = -1;
-valueChar: Char = 'A';
+value_byte: Byte = 255;
+value_s_byte: SByte = -1;
+value_char: Char = 'A';
 
-valueShort: Short = -32'000;
-valueLong: Long = 2'000'000'000;
-valueInt: Int = 9'000'000'000;
-valueInteger: Integer = 170'000'000'000'000'000'000;
+value_short: Short = -32'000;
+value_long: Long = 2'000'000'000;
+value_int: Int = 9'000'000'000;
+value_integer: Integer = 170'000'000'000'000'000'000;
 
-valueUShort: UShort = 65'535;
-valueULong: ULong = 4'000'000'000;
-valueUInt: UInt = 18'000'000'000;
-valueUInteger: UInteger = 340'000'000'000'000'000'000;
+value_u_short: UShort = 65'535;
+value_u_long: ULong = 4'000'000'000;
+value_u_int: UInt = 18'000'000'000;
+value_u_integer: UInteger = 340'000'000'000'000'000'000;
 
-valueSFloat: SFloat = 1.0;
-valueFloat: Float = 1.0;
+value_s_float: SFloat = 1.0;
+value_float: Float = 1.0;
 
 // Optional<T> is resolved as if the compiler had inserted
 // `imports optional; using namespace std::optional;` and brought
@@ -50,9 +50,9 @@ name = Some("Leitwolf");
 
 status: Result<Int, Error> = Ok(0);
 
-emptyCanonical: std::optional::Optional<Str> = std::optional::None;
-canonicalName: std::optional::Optional<Str> = std::optional::Some("Leitwolf");
-shortName: Optional<Str> = canonicalName;
+empty_canonical: std::optional::Optional<Str> = std::optional::None;
+canonical_name: std::optional::Optional<Str> = std::optional::Some("Leitwolf");
+short_name: Optional<Str> = canonical_name;
 
 display: Str = name ?? "guest";
 name ??= std::optional::Some("guest");
@@ -60,13 +60,13 @@ name ??= std::optional::Some("guest");
 // Automatic unboxing from Optional<T> to T may fail. New code models that as
 // Error rather than legacy exceptions.
 
-unboxedName: Str = name;
-forcedName: Str = name!;
+unboxed_name: Str = name;
+forced_name: Str = name!;
 
 user: Optional<User> = None;
 city: Optional<Str> = user?.Address?.City;
 
-fn NormalizeOptionalName(value: Optional<Str>) -> Result<Str, Error> {
+fn normalize_optional_name(value: Optional<Str>) -> Result<Str, Error> {
     if (value == None) {
         return Error(Error {
             message: "name is missing",

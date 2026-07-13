@@ -164,9 +164,9 @@ static void test_if_expression_requires_else(void)
 
 static void test_function_expression_structure(void)
 {
-  const char *text = "fn Spawn() {\n"
-                     "  Thread.spawn(move fn() -> Int { return 42; });\n"
-                     "  mapper: Mapper = fn(value: Int) -> Int { return value + 1; };\n"
+  const char *text = "fn spawn_tasks() {\n"
+                     "  std::thread::spawn(move fn() { 42 });\n"
+                     "  mapper: Mapper = fn(value) { value + 1 };\n"
                      "}\n";
   XsSource source = {.path = "ThreadClosure.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -179,16 +179,28 @@ static void test_function_expression_structure(void)
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_FUNCTION) == 2);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_PARAMETER) != nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_NAMED) != nullptr);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_RETURN) != nullptr);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_function_expression_rejects_written_types(void)
+{
+  const char *text = "fn main() { mapper: Mapper = fn(value: Int) -> Int { value }; }\n";
+  XsSource source = {.path = "TypedLambda.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 31, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
 
 static void test_new_expression_structure(void)
 {
-  const char *text = "fn Main() {\n"
-                     "  user: User = new();\n"
-                     "  client: Http::client = new();\n"
+  const char *text = "fn main() {\n"
+                     "  user: User = new User();\n"
+                     "  client: std::http::Client = new std::http::Client();\n"
                      "}\n";
   XsSource source = {.path = "NewExpression.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -196,6 +208,10 @@ static void test_new_expression_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 18, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_NEW) == 2);
+  const XsSyntaxNode *created = xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_NEW);
+  CHECK(created != nullptr);
+  CHECK(created == nullptr || created->child_count == 1);
+  CHECK(created == nullptr || created->children[0]->kind == XS_SYNTAX_TYPE_NAMED);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_VARIABLE) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -203,7 +219,7 @@ static void test_new_expression_structure(void)
 
 static void test_else_discard_statement_structure(void)
 {
-  const char *text = "fn Main() { else: a = new(); if (true) {} else: b = new(); }\n";
+  const char *text = "fn main() { else: a = new(); if (true) {} else: b = new(); }\n";
   XsSource source = {.path = "Discard.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -282,8 +298,8 @@ static void test_data_literal_and_member_access_structure(void)
 
 static void test_function_type_structure(void)
 {
-  const char *text = "fn Main() {\n"
-                     "  mapper: fn(Int, Str) -> Bool = fn(value: Int, name: Str) -> Bool { return true; };\n"
+  const char *text = "fn main() {\n"
+                     "  mapper: fn(Int, Str) -> Bool = fn(value, name) { true };\n"
                      "  done: fn() -> () = fn() { return; };\n"
                      "}\n";
   XsSource source = {.path = "FunctionTypes.xs", .text = text, .length = strlen(text)};
@@ -483,6 +499,7 @@ int main(void)
   test_control_flow_expression_structure();
   test_if_expression_requires_else();
   test_function_expression_structure();
+  test_function_expression_rejects_written_types();
   test_new_expression_structure();
   test_else_discard_statement_structure();
   test_tail_expression_semicolon_split();

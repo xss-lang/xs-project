@@ -663,15 +663,15 @@ externalModules {
 
 // A directly added build-graph file does not require a module:
 
-fn Main() {
+fn main() {
 }
 
 
 // A file that must be imported requires a module declaration:
 
-module Math;
+module math;
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
@@ -681,20 +681,20 @@ fn Add(a: Int, b: Int) -> Int {
 
 // Valid:
 
-module Math;
+module math;
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
 
 // Invalid:
 
-fn Add(a: Int, b: Int) -> Int {
+fn add(a: Int, b: Int) -> Int {
     return a + b;
 }
 
-module Math;
+module math;
 
 
 // A file without a module declaration cannot be imported.
@@ -709,7 +709,7 @@ module Math;
 
 // File: MathUtils.xs
 
-module Math;
+module math;
 
 
 // This is valid.
@@ -717,18 +717,18 @@ module Math;
 
 // Matching the module and file name is recommended:
 
-// File: Math.xs
+// File: math.xs
 
-module Math;
+module math;
 
 
 // imports resolves the module name, not the file name:
 
-imports Math;
+imports math;
 
 
 // The following does not depend on the source file being named
-// Math.xs.
+// math.xs.
 
 
 // ============================================================
@@ -743,12 +743,12 @@ imports Math;
 
 // File: A.xs
 
-module Math;
+module math;
 
 
 // File: B.xs
 
-module Math;
+module math;
 
 
 // Duplicate module declarations produce a compile-time error.
@@ -758,7 +758,7 @@ module Math;
 // Import behavior
 // ============================================================
 
-imports Math;
+imports math;
 
 
 // imports:

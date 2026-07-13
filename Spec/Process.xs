@@ -14,12 +14,12 @@
 // explicitly enabled with .shell(true).
 //
 
-imports process, result, std;
+imports process, result;
 
 
 // process execution
 
-fn PullRepository() -> Result<()> {
+fn pull_repository() -> Result<()> {
     std::process::execute("git", ["pull"])@;
     return Ok();
 }
@@ -27,7 +27,7 @@ fn PullRepository() -> Result<()> {
 
 // process execution with arguments
 
-fn InstallPackage(name: Str) -> Result<()> {
+fn install_package(name: Str) -> Result<()> {
     std::process::execute("pacman", ["-S", name])@;
     return Ok();
 }
@@ -35,7 +35,7 @@ fn InstallPackage(name: Str) -> Result<()> {
 
 // shell execution
 
-fn UpgradeSystem() -> Result<()> {
+fn upgrade_system() -> Result<()> {
     std::process::execute("pacman -Syu")
         .shell(true)@;
 
@@ -45,7 +45,7 @@ fn UpgradeSystem() -> Result<()> {
 
 // INVALID
 
-fn InvalidShellExecution() -> Result<()> {
+fn invalid_shell_execution() -> Result<()> {
     std::process::execute("pacman -Syu")@;
     return Ok();
 }
@@ -55,7 +55,7 @@ fn InvalidShellExecution() -> Result<()> {
 
 // explicit Result match
 
-fn PrintGitStatus() -> Result<()> {
+fn print_git_status() -> Result<()> {
     status = match (std::process::execute("git", ["status"])) {
         Ok(value) -> value,
         Error(error) -> return Error(error),
@@ -68,7 +68,7 @@ fn PrintGitStatus() -> Result<()> {
 
 // propagation with @
 
-fn RunFormatter() -> Result<()> {
+fn run_formatter() -> Result<()> {
     std::process::execute("xsfmt", ["--check"])@;
     std::process::execute("xstidy", ["--check"])@;
     return Ok();
@@ -82,7 +82,7 @@ enum data LoginError {
     Locked: Str,
 }
 
-fn Login(user: Str) -> Result<()> {
+fn login(user: Str) -> Result<()> {
     if (user.length() == 0) {
         return Error(Error {
             message: "invalid user",
@@ -101,7 +101,7 @@ fn Login(user: Str) -> Result<()> {
 
 // built-in error-style values
 
-fn ReadRequiredLine() -> Result<Str, Error> {
+fn read_required_line() -> Result<Str, Error> {
     input: Optional<Str> = std::optional::Some("");
 
     std::stdin()
@@ -125,8 +125,8 @@ class File {
     }
 }
 
-fn UseFile() -> Result<()> {
-    file: File = new();
+fn use_file() -> Result<()> {
+    file: File = new File();
     std::process::execute("git", ["rev-parse", "--is-inside-work-tree"])@;
     return Ok();
 }
@@ -138,12 +138,12 @@ fn UseFile() -> Result<()> {
 
 // Deprecated syntax remains parseable and produces compiler warnings:
 //
-// fn OpenFile(path: Str) throws IOException {
+// fn open_file(path: Str) throws IOException {
 //     throw IOException("File not found");
 // }
 //
 // try {
-//     OpenFile("missing.txt");
+//     open_file("missing.txt");
 // }
 // catch (error: Error) {
 // }

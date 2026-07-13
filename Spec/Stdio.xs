@@ -23,50 +23,50 @@ imports stdio, fs, collections, result;
 
 // standard output macros
 
-fn PrintWithoutNewline() -> Result<()> {
+fn print_without_newline() -> Result<()> {
     print!("Hello");
 }
 
-fn PrintWithNewline() -> Result<()> {
+fn print_with_newline() -> Result<()> {
     println!("Hello");
 }
 
-fn PrintNewlineOnly() -> Result<()> {
+fn print_newline_only() -> Result<()> {
     println!();
 }
 
 
 // standard error macros
 
-fn ErrorWithoutNewline() -> Result<()> {
+fn error_without_newline() -> Result<()> {
     eprint!("error");
 }
 
-fn ErrorWithNewline() -> Result<()> {
+fn error_with_newline() -> Result<()> {
     eprintln!("error");
 }
 
-fn ErrorNewlineOnly() -> Result<()> {
+fn error_newline_only() -> Result<()> {
     eprintln!();
 }
 
 // writer macros
 
-fn WriteToStream() -> Result<()> {
+fn write_to_stream() -> Result<()> {
     write!(std::stdout(), "Hello");
 }
 
-fn WriteLineToStream() -> Result<()> {
+fn write_line_to_stream() -> Result<()> {
     writeln!(std::stdout(), "{} is {}", "Alpha", 26);
 }
 
-fn WriteNewlineOnlyToStream() -> Result<()> {
+fn write_newline_only_to_stream() -> Result<()> {
     writeln!(std::stdout());
 }
 
 // formatting
 
-fn FormatValues() -> Result<()> {
+fn format_values() -> Result<()> {
     user: Str = "Alpha";
     age: Int = 26;
 
@@ -104,22 +104,22 @@ fn FormatValues() -> Result<()> {
 // Built-in format_args! returns the formatting argument value used by output
 // and writer macros and does not write to a stream.
 
-fn BuildMessage() {
+fn build_message() {
     user1: Str = "Alpha";
     user2: Str = "Leitwolf";
 
     users: Str = format!("{} {}", user1, user2);
     format_args!("{} {}", user1, user2);
-    debugUsers := format_args!("{:#?}", users);
+    debug_users := format_args!("{:#?}", users);
     aligned: Str = format!("{:^16}", user1);
-    hexAge: Str = format!("{:#x}", 26);
+    hex_age: Str = format!("{:#x}", 26);
 }
 
-fn WriteReportLine(name: Str, score: Int) -> Result<()> {
+fn write_report_line(name: Str, score: Int) -> Result<()> {
     writeln!(std::stdout(), "{:<16} {:>4}", name, score);
 }
 
-fn WriteDebugReport<T>(value: T) -> Result<()> {
+fn write_debug_report<T>(value: T) -> Result<()> {
     write!(std::stderr(), "{:#?}", value);
     writeln!(std::stderr());
 }
@@ -127,7 +127,7 @@ fn WriteDebugReport<T>(value: T) -> Result<()> {
 
 // standard stream functions
 
-fn StandardHandles() -> Result<()> {
+fn standard_handles() -> Result<()> {
     std::fs::write(std::stdout(), "stdout text\n");
     std::fs::write(std::stderr(), "stderr text\n");
 
@@ -143,7 +143,7 @@ fn StandardHandles() -> Result<()> {
 
 // line input
 
-fn ReadLine() {
+fn read_line() {
     input: Optional<Str> = std::optional::Some("");
 
     std::stdin()
@@ -153,7 +153,7 @@ fn ReadLine() {
     println!("Input: {}", input.trim());
 }
 
-fn ReadNumber() {
+fn read_number() {
     input: Optional<Str> = std::optional::Some("");
 
     std::stdin()
@@ -164,7 +164,7 @@ fn ReadNumber() {
     println!("Number: {}", number);
 }
 
-fn ReadManyNumbers() {
+fn read_many_numbers() {
     input: Optional<Str> = std::optional::Some("");
 
     std::stdin()
@@ -183,35 +183,35 @@ fn ReadManyNumbers() {
 
 // invalid examples
 
-fn InvalidNonStringTemplate() -> Result<()> {
+fn invalid_non_string_template() -> Result<()> {
     println!(10);
 }
 
 // INVALID: println! expects a Str format template as its first argument.
 
 
-fn InvalidMissingPlaceholder() -> Result<()> {
+fn invalid_missing_placeholder() -> Result<()> {
     println!("value", 10);
 }
 
 // INVALID: one argument is supplied but the template has no placeholder.
 
 
-fn InvalidMissingArgument() -> Result<()> {
+fn invalid_missing_argument() -> Result<()> {
     println!("{}",);
 }
 
 // INVALID: the template has one placeholder but no value argument.
 
 
-fn InvalidEmptyPrint() -> Result<()> {
+fn invalid_empty_print() -> Result<()> {
     print!();
 }
 
 // INVALID: print! has no newline-only form.
 
 
-fn InvalidEmptyFormatArgs() {
+fn invalid_empty_format_args() {
     format_args!();
 }
 

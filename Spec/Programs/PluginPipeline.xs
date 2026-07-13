@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Runs a configurable text-processing pipeline through nominal plugin types.
 
-module Programs::PluginPipeline;
+module programs::plugin_pipeline;
 
-imports collections, std, process;
+imports collections, process;
 
 enum data PipelineError {
     Io: Error,
@@ -14,48 +14,48 @@ enum data PipelineError {
 }
 
 interface TextPlugin {
-    fn Name() -> Str;
-    fn Run(input: Str) -> Result<Str, PipelineError>;
+    fn name() -> Str;
+    fn run(input: Str) -> Result<Str, PipelineError>;
 }
 
 class TrimPlugin : TextPlugin {
 
-    fn Name() -> Str {
+    fn name() -> Str {
         return "trim";
     }
 
-    fn Run(input: Str) -> Result<Str, PipelineError> {
+    fn run(input: Str) -> Result<Str, PipelineError> {
         return Ok(input.trim());
     }
 }
 
 class UppercasePlugin : TextPlugin {
 
-    fn Name() -> Str {
+    fn name() -> Str {
         return "upper";
     }
 
-    fn Run(input: Str) -> Result<Str, PipelineError> {
+    fn run(input: Str) -> Result<Str, PipelineError> {
         return Ok(input.uppercase());
     }
 }
 
 class ReplacePlugin : TextPlugin {
 
-    fromText: Str;
-    toText: Str;
+    from_text: Str;
+    to_text: Str;
 
-    ReplacePlugin(fromText: Str, toText: Str) {
-        self.fromText = fromText;
-        self.toText = toText;
+    ReplacePlugin(from_text: Str, to_text: Str) {
+        self.from_text = from_text;
+        self.to_text = to_text;
     }
 
-    fn Name() -> Str {
+    fn name() -> Str {
         return "replace";
     }
 
-    fn Run(input: Str) -> Result<Str, PipelineError> {
-        return Ok(input.replace(self.fromText, self.toText));
+    fn run(input: Str) -> Result<Str, PipelineError> {
+        return Ok(input.replace(self.from_text, self.to_text));
     }
 }
 
@@ -66,34 +66,34 @@ class Pipeline {
         self.stages = std::collections::Vector<TextPlugin>::new();
     }
 
-    fn Add(stage: TextPlugin) {
+    fn add(stage: TextPlugin) {
         self.stages.push(stage);
     }
 
-    fn Run(input: Str) -> Result<Str, PipelineError> {
+    fn run(input: Str) -> Result<Str, PipelineError> {
         output: Str = input;
 
         for (stage: TextPlugin in self.stages) {
-            output = stage.Run(output)@;
+            output = stage.run(output)@;
         }
 
         return Ok(output);
     }
 }
 
-fn Main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
+fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     input: Str = if (args.length() > 1) {
         args[1];
     }
     else {
         "  hello x#  ";
     };
-    pipeline: Pipeline = new();
+    pipeline: Pipeline = new Pipeline();
 
-    pipeline.Add(TrimPlugin::new());
-    pipeline.Add(ReplacePlugin::new("x#", "X#"));
-    pipeline.Add(UppercasePlugin::new());
+    pipeline.add(new TrimPlugin());
+    pipeline.add(new ReplacePlugin("x#", "X#"));
+    pipeline.add(new UppercasePlugin());
 
-    println!("{}", pipeline.Run(input)@);
+    println!("{}", pipeline.run(input)@);
     return Ok(0);
 }

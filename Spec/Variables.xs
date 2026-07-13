@@ -9,7 +9,7 @@
 // Top-level variables are not supported.
 //
 
-fn Main() {
+fn main() {
     // mutable variables
     x: Int = 5;
     name: Str = "Alpha";
@@ -31,10 +31,10 @@ fn Main() {
     floating: Float = 3.5;
 
     // Type-inferred bindings use := and always have an initializer.
-    inferredAge := 26;
-    inferredPi := 3.14;
-    inferredLetter := 'A';
-    inferredName := "Alpha";
+    inferred_age := 26;
+    inferred_pi := 3.14;
+    inferred_letter := 'A';
+    inferred_name := "Alpha";
     maybe: Optional<Int> = None;
 
     // reassignment
@@ -49,9 +49,9 @@ fn Main() {
     // Object, field, element and interior mutation are controlled by the
     // value's type, ownership and mutability rules.
     val version: Str = "1.0";
-    val maxPlayers: Int = 100;
-    val isReady: Bool = true;
-    val inferredVersion := "1.0";
+    val max_players: Int = 100;
+    val is_ready: Bool = true;
+    val inferred_version := "1.0";
 
     // compile-time constant
     //
@@ -62,7 +62,7 @@ fn Main() {
     const BuildNumber: Int = 42;
     const AppName: Str = "Example";
     const DebugMode: Bool = false;
-    const inferredBuildNumber := 42;
+    const inferred_build_number := 42;
 
     // compile-time constant + static lifetime
     //
@@ -75,33 +75,33 @@ fn Main() {
 
 
 // VALID
-fn Main() {
+fn main() {
     x: Int = 5;
 }
 
 
 // INVALID
-fn Main() {
+fn main() {
     x = 5;
 }
 // = is assignment, not a type-inferred declaration.
 
 
 // INVALID
-fn Main() {
+fn main() {
     missing := None;
 }
 // Optional<T> is never inferred. Write the Optional<T> annotation explicitly.
 
 
 // VALID
-fn Main() {
+fn main() {
     val x: Int = 5;
 }
 
 
 // INVALID
-fn Main() {
+fn main() {
     val x: Int = 5;
     x = 10;
 }
@@ -109,26 +109,26 @@ fn Main() {
 
 
 // VALID
-fn Main() {
+fn main() {
     const Version: Int = 1;
 }
 
 
 // VALID
-fn Main() {
+fn main() {
     const Version: Int = RuntimeValue();
 }
 // Valid for const if the runtime result can initialize a truly immutable value.
 
 
 // VALID
-fn Main() {
+fn main() {
     static BufferSize: Int = 4096;
 }
 
 
 // INVALID
-fn Main() {
+fn main() {
     static BufferSize: Int = RuntimeValue();
 }
 // Static values must be compile-time constants and have static lifetime.

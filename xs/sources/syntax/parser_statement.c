@@ -127,7 +127,10 @@ static XsSyntaxNode *parse_discard(SyntaxParser *parser, size_t start)
 {
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_DISCARD, (XsSpan){start, parser->previous.span.end});
   expect(parser, XS_TOKEN_COLON, "expected ':' after else discard marker");
+  bool previous_allow_untyped_new = parser->allow_untyped_new;
+  parser->allow_untyped_new = true;
   xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
+  parser->allow_untyped_new = previous_allow_untyped_new;
   expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after else discard statement");
   finish_node(parser, statement, parser->previous.span.end);
   return statement;

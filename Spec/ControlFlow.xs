@@ -31,7 +31,7 @@
 // for example in `return match (...) { ... };`.
 //
 
-fn Main() {
+fn main() {
     x: Int = 5;
 
     if (x > 0) {
@@ -87,13 +87,13 @@ fn Main() {
 
 // explicit discard
 
-fn Initialize() {
+fn initialize() {
     else: a = new();
 }
 
 
 // VALID
-fn TestIf(x: Int) {
+fn test_if(x: Int) {
     if (x > 0) {
         x = 1;
     }
@@ -101,7 +101,7 @@ fn TestIf(x: Int) {
 
 
 // VALID
-fn TestElseIf(x: Int) {
+fn test_else_if(x: Int) {
     if (x > 0) {
         x = 1;
     }
@@ -115,7 +115,7 @@ fn TestElseIf(x: Int) {
 
 
 // VALID
-fn TestIfExpression(x: Int) -> Int {
+fn test_if_expression(x: Int) -> Int {
     return if (x > 0) {
         1
     }
@@ -127,7 +127,7 @@ fn TestIfExpression(x: Int) -> Int {
 
 // match expression
 
-fn HttpStatusText(status: Int) -> Str {
+fn http_status_text(status: Int) -> Str {
     return match (status) {
         200 -> {
             "ok"
@@ -147,7 +147,7 @@ fn HttpStatusText(status: Int) -> Str {
 
 // if expression used in a local binding
 
-fn SelectPort(debug: Bool) -> Int {
+fn select_port(debug: Bool) -> Int {
     port: Int = if (debug) {
         8080
     }
@@ -161,7 +161,7 @@ fn SelectPort(debug: Bool) -> Int {
 
 // explicit discard for initialization-like side effects
 
-fn WarmCache(cache: Cache) {
+fn warm_cache(cache: Cache) {
     for (key: Str in cache.keys()) {
         else: cache.load(key);
     }
@@ -171,7 +171,7 @@ fn WarmCache(cache: Cache) {
 
 
 // VALID
-fn TestFor() {
+fn test_for() {
     for (i: Int = 0; i < 10; i++) {
         continue;
     }
@@ -179,7 +179,7 @@ fn TestFor() {
 
 
 // VALID
-fn TestWhile() {
+fn test_while() {
     x: Int = 0;
 
     while (x < 10) {
@@ -189,7 +189,7 @@ fn TestWhile() {
 
 
 // VALID
-fn TestMatch(x: Int) {
+fn test_match(x: Int) {
     match (x) {
         0 -> {
             x = 10;
@@ -205,7 +205,7 @@ fn TestMatch(x: Int) {
 
 
 // VALID
-fn TestMatchExpression(x: Int) -> Int {
+fn test_match_expression(x: Int) -> Int {
     return match (x) {
         0 -> {
             10
@@ -220,21 +220,21 @@ fn TestMatchExpression(x: Int) -> Int {
 
 
 // INVALID
-fn InvalidBreak() {
+fn invalid_break() {
     break;
 }
 // break can only be used inside loops.
 
 
 // INVALID
-fn InvalidContinue() {
+fn invalid_continue() {
     continue;
 }
 // continue can only be used inside loops.
 
 
 // INVALID
-fn InvalidIfExpression(x: Int) -> Int {
+fn invalid_if_expression(x: Int) -> Int {
     return if (x > 0) {
         1
     };

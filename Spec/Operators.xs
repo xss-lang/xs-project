@@ -28,7 +28,7 @@
 // !
 //
 
-fn Main() {
+fn main() {
     a: Int = 10;
     b: Int = 20;
 
@@ -67,17 +67,17 @@ fn Main() {
     result = a | b;
 
     // optional conditional access
-    maybeUser: Optional<User> = None;
-    maybeName: Optional<Str> = maybeUser?.Name;
+    maybe_user: Optional<User> = None;
+    maybe_name: Optional<Str> = maybe_user?.Name;
 
     // optional coalescing
-    displayName: Str = maybeName ?? "guest";
+    display_name: Str = maybe_name ?? "guest";
 
     // optional coalescing assignment
-    maybeName ??= std::optional::Some("guest");
+    maybe_name ??= std::optional::Some("guest");
 
     // optional-forgiving unboxing
-    forcedName: Str = maybeName!;
+    forced_name: Str = maybe_name!;
 }
 
 

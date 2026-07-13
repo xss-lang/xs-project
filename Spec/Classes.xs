@@ -41,7 +41,7 @@
 // - protected: visible inside the declaring type and derived classes.
 // - internal: visible inside the current project/package assembly boundary.
 //
-// Object creation uses new().
+// Class construction uses `new Type(...)`.
 // Method calls use the dot operator.
 //
 // incomplete classes are supported.
@@ -106,22 +106,22 @@ class User {
     }
 }
 
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 }
 
 // methods
 class User {
-    fn GetName() -> Str {
+    fn get_name() -> Str {
         return "Alpha";
     }
 }
 
 // method call
-fn Main() {
-    user: User = new();
+fn main() {
+    user: User = new User();
 
-    user.GetName();
+    user.get_name();
 }
 
 // static field
@@ -131,7 +131,7 @@ class Math {
 
 // static method
 class Math {
-    static fn Add(a: Int, b: Int) -> Int {
+    static fn add(a: Int, b: Int) -> Int {
         return a + b;
     }
 }
@@ -145,29 +145,29 @@ class Dog : Animal {
 
 // interface
 interface Runnable {
-    fn Run();
+    fn run();
 }
 
 // interface implementation
 class Program : Runnable {
-    fn Run() {
+    fn run() {
     }
 }
 
 // multiple interface implementation
 interface Runnable {
-    fn Run();
+    fn run();
 }
 
 interface Closeable {
-    fn Close();
+    fn close();
 }
 
 class Program : Runnable, Closeable {
-    fn Run() {
+    fn run() {
     }
 
-    fn Close() {
+    fn close() {
     }
 }
 
@@ -184,16 +184,16 @@ class User {
 
 // incomplete class
 incomplete class Animal {
-    incomplete fn Speak();
+    incomplete fn speak();
 }
 
 // method overloading
 class Math {
-    fn Add(a: Int) -> Int {
+    fn add(a: Int) -> Int {
         return a;
     }
 
-    fn Add(a: Int, b: Int) -> Int {
+    fn add(a: Int, b: Int) -> Int {
         return a + b;
     }
 }
