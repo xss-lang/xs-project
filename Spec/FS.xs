@@ -10,7 +10,7 @@
 // std.fs.write does not format text and does not add a newline.
 //
 
-imports fs, std, collections, result;
+imports fs, stdio, collections, result;
 
 
 // raw writes
@@ -49,17 +49,17 @@ fn ReadBytes() => Result.Result<Void, IOException> {
 // create paths
 
 fn CreatePaths() => Result.Result<Void, IOException> {
-    std.fs.createDir("data/backups");
-    std.fs.createFile("data/backups/log.txt");
+    std.fs.create_dir("data/backups");
+    std.fs.create_file("data/backups/log.txt");
 }
 
-// std.fs.createDir(path):
+// std.fs.create_dir(path):
 //
 // - Creates the directory and missing parent directories.
 // - Succeeds if the directory already exists.
 // - Returns Result.Error(IOException) if a non-directory path component blocks creation.
 //
-// std.fs.createFile(path):
+// std.fs.create_file(path):
 //
 // - Creates a new empty file.
 // - Returns Result.Error(IOException) if the file already exists.
@@ -69,56 +69,56 @@ fn CreatePaths() => Result.Result<Void, IOException> {
 // move, copy and remove
 
 fn MoveCopyRemove() => Result.Result<Void, IOException> {
-    std.fs.copyFile("data/source.txt", "data/copy.txt");
+    std.fs.copy_file("data/source.txt", "data/copy.txt");
     std.fs.move("data/copy.txt", "data/backups/copy.txt");
-    std.fs.removeFile("data/source.txt");
+    std.fs.remove_file("data/source.txt");
 
-    std.fs.copyDir("data/backups", "data/archive");
-    std.fs.removeDir("data/archive");
+    std.fs.copy_dir("data/backups", "data/archive");
+    std.fs.remove_dir("data/archive");
 }
 
-// std.fs.removeDir removes an empty directory.
+// std.fs.remove_dir removes an empty directory.
 // Recursive directory deletion is intentionally not the default operation.
 
 
 // list directory
 
 fn ListDirectory() => Result.Result<Void, IOException> {
-    for (entry: Str in std.fs.listDir(".")) {
+    for (entry: Str in std.fs.list_dir(".")) {
         println!("{}", entry.trim());
     }
 }
 
-// std.fs.listDir(path) returns std.collections.vector<Str>.
+// std.fs.list_dir(path) returns std.collections.vector<Str>.
 // Entries are returned in deterministic lexicographic order.
 
 
 // metadata and path helpers
 
 fn InspectPath(path: Str) => Result.Result<Void, IOException> {
-    if (std.fs.exists(path) && std.fs.isDir(path)) {
-        for (entry: Str in std.fs.walkDir(path)) {
-            relative: Str = std.fs.relativePath(path, entry);
+    if (std.fs.exists(path) && std.fs.is_dir(path)) {
+        for (entry: Str in std.fs.walk_dir(path)) {
+            relative: Str = std.fs.relative_path(path, entry);
             println!("{} {}", relative, std.fs.size(entry));
         }
     }
 }
 
 fn BuildPath(root: Str, name: Str) => Str {
-    path: Str = std.fs.joinPath(root, name);
-    return std.fs.parentDir(path);
+    path: Str = std.fs.join_path(root, name);
+    return std.fs.parent_dir(path);
 }
 
 // std.fs.exists(path) returns false instead of throwing for a missing path.
-// std.fs.isFile(path) and std.fs.isDir(path) return false for a missing path.
+// std.fs.is_file(path) and std.fs.is_dir(path) return false for a missing path.
 // std.fs.size(path) returns the byte length of a regular file.
-// std.fs.modifiedTicks(path) returns a runtime-defined comparable timestamp.
-// std.fs.joinPath(base, child) joins path components using the target platform.
-// std.fs.parentDir(path) returns the lexical parent directory.
-// std.fs.relativePath(root, path) returns a lexical relative path.
-// std.fs.walkDir(path) recursively returns files and directories in
+// std.fs.modified_ticks(path) returns a runtime-defined comparable timestamp.
+// std.fs.join_path(base, child) joins path components using the target platform.
+// std.fs.parent_dir(path) returns the lexical parent directory.
+// std.fs.relative_path(root, path) returns a lexical relative path.
+// std.fs.walk_dir(path) recursively returns files and directories in
 // deterministic lexicographic order.
-// std.fs.walkDir does not follow symbolic links by default.
+// std.fs.walk_dir does not follow symbolic links by default.
 
 
 // file handles and open options

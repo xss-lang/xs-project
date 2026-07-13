@@ -6,7 +6,7 @@
 
 module Programs.FileBackup;
 
-imports collections, std, fs, process, result;
+imports collections, stdio, fs, process, result;
 
 enum data BackupError {
     Io: IOException,
@@ -17,7 +17,7 @@ data FileEntry {
     path: Str;
     relative: Str;
     bytes: Int;
-    modifiedTicks: Int;
+    modified_ticks: Int;
 }
 
 class BackupPlan {
@@ -32,21 +32,21 @@ class BackupPlan {
     }
 
     fn Discover() => Result.Result<Void, BackupError> {
-        if (!std.fs.isDir(this.sourceRoot)) {
+        if (!std.fs.is_dir(this.sourceRoot)) {
             return Result.Error(BackupError.InvalidSource(this.sourceRoot));
         }
 
-        for (path: Str in std.fs.walkDir(this.sourceRoot)) {
-            if (std.fs.isDir(path)) {
+        for (path: Str in std.fs.walk_dir(this.sourceRoot)) {
+            if (std.fs.is_dir(path)) {
                 continue;
             }
 
-            relative: Str = std.fs.relativePath(this.sourceRoot, path);
+            relative: Str = std.fs.relative_path(this.sourceRoot, path);
             this.files.push(FileEntry {
                 path: path,
                 relative: relative,
                 bytes: std.fs.size(path),
-                modifiedTicks: std.fs.modifiedTicks(path),
+                modified_ticks: std.fs.modified_ticks(path),
             });
         }
         return Result.Ok();
@@ -54,11 +54,11 @@ class BackupPlan {
 
     fn Execute() => Result.Result<Void, IOException> {
         for (entry: FileEntry in this.files) {
-            destination: Str = std.fs.joinPath(this.targetRoot, entry.relative);
+            destination: Str = std.fs.join_path(this.targetRoot, entry.relative);
 
             if (this.ShouldCopy(entry, destination)) {
-                std.fs.createDir(std.fs.parentDir(destination));
-                std.fs.copyFile(entry.path, destination);
+                std.fs.create_dir(std.fs.parent_dir(destination));
+                std.fs.copy_file(entry.path, destination);
                 println!("copied {}", entry.relative);
             }
         }
@@ -70,7 +70,7 @@ class BackupPlan {
             return true;
         }
 
-        return std.fs.size(destination) != entry.bytes || std.fs.modifiedTicks(destination) < entry.modifiedTicks;
+        return std.fs.size(destination) != entry.bytes || std.fs.modified_ticks(destination) < entry.modified_ticks;
     }
 }
 

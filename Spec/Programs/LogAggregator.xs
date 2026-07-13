@@ -6,7 +6,7 @@
 
 module Programs.LogAggregator;
 
-imports collections, fs, optional, std, process, result;
+imports collections, fs, optional, stdio, process, result;
 
 enum data LogError {
     Io: IOException,

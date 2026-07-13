@@ -6,7 +6,7 @@
 
 module Programs.CsvAnalytics;
 
-imports collections, std, fs, process, result;
+imports collections, stdio, fs, process, result;
 
 enum data CsvError {
     Io: IOException,

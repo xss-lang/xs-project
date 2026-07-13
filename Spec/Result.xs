@@ -10,7 +10,7 @@
 // throws, throw, try, catch, and finally.
 //
 
-imports result, fs, std;
+imports result, fs, stdio;
 
 
 // result data model

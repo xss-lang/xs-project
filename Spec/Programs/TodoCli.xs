@@ -111,7 +111,7 @@ class TodoStore {
 
     fn Save() => Result.Result<Void, TodoError> {
         if (!std.fs.exists(this.path)) {
-            std.fs.createFile(this.path);
+            std.fs.create_file(this.path);
         }
 
         opened: std.fs.File = std.fs.OpenOptions.new()

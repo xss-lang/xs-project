@@ -25,7 +25,7 @@ syntax takes priority over ad-hoc implementation shortcuts.
 ## Current example conventions
 
 - Macro names are snake_case and are not under `STD`.
-- Standard modules use `std.<Module>` names, such as `std.fs` and `std.collections`.
+- Standard modules use `std.<module>` names, such as `std.fs` and `std.collections`.
 - `imports Module;` makes a module usable through its qualified name. It does not place the module's public symbols in
   local scope. Use `using Module.Name;`, `using Alias = Module.Name;`, or `using namespace Module;` when short names are desired.
 - `format_args!` and `include!` are built-in macros.
