@@ -6,7 +6,7 @@
 
 module Programs::InventoryService;
 
-imports collections, std, thread, sync, result;
+imports collections, std, thread, sync;
 
 enum data ServiceError {
     UnknownProduct: Str,
@@ -27,7 +27,7 @@ data OrderLine {
 
 data Order {
     id: Int;
-    lines: std::collections::vector<OrderLine>;
+    lines: std::collections::Vector<OrderLine>;
 }
 
 data Receipt {
@@ -127,7 +127,7 @@ fn SeedInventory() -> Arc<Mutex<InventoryRepository>> {
 }
 
 fn MakeOrder(id: Int, sku: Str, quantity: Int) -> Order {
-    lines: std::collections::vector<OrderLine> = std::collections::vector<OrderLine>::new();
+    lines: std::collections::Vector<OrderLine> = std::collections::Vector<OrderLine>::new();
     lines.push(OrderLine {
         sku: sku,
         quantity: quantity,

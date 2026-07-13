@@ -6,7 +6,7 @@
 
 module Programs::TodoCli;
 
-imports stdio, fs, collections, process, result;
+imports stdio, fs, collections, process;
 
 enum data TodoError {
     Io: Error,
@@ -30,12 +30,12 @@ data TodoItem {
 class TodoStore {
     path: Str;
     nextId: Int;
-    items: std::collections::vector<TodoItem>;
+    items: std::collections::Vector<TodoItem>;
 
     TodoStore(path: Str) {
         self.path = path;
         self.nextId = 1;
-        self.items = std::collections::vector<TodoItem>::new();
+        self.items = std::collections::Vector<TodoItem>::new();
     }
 
     static fn Open(path: Str) -> Result<TodoStore, Error> {
@@ -129,7 +129,7 @@ class TodoStore {
 
 class TodoCodec {
     static fn Parse(line: Str) -> Result<TodoItem, Error> {
-        parts: std::collections::vector<Str> = line.split("|");
+        parts: std::collections::Vector<Str> = line.split("|");
         if (parts.length() != 3) {
             return Error(Error {
                 message: "invalid todo record",
@@ -154,7 +154,7 @@ class TodoCodec {
     }
 }
 
-fn ParseCommand(args: std::collections::vector<Str>) -> Result<Command, Error> {
+fn ParseCommand(args: std::collections::Vector<Str>) -> Result<Command, Error> {
     if (args.length() < 2) {
         return Ok(Command::Help);
     }
@@ -197,7 +197,7 @@ fn PrintHelp() -> Result<()> {
     return Ok();
 }
 
-fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
+fn Main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     store: TodoStore = TodoStore::Open("todo.db")@;
     command: Command = ParseCommand(args)@;
 

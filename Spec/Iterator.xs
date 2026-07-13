@@ -50,7 +50,7 @@ for (num in nums.iter()) {
 
 // vector iteration
 
-users: std::collections::vector<Str> = {
+users: std::collections::Vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -63,7 +63,7 @@ for (user in users.iter()) {
 
 // empty collection iteration
 
-users: std::collections::vector<Str> =
+users: std::collections::Vector<Str> =
     std::collections::vector::new();
 
 for (user in users.iter()) {
@@ -76,7 +76,7 @@ for (user in users.iter()) {
 
 // indexed iteration
 
-users: std::collections::vector<Str> = {
+users: std::collections::Vector<Str> = {
     "Leitewolf",
     "Alpha",
 };

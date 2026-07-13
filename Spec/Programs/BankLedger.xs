@@ -6,7 +6,7 @@
 
 module Programs::BankLedger;
 
-imports collections, std, process, result;
+imports collections, std, process;
 
 enum data LedgerError {
     UnknownAccount: Str,
@@ -34,11 +34,11 @@ data Transfer {
 
 class Ledger {
     accounts: std::collections::hash_map<Str, Account>;
-    audit: std::collections::vector<Transfer>;
+    audit: std::collections::Vector<Transfer>;
 
     Ledger() {
         self.accounts = std::collections::hash_map<Str, Account>::new();
-        self.audit = std::collections::vector<Transfer>::new();
+        self.audit = std::collections::Vector<Transfer>::new();
     }
 
     fn Open(id: Str, owner: Str, balance: Money) {

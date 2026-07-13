@@ -6,7 +6,7 @@
 
 module Programs::FileBackup;
 
-imports collections, stdio, fs, process, result;
+imports collections, stdio, fs, process;
 
 enum data BackupError {
     Io: Error,
@@ -23,12 +23,12 @@ data FileEntry {
 class BackupPlan {
     sourceRoot: Str;
     targetRoot: Str;
-    files: std::collections::vector<FileEntry>;
+    files: std::collections::Vector<FileEntry>;
 
     BackupPlan(sourceRoot: Str, targetRoot: Str) {
         self.sourceRoot = sourceRoot;
         self.targetRoot = targetRoot;
-        self.files = std::collections::vector<FileEntry>::new();
+        self.files = std::collections::Vector<FileEntry>::new();
     }
 
     fn Discover() -> Result<()> {
@@ -76,7 +76,7 @@ class BackupPlan {
     }
 }
 
-fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
+fn Main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     if (args.length() != 3) {
         eprintln!("usage: backup <source> <target>");
         return 2;

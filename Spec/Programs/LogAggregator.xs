@@ -6,7 +6,7 @@
 
 module Programs::LogAggregator;
 
-imports collections, fs, optional, stdio, process, result;
+imports collections, fs, optional, stdio, process;
 
 enum data LogError {
     Io: Error,
@@ -20,7 +20,7 @@ data LogEntry {
 
 class LogParser {
     static fn Parse(line: Str) -> Result<LogEntry, Error> {
-        parts: std::collections::vector<Str> = line.split(" ", 2);
+        parts: std::collections::Vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
             return Error(Error {
                 message: "invalid log line",

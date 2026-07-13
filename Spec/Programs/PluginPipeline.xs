@@ -6,7 +6,7 @@
 
 module Programs::PluginPipeline;
 
-imports collections, std, process, result;
+imports collections, std, process;
 
 enum data PipelineError {
     Io: Error,
@@ -60,10 +60,10 @@ class ReplacePlugin : TextPlugin {
 }
 
 class Pipeline {
-    stages: std::collections::vector<TextPlugin>;
+    stages: std::collections::Vector<TextPlugin>;
 
     Pipeline() {
-        self.stages = std::collections::vector<TextPlugin>::new();
+        self.stages = std::collections::Vector<TextPlugin>::new();
     }
 
     fn Add(stage: TextPlugin) {
@@ -81,7 +81,7 @@ class Pipeline {
     }
 }
 
-fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
+fn Main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     input: Str = if (args.length() > 1) {
         args[1];
     }

@@ -38,13 +38,13 @@ fn ReadText() -> Result<()> {
 }
 
 fn ReadBytes() -> Result<()> {
-    bytes: std::collections::vector<Byte> = std::fs::read("image.png");
+    bytes: std::collections::Vector<Byte> = std::fs::read("image.png");
     println!("file size: {}", bytes.length());
 }
 
 // std::fs::read_to_str(path-or-stream) reads UTF-16 text into Str. The compiler/runtime selects UTF-16LE or UTF-16BE
 // automatically for the target situation.
-// std::fs::read(path-or-stream) reads raw bytes into std::collections::vector<Byte>.
+// std::fs::read(path-or-stream) reads raw bytes into std::collections::Vector<Byte>.
 
 
 // create paths
@@ -90,7 +90,7 @@ fn ListDirectory() -> Result<()> {
     }
 }
 
-// std::fs::list_dir(path) returns std::collections::vector<Str>.
+// std::fs::list_dir(path) returns std::collections::Vector<Str>.
 // Entries are returned in deterministic lexicographic order.
 
 

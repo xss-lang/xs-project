@@ -6,7 +6,7 @@
 
 module Programs::CsvAnalytics;
 
-imports collections, stdio, fs, process, result;
+imports collections, stdio, fs, process;
 
 enum data CsvError {
     Io: Error,
@@ -28,7 +28,7 @@ data RegionTotal {
 
 class CsvParser {
     static fn ParseLine(line: Str) -> Result<Sale, Error> {
-        fields: std::collections::vector<Str> = line.split(",");
+        fields: std::collections::Vector<Str> = line.split(",");
         if (fields.length() != 4) {
             return Error(Error {
                 message: "bad CSV row",
@@ -77,8 +77,8 @@ class Analytics {
     }
 }
 
-fn LoadSales(path: Str) -> Result<std::collections::vector<Sale>, Error> {
-    rows: std::collections::vector<Sale> = std::collections::vector<Sale>::new();
+fn LoadSales(path: Str) -> Result<std::collections::Vector<Sale>, Error> {
+    rows: std::collections::Vector<Sale> = std::collections::Vector<Sale>::new();
     content: Str = std::fs::read_to_str(path);
 
     for (line: Str in content.lines().skip(1)) {
@@ -91,7 +91,7 @@ fn LoadSales(path: Str) -> Result<std::collections::vector<Sale>, Error> {
     return Ok(rows);
 }
 
-fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
+fn Main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     path: Str = if (args.length() > 1) {
         args[1];
     }

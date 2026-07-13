@@ -6,7 +6,7 @@
 
 module Programs::SensorStream;
 
-imports collections, std, thread, sync, result;
+imports collections, std, thread, sync;
 
 enum data SensorError {
     Disconnected: Str,
@@ -59,8 +59,8 @@ class Aggregator {
         self.counts[reading.sensorId] = (self.counts[reading.sensorId] ?? 0) + 1;
     }
 
-    fn Averages() -> std::collections::vector<Average> {
-        result: std::collections::vector<Average> = std::collections::vector<Average>::new();
+    fn Averages() -> std::collections::Vector<Average> {
+        result: std::collections::Vector<Average> = std::collections::Vector<Average>::new();
 
         for ((sensorId, total): (Str, Float) in self.totals) {
             count: Int = self.counts[sensorId]!;
@@ -76,7 +76,7 @@ class Aggregator {
 }
 
 async fn Main() -> Task<Result<Int, Error>> {
-    sensors: std::collections::vector<Sensor> = std::collections::vector<Sensor>.of(
+    sensors: std::collections::Vector<Sensor> = std::collections::Vector<Sensor>.of(
         Sensor::new("temperature", "C"),
         Sensor::new("humidity", "%"),
         Sensor::new("pressure", "Pa")

@@ -6,7 +6,7 @@
 
 module Programs::ChatServer;
 
-imports collections, std, sync, thread, net, result;
+imports collections, std, sync, thread, net;
 
 enum data ChatError {
     Io: Error,

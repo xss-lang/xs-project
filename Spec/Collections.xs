@@ -30,7 +30,7 @@
 // - Str -> None
 //
 // Vector:
-// - std::collections::vector<T>
+// - std::collections::Vector<T>
 // - Dynamic size.
 // - Supports push().
 // - Supports pop().
@@ -114,7 +114,7 @@ nums[0] = 5;
 
 // vectors
 
-users: std::collections::vector<Str> = {
+users: std::collections::Vector<Str> = {
     "Leitewolf",
     "Alpha",
 };
@@ -122,7 +122,7 @@ users: std::collections::vector<Str> = {
 
 // vector constructor
 
-users: std::collections::vector<Str> =
+users: std::collections::Vector<Str> =
     std::collections::vector::new();
 
 
@@ -238,7 +238,7 @@ nums: Int[3] = {1, 2};
 
 // VALID
 
-users: std::collections::vector<Str> =
+users: std::collections::Vector<Str> =
     std::collections::vector::new();
 
 

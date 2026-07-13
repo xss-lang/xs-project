@@ -6,7 +6,7 @@
 
 module Programs::HttpHealthMonitor;
 
-imports http, std, collections, thread, sync, result;
+imports http, std, collections, thread, sync;
 
 enum data HealthError {
     Network: Error,
@@ -86,11 +86,11 @@ class HealthClient {
 }
 
 async fn CheckAll(
-    endpoints: std::collections::vector<Endpoint>,
+    endpoints: std::collections::Vector<Endpoint>,
     reporter: HealthReporter
 ) -> Task<Result<Int, Error>> {
     client: HealthClient = new();
-    tasks: std::collections::vector<Task<Result<HealthResult, Error>>> = std::collections::vector<Task<Result<HealthResult, Error>>>::new();
+    tasks: std::collections::Vector<Task<Result<HealthResult, Error>>> = std::collections::Vector<Task<Result<HealthResult, Error>>>::new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));
@@ -109,8 +109,8 @@ async fn CheckAll(
     return Ok(failures);
 }
 
-fn DefaultEndpoints() -> std::collections::vector<Endpoint> {
-    endpoints: std::collections::vector<Endpoint> = std::collections::vector<Endpoint>::new();
+fn DefaultEndpoints() -> std::collections::Vector<Endpoint> {
+    endpoints: std::collections::Vector<Endpoint> = std::collections::Vector<Endpoint>::new();
 
     endpoints.push(Endpoint {
         name: "example",

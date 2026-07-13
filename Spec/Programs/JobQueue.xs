@@ -6,7 +6,7 @@
 
 module Programs::JobQueue;
 
-imports collections, optional, process, result, std, sync;
+imports collections, optional, process, std, sync;
 
 enum data JobError {
     EmptyQueue,
@@ -20,10 +20,10 @@ data Job {
 }
 
 class Queue {
-    jobs: std::collections::vector<Job>;
+    jobs: std::collections::Vector<Job>;
 
     Queue() {
-        self.jobs = std::collections::vector<Job>::new();
+        self.jobs = std::collections::Vector<Job>::new();
     }
 
     fn Push(job: Job) {

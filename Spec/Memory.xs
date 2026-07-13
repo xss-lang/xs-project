@@ -278,7 +278,7 @@ iter: Iterator<Int> = numbers.Iterator();
 // VALID
 // allocation is explicit
 
-users: std::collections::vector<User> =
+users: std::collections::Vector<User> =
     std::collections::vector::new();
 
 

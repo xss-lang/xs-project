@@ -171,7 +171,7 @@ fn ReadManyNumbers() {
         .read_line(&mut input)
         .unwrap();
 
-    numbers: std::collections::vector<Int> = input
+    numbers: std::collections::Vector<Int> = input
         .split_whitespace()
         .map(fn(value) {
             return value.parse().expect("invalid number");

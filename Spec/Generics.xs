@@ -135,7 +135,7 @@ strBox: Box<Str>;
 
 // generic collections
 
-users: std::collections::vector<Str>;
+users: std::collections::Vector<Str>;
 
 scores: std::collections::hash_map<Str, Int>;
 

@@ -6,7 +6,7 @@
 
 module Programs::StaticSiteReport;
 
-imports collections, fs, optional, stdio, process, result;
+imports collections, fs, optional, stdio, process;
 
 enum data SiteError {
     Io: Error,
@@ -38,10 +38,10 @@ class Markdown {
 }
 
 class SiteReport {
-    pages: std::collections::vector<PageInfo>;
+    pages: std::collections::Vector<PageInfo>;
 
     SiteReport() {
-        self.pages = std::collections::vector<PageInfo>::new();
+        self.pages = std::collections::Vector<PageInfo>::new();
     }
 
     fn AddMarkdown(path: Str) -> Result<()> {
