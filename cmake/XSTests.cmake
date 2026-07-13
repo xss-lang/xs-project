@@ -128,7 +128,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
-                       MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl ImmutableLocalReassignment
+                       MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainBlockLocals
+                       ImmutableLocalReassignment BlockLocalShadow
                        MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
                        BoolCallAsLongMain)
@@ -324,6 +325,16 @@ add_test(NAME source_native_while_control_artifacts COMMAND xs_xse_artifact_test
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainWhileControl.o
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainWhileControl.xse 7 "br label")
 set_tests_properties(source_native_while_control_artifacts PROPERTIES DEPENDS source_native_while_control_build TIMEOUT 5)
+add_test(NAME source_native_block_locals_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBlockLocals.xs)
+set_tests_properties(source_native_block_locals_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_block_locals_artifacts COMMAND xs_xse_artifact_tests
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBlockLocals.ll
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBlockLocals.o
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBlockLocals.xse 10 "alloca i32")
+set_tests_properties(source_native_block_locals_artifacts PROPERTIES DEPENDS source_native_block_locals_build TIMEOUT 5)
+add_test(NAME source_native_block_local_shadow COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BlockLocalShadow.xs)
+set_tests_properties(source_native_block_local_shadow PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 add_test(NAME source_native_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xs)
 set_tests_properties(source_native_if_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

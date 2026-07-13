@@ -614,15 +614,15 @@ static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *c
   return context_assign(context, entry, target->text, type, value, diagnostics, node_span(target), error);
 }
 
-static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
                                const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                const NativeLoopTargets *loop, XsDiagnostics *diagnostics, XsMirError *error);
 
-static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
                                   const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                   XsDiagnostics *diagnostics, XsMirError *error);
 
-static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
                                   const NativeProgram *program, XsText current_function, const XsSyntaxNode *block,
                                   const NativeLoopTargets *loop, XsDiagnostics *diagnostics, XsMirError *error)
 {
@@ -630,38 +630,58 @@ static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current,
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block),
                               "native source if branches must contain one or more supported statements for now") &&
            false;
+  size_t scope_start = context->count;
+  bool success = true;
   for(size_t index = 0; index < block->child_count; ++index)
   {
     const XsSyntaxNode *statement = block->children[index];
     if(xs_mir_block_terminator_kind(*current) != XS_MIR_TERMINATOR_NONE)
-      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                                "native source statements cannot follow break or continue in the same block") &&
-             false;
+    {
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+                         "native source statements cannot follow break or continue in the same block");
+      success = false;
+      goto cleanup;
+    }
     if(statement->kind == XS_SYNTAX_STMT_BREAK || statement->kind == XS_SYNTAX_STMT_CONTINUE)
     {
       if(loop == nullptr)
-        return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                                  "native source break and continue require an enclosing supported while loop") &&
-               false;
+      {
+        xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+                           "native source break and continue require an enclosing supported while loop");
+        success = false;
+        goto cleanup;
+      }
       const XsMirBlock *target = statement->kind == XS_SYNTAX_STMT_BREAK ? loop->break_target : loop->continue_target;
       if(xs_mir_block_set_goto(*current, target, error) != XS_MIR_OK)
-        return false;
+      {
+        success = false;
+        goto cleanup;
+      }
       continue;
     }
     bool lowered =
-        statement->kind == XS_SYNTAX_STMT_IF ? lower_if_statement(function, current, context, program, current_function,
-                                                                  statement, loop, diagnostics, error)
+        statement->kind == XS_SYNTAX_STMT_VARIABLE
+            ? lower_local_statement(function, *current, context, program, current_function, statement, diagnostics,
+                                    error)
+        : statement->kind == XS_SYNTAX_STMT_IF
+            ? lower_if_statement(function, current, context, program, current_function, statement, loop, diagnostics,
+                                 error)
         : statement->kind == XS_SYNTAX_STMT_WHILE
             ? lower_while_statement(function, current, context, program, current_function, statement, diagnostics,
                                     error)
             : lower_assignment_statement(*current, context, program, current_function, statement, diagnostics, error);
     if(!lowered)
-      return false;
+    {
+      success = false;
+      goto cleanup;
+    }
   }
-  return true;
+cleanup:
+  context->count = scope_start;
+  return success;
 }
 
-static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
                                const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                const NativeLoopTargets *loop, XsDiagnostics *diagnostics, XsMirError *error)
 {
@@ -700,7 +720,7 @@ static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, co
   return true;
 }
 
-static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
                                   const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                   XsDiagnostics *diagnostics, XsMirError *error)
 {

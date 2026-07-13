@@ -31,6 +31,8 @@ source-to-native executable pipeline.
   conditional blocks.
 - MIR local-place validation now rejects a `load` unless the local is initialized on every reachable path; immutable-store
   validation retains its conservative reassignment protection across control-flow joins.
+- Supported source-native `if` and `while` bodies may now declare `Long`/`Bool` locals with lexical block lifetime;
+  their MIR places still lower through XLIL stack slots and LLVM allocas.
 
 ## 0.0.8 - 2026-07-13
 
