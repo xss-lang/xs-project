@@ -531,6 +531,8 @@ static unsigned precedence(XsTokenKind kind)
   case XS_TOKEN_STAR_ASSIGN:
   case XS_TOKEN_SLASH_ASSIGN:
   case XS_TOKEN_PERCENT_ASSIGN:
+  case XS_TOKEN_AMPERSAND_ASSIGN:
+  case XS_TOKEN_PIPE_ASSIGN:
   case XS_TOKEN_CARET_ASSIGN:
   case XS_TOKEN_QUESTION_QUESTION_ASSIGN:
     return 1;

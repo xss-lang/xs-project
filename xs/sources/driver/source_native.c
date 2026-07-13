@@ -723,8 +723,7 @@ static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *c
 {
   const XsSyntaxNode *assignment =
       statement->kind == XS_SYNTAX_STMT_EXPRESSION && statement->child_count == 1 ? statement->children[0] : nullptr;
-  if(assignment == nullptr || assignment->kind != XS_SYNTAX_EXPR_ASSIGNMENT ||
-     assignment->token_kind != XS_TOKEN_ASSIGN || assignment->child_count != 3 ||
+  if(assignment == nullptr || assignment->kind != XS_SYNTAX_EXPR_ASSIGNMENT || assignment->child_count != 3 ||
      assignment->children[0]->kind != XS_SYNTAX_EXPR_IDENTIFIER)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
                               "native source statements before return must be local declarations or simple "
@@ -740,6 +739,10 @@ static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *c
   XsMirValueId value = 0;
   if(type == XS_LIL_TYPE_BOOL)
   {
+    if(assignment->token_kind != XS_TOKEN_ASSIGN)
+      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(assignment),
+                                "native source compound assignment requires a Long local") &&
+             false;
     bool invert = false;
     if(!lower_bool_expression(entry, context, program, current_function, value_expression, diagnostics, &value, &invert,
                               error))
@@ -756,6 +759,54 @@ static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *c
   {
     if(!lower_i32_expression(entry, context, program, current_function, value_expression, diagnostics, &value, error))
       return false;
+    if(assignment->token_kind != XS_TOKEN_ASSIGN)
+    {
+      XsMirValueId current = 0;
+      if(!context_read(context, entry, target->text, XS_LIL_TYPE_I32, &current, error))
+        return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target),
+                                  "native source compound assignment target is not a supported Long local") &&
+               false;
+      switch(assignment->token_kind)
+      {
+      case XS_TOKEN_PLUS_ASSIGN:
+        if(xs_mir_block_add_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      case XS_TOKEN_MINUS_ASSIGN:
+        if(xs_mir_block_sub_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      case XS_TOKEN_STAR_ASSIGN:
+        if(xs_mir_block_mul_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      case XS_TOKEN_SLASH_ASSIGN:
+        if(xs_mir_block_div_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      case XS_TOKEN_PERCENT_ASSIGN:
+        if(xs_mir_block_rem_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      case XS_TOKEN_AMPERSAND_ASSIGN:
+        if(xs_mir_block_and_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      case XS_TOKEN_PIPE_ASSIGN:
+        if(xs_mir_block_or_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      case XS_TOKEN_CARET_ASSIGN:
+        if(xs_mir_block_xor_i32(entry, current, value, &value, error) != XS_MIR_OK)
+          return false;
+        break;
+      default:
+        return xs_diagnostics_add(
+                   diagnostics, XS_DIAGNOSTIC_ERROR, node_span(assignment),
+                   "native source compound assignment operator is not supported in this compiler slice") &&
+               false;
+      }
+    }
   }
   else
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target),
@@ -768,11 +819,17 @@ static bool lower_assignment_block(XsMirBlock *entry, const NativeContext *conte
                                    XsText current_function, const XsSyntaxNode *block, XsDiagnostics *diagnostics,
                                    XsMirError *error)
 {
-  if(block == nullptr || block->kind != XS_SYNTAX_STMT_BLOCK || block->child_count != 1)
+  if(block == nullptr || block->kind != XS_SYNTAX_STMT_BLOCK || block->child_count == 0)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block),
-                              "native source if branches must contain exactly one assignment statement for now") &&
+                              "native source if branches must contain one or more assignment statements for now") &&
            false;
-  return lower_assignment_statement(entry, context, program, current_function, block->children[0], diagnostics, error);
+  for(size_t index = 0; index < block->child_count; ++index)
+  {
+    if(!lower_assignment_statement(entry, context, program, current_function, block->children[index], diagnostics,
+                                   error))
+      return false;
+  }
+  return true;
 }
 
 static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,

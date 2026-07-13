@@ -21,6 +21,8 @@ source-to-native executable pipeline.
 - Source-native builds now lower a statement-level `if` with one simple assignment per branch and a post-branch local
   read through MIR branch/merge blocks. Immutable initialization uses CFG-aware path state, so assignments on mutually
   exclusive branches do not spuriously conflict.
+- The source-native `Long` slice now supports `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, and `^=` compound assignments,
+  including multiple assignments in a supported `if` branch.
 
 ## 0.0.8 - 2026-07-13
 
