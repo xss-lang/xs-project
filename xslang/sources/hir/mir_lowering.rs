@@ -14,6 +14,8 @@ use super::type_check::{
 use crate::mir;
 use crate::xlil::{Type as XlilType, TypeKind};
 
+use binary_operations::{binary_i32_operation, binary_i64_operation, comparison_i64_operation};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
 {
@@ -477,12 +479,36 @@ impl HirToMirLowerer
                                                                                                 left,
                                                                                                 right,
                                                                                                 span }),
+      (operator, XlilType::I64, XlilType::I64) if binary_i64_operation(operator).is_some() =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::BinaryI64 { operation: binary_i64_operation(operator).expect("guarded i64 \
+                                                                                                operation must \
+                                                                                                exist"),
+                                              result: target,
+                                              left,
+                                              right,
+                                              span });
+      }
       (BinaryOperator::Equal, XlilType::BOOL, XlilType::I64) => self.current_block_mut(lowered)
                                                                     .statements
                                                                     .push(mir::Statement::EqI64 { result: target,
                                                                                                   left,
                                                                                                   right,
                                                                                                   span }),
+      (operator, XlilType::BOOL, XlilType::I64) if comparison_i64_operation(operator).is_some() =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::CompareI64 { operation: comparison_i64_operation(operator).expect("guarded i64 \
+                                                                                                     comparison \
+                                                                                                     must exist"),
+                                               result: target,
+                                               left,
+                                               right,
+                                               span });
+      }
       _ => self.report(DiagnosticCode::UnsupportedExpression,
                        "HIR binary expression has no MIR instruction for this type combination",
                        span),
@@ -502,9 +528,13 @@ impl HirToMirLowerer
       (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I32) => Some(XlilType::I32),
       (operator, XlilType::I32) if binary_i32_operation(operator).is_some() => Some(XlilType::I32),
       (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I64) => Some(XlilType::I64),
-      (BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual,
-       XlilType::BOOL) => Some(XlilType::I32),
-      (BinaryOperator::Equal, XlilType::BOOL) => self.common_operand_type(left, right, lowered),
+      (operator, XlilType::I64) if binary_i64_operation(operator).is_some() => Some(XlilType::I64),
+      (BinaryOperator::Equal |
+       BinaryOperator::Less |
+       BinaryOperator::LessEqual |
+       BinaryOperator::Greater |
+       BinaryOperator::GreaterEqual,
+       XlilType::BOOL) => self.common_operand_type(left, right, lowered).or(Some(XlilType::I64)),
       _ => None,
     }
   }
@@ -644,22 +674,6 @@ impl HirToMirLowerer
   }
 }
 
-const fn binary_i32_operation(operator: BinaryOperator) -> Option<crate::xlil::I32BinaryOperation>
-{
-  use crate::xlil::I32BinaryOperation;
-  Some(match operator
-  {
-    BinaryOperator::Div => I32BinaryOperation::Div,
-    BinaryOperator::Rem => I32BinaryOperation::Rem,
-    BinaryOperator::BitAnd => I32BinaryOperation::BitAnd,
-    BinaryOperator::BitOr => I32BinaryOperation::BitOr,
-    BinaryOperator::BitXor => I32BinaryOperation::BitXor,
-    BinaryOperator::ShiftLeft => I32BinaryOperation::ShiftLeft,
-    BinaryOperator::ShiftRight => I32BinaryOperation::ShiftRight,
-    _ => return None,
-  })
-}
-
 #[must_use]
 pub const fn primitive_to_xlil(primitive: PrimitiveType) -> Option<XlilType>
 {
@@ -697,6 +711,7 @@ const fn expression_span(expression: &Expression) -> Span
   }
 }
 
+mod binary_operations;
 mod call_lowering;
 mod control_flow;
 #[cfg(test)]

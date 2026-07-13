@@ -62,6 +62,9 @@ static void test_materialized_syntax_packet(void)
                      "fn positive(value: Long) -> Long { return +value; }\n"
                      "fn negative(value: Long) -> Long { return -value; }\n"
                      "fn invert(value: Bool) -> Bool { return !value; }\n"
+                     "fn wide_ops(left: Int, right: Int) -> Int { return (left / right) & (left % right) & "
+                     "(left | right) & (left ^ right) & ((left << right) >> right); }\n"
+                     "fn wide_compare(left: Int, right: Int) -> Bool { return left >= right; }\n"
                      "fn main() -> Long { if (true) { return add(3, 4); } else { return choose(false); } }\n";
   XsSource source = {.path = "Bridge.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -85,8 +88,8 @@ static void test_materialized_syntax_packet(void)
   XsCompilerCoreSession *session = nullptr;
   CHECK(packet == nullptr || xslang_compiler_core_session_create(packet, &session) == XS_COMPILER_CORE_FFI_OK);
   CHECK(packet == nullptr || xslang_compiler_core_session_syntax_node_count(session) == packet->node_count);
-  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 13);
-  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 12);
+  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 15);
+  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 14);
   uint64_t xlil_length = 0;
   const uint8_t *xlil_text = xslang_compiler_core_session_xlil_text(session, &xlil_length);
   CHECK(packet == nullptr || xlil_text != nullptr);
@@ -99,12 +102,20 @@ static void test_materialized_syntax_packet(void)
   CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "shl.i32"));
   CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "shr.i32"));
   CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "not.bool"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "div.i64"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "rem.i64"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "and.i64"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "or.i64"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "xor.i64"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "shl.i64"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "shr.i64"));
+  CHECK(packet == nullptr || text_contains(xlil_text, xlil_length, "ge.i64"));
   XsLilModule *xlil = nullptr;
   XsLilError xlil_error = {0};
   CHECK(packet == nullptr || xs_lil_module_parse_text("Bridge.xlil", (const char *)xlil_text, (size_t)xlil_length,
                                                       &xlil, &xlil_error) == XS_LIL_OK);
   CHECK(packet == nullptr || xs_lil_module_verify(xlil, &xlil_error) == XS_LIL_OK);
-  CHECK(packet == nullptr || xs_lil_module_function_count(xlil) == 13);
+  CHECK(packet == nullptr || xs_lil_module_function_count(xlil) == 15);
   xs_lil_module_destroy(xlil);
   if(packet != nullptr)
   {

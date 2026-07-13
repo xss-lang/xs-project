@@ -892,8 +892,8 @@ mod tests
   {
     let function = Function { name: "compare".to_string(),
                               return_type: Some(primitive(PrimitiveType::Bool)),
-                              locals: vec![local("left", primitive(PrimitiveType::Int), false),
-                                           local("right", primitive(PrimitiveType::Int), false)],
+                              locals: vec![local("left", primitive(PrimitiveType::SFloat), false),
+                                           local("right", primitive(PrimitiveType::SFloat), false)],
                               body: vec![Statement::Return { value:
                                                                 Some(Expression::Binary {
                                                                   operator: BinaryOperator::Less,

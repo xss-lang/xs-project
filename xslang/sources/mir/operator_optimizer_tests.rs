@@ -4,7 +4,7 @@
  */
 
 use crate::hir::Span;
-use crate::xlil::{I32BinaryOperation, Type};
+use crate::xlil::{I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Type};
 
 use super::optimizer::{OptimizationPass, optimize_verified_function};
 use super::{BasicBlock, BlockId, Function, Local, LocalId, Statement, Terminator};
@@ -77,6 +77,68 @@ fn preserves_trapping_or_invalid_i32_operations()
                                                                                          should remain valid");
     assert!(matches!(optimized.function.blocks[0].statements[2], Statement::BinaryI32 { .. }));
   }
+}
+
+#[test]
+fn folds_safe_i64_binary_and_comparison_operations()
+{
+  let function = Function { name: "fold_i64".to_string(),
+                            parameters: vec![],
+                            return_type: Type::BOOL,
+                            locals: vec![Local { id: LocalId(0),
+                                                 name: "left".to_string(),
+                                                 value_type: Some(Type::I64),
+                                                 mutable: false,
+                                                 span: span() },
+                                         Local { id: LocalId(1),
+                                                 name: "right".to_string(),
+                                                 value_type: Some(Type::I64),
+                                                 mutable: false,
+                                                 span: span() },
+                                         Local { id: LocalId(2),
+                                                 name: "quotient".to_string(),
+                                                 value_type: Some(Type::I64),
+                                                 mutable: false,
+                                                 span: span() },
+                                         Local { id: LocalId(3),
+                                                 name: "greater".to_string(),
+                                                 value_type: Some(Type::BOOL),
+                                                 mutable: false,
+                                                 span: span() }],
+                            blocks: vec![BasicBlock { id: BlockId(0),
+                                                      statements: vec![Statement::ConstI64 { local: LocalId(0),
+                                                                                value: 28,
+                                                                                span: span() },
+                                                          Statement::ConstI64 { local: LocalId(1),
+                                                                                value: 4,
+                                                                                span: span() },
+                                                          Statement::BinaryI64 { operation:
+                                                                                   I64BinaryOperation::Div,
+                                                                                 result: LocalId(2),
+                                                                                 left: LocalId(0),
+                                                                                 right: LocalId(1),
+                                                                                 span: span() },
+                                                          Statement::CompareI64 { operation:
+                                                                                    I64ComparisonOperation::Greater,
+                                                                                  result: LocalId(3),
+                                                                                  left: LocalId(2),
+                                                                                  right: LocalId(1),
+                                                                                  span: span() }],
+                                                      terminator: Some(Terminator::Return(Some(LocalId(3)))),
+                                                      span: span() }] };
+  let optimized = optimize_verified_function(function).expect("i64 operations should optimize");
+  assert!(optimized.reports
+                   .iter()
+                   .any(|report| report.pass == OptimizationPass::FoldConstI64Binary));
+  assert!(optimized.reports
+                   .iter()
+                   .any(|report| report.pass == OptimizationPass::FoldConstI64Comparison));
+  assert!(matches!(optimized.function.blocks[0].statements[2],
+                   Statement::ConstI64 { value: 7,
+                                         .. }));
+  assert!(matches!(optimized.function.blocks[0].statements[3],
+                   Statement::ConstBool { value: true,
+                                          .. }));
 }
 
 #[test]

@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Same-module `Int` functions now lower as real i64 functions through typed HIR, MIR/XMIR, XLIL, LLVM IR, object
+  emission, and native `.xse` builds. Division, remainder, bitwise operations, signed shifts, and ordered comparisons use
+  the complete i64 instruction family without changing the required `Long`/i32 process entry ABI.
 - Unary `+`/`-` on explicitly typed `Long` values and logical `!` on `Bool` values now remain in the Rust typed-HIR,
   XHIR, verified MIR/XMIR, optimized XLIL, LLVM, and native `.xse` route. `Long` is lowered as i32; `Int` remains i64.
 - `Long` division, remainder, bitwise AND/OR/XOR, and left/arithmetic-right shifts now cross the C23 structural AST into

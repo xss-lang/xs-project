@@ -123,6 +123,8 @@ that the complete X# language is executable yet. Earlier releases are compiler i
 
 The signed integer widths are fixed: `Long` is i32, `Int` is i64, and `Integer` is i128. Unary `+`/`-` for `Long` and
 logical `!` for `Bool` now use the same Rust compiler-core route through XHIR, XMIR, XLIL, and LLVM native emission.
+Same-module `Int` helper functions also remain i64 through this route, including arithmetic, bitwise, signed-shift, and
+ordered-comparison operations. Native process entry remains `fn main() -> Long`.
 
 ## CLI summary
 

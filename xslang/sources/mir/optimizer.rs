@@ -9,6 +9,12 @@ use super::verify::{Diagnostic as VerifyDiagnostic, verify_function};
 use super::{BasicBlock, Function, LocalId, Statement, Terminator, reachable_blocks};
 use crate::xlil::I32BinaryOperation;
 
+mod control_flow;
+mod i64_operations;
+
+use control_flow::collapse_single_predecessor_gotos;
+use i64_operations::fold_const_i64_operations;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OptimizationPass
 {
@@ -18,9 +24,12 @@ pub enum OptimizationPass
   FoldConstI64Sub,
   FoldConstI64Mul,
   FoldConstI64Eq,
+  FoldConstI64Binary,
+  FoldConstI64Comparison,
   FoldConstI32Binary,
   FoldConstBoolNot,
   FoldConstBoolBranch,
+  CollapseSinglePredecessorGoto,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -84,6 +93,17 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
     reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Eq,
                                       removed_items: folded_eqs });
   }
+  let (folded_i64, folded_i64_comparisons) = fold_const_i64_operations(&mut function);
+  if folded_i64 != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Binary,
+                                      removed_items: folded_i64 });
+  }
+  if folded_i64_comparisons != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Comparison,
+                                      removed_items: folded_i64_comparisons });
+  }
   let folded_i32 = fold_const_i32_binary(&mut function);
   if folded_i32 != 0
   {
@@ -101,6 +121,12 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   {
     reports.push(OptimizationReport { pass: OptimizationPass::FoldConstBoolBranch,
                                       removed_items: folded_branches });
+  }
+  let collapsed_gotos = collapse_single_predecessor_gotos(&mut function);
+  if collapsed_gotos != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::CollapseSinglePredecessorGoto,
+                                      removed_items: collapsed_gotos });
   }
   let removed_blocks = remove_unreachable_blocks(&mut function);
   if removed_blocks != 0
@@ -513,6 +539,7 @@ fn fold_const_bool_nots_in_block(block: &mut BasicBlock) -> usize
         folded += 1;
       }
       Statement::EqI64 { result, .. } |
+      Statement::CompareI64 { result, .. } |
       Statement::EqI32 { result, .. } |
       Statement::LtI32 { result, .. } |
       Statement::LeI32 { result, .. } |
@@ -573,7 +600,9 @@ fn fold_const_bool_branch_in_block(block: &mut BasicBlock) -> usize
       Statement::AddI64 { result, .. } |
       Statement::SubI64 { result, .. } |
       Statement::MulI64 { result, .. } |
+      Statement::BinaryI64 { result, .. } |
       Statement::EqI64 { result, .. } |
+      Statement::CompareI64 { result, .. } |
       Statement::AddI32 { result, .. } |
       Statement::SubI32 { result, .. } |
       Statement::MulI32 { result, .. } |
@@ -666,9 +695,13 @@ mod tests
 
     let optimized = optimize_function(function);
 
-    assert_eq!(optimized.function.blocks.len(), 2);
+    assert_eq!(optimized.function.blocks.len(), 1);
     assert_eq!(optimized.reports[0].pass, OptimizationPass::RemoveUnreachableBlocks);
     assert_eq!(optimized.reports[0].removed_items, 1);
+    assert!(optimized.reports
+                     .iter()
+                     .any(|report| report.pass == OptimizationPass::CollapseSinglePredecessorGoto &&
+                                   report.removed_items == 1));
   }
 
   #[test]
@@ -954,8 +987,7 @@ mod tests
                      .iter()
                      .any(|report| report.pass == OptimizationPass::RemoveUnreachableBlocks &&
                                    report.removed_items == 1));
-    assert_eq!(optimized.function.blocks.len(), 2);
-    assert_eq!(optimized.function.blocks[0].terminator,
-               Some(Terminator::Goto(BlockId(1))));
+    assert_eq!(optimized.function.blocks.len(), 1);
+    assert_eq!(optimized.function.blocks[0].terminator, Some(Terminator::Return(None)));
   }
 }

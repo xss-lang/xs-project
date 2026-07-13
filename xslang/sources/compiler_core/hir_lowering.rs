@@ -435,7 +435,7 @@ fn expression_type(tree: &SyntaxTree,
   match value.kind
   {
     EXPR_LITERAL if value.text == "true" || value.text == "false" => Some(Type::Primitive(PrimitiveType::Bool)),
-    EXPR_LITERAL if value.token_kind == TOKEN_INTEGER => Some(Type::Primitive(PrimitiveType::Long)),
+    EXPR_LITERAL if value.token_kind == TOKEN_INTEGER => Some(Type::Primitive(PrimitiveType::Int)),
     EXPR_IDENTIFIER => locals.get(&path_text(tree, value)).cloned(),
     EXPR_CALL =>
     {
@@ -449,7 +449,17 @@ fn expression_type(tree: &SyntaxTree,
     {
       Some(Type::Primitive(PrimitiveType::Bool))
     }
-    EXPR_BINARY => Some(Type::Primitive(PrimitiveType::Long)),
+    EXPR_BINARY => value.children
+                        .first()
+                        .and_then(|index| tree.nodes.get(*index))
+                        .and_then(|operand| expression_type(tree, operand, signatures, locals))
+                        .or_else(|| {
+                          value.children
+                               .last()
+                               .and_then(|index| tree.nodes.get(*index))
+                               .and_then(|operand| expression_type(tree, operand, signatures, locals))
+                        })
+                        .or(Some(Type::Primitive(PrimitiveType::Int))),
     EXPR_UNARY if value.token_kind == TOKEN_BANG => Some(Type::Primitive(PrimitiveType::Bool)),
     EXPR_UNARY => expression_type(tree, tree.nodes.get(*value.children.first()?)?, signatures, locals),
     _ => None,

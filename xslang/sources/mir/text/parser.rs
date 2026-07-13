@@ -5,9 +5,11 @@
 
 use crate::hir::async_check::Span;
 use crate::mir::{BasicBlock, BlockId, Function, Local, LocalId, Parameter, Statement, Terminator};
-use crate::xlil::{Type, type_from_name};
+use crate::xlil::{I64BinaryOperation, I64ComparisonOperation, Type, type_from_name};
 
 use super::{SUPPORTED_XMIR_VERSION, is_supported_xmir_version};
+
+mod i64;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XmirParseDiagnostic
@@ -274,6 +276,8 @@ impl Parser<'_>
         "sub.i64" => block.statements.push(self.sub_i64_statement()),
         "mul.i64" => block.statements.push(self.mul_i64_statement()),
         "eq.i64" => block.statements.push(self.eq_i64_statement()),
+        "div.i64" | "rem.i64" | "and.i64" | "or.i64" | "xor.i64" | "shl.i64" | "shr.i64" | "lt.i64" | "le.i64" |
+        "gt.i64" | "ge.i64" => block.statements.push(self.extended_i64_statement(kind)),
         "add.i32" => block.statements.push(self.i32_statement("add.i32")),
         "sub.i32" => block.statements.push(self.i32_statement("sub.i32")),
         "mul.i32" => block.statements.push(self.i32_statement("mul.i32")),

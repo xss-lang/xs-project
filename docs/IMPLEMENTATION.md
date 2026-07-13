@@ -106,6 +106,9 @@ The documented compilation order is preserved:
   an explicit `Long` (i32) return, binding, or parameter context is propagated through nested binary expressions.
 - Unary `+` and `-` use the same expected-type propagation. A `Long` negation lowers to target-independent i32 MIR,
   while an `Int` negation lowers to i64 MIR. Logical `!` lowers as a typed `Bool` operation through XMIR and XLIL.
+- Same-module `Int` functions now cross the compiler-core/native boundary as i64 declarations and bodies. Their division,
+  remainder, bitwise AND/OR/XOR, signed shifts, and ordered comparisons have XMIR/XLIL records, verification, safe constant
+  folding, and LLVM lowering. The native process entry contract remains `fn main() -> Long` and therefore returns i32.
 - Source-native locals use C MIR local/place records rather than remaining SSA aliases. Their initialization and later
   reads/assignments lower to XLIL slots and LLVM stack operations. MIR validation permits one initialization store for an
   immutable local and rejects a second store as reassignment. A place load additionally requires initialization on every

@@ -177,9 +177,12 @@ const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
     OptimizationPass::FoldConstI64Sub => "fold_const_i64_sub",
     OptimizationPass::FoldConstI64Mul => "fold_const_i64_mul",
     OptimizationPass::FoldConstI64Eq => "fold_const_i64_eq",
+    OptimizationPass::FoldConstI64Binary => "fold_const_i64_binary",
+    OptimizationPass::FoldConstI64Comparison => "fold_const_i64_comparison",
     OptimizationPass::FoldConstI32Binary => "fold_const_i32_binary",
     OptimizationPass::FoldConstBoolNot => "fold_const_bool_not",
     OptimizationPass::FoldConstBoolBranch => "fold_const_bool_branch",
+    OptimizationPass::CollapseSinglePredecessorGoto => "collapse_single_predecessor_goto",
   }
 }
 
@@ -305,9 +308,12 @@ fn parse_optimization_pass(name: &str,
     "fold_const_i64_sub" => Some(OptimizationPass::FoldConstI64Sub),
     "fold_const_i64_mul" => Some(OptimizationPass::FoldConstI64Mul),
     "fold_const_i64_eq" => Some(OptimizationPass::FoldConstI64Eq),
+    "fold_const_i64_binary" => Some(OptimizationPass::FoldConstI64Binary),
+    "fold_const_i64_comparison" => Some(OptimizationPass::FoldConstI64Comparison),
     "fold_const_i32_binary" => Some(OptimizationPass::FoldConstI32Binary),
     "fold_const_bool_not" => Some(OptimizationPass::FoldConstBoolNot),
     "fold_const_bool_branch" => Some(OptimizationPass::FoldConstBoolBranch),
+    "collapse_single_predecessor_goto" => Some(OptimizationPass::CollapseSinglePredecessorGoto),
     _ =>
     {
       diagnostics.push(XmirParseDiagnostic { line,

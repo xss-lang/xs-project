@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use super::I32BinaryOperation;
+use super::{I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation};
 
 pub const SUPPORTED_XLIL_VERSION: u32 = 0;
 
@@ -106,6 +106,20 @@ pub enum Instruction
   },
   EqI64
   {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  BinaryI64
+  {
+    operation: I64BinaryOperation,
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  CompareI64
+  {
+    operation: I64ComparisonOperation,
     result: ValueId,
     left: ValueId,
     right: ValueId,

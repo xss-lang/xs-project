@@ -4,9 +4,11 @@
  */
 
 use crate::xlil::{
-  Block, BlockId, Function, I32BinaryOperation, Instruction, Module, SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator,
-  Type, Value, ValueId, is_supported_xlil_version, type_from_name,
+  Block, BlockId, Function, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Instruction, Module,
+  SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator, Type, Value, ValueId, is_supported_xlil_version, type_from_name,
 };
+
+mod i64;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -444,6 +446,15 @@ impl Parser<'_>
     if let Some((result, operands)) = text.split_once(" = eq.i64 ")
     {
       return self.eq_i64(function, result, operands, line);
+    }
+    for instruction in ["div.i64", "rem.i64", "and.i64", "or.i64", "xor.i64", "shl.i64", "shr.i64", "lt.i64", "le.i64",
+                        "gt.i64", "ge.i64"]
+    {
+      let pattern = format!(" = {instruction} ");
+      if let Some((result, operands)) = text.split_once(&pattern)
+      {
+        return self.extended_i64(function, result, operands, instruction, line);
+      }
     }
     if let Some((result, operand)) = text.split_once(" = not.bool ")
     {

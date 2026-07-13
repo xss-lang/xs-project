@@ -45,7 +45,7 @@ impl TypeChecker
       }
       BinaryOperator::Equal if is_supported_integer(primitive) => Some(Type::Primitive(PrimitiveType::Bool)),
       BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual
-        if primitive == PrimitiveType::Long =>
+        if is_supported_integer(primitive) =>
       {
         Some(Type::Primitive(PrimitiveType::Bool))
       }

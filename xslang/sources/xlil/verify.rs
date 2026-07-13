@@ -159,6 +159,28 @@ impl Verifier
         self.i64_value(function, left, "XLIL eq.i64 left operand");
         self.i64_value(function, right, "XLIL eq.i64 right operand");
       }
+      Instruction::BinaryI64 { operation,
+                               result,
+                               left,
+                               right, } =>
+      {
+        self.i64_value(function, result, &format!("XLIL {} result", operation.text_name()));
+        self.i64_value(function, left, &format!("XLIL {} left operand", operation.text_name()));
+        self.i64_value(function,
+                       right,
+                       &format!("XLIL {} right operand", operation.text_name()));
+      }
+      Instruction::CompareI64 { operation,
+                                result,
+                                left,
+                                right, } =>
+      {
+        self.bool_value(function, result, &format!("XLIL {} result", operation.text_name()));
+        self.i64_value(function, left, &format!("XLIL {} left operand", operation.text_name()));
+        self.i64_value(function,
+                       right,
+                       &format!("XLIL {} right operand", operation.text_name()));
+      }
       Instruction::AddI32 { result,
                             left,
                             right, } =>

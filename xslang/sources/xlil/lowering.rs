@@ -197,6 +197,29 @@ impl MirToXlilLowerer
       {
         self.lower_eq_i64(result, left, right, span, xlil_block, values, lowered);
       }
+      if let mir::Statement::BinaryI64 { operation,
+                                         result,
+                                         left,
+                                         right,
+                                         span, } = *statement
+      {
+        self.lower_binary_i64(result,
+                              left,
+                              right,
+                              span,
+                              operation.text_name(),
+                              xlil_block,
+                              values,
+                              lowered);
+      }
+      if let mir::Statement::CompareI64 { operation,
+                                          result,
+                                          left,
+                                          right,
+                                          span, } = *statement
+      {
+        self.lower_compare_i64(result, left, right, span, operation, xlil_block, values, lowered);
+      }
       if let mir::Statement::AddI32 { result,
                                       left,
                                       right,
@@ -470,13 +493,55 @@ impl MirToXlilLowerer
       "add.i64" => lowered.add_i64(xlil_block, left, right),
       "sub.i64" => lowered.sub_i64(xlil_block, left, right),
       "mul.i64" => lowered.mul_i64(xlil_block, left, right),
-      _ => None,
+      name => crate::xlil::I64BinaryOperation::parse_text(name).and_then(|operation| {
+                                                                 lowered.binary_i64(xlil_block, operation, left, right)
+                                                               }),
     };
     let Some(value) = value
     else
     {
       self.report(DiagnosticCode::UnsupportedLocalType,
                   &format!("MIR {instruction} operands must lower to XLIL i64 values"),
+                  span);
+      return;
+    };
+    values.insert(result, value);
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  fn lower_compare_i64(&mut self,
+                       result: mir::LocalId,
+                       left: mir::LocalId,
+                       right: mir::LocalId,
+                       span: Span,
+                       operation: crate::xlil::I64ComparisonOperation,
+                       xlil_block: BlockId,
+                       values: &mut HashMap<mir::LocalId, ValueId>,
+                       lowered: &mut Function)
+  {
+    let Some(left) = values.get(&left).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  &format!("MIR {} left operand does not have a lowered XLIL value",
+                           operation.text_name()),
+                  span);
+      return;
+    };
+    let Some(right) = values.get(&right).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  &format!("MIR {} right operand does not have a lowered XLIL value",
+                           operation.text_name()),
+                  span);
+      return;
+    };
+    let Some(value) = lowered.compare_i64(xlil_block, operation, left, right)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedLocalType,
+                  &format!("MIR {} operands must lower to XLIL i64 values", operation.text_name()),
                   span);
       return;
     };

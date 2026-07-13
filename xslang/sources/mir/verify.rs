@@ -184,6 +184,16 @@ impl<'a> Verifier<'a>
                          left,
                          right,
                          span, } => self.verify_eq_i64(result, left, right, span),
+      Statement::BinaryI64 { operation,
+                             result,
+                             left,
+                             right,
+                             span, } => self.verify_i64_binary(result, left, right, operation.text_name(), span),
+      Statement::CompareI64 { operation,
+                              result,
+                              left,
+                              right,
+                              span, } => self.verify_i64_comparison(result, left, right, operation.text_name(), span),
       Statement::AddI32 { result,
                           left,
                           right,
@@ -396,6 +406,13 @@ impl<'a> Verifier<'a>
     self.verify_bool_local(result, "eq.i64 result local", span);
     self.verify_i64_local(left, "eq.i64 left operand", span);
     self.verify_i64_local(right, "eq.i64 right operand", span);
+  }
+
+  fn verify_i64_comparison(&mut self, result: LocalId, left: LocalId, right: LocalId, instruction: &str, span: Span)
+  {
+    self.verify_bool_local(result, &format!("{instruction} result local"), span);
+    self.verify_i64_local(left, &format!("{instruction} left operand"), span);
+    self.verify_i64_local(right, &format!("{instruction} right operand"), span);
   }
 
   fn verify_i32_binary(&mut self, result: LocalId, left: LocalId, right: LocalId, instruction: &str, span: Span)
