@@ -33,6 +33,8 @@ source-to-native executable pipeline.
   validation retains its conservative reassignment protection across control-flow joins.
 - Supported source-native `if` and `while` bodies may now declare `Long`/`Bool` locals with lexical block lifetime;
   their MIR places still lower through XLIL stack slots and LLVM allocas.
+- Supported source-native nested `return <expression>;` statements now lower directly to MIR return terminators, including
+  from a `while` body or conditional branch.
 
 ## 0.0.8 - 2026-07-13
 

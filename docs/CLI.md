@@ -73,7 +73,8 @@ read after the branches merge. Supported `Long` assignments are `=`, `+=`, `-=`,
 reassigned. Supported conditional assignment blocks may nest. A supported `while` has a Bool condition and one or more
 supported assignment statements and `Long`/`Bool` local declarations in its body; it lowers through the same native
 control-flow path. `break` and `continue` target the innermost supported `while`. Block-local bindings are unavailable
-after their enclosing block, and same-name shadowing remains rejected in this compiler slice. The
+after their enclosing block, and same-name shadowing remains rejected in this compiler slice. The same supported
+return-expression subset may be used by an early `return` inside a supported conditional or loop block. The
 supported return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary
 `-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression
 whose condition is a bool literal, a `Bool` local, a direct same-module `Bool` helper call, unary `!`, or an i32 comparison,

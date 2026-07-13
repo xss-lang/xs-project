@@ -129,7 +129,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainBlockLocals
-                       ImmutableLocalReassignment BlockLocalShadow
+                       MainEarlyReturn ImmutableLocalReassignment BlockLocalShadow
                        MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
                        BoolCallAsLongMain)
@@ -335,6 +335,14 @@ add_test(NAME source_native_block_locals_artifacts COMMAND xs_xse_artifact_tests
 set_tests_properties(source_native_block_locals_artifacts PROPERTIES DEPENDS source_native_block_locals_build TIMEOUT 5)
 add_test(NAME source_native_block_local_shadow COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BlockLocalShadow.xs)
 set_tests_properties(source_native_block_local_shadow PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+add_test(NAME source_native_early_return_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainEarlyReturn.xs)
+set_tests_properties(source_native_early_return_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_early_return_artifacts COMMAND xs_xse_artifact_tests
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainEarlyReturn.ll
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainEarlyReturn.o
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainEarlyReturn.xse 7 "ret i32 7")
+set_tests_properties(source_native_early_return_artifacts PROPERTIES DEPENDS source_native_early_return_build TIMEOUT 5)
 add_test(NAME source_native_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xs)
 set_tests_properties(source_native_if_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
