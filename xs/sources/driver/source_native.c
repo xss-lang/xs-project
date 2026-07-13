@@ -717,40 +717,66 @@ static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, Na
                                XsLilTypeKind return_kind, const NativeLoopTargets *loop, XsDiagnostics *diagnostics,
                                XsMirError *error)
 {
-  if(statement->child_count < 2 || statement->child_count > 3)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                              "native source if statements do not support else if in this compiler slice") &&
-           false;
-  XsMirValueId condition = 0;
-  bool invert = false;
-  if(!lower_bool_expression(*current, context, program, current_function, statement->children[0], diagnostics,
-                            &condition, &invert, error))
-    return false;
-  XsMirBlock *then_block = nullptr;
-  XsMirBlock *else_block = nullptr;
   XsMirBlock *merge_block = nullptr;
-  if(xs_mir_function_append_block(function, "then", &then_block, error) != XS_MIR_OK ||
-     xs_mir_function_append_block(function, "else", &else_block, error) != XS_MIR_OK ||
-     xs_mir_function_append_block(function, "merge", &merge_block, error) != XS_MIR_OK ||
-     xs_mir_block_set_branch(*current, condition, invert ? else_block : then_block, invert ? then_block : else_block,
-                             error) != XS_MIR_OK)
-    return false;
-  XsMirBlock *then_current = then_block;
-  XsMirBlock *else_current = else_block;
-  if(!lower_statement_block(function, &then_current, context, program, current_function, statement->children[1],
-                            return_kind, loop, diagnostics, error) ||
-     (xs_mir_block_terminator_kind(then_current) == XS_MIR_TERMINATOR_NONE &&
-      xs_mir_block_set_goto(then_current, merge_block, error) != XS_MIR_OK))
-    return false;
-  if(statement->child_count == 3 &&
-     !lower_statement_block(function, &else_current, context, program, current_function, statement->children[2],
-                            return_kind, loop, diagnostics, error))
-    return false;
-  if(xs_mir_block_terminator_kind(else_current) == XS_MIR_TERMINATOR_NONE &&
-     xs_mir_block_set_goto(else_current, merge_block, error) != XS_MIR_OK)
-    return false;
-  *current = merge_block;
-  return true;
+  if(statement->child_count < 2 || xs_mir_function_append_block(function, "merge", &merge_block, error) != XS_MIR_OK)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+                              "native source if statement is missing a condition or body") &&
+           false;
+  XsMirBlock *condition_block = *current;
+  const XsSyntaxNode *condition_expression = statement->children[0];
+  const XsSyntaxNode *body = statement->children[1];
+  size_t child_index = 2;
+  for(;;)
+  {
+    XsMirValueId condition = 0;
+    bool invert = false;
+    XsMirBlock *then_block = nullptr;
+    if(!lower_bool_expression(condition_block, context, program, current_function, condition_expression, diagnostics,
+                              &condition, &invert, error) ||
+       xs_mir_function_append_block(function, "then", &then_block, error) != XS_MIR_OK)
+      return false;
+    const XsSyntaxNode *next_child = child_index < statement->child_count ? statement->children[child_index] : nullptr;
+    XsMirBlock *false_block = merge_block;
+    bool lowers_else = next_child != nullptr && next_child->kind == XS_SYNTAX_STMT_BLOCK;
+    bool lowers_else_if = next_child != nullptr && next_child->kind == XS_SYNTAX_STMT_ELSE_IF;
+    if(lowers_else || lowers_else_if)
+    {
+      if(xs_mir_function_append_block(function, lowers_else_if ? "else.if" : "else", &false_block, error) != XS_MIR_OK)
+        return false;
+    }
+    if(xs_mir_block_set_branch(condition_block, condition, invert ? false_block : then_block,
+                               invert ? then_block : false_block, error) != XS_MIR_OK)
+      return false;
+    XsMirBlock *then_current = then_block;
+    if(!lower_statement_block(function, &then_current, context, program, current_function, body, return_kind, loop,
+                              diagnostics, error) ||
+       (xs_mir_block_terminator_kind(then_current) == XS_MIR_TERMINATOR_NONE &&
+        xs_mir_block_set_goto(then_current, merge_block, error) != XS_MIR_OK))
+      return false;
+    if(lowers_else_if)
+    {
+      if(next_child->child_count != 2)
+        return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(next_child),
+                                  "native source else if branch is malformed") &&
+               false;
+      condition_block = false_block;
+      condition_expression = next_child->children[0];
+      body = next_child->children[1];
+      ++child_index;
+      continue;
+    }
+    if(lowers_else)
+    {
+      XsMirBlock *else_current = false_block;
+      if(!lower_statement_block(function, &else_current, context, program, current_function, next_child, return_kind,
+                                loop, diagnostics, error) ||
+         (xs_mir_block_terminator_kind(else_current) == XS_MIR_TERMINATOR_NONE &&
+          xs_mir_block_set_goto(else_current, merge_block, error) != XS_MIR_OK))
+        return false;
+    }
+    *current = merge_block;
+    return true;
+  }
 }
 
 static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,

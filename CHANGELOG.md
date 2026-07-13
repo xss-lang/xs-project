@@ -35,6 +35,7 @@ source-to-native executable pipeline.
   their MIR places still lower through XLIL stack slots and LLVM allocas.
 - Supported source-native nested `return <expression>;` statements now lower directly to MIR return terminators, including
   from a `while` body or conditional branch.
+- Source-native `else if` chains now lower as ordered MIR conditional blocks with one shared merge target.
 
 ## 0.0.8 - 2026-07-13
 

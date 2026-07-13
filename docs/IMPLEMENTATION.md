@@ -106,7 +106,8 @@ The documented compilation order is preserved:
   immutable local and rejects a second store as reassignment. A place load additionally requires initialization on every
   reachable path. The initialization check follows CFG reachability, so two mutually exclusive branch initializations are
   not treated as sequential reassignment. The current source-native slice
-  also lowers statement-level `if` blocks with one or more assignments in each branch and a merge before the final return.
+  also lowers statement-level `if`/`else if` blocks with one or more assignments in each branch and a merge before the
+  final return.
   `Long` local assignments include `=`, arithmetic, and bitwise compound assignment forms already represented by the
   structural parser. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
   assignment-only body lowers to a MIR loop header, body, and exit. Supported conditional and loop blocks also accept

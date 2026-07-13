@@ -70,7 +70,7 @@ inferred `:=` local bindings with i32-compatible or bool-compatible initializers
 and then one return statement. A statement-level `if` may contain one simple assignment in each branch; the local may be
 read after the branches merge. Supported `Long` assignments are `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, and
 `^=`; a branch may contain multiple such assignments. `val`, `const`, and `static` locals can be initialized but not
-reassigned. Supported conditional assignment blocks may nest. A supported `while` has a Bool condition and one or more
+reassigned. Supported conditional assignment blocks, including `else if` chains, may nest. A supported `while` has a Bool condition and one or more
 supported assignment statements and `Long`/`Bool` local declarations in its body; it lowers through the same native
 control-flow path. `break` and `continue` target the innermost supported `while`. Block-local bindings are unavailable
 after their enclosing block, and same-name shadowing remains rejected in this compiler slice. The same supported
