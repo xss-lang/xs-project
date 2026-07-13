@@ -51,6 +51,10 @@ static XsMirStatus write_terminator(const XsMirBlock *block, FILE *stream, XsMir
     if(fputs("  unreachable\n", stream) == EOF)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR unreachable terminator");
     return XS_MIR_OK;
+  case XS_MIR_TERMINATOR_PANIC:
+    if(fputs("  panic\n", stream) == EOF)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR panic terminator");
+    return XS_MIR_OK;
   case XS_MIR_TERMINATOR_NONE:
     if(fputs("  <missing terminator>\n", stream) == EOF)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR missing terminator marker");

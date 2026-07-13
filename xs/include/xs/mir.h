@@ -102,6 +102,7 @@ typedef enum
   XS_MIR_TERMINATOR_GOTO,
   XS_MIR_TERMINATOR_BRANCH,
   XS_MIR_TERMINATOR_UNREACHABLE,
+  XS_MIR_TERMINATOR_PANIC,
 } XsMirTerminatorKind;
 
 XsMirStatus xs_mir_module_create(const char *name, XsMirModule **module, XsMirError *error);
@@ -144,6 +145,7 @@ XsMirStatus xs_mir_block_set_goto(XsMirBlock *block, const XsMirBlock *target, X
 XsMirStatus xs_mir_block_set_branch(XsMirBlock *block, XsMirValueId condition, const XsMirBlock *then_target,
                                     const XsMirBlock *else_target, XsMirError *error);
 XsMirStatus xs_mir_block_set_unreachable(XsMirBlock *block, XsMirError *error);
+XsMirStatus xs_mir_block_set_panic(XsMirBlock *block, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_i64(XsMirBlock *block, int64_t value, XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_i32(XsMirBlock *block, int32_t value, XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_const_bool(XsMirBlock *block, bool value, XsMirValueId *result, XsMirError *error);

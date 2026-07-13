@@ -556,6 +556,8 @@ static XsLilStatus parse_terminator(Parser *parser, XsLilBlock *block, const cha
 {
   if(span_equals(line, length, "ret"))
     return xs_lil_block_set_return(block, error);
+  if(span_equals(line, length, "panic"))
+    return xs_lil_block_set_panic(block, error);
   uint32_t value = 0;
   if(parse_u32_after_prefix(line, length, "ret %r", &value))
     return xs_lil_block_set_return_value(block, value, error);

@@ -12,6 +12,11 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- C MIR and XLIL now carry an explicit `panic` terminator through verification and text round-tripping; LLVM lowers it to
+  `llvm.trap` followed by `unreachable`.
+
 ### Changed
 
 - `Str` is documented as the X# UTF-16 counterpart of Rust `&'static str`, with compiler/runtime-selected UTF-16LE or
@@ -44,7 +49,6 @@ source-to-native executable pipeline.
 - Source-native builds now also lower same-module `Long -> Bool` helper calls for supported `if` conditions and explicit
   `Bool` local initializers.
 - C MIR now has a call instruction and MIR-to-XLIL call lowering for the supported source-native direct-call slice.
-
 ### Changed
 
 - `Optional<T>` and `Result<T>`/`Result<T, E>` implicit namespace behavior is documented: Optional still behaves as if

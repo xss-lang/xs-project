@@ -214,6 +214,11 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
                block->terminator.else_target) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL branch_if terminator");
   }
+  else if(block->terminator.kind == XS_LIL_TERMINATOR_PANIC)
+  {
+    if(xs_lil_write_checked(stream, error, "  panic\n") != XS_LIL_OK)
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
+  }
   else if(block->terminator.kind == XS_LIL_TERMINATOR_NONE)
   {
     if(xs_lil_write_checked(stream, error, "  .missing_terminator\n") != XS_LIL_OK)

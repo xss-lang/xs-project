@@ -130,6 +130,11 @@ XsMirStatus xs_mir_block_set_unreachable(XsMirBlock *block, XsMirError *error)
   return set_terminator(block, (XsMirTerminator){.kind = XS_MIR_TERMINATOR_UNREACHABLE}, error);
 }
 
+XsMirStatus xs_mir_block_set_panic(XsMirBlock *block, XsMirError *error)
+{
+  return set_terminator(block, (XsMirTerminator){.kind = XS_MIR_TERMINATOR_PANIC}, error);
+}
+
 static XsMirStatus append_instruction(XsMirBlock *block, XsMirInstruction instruction, XsMirError *error)
 {
   xs_mir_clear_error(error);

@@ -373,6 +373,32 @@ static void test_text_parser_round_trips_parameters_and_calls(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_panic_terminator(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Fail : () -> void\nbb0.entry:\n  panic\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("panic.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  const XsLilFunction *function = xs_lil_module_function_at(module, 0);
+  const XsLilBlock *block = xs_lil_function_block_at(function, 0);
+  CHECK(xs_lil_block_terminator_kind(block) == XS_LIL_TERMINATOR_PANIC);
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char buffer[256] = {0};
+    size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
+    buffer[read] = '\0';
+    CHECK(strstr(buffer, "bb0.entry:\n  panic\n.end\n") != nullptr);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_round_trips_binary_i64_instructions(void)
 {
   const char text[] = ".xlil version 0\n.xlil module App\n.func Arithmetic : () -> i64\nbb0.entry:\n"
@@ -540,6 +566,7 @@ int main(void)
   test_text_parser_round_trips_branch_if_subset();
   test_text_parser_round_trips_bool_not_subset();
   test_text_parser_round_trips_parameters_and_calls();
+  test_text_parser_round_trips_panic_terminator();
   test_text_parser_round_trips_binary_i64_instructions();
   test_text_parser_round_trips_i32_constant();
   test_text_parser_round_trips_binary_i32_instructions();

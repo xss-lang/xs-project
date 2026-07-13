@@ -637,6 +637,17 @@ static XsBackendStatus lower_lil_terminator(LLVMBuilderRef builder, const XsLilB
     LLVMBuildCondBr(builder, values[condition], blocks[then_block], blocks[else_block]);
     return XS_BACKEND_OK;
   }
+  case XS_LIL_TERMINATOR_PANIC:
+  {
+    LLVMModuleRef module = LLVMGetGlobalParent(LLVMGetBasicBlockParent(LLVMGetInsertBlock(builder)));
+    LLVMTypeRef trap_type = LLVMFunctionType(LLVMVoidTypeInContext(LLVMGetModuleContext(module)), nullptr, 0, false);
+    LLVMValueRef trap = LLVMGetNamedFunction(module, "llvm.trap");
+    if(trap == nullptr)
+      trap = LLVMAddFunction(module, "llvm.trap", trap_type);
+    LLVMBuildCall2(builder, trap_type, trap, nullptr, 0, "");
+    LLVMBuildUnreachable(builder);
+    return XS_BACKEND_OK;
+  }
   case XS_LIL_TERMINATOR_NONE:
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL block is missing a terminator");
   }

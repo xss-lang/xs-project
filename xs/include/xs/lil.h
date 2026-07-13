@@ -99,6 +99,7 @@ typedef enum
   XS_LIL_TERMINATOR_RETURN,
   XS_LIL_TERMINATOR_BRANCH,
   XS_LIL_TERMINATOR_BRANCH_IF,
+  XS_LIL_TERMINATOR_PANIC,
 } XsLilTerminatorKind;
 
 typedef struct XsLilBlock XsLilBlock;
@@ -209,6 +210,7 @@ XsLilStatus xs_lil_block_set_return_value(XsLilBlock *block, XsLilValueId value,
 XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLilError *error);
 XsLilStatus xs_lil_block_set_branch_if(XsLilBlock *block, XsLilValueId condition, XsLilBlockId then_block,
                                        XsLilBlockId else_block, XsLilError *error);
+XsLilStatus xs_lil_block_set_panic(XsLilBlock *block, XsLilError *error);
 XsLilBlockId xs_lil_block_id(const XsLilBlock *block);
 const char *xs_lil_block_label(const XsLilBlock *block);
 size_t xs_lil_block_instruction_count(const XsLilBlock *block);

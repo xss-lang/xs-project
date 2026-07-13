@@ -435,7 +435,8 @@ semantics.
 - The MIR place model starts with a root local plus a `field`/`deref`/`index` projection chain.
 - MIR has an SSA value table and core `const.i64`, `const.bool`, signed i64 arithmetic/bitwise/shift/comparison
   instructions, `load`, and `store` instructions.
-- Each basic block may currently have a `return`, `goto`, `branch_if`, or `unreachable` terminator in the Rust MIR model.
+- Each basic block may currently have a `return`, `goto`, `branch_if`, `panic`, or `unreachable` terminator in the Rust MIR
+  model. The C MIR model also distinguishes `panic` from structurally unreachable control flow.
 - The MIR text writer deterministically writes declarations and functions with bodies.
 - `xs/mir/borrow_checker.h` contains the first MIR validation/borrow-check skeleton.
 - The borrow-checker skeleton validates mandatory terminators, return type compatibility, and `store` operations into
@@ -492,7 +493,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison
-  instructions, `call`, `br`, `br_if`, `ret`, and `ret %rN`.
+  instructions, `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
   source slice: one top-level `main` returning `Long` with optional explicit `Long`/`Bool` or inferred local bindings
   followed by one return statement whose expression is built from locals, i32-range integer literals, unary `+`/`-`,
@@ -538,14 +539,15 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.bool`,
   i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison, `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
-  `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `ret`, and `.end`.
+  `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `panic`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
   to bind them to XLIL `.param` values. The bridge lowers MIR
   parameter signatures, typed MIR `const.i64`, `const.i32`, `const.bool`, i64 arithmetic/bitwise/shift/comparison local
   statements,
   typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,
-  compare, `call`, `br`, `br_if`, and `ret %rN` records.
+  compare, `call`, `br`, `br_if`, `panic`, and `ret %rN` records. C MIR `panic` lowers to the XLIL terminator; LLVM then
+  emits `llvm.trap` and `unreachable`.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
   stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path

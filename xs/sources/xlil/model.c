@@ -808,6 +808,11 @@ XsLilStatus xs_lil_block_set_branch_if(XsLilBlock *block, XsLilValueId condition
       error);
 }
 
+XsLilStatus xs_lil_block_set_panic(XsLilBlock *block, XsLilError *error)
+{
+  return set_terminator(block, (XsLilTerminator){.kind = XS_LIL_TERMINATOR_PANIC}, error);
+}
+
 XsLilBlockId xs_lil_block_id(const XsLilBlock *block)
 {
   return block == nullptr ? UINT32_MAX : block->id;

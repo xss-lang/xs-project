@@ -228,6 +228,7 @@ static XsMirStatus check_terminator(const XsMirFunction *function, const XsMirBl
     return XS_MIR_OK;
   }
   case XS_MIR_TERMINATOR_UNREACHABLE:
+  case XS_MIR_TERMINATOR_PANIC:
     return XS_MIR_OK;
   }
   return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR terminator has an unknown kind");

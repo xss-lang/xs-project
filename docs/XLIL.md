@@ -79,6 +79,7 @@ Format notes:
 - `br bbN` transfers control to another basic block.
 - `br_if %rN, bbA, bbB` branches to `bbA` when the `bool` condition `%rN` is true, otherwise to `bbB`.
 - `ret` and `ret %rN` are the current return terminators.
+- `panic` terminates the current path. The LLVM backend lowers it to `llvm.trap` followed by `unreachable`.
 - `.end` closes a function body.
 
 A parameter-returning definition therefore has an explicit body mapping:

@@ -878,6 +878,30 @@ static void test_xlil_body_lowering_for_bool_not_branch(void)
   xs_mir_module_destroy(mir);
 }
 
+static void test_xlil_body_lowering_for_panic(void)
+{
+  XsMirError error = {0};
+  XsMirModule *mir = nullptr;
+  CHECK(xs_mir_module_create("project", &mir, &error) == XS_MIR_OK);
+  XsMirFunction *function = nullptr;
+  CHECK(xs_mir_module_add_function_definition(mir, "fail", (XsMirType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
+                                              &function, &error) == XS_MIR_OK);
+  XsMirBlock *entry = nullptr;
+  CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_panic(entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(mir, &error) == XS_MIR_OK);
+
+  XsLilError lil_error = {0};
+  XsLilModule *xlil = nullptr;
+  CHECK(xs_lil_module_create("project", &xlil, &lil_error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_mir_function_bodies(xlil, mir, &error) == XS_MIR_OK);
+  const XsLilFunction *lowered = xs_lil_module_function_at(xlil, 0);
+  const XsLilBlock *block = xs_lil_function_block_at(lowered, 0);
+  CHECK(xs_lil_block_terminator_kind(block) == XS_LIL_TERMINATOR_PANIC);
+  xs_lil_module_destroy(xlil);
+  xs_mir_module_destroy(mir);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
@@ -901,5 +925,6 @@ int main(void)
   test_xlil_body_lowering_for_i32_branch_return();
   test_xlil_body_lowering_for_call_return();
   test_xlil_body_lowering_for_bool_not_branch();
+  test_xlil_body_lowering_for_panic();
   return failures == 0 ? 0 : 1;
 }

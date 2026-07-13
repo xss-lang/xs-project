@@ -291,6 +291,15 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_declare_lil_function(first, "Choose", (XsLilType){.kind = XS_LIL_TYPE_VOID}, bool_parameter, 1,
                                      &function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, branch_function, &error) == XS_BACKEND_OK);
+  XsLilFunction *panic_function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Panic", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
+                                              &panic_function, nullptr) == XS_LIL_OK);
+  XsLilBlock *panic_entry = nullptr;
+  CHECK(xs_lil_function_append_block(panic_function, "entry", &panic_entry, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_panic(panic_entry, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Panic", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
+                                     &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, panic_function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);
   char ir_path[4096] = {0};
   CHECK(snprintf(ir_path, sizeof(ir_path), "%s.ll", argv[1]) > 0);
@@ -341,6 +350,9 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "icmp sge i32"));
   CHECK(file_contains(ir_path, "define void @Choose(i1"));
   CHECK(file_contains(ir_path, "br i1"));
+  CHECK(file_contains(ir_path, "define void @Panic()"));
+  CHECK(file_contains(ir_path, "call void @llvm.trap()"));
+  CHECK(file_contains(ir_path, "unreachable"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
 
   const char *linker_arguments[] = {"--version"};

@@ -394,7 +394,13 @@ static XsMirStatus lower_terminator(const XsMirFunction *function, const XsMirBl
     return map_lil_status(status, &lil_error, error);
   }
   case XS_MIR_TERMINATOR_UNREACHABLE:
-    return set_error(error, XS_MIR_UNSUPPORTED, "MIR to XLIL body lowering supports only return terminators for now");
+    return set_error(error, XS_MIR_UNSUPPORTED, "MIR unreachable lowering requires a distinct XLIL terminator");
+  case XS_MIR_TERMINATOR_PANIC:
+  {
+    XsLilError lil_error = {0};
+    XsLilStatus status = xs_lil_block_set_panic(xlil_block, &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
   }
   return set_error(error, XS_MIR_INVALID_ARGUMENT, "unknown MIR terminator kind while lowering to XLIL");
 }
