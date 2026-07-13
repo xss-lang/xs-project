@@ -47,8 +47,9 @@
 // It is only for local source files.
 //
 // format_args!() is a built-in formatting macro.
-// It validates the X# formatting grammar and returns the formatting argument
-// value used by writer/output macros. It is not resolved through Stdio.
+// It validates the Rust 1.57 formatting grammar, which is the exact X# format
+// syntax contract, and returns the formatting argument value used by
+// writer/output macros. It is not resolved through Stdio.
 
 imports stdio;
 

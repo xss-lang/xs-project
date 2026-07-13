@@ -429,6 +429,9 @@ complete.
   accept the newline-only form. Built-in `writeln!(destination)` accepts the destination-only newline form. Other
   formatting forms require a string literal format template and matching placeholder argument count. Debug, pretty-debug,
   hexadecimal, padding, and alignment specs such as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` are accepted by the validator.
+- The formatting grammar and the `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` expansion structures are
+  versioned against Rust 1.57. Newer implicit-capture syntax is not part of this contract. The internal newline-format
+  intrinsic used by line macros is not source-callable.
 - Full token matcher rules and empty matcher rules can be matched.
 - Single-token fragment matchers that can be validated precisely (`tt`, `ident`, `literal`, `lifetime`, and `vis`) are matched
   against call tokens.

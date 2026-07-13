@@ -16,8 +16,9 @@ source-to-native executable pipeline.
 
 - Fresh checkouts no longer require the intentionally untracked `xslang/Cargo.lock` as a Ninja input; the pinned Rust
   toolchain can generate the local lock file during the compiler-core build.
-- Empty `println!()` and `eprintln!()` conceptual expansion now delegates to `print!("\n")` and `eprint!("\n")`;
-  formatted forms continue to delegate to the built-in `writeln!` writer macro.
+- Formatting syntax and the `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` expansion structures now follow
+  the exact Rust 1.57 contract. Empty line forms delegate to `print!("\n")`/`eprint!("\n")`; formatted line forms use
+  the compiler-internal newline-format argument intrinsic.
 
 ## 0.1.5 - 2026-07-13
 
@@ -30,7 +31,7 @@ source-to-native executable pipeline.
 ### Changed
 
 - `write!` and `writeln!` are built-in writer macros and no longer require `imports stdio;`. Stdio continues to export
-  `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`, whose output forms delegate to the built-in writer macros.
+  `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`.
 - Result is no longer implied by ordinary output examples. Functions using postfix `@`, `Ok(...)`, or `Error(...)` must
   declare a Result return type; ordinary functions remain free to return unit or another declared type.
 

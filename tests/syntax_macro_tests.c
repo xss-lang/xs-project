@@ -527,7 +527,7 @@ static void test_formatting_macros_accept_output_forms(void)
                       "  eprintln!();\n"
                       "  eprintln!(\"{:?}\", value);\n"
                       "  eprintln!(\"{:#?}\", value);\n"
-                      "  println!(\"{0:?} {name:#?}\", value, name);\n"
+                      "  println!(\"{0:?} {name:#?}\", value, name = name);\n"
                       "  format!(\"{}\", value);\n"
                       "  format!(\"{:08x}\", value);\n"
                       "  format!(\"{:_>8}\", value);\n"

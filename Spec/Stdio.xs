@@ -102,50 +102,45 @@ fn format_values() {
 // conceptual macro expansion
 
 // Stdio macros and built-in writer macros expand during AST macro expansion,
-// before HIR construction.
-// The following calls describe their semantic result; implementations may use
-// equivalent compiler/runtime intrinsics without exposing those intrinsics as
-// source-level macros:
+// before HIR construction. Their source grammar and expansion structure match
+// Rust 1.57 exactly. X# maps `$crate` to its standard runtime registry:
 //
-// print!(template, values...)
-//   -> write!(std::stdout(), template, values...)
-// println!(template, values...)
-//   -> writeln!(std::stdout(), template, values...)
+// print!(arguments...)
+//   -> std::__print(format_args!(arguments...))
 // println!()
 //   -> print!("\n")
-// eprint!(template, values...)
-//   -> write!(std::stderr(), template, values...)
-// eprintln!(template, values...)
-//   -> writeln!(std::stderr(), template, values...)
+// println!(arguments...)
+//   -> std::__print(__format_args_nl!(arguments...))
+// eprint!(arguments...)
+//   -> std::__eprint(format_args!(arguments...))
 // eprintln!()
 //   -> eprint!("\n")
-// write!(destination, template, values...)
-//   -> std::write_format(destination, format_args!(template, values...))
-// writeln!(destination, template, values...)
-//   -> std::write_format_line(destination, format_args!(template, values...))
-// writeln!(destination)
-//   -> std::write_format_line(destination, format_args!(""))
-// format!(template, values...)
-//   -> std::format(format_args!(template, values...))
+// eprintln!(arguments...)
+//   -> std::__eprint(__format_args_nl!(arguments...))
+// write!(destination, arguments...)
+//   -> destination.write_fmt(format_args!(arguments...))
+// writeln!(destination[,])
+//   -> write!(destination, "\n")
+// writeln!(destination, arguments...)
+//   -> destination.write_fmt(__format_args_nl!(arguments...))
+// format!(arguments...)
+//   -> { result := std::fmt::format(format_args!(arguments...)); result }
 //
-// Therefore print!/println!/eprint!/eprintln! delegate to the built-in
-// write!/writeln! macros. They do not independently bypass the writer macros
-// and call the runtime formatting boundary.
-//
-// std::write_format and std::write_format_line consume a FormatArguments value
-// and return Result<>. The line form appends exactly one target newline after
-// the formatted content. std::format materializes the formatted UTF-16 Str.
-// These functions are the conceptual Stdio runtime boundary.
+// __format_args_nl! is a compiler-internal newline variant. It is not a
+// source-callable built-in and does not enter macro scope. std::__print and
+// std::__eprint are internal output boundaries. std::fmt::format materializes
+// the formatted UTF-16 Str.
 //
 // A destination expression is evaluated exactly once. Format arguments are
 // evaluated exactly once from left to right after the destination, and before
-// the runtime write begins. The template is validated at compile time.
+// the runtime write begins. The template and argument grammar are validated at compile time.
 // Expansion introduces hygienic temporary bindings when required; those names
 // cannot collide with user declarations. A macro invocation must still match
 // exactly one rule.
 
 
-// format! returns Str and does not write to a stream.
+// format! returns Str and does not write to a stream. The temporary `result`
+// binding in its conceptual expansion is hygienic.
 // Built-in format_args! returns the formatting argument value used by output
 // and writer macros and does not write to a stream. Built-in write! and
 // writeln! accept any compatible destination without importing Stdio.
