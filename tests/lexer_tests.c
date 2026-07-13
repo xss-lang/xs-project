@@ -144,10 +144,10 @@ static void test_macro_tokens(void)
   static const XsTokenKind expected[] = {
       XS_TOKEN_KW_MACRO_RULES, XS_TOKEN_BANG,        XS_TOKEN_IDENTIFIER, XS_TOKEN_LEFT_BRACE, XS_TOKEN_LEFT_PAREN,
       XS_TOKEN_DOLLAR,         XS_TOKEN_IDENTIFIER,  XS_TOKEN_COLON,      XS_TOKEN_IDENTIFIER, XS_TOKEN_RIGHT_PAREN,
-      XS_TOKEN_COLON,          XS_TOKEN_LEFT_BRACE,  XS_TOKEN_DOLLAR,     XS_TOKEN_IDENTIFIER, XS_TOKEN_RIGHT_BRACE,
+      XS_TOKEN_ARROW,          XS_TOKEN_LEFT_BRACE,  XS_TOKEN_DOLLAR,     XS_TOKEN_IDENTIFIER, XS_TOKEN_RIGHT_BRACE,
       XS_TOKEN_SEMICOLON,      XS_TOKEN_RIGHT_BRACE, XS_TOKEN_EOF,
   };
-  expect_tokens("macro_rules! identity { ($value:expr): { $value }; }", expected,
+  expect_tokens("macro_rules! identity { ($value:expr) -> { $value }; }", expected,
                 sizeof(expected) / sizeof(expected[0]));
 }
 

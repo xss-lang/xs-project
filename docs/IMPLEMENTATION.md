@@ -201,6 +201,7 @@ This layer lives under the HIR directory.
   HIR.
 - `public namespace` does not override explicit `private`, `internal`, or `protected` visibility modifiers.
 - Top-level `fn`, `class`, `interface`, `enum`, `data`, and `macro_rules!` declarations are collected into the symbol table.
+- `macro_rules!` rules use `matcher -> { expansion };`; the older `matcher: { expansion };` spelling is not accepted.
 - `extern "ABI"` block functions are collected as function symbols, while `static` foreign globals are collected as
   `extern global` symbols. Visibility on the extern block is inherited by contained declarations unless a contained
   declaration has its own explicit visibility.

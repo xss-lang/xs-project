@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 macro_rules! word {
-    (): { generatedName };
+    () -> { generatedName };
 }
 
 fn Main() {

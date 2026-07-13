@@ -147,7 +147,7 @@ static void test_macro_generated_field_like_member_symbol(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macro_rules! make { (): { value: Int; }; }\n"
+                     "  macro_rules! make { () -> { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroMembers.xs", .text = text, .length = strlen(text)};
@@ -179,7 +179,7 @@ static void test_macro_generated_member_conflicts_with_field(void)
   const char *text = "module App;\n"
                      "class User {\n"
                      "  value: Int;\n"
-                     "  macro_rules! make { (): { value: Str; }; }\n"
+                     "  macro_rules! make { () -> { value: Str; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroFieldConflict.xs", .text = text, .length = strlen(text)};
@@ -210,7 +210,7 @@ static void test_macro_generated_member_conflicts_with_method(void)
   const char *text = "module App;\n"
                      "class User {\n"
                      "  incomplete fn value();\n"
-                     "  macro_rules! make { (): { value: Int; }; }\n"
+                     "  macro_rules! make { () -> { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroMethodFieldConflict.xs", .text = text, .length = strlen(text)};
@@ -279,7 +279,7 @@ static void test_macro_generated_method_call_resolution(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macro_rules! make { (): { incomplete fn Generated(); }; }\n"
+                     "  macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "  make!();\n"
                      "}\n"
                      "fn Main() { user: User = new(); user.Generated(); }\n";

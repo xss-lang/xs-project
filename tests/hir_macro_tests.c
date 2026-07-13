@@ -27,7 +27,7 @@ static int failures;
 static void test_declaration_macro_symbols(void)
 {
   const char *text = "module App;\n"
-                     "macro_rules! make { (): { incomplete fn Generated(); }; }\n"
+                     "macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "make!();\n";
   XsSource source = {.path = "MacroSymbols.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -59,7 +59,7 @@ static void test_declaration_macro_duplicate_symbols(void)
 {
   const char *text = "module App;\n"
                      "fn Generated() {}\n"
-                     "macro_rules! make { (): { incomplete fn Generated(); }; }\n"
+                     "macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "make!();\n";
   XsSource source = {.path = "MacroDuplicateSymbols.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -83,7 +83,7 @@ static void test_generated_function_name_use(void)
 {
   const char *text = "module App;\n"
                      "fn Main() { Generated(); }\n"
-                     "macro_rules! make { (): { incomplete fn Generated(); }; }\n"
+                     "macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "make!();\n";
   XsSource source = {.path = "MacroGeneratedNameUse.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -113,7 +113,7 @@ static void test_generated_function_name_use(void)
 static void test_generated_declaration_type_errors(void)
 {
   const char *text = "module App;\n"
-                     "macro_rules! make { (): { incomplete fn Broken(value: Missing); }; }\n"
+                     "macro_rules! make { () -> { incomplete fn Broken(value: Missing); }; }\n"
                      "make!();\n";
   XsSource source = {.path = "MacroGeneratedTypeError.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -144,7 +144,7 @@ static void test_generated_declaration_type_errors(void)
 static void test_item_fragment_declaration_symbol(void)
 {
   const char *text = "module App;\n"
-                     "macro_rules! forward { ($item:item): { $item }; }\n"
+                     "macro_rules! forward { ($item:item) -> { $item }; }\n"
                      "forward!(incomplete fn Generated(););\n";
   XsSource source = {.path = "MacroItemFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -176,7 +176,7 @@ static void test_item_fragment_declaration_symbol(void)
 static void test_item_fragment_empty_call_errors(void)
 {
   const char *text = "module App;\n"
-                     "macro_rules! forward { ($item:item): { $item }; }\n"
+                     "macro_rules! forward { ($item:item) -> { $item }; }\n"
                      "forward!();\n";
   XsSource source = {.path = "MacroItemFragmentEmpty.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -193,8 +193,8 @@ static void test_multiple_matching_declaration_rules(void)
 {
   const char *text = "module App;\n"
                      "macro_rules! make {\n"
-                     "  (): { incomplete fn First(); };\n"
-                     "  (): { incomplete fn Second(); };\n"
+                     "  () -> { incomplete fn First(); };\n"
+                     "  () -> { incomplete fn Second(); };\n"
                      "}\n"
                      "make!();\n";
   XsSource source = {.path = "MacroMultipleRules.xs", .text = text, .length = strlen(text)};
@@ -213,8 +213,8 @@ static void test_multiple_matching_statement_rules_name_errors(void)
   const char *text = "module App;\n"
                      "incomplete fn Known();\n"
                      "macro_rules! both {\n"
-                     "  (): { Known(); };\n"
-                     "  (): { Missing(); };\n"
+                     "  () -> { Known(); };\n"
+                     "  () -> { Missing(); };\n"
                      "}\n"
                      "fn Main() { both!(); }\n";
   XsSource source = {.path = "MacroMultipleStatementNames.xs", .text = text, .length = strlen(text)};
@@ -232,8 +232,8 @@ static void test_multiple_matching_statement_rules_type_errors(void)
 {
   const char *text = "module App;\n"
                      "macro_rules! both {\n"
-                     "  (): { value: Int = None; };\n"
-                     "  (): { broken: Missing = None; };\n"
+                     "  () -> { value: Int = None; };\n"
+                     "  () -> { broken: Missing = None; };\n"
                      "}\n"
                      "fn Main() { both!(); }\n";
   XsSource source = {.path = "MacroMultipleStatementTypes.xs", .text = text, .length = strlen(text)};
@@ -251,7 +251,7 @@ static void test_generated_class_member_type_errors(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macro_rules! make { (): { incomplete fn Broken(value: Missing); }; }\n"
+                     "  macro_rules! make { () -> { incomplete fn Broken(value: Missing); }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroGeneratedMemberTypeError.xs", .text = text, .length = strlen(text)};
@@ -285,7 +285,7 @@ static void test_generated_class_field_like_type_errors(void)
 {
   const char *text = "module App;\n"
                      "class User {\n"
-                     "  macro_rules! make { (): { value: Missing; }; }\n"
+                     "  macro_rules! make { () -> { value: Missing; }; }\n"
                      "  make!();\n"
                      "}\n";
   XsSource source = {.path = "MacroGeneratedFieldLikeTypeError.xs", .text = text, .length = strlen(text)};

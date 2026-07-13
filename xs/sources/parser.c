@@ -211,7 +211,7 @@ static bool parse_macro(XsParser *parser, XsAst *ast, size_t start)
                          "expected macro matcher in parentheses");
       return false;
     }
-    if(!expect(parser, XS_TOKEN_COLON, "expected ':' after macro matcher"))
+    if(!expect(parser, XS_TOKEN_ARROW, "expected '->' after macro matcher"))
       return false;
     if(!skip_balanced(parser, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE, &expansion))
     {

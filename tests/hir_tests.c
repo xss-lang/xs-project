@@ -468,7 +468,7 @@ static void test_qualified_external_name_requires_import(void)
 static void test_expanded_macro_name_use_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! bad { (): { Missing.Call() }; }\n"
+                     "macro_rules! bad { () -> { Missing.Call() }; }\n"
                      "fn Main() { bad!(); }\n";
   XsSource source = {.path = "MacroNameUse.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
@@ -500,7 +500,7 @@ static void test_expanded_macro_name_use_errors(void)
 static void test_statement_fragment_macro_name_use_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! pass { ($body:stmt): { $body }; }\n"
+                     "macro_rules! pass { ($body:stmt) -> { $body }; }\n"
                      "fn Main() { pass!(Missing.Call();); }\n";
   XsSource source = {.path = "MacroStatementNameUse.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
@@ -533,7 +533,7 @@ static void test_statement_fragment_macro_name_use_errors(void)
 static void test_block_fragment_macro_name_use_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! pass { ($body:block): { $body }; }\n"
+                     "macro_rules! pass { ($body:block) -> { $body }; }\n"
                      "fn Main() { pass!({ Missing.Call(); }); }\n";
   XsSource source = {.path = "MacroBlockNameUse.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
@@ -566,7 +566,7 @@ static void test_block_fragment_macro_name_use_errors(void)
 static void test_path_fragment_macro_name_use_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! call { ($target:path): { $target(); }; }\n"
+                     "macro_rules! call { ($target:path) -> { $target(); }; }\n"
                      "fn Main() { call!(Missing.Call); }\n";
   XsSource source = {.path = "MacroPathNameUse.xs", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;

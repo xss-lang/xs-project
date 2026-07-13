@@ -165,7 +165,7 @@ XsSyntaxNode *parse_macro(SyntaxParser *parser, size_t start)
     parse_matcher_elements(parser, macro, matcher, XS_TOKEN_RIGHT_PAREN);
     expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after macro matcher");
     finish_node(parser, matcher, parser->previous.span.end);
-    expect(parser, XS_TOKEN_COLON, "expected ':' after macro matcher");
+    expect(parser, XS_TOKEN_ARROW, "expected '->' after macro matcher");
     XsSyntaxNode *expansion =
         node(parser, XS_SYNTAX_MACRO_EXPANSION, (XsSpan){parser->current.span.start, parser->current.span.start});
     expect(parser, XS_TOKEN_LEFT_BRACE, "expected macro expansion");

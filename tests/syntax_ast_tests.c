@@ -71,7 +71,7 @@ static void test_function_tree(void)
 static void test_module_import_and_macro(void)
 {
   const char *text = "module App::Core;\nimports Math::Advanced;\n"
-                     "macro_rules! identity { ($value:expr): { $value }; }\n"
+                     "macro_rules! identity { ($value:expr) -> { $value }; }\n"
                      "fn Main() { identity!(42); }\n";
   XsSource source = {.path = "Main.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -91,7 +91,7 @@ static void test_module_import_and_macro(void)
 
 static void test_macro_call_declaration_structure(void)
 {
-  const char *text = "macro_rules! create_item { (): {}; }\n"
+  const char *text = "macro_rules! create_item { () -> {}; }\n"
                      "create_item!();\n"
                      "class Host { create_item!(); }\n";
   XsSource source = {.path = "MacroDeclarationCall.xs", .text = text, .length = strlen(text)};

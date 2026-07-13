@@ -30,7 +30,7 @@ static bool text_is(XsText text, const char *value)
 
 static void test_macro_repetition_and_unique_variables(void)
 {
-  const char *valid = "macro_rules! many { ($( $value:expr ),*): { $( $value )* }; }";
+  const char *valid = "macro_rules! many { ($( $value:expr ),*) -> { $( $value )* }; }";
   XsSource source = {.path = "Macros.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -44,7 +44,7 @@ static void test_macro_repetition_and_unique_variables(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "macro_rules! duplicate { ($value:expr): {}; ($value:ident): {}; }";
+  const char *invalid = "macro_rules! duplicate { ($value:expr) -> {}; ($value:ident) -> {}; }";
   source = (XsSource){.path = "InvalidMacros.xs", .text = invalid, .length = strlen(invalid)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 11, &diagnostics, &tree));
@@ -55,7 +55,7 @@ static void test_macro_repetition_and_unique_variables(void)
 
 static void test_macro_semantic_validation(void)
 {
-  const char *depth_error = "macro_rules! bad { ($( $value:expr ),*): { $value }; }";
+  const char *depth_error = "macro_rules! bad { ($( $value:expr ),*) -> { $value }; }";
   XsSource source = {.path = "Depth.xs", .text = depth_error, .length = strlen(depth_error)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -65,8 +65,8 @@ static void test_macro_semantic_validation(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *recursion = "macro_rules! first { (): { second!(); }; }"
-                          "macro_rules! second { (): { first!(); }; }";
+  const char *recursion = "macro_rules! first { () -> { second!(); }; }"
+                          "macro_rules! second { () -> { first!(); }; }";
   source = (XsSource){.path = "Recursion.xs", .text = recursion, .length = strlen(recursion)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 13, &diagnostics, &tree));
@@ -77,7 +77,7 @@ static void test_macro_semantic_validation(void)
 
 static void test_macro_scope_resolution(void)
 {
-  const char *call_before_definition = "fn Main() { later!(); macro_rules! later { (): {}; } }";
+  const char *call_before_definition = "fn Main() { later!(); macro_rules! later { () -> {}; } }";
   XsSource source = {.path = "MacroScope.xs", .text = call_before_definition, .length = strlen(call_before_definition)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -87,7 +87,7 @@ static void test_macro_scope_resolution(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *out_of_scope = "fn Main() { { macro_rules! local { (): {}; } } local!(); }";
+  const char *out_of_scope = "fn Main() { { macro_rules! local { () -> {}; } } local!(); }";
   source = (XsSource){.path = "MacroOutOfScope.xs", .text = out_of_scope, .length = strlen(out_of_scope)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 15, &diagnostics, &tree));
@@ -95,7 +95,7 @@ static void test_macro_scope_resolution(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *token_mismatch = "macro_rules! exact { (hello): {}; } fn Main() { exact!(world); }";
+  const char *token_mismatch = "macro_rules! exact { (hello) -> {}; } fn Main() { exact!(world); }";
   source = (XsSource){.path = "MacroMismatch.xs", .text = token_mismatch, .length = strlen(token_mismatch)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 16, &diagnostics, &tree));
@@ -106,10 +106,10 @@ static void test_macro_scope_resolution(void)
 
 static void test_single_token_fragment_matching(void)
 {
-  const char *valid = "macro_rules! name { ($value:ident): {}; }"
-                      "macro_rules! lit { ($value:literal): {}; }"
-                      "macro_rules! life { ($value:lifetime): {}; }"
-                      "macro_rules! visibility { ($value:vis): {}; }"
+  const char *valid = "macro_rules! name { ($value:ident) -> {}; }"
+                      "macro_rules! lit { ($value:literal) -> {}; }"
+                      "macro_rules! life { ($value:lifetime) -> {}; }"
+                      "macro_rules! visibility { ($value:vis) -> {}; }"
                       "fn Main() { name!(value); lit!(42); life!('a); visibility!(public); }";
   XsSource source = {.path = "SingleTokenFragments.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
@@ -120,7 +120,7 @@ static void test_single_token_fragment_matching(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid_literal = "macro_rules! lit { ($value:literal): {}; } fn Main() { lit!(name); }";
+  const char *invalid_literal = "macro_rules! lit { ($value:literal) -> {}; } fn Main() { lit!(name); }";
   source = (XsSource){.path = "LiteralFragmentInvalid.xs", .text = invalid_literal, .length = strlen(invalid_literal)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 18, &diagnostics, &tree));
@@ -128,7 +128,7 @@ static void test_single_token_fragment_matching(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid_lifetime = "macro_rules! life { ($value:lifetime): {}; } fn Main() { life!(name); }";
+  const char *invalid_lifetime = "macro_rules! life { ($value:lifetime) -> {}; } fn Main() { life!(name); }";
   source =
       (XsSource){.path = "LifetimeFragmentInvalid.xs", .text = invalid_lifetime, .length = strlen(invalid_lifetime)};
   xs_diagnostics_init(&diagnostics);
@@ -140,8 +140,8 @@ static void test_single_token_fragment_matching(void)
 
 static void test_macro_expansion_preparation_report(void)
 {
-  const char *text = "macro_rules! exact { (hello): { world }; }"
-                     "macro_rules! id { ($value:ident): { $value }; }"
+  const char *text = "macro_rules! exact { (hello) -> { world }; }"
+                     "macro_rules! id { ($value:ident) -> { $value }; }"
                      "fn Main() { exact!(hello); id!(name); }";
   XsSource source = {.path = "MacroExpansionReady.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -190,7 +190,7 @@ static void test_macro_expansion_preparation_report(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *nested = "macro_rules! id { ($value:ident): { $value }; }"
+  const char *nested = "macro_rules! id { ($value:ident) -> { $value }; }"
                        "fn Main() { print(id!(name)); id!(name); }";
   source = (XsSource){.path = "MacroNestedExpression.xs", .text = nested, .length = strlen(nested)};
   xs_diagnostics_init(&diagnostics);
@@ -206,7 +206,7 @@ static void test_macro_expansion_preparation_report(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *expression = "macro_rules! identity { ($value:expr): { $value }; } fn Main() { identity!(42); }";
+  const char *expression = "macro_rules! identity { ($value:expr) -> { $value }; } fn Main() { identity!(42); }";
   source = (XsSource){.path = "MacroExpressionFragment.xs", .text = expression, .length = strlen(expression)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 21, &diagnostics, &tree));
@@ -234,7 +234,7 @@ static void test_macro_expansion_preparation_report(void)
 
 static void test_statement_fragment_expansion(void)
 {
-  const char *text = "macro_rules! pass { ($body:stmt): { $body }; }"
+  const char *text = "macro_rules! pass { ($body:stmt) -> { $body }; }"
                      "fn Main() { pass!(value: Missing = None;); }";
   XsSource source = {.path = "MacroStatementFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -263,7 +263,7 @@ static void test_statement_fragment_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "macro_rules! pass { ($body:stmt): { $body }; }"
+  const char *invalid = "macro_rules! pass { ($body:stmt) -> { $body }; }"
                         "fn Main() { pass!(); }";
   source = (XsSource){.path = "MacroStatementFragmentInvalid.xs", .text = invalid, .length = strlen(invalid)};
   xs_diagnostics_init(&diagnostics);
@@ -276,7 +276,7 @@ static void test_statement_fragment_expansion(void)
 
 static void test_block_fragment_expansion(void)
 {
-  const char *text = "macro_rules! pass { ($body:block): { $body }; }"
+  const char *text = "macro_rules! pass { ($body:block) -> { $body }; }"
                      "fn Main() { pass!({ value: Missing = None; }); }";
   XsSource source = {.path = "MacroBlockFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -303,7 +303,7 @@ static void test_block_fragment_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "macro_rules! pass { ($body:block): { $body }; }"
+  const char *invalid = "macro_rules! pass { ($body:block) -> { $body }; }"
                         "fn Main() { pass!(); }";
   source = (XsSource){.path = "MacroBlockFragmentInvalid.xs", .text = invalid, .length = strlen(invalid)};
   xs_diagnostics_init(&diagnostics);
@@ -316,7 +316,7 @@ static void test_block_fragment_expansion(void)
 
 static void test_type_fragment_expansion(void)
 {
-  const char *text = "macro_rules! declare { ($kind:ty): { value: $kind = None }; }"
+  const char *text = "macro_rules! declare { ($kind:ty) -> { value: $kind = None }; }"
                      "fn Main() { declare!(Missing); }";
   XsSource source = {.path = "MacroTypeFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -342,7 +342,7 @@ static void test_type_fragment_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "macro_rules! declare { ($kind:ty): { value: $kind = None }; }"
+  const char *invalid = "macro_rules! declare { ($kind:ty) -> { value: $kind = None }; }"
                         "fn Main() { declare!(); }";
   source = (XsSource){.path = "MacroTypeFragmentInvalid.xs", .text = invalid, .length = strlen(invalid)};
   xs_diagnostics_init(&diagnostics);
@@ -355,7 +355,7 @@ static void test_type_fragment_expansion(void)
 
 static void test_path_fragment_expansion(void)
 {
-  const char *text = "macro_rules! call { ($target:path): { $target(); }; }"
+  const char *text = "macro_rules! call { ($target:path) -> { $target(); }; }"
                      "fn Main() { call!(Missing.Call); }";
   XsSource source = {.path = "MacroPathFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -382,7 +382,7 @@ static void test_path_fragment_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "macro_rules! call { ($target:path): { $target(); }; }"
+  const char *invalid = "macro_rules! call { ($target:path) -> { $target(); }; }"
                         "fn Main() { call!(); }";
   source = (XsSource){.path = "MacroPathFragmentInvalid.xs", .text = invalid, .length = strlen(invalid)};
   xs_diagnostics_init(&diagnostics);
@@ -396,7 +396,7 @@ static void test_path_fragment_expansion(void)
 static void test_pattern_fragment_expansion(void)
 {
   const char *text =
-      "macro_rules! match_it { ($case:pat): { match (value) { $case -> { return; }, else -> { return; }, } }; }"
+      "macro_rules! match_it { ($case:pat) -> { match (value) { $case -> { return; }, else -> { return; }, } }; }"
       "fn Main() { match_it!(None); }";
   XsSource source = {.path = "MacroPatternFragment.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -426,7 +426,7 @@ static void test_pattern_fragment_expansion(void)
 
 static void test_declaration_macro_expansion(void)
 {
-  const char *text = "macro_rules! make { (): { incomplete fn Generated(); }; } make!();";
+  const char *text = "macro_rules! make { () -> { incomplete fn Generated(); }; } make!();";
   XsSource source = {.path = "MacroDeclarationExpansion.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -460,7 +460,7 @@ static void test_declaration_macro_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid = "macro_rules! make { (): {}; } make!();";
+  const char *invalid = "macro_rules! make { () -> {}; } make!();";
   source = (XsSource){.path = "MacroDeclarationExpansionInvalid.xs", .text = invalid, .length = strlen(invalid)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 33, &diagnostics, &tree));

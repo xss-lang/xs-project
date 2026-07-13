@@ -241,7 +241,7 @@ static void test_result_propagation_requires_result_return(void)
 static void test_macro_literal_initializer_expression_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! bad { (): { value: Int = \"bad\"; }; }\n"
+                     "macro_rules! bad { () -> { value: Int = \"bad\"; }; }\n"
                      "fn Main() { bad!(); }\n";
   CHECK(check_macro_expression_error(main, 96));
 }
@@ -249,7 +249,7 @@ static void test_macro_literal_initializer_expression_errors(void)
 static void test_macro_binding_reassignment_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! bad { (): { value = 2; }; }\n"
+                     "macro_rules! bad { () -> { value = 2; }; }\n"
                      "fn Main() { val value: Int = 1; bad!(); }\n";
   CHECK(check_macro_expression_error(main, 97));
 }
@@ -258,7 +258,7 @@ static void test_macro_static_runtime_initializer_errors(void)
 {
   const char *main = "module App;\n"
                      "fn RuntimeValue() -> Int { return 1; }\n"
-                     "macro_rules! bad { (): { static value: Int = RuntimeValue(); }; }\n"
+                     "macro_rules! bad { () -> { static value: Int = RuntimeValue(); }; }\n"
                      "fn Main() { bad!(); }\n";
   CHECK(check_macro_expression_error(main, 100));
 }
@@ -266,7 +266,7 @@ static void test_macro_static_runtime_initializer_errors(void)
 static void test_macro_assignment_literal_expression_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! bad { (): { value = \"bad\"; }; }\n"
+                     "macro_rules! bad { () -> { value = \"bad\"; }; }\n"
                      "fn Main() { value: Int = 1; bad!(); }\n";
   CHECK(check_macro_expression_error(main, 98));
 }
@@ -274,7 +274,7 @@ static void test_macro_assignment_literal_expression_errors(void)
 static void test_macro_return_literal_expression_errors(void)
 {
   const char *main = "module App;\n"
-                     "macro_rules! bad { (): { return \"bad\"; }; }\n"
+                     "macro_rules! bad { () -> { return \"bad\"; }; }\n"
                      "fn Main() -> Int { bad!(); }\n";
   CHECK(check_macro_expression_error(main, 99));
 }
@@ -289,7 +289,7 @@ static void test_op_referential_transparency_rules(void)
       !check_single_source_expressions("module App;\nop Bad() -> Int { value: Int = 1; value = 2; return value; }\n"));
   CHECK(!check_single_source_expressions("module App;\nop Bad() -> User { return new(); }\n"));
   CHECK(
-      !check_single_source_expressions("module App;\nmacro_rules! bad { (): { 1 }; }\nop Bad() -> Int { bad!(); }\n"));
+      !check_single_source_expressions("module App;\nmacro_rules! bad { () -> { 1 }; }\nop Bad() -> Int { bad!(); }\n"));
 }
 
 static void test_property_accessor_expression_rules(void)

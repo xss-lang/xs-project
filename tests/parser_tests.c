@@ -93,7 +93,7 @@ static void test_macro_definition(void)
 {
   XsAst ast;
   XsDiagnostics diagnostics;
-  CHECK(parse("macro_rules! say { ($x:expr): { $x; }; } fn Main() {}", &ast, &diagnostics));
+  CHECK(parse("macro_rules! say { ($x:expr) -> { $x; }; } fn Main() {}", &ast, &diagnostics));
   CHECK(ast.count == 2);
   CHECK(ast.items[0].kind == XS_AST_MACRO);
   xs_ast_free(&ast);
@@ -104,7 +104,7 @@ static void test_macro_rule_semicolon_required(void)
 {
   XsAst ast;
   XsDiagnostics diagnostics;
-  CHECK(!parse("macro_rules! invalid { (): {} }", &ast, &diagnostics));
+  CHECK(!parse("macro_rules! invalid { () -> {} }", &ast, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_ast_free(&ast);
   xs_diagnostics_free(&diagnostics);
