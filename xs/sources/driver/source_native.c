@@ -618,6 +618,10 @@ static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, co
                                const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                XsDiagnostics *diagnostics, XsMirError *error);
 
+static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+                                  const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                                  XsDiagnostics *diagnostics, XsMirError *error);
+
 static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
                                   const NativeProgram *program, XsText current_function, const XsSyntaxNode *block,
                                   XsDiagnostics *diagnostics, XsMirError *error)
@@ -632,6 +636,9 @@ static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current,
     bool lowered =
         statement->kind == XS_SYNTAX_STMT_IF
             ? lower_if_statement(function, current, context, program, current_function, statement, diagnostics, error)
+        : statement->kind == XS_SYNTAX_STMT_WHILE
+            ? lower_while_statement(function, current, context, program, current_function, statement, diagnostics,
+                                    error)
             : lower_assignment_statement(*current, context, program, current_function, statement, diagnostics, error);
     if(!lowered)
       return false;
@@ -676,6 +683,37 @@ static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, co
   return true;
 }
 
+static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+                                  const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                                  XsDiagnostics *diagnostics, XsMirError *error)
+{
+  if(statement->child_count != 2)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+                              "native source while statements require a condition and body") &&
+           false;
+  XsMirBlock *header = nullptr;
+  XsMirBlock *body = nullptr;
+  XsMirBlock *exit = nullptr;
+  if(xs_mir_function_append_block(function, "while.header", &header, error) != XS_MIR_OK ||
+     xs_mir_function_append_block(function, "while.body", &body, error) != XS_MIR_OK ||
+     xs_mir_function_append_block(function, "while.exit", &exit, error) != XS_MIR_OK ||
+     xs_mir_block_set_goto(*current, header, error) != XS_MIR_OK)
+    return false;
+  XsMirValueId condition = 0;
+  bool invert = false;
+  if(!lower_bool_expression(header, context, program, current_function, statement->children[0], diagnostics, &condition,
+                            &invert, error) ||
+     xs_mir_block_set_branch(header, condition, invert ? exit : body, invert ? body : exit, error) != XS_MIR_OK)
+    return false;
+  XsMirBlock *body_current = body;
+  if(!lower_statement_block(function, &body_current, context, program, current_function, statement->children[1],
+                            diagnostics, error) ||
+     xs_mir_block_set_goto(body_current, header, error) != XS_MIR_OK)
+    return false;
+  *current = exit;
+  return true;
+}
+
 bool xs_source_native_lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,
                                           const NativeProgram *program, XsDiagnostics *diagnostics, XsMirError *error)
 {
@@ -689,9 +727,11 @@ bool xs_source_native_lower_function_body(XsMirFunction *function, XsMirBlock *e
         statement->kind == XS_SYNTAX_STMT_VARIABLE
             ? lower_local_statement(function, current, &context, program, native->name->text, statement, diagnostics,
                                     error)
-        : statement->kind == XS_SYNTAX_STMT_IF
-            ? lower_if_statement(function, &current, &context, program, native->name->text, statement, diagnostics,
-                                 error)
+        : statement->kind == XS_SYNTAX_STMT_IF ? lower_if_statement(function, &current, &context, program,
+                                                                    native->name->text, statement, diagnostics, error)
+        : statement->kind == XS_SYNTAX_STMT_WHILE
+            ? lower_while_statement(function, &current, &context, program, native->name->text, statement, diagnostics,
+                                    error)
             : lower_assignment_statement(current, &context, program, native->name->text, statement, diagnostics, error);
     if(!lowered)
       return false;

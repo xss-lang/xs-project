@@ -25,6 +25,8 @@ source-to-native executable pipeline.
   including multiple assignments in a supported `if` branch.
 - Source-native conditional assignment lowering now supports nested `if` statements. The driver was split into expression/
   statement lowering and program/native-module construction units to keep the C23 implementation modular.
+- Source-native `while` now lowers a supported Bool condition, assignment-only body, and loop exit through MIR CFG,
+  XLIL branches, and LLVM IR.
 
 ## 0.0.8 - 2026-07-13
 

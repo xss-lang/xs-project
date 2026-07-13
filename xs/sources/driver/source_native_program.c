@@ -87,10 +87,12 @@ static bool validate_shape(const XsSyntaxNode *function, bool is_main, XsDiagnos
   for(size_t index = 0; index + 1 < block->child_count; ++index)
   {
     XsSyntaxKind kind = block->children[index]->kind;
-    if(kind != XS_SYNTAX_STMT_VARIABLE && kind != XS_SYNTAX_STMT_EXPRESSION && kind != XS_SYNTAX_STMT_IF)
+    if(kind != XS_SYNTAX_STMT_VARIABLE && kind != XS_SYNTAX_STMT_EXPRESSION && kind != XS_SYNTAX_STMT_IF &&
+       kind != XS_SYNTAX_STMT_WHILE)
       return xs_diagnostics_add(
                  diagnostics, XS_DIAGNOSTIC_ERROR, xs_source_native_node_span(block->children[index]),
-                 "native source main body supports only local declarations, assignments, and if statements "
+                 "native source main body supports only local declarations, assignments, if statements, and while "
+                 "statements "
                  "before return for now") &&
              false;
   }
