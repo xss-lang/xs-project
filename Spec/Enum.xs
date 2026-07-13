@@ -19,6 +19,9 @@
 // - Non-typed variants cannot be overloaded.
 // - Regular enum variant names must be unique.
 // - enum data may inherit any number of enum data types, but no other type category.
+// - Standard generic enum data families may appear unspecialized in a base list.
+// - A derived enum data remains usable as its base and inherits its variants and operations.
+// - Optional<T> provides `Some: T` and `None`; Result<T, E> provides `Ok: T` and `Error: E`.
 // - Regular enum cannot inherit.
 //
 // Visibility modifiers:
@@ -81,6 +84,18 @@ enum data ValueMetadata {
 enum data RichValue : TaggedValue, ValueMetadata, Value {
     Number: Long,
 }
+
+enum data Option : Optional {
+    Deferred: Str,
+}
+
+option: Optional<Str> = Option::Some("cached");
+
+enum data MyResult : Result {
+    Cached: Int,
+}
+
+result: Result<Int, Error> = MyResult::Ok(7);
 
 
 // data enum overload selection

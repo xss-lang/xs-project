@@ -128,16 +128,31 @@ static void test_standard_generic_types(void)
   const char *valid = "module App;\n"
                       "fn Read() -> Optional<Str> { return None; }\n"
                       "fn ReadCanonical() -> std::optional::Optional<Str> { return None; }\n"
-                      "fn Save() -> Result<Int> { return Ok(1); }\n"
+                      "fn Save() -> Result<()> { return Ok(()); }\n"
                       "fn Load() -> Result<Int, Error> { return Ok(1); }\n"
+                      "fn ValueError() -> Result<(), Int> { return Ok(()); }\n"
+                      "fn UnitError() -> Result<Int, ()> { return Ok(1); }\n"
                       "fn LoadCanonical() -> std::result::Result<Int, Error> { return Ok(1); }\n"
                       "fn Compact() -> Result<Int, Error> { return Ok(1); }\n";
   CHECK(check_single_source(valid));
   CHECK(!check_single_source("module App;\nfn Missing() -> Optional { return None; }\n"));
   CHECK(!check_single_source("module App;\nfn Missing() -> Result { return Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn Incomplete() -> Result<Int> { return Ok(1); }\n"));
   CHECK(!check_single_source("module App;\nfn TooMany() -> Result<Int, Error, Int> { return "
                              "Ok(1); }\n"));
   CHECK(!check_single_source("module App;\nfn BadError() -> Error<Int> { return Ok(1); }\n"));
+}
+
+static void test_result_payload_types_and_error_inheritance(void)
+{
+  const char *valid = "module App;\n"
+                      "class MyError : Error {}\n"
+                      "class DetailedError : MyError {}\n"
+                      "fn Direct() -> Result<Int, MyError> { return Ok(1); }\n"
+                      "fn Indirect() -> Result<Int, DetailedError> { return Ok(1); }\n"
+                      "fn PrimitiveError() -> Result<(), Int> { return Ok(()); }\n"
+                      "fn UnitError() -> Result<Int, ()> { return Ok(1); }\n";
+  CHECK(check_single_source(valid));
 }
 
 static void test_else_type_placeholder(void)
@@ -445,6 +460,7 @@ int main(void)
   test_local_user_type();
   test_generic_type_arity();
   test_standard_generic_types();
+  test_result_payload_types_and_error_inheritance();
   test_else_type_placeholder();
   test_standard_cffi_types();
   test_duplicate_generic_parameter_names();

@@ -8,12 +8,6 @@ module programs::inventory_service;
 
 imports collections, thread, sync;
 
-enum data ServiceError {
-    UnknownProduct: Str,
-    NotEnoughStock: Str,
-    Closed: Str,
-}
-
 data Product {
     sku: Str;
     name: Str;
@@ -51,9 +45,7 @@ class InventoryRepository : Repository<Str, Product> {
 
     fn get(key: Str) -> Result<&Product, Error> {
         if (!self.products.contains(key)) {
-            return Error(Error {
-                message: "unknown product",
-            });
+            return Error(new Error("unknown product"));
         }
         return Ok(&self.products[key]);
     }
@@ -66,9 +58,7 @@ class InventoryRepository : Repository<Str, Product> {
         product: &mut Product = &mut self.products[line.sku];
 
         if (product.stock < line.quantity) {
-            return Error(Error {
-                message: "not enough stock",
-            });
+            return Error(new Error("not enough stock"));
         }
 
         product.stock -= line.quantity;
@@ -151,7 +141,7 @@ fn main() -> Result<()> {
         worker: OrderWorker = new OrderWorker(worker_inventory);
 
         while (true) {
-            maybe_order: Result<Order, SyncError> = receipts.recv();
+            maybe_order: Result<Order, Error> = receipts.recv();
             if (maybe_order.is_error()) {
                 break;
             }
@@ -165,7 +155,7 @@ fn main() -> Result<()> {
     orders.close();
 
     while (true) {
-        maybe_receipt: Result<Receipt, SyncError> = result_reader.recv();
+        maybe_receipt: Result<Receipt, Error> = result_reader.recv();
         if (maybe_receipt.is_error()) {
             break;
         }

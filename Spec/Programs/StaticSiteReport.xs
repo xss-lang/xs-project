@@ -8,11 +8,6 @@ module programs::static_site_report;
 
 imports collections, fs, optional, stdio, process;
 
-enum data SiteError {
-    Io: Error,
-    MissingTitle: Str,
-}
-
 data PageInfo {
     path: Str;
     title: Str;
@@ -27,9 +22,7 @@ class Markdown {
             }
         }
 
-        return Error(Error {
-            message: "missing page title",
-        });
+        return Error(new Error("missing page title"));
     }
 
     static fn count_words(text: Str) -> Int {

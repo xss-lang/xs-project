@@ -31,6 +31,13 @@ source-to-native executable pipeline.
 
 ### Changed
 
+- `Optional<T>` and `Result<T, E>` are compiler-provided `enum data` families with explicit `Some`/`None` and
+  `Ok`/`Error` variants. User `enum data` declarations may inherit those unspecialized standard families and remain
+  usable as their nominal bases.
+- `Result<T, E>` accepts both payload types without an error-class bound. The only one-argument form is `Result<()>`,
+  which defaults its error payload to the standard `Error` class; incomplete forms such as `Result<Int>` are rejected.
+- Runtime and standard-library failures use the single standard `Error` class by default. Applications may derive custom
+  error classes from it; former official domain-specific error and exception types are no longer part of the Spec.
 - The canonical `format!(...)` expansion is `std::fmt::format(format_args!(...))` with no synthetic source-level block.
 - `format!` and the `std::fmt::*` API are both provided by the non-prelude `Stdio` module; importing Stdio makes that
   standard formatting surface available.

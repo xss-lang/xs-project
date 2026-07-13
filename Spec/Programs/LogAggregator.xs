@@ -8,11 +8,6 @@ module programs::log_aggregator;
 
 imports collections, fs, optional, stdio, process;
 
-enum data LogError {
-    Io: Error,
-    InvalidLine: Str,
-}
-
 data LogEntry {
     level: Str;
     message: Str;
@@ -22,9 +17,7 @@ class LogParser {
     static fn parse(line: Str) -> Result<LogEntry, Error> {
         parts: std::collections::Vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
-            return Error(Error {
-                message: "invalid log line",
-            });
+            return Error(new Error("invalid log line"));
         }
 
         return Ok(LogEntry {

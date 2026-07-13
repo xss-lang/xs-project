@@ -170,7 +170,8 @@ The documented compilation order is preserved:
   external/incomplete, and static foreign globals are marked external/static. HIR currently accepts the first explicit C ABI
   shape, `#[repr(C)] extern "C"`, and rejects unsupported ABI strings or missing/non-C representation attributes. Library
   resolution, symbol binding, and backend lowering remain HIR/backend work.
-- Recoverable failures use `Result<T, E>` and postfix `@` propagation. The removed exception spellings are ordinary
+- Recoverable failures use the compiler-provided `Result<T, E>` enum data and postfix `@` propagation. Both payload types
+  are unrestricted. The standard `Error` class remains available as a root for nominal application error classes. The removed exception spellings are ordinary
   identifiers and no longer introduce declarations, statements, or control-flow regions.
 - `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
   constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
@@ -200,7 +201,10 @@ The documented compilation order is preserved:
   parser diagnostic.
 - Regular enum variants cannot contain payload types and must have unique names. `enum data` requires at least one typed
   variant, rejects tuple payloads, and permits same-name typed variants only when their payload types differ. Constructor
-  overload selection remains a later HIR type-checking responsibility.
+  overload selection remains a later HIR type-checking responsibility. The compiler-provided generic families are
+  `Optional<T> { Some: T, None }` and `Result<T, E> { Ok: T, Error: E }`. An `enum data` declaration may inherit an
+  unspecialized standard family (`enum data Option : Optional`, `enum data MyResult : Result`); the derived declaration
+  remains nominally usable as the base and inherits its variants and operations.
 - Function expressions use inferred signatures: `fn(a, b) { a + b }` and `move fn() { work() }` are represented as
   `XS_SYNTAX_EXPR_FUNCTION` nodes. Parameter and return types are supplied by context rather than written on the lambda;
   `move` capture is a separate AST flag.
@@ -208,8 +212,8 @@ The documented compilation order is preserved:
   otherwise-untyped `new()` spelling is accepted only inside the dedicated `else: expression;` discard form.
 - Data object initialization uses normal object field literals, and field access uses ordinary member access.
 - Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 HIR
-  expression checker now requires an enclosing function whose return type is `Result<T, E>` or shorthand
-  `Result<T, E>`. It does not yet prove that the propagated operand itself has a matching Result type; full propagation
+  expression checker now requires an enclosing function whose return type is `Result<T, E>` or unit shorthand
+  `Result<()>`. It does not yet prove that the propagated operand itself has a matching Result type; full propagation
   control-flow lowering is handled by later HIR/MIR work.
 - `if`, `for`, for-each, `while`, `match`, `return`, `break`, `continue`, and `else: expression;` are parsed. The `else:`
   statement explicitly discards its expression value, analogous
@@ -298,19 +302,19 @@ validation does not decide dispatch, override, or overload selection.
 - Semantically, `Str` is the X# counterpart of Rust's `&'static str`: an immutable static string reference. Its runtime
   layout remains deferred and it is not yet lowered to XLIL storage.
 - `Optional<T>` resolves as if the compiler had inserted `imports optional; using namespace std::optional;`, making
-  `std::optional::Optional<T>` available as `Optional<T>`. Optional value constructors are written as `None` and
-  `Some(...)`, made available through that implicit namespace using. It is not an enum
-  lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
+  `std::optional::Optional<T>` available as `Optional<T>`. It is compiler-provided enum data with `Some: T` and
+  payload-free `None` variants, made available through that implicit namespace using. `?.`, `??`, `??=`, and postfix `!`
+  are represented syntactically; `Optional<T>` has automatic unboxing to
   `T`, and failed unboxing is modeled through the standard `Result`/`Error` direction. `Optional<Str>` is special at the
   language model level: it behaves like Rust's `Option<String>`, meaning the
   optional string payload is owned/dynamic instead of an optional borrowed/static `Str` reference. Full flow-sensitive
   Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
-  `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand `Result<T>`, and the standard error type `Error`.
-  The compiler treats the `std::result` namespace as implicitly usable, so `imports result;` is optional for `Result<T>`,
-  `Result<T, E>`, `Ok(...)`, and `Error(...)`. Unit success is canonically written as `Result<()>`. This is name and
-  arity validation only. Postfix `@` and direct `Ok(...)`/`Error(...)` constructor use require an enclosing function with
+  `std::result::Result<(), E>`, `std::result::Result<T, E>`, the special shorthand `Result<()>`, and the standard error type `Error`.
+  The compiler treats the `std::result` namespace as implicitly usable, so `imports result;` is optional for `Result<T, E>`,
+  `Result<T, E>`, `Ok(...)`, and `Error(...)`. The only one-argument form is `Result<()>`, defaulting its error payload to
+  `Error`; `Result<Int>` is rejected as incomplete. This is name and arity validation only. Postfix `@` and direct `Ok(...)`/`Error(...)` constructor use require an enclosing function with
   a Result return type; constructor payload checking and complete propagation lowering remain later semantic work.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
@@ -358,7 +362,7 @@ checks, trait/interface compatibility, or ABI/layout decisions.
 
 The growing semantic-analysis and type-checking implementation now starts in the isolated Rust `xslang` crate instead of
 adding new semantic rules to the old C23 HIR prototypes. The first checked Rust rule validates that `await` expressions occur
-only inside async function bodies. `xslang` also carries the first Result propagation type rule: `Result<T>@` and
+only inside async function bodies. `xslang` also carries the first Result propagation type rule: `Result<()>@` and
 `Result<T, E>@` have success type `T`, require an enclosing Result return type with a compatible error channel, and remain
 deferred at HIR-to-MIR lowering until error-return control-flow lowering exists. The first integration boundary is now
 active in the C23 driver: the frontend flattens every macro-materialized AST into a versioned in-memory packet containing
@@ -405,7 +409,7 @@ object, and native `.xse` emission path. Unsupported source forms continue throu
 until their Rust HIR/MIR lowering is complete; HIR and MIR remain independent of LLVM in both paths.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
-`Result<T>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
+`Result<()>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
 callee must also return a Result type. Imported calls, method calls, local function values, and full success/error
 compatibility remain the Rust compiler-core direction and later C/Rust integration work.
 
@@ -413,7 +417,7 @@ compatibility remain the Rust compiler-core direction and later C/Rust integrati
 early-return intent model before MIR lowering. If a raw `ResultPropagation` expression reaches MIR lowering, that is treated
 as a pipeline ordering error and is rejected instead of becoming a backend primitive.
 
-For `xslang` propagation checking and desugaring, single-argument `Result<T>` uses the standard `Error` error type.
+For `xslang` propagation checking and desugaring, the single-argument `Result<()>` form uses standard `Error` as its error type.
 
 The MIR lowerer has a separate `DesugaredFunction` entry point. It can lower desugared functions that contain only currently
 supported expression forms, but explicit ResultMatch nodes remain deferred until Result-aware MIR control-flow and return

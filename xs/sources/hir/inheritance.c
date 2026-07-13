@@ -65,6 +65,19 @@ static bool is_data_enum(const XsHirSymbol *symbol)
          (symbol->syntax->flags & XS_SYNTAX_FLAG_DATA_ENUM) != 0;
 }
 
+static bool standard_enum_data_family(const XsSyntaxNode *type)
+{
+  const XsSyntaxNode *named = base_named_type(type);
+  const XsSyntaxNode *path = xs_hir_first_child_kind(named, XS_SYNTAX_PATH);
+  char *name = xs_hir_path_to_string(path);
+  if(name == nullptr)
+    return false;
+  bool matches = strcmp(name, "Optional") == 0 || strcmp(name, "std.optional.Optional") == 0 ||
+                 strcmp(name, "Result") == 0 || strcmp(name, "std.result.Result") == 0;
+  free(name);
+  return matches;
+}
+
 static bool supports_base_list(const XsHirSymbol *symbol)
 {
   return symbol != nullptr && (symbol->kind == XS_HIR_SYMBOL_CLASS || symbol->kind == XS_HIR_SYMBOL_INTERFACE ||
@@ -177,7 +190,13 @@ static bool validate_base(const XsHirSymbol *owner, const XsSyntaxNode *type, co
 {
   const XsHirSymbol *base = resolve_base(type, owner->namespace_name, symbols, imports);
   if(base == nullptr)
-    return true;
+  {
+    if(!standard_enum_data_family(type))
+      return true;
+    if(is_data_enum(owner))
+      return true;
+    return report(diagnostics, type, "only enum data types may inherit standard enum data families");
+  }
   bool success = true;
   if(!supports_base_list(base))
     success = report(diagnostics, type, "base-list entry does not resolve to an inheritable type") && success;

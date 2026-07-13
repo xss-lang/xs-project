@@ -725,59 +725,10 @@ impl Module
   }
 }
 
-#[must_use]
-pub fn type_name(value_type: Type) -> &'static str
-{
-  match value_type.kind
-  {
-    TypeKind::Void => "void",
-    TypeKind::Bool => "bool",
-    TypeKind::U8 => "u8",
-    TypeKind::I8 => "i8",
-    TypeKind::U16 => "u16",
-    TypeKind::I16 => "i16",
-    TypeKind::U32 => "u32",
-    TypeKind::I32 => "i32",
-    TypeKind::U64 => "u64",
-    TypeKind::I64 => "i64",
-    TypeKind::U128 => "u128",
-    TypeKind::I128 => "i128",
-    TypeKind::F16 => "f16",
-    TypeKind::F32 => "f32",
-    TypeKind::F64 => "f64",
-    TypeKind::F128 => "f128",
-  }
-}
-
-#[must_use]
-pub fn type_from_name(name: &str) -> Option<Type>
-{
-  let kind = match name
-  {
-    "void" => TypeKind::Void,
-    "bool" => TypeKind::Bool,
-    "u8" => TypeKind::U8,
-    "i8" => TypeKind::I8,
-    "u16" => TypeKind::U16,
-    "i16" => TypeKind::I16,
-    "u32" => TypeKind::U32,
-    "i32" => TypeKind::I32,
-    "u64" => TypeKind::U64,
-    "i64" => TypeKind::I64,
-    "u128" => TypeKind::U128,
-    "i128" => TypeKind::I128,
-    "f16" => TypeKind::F16,
-    "f32" => TypeKind::F32,
-    "f64" => TypeKind::F64,
-    "f128" => TypeKind::F128,
-    _ => return None,
-  };
-  Some(Type { kind })
-}
-
 #[cfg(test)]
 mod tests
 {
+  use super::super::{type_from_name, type_name};
   use super::*;
 
   #[test]

@@ -29,11 +29,6 @@ static const StandardTypeInfo standard_types[] = {
     {.name = "std.optional.Optional", .min_arity = 1, .max_arity = 1},
     {.name = "std.result.Result", .min_arity = 1, .max_arity = 2},
     {.name = "std.result.Error", .min_arity = 0, .max_arity = 0},
-    {.name = "std.result.IO.error", .min_arity = 0, .max_arity = 0},
-    {.name = "Result", .min_arity = 1, .max_arity = 2},
-    {.name = "Result.Result", .min_arity = 1, .max_arity = 2},
-    {.name = "Result.Error", .min_arity = 0, .max_arity = 0},
-    {.name = "Result.IO.error", .min_arity = 0, .max_arity = 0},
     {.name = "std.cffi.CStr", .min_arity = 0, .max_arity = 0},
     {.name = "std.cffi.CString", .min_arity = 0, .max_arity = 0},
     {.name = "std.cffi.File", .min_arity = 0, .max_arity = 0},
@@ -317,6 +312,29 @@ static bool standard_type_arity_ok(const StandardTypeInfo *type, size_t actual)
   return type != nullptr && actual >= type->min_arity && actual <= type->max_arity;
 }
 
+static bool standard_type_is_result(const StandardTypeInfo *type)
+{
+  return type != nullptr && strcmp(type->name, "std.result.Result") == 0;
+}
+
+static bool standard_enum_data_family_base(const XsSyntaxNode *specifier)
+{
+  if(specifier == nullptr || specifier->kind != XS_SYNTAX_BASE_SPECIFIER || specifier->child_count == 0)
+    return false;
+  const XsSyntaxNode *type = specifier->children[0];
+  if(type->kind != XS_SYNTAX_TYPE_NAMED)
+    return false;
+  const StandardTypeInfo *standard = find_standard_type_from_path(first_child_kind(type, XS_SYNTAX_PATH));
+  return standard != nullptr &&
+         (strcmp(standard->name, "std.optional.Optional") == 0 || standard_type_is_result(standard));
+}
+
+static bool report_incomplete_result_type(XsDiagnostics *diagnostics, const XsSyntaxNode *type)
+{
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type),
+                            "single-argument Result is valid only as Result<()>; write both Result<T, E> payload types");
+}
+
 static bool report_constraint_kind(XsDiagnostics *diagnostics, const XsSyntaxNode *type, const char *path)
 {
   char message[512];
@@ -452,6 +470,8 @@ static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *name
     if(!standard_type_arity_ok(standard, actual))
       success = report_generic_arity_range(diagnostics, type, name, standard->min_arity, standard->max_arity, actual) &&
                 success;
+    if(standard_type_is_result(standard) && actual == 1 && type->children[1]->kind != XS_SYNTAX_TYPE_UNIT)
+      success = report_incomplete_result_type(diagnostics, type) && success;
     free(name);
   }
   if(symbol != nullptr)
@@ -578,6 +598,8 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
   if(node->kind == XS_SYNTAX_GENERIC_PARAMETER)
     return resolve_generic_parameter_constraints(node, namespace_name, current_file_id, active, symbols, imports,
                                                  diagnostics);
+  if(standard_enum_data_family_base(node))
+    return true;
   if(node->kind == XS_SYNTAX_TYPE_NAMED || node->kind == XS_SYNTAX_TYPE_GENERIC || node->kind == XS_SYNTAX_TYPE_ARRAY ||
      node->kind == XS_SYNTAX_TYPE_FIXED_ARRAY || node->kind == XS_SYNTAX_TYPE_POINTER ||
      node->kind == XS_SYNTAX_TYPE_REFERENCE || node->kind == XS_SYNTAX_TYPE_MUTABLE_REFERENCE ||

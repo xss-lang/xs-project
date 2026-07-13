@@ -4,8 +4,8 @@
 // Result module:
 
 //
-// Result provides explicit success/error values. Recoverable failures use
-// Result<T> or Result<T, E>, and postfix @ propagates an Error value.
+// Result provides explicit success/error values. Result<T, E> is an enum data
+// family and both payload types are unrestricted. Postfix @ propagates E.
 //
 
 imports fs, stdio;
@@ -13,18 +13,29 @@ imports fs, stdio;
 
 // result data model
 
-// The compiler provides Result<T, E> and its Ok(T)/Error(E) variants. User
-// source does not redeclare that enum data type.
+// The compiler provides the Result<T, E> enum data family with `Ok: T` and
+// `Error: E` variants. The variant representation is class-backed. User source
+// does not redeclare that standard enum data type.
+// std::result::Error is the standard root error class and accepts a Str message.
+// Application error classes may derive from it nominally.
 
-data Error {
-    message: Str,
+class ParseError : Error {
 }
 
-// Result<T> is the canonical shorthand for Result<T, Error>.
-// Unit success is written as Result<()>, not Result<(), Error>.
+// Single-argument Result is valid only as Result<()>, which uses Error as its
+// default error payload. Other success types must write both payloads:
+// Result<Int, Error>, Result<(), Int>, and Result<Int, ()> are valid;
+// Result<Int> is incomplete and invalid.
 // Result is not the default return type. A function with no written return type
 // returns unit. Other functions may declare another type. A body that uses postfix `@`, constructs
 // `Ok(...)`, or constructs `Error(...)` must declare a Result return type.
+
+// Standard generic enum data families may be inherited without specializing
+// their parameters in the base list. The derived enum data remains a nominal
+// subtype of Result and may use inherited Result variants and operations.
+enum data MyResult : Result {
+    Cached: Int,
+}
 
 
 // success construction

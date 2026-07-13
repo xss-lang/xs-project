@@ -8,12 +8,6 @@ module programs::chat_server;
 
 imports collections, sync, thread, net;
 
-enum data ChatError {
-    Io: Error,
-    Protocol: Str,
-    Closed,
-}
-
 data ClientId {
     value: Int;
 }

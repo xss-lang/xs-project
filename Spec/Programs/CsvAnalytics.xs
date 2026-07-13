@@ -8,11 +8,6 @@ module programs::csv_analytics;
 
 imports collections, stdio, fs, process;
 
-enum data CsvError {
-    Io: Error,
-    BadRow: Str,
-}
-
 data Sale {
     region: Str;
     product: Str;
@@ -30,9 +25,7 @@ class CsvParser {
     static fn parse_line(line: Str) -> Result<Sale, Error> {
         fields: std::collections::Vector<Str> = line.split(",");
         if (fields.length() != 4) {
-            return Error(Error {
-                message: "bad CSV row",
-            });
+            return Error(new Error("bad CSV row"));
         }
 
         return Ok(Sale {

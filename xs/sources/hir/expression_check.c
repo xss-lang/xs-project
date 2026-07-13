@@ -700,7 +700,7 @@ static const XsSyntaxNode *direct_call_return_type(const XsSyntaxNode *expressio
 static bool report_result_operand_error(XsDiagnostics *diagnostics, const XsSyntaxNode *node)
 {
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
-                            "Result propagation operand must return Result.Result<T, E>");
+                            "Result propagation operand must return Result<T, E>");
 }
 
 static const XsSyntaxNode *assignment_identifier_target(const XsSyntaxNode *node)
@@ -764,7 +764,7 @@ static bool check_result_propagation(const XsSyntaxNode *node, const CheckContex
     return true;
   }
   xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
-                     "Result propagation with '@' requires an enclosing function returning Result.Result<T, E>");
+                     "Result propagation with '@' requires an enclosing function returning Result<T, E>");
   return false;
 }
 

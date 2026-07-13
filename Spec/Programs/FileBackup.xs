@@ -8,11 +8,6 @@ module programs::file_backup;
 
 imports collections, stdio, fs, process;
 
-enum data BackupError {
-    Io: Error,
-    InvalidSource: Str,
-}
-
 data FileEntry {
     path: Str;
     relative: Str;
@@ -33,9 +28,7 @@ class BackupPlan {
 
     fn discover() -> Result<()> {
         if (!std::fs::is_dir(self.source_root)) {
-            return Error(Error {
-                message: "invalid backup source",
-            });
+            return Error(new Error("invalid backup source"));
         }
 
         for (path: Str in std::fs::walk_dir(self.source_root)) {

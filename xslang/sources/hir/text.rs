@@ -873,8 +873,7 @@ mod tests
     let function = DesugaredFunction { name: "TryWork".to_string(),
                                        return_type: Some(Type::Named("Result<()>".to_string())),
                                        locals: vec![Local { name: "work".to_string(),
-                                                            ty:
-                                                              Type::Named("Result<Long, Result.Error>".to_string()),
+                                                            ty: Type::Named("Result<Long, Error>".to_string()),
                                                             mutable: false,
                                                             span: span() }],
                                        body: vec![DesugaredStatement::Expr(DesugaredExpression::ResultMatch {
@@ -883,7 +882,7 @@ mod tests
         success_binding: "__xs_try_ok_0".to_string(),
         error_binding: "__xs_try_error_0".to_string(),
         success_type: Type::Primitive(PrimitiveType::Long),
-        error_type: Type::Named("Result.Error".to_string()),
+        error_type: Type::Named("Error".to_string()),
         span: span(),
       })] };
 
@@ -892,7 +891,7 @@ mod tests
     assert!(text.contains("function TryWork"));
     assert!(text.contains("result_match"));
     assert!(text.contains("ok __xs_try_ok_0: Long"));
-    assert!(text.contains("error __xs_try_error_0: Result.Error"));
+    assert!(text.contains("error __xs_try_error_0: Error"));
     assert!(text.contains("value\n          local work"));
     assert!(!text.contains("propagate"));
   }

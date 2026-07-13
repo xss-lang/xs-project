@@ -919,7 +919,7 @@ mod tests
   {
     let function = Function { name: "main".to_string(),
                               return_type: Some(Type::Named("Result<()>".to_string())),
-                              locals: vec![local("work", Type::Named("Result<Int>".to_string()), false)],
+                              locals: vec![local("work", Type::Named("Result<Int, Error>".to_string()), false)],
                               body: vec![Statement::Let {
                                 local: local("value", primitive(PrimitiveType::Int), false),
                                 initializer: Some(Expression::ResultPropagation {
@@ -933,19 +933,15 @@ mod tests
   }
 
   #[test]
-  fn validates_single_argument_result_as_default_error()
+  fn validates_unit_result_as_default_error()
   {
     let function = Function { name: "main".to_string(),
                               return_type: Some(Type::Named("Result<()>".to_string())),
-                              locals: vec![local("work", Type::Named("Result<Int>".to_string()), false)],
-                              body: vec![Statement::Let {
-                                local: local("value", primitive(PrimitiveType::Int), false),
-                                initializer: Some(Expression::ResultPropagation {
-                                  value: Box::new(Expression::Local { name: "work".to_string(),
-                                                                      span: span(4, 8) }),
-                                  span: span(4, 9),
-                                }),
-                              }] };
+                              locals: vec![local("work", Type::Named("Result<()>".to_string()), false)],
+                              body: vec![Statement::Expr(Expression::ResultPropagation {
+                                value: Box::new(Expression::Local { name: "work".to_string(), span: span(4, 8) }),
+                                span: span(4, 9),
+                              })] };
 
     assert!(TypeChecker::new().check_function(&function).is_empty());
   }
@@ -971,8 +967,8 @@ mod tests
   fn rejects_result_propagation_error_mismatch()
   {
     let function = Function { name: "main".to_string(),
-                              return_type: Some(Type::Named("Result<Bool, OtherError>".to_string())),
-                              locals: vec![local("work", Type::Named("Result<Int>".to_string()), false)],
+                              return_type: Some(Type::Named("Result<Bool, Other>".to_string())),
+                              locals: vec![local("work", Type::Named("Result<Int, Error>".to_string()), false)],
                               body: vec![Statement::Expr(Expression::ResultPropagation {
                                 value: Box::new(Expression::Local { name: "work".to_string(),
                                                                     span: span(4, 8) }),

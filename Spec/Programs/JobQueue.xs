@@ -8,11 +8,6 @@ module programs::job_queue;
 
 imports collections, optional, process, sync;
 
-enum data JobError {
-    EmptyQueue,
-    Failed: Str,
-}
-
 data Job {
     id: Int;
     command: Str;
@@ -59,9 +54,7 @@ class Worker {
     static async fn execute(job: Job) -> Result<()> {
         status: Int = await std::process::run(job.command);
         if (status != 0) {
-            return Error(Error {
-                message: "job failed",
-            });
+            return Error(new Error("job failed"));
         }
 
         return Ok();

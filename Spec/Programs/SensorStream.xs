@@ -8,11 +8,6 @@ module programs::sensor_stream;
 
 imports collections, hardware, thread, sync;
 
-enum data SensorError {
-    Disconnected: Str,
-    Cancelled,
-}
-
 data Reading {
     sensor_id: Str;
     value: Float;
@@ -34,7 +29,7 @@ class Sensor {
         self.unit = unit;
     }
 
-    async fn read() -> Task<Result<Optional<Reading>, SensorError>> {
+    async fn read() -> Task<Result<Optional<Reading>, Error>> {
         sample: Optional<Float> = await hardware::read_float(self.id);
 
         return Ok(sample?.map(fn(value) {

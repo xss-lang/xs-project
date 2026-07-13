@@ -74,7 +74,7 @@ fn rejects_desugared_result_match_until_cfg_lowering_exists()
       success_binding: "__xs_try_ok_0".to_string(),
       error_binding: "__xs_try_error_0".to_string(),
       success_type: primitive(PrimitiveType::Long),
-      error_type: Type::Named("Result.Error".to_string()),
+      error_type: Type::Named("Error".to_string()),
       span: span(4, 9),
     })] };
 

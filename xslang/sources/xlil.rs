@@ -5,9 +5,11 @@
 
 mod model;
 mod operations;
+mod type_names;
 
 pub use model::*;
 pub use operations::*;
+pub use type_names::*;
 
 pub mod lowering;
 pub mod parser;

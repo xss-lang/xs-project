@@ -8,12 +8,6 @@ module programs::bank_ledger;
 
 imports collections, process;
 
-enum data LedgerError {
-    UnknownAccount: Str,
-    InsufficientFunds: Str,
-    InvalidAmount: Int,
-}
-
 data Money {
     cents: Int;
     currency: Str;
@@ -51,18 +45,14 @@ class Ledger {
 
     fn apply(transfer: Transfer) -> Result<()> {
         if (transfer.amount.cents <= 0) {
-            return Error(Error {
-                message: "invalid transfer amount",
-            });
+            return Error(new Error("invalid transfer amount"));
         }
 
         from_account: &mut Account = self.account_mut(transfer.source_account)@;
         to_account: &mut Account = self.account_mut(transfer.target_account)@;
 
         if (from_account.balance.cents < transfer.amount.cents) {
-            return Error(Error {
-                message: "insufficient funds",
-            });
+            return Error(new Error("insufficient funds"));
         }
 
         from_account.balance.cents -= transfer.amount.cents;
@@ -73,9 +63,7 @@ class Ledger {
 
     fn account_mut(id: Str) -> Result<&mut Account, Error> {
         if (!self.accounts.contains(id)) {
-            return Error(Error {
-                message: "unknown account",
-            });
+            return Error(new Error("unknown account"));
         }
         return Ok(&mut self.accounts[id]);
     }

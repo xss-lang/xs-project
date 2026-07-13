@@ -13,13 +13,19 @@ pub(crate) fn result_type_parts(ty: &Type) -> Option<(Type, Type)>
     return None;
   };
   let generic = name.strip_prefix("Result<")
-                    .or_else(|| name.strip_prefix("Result.Result<"))?;
+                    .or_else(|| name.strip_prefix("std::result::Result<"))
+                    .or_else(|| name.strip_prefix("std.result.Result<"))?;
   let inner = generic.strip_suffix('>')?;
   if let Some((success, error)) = split_top_level_pair(inner)
   {
     return Some((parse_named_or_primitive(success.trim()), parse_named_or_primitive(error.trim())));
   }
-  Some((parse_named_or_primitive(inner.trim()), Type::Named("Result.Error".to_string())))
+  (inner.trim() == "()").then(|| (Type::Named("()".to_string()), standard_error()))
+}
+
+fn standard_error() -> Type
+{
+  Type::Named("Error".to_string())
 }
 
 fn split_top_level_pair(text: &str) -> Option<(&str, &str)>
@@ -61,4 +67,27 @@ fn parse_named_or_primitive(name: &str) -> Type
     _ => None,
   };
   primitive.map_or_else(|| Type::Named(name.to_string()), Type::Primitive)
+}
+
+#[cfg(test)]
+mod tests
+{
+  use super::*;
+
+  #[test]
+  fn accepts_two_payloads_and_unit_shorthand()
+  {
+    assert_eq!(result_type_parts(&Type::Named("Result<(), Int>".to_string())),
+               Some((Type::Named("()".to_string()), Type::Primitive(PrimitiveType::Int))));
+    assert_eq!(result_type_parts(&Type::Named("Result<Int, ()>".to_string())),
+               Some((Type::Primitive(PrimitiveType::Int), Type::Named("()".to_string()))));
+    assert_eq!(result_type_parts(&Type::Named("Result<()>".to_string())),
+               Some((Type::Named("()".to_string()), Type::Named("Error".to_string()))));
+  }
+
+  #[test]
+  fn rejects_incomplete_single_payload_result()
+  {
+    assert_eq!(result_type_parts(&Type::Named("Result<Int>".to_string())), None);
+  }
 }

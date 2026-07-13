@@ -8,11 +8,6 @@ module programs::package_resolver;
 
 imports collections, process;
 
-enum data ResolveError {
-    UnknownPackage: Str,
-    Cycle: Str,
-}
-
 enum VisitState {
     White,
     Gray,
@@ -41,16 +36,14 @@ class PackageGraph {
         self.states[package.name] = VisitState::White;
     }
 
-    fn resolve(root: Str) -> Result<std::collections::Vector<Package>, ResolveError> {
+    fn resolve(root: Str) -> Result<std::collections::Vector<Package>, Error> {
         self.visit(root)@;
         return Ok(self.ordered);
     }
 
     fn visit(name: Str) -> Result<()> {
         if (!self.packages.contains(name)) {
-            return Error(Error {
-                message: "unknown package",
-            });
+            return Error(new Error("unknown package"));
         }
 
         state: VisitState = self.states[name];
@@ -59,9 +52,7 @@ class PackageGraph {
                 return;
             },
             VisitState::Gray -> {
-                return Error(Error {
-                    message: "dependency cycle",
-                });
+                return Error(new Error("dependency cycle"));
             },
             VisitState::White -> {
             },

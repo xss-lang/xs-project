@@ -6,7 +6,7 @@
 //
 // Process execution is provided by std::process::
 //
-// X# uses Result<T, E> for recoverable process and I/O failures.
+// X# uses Result<T, Error> for recoverable process and I/O failures.
 //
 // Raw shell execution is disabled by default. Shell execution must be
 // explicitly enabled with .shell(true).
@@ -75,22 +75,13 @@ fn run_formatter() -> Result<()> {
 
 // custom error model
 
-enum data LoginError {
-    InvalidUser: Str,
-    Locked: Str,
-}
-
 fn login(user: Str) -> Result<()> {
     if (user.length() == 0) {
-        return Error(Error {
-            message: "invalid user",
-        });
+        return Error(new Error("invalid user"));
     }
 
     if (user == "root") {
-        return Error(Error {
-            message: "locked user",
-        });
+        return Error(new Error("locked user"));
     }
 
     return Ok();
@@ -106,9 +97,7 @@ fn read_required_line() -> Result<Str, Error> {
         .read_line(&mut input)@;
 
     if (input == None) {
-        return Error(Error {
-            message: "no input",
-        });
+        return Error(new Error("no input"));
     }
 
     return Ok(input!);

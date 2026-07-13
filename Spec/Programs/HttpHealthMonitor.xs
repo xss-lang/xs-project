@@ -8,11 +8,6 @@ module programs::http_health_monitor;
 
 imports http, collections, thread, sync;
 
-enum data HealthError {
-    Network: Error,
-    Timeout: Str,
-}
-
 data Endpoint {
     name: Str;
     url: Str;

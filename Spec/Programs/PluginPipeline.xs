@@ -8,14 +8,9 @@ module programs::plugin_pipeline;
 
 imports collections, process;
 
-enum data PipelineError {
-    Io: Error,
-    InvalidStage: Str,
-}
-
 interface TextPlugin {
     fn name() -> Str;
-    fn run(input: Str) -> Result<Str, PipelineError>;
+    fn run(input: Str) -> Result<Str, Error>;
 }
 
 class TrimPlugin : TextPlugin {
@@ -24,7 +19,7 @@ class TrimPlugin : TextPlugin {
         return "trim";
     }
 
-    fn run(input: Str) -> Result<Str, PipelineError> {
+    fn run(input: Str) -> Result<Str, Error> {
         return Ok(input.trim());
     }
 }
@@ -35,7 +30,7 @@ class UppercasePlugin : TextPlugin {
         return "upper";
     }
 
-    fn run(input: Str) -> Result<Str, PipelineError> {
+    fn run(input: Str) -> Result<Str, Error> {
         return Ok(input.uppercase());
     }
 }
@@ -54,7 +49,7 @@ class ReplacePlugin : TextPlugin {
         return "replace";
     }
 
-    fn run(input: Str) -> Result<Str, PipelineError> {
+    fn run(input: Str) -> Result<Str, Error> {
         return Ok(input.replace(self.from_text, self.to_text));
     }
 }
@@ -70,7 +65,7 @@ class Pipeline {
         self.stages.push(stage);
     }
 
-    fn run(input: Str) -> Result<Str, PipelineError> {
+    fn run(input: Str) -> Result<Str, Error> {
         output: Str = input;
 
         for (stage: TextPlugin in self.stages) {

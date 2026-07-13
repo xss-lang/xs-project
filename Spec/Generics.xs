@@ -142,9 +142,9 @@ scores: std::collections::HashMap<Str, Int>;
 
 // generic enum data
 
-enum data Result<T> {
+enum data Result<T, E> {
     Ok: T,
-    Error: Str,
+    Error: E,
 }
 
 

@@ -606,7 +606,7 @@ mod tests
   {
     let function = Function { name: "try_work".to_string(),
                               return_type: Some(named("Result<()>")),
-                              locals: vec![local("work", named("Result<Long, Result.Error>"))],
+                              locals: vec![local("work", named("Result<Long, Error>"))],
                               body: vec![Statement::Expr(Expression::ResultPropagation {
                                 value: Box::new(Expression::Local { name: "work".to_string(),
                                                                     span: span(4, 8) }),
@@ -628,7 +628,7 @@ mod tests
     assert_eq!(success_binding, "__xs_try_ok_0");
     assert_eq!(error_binding, "__xs_try_error_0");
     assert_eq!(success_type, &primitive(PrimitiveType::Long));
-    assert_eq!(error_type, &named("Result.Error"));
+    assert_eq!(error_type, &named("Error"));
   }
 
   #[test]
@@ -650,11 +650,11 @@ mod tests
   }
 
   #[test]
-  fn desugars_single_argument_result_with_default_error()
+  fn desugars_unit_result_with_default_error()
   {
     let function = Function { name: "try_work".to_string(),
                               return_type: Some(named("Result<()>")),
-                              locals: vec![local("work", named("Result<Long>"))],
+                              locals: vec![local("work", named("Result<()>"))],
                               body: vec![Statement::Expr(Expression::ResultPropagation {
                                 value: Box::new(Expression::Local { name: "work".to_string(),
                                                                     span: span(4, 8) }),
@@ -662,22 +662,22 @@ mod tests
                               })] };
 
     let desugared = ResultDesugar::new().desugar_function(&function)
-                                        .expect("single-argument Result should use Result.Error");
+                                        .expect("unit Result shorthand should use Error");
 
     let DesugaredStatement::Expr(DesugaredExpression::ResultMatch { error_type, .. }) = &desugared.body[0]
     else
     {
       panic!("expected explicit Result match desugar");
     };
-    assert_eq!(error_type, &named("Result.Error"));
+    assert_eq!(error_type, &named("Error"));
   }
 
   #[test]
   fn rejects_error_type_mismatch()
   {
     let function = Function { name: "bad".to_string(),
-                              return_type: Some(named("Result<Bool, OtherError>")),
-                              locals: vec![local("work", named("Result<Long, Result.Error>"))],
+                              return_type: Some(named("Result<Bool, Other>")),
+                              locals: vec![local("work", named("Result<Long, Error>"))],
                               body: vec![Statement::Expr(Expression::ResultPropagation {
                                 value: Box::new(Expression::Local { name: "work".to_string(),
                                                                     span: span(4, 8) }),

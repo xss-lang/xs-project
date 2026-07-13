@@ -69,6 +69,14 @@ static void test_each_nominal_category_supports_multiple_same_kind_bases(void)
   CHECK(validate(text));
 }
 
+static void test_standard_enum_data_family_inheritance(void)
+{
+  CHECK(validate("enum data Option : Optional { Some: Str }\n"
+                 "enum data MyResult : Result { Success: Int }\n"));
+  CHECK(!validate("class Invalid : Result {}\n"));
+  CHECK(!validate("data Invalid : Optional {}\n"));
+}
+
 static void test_one_override_can_cover_multiple_base_slots(void)
 {
   const char *text = "class Left { virtual fn run(value: Long) {} }\n"
@@ -102,6 +110,7 @@ int main(void)
 {
   test_multiple_and_virtual_inheritance();
   test_each_nominal_category_supports_multiple_same_kind_bases();
+  test_standard_enum_data_family_inheritance();
   test_one_override_can_cover_multiple_base_slots();
   test_invalid_inheritance_graphs();
   return failures == 0 ? 0 : 1;

@@ -15,7 +15,7 @@
 // - Cooperative yielding
 // - Single-sender, single-receiver channels
 //
-// Thread synchronization failures use SyncError through Error.
+// Thread synchronization failures use the Result error channel.
 //
 // Thread values and channel endpoints follow the language's ownership,
 // move and Send rules.
@@ -161,11 +161,11 @@ fn join_thread() {
 // join():
 //
 // - Blocks until the thread finishes.
-// - Returns Result<T, ThreadError>.
+// - Returns Result<T, Error>.
 // - Consumes the Thread::handle<T>.
 // - May only be called once.
 // - Carries thread failure through Error.
-// - Returns Error(SyncError) for invalid runtime join operations.
+// - Returns an Error variant carrying an Error object for invalid runtime join operations.
 
 
 // invalid second join
@@ -186,7 +186,7 @@ fn invalid_second_join() {
 
 // self join
 
-// A thread attempting to join itself returns Error(SyncError).
+// A thread attempting to join itself returns an Error variant carrying an Error object.
 
 
 // ============================================================
@@ -196,7 +196,7 @@ fn invalid_second_join() {
 fn joined_thread_failure() {
     thread: Thread::handle<Result<Int, Error>> =
         std::thread::spawn(move fn() {
-            return Error(Error { message: "I/O error" });
+            return Error(new Error("I/O error"));
         });
 
     result: Result<Int, Error> = thread.join()@;
@@ -216,7 +216,7 @@ fn joined_thread_failure() {
 
 fn detached_thread_failure() {
     std::thread::spawn(move fn() {
-        return Error(Error { message: "I/O error" });
+        return Error(new Error("I/O error"));
     });
 }
 
@@ -292,7 +292,7 @@ fn channel_example() {
         tx.send(42);
     });
 
-    received: Result<Int, SyncError> = rx.recv();
+    received: Result<Int, Error> = rx.recv();
 }
 
 
@@ -322,7 +322,7 @@ fn send_channel_value() {
 //
 // - Transfers ownership of value into the channel.
 // - The sent value can no longer be used by the sender.
-// - Returns Result<(), SyncError>; Error means that the channel is closed.
+// - Returns Result<(), Error>; Error means that the channel is closed.
 
 
 // receiving
@@ -335,15 +335,15 @@ fn receive_channel_value() {
         tx.send(42);
     });
 
-    received: Result<Int, SyncError> = rx.recv();
+    received: Result<Int, Error> = rx.recv();
 }
 
 // rx.recv():
 //
 // - Blocks until a value becomes available.
-// - Returns Result<T, SyncError>.
+// - Returns Result<T, Error>.
 // - Transfers ownership of the received value to the receiver.
-// - Returns Error(SyncError) if the channel is closed and no value can be received.
+// - Returns an Error variant carrying an Error object if the channel is closed and no value can be received.
 
 
 // moving receiver to another thread
@@ -354,7 +354,7 @@ fn move_receiver_to_thread() {
 
     receiver_thread: Thread::handle<()> =
         std::thread::spawn(move fn() {
-            received: Result<Int, SyncError> = rx.recv();
+            received: Result<Int, Error> = rx.recv();
         });
 
     tx.send(42);
@@ -374,7 +374,7 @@ fn move_sender_to_thread() {
             tx.send(42);
         });
 
-    received: Result<Int, SyncError> = rx.recv();
+    received: Result<Int, Error> = rx.recv();
 
     sender_thread.join();
 }

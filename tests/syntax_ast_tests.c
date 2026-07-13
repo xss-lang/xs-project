@@ -397,7 +397,7 @@ static void test_expression_turbofish_structure(void)
 
 static void test_removed_exception_syntax_is_rejected(void)
 {
-  const char *text = "fn Main() throws IOException { try { throw IOException(); } catch (error: IOException) {} }\n";
+  const char *text = "fn Main() throws Error { try { throw Error(); } catch (error: Error) {} }\n";
   XsSource source = {.path = "RemovedExceptions.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;

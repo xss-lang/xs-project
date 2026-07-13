@@ -8,12 +8,6 @@ module programs::todo_cli;
 
 imports stdio, fs, collections, process;
 
-enum data TodoError {
-    Io: Error,
-    InvalidCommand: Str,
-    InvalidId: Int,
-}
-
 enum data Command {
     Add: Str,
     Done: Int,
@@ -66,9 +60,7 @@ class TodoStore {
             }
         }
 
-        return Error(Error {
-            message: "invalid todo id",
-        });
+        return Error(new Error("invalid todo id"));
     }
 
     fn print() -> Result<()> {
@@ -131,9 +123,7 @@ class TodoCodec {
     static fn parse(line: Str) -> Result<TodoItem, Error> {
         parts: std::collections::Vector<Str> = line.split("|");
         if (parts.length() != 3) {
-            return Error(Error {
-                message: "invalid todo record",
-            });
+            return Error(new Error("invalid todo record"));
         }
 
         return Ok(TodoItem {
@@ -162,17 +152,13 @@ fn parse_command(args: std::collections::Vector<Str>) -> Result<Command, Error> 
     return match (args[1]) {
         "add" -> {
             if (args.length() < 3) {
-                return Error(Error {
-                    message: "todo add <title>",
-                });
+                return Error(new Error("todo add <title>"));
             }
             Ok(Command::Add(args.slice(2).join(" ")));
         },
         "done" -> {
             if (args.length() != 3) {
-                return Error(Error {
-                    message: "todo done <id>",
-                });
+                return Error(new Error("todo done <id>"));
             }
             Ok(Command::Done(Int::parse(args[2])));
         },
@@ -183,9 +169,7 @@ fn parse_command(args: std::collections::Vector<Str>) -> Result<Command, Error> 
             Ok(Command::Help);
         },
         else -> {
-            Error(Error {
-                message: "invalid command",
-            });
+            Error(new Error("invalid command"));
         },
     };
 }

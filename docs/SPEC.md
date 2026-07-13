@@ -59,12 +59,13 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - Statement/expression separation follows Rust: `expression;` evaluates and discards the value, while the final expression
   in a block may omit `;` and becomes the block value. Function tail expressions are desugared as implicit returns when the
   function return type expects a value.
-- Optional value constructors are `None` and `Some(...)`; the implicit namespace using makes both names available in
-  source.
+- `Optional<T>` is compiler-provided enum data with `Some: T` and payload-free `None` variants; the implicit namespace
+  using makes both constructors available in source.
 - `Result` is a special standard namespace: `imports result;` is optional, and the compiler behaves as if
-  `using namespace std::result;` existed for `Result<T>`, `Result<T, E>`, `Ok(...)`, and `Error(...)`. Most other `std::*` modules are
-  not automatically placed in local scope. `Result<T>` uses the standard `Error` channel; unit success is written as
-  `Result<()>`. Result is not a default function return: a function must declare it when its body uses `@`, `Ok(...)`, or
+  `using namespace std::result;` existed for `Result<()>`, `Result<T, E>`, `Ok(...)`, and `Error(...)`. `Result<T, E>` is
+  compiler-provided enum data and both payload types are unrestricted. Most other `std::*` modules are not automatically
+  placed in local scope. The only single-argument form is `Result<()>`, whose error payload defaults to standard `Error`;
+  forms such as `Result<Int>` are incomplete. Result is not a default function return: a function must declare it when its body uses `@`, `Ok(...)`, or
   `Error(...)`.
 - `Panic` is also an implicit standard import for assertion and panic macros. `assert!`, `assert_eq!`, `assert_ne!`,
   `debug_assert!`, `debug_assert_eq!`, and `panic!` are available without an explicit import, but they are still library
@@ -72,7 +73,7 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - `Stdio` is not prelude and is not implicit. Its `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` macros and
   `std::fmt::*` API require `imports stdio;` or `using namespace stdio;`. The writer and formatting-argument built-ins do
   not.
-- Recoverable failures use `Result<T>`/`Result<T, E>` plus postfix `@` propagation. Exception declarations and
+- Recoverable failures use `Result<()>`/`Result<T, E>` plus postfix `@` propagation. Exception declarations and
   control-flow syntax are not part of X#.
 
 ## Program examples
