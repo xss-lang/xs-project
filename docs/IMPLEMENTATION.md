@@ -311,7 +311,9 @@ validation does not decide dispatch, override, or overload selection.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` require
-  `imports stdio;` or `using namespace stdio;`. `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built in.
+  `imports stdio;` or `using namespace stdio;`. `format_args!` and `format_args_nl!` are compiler-special built-ins:
+  they bypass `macro_rules!` resolution and cannot be declared or shadowed by user macros. `write!` and `writeln!` are
+  built-in writer macros.
 - The C23 HIR type resolver also recognizes the initial standard CFFI family: `std::cffi::CStr`, `std::cffi::CString`,
   `std::cffi::RawPtr<T>`, `std::cffi::NonNull<T>`, `std::cffi::Slice<T>`, `std::cffi::Handle<T>`, `std::cffi::Owned<T>`, `std::cffi::Borrowed<T>`,
   `std::cffi::Out<T>`, `std::cffi::DynamicLibrary`, `std::cffi::Symbol<T>`, `std::cffi::File`, and `std::cffi::VarArgs`.
@@ -422,8 +424,9 @@ complete.
 - Macro calls before textual definition in the same scope are accepted.
 - Macros defined in an inner scope cannot be called from an outer scope.
 - Calls are checked to resolve to a visible macro definition.
-- `include!`, `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built-in macros. They use the same format
-  string validation as the Stdio output macros where applicable.
+- `include!`, `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built-in macros. `format_args!` and
+  `format_args_nl!` are compiler-special syntax rather than `macro_rules!` definitions. They use the same format string
+  validation as the Stdio output macros where applicable.
 - Imported `Stdio` macros are treated as external macros, not built-ins. The validator recognizes `print!`, `println!`,
   `eprint!`, `eprintln!`, and `format!` through `imports stdio` or `using namespace stdio;`. `println!()` and `eprintln!()`
   accept the newline-only form. Built-in `writeln!(destination)` accepts the destination-only newline form. Other

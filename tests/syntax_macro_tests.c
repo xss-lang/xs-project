@@ -589,6 +589,8 @@ static void test_formatting_macros_reject_invalid_forms(void)
       "imports stdio;\nfn Main() { println!(\"{}\",); }\n",
       "fn Main() { format_args!(); }\n",
       "fn Main() { format_args_nl!(); }\n",
+      "macro_rules! format_args { ($value:expr) -> { $value }; }\nfn Main() { format_args!(\"{}\", 1); }\n",
+      "macro_rules! format_args_nl { ($value:expr) -> { $value }; }\nfn Main() { format_args_nl!(\"{}\", 1); }\n",
       "imports stdio;\nfn Main() { println!(\"{\"); }\n",
       "imports stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
       "fn Main() { write!(); }\n",

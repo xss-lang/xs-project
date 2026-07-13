@@ -14,7 +14,8 @@ source-to-native executable pipeline.
 
 ### Added
 
-- `format_args_nl!` is now a source-callable built-in macro and shares format-string validation with `format_args!`.
+- `format_args_nl!` is now a source-callable compiler-special built-in and shares format-string validation with
+  `format_args!`; neither formatting-argument intrinsic can be declared or shadowed through `macro_rules!`.
 
 ### Fixed
 

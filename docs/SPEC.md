@@ -41,7 +41,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
   local scope. For example, `imports fs;` keeps file APIs qualified as `std::fs::File::open(...)`; users may add
   `using namespace std::fs;` when they want `File::open(...)`. Use `using Module::Name;`, `using Alias = Module::Name;`,
   or `using namespace Module;` when short names are desired.
-- `include!`, `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built-in macros.
+- `include!`, `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built-in macros. `format_args!` and
+  `format_args_nl!` are compiler-special and cannot be declared or shadowed through `macro_rules!`.
 - `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` come from `Stdio`.
 - Attribute delimiter syntax is built in: `#[...]` applies to the following declaration/member, and `#![...]` applies to the
   enclosing file/module form. Official X# attributes live under `std::attrs::*`; the compiler brings those names into

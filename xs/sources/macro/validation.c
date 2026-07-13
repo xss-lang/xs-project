@@ -654,8 +654,13 @@ static void validate_node_calls(const XsSyntaxTree *tree, const XsSyntaxNode *no
   if(node->kind == XS_SYNTAX_EXPR_MACRO_CALL)
   {
     XsText name = macro_call_name(node);
-    const XsSyntaxNode *macro = resolve_macro(visible, name);
     XsSpan span = {.start = node->span.start_offset, .end = node->span.end_offset};
+    if(is_format_args_macro(name))
+    {
+      validate_formatting_macro_call(node, name, diagnostics);
+      return;
+    }
+    const XsSyntaxNode *macro = resolve_macro(visible, name);
     if(macro == nullptr && !is_builtin_macro(name) && !xs_macro_external_import_resolves(tree, name))
     {
       xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, "macro call does not resolve in this scope");
@@ -728,7 +733,17 @@ bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
   NodeList macros = {0};
   collect_kind(tree->root, XS_SYNTAX_DECL_MACRO, &macros);
   for(size_t i = 0; i < macros.count; ++i)
+  {
+    XsText name = macro_name(macros.items[i]);
+    if(is_format_args_macro(name))
+    {
+      XsSpan span = {.start = macros.items[i]->span.start_offset, .end = macros.items[i]->span.end_offset};
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                         "compiler-special formatting macro cannot be declared with macro_rules");
+      continue;
+    }
     validate_macro_rules(macros.items[i], diagnostics);
+  }
   validate_scope_recursion(tree->root, diagnostics);
   NodeList empty = {0};
   validate_scope_calls(tree, tree->root, &empty, diagnostics);

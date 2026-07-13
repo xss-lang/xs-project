@@ -46,12 +46,14 @@
 // include!() cannot include packages, modules or libraries.
 // It is only for local source files.
 //
-// format_args!() is a built-in formatting macro.
+// format_args!() is a compiler-special built-in formatting macro.
 // It validates the Rust 1.57 formatting grammar, which is the exact X# format
 // syntax contract, and returns the formatting argument value used by
 // writer/output macros. It is not resolved through Stdio.
-// format_args_nl!() is also built in and applies the same grammar while
+// format_args_nl!() is also compiler-special and applies the same grammar while
 // appending one newline to the formatted argument sequence.
+// Neither macro participates in macro_rules! lookup or matcher expansion, and
+// neither name can be declared or shadowed by a macro_rules! declaration.
 
 imports stdio;
 

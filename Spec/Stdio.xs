@@ -7,8 +7,10 @@
 // Stdio provides formatted text output macros and standard stream functions.
 // print!, println!, eprint!, eprintln!, and format! are exported Stdio macros.
 // They are available through `imports stdio`, not as compiler built-ins.
-// format_args!, format_args_nl!, write!, and writeln! are built-in macros and
-// do not require Stdio to be imported.
+// format_args! and format_args_nl! are compiler-special built-in macros. They
+// do not participate in macro_rules! matching and cannot be redefined or
+// shadowed. write! and writeln! are built-in writer macros. None of these
+// built-ins require Stdio to be imported.
 //
 // Stdio does not provide filesystem operations.
 // Filesystem operations belong to the FS module.
@@ -126,7 +128,7 @@ fn format_values() {
 // format!(arguments...)
 //   -> { result := std::fmt::format(format_args!(arguments...)); result }
 //
-// format_args_nl! is the built-in newline variant of format_args!. std::_print
+// format_args_nl! is the compiler-special newline variant of format_args!. std::_print
 // and std::_eprint are internal output boundaries. std::fmt::format
 // materializes the formatted UTF-16 Str.
 //
