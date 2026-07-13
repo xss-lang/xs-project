@@ -19,11 +19,13 @@ source-to-native executable pipeline.
   the imported declaration module.
 - Explicitly typed local declarations and simple assignments now import into Rust HIR, while leading function parameters
   lower as real MIR parameters instead of uninitialized locals.
+- Same-module direct calls with resolved parameter and return types now cross the compiler-core import boundary and lower
+  through typed Rust HIR, MIR, and XLIL call records.
 
 ### Changed
 
-- Rust `mir.rs` and `xlil.rs` are now small module/re-export surfaces; their data models moved to dedicated `model.rs`
-  modules. `hir.rs` already follows the module-surface-only layout.
+- Rust `hir.rs`, `mir.rs`, and `xlil.rs` are now small module/re-export surfaces. MIR and XLIL data models live in dedicated
+  `model.rs` modules, while the canonical checked-HIR model is re-exported from `hir.rs`.
 
 ## 0.1.1 - 2026-07-13
 

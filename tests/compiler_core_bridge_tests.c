@@ -35,7 +35,8 @@ static void test_materialized_syntax_packet(void)
   const char *text = "module app;\n"
                      "macro_rules! make { () -> { incomplete fn generated(); }; }\n"
                      "make!();\n"
-                     "fn main() -> Long { value: Long = 3; value = 7; return value; }\n";
+                     "fn add(a: Long, b: Long) -> Long { return a + b; }\n"
+                     "fn main() -> Long { value: Long = add(3, 4); value = 7; return value; }\n";
   XsSource source = {.path = "Bridge.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -58,8 +59,8 @@ static void test_materialized_syntax_packet(void)
   XsCompilerCoreSession *session = nullptr;
   CHECK(packet == nullptr || xslang_compiler_core_session_create(packet, &session) == XS_COMPILER_CORE_FFI_OK);
   CHECK(packet == nullptr || xslang_compiler_core_session_syntax_node_count(session) == packet->node_count);
-  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 2);
-  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 1);
+  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 3);
+  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 2);
   if(packet != nullptr)
   {
     const XsCompilerCoreSyntaxNode *root = &packet->nodes[packet->root_index];

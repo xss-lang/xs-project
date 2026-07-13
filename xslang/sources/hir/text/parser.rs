@@ -290,6 +290,50 @@ impl Parser<'_>
                                        value: Box::new(value),
                                        span: span() });
     }
+    if let Some(signature) = rest.strip_prefix("call ")
+    {
+      self.index += 1;
+      let Some((function, signature)) = signature.split_once(" : (")
+      else
+      {
+        self.report("invalid call signature".to_string());
+        return None;
+      };
+      let Some((parameters, return_type)) = signature.split_once(") -> ")
+      else
+      {
+        self.report("invalid call return signature".to_string());
+        return None;
+      };
+      let parameter_types = if parameters.is_empty()
+      {
+        Vec::new()
+      }
+      else
+      {
+        split_type_list(parameters).into_iter()
+                                   .map(|name| {
+                                     self.parse_type(name.trim())
+                                         .unwrap_or(Type::Named(name.trim().to_string()))
+                                   })
+                                   .collect()
+      };
+      let return_type = self.parse_type(return_type)
+                            .unwrap_or(Type::Named(return_type.to_string()));
+      let mut arguments = Vec::with_capacity(parameter_types.len());
+      for _ in 0..parameter_types.len()
+      {
+        self.consume_expression_field("argument");
+        arguments.push(self.expression()
+                           .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                            span: span() }));
+      }
+      return Some(Expression::Call { function: function.to_string(),
+                                     arguments,
+                                     parameter_types,
+                                     return_type: Box::new(return_type),
+                                     span: span() });
+    }
     if let Some(operator) = rest.strip_prefix("binary ")
     {
       self.index += 1;
@@ -671,13 +715,57 @@ fn primitive_type(name: &str) -> Option<PrimitiveType>
 
 fn is_named_type(name: &str) -> bool
 {
-  let mut chars = name.chars();
-  let Some(first) = chars.next()
-  else
+  let name = name.trim();
+  if !name.starts_with(|value: char| value == '_' || value.is_alphabetic()) ||
+     name.ends_with([',', '<', ':', '.']) ||
+     name.contains("<>") ||
+     name.contains("<,") ||
+     name.contains(",>") ||
+     name.contains(",,")
   {
     return false;
-  };
-  (first == '_' || first.is_alphabetic()) && chars.all(|c| c == '_' || c == '.' || c.is_alphanumeric())
+  }
+  let mut generic_depth = 0_u32;
+  let mut saw_identifier = false;
+  for character in name.chars()
+  {
+    match character
+    {
+      '<' => generic_depth += 1,
+      '>' if generic_depth > 0 => generic_depth -= 1,
+      '>' => return false,
+      ',' if generic_depth == 0 => return false,
+      '_' | '.' | ':' | ',' | ' ' | '(' | ')' =>
+      {}
+      value if value.is_alphanumeric() => saw_identifier = true,
+      _ => return false,
+    }
+  }
+  saw_identifier && generic_depth == 0
+}
+
+fn split_type_list(text: &str) -> Vec<&str>
+{
+  let mut result = Vec::new();
+  let mut depth = 0_u32;
+  let mut start = 0;
+  for (index, character) in text.char_indices()
+  {
+    match character
+    {
+      '<' => depth += 1,
+      '>' => depth = depth.saturating_sub(1),
+      ',' if depth == 0 =>
+      {
+        result.push(&text[start..index]);
+        start = index + character.len_utf8();
+      }
+      _ =>
+      {}
+    }
+  }
+  result.push(&text[start..]);
+  result
 }
 
 const fn span() -> Span

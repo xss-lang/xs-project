@@ -364,7 +364,10 @@ type-checked, and lowered to target-independent Rust MIR. Unsupported body shape
 stay available to the session.
 Explicitly typed local declarations and simple `=` assignments are included in this body slice. Function parameters occupy
 the MIR parameter table and are immediately live values; they no longer masquerade as uninitialized MIR locals. Inferred
-local types and compound assignments remain outside this Rust import slice for now.
+local types and compound assignments remain outside this Rust import slice for now. Function signatures are collected before
+body import, so direct calls to functions in the same module can resolve forward references. Their argument and result types
+are recorded in typed HIR and lower through the existing target-independent MIR and XLIL call models. Overload selection,
+generic calls, methods, imported targets, recursion policy, and function values remain later compiler-core work.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
 `Result<T>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the

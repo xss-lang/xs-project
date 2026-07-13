@@ -13,3 +13,6 @@ pub mod send_sync;
 pub mod symbols;
 pub mod text;
 pub mod type_check;
+
+pub use async_check::Span;
+pub use type_check::*;

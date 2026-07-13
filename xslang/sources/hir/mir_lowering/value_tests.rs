@@ -67,3 +67,38 @@ fn lowers_leading_hir_locals_as_real_mir_parameters()
                    Some(mir::Terminator::Return(Some(mir::LocalId(0))))));
   assert!(verify_function(&mir).is_empty());
 }
+
+#[test]
+fn lowers_typed_hir_call_through_mir_and_xlil()
+{
+  let long = primitive(PrimitiveType::Long);
+  let function = Function { name: "main".to_string(),
+                            return_type: Some(long.clone()),
+                            locals: vec![],
+                            body: vec![Statement::Return {
+      value: Some(Expression::Call {
+        function: "add".to_string(),
+        arguments: vec![Expression::Literal { literal: Literal::Integer("3".to_string()),
+                                              span: span(10, 11) },
+                        Expression::Literal { literal: Literal::Integer("4".to_string()),
+                                              span: span(13, 14) }],
+        parameter_types: vec![long.clone(), long],
+        return_type: Box::new(primitive(PrimitiveType::Long)),
+        span: span(6, 15),
+      }),
+      span: span(0, 16),
+    }] };
+
+  let mir = HirToMirLowerer::new().lower_function(&function)
+                                  .expect("typed call should lower");
+  assert!(matches!(&mir.blocks[0].statements[2],
+                   mir::Statement::Call { function, arguments, .. }
+                     if function == "add" && arguments.len() == 2));
+  assert!(verify_function(&mir).is_empty());
+
+  let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                           .expect("MIR call should lower to XLIL");
+  assert!(matches!(&xlil.blocks[0].instructions[2],
+                   crate::xlil::Instruction::Call { function, arguments, .. }
+                     if function == "add" && arguments.len() == 2));
+}

@@ -48,6 +48,14 @@ pub enum DesugaredExpression
     right: Box<DesugaredExpression>,
     span: Span,
   },
+  Call
+  {
+    function: String,
+    arguments: Vec<DesugaredExpression>,
+    parameter_types: Vec<Type>,
+    return_type: Box<Type>,
+    span: Span,
+  },
   ResultMatch
   {
     value: Box<DesugaredExpression>,
@@ -176,6 +184,18 @@ impl ResultDesugar
                                                                     span: *span },
       Expression::ResultPropagation { value,
                                       span, } => self.desugar_result_propagation(value, *span),
+      Expression::Call { function,
+                         arguments,
+                         parameter_types,
+                         return_type,
+                         span, } =>
+      {
+        DesugaredExpression::Call { function: function.clone(),
+                                    arguments: arguments.iter().map(|value| self.desugar_expression(value)).collect(),
+                                    parameter_types: parameter_types.clone(),
+                                    return_type: return_type.clone(),
+                                    span: *span }
+      }
     }
   }
 
@@ -278,6 +298,7 @@ impl ResultDesugar
       Expression::ResultPropagation { value,
                                       span, } => self.result_parts_of_expression(value, *span)
                                                      .map(|(success, _)| success),
+      Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
     }
   }
 

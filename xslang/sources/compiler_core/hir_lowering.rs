@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+use std::collections::HashMap;
+
 use crate::hir::{
   async_check::Span,
   declarations,
@@ -28,6 +30,7 @@ const EXPR_IDENTIFIER: u32 = 56;
 const EXPR_LITERAL: u32 = 57;
 const EXPR_BINARY: u32 = 58;
 const EXPR_ASSIGNMENT: u32 = 60;
+const EXPR_CALL: u32 = 61;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_EQUAL: u32 = 25;
 const TOKEN_GREATER: u32 = 32;
@@ -126,13 +129,13 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
   declarations::TypeRef::Named(value.text.clone())
 }
 
-fn checked_type(value: declarations::TypeRef) -> Option<crate::hir::type_check::Type>
+fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check::Type>
 {
   Some(match value
   {
     declarations::TypeRef::Unit => return None,
-    declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(value),
-    declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value),
+    declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(*value),
+    declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value.clone()),
   })
 }
 
@@ -156,7 +159,17 @@ fn span(value: &SyntaxNode) -> Option<Span>
                  u32::try_from(value.span.end_offset).ok()?))
 }
 
-fn lower_expression(tree: &SyntaxTree, value: &SyntaxNode) -> Option<Expression>
+#[derive(Clone)]
+struct CallSignature
+{
+  parameters: Vec<crate::hir::type_check::Type>,
+  return_type: crate::hir::type_check::Type,
+}
+
+fn lower_expression(tree: &SyntaxTree,
+                    value: &SyntaxNode,
+                    signatures: &HashMap<String, CallSignature>)
+                    -> Option<Expression>
 {
   let source_span = span(value)?;
   match value.kind
@@ -187,8 +200,8 @@ fn lower_expression(tree: &SyntaxTree, value: &SyntaxNode) -> Option<Expression>
         TOKEN_GREATER_EQUAL => BinaryOperator::GreaterEqual,
         _ => return None,
       };
-      let left = lower_expression(tree, tree.nodes.get(value.children[0])?)?;
-      let right = lower_expression(tree, tree.nodes.get(value.children[2])?)?;
+      let left = lower_expression(tree, tree.nodes.get(value.children[0])?, signatures)?;
+      let right = lower_expression(tree, tree.nodes.get(value.children[2])?, signatures)?;
       Some(Expression::Binary { operator,
                                 left: Box::new(left),
                                 right: Box::new(right),
@@ -201,16 +214,41 @@ fn lower_expression(tree: &SyntaxTree, value: &SyntaxNode) -> Option<Expression>
       {
         return None;
       }
-      let assigned = lower_expression(tree, tree.nodes.get(value.children[2])?)?;
+      let assigned = lower_expression(tree, tree.nodes.get(value.children[2])?, signatures)?;
       Some(Expression::Assign { target: path_text(tree, target),
                                 value: Box::new(assigned),
                                 span: source_span })
+    }
+    EXPR_CALL if !value.children.is_empty() =>
+    {
+      let callee = tree.nodes.get(value.children[0])?;
+      if callee.kind != EXPR_IDENTIFIER
+      {
+        return None;
+      }
+      let function = path_text(tree, callee);
+      let signature = signatures.get(&function)?;
+      if value.children.len() - 1 != signature.parameters.len()
+      {
+        return None;
+      }
+      let arguments = value.children[1..].iter()
+                                         .map(|index| lower_expression(tree, tree.nodes.get(*index)?, signatures))
+                                         .collect::<Option<Vec<_>>>()?;
+      Some(Expression::Call { function,
+                              arguments,
+                              parameter_types: signature.parameters.clone(),
+                              return_type: Box::new(signature.return_type.clone()),
+                              span: source_span })
     }
     _ => None,
   }
 }
 
-fn lower_local(tree: &SyntaxTree, statement: &SyntaxNode) -> Option<Statement>
+fn lower_local(tree: &SyntaxTree,
+               statement: &SyntaxNode,
+               signatures: &HashMap<String, CallSignature>)
+               -> Option<Statement>
 {
   let declaration = first_child_kind(tree, statement, DECL_VARIABLE)?;
   if declaration.flags & INFERRED_TYPE != 0
@@ -228,11 +266,11 @@ fn lower_local(tree: &SyntaxTree, statement: &SyntaxNode) -> Option<Statement>
                                     .find(|child| child.kind >= EXPR_IDENTIFIER);
   let initializer = match initializer_node
   {
-    Some(value) => Some(lower_expression(tree, value)?),
+    Some(value) => Some(lower_expression(tree, value, signatures)?),
     None => None,
   };
   Some(Statement::Let { local: crate::hir::type_check::Local { name: name.text.clone(),
-                                                               ty: checked_type(lower_type(tree, ty))?,
+                                                               ty: checked_type(&lower_type(tree, ty))?,
                                                                mutable: declaration.flags &
                                                                         (IMMUTABLE |
                                                                          CONSTANT |
@@ -242,7 +280,10 @@ fn lower_local(tree: &SyntaxTree, statement: &SyntaxNode) -> Option<Statement>
                         initializer })
 }
 
-fn lower_body(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Statement>>
+fn lower_body(tree: &SyntaxTree,
+              function: &SyntaxNode,
+              signatures: &HashMap<String, CallSignature>)
+              -> Option<Vec<Statement>>
 {
   let block = first_child_kind(tree, function, STMT_BLOCK)?;
   let mut body = Vec::with_capacity(block.children.len());
@@ -256,7 +297,7 @@ fn lower_body(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Statement>
         let value = statement.children
                              .first()
                              .and_then(|index| tree.nodes.get(*index))
-                             .and_then(|value| lower_expression(tree, value));
+                             .and_then(|value| lower_expression(tree, value, signatures));
         if !statement.children.is_empty() && value.is_none()
         {
           return None;
@@ -266,7 +307,7 @@ fn lower_body(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Statement>
       }
       STMT_EXPRESSION if statement.children.len() == 1 =>
       {
-        let expression = lower_expression(tree, tree.nodes.get(statement.children[0])?)?;
+        let expression = lower_expression(tree, tree.nodes.get(statement.children[0])?, signatures)?;
         if position + 1 == block.children.len() && statement.flags & DISCARDED == 0
         {
           body.push(Statement::Return { value: Some(expression),
@@ -277,14 +318,14 @@ fn lower_body(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Statement>
           body.push(Statement::Expr(expression));
         }
       }
-      STMT_VARIABLE => body.push(lower_local(tree, statement)?),
+      STMT_VARIABLE => body.push(lower_local(tree, statement, signatures)?),
       _ => return None,
     }
   }
   Some(body)
 }
 
-fn lower_function(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Function, LoweringError>
+fn lower_function_signature(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Function, LoweringError>
 {
   let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
   let parameters = value.children
@@ -303,7 +344,7 @@ fn lower_function(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations:
                               return_type,
                               flags: value.flags,
                               span: value.span.clone(),
-                              body: lower_body(tree, value) })
+                              body: None })
 }
 
 pub fn lower_declarations(tree: &SyntaxTree) -> Result<declarations::Module, LoweringError>
@@ -319,12 +360,30 @@ pub fn lower_declarations(tree: &SyntaxTree) -> Result<declarations::Module, Low
                  .find(|child| child.kind == DECL_MODULE)
                  .and_then(|module| first_child_kind(tree, module, PATH))
                  .map(|path| path_text(tree, path));
-  let functions = root.children
-                      .iter()
-                      .filter_map(|index| tree.nodes.get(*index))
-                      .filter(|child| child.kind == DECL_FUNCTION)
-                      .map(|function| lower_function(tree, function))
-                      .collect::<Result<_, _>>()?;
+  let function_nodes = root.children
+                           .iter()
+                           .filter_map(|index| tree.nodes.get(*index))
+                           .filter(|child| child.kind == DECL_FUNCTION)
+                           .collect::<Vec<_>>();
+  let mut functions = function_nodes.iter()
+                                    .map(|function| lower_function_signature(tree, function))
+                                    .collect::<Result<Vec<_>, _>>()?;
+  let signatures = functions.iter()
+                            .filter_map(|function| {
+                              let parameters = function.parameters
+                                                       .iter()
+                                                       .map(|parameter| checked_type(&parameter.ty))
+                                                       .collect::<Option<Vec<_>>>()?;
+                              let return_type = checked_type(&function.return_type)?;
+                              Some((function.name.clone(),
+                                    CallSignature { parameters,
+                                                    return_type }))
+                            })
+                            .collect::<HashMap<_, _>>();
+  for (function, syntax) in functions.iter_mut().zip(function_nodes)
+  {
+    function.body = lower_body(tree, syntax, &signatures);
+  }
   Ok(declarations::Module { name,
                             functions })
 }

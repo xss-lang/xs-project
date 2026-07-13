@@ -50,69 +50,6 @@ impl HirToMirLowerer
     self.lower_function_with_parameters(function, 0)
   }
 
-  pub fn lower_function_with_parameters(mut self,
-                                        function: &Function,
-                                        parameter_count: usize)
-                                        -> Result<mir::Function, Vec<Diagnostic>>
-  {
-    let return_type = self.lower_return_type(function.return_type.as_ref(), Span::new(0, 0, 0));
-    let mut lowered = mir::Function { name: function.name.clone(),
-                                      parameters: vec![],
-                                      return_type,
-                                      locals: vec![],
-                                      blocks: vec![mir::BasicBlock { id: mir::BlockId(0),
-                                                                     statements: vec![],
-                                                                     terminator: None,
-                                                                     span: Span::new(0, 0, 0) }] };
-
-    for (index, local) in function.locals.iter().enumerate()
-    {
-      if index < parameter_count
-      {
-        let id = mir::LocalId(self.next_local);
-        self.next_local += 1;
-        if let Some(value_type) = self.lower_value_type(&local.ty, local.span)
-        {
-          self.locals.insert(local.name.clone(), id);
-          lowered.parameters.push(mir::Parameter { local: id,
-                                                   name: local.name.clone(),
-                                                   value_type,
-                                                   span: local.span });
-        }
-      }
-      else
-      {
-        self.declare_local(local.name.clone(), &local.ty, local.mutable, local.span, &mut lowered);
-      }
-    }
-    for statement in &function.body
-    {
-      self.lower_statement(statement, &mut lowered);
-    }
-    if lowered.blocks[0].terminator.is_none()
-    {
-      if lowered.return_type == XlilType::VOID
-      {
-        lowered.blocks[0].terminator = Some(mir::Terminator::Return(None));
-      }
-      else
-      {
-        self.report(DiagnosticCode::MissingReturn,
-                    "non-void HIR function did not lower to a MIR return",
-                    Span::new(0, 0, 0));
-      }
-    }
-
-    if self.diagnostics.is_empty()
-    {
-      Ok(lowered)
-    }
-    else
-    {
-      Err(self.diagnostics)
-    }
-  }
-
   pub fn lower_desugared_function(mut self, function: &DesugaredFunction) -> Result<mir::Function, Vec<Diagnostic>>
   {
     let mut body = Vec::with_capacity(function.body.len());
@@ -197,6 +134,21 @@ impl HirToMirLowerer
                     *span);
         None
       }
+      DesugaredExpression::Call { function,
+                                  arguments,
+                                  parameter_types,
+                                  return_type,
+                                  span, } =>
+      {
+        let arguments = arguments.iter()
+                                 .map(|value| self.surface_expression_from_desugared(value))
+                                 .collect::<Option<Vec<_>>>()?;
+        Some(Expression::Call { function: function.clone(),
+                                arguments,
+                                parameter_types: parameter_types.clone(),
+                                return_type: return_type.clone(),
+                                span: *span })
+      }
     }
   }
 
@@ -254,6 +206,7 @@ impl HirToMirLowerer
                            left,
                            right,
                            span, } => self.lower_binary_into(target, *operator, left, right, *span, lowered),
+      Expression::Call { .. } => self.lower_call_into(target, expression, lowered),
       _ => self.unsupported_expression(expression),
     }
   }
@@ -302,6 +255,16 @@ impl HirToMirLowerer
           return;
         };
         self.lower_binary_into(local, *operator, left, right, *span, lowered);
+        mir::Terminator::Return(Some(local))
+      }
+      Some(expression @ Expression::Call { span, .. }) =>
+      {
+        let Some(local) = self.declare_temp(lowered.return_type, *span, lowered)
+        else
+        {
+          return;
+        };
+        self.lower_call_into(local, expression, lowered);
         mir::Terminator::Return(Some(local))
       }
       Some(expression) =>
@@ -360,6 +323,12 @@ impl HirToMirLowerer
       {
         self.unsupported_expression(expression);
         None
+      }
+      Expression::Call { span, .. } =>
+      {
+        let local = self.declare_temp(expected_type, *span, lowered)?;
+        self.lower_call_into(local, expression, lowered);
+        Some(local)
       }
     }
   }
@@ -557,6 +526,11 @@ impl HirToMirLowerer
         BinaryOperator::Greater |
         BinaryOperator::GreaterEqual => Some(XlilType::BOOL),
       },
+      Expression::Call { return_type, .. } => match return_type.as_ref()
+      {
+        Type::Primitive(value) => primitive_to_xlil(*value),
+        Type::Named(_) => None,
+      },
       Expression::Literal { .. } | Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
@@ -739,11 +713,14 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Assign { span, .. } |
     Expression::Binary { span, .. } |
     Expression::ResultPropagation { span, .. } => *span,
+    Expression::Call { span, .. } => *span,
   }
 }
 
+mod call_lowering;
 #[cfg(test)]
 mod desugar_tests;
+mod function_lowering;
 #[cfg(test)]
 mod value_tests;
 

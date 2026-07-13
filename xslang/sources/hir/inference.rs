@@ -107,6 +107,7 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
       let result_type = infer_expression_type(value, locals)?;
       result_type_parts(&result_type).map(|(success_type, _)| success_type)
     }
+    Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
   }
 }
 

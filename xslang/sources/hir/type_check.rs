@@ -89,6 +89,14 @@ pub enum Expression
     right: Box<Expression>,
     span: Span,
   },
+  Call
+  {
+    function: String,
+    arguments: Vec<Expression>,
+    parameter_types: Vec<Type>,
+    return_type: Box<Type>,
+    span: Span,
+  },
   ResultPropagation
   {
     value: Box<Expression>, span: Span
@@ -254,6 +262,23 @@ impl TypeChecker
         self.check_expression(value);
         self.check_result_propagation(value, *span);
       }
+      Expression::Call { arguments,
+                         parameter_types,
+                         span,
+                         .. } =>
+      {
+        if arguments.len() != parameter_types.len()
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "call argument count does not match its typed signature".to_string(),
+                                 span: *span });
+        }
+        for (argument, parameter_type) in arguments.iter().zip(parameter_types)
+        {
+          self.check_expression_against_type(argument, parameter_type);
+        }
+      }
       Expression::Local { name,
                           span, } =>
       {
@@ -335,6 +360,17 @@ impl TypeChecker
                                  span: *span });
         }
       }
+      Expression::Call { span, .. } =>
+      {
+        self.check_expression(expression);
+        if self.expression_type(expression).as_ref() != Some(ty)
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "call result is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
@@ -352,6 +388,7 @@ impl TypeChecker
                            right,
                            .. } => self.binary_expression_type(*operator, left, right),
       Expression::ResultPropagation { value, .. } => self.result_success_type(value),
+      Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
     }
   }
 

@@ -12,6 +12,9 @@ use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiag
 
 pub mod parser;
 
+#[cfg(test)]
+mod call_tests;
+
 pub use parser::{XhirParseDiagnostic, parse_xhir_function, parse_xhir_module_symbols};
 
 pub const SUPPORTED_XHIR_VERSION: u32 = 0;
@@ -459,6 +462,22 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       let _ = writeln!(output, "{pad}propagate");
       write_expression(output, value, indent + 1);
     }
+    Expression::Call { function,
+                       arguments,
+                       parameter_types,
+                       return_type,
+                       .. } =>
+    {
+      let parameters = parameter_types.iter().map(type_name).collect::<Vec<_>>().join(", ");
+      let _ = writeln!(output,
+                       "{pad}call {function} : ({parameters}) -> {}",
+                       type_name(return_type));
+      for argument in arguments
+      {
+        let _ = writeln!(output, "{pad}  argument");
+        write_expression(output, argument, indent + 2);
+      }
+    }
   }
 }
 
@@ -505,6 +524,22 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
       let _ = writeln!(output, "{pad}  error {error_binding}: {}", type_name(error_type));
       let _ = writeln!(output, "{pad}  value");
       write_desugared_expression(output, value, indent + 2);
+    }
+    DesugaredExpression::Call { function,
+                                arguments,
+                                parameter_types,
+                                return_type,
+                                .. } =>
+    {
+      let parameters = parameter_types.iter().map(type_name).collect::<Vec<_>>().join(", ");
+      let _ = writeln!(output,
+                       "{pad}call {function} : ({parameters}) -> {}",
+                       type_name(return_type));
+      for argument in arguments
+      {
+        let _ = writeln!(output, "{pad}  argument");
+        write_desugared_expression(output, argument, indent + 2);
+      }
     }
   }
 }
