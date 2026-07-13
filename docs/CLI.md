@@ -40,7 +40,7 @@ usage: xs --version
 
 ## `xs --version`
 
-`xs --version` prints the compiler version, such as `xs 0.0.8`.
+`xs --version` prints the compiler version, such as `xs 0.1.0`.
 
 ## `xs check`
 
@@ -60,8 +60,8 @@ Today, plain `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can pr
 supported source slice:
 
 ```xs
-fn Add(left: Long, right: Long) -> Long { return left + right; }
-fn main() -> Long { return Add(2, 5); }
+fn add(left: Long, right: Long) -> Long { return left + right; }
+fn main() -> Long { return add(2, 5); }
 ```
 
 The entry function must be top-level, named `main`, have no parameters, and return `Long`. Same-module helper functions may
@@ -78,6 +78,8 @@ The same supported
 return-expression subset may be used by an early `return` inside a supported conditional or loop block. The
 native slice also supports `for (name: Long = initializer; bool_condition; update)` with a required variable initializer
 and an assignment, postfix `++`, or postfix `--` update; `for each` remains deferred. The
+native slice also lowers statement-level `match (value)` over a supported `Long` or `Bool` selector. Arms use matching
+literal patterns and must end with an `else` arm; each arm accepts the same supported block statements as `if`.
 supported return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary
 `-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression
 whose condition is a bool literal, a `Bool` local, a direct same-module `Bool` helper call, unary `!`, or an i32 comparison,

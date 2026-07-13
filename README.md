@@ -110,7 +110,8 @@ example today.
 
 ## Release policy
 
-The project is now in the `0.0.8` pre-1.0 development period. Numbered `0.0.x` entries are compiler infrastructure
+The project is now in the `0.1.0` development period. This milestone produces native Linux ELF `.xse` executables for the
+documented source-native subset; it does not imply that the complete X# language is executable yet. Earlier `0.0.x` entries are compiler infrastructure
 snapshots; they do not imply that the full X# source-to-native pipeline is complete.
 
 ## CLI summary

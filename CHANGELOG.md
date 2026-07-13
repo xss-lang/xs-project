@@ -12,6 +12,8 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.0 - 2026-07-13
+
 ### Added
 
 - Source-native `Long` and `Bool` local declarations now lower to MIR places, XLIL stack slots, and LLVM
@@ -48,6 +50,8 @@ source-to-native executable pipeline.
   discard form.
 - Specification declarations and examples now consistently use snake_case for modules, namespaces, functions, methods,
   fields, and local bindings while preserving PascalCase for types and enum variants.
+- Source-native statement `match` now lowers `Long` and `Bool` selectors with literal arms and a required final `else`
+  through MIR branches, XLIL, LLVM IR, ELF object emission, and native `.xse` linking.
 
 ## 0.0.8 - 2026-07-13
 

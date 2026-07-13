@@ -12,7 +12,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 
 ## Current status
 
-- Current project version: `0.0.8`.
+- Current project version: `0.1.0`.
 - `xs --version` reports the configured compiler version.
 - The root [../CHANGELOG.md](../CHANGELOG.md) file keeps `Unreleased` for work after the current numbered line.
 - Numbered `0.0.x` entries are development snapshots, not stable language releases.
@@ -22,7 +22,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 The root `release.java` source-file tool checks release metadata without using shell scripts:
 
 ```text
-java --source=21 release.java check 0.0.8
+java --source=21 release.java check 0.1.0
 ```
 
 It validates the CMake project version, changelog heading, release documentation, CLI version documentation, and the built
@@ -30,6 +30,8 @@ It validates the CMake project version, changelog heading, release documentation
 
 ## Version line
 
+- `0.1.0` is the first source-to-native Linux ELF milestone. The supported source subset lowers through MIR, XLIL, LLVM IR,
+  ELF object emission, and LLD linking to a runnable `.xse` executable.
 - `0.0.8` is the XLIL stack-memory snapshot: target-independent stack slots and typed load/store operations lower through
   LLVM `alloca`, `load`, and `store`, including direct XLIL native `.xse` builds.
 - `0.0.7` is the source-native direct-call snapshot: checked source `main` can call same-module `Long -> Long` helpers and

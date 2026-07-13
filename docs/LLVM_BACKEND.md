@@ -79,9 +79,10 @@ for normal LLVM promotion and scalar optimization. The current source-native bri
 local initialization, reads, and simple mutable reassignment. `panic` emits an `llvm.trap` call followed by LLVM
 `unreachable`.
 
-The source-native bridge can also lower a statement-level conditional assignment into LLVM conditional branch and merge
-blocks before loading the local for the later return. This remains a narrow source slice; loops, arbitrary branch bodies,
-and general statement lowering are not implemented yet.
+The source-native bridge lowers supported `if`, `while`, classic `for`, and statement-level `match` control flow into MIR
+branches before XLIL and LLVM lowering. A supported `match` over `Long` or `Bool` becomes ordered literal tests and branch
+blocks with a required final `else` arm. This remains a narrow source slice; `for each`, general expressions, and arbitrary
+runtime-backed statements are not implemented yet.
 Parameter values are read from the declared
 LLVM function; calls use declarations emitted for the same XLIL registry module. The backend emits declarations from the
 public C API and direct `.xlil` files after they are parsed into the XLIL C model, can write verified LLVM IR text for the

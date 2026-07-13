@@ -125,120 +125,6 @@ static bool lower_bool_expression(XsMirBlock *entry, const NativeContext *contex
          false;
 }
 
-static bool static_bool_condition(const XsSyntaxNode *expression, bool *value)
-{
-  if(expression->kind == XS_SYNTAX_EXPR_LITERAL &&
-     (expression->token_kind == XS_TOKEN_KW_TRUE || expression->token_kind == XS_TOKEN_KW_FALSE))
-  {
-    *value = expression->token_kind == XS_TOKEN_KW_TRUE;
-    return true;
-  }
-  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_BANG &&
-     expression->child_count == 1 && static_bool_condition(expression->children[0], value))
-  {
-    *value = !*value;
-    return true;
-  }
-  return false;
-}
-
-static bool static_i32_expression(const XsSyntaxNode *expression, int32_t *value)
-{
-  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_MINUS &&
-     expression->child_count == 1)
-  {
-    int32_t nested = 0;
-    if(!static_i32_expression(expression->children[0], &nested))
-      return false;
-    if(nested == INT32_MIN)
-      return false;
-    *value = -nested;
-    return true;
-  }
-  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_PLUS &&
-     expression->child_count == 1)
-    return static_i32_expression(expression->children[0], value);
-  if(expression->kind == XS_SYNTAX_EXPR_LITERAL && expression->token_kind == XS_TOKEN_INTEGER)
-    return parse_i32_literal(expression, value);
-  if(expression->kind != XS_SYNTAX_EXPR_BINARY || expression->child_count != 3)
-    return false;
-  int32_t left = 0;
-  int32_t right = 0;
-  if(!static_i32_expression(expression->children[0], &left) || !static_i32_expression(expression->children[2], &right))
-    return false;
-  if((expression->token_kind == XS_TOKEN_SLASH || expression->token_kind == XS_TOKEN_PERCENT) &&
-     (right == 0 || (left == INT32_MIN && right == -1)))
-    return false;
-  if((expression->token_kind == XS_TOKEN_SHIFT_LEFT || expression->token_kind == XS_TOKEN_SHIFT_RIGHT) &&
-     (right < 0 || right >= 32))
-    return false;
-  if(expression->token_kind == XS_TOKEN_SHIFT_LEFT && (left < 0 || left > (INT32_MAX >> (unsigned)right)))
-    return false;
-  if(expression->token_kind == XS_TOKEN_SHIFT_RIGHT && left < 0)
-    return false;
-  int64_t result = expression->token_kind == XS_TOKEN_PLUS          ? (int64_t)left + right
-                   : expression->token_kind == XS_TOKEN_MINUS       ? (int64_t)left - right
-                   : expression->token_kind == XS_TOKEN_STAR        ? (int64_t)left * right
-                   : expression->token_kind == XS_TOKEN_SLASH       ? left / right
-                   : expression->token_kind == XS_TOKEN_PERCENT     ? left % right
-                   : expression->token_kind == XS_TOKEN_AMPERSAND   ? left & right
-                   : expression->token_kind == XS_TOKEN_PIPE        ? left | right
-                   : expression->token_kind == XS_TOKEN_CARET       ? left ^ right
-                   : expression->token_kind == XS_TOKEN_SHIFT_LEFT  ? left << (unsigned)right
-                   : expression->token_kind == XS_TOKEN_SHIFT_RIGHT ? left >> (unsigned)right
-                                                                    : (int64_t)INT32_MIN - 1;
-  if(result < INT32_MIN || result > INT32_MAX)
-    return false;
-  *value = (int32_t)result;
-  return true;
-}
-
-static bool static_i32_comparison(const XsSyntaxNode *expression, bool *value)
-{
-  if(expression->kind != XS_SYNTAX_EXPR_BINARY || expression->child_count != 3)
-    return false;
-  int32_t left = 0;
-  int32_t right = 0;
-  if(!static_i32_expression(expression->children[0], &left) || !static_i32_expression(expression->children[2], &right))
-    return false;
-  switch(expression->token_kind)
-  {
-  case XS_TOKEN_EQUAL:
-    *value = left == right;
-    return true;
-  case XS_TOKEN_NOT_EQUAL:
-    *value = left != right;
-    return true;
-  case XS_TOKEN_LESS:
-    *value = left < right;
-    return true;
-  case XS_TOKEN_LESS_EQUAL:
-    *value = left <= right;
-    return true;
-  case XS_TOKEN_GREATER:
-    *value = left > right;
-    return true;
-  case XS_TOKEN_GREATER_EQUAL:
-    *value = left >= right;
-    return true;
-  default:
-    return false;
-  }
-}
-
-static bool static_source_condition(const XsSyntaxNode *expression, bool *value)
-{
-  if(static_bool_condition(expression, value) || static_i32_comparison(expression, value))
-    return true;
-  if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_BANG &&
-     expression->child_count == 1 && static_source_condition(expression->children[0], value))
-  {
-    *value = !*value;
-    return true;
-  }
-  return false;
-}
-
 static bool is_bool_expression_shape(const XsSyntaxNode *expression)
 {
   if(expression == nullptr)
@@ -431,7 +317,7 @@ static bool lower_if_return(XsMirFunction *function, XsMirBlock *entry, const Na
                               "native source main if branches must each contain exactly one expression statement") &&
            false;
   bool static_condition = false;
-  if(static_source_condition(expression->children[0], &static_condition))
+  if(xs_source_native_static_condition(expression->children[0], &static_condition))
   {
     XsMirValueId selected_value = 0;
     const XsSyntaxNode *selected = static_condition ? then_expression : else_expression;
@@ -665,6 +551,11 @@ static bool lower_for_statement(XsMirFunction *function, XsMirBlock **current, N
                                 const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                 XsLilTypeKind return_kind, XsDiagnostics *diagnostics, XsMirError *error);
 
+static bool lower_match_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
+                                  const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                                  XsLilTypeKind return_kind, const NativeLoopTargets *loop, XsDiagnostics *diagnostics,
+                                  XsMirError *error);
+
 static bool lower_return_statement(XsMirFunction *function, XsMirBlock *block, const NativeContext *context,
                                    const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                    XsLilTypeKind return_kind, XsDiagnostics *diagnostics, XsMirError *error)
@@ -746,6 +637,9 @@ static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current,
         : statement->kind == XS_SYNTAX_STMT_FOR
             ? lower_for_statement(function, current, context, program, current_function, statement, return_kind,
                                   diagnostics, error)
+        : statement->kind == XS_SYNTAX_STMT_MATCH
+            ? lower_match_statement(function, current, context, program, current_function, statement, return_kind, loop,
+                                    diagnostics, error)
             : lower_assignment_statement(*current, context, program, current_function, statement, diagnostics, error);
     if(!lowered)
     {
@@ -756,6 +650,139 @@ static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current,
 cleanup:
   context_exit_scope(context);
   return success;
+}
+
+static bool match_selector_type(const NativeContext *context, const NativeProgram *program,
+                                const XsSyntaxNode *expression, XsLilTypeKind *type)
+{
+  if(is_bool_expression_shape(expression))
+  {
+    *type = XS_LIL_TYPE_BOOL;
+    return true;
+  }
+  if(expression->kind == XS_SYNTAX_EXPR_IDENTIFIER && context_type(context, expression->text, type))
+    return *type == XS_LIL_TYPE_I32 || *type == XS_LIL_TYPE_BOOL;
+  const XsSyntaxNode *call_name = simple_call_name(expression);
+  const NativeFunction *callee =
+      call_name == nullptr ? nullptr : xs_source_native_program_find_function(program, call_name->text);
+  if(callee != nullptr)
+  {
+    *type = callee->return_kind;
+    return *type == XS_LIL_TYPE_I32 || *type == XS_LIL_TYPE_BOOL;
+  }
+  *type = XS_LIL_TYPE_I32;
+  return true;
+}
+
+static bool validate_match_arm(const XsSyntaxNode *arm, XsLilTypeKind selector_type, bool require_else,
+                               XsDiagnostics *diagnostics)
+{
+  if(arm == nullptr || arm->kind != XS_SYNTAX_MATCH_ARM || arm->child_count != 2 ||
+     arm->children[1]->kind != XS_SYNTAX_STMT_BLOCK)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(arm),
+                              "native source match arms require one pattern and one block") &&
+           false;
+  const XsSyntaxNode *pattern = arm->children[0];
+  if(require_else)
+    return pattern->kind == XS_SYNTAX_PATTERN_ELSE ||
+           (xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(pattern),
+                               "native source match requires a final else arm") &&
+            false);
+  if(pattern->kind != XS_SYNTAX_PATTERN_LITERAL || pattern->child_count != 1)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(pattern),
+                              "native source match supports only literal patterns before else") &&
+           false;
+  const XsSyntaxNode *literal = pattern->children[0];
+  bool valid = selector_type == XS_LIL_TYPE_BOOL
+                   ? literal->token_kind == XS_TOKEN_KW_TRUE || literal->token_kind == XS_TOKEN_KW_FALSE
+                   : literal->token_kind == XS_TOKEN_INTEGER;
+  return valid || (xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(literal),
+                                      "native source match pattern type does not match its selector") &&
+                   false);
+}
+
+static bool lower_match_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
+                                  const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                                  XsLilTypeKind return_kind, const NativeLoopTargets *loop, XsDiagnostics *diagnostics,
+                                  XsMirError *error)
+{
+  if(statement->child_count < 2)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+                              "native source match requires a selector and final else arm") &&
+           false;
+  XsLilTypeKind selector_type = XS_LIL_TYPE_VOID;
+  const XsSyntaxNode *selector_expression = statement->children[0];
+  if(!match_selector_type(context, program, selector_expression, &selector_type))
+    return false;
+  for(size_t index = 1; index < statement->child_count; ++index)
+  {
+    bool final_arm = index + 1 == statement->child_count;
+    if(!validate_match_arm(statement->children[index], selector_type, final_arm, diagnostics))
+      return false;
+  }
+  XsMirValueId selector = 0;
+  if(selector_type == XS_LIL_TYPE_BOOL)
+  {
+    bool invert = false;
+    if(!lower_bool_expression(*current, context, program, current_function, selector_expression, diagnostics, &selector,
+                              &invert, error) ||
+       (invert && xs_mir_block_not_bool(*current, selector, &selector, error) != XS_MIR_OK))
+      return false;
+  }
+  else if(!lower_i32_expression(*current, context, program, current_function, selector_expression, diagnostics,
+                                &selector, error))
+    return false;
+  XsMirBlock *merge = nullptr;
+  if(xs_mir_function_append_block(function, "match.merge", &merge, error) != XS_MIR_OK)
+    return false;
+  XsMirBlock *test = *current;
+  for(size_t index = 1; index < statement->child_count; ++index)
+  {
+    const XsSyntaxNode *arm = statement->children[index];
+    const XsSyntaxNode *pattern = arm->children[0];
+    if(pattern->kind == XS_SYNTAX_PATTERN_ELSE)
+    {
+      XsMirBlock *arm_current = test;
+      if(!lower_statement_block(function, &arm_current, context, program, current_function, arm->children[1],
+                                return_kind, loop, diagnostics, error) ||
+         (xs_mir_block_terminator_kind(arm_current) == XS_MIR_TERMINATOR_NONE &&
+          xs_mir_block_set_goto(arm_current, merge, error) != XS_MIR_OK))
+        return false;
+      break;
+    }
+    XsMirBlock *body = nullptr;
+    XsMirBlock *next = nullptr;
+    if(xs_mir_function_append_block(function, "match.arm", &body, error) != XS_MIR_OK ||
+       xs_mir_function_append_block(function, "match.next", &next, error) != XS_MIR_OK)
+      return false;
+    if(selector_type == XS_LIL_TYPE_BOOL)
+    {
+      bool matches_true = pattern->children[0]->token_kind == XS_TOKEN_KW_TRUE;
+      if(xs_mir_block_set_branch(test, selector, matches_true ? body : next, matches_true ? next : body, error) !=
+         XS_MIR_OK)
+        return false;
+    }
+    else
+    {
+      int32_t pattern_value = 0;
+      XsMirValueId constant = 0;
+      XsMirValueId condition = 0;
+      if(!parse_i32_literal(pattern->children[0], &pattern_value) ||
+         xs_mir_block_add_const_i32(test, pattern_value, &constant, error) != XS_MIR_OK ||
+         xs_mir_block_eq_i32(test, selector, constant, &condition, error) != XS_MIR_OK ||
+         xs_mir_block_set_branch(test, condition, body, next, error) != XS_MIR_OK)
+        return false;
+    }
+    XsMirBlock *body_current = body;
+    if(!lower_statement_block(function, &body_current, context, program, current_function, arm->children[1],
+                              return_kind, loop, diagnostics, error) ||
+       (xs_mir_block_terminator_kind(body_current) == XS_MIR_TERMINATOR_NONE &&
+        xs_mir_block_set_goto(body_current, merge, error) != XS_MIR_OK))
+      return false;
+    test = next;
+  }
+  *current = merge;
+  return true;
 }
 
 static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
@@ -928,6 +955,9 @@ bool xs_source_native_lower_function_body(XsMirFunction *function, XsMirBlock *e
         : statement->kind == XS_SYNTAX_STMT_FOR
             ? lower_for_statement(function, &current, &context, program, native->name->text, statement,
                                   native->return_kind, diagnostics, error)
+        : statement->kind == XS_SYNTAX_STMT_MATCH
+            ? lower_match_statement(function, &current, &context, program, native->name->text, statement,
+                                    native->return_kind, nullptr, diagnostics, error)
             : lower_assignment_statement(current, &context, program, native->name->text, statement, diagnostics, error);
     if(!lowered)
       return false;

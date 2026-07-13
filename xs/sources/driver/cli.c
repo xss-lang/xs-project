@@ -28,7 +28,7 @@
 #include <string.h>
 
 #ifndef XS_PROJECT_VERSION
-#define XS_PROJECT_VERSION "0.0.8"
+#define XS_PROJECT_VERSION "0.1.0"
 #endif
 
 static char *copy_text(const char *text)

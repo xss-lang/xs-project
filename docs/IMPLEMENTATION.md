@@ -116,8 +116,10 @@ The documented compilation order is preserved:
   including when written in a nested supported
   conditional. Supported early return expressions lower to direct MIR return terminators from nested conditionals and loop
   bodies. Classic `for` loops with a variable initializer, supported Bool condition, and supported assignment or postfix
-  `++`/`--` update lower through distinct header/body/update/exit blocks; `continue` targets update and `break` targets exit. `for each`, arbitrary
-  statement blocks, and general CFG lowering remain deferred.
+  `++`/`--` update lower through distinct header/body/update/exit blocks; `continue` targets update and `break` targets exit.
+  Statement-level `match` lowers supported `Long`/`Bool` selectors and literal arms into ordered MIR comparisons and
+  branches with a required final `else` arm. `for each`, arbitrary statement blocks, and general CFG lowering remain
+  deferred.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
