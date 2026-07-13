@@ -12,6 +12,13 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Fixed
+
+- Fresh checkouts no longer require the intentionally untracked `xslang/Cargo.lock` as a Ninja input; the pinned Rust
+  toolchain can generate the local lock file during the compiler-core build.
+- Empty `println!()` and `eprintln!()` conceptual expansion now delegates to `print!("\n")` and `eprint!("\n")`;
+  formatted forms continue to delegate to the built-in `writeln!` writer macro.
+
 ## 0.1.5 - 2026-07-13
 
 ### Added

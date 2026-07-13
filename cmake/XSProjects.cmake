@@ -28,8 +28,8 @@ set(XS_XSLANG_STATIC_LIBRARY "${XS_XSLANG_TARGET_DIR}/debug/libxslang.a")
 file(GLOB_RECURSE XS_XSLANG_RUST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/xslang/sources/*.rs")
 add_custom_command(
   OUTPUT "${XS_XSLANG_STATIC_LIBRARY}"
-  COMMAND "${XS_CARGO_EXECUTABLE}" build --locked --lib --target-dir "${XS_XSLANG_TARGET_DIR}"
-  DEPENDS ${XS_XSLANG_RUST_SOURCES} xslang/Cargo.toml xslang/Cargo.lock xslang/rust-toolchain.toml
+  COMMAND "${XS_CARGO_EXECUTABLE}" build --lib --target-dir "${XS_XSLANG_TARGET_DIR}"
+  DEPENDS ${XS_XSLANG_RUST_SOURCES} xslang/Cargo.toml xslang/rust-toolchain.toml
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/xslang"
   COMMENT "Building the Rust compiler core"
   VERBATIM
