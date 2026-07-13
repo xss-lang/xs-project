@@ -201,7 +201,7 @@ std.collections.hash_map.delete(
 
 // output example
 
-imports collections, stdio, format;
+imports collections, std, format;
 
 scores: std.collections.hash_map<Str, Int> =
     std.collections.hash_map.new();

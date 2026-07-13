@@ -14,7 +14,7 @@
 // explicitly enabled with .shell(true).
 //
 
-imports process, result, stdio;
+imports process, result, std;
 
 
 // process execution

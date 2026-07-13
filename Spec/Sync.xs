@@ -994,7 +994,7 @@ async fn AsyncResultHandling() => Task<Result.Result<Void, IOException>> {
 // Thread channels
 // ============================================================
 
-imports thread, stdio;
+imports thread, std;
 
 
 // channel creation and communication

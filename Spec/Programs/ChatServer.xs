@@ -6,7 +6,7 @@
 
 module Programs.ChatServer;
 
-imports collections, stdio, sync, thread, net, result;
+imports collections, std, sync, thread, net, result;
 
 enum data ChatError {
     Io: IOException,

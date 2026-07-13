@@ -6,7 +6,7 @@
 
 module Programs.JobQueue;
 
-imports collections, optional, process, result, stdio, sync;
+imports collections, optional, process, result, std, sync;
 
 enum data JobError {
     EmptyQueue,

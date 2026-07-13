@@ -6,7 +6,7 @@
 
 module Programs.PluginPipeline;
 
-imports collections, stdio, process, result;
+imports collections, std, process, result;
 
 enum data PipelineError {
     Io: IOException,

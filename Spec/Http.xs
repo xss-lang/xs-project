@@ -22,7 +22,7 @@
 // No additional HTTP API is defined in this file.
 //
 
-imports http, stdio, result;
+imports http, std, result;
 
 
 // ============================================================

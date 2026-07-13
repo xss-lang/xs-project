@@ -6,7 +6,7 @@
 
 module Programs.HttpHealthMonitor;
 
-imports http, stdio, collections, thread, sync, result;
+imports http, std, collections, thread, sync, result;
 
 enum data HealthError {
     Network: NetworkException,

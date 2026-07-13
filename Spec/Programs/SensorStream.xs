@@ -6,7 +6,7 @@
 
 module Programs.SensorStream;
 
-imports collections, stdio, thread, sync, result;
+imports collections, std, thread, sync, result;
 
 enum data SensorError {
     Disconnected: Str,

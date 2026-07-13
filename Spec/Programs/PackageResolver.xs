@@ -6,7 +6,7 @@
 
 module Programs.PackageResolver;
 
-imports collections, stdio, process, result;
+imports collections, std, process, result;
 
 enum data ResolveError {
     UnknownPackage: Str,

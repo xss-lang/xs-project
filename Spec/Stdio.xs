@@ -8,7 +8,7 @@
 // standard stream handles.
 // print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
 // exported Stdio macros.
-// They are available through `imports stdio`, not as compiler built-ins.
+// They are available through `imports std`, not as compiler built-ins.
 // format_args! is a built-in macro, not a Stdio export.
 //
 // Stdio does not provide filesystem operations.
