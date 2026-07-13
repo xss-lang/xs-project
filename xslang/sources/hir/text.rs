@@ -434,6 +434,36 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       let _ = writeln!(output, "{pad}  else");
       write_block(output, else_block, indent + 2);
     }
+    Expression::Match { selector,
+                        selector_type,
+                        arms,
+                        result_type,
+                        .. } =>
+    {
+      let _ = writeln!(output,
+                       "{pad}match_expression {} selector {}",
+                       type_name(result_type),
+                       type_name(selector_type));
+      let _ = writeln!(output, "{pad}  selector");
+      write_expression(output, selector, indent + 2);
+      for arm in arms
+      {
+        match &arm.pattern
+        {
+          MatchPattern::Literal(literal) =>
+          {
+            let _ = writeln!(output, "{pad}  arm literal {}", literal_name(literal));
+          }
+          MatchPattern::Else =>
+          {
+            let _ = writeln!(output, "{pad}  arm else");
+          }
+        }
+        let _ = writeln!(output, "{pad}    body");
+        write_block(output, &arm.body, indent + 3);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
   }
 }
 
@@ -510,6 +540,36 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
       write_desugared_block(output, then_block, indent + 2);
       let _ = writeln!(output, "{pad}  else");
       write_desugared_block(output, else_block, indent + 2);
+    }
+    DesugaredExpression::Match { selector,
+                                 selector_type,
+                                 arms,
+                                 result_type,
+                                 .. } =>
+    {
+      let _ = writeln!(output,
+                       "{pad}match_expression {} selector {}",
+                       type_name(result_type),
+                       type_name(selector_type));
+      let _ = writeln!(output, "{pad}  selector");
+      write_desugared_expression(output, selector, indent + 2);
+      for arm in arms
+      {
+        match &arm.pattern
+        {
+          MatchPattern::Literal(literal) =>
+          {
+            let _ = writeln!(output, "{pad}  arm literal {}", literal_name(literal));
+          }
+          MatchPattern::Else =>
+          {
+            let _ = writeln!(output, "{pad}  arm else");
+          }
+        }
+        let _ = writeln!(output, "{pad}    body");
+        write_desugared_block(output, &arm.body, indent + 3);
+      }
+      let _ = writeln!(output, "{pad}.end");
     }
   }
 }

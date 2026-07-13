@@ -29,6 +29,49 @@ fn returning(pattern: MatchPattern, value: &str) -> MatchArm
              span: span() }
 }
 
+fn yielding(pattern: MatchPattern, value: &str) -> MatchArm
+{
+  MatchArm { pattern,
+             body: Block { statements: Vec::new(),
+                           tail: Some(Box::new(Expression::Literal { literal: integer(value),
+                                                                     span: span() })),
+                           span: span() },
+             span: span() }
+}
+
+#[test]
+fn lowers_match_expression_through_result_storage_to_xlil()
+{
+  let expression = Expression::Match { selector: Box::new(Expression::Literal { literal: integer("2"),
+                                                                                span: span() }),
+                                       selector_type: Box::new(Type::Primitive(PrimitiveType::Long)),
+                                       arms: vec![yielding(MatchPattern::Literal(integer("2")), "7"),
+                                                  yielding(MatchPattern::Else, "9")],
+                                       result_type: Box::new(Type::Primitive(PrimitiveType::Long)),
+                                       span: span() };
+  let function = Function { name: "choose_value".to_string(),
+                            return_type: Some(Type::Primitive(PrimitiveType::Long)),
+                            locals: Vec::new(),
+                            body: vec![Statement::Return { value: Some(expression),
+                                                           span: span() }] };
+
+  assert!(crate::hir::TypeChecker::new().check_function(&function).is_empty());
+  let mir = HirToMirLowerer::new().lower_function(&function)
+                                  .expect("match expression should lower");
+  assert!(verify_function(&mir).is_empty());
+  assert!(mir.blocks
+             .iter()
+             .flat_map(|block| &block.statements)
+             .any(|statement| { matches!(statement, mir::Statement::StoreLocal { .. }) }));
+
+  let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                           .expect("match expression MIR should lower to XLIL");
+  assert!(xlil.blocks
+              .iter()
+              .flat_map(|block| &block.instructions)
+              .any(|instruction| matches!(instruction, crate::xlil::Instruction::Store { .. })));
+}
+
 #[test]
 fn lowers_long_match_to_verified_mir_and_xlil_branches()
 {

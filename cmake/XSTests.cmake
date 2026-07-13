@@ -129,7 +129,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainBlockLocals
-                       MainEarlyReturn MainElseIf MainMatch MainMatchBool MainFor MainPostfixDecrement MainUpdateValues
+                       MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
+                       MainPostfixDecrement MainUpdateValues
                        ImmutableLocalReassignment BlockLocalShadow SameScopeDuplicateLocal
                        MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain RecursiveCallMain
@@ -386,6 +387,16 @@ add_test(NAME source_native_match_bool_artifacts COMMAND xs_xse_artifact_tests
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainMatchBool.o
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainMatchBool.xse 7 "br i1")
 set_tests_properties(source_native_match_bool_artifacts PROPERTIES DEPENDS source_native_match_bool_build TIMEOUT 5)
+add_test(NAME source_native_match_expression_build COMMAND xs build -file
+                                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainMatchExpression.xs)
+set_tests_properties(source_native_match_expression_build PROPERTIES TIMEOUT 5
+                     FIXTURES_SETUP source_native_match_expression)
+add_test(NAME source_native_match_expression_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainMatchExpression.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainMatchExpression.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainMatchExpression.xse 7 "icmp eq i32")
+set_tests_properties(source_native_match_expression_artifacts PROPERTIES
+                     DEPENDS source_native_match_expression_build TIMEOUT 5)
 add_test(NAME source_native_for_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFor.xs)
 set_tests_properties(source_native_for_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

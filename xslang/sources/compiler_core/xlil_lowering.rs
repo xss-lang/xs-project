@@ -57,6 +57,9 @@ fn expression_calls(expression: &Expression, name: &str) -> bool
     {
       expression_calls(condition, name) || block_calls(then_block, name) || block_calls(else_block, name)
     }
+    Expression::Match { selector,
+                        arms,
+                        .. } => expression_calls(selector, name) || arms.iter().any(|arm| block_calls(&arm.body, name)),
     Expression::Literal { .. } | Expression::Local { .. } => false,
   }
 }

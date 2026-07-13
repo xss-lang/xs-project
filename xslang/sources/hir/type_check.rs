@@ -106,6 +106,14 @@ pub enum Expression
     result_type: Box<Type>,
     span: Span,
   },
+  Match
+  {
+    selector: Box<Expression>,
+    selector_type: Box<Type>,
+    arms: Vec<MatchArm>,
+    result_type: Box<Type>,
+    span: Span,
+  },
   ResultPropagation
   {
     value: Box<Expression>, span: Span
@@ -415,6 +423,11 @@ impl TypeChecker
         self.check_block(then_block, Some(result_type));
         self.check_block(else_block, Some(result_type));
       }
+      Expression::Match { selector,
+                          selector_type,
+                          arms,
+                          result_type,
+                          span, } => self.check_match_expression(selector, selector_type, arms, result_type, *span),
       Expression::Local { name,
                           span, } =>
       {
@@ -518,25 +531,20 @@ impl TypeChecker
                                  span: *span });
         }
       }
+      Expression::Match { span, .. } =>
+      {
+        self.check_expression(expression);
+        if self.expression_type(expression).as_ref() != Some(ty)
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message:
+                                   "match expression result is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
       Expression::Literal { .. } =>
       {}
-    }
-  }
-
-  fn expression_type(&self, expression: &Expression) -> Option<Type>
-  {
-    match expression
-    {
-      Expression::Literal { literal, .. } => literal_default_type(literal),
-      Expression::Local { name, .. } => self.find_local(name).map(|local| local.ty.clone()),
-      Expression::Assign { value, .. } => self.expression_type(value),
-      Expression::Binary { operator,
-                           left,
-                           right,
-                           .. } => self.binary_expression_type(*operator, left, right),
-      Expression::ResultPropagation { value, .. } => self.result_success_type(value),
-      Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
-      Expression::If { result_type, .. } => Some(result_type.as_ref().clone()),
     }
   }
 
@@ -681,6 +689,7 @@ impl TypeChecker
   }
 }
 
+mod expression_type;
 mod for_check;
 mod match_check;
 mod result_type;

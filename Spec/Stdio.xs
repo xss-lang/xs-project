@@ -4,9 +4,11 @@
 // Stdio module:
 
 //
-// Stdio provides formatted text output macros and standard stream functions.
+// Stdio provides formatted text output macros, the std::fmt formatting API,
+// and standard stream functions.
 // print!, println!, eprint!, eprintln!, and format! are exported Stdio macros.
-// They are available through `imports stdio`, not as compiler built-ins.
+// They and std::fmt::* are made available through `imports stdio`; they are
+// not prelude or compiler built-ins.
 // format_args! and format_args_nl! are compiler-special built-in macros. They
 // do not participate in macro_rules! matching and cannot be redefined or
 // shadowed. write! and writeln! are built-in writer macros. None of these
@@ -126,22 +128,20 @@ fn format_values() {
 // writeln!(destination, arguments...)
 //   -> destination.write_fmt(format_args_nl!(arguments...))
 // format!(arguments...)
-//   -> { result := std::fmt::format(format_args!(arguments...)); result }
+//   -> std::fmt::format(format_args!(arguments...))
 //
 // format_args_nl! is the compiler-special newline variant of format_args!. std::_print
 // and std::_eprint are internal output boundaries. std::fmt::format
-// materializes the formatted UTF-16 Str.
+// materializes the formatted UTF-16 Str and belongs to the imported Stdio
+// surface.
 //
 // A destination expression is evaluated exactly once. Format arguments are
 // evaluated exactly once from left to right after the destination, and before
 // the runtime write begins. The template and argument grammar are validated at compile time.
-// Expansion introduces hygienic temporary bindings when required; those names
-// cannot collide with user declarations. A macro invocation must still match
-// exactly one rule.
+// A macro invocation must still match exactly one rule.
 
 
-// format! returns Str and does not write to a stream. The temporary `result`
-// binding in its conceptual expansion is hygienic.
+// format! returns Str and does not write to a stream.
 // Built-in format_args! returns the formatting argument value used by output
 // and writer macros and does not write to a stream. format_args_nl! returns the
 // same value with one trailing newline. Built-in write! and writeln! accept any

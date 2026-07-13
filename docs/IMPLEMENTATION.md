@@ -310,7 +310,7 @@ validation does not decide dispatch, override, or overload selection.
   a Result return type; constructor payload checking and complete propagation lowering remain later semantic work.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
-- `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` require
+- `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `format!`, and `std::fmt::*` require
   `imports stdio;` or `using namespace stdio;`. `format_args!` and `format_args_nl!` are compiler-special built-ins:
   they bypass `macro_rules!` resolution and cannot be declared or shadowed by user macros. `write!` and `writeln!` are
   built-in writer macros.
@@ -389,6 +389,10 @@ arm. HIR lowers each pattern to ordered MIR test/body blocks and a merge when an
 MIR storage locations: initializers and assignments emit `store.local`, reads emit `load.local`, and MIR-to-XLIL allocates
 typed stack slots. This keeps mutations visible after conditionals, loops, and match arms before LLVM emits memory and branch
 instructions.
+Value-producing `match` expressions use the same ordered pattern CFG. Every arm must provide a tail value of the declared
+result type. MIR writes those mutually exclusive values to compiler-owned target-independent storage, joins at a merge
+block, and loads the result for its enclosing expression. XHIR v0 records the selector type, result type, arms, and value
+blocks explicitly; LLVM-specific phi or ABI semantics do not leak into HIR or MIR.
 For supported single-unit builds, this Rust path no longer stops at an internal MIR count. The session borrow-checks and
 optimizes each lowered function, lowers the module to XLIL v0 text, and exposes that text through a borrowed C ABI view. The
 C23 driver parses it with the public `xs/lil.h` API, verifies the reconstructed module, and reuses the established LLVM IR,

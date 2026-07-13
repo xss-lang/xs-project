@@ -12,6 +12,8 @@ use crate::hir::{MatchArm, MatchPattern};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
+mod match_expression;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XhirParseDiagnostic
 {
@@ -537,6 +539,10 @@ impl Parser<'_>
                                    else_block: Box::new(else_block),
                                    result_type: Box::new(result_type),
                                    span: span() });
+    }
+    if let Some(signature) = rest.strip_prefix("match_expression ")
+    {
+      return self.match_expression(signature);
     }
     if let Some(operator) = rest.strip_prefix("binary ")
     {

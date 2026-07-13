@@ -165,90 +165,6 @@ impl HirToMirLowerer
     }
   }
 
-  fn surface_expression_from_desugared(&mut self, expression: &DesugaredExpression) -> Option<Expression>
-  {
-    match expression
-    {
-      DesugaredExpression::Literal { literal,
-                                     span, } => Some(Expression::Literal { literal: literal.clone(),
-                                                                           span: *span }),
-      DesugaredExpression::Local { name,
-                                   span, } => Some(Expression::Local { name: name.clone(),
-                                                                       span: *span }),
-      DesugaredExpression::Assign { target,
-                                    value,
-                                    span, } =>
-      {
-        self.surface_expression_from_desugared(value)
-            .map(|value| Expression::Assign { target: target.clone(),
-                                              value: Box::new(value),
-                                              span: *span })
-      }
-      DesugaredExpression::Binary { operator,
-                                    left,
-                                    right,
-                                    span, } =>
-      {
-        let left = self.surface_expression_from_desugared(left)?;
-        let right = self.surface_expression_from_desugared(right)?;
-        Some(Expression::Binary { operator: *operator,
-                                  left: Box::new(left),
-                                  right: Box::new(right),
-                                  span: *span })
-      }
-      DesugaredExpression::ResultMatch { span, .. } =>
-      {
-        self.report(DiagnosticCode::UnsupportedExpression,
-                    "desugared Result match lowering awaits MIR Result control-flow support",
-                    *span);
-        None
-      }
-      DesugaredExpression::Call { function,
-                                  arguments,
-                                  parameter_types,
-                                  return_type,
-                                  span, } =>
-      {
-        let arguments = arguments.iter()
-                                 .map(|value| self.surface_expression_from_desugared(value))
-                                 .collect::<Option<Vec<_>>>()?;
-        Some(Expression::Call { function: function.clone(),
-                                arguments,
-                                parameter_types: parameter_types.clone(),
-                                return_type: return_type.clone(),
-                                span: *span })
-      }
-      DesugaredExpression::If { condition,
-                                then_block,
-                                else_block,
-                                result_type,
-                                span, } =>
-      {
-        Some(Expression::If { condition: Box::new(self.surface_expression_from_desugared(condition)?),
-                              then_block: Box::new(self.surface_block_from_desugared(then_block)?),
-                              else_block: Box::new(self.surface_block_from_desugared(else_block)?),
-                              result_type: result_type.clone(),
-                              span: *span })
-      }
-    }
-  }
-
-  fn surface_block_from_desugared(&mut self, block: &DesugaredBlock) -> Option<Block>
-  {
-    let statements = block.statements
-                          .iter()
-                          .map(|statement| self.surface_statement_from_desugared(statement))
-                          .collect::<Option<Vec<_>>>()?;
-    let tail = match &block.tail
-    {
-      Some(expression) => Some(Box::new(self.surface_expression_from_desugared(expression)?)),
-      None => None,
-    };
-    Some(Block { statements,
-                 tail,
-                 span: block.span })
-  }
-
   fn lower_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
   {
     match statement
@@ -429,6 +345,7 @@ impl HirToMirLowerer
         self.unsupported_expression(expression);
         None
       }
+      Expression::Match { .. } => self.lower_match_expression(expression, expected_type, lowered),
     }
   }
 
@@ -611,6 +528,11 @@ impl HirToMirLowerer
         Type::Primitive(value) => primitive_to_xlil(*value),
         Type::Named(_) => None,
       },
+      Expression::Match { result_type, .. } => match result_type.as_ref()
+      {
+        Type::Primitive(value) => primitive_to_xlil(*value),
+        Type::Named(_) => None,
+      },
       Expression::Literal { .. } | Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
@@ -714,7 +636,7 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Assign { span, .. } |
     Expression::Binary { span, .. } |
     Expression::ResultPropagation { span, .. } => *span,
-    Expression::Call { span, .. } | Expression::If { span, .. } => *span,
+    Expression::Call { span, .. } | Expression::If { span, .. } | Expression::Match { span, .. } => *span,
   }
 }
 
@@ -724,6 +646,7 @@ mod control_flow;
 mod control_flow_tests;
 #[cfg(test)]
 mod desugar_tests;
+mod desugared;
 mod function_lowering;
 #[cfg(test)]
 mod match_tests;

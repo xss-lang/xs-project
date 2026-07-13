@@ -119,6 +119,30 @@ impl HirToMirLowerer
     Some(id)
   }
 
+  pub(super) fn declare_storage_temp(&mut self,
+                                     value_type: XlilType,
+                                     span: Span,
+                                     lowered: &mut mir::Function)
+                                     -> Option<mir::LocalId>
+  {
+    if value_type == XlilType::VOID
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "void expression cannot allocate MIR result storage",
+                  span);
+      return None;
+    }
+    let id = mir::LocalId(self.next_local);
+    self.next_local += 1;
+    lowered.locals.push(mir::Local { id,
+                                     name: format!("$match_result{}", id.0),
+                                     value_type: Some(value_type),
+                                     mutable: true,
+                                     span });
+    self.storage_locals.insert(id);
+    Some(id)
+  }
+
   pub(super) fn lower_return_type(&mut self, ty: Option<&Type>, span: Span) -> XlilType
   {
     ty.and_then(|ty| self.lower_value_type(ty, span))

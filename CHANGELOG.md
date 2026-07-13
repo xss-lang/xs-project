@@ -16,6 +16,14 @@ source-to-native executable pipeline.
 
 - `format_args_nl!` is now a source-callable compiler-special built-in and shares format-string validation with
   `format_args!`; neither formatting-argument intrinsic can be declared or shadowed through `macro_rules!`.
+- Value-producing `match` expressions with `Long`/`Bool` selectors, literal arms, and a final `else` now cross the C23
+  structural AST into typed HIR, versioned XHIR, MIR control flow and storage, XLIL, LLVM IR, and native `.xse` output.
+
+### Changed
+
+- The canonical `format!(...)` expansion is `std::fmt::format(format_args!(...))` with no synthetic source-level block.
+- `format!` and the `std::fmt::*` API are both provided by the non-prelude `Stdio` module; importing Stdio makes that
+  standard formatting surface available.
 
 ### Fixed
 

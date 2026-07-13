@@ -43,7 +43,7 @@ syntax takes priority over ad-hoc implementation shortcuts.
   or `using namespace Module;` when short names are desired.
 - `include!`, `format_args!`, `format_args_nl!`, `write!`, and `writeln!` are built-in macros. `format_args!` and
   `format_args_nl!` are compiler-special and cannot be declared or shadowed through `macro_rules!`.
-- `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` come from `Stdio`.
+- `print!`, `println!`, `eprint!`, `eprintln!`, `format!`, and the `std::fmt::*` API come from `Stdio`.
 - Attribute delimiter syntax is built in: `#[...]` applies to the following declaration/member, and `#![...]` applies to the
   enclosing file/module form. Official X# attributes live under `std::attrs::*`; the compiler brings those names into
   attribute scope automatically, so `imports attrs;` is optional.
@@ -69,8 +69,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - `Panic` is also an implicit standard import for assertion and panic macros. `assert!`, `assert_eq!`, `assert_ne!`,
   `debug_assert!`, `debug_assert_eq!`, and `panic!` are available without an explicit import, but they are still library
   macros rather than compiler built-ins.
-- `Stdio` is not prelude and is not implicit. Its `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` macros require
-  `imports stdio;` or `using namespace stdio;`. The writer and formatting-argument built-ins do not.
+- `Stdio` is not prelude and is not implicit. Its `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` macros and
+  `std::fmt::*` API require `imports stdio;` or `using namespace stdio;`. The writer and formatting-argument built-ins do
+  not.
 - Legacy exception syntax is deprecated and scheduled for removal in X# 2.0.0. Active examples should prefer
   `Result<T>`/`Result<T, E>` plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only in
   explicitly marked legacy notes.

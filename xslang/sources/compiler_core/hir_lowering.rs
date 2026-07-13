@@ -14,6 +14,8 @@ use crate::hir::{
 
 use super::{SyntaxNode, SyntaxTree};
 
+mod match_expression;
+
 const FILE: u32 = 0;
 const DECL_MODULE: u32 = 1;
 const DECL_FUNCTION: u32 = 4;
@@ -42,6 +44,7 @@ const EXPR_UNARY: u32 = 59;
 const EXPR_ASSIGNMENT: u32 = 60;
 const EXPR_CALL: u32 = 61;
 const EXPR_IF: u32 = 81;
+const EXPR_MATCH: u32 = 82;
 const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
 const TOKEN_INTEGER: u32 = 3;
@@ -342,6 +345,10 @@ fn lower_expression(tree: &SyntaxTree,
                             else_block: Box::new(else_block),
                             result_type: Box::new(result_type),
                             span: source_span })
+    }
+    EXPR_MATCH if value.children.len() >= 2 =>
+    {
+      match_expression::lower_match_expression(tree, value, signatures, locals, expected_type?.clone())
     }
     _ => None,
   }

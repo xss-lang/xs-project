@@ -66,6 +66,14 @@ pub enum DesugaredExpression
     result_type: Box<Type>,
     span: Span,
   },
+  Match
+  {
+    selector: Box<DesugaredExpression>,
+    selector_type: Box<Type>,
+    arms: Vec<DesugaredMatchArm>,
+    result_type: Box<Type>,
+    span: Span,
+  },
   ResultMatch
   {
     value: Box<DesugaredExpression>,
@@ -315,6 +323,22 @@ impl ResultDesugar
                                                             else_block: Box::new(self.desugar_block(else_block)),
                                                             result_type: result_type.clone(),
                                                             span: *span },
+      Expression::Match { selector,
+                          selector_type,
+                          arms,
+                          result_type,
+                          span, } =>
+      {
+        DesugaredExpression::Match { selector: Box::new(self.desugar_expression(selector)),
+                                     selector_type: selector_type.clone(),
+                                     arms: arms.iter()
+                                               .map(|arm| DesugaredMatchArm { pattern: arm.pattern.clone(),
+                                                                              body: self.desugar_block(&arm.body),
+                                                                              span: arm.span })
+                                               .collect(),
+                                     result_type: result_type.clone(),
+                                     span: *span }
+      }
     }
   }
 
@@ -419,6 +443,7 @@ impl ResultDesugar
                                                      .map(|(success, _)| success),
       Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
       Expression::If { result_type, .. } => Some(result_type.as_ref().clone()),
+      Expression::Match { result_type, .. } => Some(result_type.as_ref().clone()),
     }
   }
 

@@ -7,6 +7,187 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_match_expression(&mut self,
+                                       expression: &Expression,
+                                       expected_type: XlilType,
+                                       lowered: &mut mir::Function)
+                                       -> Option<mir::LocalId>
+  {
+    let Expression::Match { selector,
+                            selector_type,
+                            arms,
+                            result_type,
+                            span, } = expression
+    else
+    {
+      return None;
+    };
+    if primitive_to_xlil(match result_type.as_ref()
+    {
+      Type::Primitive(value) => *value,
+      Type::Named(_) =>
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    "named match result cannot lower to MIR yet",
+                    *span);
+        return None;
+      }
+    }) != Some(expected_type)
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "match result type does not match MIR context",
+                  *span);
+      return None;
+    }
+    if !matches!(arms.last().map(|arm| &arm.pattern), Some(MatchPattern::Else))
+    {
+      self.report(DiagnosticCode::UnsupportedExpression,
+                  "MIR match expression lowering requires a final else arm",
+                  *span);
+      return None;
+    }
+    let selector_value_type = self.match_selector_value_type(selector_type, *span)?;
+    let selector = self.lower_expression_to_local(selector, selector_value_type, lowered)?;
+    let result_storage = self.declare_storage_temp(expected_type, *span, lowered)?;
+    let merge = self.append_block(*span, lowered);
+    let outer_locals = self.locals.clone();
+    let mut test = self.current_block;
+    let mut open_arm = false;
+    for arm in arms
+    {
+      self.locals.clone_from(&outer_locals);
+      self.switch_to(test);
+      match &arm.pattern
+      {
+        MatchPattern::Literal(literal) =>
+        {
+          let body = self.append_block(arm.body.span, lowered);
+          let next = self.append_block(arm.span, lowered);
+          let condition = self.lower_match_test(selector, selector_value_type, literal, arm.span, lowered)?;
+          let (then_block, else_block) = if matches!(literal, Literal::Bool(false))
+          {
+            (next, body)
+          }
+          else
+          {
+            (body, next)
+          };
+          self.set_terminator(mir::Terminator::BranchIf { condition,
+                                                          then_block,
+                                                          else_block },
+                              arm.span,
+                              lowered);
+          self.switch_to(body);
+          open_arm |= self.lower_match_value_arm(&arm.body, result_storage, expected_type, merge, arm.span, lowered);
+          test = next;
+        }
+        MatchPattern::Else =>
+        {
+          open_arm |= self.lower_match_value_arm(&arm.body, result_storage, expected_type, merge, arm.span, lowered);
+        }
+      }
+    }
+    self.locals = outer_locals;
+    if !open_arm
+    {
+      self.report(DiagnosticCode::MissingReturn,
+                  "match expression has no value-producing arm",
+                  *span);
+      return None;
+    }
+    self.switch_to(merge);
+    let result = self.declare_temp(expected_type, *span, lowered)?;
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::LoadLocal { result,
+                                          local: result_storage,
+                                          span: *span });
+    Some(result)
+  }
+
+  fn match_selector_value_type(&mut self, selector_type: &Type, span: Span) -> Option<XlilType>
+  {
+    match selector_type
+    {
+      Type::Primitive(PrimitiveType::Bool) => Some(XlilType::BOOL),
+      Type::Primitive(PrimitiveType::Long) => Some(XlilType::I32),
+      _ =>
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    "MIR match lowering currently supports Bool and Long selectors",
+                    span);
+        None
+      }
+    }
+  }
+
+  fn lower_match_test(&mut self,
+                      selector: mir::LocalId,
+                      selector_type: XlilType,
+                      literal: &Literal,
+                      span: Span,
+                      lowered: &mut mir::Function)
+                      -> Option<mir::LocalId>
+  {
+    if selector_type == XlilType::BOOL
+    {
+      return Some(selector);
+    }
+    let pattern = self.declare_temp(XlilType::I32, span, lowered)?;
+    self.lower_literal_into(pattern, literal, span, lowered);
+    let condition = self.declare_temp(XlilType::BOOL, span, lowered)?;
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::EqI32 { result: condition,
+                                      left: selector,
+                                      right: pattern,
+                                      span });
+    Some(condition)
+  }
+
+  fn lower_match_value_arm(&mut self,
+                           block: &Block,
+                           result_storage: mir::LocalId,
+                           result_type: XlilType,
+                           merge: mir::BlockId,
+                           span: Span,
+                           lowered: &mut mir::Function)
+                           -> bool
+  {
+    for statement in &block.statements
+    {
+      if self.current_is_terminated(lowered)
+      {
+        return false;
+      }
+      self.lower_statement(statement, lowered);
+    }
+    if self.current_is_terminated(lowered)
+    {
+      return false;
+    }
+    let Some(tail) = block.tail.as_deref()
+    else
+    {
+      self.report(DiagnosticCode::MissingReturn,
+                  "match expression arm requires a tail value",
+                  span);
+      return false;
+    };
+    let Some(value) = self.lower_expression_to_local(tail, result_type, lowered)
+    else
+    {
+      return false;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::StoreLocal { local: result_storage,
+                                           value,
+                                           span: expression_span(tail) });
+    self.set_terminator(mir::Terminator::Goto(merge), span, lowered);
+    true
+  }
+
   pub(super) fn lower_match_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
   {
     let Statement::Match { selector,

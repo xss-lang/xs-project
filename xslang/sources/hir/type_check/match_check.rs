@@ -13,6 +13,26 @@ impl TypeChecker
                                       arms: &[MatchArm],
                                       span: Span)
   {
+    self.check_match(selector, selector_type, arms, None, span);
+  }
+
+  pub(super) fn check_match_expression(&mut self,
+                                       selector: &Expression,
+                                       selector_type: &Type,
+                                       arms: &[MatchArm],
+                                       result_type: &Type,
+                                       span: Span)
+  {
+    self.check_match(selector, selector_type, arms, Some(result_type), span);
+  }
+
+  fn check_match(&mut self,
+                 selector: &Expression,
+                 selector_type: &Type,
+                 arms: &[MatchArm],
+                 result_type: Option<&Type>,
+                 span: Span)
+  {
     self.check_expression_against_type(selector, selector_type);
     if !matches!(arms.last().map(|arm| &arm.pattern), Some(MatchPattern::Else))
     {
@@ -53,7 +73,7 @@ impl TypeChecker
         MatchPattern::Else =>
         {}
       }
-      self.check_block(&arm.body, None);
+      self.check_block(&arm.body, result_type);
     }
   }
 }
