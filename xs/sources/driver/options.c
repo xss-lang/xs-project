@@ -9,7 +9,7 @@
 
 XsCompilerSettings xs_cli_default_compiler_settings(void)
 {
-  return (XsCompilerSettings){.warning_level = XS_WARNING_MEDIUM};
+  return (XsCompilerSettings){.warning_level = XS_WARNING_MEDIUM, .verbose = true};
 }
 
 const char *xs_cli_warning_level_name(XsWarningLevel level)

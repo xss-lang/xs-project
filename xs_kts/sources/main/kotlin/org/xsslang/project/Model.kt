@@ -60,7 +60,7 @@ data class Author(
 data class CompilerSettings(
   var warningLevel: WarningLevel = WarningLevel.MEDIUM,
   var warningsAsErrors: Boolean = false,
-  var verbose: Boolean = false,
+  var verbose: Boolean = true,
 ) : Serializable
 
 data class ProjectState(

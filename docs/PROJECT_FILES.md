@@ -80,7 +80,8 @@ The DSL also provides:
 
 The compiler policy is transferred with the resolved source registry to the JVM-free `xs` process. Command-line
 `--warning`, `--werrror`, and `--verbose` values are one-shot overrides applied after KTS evaluation; they never rewrite
-the project script. XSPROJ intentionally has no persistent equivalent.
+the project script. The defaults are `warnings("medium")`, `werror(false)`, and `verbose(true)`. XSPROJ intentionally has
+no persistent equivalent.
 
 ## Source registries
 

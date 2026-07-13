@@ -14,6 +14,14 @@ import kotlin.test.assertTrue
 
 class ProjectDslTest {
   @Test
+  fun compilerPolicyDefaultsAreStable() {
+    val settings = CompilerSettings()
+    assertEquals(WarningLevel.MEDIUM, settings.warningLevel)
+    assertTrue(!settings.warningsAsErrors)
+    assertTrue(settings.verbose)
+  }
+
+  @Test
   fun buildsConditionalProjectPlan() {
     val context = ProjectContext(Host(OperatingSystem.LINUX, OperatingSystemFamily.UNIX, Architecture.X86_64))
     context.project("Demo", "BETA", "0.1.0")

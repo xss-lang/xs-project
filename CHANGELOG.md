@@ -20,7 +20,8 @@ source-to-native executable pipeline.
   and emit a deterministic main-first source registry.
 - `--warning all|medium|low|none`, `--werrror true|false`, and `--verbose true|false` provide one-shot compiler-policy
   overrides for KTS, legacy XSPROJ, and direct source invocations. The KTS resolver now transfers its evaluated
-  `compiler {}` policy with the source registry.
+  `compiler {}` policy with the source registry. Defaults are medium warnings, warnings-as-errors disabled, and verbose
+  progress enabled.
 - The Kotlin/JVM 25 `xs-project` resolver evaluates combined `xs.project.kts` files or split `xs.settings.kts` and
   `xs.build.kts` files through the required external `kotlin` script runner. Explicit source registries require one
   case-sensitive `main.xs` entry and are compiled by the JVM-free `/usr/bin/xs` process.

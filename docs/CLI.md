@@ -46,6 +46,9 @@ project build, `-proj`, or `-file`:
 - `--verbose true|false` controls compiler progress output. When enabled, `xs` prints the effective policy and the
   ordered source registry entering the frontend.
 
+The default policy is `warning=medium`, `werrror=false`, and `verbose=true`. An explicit KTS `compiler {}` value is used
+for that project, and a command-line value has final precedence for the current invocation.
+
 For Kotlin projects these values override the evaluated `compiler {}` block without modifying either KTS file:
 
 ```text
