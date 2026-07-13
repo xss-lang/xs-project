@@ -169,7 +169,12 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
     XsMirStatus status = check_value_exists(function, instruction->result, "MIR load result is unknown", error);
     if(status != XS_MIR_OK)
       return status;
-    return find_place(function, instruction->place, &place, error);
+    status = find_place(function, instruction->place, &place, error);
+    if(status != XS_MIR_OK)
+      return status;
+    if(!type_equal(function->values[instruction->result].type, function->locals[place->root_local].type))
+      return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR load result type does not match place type");
+    return XS_MIR_OK;
   }
   case XS_MIR_INSTRUCTION_STORE:
   {
@@ -180,6 +185,8 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
     status = find_place(function, instruction->place, &place, error);
     if(status != XS_MIR_OK)
       return status;
+    if(!type_equal(function->values[instruction->operand_left].type, function->locals[place->root_local].type))
+      return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR store value type does not match place type");
     return check_store_mutability(function, place, error);
   }
   }

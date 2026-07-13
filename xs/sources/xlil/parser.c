@@ -421,6 +421,20 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
      equals < line + length && *equals == '=')
   {
     const char *operation = skip_space(equals + 1, line + length);
+    static const char load_prefix[] = "load %s";
+    if((size_t)(line + length - operation) > sizeof(load_prefix) - 1U &&
+       strncmp(operation, load_prefix, sizeof(load_prefix) - 1U) == 0)
+    {
+      uint32_t slot = 0;
+      if(!parse_u32_after_prefix(operation, (size_t)(line + length - operation), load_prefix, &slot) ||
+         xs_lil_function_slot_type(block->owner, slot).kind != result_type.kind)
+        return parse_error(parser, error, "XLIL load type or stack slot is invalid");
+      XsLilValueId actual = 0;
+      XsLilStatus status = xs_lil_block_add_load(block, slot, &actual, error);
+      if(status != XS_LIL_OK)
+        return status;
+      return actual == result ? XS_LIL_OK : parse_error(parser, error, "XLIL value ids must be sequential");
+    }
     if((size_t)(line + length - operation) >= 5U && strncmp(operation, "call ", 5) == 0)
       return parse_call(parser, block, operation, (size_t)(line + length - operation), &result_type, result, error);
     static const struct
@@ -551,6 +565,25 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
   return XS_LIL_OK;
 }
 
+static XsLilStatus parse_store(Parser *parser, XsLilBlock *block, const char *line, size_t length, XsLilError *error)
+{
+  static const char prefix[] = "store %r";
+  if(length <= sizeof(prefix) - 1U || strncmp(line, prefix, sizeof(prefix) - 1U) != 0)
+    return parse_error(parser, error, "XLIL store instruction is invalid");
+  const char *comma = line + sizeof(prefix) - 1U;
+  while(comma < line + length && *comma != ',')
+    ++comma;
+  uint32_t value = 0;
+  if(comma == line + length ||
+     !parse_u32_after_prefix(line + sizeof(prefix) - 1U, (size_t)(comma - (line + sizeof(prefix) - 1U)), "", &value))
+    return parse_error(parser, error, "XLIL store value is invalid");
+  const char *slot = skip_space(comma + 1, line + length);
+  uint32_t slot_id = 0;
+  if(!parse_u32_after_prefix(slot, (size_t)(line + length - slot), "%s", &slot_id))
+    return parse_error(parser, error, "XLIL store stack slot is invalid");
+  return xs_lil_block_add_store(block, slot_id, value, error);
+}
+
 static XsLilStatus parse_terminator(Parser *parser, XsLilBlock *block, const char *line, size_t length,
                                     PendingBranch **branches, size_t *branch_count, XsLilError *error)
 {
@@ -636,6 +669,28 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
       ++parameter;
       continue;
     }
+    if(trimmed_length > 6 && strncmp(trimmed, ".slot ", 6) == 0)
+    {
+      if(current != nullptr || parameter != function->parameter_count)
+        return parse_error(parser, error, "XLIL stack slot record is misplaced");
+      const char *record = trimmed + 6;
+      const char *colon = record;
+      while(colon < trimmed + trimmed_length && *colon != ':')
+        ++colon;
+      uint32_t expected = 0;
+      XsLilType type = {0};
+      if(colon == trimmed + trimmed_length ||
+         !parse_u32_after_prefix(record, (size_t)(colon - record), "%s", &expected) ||
+         !parse_type(colon + 1, (size_t)(trimmed + trimmed_length - (colon + 1)), &type))
+        return parse_error(parser, error, "XLIL stack slot record is invalid");
+      XsLilSlotId actual = UINT32_MAX;
+      XsLilStatus status = xs_lil_function_add_slot(function, type, &actual, error);
+      if(status != XS_LIL_OK)
+        return status;
+      if(actual != expected)
+        return parse_error(parser, error, "XLIL stack slot ids must be sequential");
+      continue;
+    }
     if(trimmed_length > 4 && trimmed[0] == 'b' && trimmed[1] == 'b')
     {
       if(parameter != function->parameter_count)
@@ -665,10 +720,15 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
     if(current_terminated)
       return parse_error(parser, error, "XLIL instruction appears after a terminator");
     XsLilStatus status = XS_LIL_OK;
-    if(trimmed[0] == '%' || (trimmed_length >= 5 && strncmp(trimmed, "call ", 5) == 0))
+    if(trimmed[0] == '%' || (trimmed_length >= 5 && strncmp(trimmed, "call ", 5) == 0) ||
+       (trimmed_length >= 6 && strncmp(trimmed, "store ", 6) == 0))
     {
-      status = trimmed[0] == '%' ? parse_instruction(parser, current, trimmed, trimmed_length, error)
-                                 : parse_call(parser, current, trimmed, trimmed_length, nullptr, 0, error);
+      if(trimmed[0] == '%')
+        status = parse_instruction(parser, current, trimmed, trimmed_length, error);
+      else if(strncmp(trimmed, "store ", 6) == 0)
+        status = parse_store(parser, current, trimmed, trimmed_length, error);
+      else
+        status = parse_call(parser, current, trimmed, trimmed_length, nullptr, 0, error);
     }
     else
     {

@@ -51,6 +51,7 @@ typedef struct
 
 typedef uint32_t XsLilValueId;
 typedef uint32_t XsLilBlockId;
+typedef uint32_t XsLilSlotId;
 
 typedef enum
 {
@@ -91,6 +92,8 @@ typedef enum
   XS_LIL_INSTRUCTION_GE_I32,
   XS_LIL_INSTRUCTION_NOT_BOOL,
   XS_LIL_INSTRUCTION_CALL,
+  XS_LIL_INSTRUCTION_LOAD,
+  XS_LIL_INSTRUCTION_STORE,
 } XsLilInstructionKind;
 
 typedef enum
@@ -127,6 +130,9 @@ XsLilType xs_lil_function_parameter_type(const XsLilFunction *function, size_t i
 bool xs_lil_function_is_definition(const XsLilFunction *function);
 size_t xs_lil_function_value_count(const XsLilFunction *function);
 XsLilType xs_lil_function_value_type(const XsLilFunction *function, XsLilValueId value);
+XsLilStatus xs_lil_function_add_slot(XsLilFunction *function, XsLilType type, XsLilSlotId *slot, XsLilError *error);
+size_t xs_lil_function_slot_count(const XsLilFunction *function);
+XsLilType xs_lil_function_slot_type(const XsLilFunction *function, XsLilSlotId slot);
 size_t xs_lil_function_block_count(const XsLilFunction *function);
 const XsLilBlock *xs_lil_function_block_at(const XsLilFunction *function, size_t index);
 
@@ -205,6 +211,8 @@ XsLilStatus xs_lil_block_add_call(XsLilBlock *block, const char *callee, XsLilTy
                                   XsLilError *error);
 XsLilStatus xs_lil_block_add_void_call(XsLilBlock *block, const char *callee, const XsLilValueId *arguments,
                                        size_t argument_count, XsLilError *error);
+XsLilStatus xs_lil_block_add_load(XsLilBlock *block, XsLilSlotId slot, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_store(XsLilBlock *block, XsLilSlotId slot, XsLilValueId value, XsLilError *error);
 XsLilStatus xs_lil_block_set_return(XsLilBlock *block, XsLilError *error);
 XsLilStatus xs_lil_block_set_return_value(XsLilBlock *block, XsLilValueId value, XsLilError *error);
 XsLilStatus xs_lil_block_set_branch(XsLilBlock *block, XsLilBlockId target, XsLilError *error);
@@ -223,6 +231,7 @@ size_t xs_lil_block_instruction_argument_count(const XsLilBlock *block, size_t i
 XsLilValueId xs_lil_block_instruction_argument(const XsLilBlock *block, size_t index, size_t argument);
 XsLilValueId xs_lil_block_instruction_left(const XsLilBlock *block, size_t index);
 XsLilValueId xs_lil_block_instruction_right(const XsLilBlock *block, size_t index);
+XsLilSlotId xs_lil_block_instruction_slot(const XsLilBlock *block, size_t index);
 XsLilTerminatorKind xs_lil_block_terminator_kind(const XsLilBlock *block);
 bool xs_lil_block_terminator_has_value(const XsLilBlock *block);
 XsLilValueId xs_lil_block_terminator_value(const XsLilBlock *block);

@@ -506,13 +506,15 @@ static XsBackendStatus lower_lil_binary_integer(LLVMBuilderRef builder, const Xs
   return XS_BACKEND_OK;
 }
 
-static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilderRef builder, const XsLilBlock *block,
+static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilderRef builder,
+                                             const XsLilFunction *function, const XsLilBlock *block,
                                              size_t index, LLVMValueRef *values, size_t value_count,
+                                             LLVMValueRef *slots, size_t slot_count,
                                              XsBackendError *error)
 {
   XsLilInstructionKind kind = xs_lil_block_instruction_kind(block, index);
   XsLilValueId result = xs_lil_block_instruction_result(block, index);
-  if(kind != XS_LIL_INSTRUCTION_CALL && (size_t)result >= value_count)
+  if(kind != XS_LIL_INSTRUCTION_CALL && kind != XS_LIL_INSTRUCTION_STORE && (size_t)result >= value_count)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL instruction result references an unknown value");
   LLVMTypeRef type = nullptr;
   if(kind == XS_LIL_INSTRUCTION_CONST_I64)
@@ -594,6 +596,29 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     free(arguments);
     return status;
   }
+  if(kind == XS_LIL_INSTRUCTION_LOAD)
+  {
+    XsLilSlotId slot = xs_lil_block_instruction_slot(block, index);
+    if((size_t)slot >= slot_count || slots[slot] == nullptr)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL load references an unavailable stack slot");
+    XsBackendStatus status = xs_llvm_lil_type(unit->backend, xs_lil_function_value_type(function, result), &type,
+                                              error);
+    if(status != XS_BACKEND_OK)
+      return status;
+    values[result] = LLVMBuildLoad2(builder, type, slots[slot], "load");
+    return values[result] == nullptr ? set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL load")
+                                     : XS_BACKEND_OK;
+  }
+  if(kind == XS_LIL_INSTRUCTION_STORE)
+  {
+    XsLilSlotId slot = xs_lil_block_instruction_slot(block, index);
+    XsLilValueId value = xs_lil_block_instruction_left(block, index);
+    if((size_t)slot >= slot_count || slots[slot] == nullptr || (size_t)value >= value_count || values[value] == nullptr)
+      return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL store references an unavailable value or stack slot");
+    return LLVMBuildStore(builder, values[value], slots[slot]) == nullptr
+               ? set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL store")
+               : XS_BACKEND_OK;
+  }
   return set_error(error, XS_BACKEND_DEFERRED, "XLIL instruction lowering is not supported yet");
 }
 
@@ -671,15 +696,18 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
 
   size_t block_count = xs_lil_function_block_count(function);
   size_t value_count = xs_lil_function_value_count(function);
-  if(block_count > (size_t)UINT_MAX || value_count > (size_t)UINT_MAX)
+  size_t slot_count = xs_lil_function_slot_count(function);
+  if(block_count > (size_t)UINT_MAX || value_count > (size_t)UINT_MAX || slot_count > (size_t)UINT_MAX)
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL function body is too large for LLVM C API");
   LLVMBasicBlockRef *blocks = calloc(block_count == 0 ? 1 : block_count, sizeof(*blocks));
   LLVMValueRef *values = calloc(value_count == 0 ? 1 : value_count, sizeof(*values));
+  LLVMValueRef *slots = calloc(slot_count == 0 ? 1 : slot_count, sizeof(*slots));
   LLVMBuilderRef builder = LLVMCreateBuilderInContext(unit->backend->context);
-  if(blocks == nullptr || values == nullptr || builder == nullptr)
+  if(blocks == nullptr || values == nullptr || slots == nullptr || builder == nullptr)
   {
     free(blocks);
     free(values);
+    free(slots);
     if(builder != nullptr)
       LLVMDisposeBuilder(builder);
     return set_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while lowering XLIL function body");
@@ -716,6 +744,28 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
       goto cleanup;
     }
   }
+  if(slot_count != 0)
+  {
+    if(block_count == 0)
+    {
+      status = set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL stack slots require an entry block");
+      goto cleanup;
+    }
+    LLVMPositionBuilderAtEnd(builder, blocks[0]);
+    for(size_t slot = 0; slot < slot_count; ++slot)
+    {
+      LLVMTypeRef slot_type = nullptr;
+      status = xs_llvm_lil_type(unit->backend, xs_lil_function_slot_type(function, (XsLilSlotId)slot), &slot_type, error);
+      if(status != XS_BACKEND_OK)
+        goto cleanup;
+      slots[slot] = LLVMBuildAlloca(builder, slot_type, "slot");
+      if(slots[slot] == nullptr)
+      {
+        status = set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not allocate XLIL stack slot");
+        goto cleanup;
+      }
+    }
+  }
   for(size_t i = 0; i < block_count; ++i)
   {
     const XsLilBlock *block = xs_lil_function_block_at(function, i);
@@ -723,7 +773,8 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
     size_t instruction_count = xs_lil_block_instruction_count(block);
     for(size_t instruction = 0; instruction < instruction_count; ++instruction)
     {
-      status = lower_lil_instruction(unit, builder, block, instruction, values, value_count, error);
+      status =
+          lower_lil_instruction(unit, builder, function, block, instruction, values, value_count, slots, slot_count, error);
       if(status != XS_BACKEND_OK)
         goto cleanup;
     }
@@ -736,6 +787,7 @@ cleanup:
   LLVMDisposeBuilder(builder);
   free(blocks);
   free(values);
+  free(slots);
   return status;
 }
 

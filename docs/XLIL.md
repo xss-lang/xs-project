@@ -61,6 +61,7 @@ Format notes:
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
 - `.param %rN:type` maps a signature parameter to a body register. Records occur before the first basic block, in
   signature order, and repeat the signature type.
+- `.slot %sN:type` declares a typed function-local stack slot after parameters and before the first basic block.
 - `bbN.<label>:` starts a basic block.
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
@@ -76,6 +77,8 @@ Format notes:
 - `%rN:bool = not.bool %rA` negates a boolean SSA value.
 - `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.
 - `call <symbol>(%rA, %rB)` calls a void function and discards the result.
+- `store %rN, %sA` writes a typed register value to a matching stack slot.
+- `%rN:type = load %sA` reads a matching stack slot into a new typed register value.
 - `br bbN` transfers control to another basic block.
 - `br_if %rN, bbA, bbB` branches to `bbA` when the `bool` condition `%rN` is true, otherwise to `bbB`.
 - `ret` and `ret %rN` are the current return terminators.
@@ -94,6 +97,10 @@ bb0.entry:
 
 Call targets resolve only within the registry module. Forward references are accepted, but every target must be declared by
 `.extern` or `.func` and its argument and return types must match the call record.
+
+Stack slots are function-local and target-independent. Slot ids are sequential, `void` slots are invalid, and load/store
+value types must exactly match the slot type. The LLVM backend currently materializes them with entry-block `alloca`
+instructions and typed `load`/`store` operations.
 
 Version `0` is the only supported XLIL version today. The header exists so `xs build --xlil -file <input.xlil>` can select
 the correct XLIL grammar as the format evolves. It is not a bytecode VM version and does not make `.xlil` binary.

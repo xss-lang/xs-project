@@ -187,6 +187,18 @@ fn roundtrips_panic_function()
 }
 
 #[test]
+fn roundtrips_stack_slot_memory()
+{
+  let text = ".xlil version 0\n.xlil module App\n.func Memory : () -> i32\n.slot %s0:i32\nbb0.entry:\n  %r0:i32 = \
+              const.i32 7\n  store %r0, %s0\n  %r1:i32 = load %s0\n  ret %r1\n.end\n";
+
+  let module = parse_module(text).expect("parse should succeed");
+
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(module_to_string(&module), text);
+}
+
+#[test]
 fn rejects_legacy_plain_value_ids()
 {
   let text = ".xlil version 0\n.xlil module App\n.func xs$App$Legacy : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  \

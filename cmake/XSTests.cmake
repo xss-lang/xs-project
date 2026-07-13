@@ -46,7 +46,7 @@ endforeach()
 
 set(XS_DIRECT_XLIL_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/intermediate")
 file(MAKE_DIRECTORY "${XS_DIRECT_XLIL_FIXTURE_DIR}")
-foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit MissingMain ExternMain
+foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit StackSlotExit MissingMain ExternMain
                       ParameterizedMain VoidMain I64Main DuplicateMain)
   configure_file(tests/fixtures/intermediate/${entry_fixture}.xlil
                  "${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil" COPYONLY)
@@ -106,6 +106,16 @@ add_test(NAME direct_xlil_bitwise_exit_artifacts COMMAND xs_xse_artifact_tests
                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/BitwiseExit.o
                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/BitwiseExit.xse 6)
 set_tests_properties(direct_xlil_bitwise_exit_artifacts PROPERTIES DEPENDS direct_xlil_bitwise_exit_build TIMEOUT 5)
+add_test(NAME direct_xlil_stack_slot_exit_build COMMAND xs build --xlil -file
+                                                ${XS_DIRECT_XLIL_FIXTURE_DIR}/StackSlotExit.xlil)
+set_tests_properties(direct_xlil_stack_slot_exit_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME direct_xlil_stack_slot_exit_artifacts COMMAND xs_xse_artifact_tests
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/StackSlotExit.ll
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/StackSlotExit.o
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/StackSlotExit.xse 7 "load i32")
+set_tests_properties(direct_xlil_stack_slot_exit_artifacts PROPERTIES DEPENDS direct_xlil_stack_slot_exit_build
+                                                                        TIMEOUT 5)
 foreach(entry_fixture MissingMain ExternMain ParameterizedMain VoidMain I64Main DuplicateMain)
   add_test(NAME direct_xlil_invalid_${entry_fixture} COMMAND xs build --xlil -file ${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil)
   set_tests_properties(direct_xlil_invalid_${entry_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)

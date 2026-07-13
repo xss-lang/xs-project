@@ -190,6 +190,13 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
       if(xs_lil_write_checked(stream, error, ")\n") != XS_LIL_OK)
         return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     }
+    if(instruction->kind == XS_LIL_INSTRUCTION_LOAD &&
+       fprintf(stream, "  %%r%u:%s = load %%s%u\n", instruction->result,
+               xs_lil_type_name(block->owner->values[instruction->result].type), instruction->slot) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL load instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_STORE &&
+       fprintf(stream, "  store %%r%u, %%s%u\n", instruction->left, instruction->slot) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL store instruction");
   }
   if(block->terminator.kind == XS_LIL_TERMINATOR_RETURN)
   {
@@ -249,6 +256,11 @@ XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, Xs
     {
       if(fprintf(stream, ".param %%r%zu:%s\n", parameter, xs_lil_type_name(function->parameters[parameter])) < 0)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL function parameter");
+    }
+    for(size_t slot = 0; slot < function->slot_count; ++slot)
+    {
+      if(fprintf(stream, ".slot %%s%zu:%s\n", slot, xs_lil_type_name(function->slots[slot].type)) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL stack slot");
     }
     for(size_t block = 0; block < function->block_count; ++block)
     {

@@ -67,6 +67,7 @@ static void function_free(XsLilFunction *function)
     free(block);
   }
   free(function->blocks);
+  free(function->slots);
   free(function->values);
   free(function->name);
   free(function->parameters);
@@ -122,7 +123,7 @@ static XsLilStatus append_function(XsLilModule *module, XsLilFunction function, 
   return XS_LIL_OK;
 }
 
-static XsLilStatus add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error)
+XsLilStatus xs_lil_add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error)
 {
   if(function->value_count == function->value_capacity)
   {
@@ -170,7 +171,7 @@ static XsLilStatus add_function(XsLilModule *module, const char *name, XsLilType
     for(size_t parameter = 0; parameter < parameter_count; ++parameter)
     {
       XsLilValueId value = 0;
-      XsLilStatus status = add_value(&function, parameters[parameter], &value, error);
+      XsLilStatus status = xs_lil_add_value(&function, parameters[parameter], &value, error);
       if(status != XS_LIL_OK)
       {
         function_free(&function);
@@ -295,7 +296,7 @@ XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *la
   return XS_LIL_OK;
 }
 
-static XsLilStatus append_instruction(XsLilBlock *block, XsLilInstruction instruction, XsLilError *error)
+XsLilStatus xs_lil_append_instruction(XsLilBlock *block, XsLilInstruction instruction, XsLilError *error)
 {
   if(block == nullptr)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
@@ -322,10 +323,10 @@ XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilVa
   if(block == nullptr || block->owner == nullptr)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
   XsLilValueId value_id = 0;
-  XsLilStatus status = add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_I64}, &value_id, error);
+  XsLilStatus status = xs_lil_add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_I64}, &value_id, error);
   if(status != XS_LIL_OK)
     return status;
-  status = append_instruction(block,
+  status = xs_lil_append_instruction(block,
                               (XsLilInstruction){
                                   .kind = XS_LIL_INSTRUCTION_CONST_I64,
                                   .result = value_id,
@@ -347,10 +348,10 @@ XsLilStatus xs_lil_block_add_const_i32(XsLilBlock *block, int32_t value, XsLilVa
   if(block == nullptr || block->owner == nullptr)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
   XsLilValueId value_id = 0;
-  XsLilStatus status = add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_I32}, &value_id, error);
+  XsLilStatus status = xs_lil_add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_I32}, &value_id, error);
   if(status != XS_LIL_OK)
     return status;
-  status = append_instruction(block,
+  status = xs_lil_append_instruction(block,
                               (XsLilInstruction){
                                   .kind = XS_LIL_INSTRUCTION_CONST_I32,
                                   .result = value_id,
@@ -372,10 +373,10 @@ XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValu
   if(block == nullptr || block->owner == nullptr)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
   XsLilValueId value_id = 0;
-  XsLilStatus status = add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &value_id, error);
+  XsLilStatus status = xs_lil_add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &value_id, error);
   if(status != XS_LIL_OK)
     return status;
-  status = append_instruction(block,
+  status = xs_lil_append_instruction(block,
                               (XsLilInstruction){
                                   .kind = XS_LIL_INSTRUCTION_CONST_BOOL,
                                   .result = value_id,
@@ -405,10 +406,10 @@ static XsLilStatus add_binary_integer(XsLilBlock *block, XsLilInstructionKind ki
       .left = left,
       .right = right,
   };
-  XsLilStatus status = add_value(block->owner, result_type, &instruction.result, error);
+  XsLilStatus status = xs_lil_add_value(block->owner, result_type, &instruction.result, error);
   if(status != XS_LIL_OK)
     return status;
-  status = append_instruction(block, instruction, error);
+  status = xs_lil_append_instruction(block, instruction, error);
   if(status != XS_LIL_OK)
   {
     --block->owner->value_count;
@@ -652,10 +653,10 @@ XsLilStatus xs_lil_block_not_bool(XsLilBlock *block, XsLilValueId operand, XsLil
      block->owner->values[operand].type.kind != XS_LIL_TYPE_BOOL)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL not.bool operand must be bool");
   XsLilValueId value_id = 0;
-  XsLilStatus status = add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &value_id, error);
+  XsLilStatus status = xs_lil_add_value(block->owner, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &value_id, error);
   if(status != XS_LIL_OK)
     return status;
-  status = append_instruction(block,
+  status = xs_lil_append_instruction(block,
                               (XsLilInstruction){
                                   .kind = XS_LIL_INSTRUCTION_NOT_BOOL,
                                   .result = value_id,
@@ -705,7 +706,7 @@ static XsLilStatus add_call(XsLilBlock *block, const char *callee, XsLilType ret
   }
   if(has_result)
   {
-    XsLilStatus status = add_value(block->owner, return_type, &instruction.result, error);
+    XsLilStatus status = xs_lil_add_value(block->owner, return_type, &instruction.result, error);
     if(status != XS_LIL_OK)
     {
       free(instruction.arguments);
@@ -713,7 +714,7 @@ static XsLilStatus add_call(XsLilBlock *block, const char *callee, XsLilType ret
       return status;
     }
   }
-  XsLilStatus status = append_instruction(block, instruction, error);
+  XsLilStatus status = xs_lil_append_instruction(block, instruction, error);
   if(status != XS_LIL_OK)
   {
     if(has_result)

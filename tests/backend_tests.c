@@ -300,6 +300,23 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_declare_lil_function(first, "Panic", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
                                      &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, panic_function, &error) == XS_BACKEND_OK);
+  XsLilFunction *memory_function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Memory", (XsLilType){.kind = XS_LIL_TYPE_I32}, nullptr, 0,
+                                              &memory_function, nullptr) == XS_LIL_OK);
+  XsLilSlotId memory_slot = 0;
+  CHECK(xs_lil_function_add_slot(memory_function, (XsLilType){.kind = XS_LIL_TYPE_I32}, &memory_slot, nullptr) ==
+        XS_LIL_OK);
+  XsLilBlock *memory_entry = nullptr;
+  CHECK(xs_lil_function_append_block(memory_function, "entry", &memory_entry, nullptr) == XS_LIL_OK);
+  XsLilValueId stored_value = 0;
+  XsLilValueId loaded_value = 0;
+  CHECK(xs_lil_block_add_const_i32(memory_entry, 7, &stored_value, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_store(memory_entry, memory_slot, stored_value, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_load(memory_entry, memory_slot, &loaded_value, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(memory_entry, loaded_value, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Memory", (XsLilType){.kind = XS_LIL_TYPE_I32}, nullptr, 0, &function,
+                                     &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, memory_function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);
   char ir_path[4096] = {0};
   CHECK(snprintf(ir_path, sizeof(ir_path), "%s.ll", argv[1]) > 0);
@@ -353,6 +370,10 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "define void @Panic()"));
   CHECK(file_contains(ir_path, "call void @llvm.trap()"));
   CHECK(file_contains(ir_path, "unreachable"));
+  CHECK(file_contains(ir_path, "define i32 @Memory()"));
+  CHECK(file_contains(ir_path, "alloca i32"));
+  CHECK(file_contains(ir_path, "store i32 7"));
+  CHECK(file_contains(ir_path, "load i32"));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
 
   const char *linker_arguments[] = {"--version"};

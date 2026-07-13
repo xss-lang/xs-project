@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 
-use crate::xlil::{Function, Instruction, Module, Terminator, ValueId};
+use crate::xlil::{Function, Instruction, Module, SlotId, Terminator, Type, ValueId};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -29,6 +29,8 @@ pub enum DiagnosticCode
   CallArgumentTypeMismatch,
   CallResultTypeMismatch,
   CallVoidResultMismatch,
+  StackSlotInvalid,
+  MemoryTypeMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -88,6 +90,14 @@ impl Verifier
     {
       self.report(DiagnosticCode::DefinitionHasNoBlocks,
                   "XLIL function definition must contain at least one block");
+    }
+    for (index, slot) in function.slots.iter().enumerate()
+    {
+      if slot.id != SlotId(index as u32) || slot.value_type == Type::VOID
+      {
+        self.report(DiagnosticCode::StackSlotInvalid,
+                    "XLIL stack slots must be sequential and have non-void types");
+      }
     }
     let blocks = function.blocks.iter().map(|block| block.id).collect::<HashSet<_>>();
     let mut seen_blocks = HashSet::new();
@@ -253,6 +263,29 @@ impl Verifier
           }
         }
       }
+      Instruction::Load { result,
+                          slot, } => self.memory(function, slot, result, "XLIL load"),
+      Instruction::Store { slot,
+                           value, } => self.memory(function, slot, value, "XLIL store"),
+    }
+  }
+
+  fn memory(&mut self, function: &Function, slot: SlotId, value: ValueId, label: &str)
+  {
+    let Some(slot_type) = function.slots
+                                  .get(slot.0 as usize)
+                                  .filter(|entry| entry.id == slot)
+                                  .map(|entry| entry.value_type)
+    else
+    {
+      self.report(DiagnosticCode::StackSlotInvalid,
+                  &format!("{label} references an unknown stack slot"));
+      return;
+    };
+    if value_type(function, value) != Some(slot_type)
+    {
+      self.report(DiagnosticCode::MemoryTypeMismatch,
+                  &format!("{label} value type must match the stack slot type"));
     }
   }
 

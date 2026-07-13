@@ -4,8 +4,8 @@
  */
 
 use crate::xlil::{
-  Block, BlockId, Function, Instruction, Module, SUPPORTED_XLIL_VERSION, Terminator, Type, Value, ValueId,
-  is_supported_xlil_version, type_from_name,
+  Block, BlockId, Function, Instruction, Module, SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator, Type, Value,
+  ValueId, is_supported_xlil_version, type_from_name,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -233,6 +233,21 @@ impl Parser<'_>
         parameter += 1;
         continue;
       }
+      if let Some(record) = line.strip_prefix(".slot ")
+      {
+        if parameter != function.parameters.len()
+        {
+          self.report(DiagnosticCode::InvalidInstruction,
+                      self.line_number(),
+                      "XLIL stack slot appears before parameter records are complete");
+          return;
+        }
+        let line = self.line_number();
+        let record = record.to_string();
+        self.cursor += 1;
+        self.slot_record(function, &record, line);
+        continue;
+      }
       if parameter != function.parameters.len()
       {
         self.report(DiagnosticCode::InvalidInstruction,
@@ -253,6 +268,42 @@ impl Parser<'_>
     self.report(DiagnosticCode::UnexpectedEndOfInput,
                 self.line_number(),
                 "XLIL function body is not closed");
+  }
+
+  fn slot_record(&mut self, function: &mut Function, record: &str, line: usize)
+  {
+    let Some((slot, type_name)) = record.split_once(':')
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL stack slot record is invalid");
+      return;
+    };
+    let Some(id) = slot.strip_prefix("%s")
+                       .and_then(|id| id.parse::<u32>().ok())
+                       .map(SlotId)
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL stack slot id is invalid");
+      return;
+    };
+    let Some(value_type) = self.type_name(type_name, line)
+    else
+    {
+      return;
+    };
+    if id.0 as usize != function.slots.len() || value_type == Type::VOID
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL stack slot record is invalid or out of order");
+      return;
+    }
+    function.slots.push(Slot { id,
+                               value_type });
   }
 
   fn parameter_record(&mut self, function: &Function, parameter: usize, record: &str, line: usize)
@@ -318,6 +369,13 @@ impl Parser<'_>
           block.instructions.push(instruction);
         }
       }
+      else if let Some(store) = line.strip_prefix("  store ")
+      {
+        if let Some(instruction) = self.store(store, line_number)
+        {
+          block.instructions.push(instruction);
+        }
+      }
       else if let Some(terminator) = line.strip_prefix("  ret")
       {
         block.terminator = self.return_terminator(terminator, line_number);
@@ -366,6 +424,10 @@ impl Parser<'_>
     if let Some((result, call)) = text.split_once(" = call ")
     {
       return self.value_call(function, result, call, line);
+    }
+    if let Some((result, slot)) = text.split_once(" = load ")
+    {
+      return self.load(function, result, slot, line);
     }
     if let Some((result, operands)) = text.split_once(" = add.i64 ")
     {
@@ -425,6 +487,55 @@ impl Parser<'_>
                                  value_type: Type::I64 });
     Some(Instruction::ConstI64 { result,
                                  value })
+  }
+
+  fn load(&mut self, function: &mut Function, result: &str, slot: &str, line: usize) -> Option<Instruction>
+  {
+    let (result, result_type) = result.split_once(':')?;
+    let result = self.value_id(result, line)?;
+    let result_type = self.type_name(result_type, line)?;
+    let slot = self.slot_operand(slot, line)?;
+    if !function.slots
+                .get(slot.0 as usize)
+                .is_some_and(|entry| entry.id == slot && entry.value_type == result_type)
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL load type does not match stack slot type");
+      return None;
+    }
+    function.values.push(Value { id: result,
+                                 value_type: result_type });
+    Some(Instruction::Load { result,
+                             slot })
+  }
+
+  fn store(&mut self, text: &str, line: usize) -> Option<Instruction>
+  {
+    let Some((value, slot)) = text.split_once(", ")
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL store operands are invalid");
+      return None;
+    };
+    Some(Instruction::Store { value: self.value_operand(value, line)?,
+                              slot: self.slot_operand(slot, line)? })
+  }
+
+  fn slot_operand(&mut self, text: &str, line: usize) -> Option<SlotId>
+  {
+    let parsed = text.strip_prefix("%s")
+                     .and_then(|value| value.parse::<u32>().ok())
+                     .map(SlotId);
+    if parsed.is_none()
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL stack slot operand is invalid");
+    }
+    parsed
   }
 
   fn const_i32(&mut self, function: &mut Function, result: &str, value: &str, line: usize) -> Option<Instruction>

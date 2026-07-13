@@ -70,6 +70,7 @@ add_library(xs_compiler
 )
 
 add_library(xs_lil
+  xs/sources/xlil/memory.c
   xs/sources/xlil/model.c
   xs/sources/xlil/parser.c
   xs/sources/xlil/verify.c

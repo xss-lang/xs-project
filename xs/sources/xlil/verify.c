@@ -124,6 +124,18 @@ static XsLilStatus verify_not_bool(const XsLilFunction *function, const XsLilIns
   return XS_LIL_OK;
 }
 
+static XsLilStatus verify_memory(const XsLilFunction *function, const XsLilInstruction *instruction, XsLilError *error)
+{
+  if((size_t)instruction->slot >= function->slot_count)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL memory instruction references an unknown stack slot");
+  XsLilTypeKind slot_type = function->slots[instruction->slot].type.kind;
+  XsLilValueId value = instruction->kind == XS_LIL_INSTRUCTION_LOAD ? instruction->result : instruction->left;
+  if((size_t)value >= function->value_count || function->values[value].type.kind != slot_type)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
+                            "XLIL memory instruction value type does not match stack slot type");
+  return XS_LIL_OK;
+}
+
 XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
 {
   xs_lil_clear_error(error);
@@ -137,6 +149,11 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
       return status;
     if(function->is_definition && function->block_count == 0)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL function definition requires a block");
+    for(size_t slot = 0; slot < function->slot_count; ++slot)
+    {
+      if(function->slots[slot].type.kind == XS_LIL_TYPE_VOID)
+        return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL stack slot cannot have void type");
+    }
     for(size_t block_index = 0; block_index < function->block_count; ++block_index)
     {
       const XsLilBlock *block = function->blocks[block_index];
@@ -160,6 +177,12 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(current->kind == XS_LIL_INSTRUCTION_NOT_BOOL)
         {
           status = verify_not_bool(function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_LOAD || current->kind == XS_LIL_INSTRUCTION_STORE)
+        {
+          status = verify_memory(function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

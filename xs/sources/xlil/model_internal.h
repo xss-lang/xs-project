@@ -25,12 +25,18 @@ typedef struct
 
 typedef struct
 {
+  XsLilType type;
+} XsLilSlot;
+
+typedef struct
+{
   XsLilInstructionKind kind;
   XsLilValueId result;
   int64_t immediate_i64;
   bool immediate_bool;
   XsLilValueId left;
   XsLilValueId right;
+  XsLilSlotId slot;
   char *callee;
   XsLilValueId *arguments;
   size_t argument_count;
@@ -57,6 +63,9 @@ struct XsLilFunction
   XsLilValue *values;
   size_t value_count;
   size_t value_capacity;
+  XsLilSlot *slots;
+  size_t slot_count;
+  size_t slot_capacity;
   XsLilBlock **blocks;
   size_t block_count;
   size_t block_capacity;
@@ -75,5 +84,7 @@ XsLilStatus xs_lil_set_error(XsLilError *error, XsLilStatus status, const char *
 char *xs_lil_copy_text(const char *text);
 char *xs_lil_copy_span(const char *text, size_t length);
 XsLilStatus xs_lil_write_checked(FILE *stream, XsLilError *error, const char *text);
+XsLilStatus xs_lil_add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error);
+XsLilStatus xs_lil_append_instruction(XsLilBlock *block, XsLilInstruction instruction, XsLilError *error);
 
 #endif

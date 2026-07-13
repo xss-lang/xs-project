@@ -493,7 +493,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison
-  instructions, `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`.
+  instructions, typed `.slot`/`load`/`store`, `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
   source slice: one top-level `main` returning `Long` with optional explicit `Long`/`Bool` or inferred local bindings
   followed by one return statement whose expression is built from locals, i32-range integer literals, unary `+`/`-`,
@@ -537,9 +537,11 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, verification, primitive types, text parsing/writing,
   read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.bool`,
-  i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison, `call`, `br`, `br_if`, and `return`.
+  typed stack slots and `load`/`store`, i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison,
+  `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
-  `bbN.label:`, typed SSA instructions, `br bbN`, `br_if %rN, bbA, bbB`, `panic`, `ret`, and `.end`.
+  `.slot %sN:type`, `bbN.label:`, typed SSA instructions, `store %rN, %sA`, `%rN:type = load %sA`, `br bbN`,
+  `br_if %rN, bbA, bbB`, `panic`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
   to bind them to XLIL `.param` values. The bridge lowers MIR
   parameter signatures, typed MIR `const.i64`, `const.i32`, `const.bool`, i64 arithmetic/bitwise/shift/comparison local
@@ -548,6 +550,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,
   compare, `call`, `br`, `br_if`, `panic`, and `ret %rN` records. C MIR `panic` lowers to the XLIL terminator; LLVM then
   emits `llvm.trap` and `unreachable`.
+- C MIR root-local places lower to typed XLIL stack slots. Root-place loads and stores lower through XLIL and LLVM
+  `alloca`/`load`/`store`; field, dereference, and index projections remain deferred until their layout rules are available.
 - `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
   stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path

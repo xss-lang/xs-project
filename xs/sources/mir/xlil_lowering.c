@@ -49,7 +49,8 @@ static XsMirStatus map_lil_status(XsLilStatus status, const XsLilError *lil_erro
 }
 
 static XsMirStatus lower_instruction(const XsMirFunction *function, const XsMirInstruction *instruction,
-                                     XsLilBlock *block, XsLilValueId *values, XsMirError *error)
+                                     XsLilBlock *block, XsLilValueId *values, const XsLilSlotId *slots,
+                                     XsMirError *error)
 {
   switch(instruction->kind)
   {
@@ -356,8 +357,33 @@ static XsMirStatus lower_instruction(const XsMirFunction *function, const XsMirI
     return map_lil_status(status, &lil_error, error);
   }
   case XS_MIR_INSTRUCTION_LOAD:
+  {
+    if((size_t)instruction->place >= function->place_count || function->places[instruction->place] == nullptr)
+      return set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR load references an unknown place");
+    const XsMirPlace *place = function->places[instruction->place];
+    if((size_t)place->root_local >= function->local_count)
+      return set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR load place has an unknown root local");
+    if(place->projection_count != 0)
+      return set_error(error, XS_MIR_UNSUPPORTED, "MIR projected-place load lowering is not implemented yet");
+    XsLilError lil_error = {0};
+    XsLilStatus status =
+        xs_lil_block_add_load(block, slots[place->root_local], &values[instruction->result], &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
   case XS_MIR_INSTRUCTION_STORE:
-    return set_error(error, XS_MIR_UNSUPPORTED, "MIR to XLIL body lowering does not support this instruction yet");
+  {
+    if((size_t)instruction->place >= function->place_count || function->places[instruction->place] == nullptr)
+      return set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR store references an unknown place");
+    const XsMirPlace *place = function->places[instruction->place];
+    if((size_t)place->root_local >= function->local_count)
+      return set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR store place has an unknown root local");
+    if(place->projection_count != 0)
+      return set_error(error, XS_MIR_UNSUPPORTED, "MIR projected-place store lowering is not implemented yet");
+    XsLilError lil_error = {0};
+    XsLilStatus status = xs_lil_block_add_store(block, slots[place->root_local], values[instruction->operand_left],
+                                                &lil_error);
+    return map_lil_status(status, &lil_error, error);
+  }
   }
   return set_error(error, XS_MIR_INVALID_ARGUMENT, "unknown MIR instruction kind while lowering to XLIL");
 }
@@ -408,6 +434,7 @@ static XsMirStatus lower_terminator(const XsMirFunction *function, const XsMirBl
 static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil_function, XsMirError *error)
 {
   XsLilValueId *values = nullptr;
+  XsLilSlotId *slots = nullptr;
   XsLilBlock **blocks = nullptr;
   if(function->value_count != 0)
   {
@@ -415,11 +442,32 @@ static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil
     if(values == nullptr)
       return set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while lowering MIR values to XLIL");
   }
+  if(function->local_count != 0)
+  {
+    slots = calloc(function->local_count, sizeof(*slots));
+    if(slots == nullptr)
+    {
+      free(values);
+      return set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while lowering MIR locals to XLIL slots");
+    }
+    for(size_t local = 0; local < function->local_count; ++local)
+    {
+      XsLilError lil_error = {0};
+      XsLilStatus status = xs_lil_function_add_slot(xlil_function, function->locals[local].type, &slots[local], &lil_error);
+      if(status != XS_LIL_OK)
+      {
+        free(slots);
+        free(values);
+        return map_lil_status(status, &lil_error, error);
+      }
+    }
+  }
   if(function->block_count != 0)
   {
     blocks = calloc(function->block_count, sizeof(*blocks));
     if(blocks == nullptr)
     {
+      free(slots);
       free(values);
       return set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while lowering MIR blocks to XLIL");
     }
@@ -436,6 +484,7 @@ static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil
     if(status != XS_MIR_OK)
     {
       free(blocks);
+      free(slots);
       free(values);
       return status;
     }
@@ -447,10 +496,11 @@ static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil
     for(size_t instruction_index = 0; instruction_index < mir_block->instruction_count; ++instruction_index)
     {
       XsMirStatus status =
-          lower_instruction(function, &mir_block->instructions[instruction_index], xlil_block, values, error);
+          lower_instruction(function, &mir_block->instructions[instruction_index], xlil_block, values, slots, error);
       if(status != XS_MIR_OK)
       {
         free(blocks);
+        free(slots);
         free(values);
         return status;
       }
@@ -459,11 +509,13 @@ static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil
     if(status != XS_MIR_OK)
     {
       free(blocks);
+      free(slots);
       free(values);
       return status;
     }
   }
   free(blocks);
+  free(slots);
   free(values);
   return XS_MIR_OK;
 }

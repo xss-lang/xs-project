@@ -12,10 +12,16 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.0.8 - 2026-07-13
+
 ### Added
 
 - C MIR and XLIL now carry an explicit `panic` terminator through verification and text round-tripping; LLVM lowers it to
   `llvm.trap` followed by `unreachable`.
+- XLIL v0 now has typed stack slots (`.slot %sN:type`) plus register-to-slot `store` and slot-to-register `load`
+  instructions in both the public C23 model and Rust `xslang`.
+- C MIR root-local places now lower to XLIL stack slots, and LLVM emits corresponding `alloca`, `store`, and `load`
+  instructions. Direct XLIL native builds exercise the complete path through `.xse` linking.
 
 ### Changed
 

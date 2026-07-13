@@ -45,9 +45,13 @@ fn write_function(function: &Function, output: &mut impl Write) -> fmt::Result
   {
     writeln!(output, ".param %r{}:{}", index, type_name(*parameter))?;
   }
+  for slot in &function.slots
+  {
+    writeln!(output, ".slot %s{}:{}", slot.id.0, type_name(slot.value_type))?;
+  }
   for block in &function.blocks
   {
-    write_block(block, output)?;
+    write_block(function, block, output)?;
   }
   writeln!(output, ".end")
 }
@@ -66,12 +70,12 @@ fn write_signature(function: &Function, output: &mut impl Write) -> fmt::Result
   writeln!(output, ") -> {}", type_name(function.return_type))
 }
 
-fn write_block(block: &Block, output: &mut impl Write) -> fmt::Result
+fn write_block(function: &Function, block: &Block, output: &mut impl Write) -> fmt::Result
 {
   writeln!(output, "bb{}.{}:", block.id.0, block.label)?;
   for instruction in &block.instructions
   {
-    write_instruction(instruction, output)?;
+    write_instruction(function, instruction, output)?;
   }
   match block.terminator
   {
@@ -87,7 +91,7 @@ fn write_block(block: &Block, output: &mut impl Write) -> fmt::Result
   }
 }
 
-fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt::Result
+fn write_instruction(function: &Function, instruction: &Instruction, output: &mut impl Write) -> fmt::Result
 {
   match *instruction
   {
@@ -157,6 +161,14 @@ fn write_instruction(instruction: &Instruction, output: &mut impl Write) -> fmt:
       }
       writeln!(output, ")")
     }
+    Instruction::Load { result,
+                        slot, } => writeln!(output,
+                                            "  %r{}:{} = load %s{}",
+                                            result.0,
+                                            type_name(function.values[result.0 as usize].value_type),
+                                            slot.0),
+    Instruction::Store { slot,
+                         value, } => writeln!(output, "  store %r{}, %s{}", value.0, slot.0),
   }
 }
 

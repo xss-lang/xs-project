@@ -399,6 +399,39 @@ static void test_text_parser_round_trips_panic_terminator(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_stack_slots(void)
+{
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Memory : () -> i32\n.slot %s0:i32\n"
+                      "bb0.entry:\n  %r0:i32 = const.i32 7\n  store %r0, %s0\n"
+                      "  %r1:i32 = load %s0\n  ret %r1\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("memory.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  const XsLilFunction *function = xs_lil_module_function_at(module, 0);
+  CHECK(xs_lil_function_slot_count(function) == 1);
+  CHECK(xs_lil_function_slot_type(function, 0).kind == XS_LIL_TYPE_I32);
+  const XsLilBlock *block = xs_lil_function_block_at(function, 0);
+  CHECK(xs_lil_block_instruction_kind(block, 1) == XS_LIL_INSTRUCTION_STORE);
+  CHECK(xs_lil_block_instruction_kind(block, 2) == XS_LIL_INSTRUCTION_LOAD);
+  CHECK(xs_lil_block_instruction_slot(block, 1) == 0);
+  CHECK(xs_lil_block_instruction_slot(block, 2) == 0);
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char buffer[512] = {0};
+    size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
+    buffer[read] = '\0';
+    CHECK(strstr(buffer, ".slot %s0:i32\n") != nullptr);
+    CHECK(strstr(buffer, "store %r0, %s0\n  %r1:i32 = load %s0\n") != nullptr);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_round_trips_binary_i64_instructions(void)
 {
   const char text[] = ".xlil version 0\n.xlil module App\n.func Arithmetic : () -> i64\nbb0.entry:\n"
@@ -540,6 +573,11 @@ static void test_text_parser_rejects_invalid_inputs(void)
       "  call Import()\n  ret\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> bool\nbb0.entry:\n"
       "  %r0:i64 = const 1\n  %r1:bool = not.bool %r0\n  ret %r1\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> void\n.slot %s0:void\nbb0.entry:\n  ret\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\n.slot %s0:i32\nbb0.entry:\n"
+      "  %r0:i64 = load %s0\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> void\n.slot %s0:i32\nbb0.entry:\n"
+      "  %r0:i64 = const 1\n  store %r0, %s0\n  ret\n.end\n",
   };
   for(size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
@@ -567,6 +605,7 @@ int main(void)
   test_text_parser_round_trips_bool_not_subset();
   test_text_parser_round_trips_parameters_and_calls();
   test_text_parser_round_trips_panic_terminator();
+  test_text_parser_round_trips_stack_slots();
   test_text_parser_round_trips_binary_i64_instructions();
   test_text_parser_round_trips_i32_constant();
   test_text_parser_round_trips_binary_i32_instructions();

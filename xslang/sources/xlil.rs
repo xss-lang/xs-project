@@ -57,10 +57,20 @@ pub struct ValueId(pub u32);
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct BlockId(pub u32);
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct SlotId(pub u32);
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Value
 {
   pub id: ValueId,
+  pub value_type: Type,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Slot
+{
+  pub id: SlotId,
   pub value_type: Type,
 }
 
@@ -158,6 +168,14 @@ pub enum Instruction
     arguments: Vec<ValueId>,
     return_type: Type,
   },
+  Load
+  {
+    result: ValueId, slot: SlotId
+  },
+  Store
+  {
+    slot: SlotId, value: ValueId
+  },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -190,6 +208,7 @@ pub struct Function
   pub return_type: Type,
   pub parameters: Vec<Type>,
   pub values: Vec<Value>,
+  pub slots: Vec<Slot>,
   pub blocks: Vec<Block>,
   pub is_definition: bool,
 }
@@ -203,6 +222,7 @@ impl Function
            return_type,
            parameters,
            values: vec![],
+           slots: vec![],
            blocks: vec![],
            is_definition: false }
   }
@@ -219,6 +239,7 @@ impl Function
            return_type,
            parameters,
            values,
+           slots: vec![],
            blocks: vec![],
            is_definition: true }
   }
@@ -433,6 +454,50 @@ impl Function
     Some(result)
   }
 
+  pub fn add_slot(&mut self, value_type: Type) -> Option<SlotId>
+  {
+    if value_type == Type::VOID
+    {
+      return None;
+    }
+    let id = SlotId(self.slots.len() as u32);
+    self.slots.push(Slot { id,
+                           value_type });
+    Some(id)
+  }
+
+  pub fn add_load(&mut self, block: BlockId, slot: SlotId) -> Option<ValueId>
+  {
+    let value_type = self.slot(slot)?.value_type;
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type });
+    self.block_mut(block)?.instructions.push(Instruction::Load { result,
+                                                                 slot });
+    Some(result)
+  }
+
+  pub fn add_store(&mut self, block: BlockId, slot: SlotId, value: ValueId) -> bool
+  {
+    let Some(slot_type) = self.slot(slot).map(|slot| slot.value_type)
+    else
+    {
+      return false;
+    };
+    if !self.value(value).is_some_and(|value| value.value_type == slot_type)
+    {
+      return false;
+    }
+    let Some(block) = self.block_mut(block)
+    else
+    {
+      return false;
+    };
+    block.instructions.push(Instruction::Store { slot,
+                                                 value });
+    true
+  }
+
   pub fn set_return(&mut self, block: BlockId, value: Option<ValueId>) -> bool
   {
     let return_type_matches = match value
@@ -539,6 +604,11 @@ impl Function
     self.values
         .get(value.0 as usize)
         .filter(|candidate| candidate.id == value)
+  }
+
+  fn slot(&self, slot: SlotId) -> Option<&Slot>
+  {
+    self.slots.get(slot.0 as usize).filter(|candidate| candidate.id == slot)
   }
 }
 
@@ -704,6 +774,19 @@ mod tests
 
     assert_eq!(result, Some(ValueId(1)));
     assert!(function.set_return(block, result));
+  }
+
+  #[test]
+  fn models_typed_stack_slot_load_and_store()
+  {
+    let mut function = Function::definition("Memory", Type::I32, vec![]);
+    let entry = function.append_block("entry");
+    let slot = function.add_slot(Type::I32).expect("slot should be added");
+    let value = function.add_const_i32(entry, 7).expect("constant should be added");
+
+    assert!(function.add_store(entry, slot, value));
+    let loaded = function.add_load(entry, slot).expect("load should be added");
+    assert!(function.set_return(entry, Some(loaded)));
   }
 
   #[test]
