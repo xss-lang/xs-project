@@ -12,6 +12,12 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- The C23 driver now flattens every macro-materialized structural AST into the versioned compiler-core ABI v0 packet:
+  fixed node records, a child-index table, and a text-byte arena. Rust `xslang` validates that packet and retains an owned,
+  target-independent syntax tree in a compilation-unit session for typed-HIR lowering.
+
 ## 0.1.0 - 2026-07-13
 
 ### Added

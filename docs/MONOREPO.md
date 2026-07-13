@@ -24,6 +24,8 @@ The default value is `xs`. The value `all` selects all stable projects.
 
 - `xs`: the X# compiler, public C23 API headers, CLI, and current test targets.
 - `xsproj`: the public C23 `.xsproj` manifest parser/lexer/model API.
+- `xslang`: the Rust semantic compiler core. It is built as an internal static library of `xs`, not selected as a separate
+  top-level CMake project.
 
 Shared public C headers live under root `include/`. `xs` C sources live under `xs/sources/`, `xs`-specific headers under
 `xs/include/`; `xsproj` C sources live under `xsproj/sources/`, and `xsproj`-specific headers under `xsproj/include/`.

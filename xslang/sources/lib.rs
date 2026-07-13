@@ -4,6 +4,7 @@
  */
 
 pub mod codegen;
+pub mod compiler_core;
 pub mod hir;
 pub mod mir;
 pub mod mono;

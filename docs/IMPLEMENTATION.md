@@ -41,8 +41,8 @@ The documented compilation order is preserved:
 - The root `include/` directory is reserved for shared public C headers across projects; `xs/include/` is for `xs` only, and
   `xsproj/include/` is for `xsproj` only.
 - `xsfmt` and `xstidy` are future Rust nightly + Serde projects; `xs-analyzer` is a future Rust language server and
-  TypeScript VS Code extension project; `xslang` is the future Rust compiler-core crate; `xs-backend` is a future native
-  backend project; `xsrt` is a future runtime. They are not included in the CMake build yet.
+  TypeScript VS Code extension project. `xslang` is the active Rust compiler-core static library linked into `xs`;
+  `xs-backend` is a future native backend project and `xsrt` is a future runtime.
 
 ### XLIL-bound middle-layer rule
 
@@ -350,8 +350,11 @@ The growing semantic-analysis and type-checking implementation now starts in the
 adding new semantic rules to the old C23 HIR prototypes. The first checked Rust rule validates that `await` expressions occur
 only inside async function bodies. `xslang` also carries the first Result propagation type rule: `Result<T>@` and
 `Result<T, E>@` have success type `T`, require an enclosing Result return type with a compatible error channel, and remain
-deferred at HIR-to-MIR lowering until error-return control-flow lowering exists. The crate is not wired into the C23 driver
-yet; integration will use a bulk structural syntax transfer boundary so one compiler layer is not split across C and Rust.
+deferred at HIR-to-MIR lowering until error-return control-flow lowering exists. The first integration boundary is now
+active in the C23 driver: the frontend flattens every macro-materialized AST into a versioned in-memory packet containing
+fixed node records, a child-index table, and a text-byte arena. Rust `xslang` validates the ABI version, indices,
+parent/child relationships, text ranges, and UTF-8 before creating an owned syntax tree in an opaque compiler-core session.
+The session lives for the C compilation unit and provides the input for the next typed-HIR construction step.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
 `Result<T>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the

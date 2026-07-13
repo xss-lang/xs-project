@@ -10,7 +10,8 @@ This repository is compiler infrastructure. Prefer small, testable patches that 
 ## Core rules
 
 - C23 is the primary implementation language.
-- Rust should be used only in future tool projects (`xsfmt`, `xstidy`) or in isolated modules with a clear technical reason.
+- Existing C23 frontend and backend layers stay in C. New semantic compiler-core work belongs in the isolated Rust `xslang`
+  crate and crosses the C boundary through bulk, versioned APIs.
 - Shell scripts are not added as persistent project artifacts.
 - Use CMake 3.31 or newer; do not use Meson.
 - Stay within the documented Clang/LLVM build path and avoid assumptions that are not covered by the supported toolchain.

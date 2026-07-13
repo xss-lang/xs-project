@@ -9,5 +9,6 @@ publish = false
 
 [lib]
 path = "sources/lib.rs"
+crate-type = ["rlib", "staticlib"]
 
 [dependencies]

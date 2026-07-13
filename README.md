@@ -19,6 +19,7 @@ Required core tools:
 - Ninja
 - Clang / LLVM tools
 - LLD
+- Rustup and Cargo; `xslang/rust-toolchain.toml` selects the pinned nightly compiler core toolchain
 - Optional helper tools such as `fd`, `rg`, `bat -p`, `sd`, and `busybox wc` are useful for development
 
 Default debug build:
@@ -50,6 +51,7 @@ Check the example project:
 | `include/` | active | Shared public C headers across projects |
 | `xs/` | active | X# compiler, CLI, lexer/parser, AST, macro, HIR, MIR, XLIL, LLVM backend infrastructure |
 | `xsproj/` | active | Public C23 `.xsproj` parser/lexer/model API |
+| `xslang/` | active | Rust semantic compiler core linked into the C23 driver through a versioned bulk AST boundary |
 | `Spec/` | active source documentation | X# syntax and language behavior examples/spec files |
 | `docs/` | active documentation | Architecture, build, CLI, backend, roadmap, and implementation status |
 | `tests/` | active | C-based unit and integration tests |

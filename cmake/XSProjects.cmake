@@ -20,10 +20,30 @@ endif()
 
 find_package(LLVM REQUIRED CONFIG)
 find_library(XS_LLVM_LIBRARY NAMES LLVM-${LLVM_VERSION_MAJOR} LLVM HINTS ${LLVM_LIBRARY_DIRS} REQUIRED)
+find_package(Threads REQUIRED)
+find_program(XS_CARGO_EXECUTABLE NAMES cargo REQUIRED)
+
+set(XS_XSLANG_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/xslang-target")
+set(XS_XSLANG_STATIC_LIBRARY "${XS_XSLANG_TARGET_DIR}/debug/libxslang.a")
+file(GLOB_RECURSE XS_XSLANG_RUST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/xslang/sources/*.rs")
+add_custom_command(
+  OUTPUT "${XS_XSLANG_STATIC_LIBRARY}"
+  COMMAND "${XS_CARGO_EXECUTABLE}" build --locked --lib --target-dir "${XS_XSLANG_TARGET_DIR}"
+  DEPENDS ${XS_XSLANG_RUST_SOURCES} xslang/Cargo.toml xslang/Cargo.lock xslang/rust-toolchain.toml
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/xslang"
+  COMMENT "Building the Rust compiler core"
+  VERBATIM
+)
+add_custom_target(xslang_compiler_core_build DEPENDS "${XS_XSLANG_STATIC_LIBRARY}")
+add_library(xslang_compiler_core STATIC IMPORTED GLOBAL)
+set_target_properties(xslang_compiler_core PROPERTIES IMPORTED_LOCATION "${XS_XSLANG_STATIC_LIBRARY}")
+add_dependencies(xslang_compiler_core xslang_compiler_core_build)
+target_link_libraries(xslang_compiler_core INTERFACE Threads::Threads ${CMAKE_DL_LIBS} m)
 
 add_library(xs_compiler
   xs/sources/ast.c
   xs/sources/codegen/units.c
+  xs/sources/compiler_core/syntax_packet.c
   xs/sources/driver/cli.c
   xs/sources/driver/direct_xlil.c
   xs/sources/driver/options.c
@@ -81,7 +101,7 @@ add_library(xs_lil
 
 target_include_directories(xs_compiler PUBLIC include xs/include xsproj/include)
 target_include_directories(xs_lil PUBLIC include xs/include)
-target_link_libraries(xs_compiler PUBLIC xsproj xs_lil)
+target_link_libraries(xs_compiler PUBLIC xsproj xs_lil PRIVATE xslang_compiler_core)
 target_compile_definitions(xs_compiler PRIVATE XS_PROJECT_VERSION="${PROJECT_VERSION}"
                                             XS_CLANG_EXECUTABLE="${CMAKE_C_COMPILER}")
 if(CMAKE_C_COMPILER_TARGET)

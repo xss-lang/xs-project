@@ -21,6 +21,7 @@ toolchain.
   - `llvm-objdump`
   - `llvm-strip`
 - `ld.lld`
+- `rustup` and `cargo`; the pinned `xslang/rust-toolchain.toml` toolchain must be installed
 
 Useful helper tools:
 
@@ -46,6 +47,9 @@ Preset details:
 - compiler: Clang
 - build directory: `build/clang-debug`
 - default project: `xs`
+
+The `xs` target builds the Rust `xslang` static library into the CMake build directory and links its compiler-core session
+API into the C23 driver. Building `xsproj` alone remains C23-only and does not require Rust or LLVM.
 
 ## OOM-safe workflow
 

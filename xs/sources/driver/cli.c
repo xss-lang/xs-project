@@ -9,6 +9,7 @@
 #include "options.h"
 #include "source_native.h"
 
+#include "xs/compiler_core.h"
 #include "xs/diagnostic.h"
 #include "xs/hir/cffi.h"
 #include "xs/hir/expression_check.h"
@@ -245,6 +246,7 @@ typedef struct
   XsSyntaxTree tree;
   XsMacroStatementExpansionSet macro_statements;
   XsMacroDeclarationExpansionSet macro_declarations;
+  XsCompilerCoreSession *compiler_core;
   XsHirImportScope imports;
   bool diagnostics_initialized;
   bool tree_initialized;
@@ -256,6 +258,7 @@ typedef struct
 
 static void compilation_unit_free(CompilationUnit *unit)
 {
+  xslang_compiler_core_session_free(unit->compiler_core);
   if(unit->imports_initialized)
     xs_hir_import_scope_free(&unit->imports);
   if(unit->macro_declarations_initialized)
@@ -304,6 +307,33 @@ static bool append_compilation_unit(CompilationUnit **units, size_t *count, size
   return true;
 }
 
+static bool import_compiler_core_syntax(CompilationUnit *unit)
+{
+  XsSpan root_span = {.start = unit->tree.root->span.start_offset, .end = unit->tree.root->span.end_offset};
+  XsSyntaxTree expanded = {0};
+  if(!xs_macro_materialize_expanded_tree(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
+                                         &unit->diagnostics, &expanded))
+    return false;
+  XsCompilerCoreSyntaxStorage *storage = nullptr;
+  XsCompilerCoreStatus packet_status = xs_compiler_core_syntax_packet_create(&expanded, &storage);
+  if(packet_status != XS_COMPILER_CORE_OK)
+  {
+    xs_syntax_tree_free(&expanded);
+    return xs_diagnostics_add(&unit->diagnostics, XS_DIAGNOSTIC_ERROR, root_span,
+                              "compiler-core syntax packet could not be created") &&
+           false;
+  }
+  const XsCompilerCoreSyntaxPacket *packet = xs_compiler_core_syntax_packet(storage);
+  XsCompilerCoreFfiStatus import_status = xslang_compiler_core_session_create(packet, &unit->compiler_core);
+  xs_compiler_core_syntax_packet_free(storage);
+  xs_syntax_tree_free(&expanded);
+  if(import_status == XS_COMPILER_CORE_FFI_OK)
+    return true;
+  return xs_diagnostics_add(&unit->diagnostics, XS_DIAGNOSTIC_ERROR, root_span,
+                            "Rust compiler core rejected the expanded structural AST packet") &&
+         false;
+}
+
 static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHirSymbolTable *symbols)
 {
   size_t length = 0;
@@ -348,6 +378,8 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   if(success)
     success = xs_macro_expand_declarations(&unit->tree, &unit->diagnostics, &unit->macro_declarations);
   unit->macro_declarations_initialized = success;
+  if(success)
+    success = import_compiler_core_syntax(unit);
   if(success)
     success = xs_hir_collect_symbols_expanded(&unit->tree, &unit->macro_declarations, symbols, &unit->diagnostics);
   unit->hir_ready = success;

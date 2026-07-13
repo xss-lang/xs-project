@@ -7,7 +7,9 @@
   "files.associations": {
     "CmakeLists.txt": "cmake",
     "CMakeCache.txt": "cmake",
-    "*.xs": "xs"
+    "*.xs": "xs",
+    "*.ll": "llvm",
+    "*.asm": "asm-intel-x86-generic"
   },
   "FSharp.suggestGitignore": false,
   "r.lsp.promptToInstall": false
