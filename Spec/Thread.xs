@@ -194,12 +194,12 @@ fn InvalidSecondJoin() {
 // ============================================================
 
 fn JoinedThreadFailure() {
-    thread: Thread::handle<Result<Int, IOException>> =
-        Thread.spawn(move fn() -> Result<Int, IOException> {
-            return Error(IOException());
+    thread: Thread::handle<Result<Int, Error>> =
+        Thread.spawn(move fn() -> Result<Int, Error> {
+            return Error(Error { message: "I/O error" });
         });
 
-    result: Result<Int, IOException> = thread.join()@;
+    result: Result<Int, Error> = thread.join()@;
     if (result.isError()) {
         eprintln!("thread failed");
     }
@@ -215,8 +215,8 @@ fn JoinedThreadFailure() {
 // detached thread failure
 
 fn DetachedThreadFailure() {
-    Thread.spawn(move fn() -> Result<(), IOException> {
-        return Error(IOException());
+    Thread.spawn(move fn() -> Result<()> {
+        return Error(Error { message: "I/O error" });
     });
 }
 
@@ -438,7 +438,7 @@ fn ShareMutexBetweenThreads() {
         Arc::new(Mutex::new(42));
 
     worker: Arc<Mutex<Int>> =
-        Arc.clone(&shared);
+        Arc::clone(&shared);
 
     thread: Thread::handle<()> =
         Thread.spawn(move fn() {
@@ -459,7 +459,7 @@ fn ShareRwLockBetweenThreads() {
         Arc::new(RwLock::new(42));
 
     worker: Arc<RwLock<Int>> =
-        Arc.clone(&shared);
+        Arc::clone(&shared);
 
     thread: Thread::handle<()> =
         Thread.spawn(move fn() {

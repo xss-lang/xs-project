@@ -46,9 +46,11 @@ class PackageGraph {
         return Ok(self.ordered);
     }
 
-    fn Visit(name: Str) -> Result<(), ResolveError> {
+    fn Visit(name: Str) -> Result<()> {
         if (!self.packages.contains(name)) {
-            return Error(ResolveError::UnknownPackage(name));
+            return Error(Error {
+                message: "unknown package",
+            });
         }
 
         state: VisitState = self.states[name];
@@ -57,7 +59,9 @@ class PackageGraph {
                 return;
             },
             VisitState::Gray -> {
-                return Error(ResolveError::Cycle(name));
+                return Error(Error {
+                    message: "dependency cycle",
+                });
             },
             VisitState::White -> {
             },

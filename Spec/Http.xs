@@ -17,7 +17,7 @@
 // - Str response body handlers
 // - Synchronous send(...)
 // - Asynchronous sendAsync(...)
-// - NetworkException error payloads through Result
+// - Error payloads through Result
 //
 // No additional HTTP API is defined in this file.
 //
@@ -29,7 +29,7 @@ imports http, std, result;
 // Synchronous request
 // ============================================================
 
-fn Main() -> Result<(), NetworkException> {
+fn Main() -> Result<()> {
     client: Http::client = new();
 
     request: Http.request = new()
@@ -109,7 +109,7 @@ fn StrRequestBody() {
 // Synchronous send
 // ============================================================
 
-fn SendRequest() -> Result<(), NetworkException> {
+fn SendRequest() -> Result<()> {
     client: Http::client = new();
 
     request: Http.request = new()
@@ -132,7 +132,7 @@ fn SendRequest() -> Result<(), NetworkException> {
 // - Sends the request synchronously.
 // - Blocks until a response is available.
 // - Returns Http::response<Str> when used with ofstr().
-// - Returns Error(NetworkException) on network failure.
+// - Returns the standard Error payload on network failure.
 
 
 // ============================================================
@@ -161,7 +161,7 @@ async fn SendRequestAsync() -> Task<()> {
 // - Sends the request asynchronously.
 // - Returns Task<Http::response<Str>> when used with ofstr().
 // - Must be awaited according to Task<T> rules.
-// - A network failure is represented as Error(NetworkException).
+// - A network failure is represented as the standard Error payload.
 
 
 // ============================================================
@@ -203,14 +203,14 @@ fn StrBodyHandler() {
 // Result error handling
 // ============================================================
 
-fn HandleNetworkError() -> Result<(), NetworkException> {
+fn HandleNetworkError() -> Result<()> {
     client: Http::client = new();
 
     request: Http.request = new()
         .uri(URI.create("https://example.com"))
         .build();
 
-    result: Result<Http::response<Str>, NetworkException> =
+    result: Result<Http::response<Str>, Error> =
         client.send(
             request,
             HttpResponse::BodyHandlers.ofstr()
@@ -230,10 +230,10 @@ fn HandleNetworkError() -> Result<(), NetworkException> {
 }
 
 
-// NetworkException:
+// Network failure:
 //
 // - Represents HTTP or network request failure.
-// - Is carried through Error(NetworkException).
+// - Is carried through the standard Error payload.
 // - New code should not use legacy `throws` or `catch`.
 
 
@@ -246,5 +246,5 @@ fn HandleNetworkError() -> Result<(), NetworkException> {
 // Http.request
 // Http::response<T>
 // Task<Http::response<Str>>
-// NetworkException
+// Network failure
 //

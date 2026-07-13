@@ -781,7 +781,7 @@ mod tests
   fn writes_desugared_result_match_as_structured_xhir()
   {
     let function = DesugaredFunction { name: "TryWork".to_string(),
-                                       return_type: Some(Type::Named("Result<(), Result.Error>".to_string())),
+                                       return_type: Some(Type::Named("Result<()>".to_string())),
                                        locals: vec![Local { name: "work".to_string(),
                                                             ty:
                                                               Type::Named("Result<Long, Result.Error>".to_string()),

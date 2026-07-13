@@ -9,7 +9,7 @@ module Programs::CsvAnalytics;
 imports collections, stdio, fs, process, result;
 
 enum data CsvError {
-    Io: IOException,
+    Io: Error,
     BadRow: Str,
 }
 
@@ -27,10 +27,12 @@ data RegionTotal {
 }
 
 class CsvParser {
-    static fn ParseLine(line: Str) -> Result<Sale, CsvError> {
+    static fn ParseLine(line: Str) -> Result<Sale, Error> {
         fields: std::collections::vector<Str> = line.split(",");
         if (fields.length() != 4) {
-            return Error(CsvError::BadRow(line));
+            return Error(Error {
+                message: "bad CSV row",
+            });
         }
 
         return Ok(Sale {
@@ -62,7 +64,7 @@ class Analytics {
         self.totals[sale.region].revenue += sale.revenue;
     }
 
-    fn Print() -> Result<(), IOException> {
+    fn Print() -> Result<()> {
         for ((else, total): (Str, RegionTotal) in self.totals) {
             println!(
                 "{}: units={} revenue={}",

@@ -9,7 +9,7 @@ module Programs::FileBackup;
 imports collections, stdio, fs, process, result;
 
 enum data BackupError {
-    Io: IOException,
+    Io: Error,
     InvalidSource: Str,
 }
 
@@ -31,9 +31,11 @@ class BackupPlan {
         self.files = std::collections::vector<FileEntry>::new();
     }
 
-    fn Discover() -> Result<(), BackupError> {
+    fn Discover() -> Result<()> {
         if (!std::fs::is_dir(self.sourceRoot)) {
-            return Error(BackupError::InvalidSource(self.sourceRoot));
+            return Error(Error {
+                message: "invalid backup source",
+            });
         }
 
         for (path: Str in std::fs::walk_dir(self.sourceRoot)) {
@@ -52,7 +54,7 @@ class BackupPlan {
         return Ok();
     }
 
-    fn Execute() -> Result<(), IOException> {
+    fn Execute() -> Result<()> {
         for (entry: FileEntry in self.files) {
             destination: Str = std::fs::join_path(self.targetRoot, entry.relative);
 

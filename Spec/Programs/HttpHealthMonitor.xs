@@ -9,7 +9,7 @@ module Programs::HttpHealthMonitor;
 imports http, std, collections, thread, sync, result;
 
 enum data HealthError {
-    Network: NetworkException,
+    Network: Error,
     Timeout: Str,
 }
 
@@ -26,12 +26,12 @@ data HealthResult {
 }
 
 interface HealthReporter {
-    fn Report(result: HealthResult) -> Result<(), IOException>;
+    fn Report(result: HealthResult) -> Result<()>;
 }
 
 class ConsoleReporter : HealthReporter {
 
-    fn Report(result: HealthResult) -> Result<(), IOException> {
+    fn Report(result: HealthResult) -> Result<()> {
         state: Str = if (result.ok) {
             "OK";
         }
@@ -56,7 +56,7 @@ class HealthClient {
         self.client = new();
     }
 
-    async fn Check(endpoint: Endpoint) -> Task<Result<HealthResult, HealthError>> {
+    async fn Check(endpoint: Endpoint) -> Task<Result<HealthResult, Error>> {
         request: Http.request = new()
             .uri(URI.create(endpoint.url))
             .header("Accept", "text/plain")
@@ -90,7 +90,7 @@ async fn CheckAll(
     reporter: HealthReporter
 ) -> Task<Result<Int, Error>> {
     client: HealthClient = new();
-    tasks: std::collections::vector<Task<Result<HealthResult, HealthError>>> = std::collections::vector<Task<Result<HealthResult, HealthError>>>::new();
+    tasks: std::collections::vector<Task<Result<HealthResult, Error>>> = std::collections::vector<Task<Result<HealthResult, Error>>>::new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));

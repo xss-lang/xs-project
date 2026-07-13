@@ -47,11 +47,11 @@ source-to-native executable pipeline.
 
 ### Changed
 
-- `Optional<T>` and `Result<T, E>` implicit namespace behavior is documented: Optional still behaves as if
+- `Optional<T>` and `Result<T>`/`Result<T, E>` implicit namespace behavior is documented: Optional still behaves as if
   `imports optional; using namespace std::optional;` existed, while Result treats `imports result;` as optional and brings
   `std::result` names such as `Result`, `Ok`, and `Error` into scope.
-- The C23 HIR type resolver now accepts canonical `std::result::Result<T, E>`, shorthand `Result<T, E>`, and short `Error`
-  names without a user-defined project symbol.
+- The C23 HIR type resolver now accepts canonical `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand
+  `Result<T>`, and short `Error` names without a user-defined project symbol.
 - Pattern defaults and placeholder spellings use `else`; `_` is no longer produced as a wildcard pattern or inferred
   lifetime/type placeholder.
 
@@ -106,9 +106,9 @@ source-to-native executable pipeline.
   are intentionally left for later Result work, and HIR expression checking reports that gap explicitly instead of silently
   accepting it.
 - Rust `xslang` XHIR now models and round-trips Result propagation with a `propagate` expression record.
-- Rust `xslang` type checking and inference now implement the first Result propagation rule: `Result<T, E>@` yields `T`,
-  and the enclosing function must return `Result<else, E>`. HIR-to-MIR lowering still intentionally rejects propagation until
-  control-flow lowering for error returns exists.
+- Rust `xslang` type checking and inference now implement the first Result propagation rule: `Result<T>@` and
+  `Result<T, E>@` yield `T`, and the enclosing function must return a Result type with a compatible error channel.
+  HIR-to-MIR lowering still intentionally rejects propagation until control-flow lowering for error returns exists.
 - Rust `xslang` now includes an explicit Result propagation desugar pass. Surface `value@` is translated into a
   Result-match/early-return intent model before MIR lowering work begins, so backend stages do not need to treat `@` as a
   primitive operation.
@@ -119,7 +119,7 @@ source-to-native executable pipeline.
 - Rust `xslang` treats single-argument `Result<T>` as using the standard `Error` error type for propagation type checking
   and desugaring.
 - The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result<T>`,
-  `Result<T, E>`, shorthand `Result<T, E>`, and `Error` without requiring a user-defined project symbol.
+  `Result<T, E>`, shorthand `Result<T>`, and `Error` without requiring a user-defined project symbol.
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
 - Plain source native builds now accept explicit `Long` and inferred i32-compatible local bindings before the final

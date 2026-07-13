@@ -9,7 +9,7 @@ module Programs::LogAggregator;
 imports collections, fs, optional, stdio, process, result;
 
 enum data LogError {
-    Io: IOException,
+    Io: Error,
     InvalidLine: Str,
 }
 
@@ -19,10 +19,12 @@ data LogEntry {
 }
 
 class LogParser {
-    static fn Parse(line: Str) -> Result<LogEntry, LogError> {
+    static fn Parse(line: Str) -> Result<LogEntry, Error> {
         parts: std::collections::vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
-            return Error(LogError::InvalidLine(line));
+            return Error(Error {
+                message: "invalid log line",
+            });
         }
 
         return Ok(LogEntry {
@@ -50,7 +52,7 @@ class Report {
         }
     }
 
-    fn Print() -> Result<(), IOException> {
+    fn Print() -> Result<()> {
         for ((level, count): (Str, Int) in self.counts) {
             println!("{:<8} {}", level, count);
         }

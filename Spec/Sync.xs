@@ -415,11 +415,11 @@ fn ArcCreation() {
 fn ArcCloning() {
     value: Arc<Str> = Arc::new("Alpha");
 
-    second: Arc<Str> = Arc.clone(&value);
-    third: Arc<Str> = Arc.clone(&value);
+    second: Arc<Str> = Arc::clone(&value);
+    third: Arc<Str> = Arc::clone(&value);
 }
 
-// Arc.clone(&value):
+// Arc::clone(&value):
 //
 // - Borrows value immutably.
 // - Does not move value.
@@ -474,7 +474,7 @@ fn SharedMutex() {
         Arc::new(Mutex::new("Alpha"));
 
     second: Arc<Mutex<Str>> =
-        Arc.clone(&shared);
+        Arc::clone(&shared);
 
     guard: Mutex<Str> = shared.lock();
 
@@ -489,7 +489,7 @@ fn SharedRwLock() {
         Arc::new(RwLock::new(42));
 
     second: Arc<RwLock<Int>> =
-        Arc.clone(&shared);
+        Arc::clone(&shared);
 
     reader: RwLock<Int> = shared.read();
 }
@@ -962,7 +962,7 @@ async fn MoveTask() -> Task<()> {
 
 // async Result handling
 
-async fn AsyncResultHandling() -> Task<Result<(), IOException>> {
+async fn AsyncResultHandling() -> Task<Result<()>> {
     value: Int = await FailingTask()@;
     return Ok();
 }

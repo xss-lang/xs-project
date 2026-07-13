@@ -44,7 +44,7 @@ name: Optional<Str> = None;
 name = Some("Leitwolf");
 
 // Result is also special. `imports result;` is optional; the compiler behaves
-// as if `using namespace std::result;` existed for Result<T, E>, Ok(...), and
+// as if `using namespace std::result;` existed for Result<T>, Result<T, E>, Ok(...), and
 // Error(...). Most other std::* modules still require qualified names or
 // explicit using declarations.
 

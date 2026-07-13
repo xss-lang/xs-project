@@ -367,7 +367,7 @@ mod tests
   fn desugars_result_propagation_to_explicit_result_match()
   {
     let function = Function { name: "try_work".to_string(),
-                              return_type: Some(named("Result<(), Result.Error>")),
+                              return_type: Some(named("Result<()>")),
                               locals: vec![local("work", named("Result<Long, Result.Error>"))],
                               body: vec![Statement::Expr(Expression::ResultPropagation {
                                 value: Box::new(Expression::Local { name: "work".to_string(),
@@ -397,7 +397,7 @@ mod tests
   fn rejects_non_result_propagation_value()
   {
     let function = Function { name: "bad".to_string(),
-                              return_type: Some(named("Result<(), Result.Error>")),
+                              return_type: Some(named("Result<()>")),
                               locals: vec![local("value", primitive(PrimitiveType::Long))],
                               body: vec![Statement::Expr(Expression::ResultPropagation {
                                 value: Box::new(Expression::Local { name: "value".to_string(),
@@ -438,7 +438,7 @@ mod tests
   fn rejects_error_type_mismatch()
   {
     let function = Function { name: "bad".to_string(),
-                              return_type: Some(named("Result<(), OtherError>")),
+                              return_type: Some(named("Result<Bool, OtherError>")),
                               locals: vec![local("work", named("Result<Long, Result.Error>"))],
                               body: vec![Statement::Expr(Expression::ResultPropagation {
                                 value: Box::new(Expression::Local { name: "work".to_string(),

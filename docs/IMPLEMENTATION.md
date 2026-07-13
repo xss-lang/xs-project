@@ -279,10 +279,10 @@ validation does not decide dispatch, override, or overload selection.
   Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
-  `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand `Result<T, E>`, and the standard error type
-  `Error`. The compiler treats the `std::result` namespace as implicitly usable, so `imports result;` is optional for
-  `Result<T, E>`, `Ok(...)`, and `Error(...)`. This is name and arity validation only; constructors, method calls, and
-  propagation lowering are still handled by later semantic passes.
+  `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand `Result<T>`, and the standard error type `Error`.
+  The compiler treats the `std::result` namespace as implicitly usable, so `imports result;` is optional for `Result<T>`,
+  `Result<T, E>`, `Ok(...)`, and `Error(...)`. Unit success is canonically written as `Result<()>`. This is name and
+  arity validation only; constructors, method calls, and propagation lowering are still handled by later semantic passes.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`
@@ -327,13 +327,13 @@ checks, trait/interface compatibility, or ABI/layout decisions.
 
 The growing semantic-analysis and type-checking implementation now starts in the isolated Rust `xslang` crate instead of
 adding new semantic rules to the old C23 HIR prototypes. The first checked Rust rule validates that `await` expressions occur
-only inside async function bodies. `xslang` also carries the first Result propagation type rule: `Result<T, E>@` has success
-type `T`, requires an enclosing `Result<else, E>` return type, and remains deferred at HIR-to-MIR lowering until error-return
-control-flow lowering exists. The crate is not wired into the C23 driver yet; integration will use a bulk structural syntax
-transfer boundary so one compiler layer is not split across C and Rust.
+only inside async function bodies. `xslang` also carries the first Result propagation type rule: `Result<T>@` and
+`Result<T, E>@` have success type `T`, require an enclosing Result return type with a compatible error channel, and remain
+deferred at HIR-to-MIR lowering until error-return control-flow lowering exists. The crate is not wired into the C23 driver
+yet; integration will use a bulk structural syntax transfer boundary so one compiler layer is not split across C and Rust.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
-`Result<T, E>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
+`Result<T>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
 callee must also return a Result type. Imported calls, method calls, local function values, and full success/error
 compatibility remain the Rust compiler-core direction and later C/Rust integration work.
 

@@ -9,7 +9,7 @@ module Programs::PluginPipeline;
 imports collections, std, process, result;
 
 enum data PipelineError {
-    Io: IOException,
+    Io: Error,
     InvalidStage: Str,
 }
 

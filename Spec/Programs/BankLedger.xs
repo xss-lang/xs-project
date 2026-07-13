@@ -49,16 +49,20 @@ class Ledger {
         };
     }
 
-    fn Apply(transfer: Transfer) -> Result<(), LedgerError> {
+    fn Apply(transfer: Transfer) -> Result<()> {
         if (transfer.amount.cents <= 0) {
-            return Error(LedgerError::InvalidAmount(transfer.amount.cents));
+            return Error(Error {
+                message: "invalid transfer amount",
+            });
         }
 
         fromAccount: &mut Account = self.AccountMut(transfer.sourceAccount)@;
         toAccount: &mut Account = self.AccountMut(transfer.targetAccount)@;
 
         if (fromAccount.balance.cents < transfer.amount.cents) {
-            return Error(LedgerError::InsufficientFunds(fromAccount.id));
+            return Error(Error {
+                message: "insufficient funds",
+            });
         }
 
         fromAccount.balance.cents -= transfer.amount.cents;
@@ -67,14 +71,16 @@ class Ledger {
         return Ok();
     }
 
-    fn AccountMut(id: Str) -> Result<&mut Account, LedgerError> {
+    fn AccountMut(id: Str) -> Result<&mut Account, Error> {
         if (!self.accounts.contains(id)) {
-            return Error(LedgerError::UnknownAccount(id));
+            return Error(Error {
+                message: "unknown account",
+            });
         }
         return Ok(&mut self.accounts[id]);
     }
 
-    fn Print() -> Result<(), IOException> {
+    fn Print() -> Result<()> {
         for ((id, account): (Str, Account) in self.accounts) {
             println!("{} {} {}", id, account.owner, account.balance.cents);
         }

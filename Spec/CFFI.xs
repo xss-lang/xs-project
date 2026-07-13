@@ -24,7 +24,7 @@ extern "C" {
 }
 
 
-fn PrintLine(message: Str) -> Result<(), Error> {
+fn PrintLine(message: Str) -> Result<()> {
     c_text: std::cffi::CString = std::cffi::CString::from_str(message)@;
     else: puts(c_text.as_c_str());
     return Ok(());

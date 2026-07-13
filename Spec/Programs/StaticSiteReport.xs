@@ -9,7 +9,7 @@ module Programs::StaticSiteReport;
 imports collections, fs, optional, stdio, process, result;
 
 enum data SiteError {
-    Io: IOException,
+    Io: Error,
     MissingTitle: Str,
 }
 
@@ -20,14 +20,16 @@ data PageInfo {
 }
 
 class Markdown {
-    static fn Title(path: Str, text: Str) -> Result<Str, SiteError> {
+    static fn Title(path: Str, text: Str) -> Result<Str, Error> {
         for (line: Str in text.lines()) {
             if (line.startsWith("# ")) {
                 return Ok(line.trimStart("# ").trim());
             }
         }
 
-        return Error(SiteError::MissingTitle(path));
+        return Error(Error {
+            message: "missing page title",
+        });
     }
 
     static fn CountWords(text: Str) -> Int {
@@ -42,7 +44,7 @@ class SiteReport {
         self.pages = std::collections::vector<PageInfo>::new();
     }
 
-    fn AddMarkdown(path: Str) -> Result<(), Error> {
+    fn AddMarkdown(path: Str) -> Result<()> {
         text: Str = std::fs::read_to_str(path);
         self.pages.push(PageInfo {
             path: path,
@@ -52,7 +54,7 @@ class SiteReport {
         return Ok();
     }
 
-    fn Print() -> Result<(), IOException> {
+    fn Print() -> Result<()> {
         println!("pages: {}", self.pages.length());
 
         for (page: PageInfo in self.pages) {

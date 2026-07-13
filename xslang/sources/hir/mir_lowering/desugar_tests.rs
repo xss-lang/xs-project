@@ -66,7 +66,7 @@ fn lowers_desugared_function_without_result_match()
 fn rejects_desugared_result_match_until_cfg_lowering_exists()
 {
   let function = DesugaredFunction { name: "TryWork".to_string(),
-                                     return_type: Some(Type::Named("Result<(), Result.Error>".to_string())),
+                                     return_type: Some(Type::Named("Result<()>".to_string())),
                                      locals: vec![],
                                      body: vec![DesugaredStatement::Expr(DesugaredExpression::ResultMatch {
       value: Box::new(DesugaredExpression::Local { name: "work".to_string(),

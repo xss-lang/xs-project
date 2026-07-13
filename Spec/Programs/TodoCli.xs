@@ -9,7 +9,7 @@ module Programs::TodoCli;
 imports stdio, fs, collections, process, result;
 
 enum data TodoError {
-    Io: IOException,
+    Io: Error,
     InvalidCommand: Str,
     InvalidId: Int,
 }
@@ -38,13 +38,13 @@ class TodoStore {
         self.items = std::collections::vector<TodoItem>::new();
     }
 
-    static fn Open(path: Str) -> Result<TodoStore, TodoError> {
+    static fn Open(path: Str) -> Result<TodoStore, Error> {
         store: TodoStore = new(path);
         store.Load()@;
         return Ok(store);
     }
 
-    fn Add(title: Str) -> Result<(), TodoError> {
+    fn Add(title: Str) -> Result<()> {
         item: TodoItem = TodoItem {
             id: self.nextId,
             title: title,
@@ -57,7 +57,7 @@ class TodoStore {
         return Ok();
     }
 
-    fn MarkDone(id: Int) -> Result<(), TodoError> {
+    fn MarkDone(id: Int) -> Result<()> {
         for (index: Int = 0; index < self.items.length(); index = index + 1) {
             if (self.items[index].id == id) {
                 self.items[index].done = true;
@@ -66,10 +66,12 @@ class TodoStore {
             }
         }
 
-        return Error(TodoError::InvalidId(id));
+        return Error(Error {
+            message: "invalid todo id",
+        });
     }
 
-    fn Print() -> Result<(), IOException> {
+    fn Print() -> Result<()> {
         if (self.items.length() == 0) {
             println!("No tasks yet.");
             return Ok();
@@ -87,7 +89,7 @@ class TodoStore {
         return Ok();
     }
 
-    fn Load() -> Result<(), TodoError> {
+    fn Load() -> Result<()> {
         if (!std::fs::exists(self.path)) {
             return Ok();
         }
@@ -109,7 +111,7 @@ class TodoStore {
         return Ok();
     }
 
-    fn Save() -> Result<(), TodoError> {
+    fn Save() -> Result<()> {
         if (!std::fs::exists(self.path)) {
             std::fs::create_file(self.path);
         }
@@ -126,10 +128,12 @@ class TodoStore {
 }
 
 class TodoCodec {
-    static fn Parse(line: Str) -> Result<TodoItem, TodoError> {
+    static fn Parse(line: Str) -> Result<TodoItem, Error> {
         parts: std::collections::vector<Str> = line.split("|");
         if (parts.length() != 3) {
-            return Error(TodoError::InvalidCommand(line));
+            return Error(Error {
+                message: "invalid todo record",
+            });
         }
 
         return Ok(TodoItem {
@@ -150,7 +154,7 @@ class TodoCodec {
     }
 }
 
-fn ParseCommand(args: std::collections::vector<Str>) -> Result<Command, TodoError> {
+fn ParseCommand(args: std::collections::vector<Str>) -> Result<Command, Error> {
     if (args.length() < 2) {
         return Ok(Command::Help);
     }
@@ -158,13 +162,17 @@ fn ParseCommand(args: std::collections::vector<Str>) -> Result<Command, TodoErro
     return match (args[1]) {
         "add" -> {
             if (args.length() < 3) {
-                return Error(TodoError::InvalidCommand("todo add <title>"));
+                return Error(Error {
+                    message: "todo add <title>",
+                });
             }
             Ok(Command::Add(args.slice(2).join(" ")));
         },
         "done" -> {
             if (args.length() != 3) {
-                return Error(TodoError::InvalidCommand("todo done <id>"));
+                return Error(Error {
+                    message: "todo done <id>",
+                });
             }
             Ok(Command::Done(Int::Parse(args[2])));
         },
@@ -175,12 +183,14 @@ fn ParseCommand(args: std::collections::vector<Str>) -> Result<Command, TodoErro
             Ok(Command::Help);
         },
         else -> {
-            Error(TodoError::InvalidCommand(args[1]));
+            Error(Error {
+                message: "invalid command",
+            });
         },
     };
 }
 
-fn PrintHelp() -> Result<(), IOException> {
+fn PrintHelp() -> Result<()> {
     println!("todo add <title>");
     println!("todo done <id>");
     println!("todo list");

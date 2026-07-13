@@ -9,7 +9,7 @@ module Programs::ChatServer;
 imports collections, std, sync, thread, net, result;
 
 enum data ChatError {
-    Io: IOException,
+    Io: Error,
     Protocol: Str,
     Closed,
 }
@@ -57,13 +57,13 @@ class ChatHub {
         self.rooms = Arc::new(Mutex::new(std::collections::hash_map<Str, Room>::new()));
     }
 
-    async fn Serve(listener: Net.tcpListener) -> Task<Result<(), ChatError>> {
+    async fn Serve(listener: Net.tcpListener) -> Task<Result<()>> {
         while (true) {
             socket: Net.tcpStream = await listener.accept()@;
             id: ClientId = ClientId {
                 value: self.nextId.fetchAdd(1),
             };
-            rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>> = Arc.clone(&self.rooms);
+            rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>> = Arc::clone(&self.rooms);
 
             Thread.spawn(move async fn() {
                 session: ClientSession = new(id, socket, rooms);
@@ -84,7 +84,7 @@ class ClientSession {
         self.rooms = rooms;
     }
 
-    async fn Run() -> Task<Result<(), ChatError>> {
+    async fn Run() -> Task<Result<()>> {
         currentRoom: Str = "lobby";
         outbound: Thread.channel<Message> = Thread.channel<Message>();
         self.Join(currentRoom, outbound.sender());
@@ -132,7 +132,7 @@ class ClientSession {
     }
 }
 
-async fn Main() -> Task<Result<Int, ChatError>> {
+async fn Main() -> Task<Result<Int, Error>> {
     listener: Net.tcpListener = await Net.listen("127.0.0.1:9000")@;
     hub: ChatHub = new();
     await hub.Serve(listener)@;

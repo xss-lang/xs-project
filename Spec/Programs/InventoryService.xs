@@ -37,7 +37,7 @@ data Receipt {
 }
 
 interface Repository<K, V> {
-    fn Get(key: K) -> Result<&V, ServiceError>;
+    fn Get(key: K) -> Result<&V, Error>;
     fn Put(key: K, value: V);
 }
 
@@ -49,9 +49,11 @@ class InventoryRepository : Repository<Str, Product> {
         self.products = std::collections::hash_map<Str, Product>::new();
     }
 
-    fn Get(key: Str) -> Result<&Product, ServiceError> {
+    fn Get(key: Str) -> Result<&Product, Error> {
         if (!self.products.contains(key)) {
-            return Error(ServiceError::UnknownProduct(key));
+            return Error(Error {
+                message: "unknown product",
+            });
         }
         return Ok(&self.products[key]);
     }
@@ -60,11 +62,13 @@ class InventoryRepository : Repository<Str, Product> {
         self.products[key] = value;
     }
 
-    fn Reserve(line: OrderLine) -> Result<(), ServiceError> {
+    fn Reserve(line: OrderLine) -> Result<()> {
         product: &mut Product = &mut self.products[line.sku];
 
         if (product.stock < line.quantity) {
-            return Error(ServiceError::NotEnoughStock(line.sku));
+            return Error(Error {
+                message: "not enough stock",
+            });
         }
 
         product.stock -= line.quantity;
@@ -83,7 +87,7 @@ class OrderWorker {
         guard: Mutex<InventoryRepository> = self.inventory.lock();
 
         for (line: OrderLine in order.lines) {
-            result: Result<(), ServiceError> = (*guard).Reserve(line);
+            result: Result<()> = (*guard).Reserve(line);
             match (result) {
                 Ok(else) -> {},
                 Error(error) -> {
@@ -135,13 +139,13 @@ fn MakeOrder(id: Int, sku: Str, quantity: Int) -> Order {
     };
 }
 
-fn Main() -> Result<(), Error> {
+fn Main() -> Result<()> {
     inventory: Arc<Mutex<InventoryRepository>> = SeedInventory();
 
     (orders, receipts): Thread.channel<Order> = Thread.channel<Order>();
     (results, resultReader): Thread.channel<Receipt> = Thread.channel<Receipt>();
 
-    workerInventory: Arc<Mutex<InventoryRepository>> = Arc.clone(&inventory);
+    workerInventory: Arc<Mutex<InventoryRepository>> = Arc::clone(&inventory);
 
     Thread.spawn(move fn() {
         worker: OrderWorker = new(workerInventory);

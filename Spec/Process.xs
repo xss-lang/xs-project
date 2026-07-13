@@ -19,7 +19,7 @@ imports process, result, std;
 
 // process execution
 
-fn PullRepository() -> Result<(), Error> {
+fn PullRepository() -> Result<()> {
     std::process::execute("git", ["pull"])@;
     return Ok();
 }
@@ -27,7 +27,7 @@ fn PullRepository() -> Result<(), Error> {
 
 // process execution with arguments
 
-fn InstallPackage(name: Str) -> Result<(), Error> {
+fn InstallPackage(name: Str) -> Result<()> {
     std::process::execute("pacman", ["-S", name])@;
     return Ok();
 }
@@ -35,7 +35,7 @@ fn InstallPackage(name: Str) -> Result<(), Error> {
 
 // shell execution
 
-fn UpgradeSystem() -> Result<(), Error> {
+fn UpgradeSystem() -> Result<()> {
     std::process::execute("pacman -Syu")
         .shell(true)@;
 
@@ -45,7 +45,7 @@ fn UpgradeSystem() -> Result<(), Error> {
 
 // INVALID
 
-fn InvalidShellExecution() -> Result<(), Error> {
+fn InvalidShellExecution() -> Result<()> {
     std::process::execute("pacman -Syu")@;
     return Ok();
 }
@@ -55,7 +55,7 @@ fn InvalidShellExecution() -> Result<(), Error> {
 
 // explicit Result match
 
-fn PrintGitStatus() -> Result<(), Error> {
+fn PrintGitStatus() -> Result<()> {
     status = match (std::process::execute("git", ["status"])) {
         Ok(value) -> value,
         Error(error) -> return Error(error),
@@ -68,7 +68,7 @@ fn PrintGitStatus() -> Result<(), Error> {
 
 // propagation with @
 
-fn RunFormatter() -> Result<(), Error> {
+fn RunFormatter() -> Result<()> {
     std::process::execute("xsfmt", ["--check"])@;
     std::process::execute("xstidy", ["--check"])@;
     return Ok();
@@ -82,13 +82,17 @@ enum data LoginError {
     Locked: Str,
 }
 
-fn Login(user: Str) -> Result<(), LoginError> {
+fn Login(user: Str) -> Result<()> {
     if (user.length() == 0) {
-        return Error(LoginError::InvalidUser(user));
+        return Error(Error {
+            message: "invalid user",
+        });
     }
 
     if (user == "root") {
-        return Error(LoginError::Locked(user));
+        return Error(Error {
+            message: "locked user",
+        });
     }
 
     return Ok();
@@ -121,7 +125,7 @@ class File {
     }
 }
 
-fn UseFile() -> Result<(), Error> {
+fn UseFile() -> Result<()> {
     file: File = new();
     std::process::execute("git", ["rev-parse", "--is-inside-work-tree"])@;
     return Ok();
@@ -141,7 +145,7 @@ fn UseFile() -> Result<(), Error> {
 // try {
 //     OpenFile("missing.txt");
 // }
-// catch (error: IOException) {
+// catch (error: Error) {
 // }
 //
 // New code should use Result<T, E> instead.

@@ -58,7 +58,7 @@ data SharedCounter {
 
 #[AsyncEntry]
 #[CancellationSafe]
-fn RunAsync() -> Result<(), Error> {
+fn RunAsync() -> Result<()> {
     return Ok(());
 }
 

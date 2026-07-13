@@ -6,7 +6,7 @@
 //
 // Result provides explicit success/error values.
 // The legacy exception syntax remains parseable, but it is deprecated.
-// New code should use Result<T, E> and postfix @ propagation instead of
+// New code should use Result<T> or Result<T, E> and postfix @ propagation instead of
 // throws, throw, try, catch, and finally.
 //
 
@@ -24,22 +24,25 @@ data Error {
     message: Str,
 }
 
+// Result<T> is the canonical shorthand for Result<T, Error>.
+// Unit success is written as Result<()>, not Result<(), Error>.
+
 
 // success construction
 
-fn Succeed() -> Result<(), Error> {
+fn Succeed() -> Result<()> {
     return Ok(());
 }
 
 
 // propagation
 
-fn Propagate() -> Result<(), Error> {
+fn Propagate() -> Result<()> {
     DoWork()@;
     return Ok(());
 }
 
-fn DoWork() -> Result<(), Error> {
+fn DoWork() -> Result<()> {
     return Ok(());
 }
 

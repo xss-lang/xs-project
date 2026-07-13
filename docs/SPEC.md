@@ -61,15 +61,16 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - Optional value constructors are `std::optional::None` and `std::optional::Some(...)`; the same implicit namespace using
   may make `None` and `Some(...)` available in source.
 - `Result` is a special standard namespace: `imports result;` is optional, and the compiler behaves as if
-  `using namespace std::result;` existed for `Result<T, E>`, `Ok(...)`, and `Error(...)`. Most other `std::*` modules are
-  not automatically placed in local scope.
+  `using namespace std::result;` existed for `Result<T>`, `Result<T, E>`, `Ok(...)`, and `Error(...)`. Most other `std::*` modules are
+  not automatically placed in local scope. `Result<T>` uses the standard `Error` channel; unit success is written as
+  `Result<()>`.
 - `Panic` is also an implicit standard import for assertion and panic macros. `assert!`, `assert_eq!`, `assert_ne!`,
   `debug_assert!`, `debug_assert_eq!`, and `panic!` are available without an explicit import, but they are still library
   macros rather than compiler built-ins.
 - `Stdio` is not prelude and is not implicit. Its macros require `imports stdio;` or `using namespace stdio;`, except
   `format_args!`, which is built in.
 - Legacy exception syntax is deprecated and scheduled for removal in X# 2.0.0. Active examples should prefer
-  `Result<T, E>` plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only in
+  `Result<T>`/`Result<T, E>` plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only in
   explicitly marked legacy notes.
 
 ## Program examples

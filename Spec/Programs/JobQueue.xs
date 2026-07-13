@@ -40,7 +40,7 @@ class Queue {
 }
 
 class Worker {
-    async fn Run(queue: &mut Queue) -> Result<Int, JobError> {
+    async fn Run(queue: &mut Queue) -> Result<Int, Error> {
         completed: Int = 0;
 
         loop {
@@ -50,16 +50,18 @@ class Worker {
             }
 
             job: Job = maybeJob!;
-            result: Result<(), JobError> = await Worker::Execute(job);
+            result: Result<()> = await Worker::Execute(job);
             result@;
             completed += 1;
         }
     }
 
-    static async fn Execute(job: Job) -> Result<(), JobError> {
+    static async fn Execute(job: Job) -> Result<()> {
         status: Int = await std::process::run(job.command);
         if (status != 0) {
-            return Error(JobError::Failed(job.command));
+            return Error(Error {
+                message: "job failed",
+            });
         }
 
         return Ok();
