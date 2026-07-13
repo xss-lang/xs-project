@@ -45,7 +45,15 @@ impl HirToMirLowerer
     Self::default()
   }
 
-  pub fn lower_function(mut self, function: &Function) -> Result<mir::Function, Vec<Diagnostic>>
+  pub fn lower_function(self, function: &Function) -> Result<mir::Function, Vec<Diagnostic>>
+  {
+    self.lower_function_with_parameters(function, 0)
+  }
+
+  pub fn lower_function_with_parameters(mut self,
+                                        function: &Function,
+                                        parameter_count: usize)
+                                        -> Result<mir::Function, Vec<Diagnostic>>
   {
     let return_type = self.lower_return_type(function.return_type.as_ref(), Span::new(0, 0, 0));
     let mut lowered = mir::Function { name: function.name.clone(),
@@ -57,9 +65,25 @@ impl HirToMirLowerer
                                                                      terminator: None,
                                                                      span: Span::new(0, 0, 0) }] };
 
-    for local in &function.locals
+    for (index, local) in function.locals.iter().enumerate()
     {
-      self.declare_local(local.name.clone(), &local.ty, local.mutable, local.span, &mut lowered);
+      if index < parameter_count
+      {
+        let id = mir::LocalId(self.next_local);
+        self.next_local += 1;
+        if let Some(value_type) = self.lower_value_type(&local.ty, local.span)
+        {
+          self.locals.insert(local.name.clone(), id);
+          lowered.parameters.push(mir::Parameter { local: id,
+                                                   name: local.name.clone(),
+                                                   value_type,
+                                                   span: local.span });
+        }
+      }
+      else
+      {
+        self.declare_local(local.name.clone(), &local.ty, local.mutable, local.span, &mut lowered);
+      }
     }
     for statement in &function.body
     {
@@ -539,10 +563,16 @@ impl HirToMirLowerer
 
   fn local_value_type(&self, local: mir::LocalId, lowered: &mir::Function) -> Option<XlilType>
   {
-    lowered.locals
+    lowered.parameters
            .iter()
-           .find(|candidate| candidate.id == local)
-           .and_then(|candidate| candidate.value_type)
+           .find(|candidate| candidate.local == local)
+           .map(|candidate| candidate.value_type)
+           .or_else(|| {
+             lowered.locals
+                    .iter()
+                    .find(|candidate| candidate.id == local)
+                    .and_then(|candidate| candidate.value_type)
+           })
   }
 
   fn lower_literal_into(&mut self, target: mir::LocalId, literal: &Literal, span: Span, lowered: &mut mir::Function)
@@ -714,6 +744,8 @@ const fn expression_span(expression: &Expression) -> Span
 
 #[cfg(test)]
 mod desugar_tests;
+#[cfg(test)]
+mod value_tests;
 
 #[cfg(test)]
 mod tests
@@ -737,16 +769,6 @@ mod tests
                                       ty,
                                       mutable,
                                       span: span(0, 1) }
-  }
-
-  #[test]
-  fn maps_hir_primitives_to_xlil_value_types()
-  {
-    assert_eq!(primitive_to_xlil(PrimitiveType::Bool),
-               Some(XlilType { kind: TypeKind::Bool }));
-    assert_eq!(primitive_to_xlil(PrimitiveType::Long), Some(XlilType::I32));
-    assert_eq!(primitive_to_xlil(PrimitiveType::Int), Some(XlilType::I64));
-    assert_eq!(primitive_to_xlil(PrimitiveType::Str), None);
   }
 
   #[test]
@@ -969,23 +991,5 @@ mod tests
     let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
                                                              .expect("Long comparison MIR should lower to XLIL");
     assert!(matches!(xlil.blocks[0].instructions[2], crate::xlil::Instruction::LtI32 { .. }));
-  }
-
-  #[test]
-  fn rejects_str_literal_lowering_until_runtime_layout_exists()
-  {
-    let function = Function { name: "Name".to_string(),
-                              return_type: Some(primitive(PrimitiveType::Str)),
-                              locals: vec![],
-                              body: vec![Statement::Return { value: Some(Expression::Literal { literal:
-                                                                                     Literal::String("xs".to_string()),
-                                                                                   span: span(10, 14) }),
-                                                            span: span(3, 14) }] };
-
-    let diagnostics = HirToMirLowerer::new().lower_function(&function)
-                                            .expect_err("Str lowering is intentionally deferred");
-
-    assert!(diagnostics.iter()
-                       .any(|diagnostic| diagnostic.code == DiagnosticCode::UnsupportedType));
   }
 }

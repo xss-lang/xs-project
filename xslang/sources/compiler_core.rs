@@ -334,14 +334,16 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
   };
   let mir_functions = declarations.functions
                                   .iter()
-                                  .filter_map(crate::hir::declarations::Function::as_type_checked_input)
-                                  .filter(|function| {
-                                    crate::hir::type_check::TypeChecker::new().check_function(function)
-                                                                              .is_empty()
-                                  })
-                                  .filter_map(|function| {
-                                    crate::hir::mir_lowering::HirToMirLowerer::new().lower_function(&function)
-                                                                                    .ok()
+                                  .filter_map(|declaration| {
+                                    let function = declaration.as_type_checked_input()?;
+                                    if !crate::hir::type_check::TypeChecker::new().check_function(&function)
+                                                                                  .is_empty()
+                                    {
+                                      return None;
+                                    }
+                                    crate::hir::mir_lowering::HirToMirLowerer::new()
+                                      .lower_function_with_parameters(&function, declaration.parameters.len())
+                                      .ok()
                                   })
                                   .collect();
   *session = Box::into_raw(Box::new(CompilerCoreSession { syntax,

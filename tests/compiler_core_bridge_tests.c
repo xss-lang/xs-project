@@ -35,7 +35,7 @@ static void test_materialized_syntax_packet(void)
   const char *text = "module app;\n"
                      "macro_rules! make { () -> { incomplete fn generated(); }; }\n"
                      "make!();\n"
-                     "fn main() -> Long { return 7; }\n";
+                     "fn main() -> Long { value: Long = 3; value = 7; return value; }\n";
   XsSource source = {.path = "Bridge.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;

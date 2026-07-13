@@ -362,6 +362,9 @@ Supported single-block bodies now cross the next boundary as well: explicit retu
 integer/boolean literals, local references, and the current arithmetic/comparison operator subset are built as Rust HIR,
 type-checked, and lowered to target-independent Rust MIR. Unsupported body shapes remain deferred while their declarations
 stay available to the session.
+Explicitly typed local declarations and simple `=` assignments are included in this body slice. Function parameters occupy
+the MIR parameter table and are immediately live values; they no longer masquerade as uninitialized MIR locals. Inferred
+local types and compound assignments remain outside this Rust import slice for now.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
 `Result<T>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the

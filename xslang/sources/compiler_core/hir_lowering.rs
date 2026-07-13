@@ -14,6 +14,7 @@ use super::{SyntaxNode, SyntaxTree};
 const FILE: u32 = 0;
 const DECL_MODULE: u32 = 1;
 const DECL_FUNCTION: u32 = 4;
+const DECL_VARIABLE: u32 = 9;
 const PARAMETER: u32 = 21;
 const IDENTIFIER: u32 = 24;
 const PATH: u32 = 25;
@@ -21,10 +22,12 @@ const TYPE_NAMED: u32 = 27;
 const TYPE_UNIT: u32 = 36;
 const STMT_BLOCK: u32 = 38;
 const STMT_EXPRESSION: u32 = 39;
+const STMT_VARIABLE: u32 = 40;
 const STMT_RETURN: u32 = 41;
 const EXPR_IDENTIFIER: u32 = 56;
 const EXPR_LITERAL: u32 = 57;
 const EXPR_BINARY: u32 = 58;
+const EXPR_ASSIGNMENT: u32 = 60;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_EQUAL: u32 = 25;
 const TOKEN_GREATER: u32 = 32;
@@ -34,7 +37,12 @@ const TOKEN_LESS_EQUAL: u32 = 36;
 const TOKEN_PLUS: u32 = 38;
 const TOKEN_MINUS: u32 = 41;
 const TOKEN_STAR: u32 = 44;
+const TOKEN_ASSIGN: u32 = 24;
+const IMMUTABLE: u32 = 1 << 4;
+const CONSTANT: u32 = 1 << 5;
+const STATIC_CONSTANT: u32 = 1 << 6;
 const RETURN_TYPE: u32 = 1 << 11;
+const INFERRED_TYPE: u32 = 1 << 12;
 const DISCARDED: u32 = 1 << 21;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -118,6 +126,16 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
   declarations::TypeRef::Named(value.text.clone())
 }
 
+fn checked_type(value: declarations::TypeRef) -> Option<crate::hir::type_check::Type>
+{
+  Some(match value
+  {
+    declarations::TypeRef::Unit => return None,
+    declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(value),
+    declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value),
+  })
+}
+
 fn lower_parameter(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Parameter, LoweringError>
 {
   let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
@@ -176,8 +194,52 @@ fn lower_expression(tree: &SyntaxTree, value: &SyntaxNode) -> Option<Expression>
                                 right: Box::new(right),
                                 span: source_span })
     }
+    EXPR_ASSIGNMENT if value.token_kind == TOKEN_ASSIGN && value.children.len() == 3 =>
+    {
+      let target = tree.nodes.get(value.children[0])?;
+      if target.kind != EXPR_IDENTIFIER
+      {
+        return None;
+      }
+      let assigned = lower_expression(tree, tree.nodes.get(value.children[2])?)?;
+      Some(Expression::Assign { target: path_text(tree, target),
+                                value: Box::new(assigned),
+                                span: source_span })
+    }
     _ => None,
   }
+}
+
+fn lower_local(tree: &SyntaxTree, statement: &SyntaxNode) -> Option<Statement>
+{
+  let declaration = first_child_kind(tree, statement, DECL_VARIABLE)?;
+  if declaration.flags & INFERRED_TYPE != 0
+  {
+    return None;
+  }
+  let name = first_child_kind(tree, declaration, IDENTIFIER)?;
+  let ty = declaration.children
+                      .iter()
+                      .filter_map(|index| tree.nodes.get(*index))
+                      .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))?;
+  let initializer_node = declaration.children
+                                    .iter()
+                                    .filter_map(|index| tree.nodes.get(*index))
+                                    .find(|child| child.kind >= EXPR_IDENTIFIER);
+  let initializer = match initializer_node
+  {
+    Some(value) => Some(lower_expression(tree, value)?),
+    None => None,
+  };
+  Some(Statement::Let { local: crate::hir::type_check::Local { name: name.text.clone(),
+                                                               ty: checked_type(lower_type(tree, ty))?,
+                                                               mutable: declaration.flags &
+                                                                        (IMMUTABLE |
+                                                                         CONSTANT |
+                                                                         STATIC_CONSTANT) ==
+                                                                        0,
+                                                               span: span(declaration)? },
+                        initializer })
 }
 
 fn lower_body(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Statement>>
@@ -215,6 +277,7 @@ fn lower_body(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Statement>
           body.push(Statement::Expr(expression));
         }
       }
+      STMT_VARIABLE => body.push(lower_local(tree, statement)?),
       _ => return None,
     }
   }
