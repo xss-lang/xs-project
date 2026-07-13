@@ -72,6 +72,7 @@ void xs_compiler_core_syntax_packet_free(XsCompilerCoreSyntaxStorage *storage);
 XsCompilerCoreFfiStatus xslang_compiler_core_session_create(const XsCompilerCoreSyntaxPacket *packet,
                                                             XsCompilerCoreSession **session);
 uint64_t xslang_compiler_core_session_syntax_node_count(const XsCompilerCoreSession *session);
+uint64_t xslang_compiler_core_session_function_count(const XsCompilerCoreSession *session);
 void xslang_compiler_core_session_free(XsCompilerCoreSession *session);
 
 #endif

@@ -4,6 +4,7 @@
  */
 
 pub mod async_check;
+pub mod declarations;
 pub mod generics;
 pub mod inference;
 pub mod mir_lowering;

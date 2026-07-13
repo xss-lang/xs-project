@@ -15,6 +15,9 @@ static_assert(offsetof(XsCompilerCoreSyntaxNode, end_column) == 104);
 static_assert(sizeof(XsCompilerCoreSyntaxPacket) == 64);
 static_assert(offsetof(XsCompilerCoreSyntaxPacket, nodes) == 16);
 static_assert(offsetof(XsCompilerCoreSyntaxPacket, text_byte_count) == 56);
+static_assert(XS_SYNTAX_FILE == 0 && XS_SYNTAX_DECL_MODULE == 1 && XS_SYNTAX_DECL_FUNCTION == 4);
+static_assert(XS_SYNTAX_PARAMETER == 21 && XS_SYNTAX_IDENTIFIER == 24 && XS_SYNTAX_PATH == 25);
+static_assert(XS_SYNTAX_TYPE_NAMED == 27 && XS_SYNTAX_TYPE_UNIT == 36);
 
 struct XsCompilerCoreSyntaxStorage
 {
