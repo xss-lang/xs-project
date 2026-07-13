@@ -32,207 +32,6 @@
 #define child_count_kind xs_source_native_child_count_kind
 #define parse_i32_literal xs_source_native_parse_i32_literal
 
-typedef struct
-{
-  const XsSyntaxNode *function;
-  const XsSyntaxNode *name;
-  const XsSyntaxNode *body;
-  size_t parameter_count;
-  XsLilTypeKind return_kind;
-  bool is_main;
-} NativeFunction;
-
-typedef struct
-{
-  NativeFunction functions[32];
-  size_t count;
-} NativeProgram;
-
-static const XsSyntaxNode *return_type(const XsSyntaxNode *function)
-{
-  for(size_t i = 0; i < function->child_count; ++i)
-  {
-    const XsSyntaxNode *child = function->children[i];
-    if((child->flags & XS_SYNTAX_FLAG_RETURN_TYPE) != 0)
-      return child;
-  }
-  return nullptr;
-}
-
-static const NativeFunction *program_find_function(const NativeProgram *program, XsText name)
-{
-  for(size_t i = 0; i < program->count; ++i)
-  {
-    if(text_equals(program->functions[i].name->text, name))
-      return &program->functions[i];
-  }
-  return nullptr;
-}
-
-static bool program_has_name(const NativeProgram *program, XsText name)
-{
-  return program_find_function(program, name) != nullptr;
-}
-
-static bool validate_shape(const XsSyntaxNode *function, bool is_main, XsDiagnostics *diagnostics,
-                           const XsSyntaxNode **body, size_t *parameter_count, XsLilTypeKind *return_kind)
-{
-  *parameter_count = child_count_kind(function, XS_SYNTAX_PARAMETER);
-  if(is_main && *parameter_count != 0)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
-                              "native source main must not have parameters") &&
-           false;
-  if(child_count_kind(function, XS_SYNTAX_GENERIC_PARAMETER) != 0)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
-                              "native source main must not be generic") &&
-           false;
-  const XsSyntaxNode *type = return_type(function);
-  if(node_text_equals(type, "Long"))
-    *return_kind = XS_LIL_TYPE_I32;
-  else if(!is_main && node_text_equals(type, "Bool"))
-    *return_kind = XS_LIL_TYPE_BOOL;
-  else
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
-                              is_main
-                                  ? "native source main must return Long in this compiler slice"
-                                  : "native source helper functions must return Long or Bool in this compiler slice") &&
-           false;
-  if(!is_main)
-  {
-    for(size_t i = 0; i < function->child_count; ++i)
-    {
-      const XsSyntaxNode *parameter = function->children[i];
-      if(parameter->kind != XS_SYNTAX_PARAMETER)
-        continue;
-      const XsSyntaxNode *parameter_type = parameter->child_count >= 2 ? parameter->children[1] : nullptr;
-      if(!node_text_equals(parameter_type, "Long"))
-        return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(parameter),
-                                  "native source helper parameters must be Long in this compiler slice") &&
-               false;
-    }
-  }
-  const XsSyntaxNode *block = first_child_kind(function, XS_SYNTAX_STMT_BLOCK);
-  if(block == nullptr || block->child_count == 0)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
-                              "native source main body must end with one return statement") &&
-           false;
-  for(size_t i = 0; i + 1 < block->child_count; ++i)
-  {
-    if(block->children[i]->kind != XS_SYNTAX_STMT_VARIABLE && block->children[i]->kind != XS_SYNTAX_STMT_EXPRESSION &&
-       block->children[i]->kind != XS_SYNTAX_STMT_IF)
-      return xs_diagnostics_add(
-                 diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block->children[i]),
-                 "native source main body supports only local declarations, assignments, and if statements before "
-                 "return for now") &&
-             false;
-  }
-  const XsSyntaxNode *statement = block->children[block->child_count - 1];
-  if(statement->kind != XS_SYNTAX_STMT_RETURN)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                              "native source main body must end with one return statement") &&
-           false;
-  if(statement->child_count != 1)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                              "native source main return statement must return one expression") &&
-           false;
-  *body = block;
-  return true;
-}
-
-static const XsSyntaxNode *simple_call_name(const XsSyntaxNode *expression);
-
-static bool node_calls_function(const XsSyntaxNode *node, XsText name)
-{
-  if(node == nullptr)
-    return false;
-  const XsSyntaxNode *callee = simple_call_name(node);
-  if(callee != nullptr && text_equals(callee->text, name))
-    return true;
-  for(size_t i = 0; i < node->child_count; ++i)
-  {
-    if(node_calls_function(node->children[i], name))
-      return true;
-  }
-  return false;
-}
-
-static bool reject_recursive_calls_from(const NativeProgram *program, size_t index, uint8_t *state,
-                                        XsDiagnostics *diagnostics)
-{
-  state[index] = 1;
-  const NativeFunction *function = &program->functions[index];
-  for(size_t callee = 0; callee < program->count; ++callee)
-  {
-    if(!node_calls_function(function->body, program->functions[callee].name->text))
-      continue;
-    if(state[callee] == 1)
-      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function->name),
-                                "native source direct calls do not support recursion in this compiler slice") &&
-             false;
-    if(state[callee] == 0 && !reject_recursive_calls_from(program, callee, state, diagnostics))
-      return false;
-  }
-  state[index] = 2;
-  return true;
-}
-
-static bool reject_recursive_calls(const NativeProgram *program, XsDiagnostics *diagnostics)
-{
-  uint8_t state[32] = {0};
-  for(size_t i = 0; i < program->count; ++i)
-  {
-    if(state[i] == 0 && !reject_recursive_calls_from(program, i, state, diagnostics))
-      return false;
-  }
-  return true;
-}
-
-static bool collect_program(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, NativeProgram *program)
-{
-  *program = (NativeProgram){0};
-  size_t main_count = 0;
-  for(size_t i = 0; i < tree->root->child_count; ++i)
-  {
-    const XsSyntaxNode *child = tree->root->children[i];
-    if(child->kind != XS_SYNTAX_DECL_FUNCTION)
-      continue;
-    const XsSyntaxNode *name = first_child_kind(child, XS_SYNTAX_IDENTIFIER);
-    if(name == nullptr)
-      continue;
-    if(program->count == sizeof(program->functions) / sizeof(program->functions[0]))
-      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(child),
-                                "native source build supports at most 32 functions for now") &&
-             false;
-    if(program_has_name(program, name->text))
-      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(name),
-                                "native source build does not support overloaded or duplicate function names yet") &&
-             false;
-    bool is_main = node_text_equals(name, "main");
-    if(is_main)
-      ++main_count;
-    const XsSyntaxNode *body = nullptr;
-    size_t parameter_count = 0;
-    XsLilTypeKind return_kind = XS_LIL_TYPE_I32;
-    if(!validate_shape(child, is_main, diagnostics, &body, &parameter_count, &return_kind))
-      return false;
-    program->functions[program->count++] = (NativeFunction){
-        .function = child,
-        .name = name,
-        .body = body,
-        .parameter_count = parameter_count,
-        .return_kind = return_kind,
-        .is_main = is_main,
-    };
-  }
-  if(main_count == 1)
-    return reject_recursive_calls(program, diagnostics);
-  XsSpan span = tree->root == nullptr ? (XsSpan){0} : node_span(tree->root);
-  const char *message = main_count == 0 ? "native source build requires one top-level 'main' function"
-                                        : "native source build supports exactly one top-level 'main' function";
-  xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, message);
-  return false;
-}
-
 static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
                                  XsText current_function, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
                                  XsMirValueId *result, XsMirError *error);
@@ -482,7 +281,7 @@ static const NativeFunction *resolve_call_target(const NativeProgram *program, X
                        "native source direct calls do not support recursion in this compiler slice");
     return nullptr;
   }
-  const NativeFunction *callee = program_find_function(program, callee_name->text);
+  const NativeFunction *callee = xs_source_native_program_find_function(program, callee_name->text);
   if(callee == nullptr)
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(callee_name),
@@ -815,18 +614,26 @@ static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *c
   return context_assign(context, entry, target->text, type, value, diagnostics, node_span(target), error);
 }
 
-static bool lower_assignment_block(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
-                                   XsText current_function, const XsSyntaxNode *block, XsDiagnostics *diagnostics,
-                                   XsMirError *error)
+static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+                               const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                               XsDiagnostics *diagnostics, XsMirError *error);
+
+static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current, const NativeContext *context,
+                                  const NativeProgram *program, XsText current_function, const XsSyntaxNode *block,
+                                  XsDiagnostics *diagnostics, XsMirError *error)
 {
   if(block == nullptr || block->kind != XS_SYNTAX_STMT_BLOCK || block->child_count == 0)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block),
-                              "native source if branches must contain one or more assignment statements for now") &&
+                              "native source if branches must contain one or more supported statements for now") &&
            false;
   for(size_t index = 0; index < block->child_count; ++index)
   {
-    if(!lower_assignment_statement(entry, context, program, current_function, block->children[index], diagnostics,
-                                   error))
+    const XsSyntaxNode *statement = block->children[index];
+    bool lowered =
+        statement->kind == XS_SYNTAX_STMT_IF
+            ? lower_if_statement(function, current, context, program, current_function, statement, diagnostics, error)
+            : lower_assignment_statement(*current, context, program, current_function, statement, diagnostics, error);
+    if(!lowered)
       return false;
   }
   return true;
@@ -854,21 +661,23 @@ static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, co
      xs_mir_block_set_branch(*current, condition, invert ? else_block : then_block, invert ? then_block : else_block,
                              error) != XS_MIR_OK)
     return false;
-  if(!lower_assignment_block(then_block, context, program, current_function, statement->children[1], diagnostics,
-                             error) ||
-     xs_mir_block_set_goto(then_block, merge_block, error) != XS_MIR_OK)
+  XsMirBlock *then_current = then_block;
+  XsMirBlock *else_current = else_block;
+  if(!lower_statement_block(function, &then_current, context, program, current_function, statement->children[1],
+                            diagnostics, error) ||
+     xs_mir_block_set_goto(then_current, merge_block, error) != XS_MIR_OK)
     return false;
-  if(statement->child_count == 3 && !lower_assignment_block(else_block, context, program, current_function,
-                                                            statement->children[2], diagnostics, error))
+  if(statement->child_count == 3 && !lower_statement_block(function, &else_current, context, program, current_function,
+                                                           statement->children[2], diagnostics, error))
     return false;
-  if(xs_mir_block_set_goto(else_block, merge_block, error) != XS_MIR_OK)
+  if(xs_mir_block_set_goto(else_current, merge_block, error) != XS_MIR_OK)
     return false;
   *current = merge_block;
   return true;
 }
 
-static bool lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,
-                                const NativeProgram *program, XsDiagnostics *diagnostics, XsMirError *error)
+bool xs_source_native_lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,
+                                          const NativeProgram *program, XsDiagnostics *diagnostics, XsMirError *error)
 {
   NativeContext context = {0};
   context_init_parameters(&context, native->function);
@@ -910,79 +719,4 @@ static bool lower_function_body(XsMirFunction *function, XsMirBlock *entry, cons
   XsMirValueId value = 0;
   return lower_i32_expression(current, &context, program, native->name->text, expression, diagnostics, &value, error) &&
          xs_mir_block_set_return_value(current, value, error) == XS_MIR_OK;
-}
-
-static bool build_native_module(const char *input_path, const NativeProgram *program, XsDiagnostics *diagnostics)
-{
-  XsMirError mir_error = {0};
-  XsMirModule *mir = nullptr;
-  bool success = xs_mir_module_create("source", &mir, &mir_error) == XS_MIR_OK;
-  for(size_t i = 0; success && i < program->count; ++i)
-  {
-    const NativeFunction *native = &program->functions[i];
-    char *name = native->is_main ? copy_cstr("main") : copy_node_text(native->name);
-    XsMirType parameters[16] = {0};
-    if(name == nullptr)
-    {
-      success = false;
-      set_mir_error(&mir_error, XS_MIR_ALLOCATION_FAILED, "out of memory while naming native source function");
-      break;
-    }
-    for(size_t parameter = 0; parameter < native->parameter_count; ++parameter)
-      parameters[parameter] = (XsMirType){.kind = XS_LIL_TYPE_I32};
-    success = xs_mir_module_add_function_definition(mir, name, (XsMirType){.kind = native->return_kind}, parameters,
-                                                    native->parameter_count, nullptr, &mir_error) == XS_MIR_OK;
-    free(name);
-  }
-  for(size_t i = 0; success && i < program->count; ++i)
-  {
-    XsMirFunction *function = (XsMirFunction *)(void *)xs_mir_module_function_at(mir, i);
-    XsMirBlock *entry = nullptr;
-    success = xs_mir_function_append_block(function, "entry", &entry, &mir_error) == XS_MIR_OK;
-    if(success)
-      success = lower_function_body(function, entry, &program->functions[i], program, diagnostics, &mir_error);
-  }
-  if(success)
-    success = xs_mir_borrow_check_module(mir, &mir_error) == XS_MIR_OK;
-  if(success)
-    success = xs_mir_optimize_module_constants(mir, &mir_error) == XS_MIR_OK;
-  if(success)
-    success = xs_mir_optimize_module_cfg(mir, &mir_error) == XS_MIR_OK;
-  if(success)
-    success = xs_mir_borrow_check_module(mir, &mir_error) == XS_MIR_OK;
-  if(!success)
-  {
-    fprintf(stderr, "xs: source native MIR build failed: %s\n", mir_error.message);
-    xs_mir_module_destroy(mir);
-    return false;
-  }
-
-  XsLilError lil_error = {0};
-  XsLilModule *xlil = nullptr;
-  success = xs_lil_module_create("source", &xlil, &lil_error) == XS_LIL_OK;
-  if(success)
-    success = xs_lil_module_add_mir_function_bodies(xlil, mir, &mir_error) == XS_MIR_OK;
-  xs_mir_module_destroy(mir);
-  if(!success)
-  {
-    fprintf(stderr, "xs: source native XLIL build failed: %s%s\n", lil_error.message, mir_error.message);
-    xs_lil_module_destroy(xlil);
-    return false;
-  }
-  success = xs_driver_build_lil_module_native(input_path, xlil);
-  xs_lil_module_destroy(xlil);
-  return success;
-}
-
-bool xs_driver_build_source_native(const char *input_path, const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
-{
-  if(input_path == nullptr || tree == nullptr || tree->root == nullptr || diagnostics == nullptr)
-  {
-    fprintf(stderr, "xs: checked source tree is required for native source build\n");
-    return false;
-  }
-  NativeProgram program = {0};
-  if(!collect_program(tree, diagnostics, &program))
-    return false;
-  return build_native_module(input_path, &program, diagnostics);
 }

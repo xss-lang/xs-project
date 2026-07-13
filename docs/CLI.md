@@ -70,7 +70,7 @@ inferred `:=` local bindings with i32-compatible or bool-compatible initializers
 and then one return statement. A statement-level `if` may contain one simple assignment in each branch; the local may be
 read after the branches merge. Supported `Long` assignments are `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, and
 `^=`; a branch may contain multiple such assignments. `val`, `const`, and `static` locals can be initialized but not
-reassigned. The
+reassigned. Supported conditional assignment blocks may nest. The
 supported return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary
 `-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression
 whose condition is a bool literal, a `Bool` local, a direct same-module `Bool` helper call, unary `!`, or an i32 comparison,

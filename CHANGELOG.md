@@ -23,6 +23,8 @@ source-to-native executable pipeline.
   exclusive branches do not spuriously conflict.
 - The source-native `Long` slice now supports `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, and `^=` compound assignments,
   including multiple assignments in a supported `if` branch.
+- Source-native conditional assignment lowering now supports nested `if` statements. The driver was split into expression/
+  statement lowering and program/native-module construction units to keep the C23 implementation modular.
 
 ## 0.0.8 - 2026-07-13
 
