@@ -106,29 +106,29 @@ fn format_values() {
 // Rust 1.57 exactly. X# maps `$crate` to its standard runtime registry:
 //
 // print!(arguments...)
-//   -> std::__print(format_args!(arguments...))
+//   -> std::_print(format_args!(arguments...))
 // println!()
 //   -> print!("\n")
 // println!(arguments...)
-//   -> std::__print(__format_args_nl!(arguments...))
+//   -> std::_print(format_args_nl!(arguments...))
 // eprint!(arguments...)
-//   -> std::__eprint(format_args!(arguments...))
+//   -> std::_eprint(format_args!(arguments...))
 // eprintln!()
 //   -> eprint!("\n")
 // eprintln!(arguments...)
-//   -> std::__eprint(__format_args_nl!(arguments...))
+//   -> std::_eprint(format_args_nl!(arguments...))
 // write!(destination, arguments...)
 //   -> destination.write_fmt(format_args!(arguments...))
 // writeln!(destination[,])
 //   -> write!(destination, "\n")
 // writeln!(destination, arguments...)
-//   -> destination.write_fmt(__format_args_nl!(arguments...))
+//   -> destination.write_fmt(format_args_nl!(arguments...))
 // format!(arguments...)
 //   -> { result := std::fmt::format(format_args!(arguments...)); result }
 //
-// __format_args_nl! is a compiler-internal newline variant. It is not a
-// source-callable built-in and does not enter macro scope. std::__print and
-// std::__eprint are internal output boundaries. std::fmt::format materializes
+// format_args_nl! is a compiler-internal newline variant. It is not a
+// source-callable built-in and does not enter macro scope. std::_print and
+// std::_eprint are internal output boundaries. std::fmt::format materializes
 // the formatted UTF-16 Str.
 //
 // A destination expression is evaluated exactly once. Format arguments are
