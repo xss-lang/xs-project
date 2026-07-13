@@ -14,8 +14,11 @@ use crate::hir::{
 
 use super::{SyntaxNode, SyntaxTree};
 
+mod expression_type;
 mod match_expression;
 mod unary;
+
+use expression_type::expression_type;
 
 const FILE: u32 = 0;
 const DECL_MODULE: u32 = 1;
@@ -49,6 +52,7 @@ const EXPR_MATCH: u32 = 82;
 const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
 const TOKEN_INTEGER: u32 = 3;
+const TOKEN_FLOAT: u32 = 4;
 const TOKEN_EQUAL: u32 = 25;
 const TOKEN_BANG: u32 = 26;
 const TOKEN_GREATER: u32 = 32;
@@ -215,6 +219,9 @@ fn lower_expression(tree: &SyntaxTree,
       Some(Expression::Literal { literal: Literal::Integer(value.text.clone()),
                                  span: source_span })
     }
+    EXPR_LITERAL if value.token_kind == TOKEN_FLOAT => Some(Expression::Literal { literal:
+                                                                                    Literal::Float(value.text.clone()),
+                                                                                  span: source_span }),
     EXPR_LITERAL if value.text == "true" || value.text == "false" =>
     {
       Some(Expression::Literal { literal: Literal::Bool(value.text == "true"),
@@ -424,46 +431,6 @@ fn lower_discarded_expression(tree: &SyntaxTree,
     });
   }
   lower_expression(tree, value, signatures, locals, expected_type)
-}
-
-fn expression_type(tree: &SyntaxTree,
-                   value: &SyntaxNode,
-                   signatures: &HashMap<String, CallSignature>,
-                   locals: &HashMap<String, Type>)
-                   -> Option<Type>
-{
-  match value.kind
-  {
-    EXPR_LITERAL if value.text == "true" || value.text == "false" => Some(Type::Primitive(PrimitiveType::Bool)),
-    EXPR_LITERAL if value.token_kind == TOKEN_INTEGER => Some(Type::Primitive(PrimitiveType::Int)),
-    EXPR_IDENTIFIER => locals.get(&path_text(tree, value)).cloned(),
-    EXPR_CALL =>
-    {
-      let callee = tree.nodes.get(*value.children.first()?)?;
-      signatures.get(&path_text(tree, callee))
-                .map(|signature| signature.return_type.clone())
-    }
-    EXPR_BINARY
-      if matches!(value.token_kind,
-                  TOKEN_EQUAL | TOKEN_GREATER | TOKEN_GREATER_EQUAL | TOKEN_LESS | TOKEN_LESS_EQUAL) =>
-    {
-      Some(Type::Primitive(PrimitiveType::Bool))
-    }
-    EXPR_BINARY => value.children
-                        .first()
-                        .and_then(|index| tree.nodes.get(*index))
-                        .and_then(|operand| expression_type(tree, operand, signatures, locals))
-                        .or_else(|| {
-                          value.children
-                               .last()
-                               .and_then(|index| tree.nodes.get(*index))
-                               .and_then(|operand| expression_type(tree, operand, signatures, locals))
-                        })
-                        .or(Some(Type::Primitive(PrimitiveType::Int))),
-    EXPR_UNARY if value.token_kind == TOKEN_BANG => Some(Type::Primitive(PrimitiveType::Bool)),
-    EXPR_UNARY => expression_type(tree, tree.nodes.get(*value.children.first()?)?, signatures, locals),
-    _ => None,
-  }
 }
 
 fn lower_local(tree: &SyntaxTree,

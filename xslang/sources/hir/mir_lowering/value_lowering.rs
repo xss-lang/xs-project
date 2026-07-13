@@ -59,6 +59,52 @@ impl HirToMirLowerer
                                               value: *value,
                                               span });
       }
+      (Literal::Float(value), Some(XlilType { kind: TypeKind::F32 })) =>
+      {
+        let Ok(value) = value.replace('\'', "").parse::<f32>()
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedExpression,
+                      "HIR float literal is not a finite f32 value",
+                      span);
+          return;
+        };
+        if !value.is_finite()
+        {
+          self.report(DiagnosticCode::UnsupportedExpression,
+                      "HIR float literal is not a finite f32 value",
+                      span);
+          return;
+        }
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::ConstF32 { local: target,
+                                             bits: value.to_bits(),
+                                             span });
+      }
+      (Literal::Float(value), Some(XlilType { kind: TypeKind::F64 })) =>
+      {
+        let Ok(value) = value.replace('\'', "").parse::<f64>()
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedExpression,
+                      "HIR float literal is not a finite f64 value",
+                      span);
+          return;
+        };
+        if !value.is_finite()
+        {
+          self.report(DiagnosticCode::UnsupportedExpression,
+                      "HIR float literal is not a finite f64 value",
+                      span);
+          return;
+        }
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::ConstF64 { local: target,
+                                             bits: value.to_bits(),
+                                             span });
+      }
       (Literal::Integer(_), Some(_)) => self.report(DiagnosticCode::UnsupportedType,
                                                     "only Long and Int literals can lower to MIR constants today",
                                                     span),

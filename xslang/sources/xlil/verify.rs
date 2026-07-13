@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 
-use crate::xlil::{Function, Instruction, Module, SlotId, Terminator, Type, ValueId};
+use crate::xlil::{Function, Instruction, Module, SlotId, Terminator, Type, ValueId, type_name};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -126,6 +126,8 @@ impl Verifier
     {
       Instruction::ConstI64 { result, .. } => self.i64_value(function, result, "XLIL const result"),
       Instruction::ConstI32 { result, .. } => self.i32_value(function, result, "XLIL const.i32 result"),
+      Instruction::ConstF32 { result, .. } => self.float_value(function, result, Type::F32, "XLIL const.f32 result"),
+      Instruction::ConstF64 { result, .. } => self.float_value(function, result, Type::F64, "XLIL const.f64 result"),
       Instruction::ConstBool { result, .. } => self.bool_value(function, result, "XLIL const.bool result"),
       Instruction::AddI64 { result,
                             left,
@@ -427,6 +429,15 @@ impl Verifier
       {}
       Some(_) | None => self.report(DiagnosticCode::InstructionResultUnknown,
                                     &format!("{label} must reference a bool value")),
+    }
+  }
+
+  fn float_value(&mut self, function: &Function, value: ValueId, expected: Type, label: &str)
+  {
+    if value_type(function, value) != Some(expected)
+    {
+      self.report(DiagnosticCode::InstructionResultUnknown,
+                  &format!("{label} must reference an {} value", type_name(expected)));
     }
   }
 

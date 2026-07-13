@@ -120,12 +120,16 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                                                   matches!(parameter.ty,
                                                                TypeRef::Primitive(PrimitiveType::Long |
                                                                                   PrimitiveType::Int |
-                                                                                  PrimitiveType::Bool))
+                                                                                  PrimitiveType::Bool |
+                                                                                  PrimitiveType::SFloat |
+                                                                                  PrimitiveType::Float))
                                                                                 });
                            let return_supported = matches!(function.return_type,
                                                            TypeRef::Primitive(PrimitiveType::Long |
                                                                               PrimitiveType::Int |
-                                                                              PrimitiveType::Bool));
+                                                                              PrimitiveType::Bool |
+                                                                              PrimitiveType::SFloat |
+                                                                              PrimitiveType::Float));
                            let recursive =
                              function.body
                                      .as_ref()

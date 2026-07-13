@@ -94,6 +94,8 @@ typedef enum
   XS_LIL_INSTRUCTION_CALL,
   XS_LIL_INSTRUCTION_LOAD,
   XS_LIL_INSTRUCTION_STORE,
+  XS_LIL_INSTRUCTION_CONST_F32,
+  XS_LIL_INSTRUCTION_CONST_F64,
 } XsLilInstructionKind;
 
 typedef enum
@@ -141,6 +143,8 @@ XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *la
 XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_i32(XsLilBlock *block, int32_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_f32_bits(XsLilBlock *block, uint32_t bits, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_f64_bits(XsLilBlock *block, uint64_t bits, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
@@ -225,6 +229,7 @@ size_t xs_lil_block_instruction_count(const XsLilBlock *block);
 XsLilInstructionKind xs_lil_block_instruction_kind(const XsLilBlock *block, size_t index);
 XsLilValueId xs_lil_block_instruction_result(const XsLilBlock *block, size_t index);
 int64_t xs_lil_block_instruction_i64(const XsLilBlock *block, size_t index);
+uint64_t xs_lil_block_instruction_float_bits(const XsLilBlock *block, size_t index);
 bool xs_lil_block_instruction_bool(const XsLilBlock *block, size_t index);
 const char *xs_lil_block_instruction_callee(const XsLilBlock *block, size_t index);
 size_t xs_lil_block_instruction_argument_count(const XsLilBlock *block, size_t index);

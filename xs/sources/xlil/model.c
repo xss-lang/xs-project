@@ -327,12 +327,12 @@ XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilVa
   if(status != XS_LIL_OK)
     return status;
   status = xs_lil_append_instruction(block,
-                              (XsLilInstruction){
-                                  .kind = XS_LIL_INSTRUCTION_CONST_I64,
-                                  .result = value_id,
-                                  .immediate_i64 = value,
-                              },
-                              error);
+                                     (XsLilInstruction){
+                                         .kind = XS_LIL_INSTRUCTION_CONST_I64,
+                                         .result = value_id,
+                                         .immediate_i64 = value,
+                                     },
+                                     error);
   if(status != XS_LIL_OK)
     return status;
   if(result != nullptr)
@@ -352,12 +352,12 @@ XsLilStatus xs_lil_block_add_const_i32(XsLilBlock *block, int32_t value, XsLilVa
   if(status != XS_LIL_OK)
     return status;
   status = xs_lil_append_instruction(block,
-                              (XsLilInstruction){
-                                  .kind = XS_LIL_INSTRUCTION_CONST_I32,
-                                  .result = value_id,
-                                  .immediate_i64 = value,
-                              },
-                              error);
+                                     (XsLilInstruction){
+                                         .kind = XS_LIL_INSTRUCTION_CONST_I32,
+                                         .result = value_id,
+                                         .immediate_i64 = value,
+                                     },
+                                     error);
   if(status != XS_LIL_OK)
     return status;
   if(result != nullptr)
@@ -377,17 +377,45 @@ XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValu
   if(status != XS_LIL_OK)
     return status;
   status = xs_lil_append_instruction(block,
-                              (XsLilInstruction){
-                                  .kind = XS_LIL_INSTRUCTION_CONST_BOOL,
-                                  .result = value_id,
-                                  .immediate_bool = value,
-                              },
-                              error);
+                                     (XsLilInstruction){
+                                         .kind = XS_LIL_INSTRUCTION_CONST_BOOL,
+                                         .result = value_id,
+                                         .immediate_bool = value,
+                                     },
+                                     error);
   if(status != XS_LIL_OK)
     return status;
   if(result != nullptr)
     *result = value_id;
   return XS_LIL_OK;
+}
+
+static XsLilStatus add_const_float_bits(XsLilBlock *block, XsLilInstructionKind kind, XsLilTypeKind type, uint64_t bits,
+                                        XsLilValueId *result, XsLilError *error)
+{
+  xs_lil_clear_error(error);
+  if(result != nullptr)
+    *result = 0;
+  if(block == nullptr || block->owner == nullptr)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "valid XLIL block is required");
+  XsLilValueId value_id = 0;
+  XsLilStatus status = xs_lil_add_value(block->owner, (XsLilType){.kind = type}, &value_id, error);
+  if(status == XS_LIL_OK)
+    status = xs_lil_append_instruction(
+        block, (XsLilInstruction){.kind = kind, .result = value_id, .immediate_float_bits = bits}, error);
+  if(status == XS_LIL_OK && result != nullptr)
+    *result = value_id;
+  return status;
+}
+
+XsLilStatus xs_lil_block_add_const_f32_bits(XsLilBlock *block, uint32_t bits, XsLilValueId *result, XsLilError *error)
+{
+  return add_const_float_bits(block, XS_LIL_INSTRUCTION_CONST_F32, XS_LIL_TYPE_F32, bits, result, error);
+}
+
+XsLilStatus xs_lil_block_add_const_f64_bits(XsLilBlock *block, uint64_t bits, XsLilValueId *result, XsLilError *error)
+{
+  return add_const_float_bits(block, XS_LIL_INSTRUCTION_CONST_F64, XS_LIL_TYPE_F64, bits, result, error);
 }
 
 static XsLilStatus add_binary_integer(XsLilBlock *block, XsLilInstructionKind kind, XsLilValueId left,
@@ -657,12 +685,12 @@ XsLilStatus xs_lil_block_not_bool(XsLilBlock *block, XsLilValueId operand, XsLil
   if(status != XS_LIL_OK)
     return status;
   status = xs_lil_append_instruction(block,
-                              (XsLilInstruction){
-                                  .kind = XS_LIL_INSTRUCTION_NOT_BOOL,
-                                  .result = value_id,
-                                  .left = operand,
-                              },
-                              error);
+                                     (XsLilInstruction){
+                                         .kind = XS_LIL_INSTRUCTION_NOT_BOOL,
+                                         .result = value_id,
+                                         .left = operand,
+                                     },
+                                     error);
   if(status != XS_LIL_OK)
     return status;
   if(result != nullptr)
@@ -848,6 +876,13 @@ int64_t xs_lil_block_instruction_i64(const XsLilBlock *block, size_t index)
   if(block == nullptr || index >= block->instruction_count)
     return 0;
   return block->instructions[index].immediate_i64;
+}
+
+uint64_t xs_lil_block_instruction_float_bits(const XsLilBlock *block, size_t index)
+{
+  if(block == nullptr || index >= block->instruction_count)
+    return 0;
+  return block->instructions[index].immediate_float_bits;
 }
 
 bool xs_lil_block_instruction_bool(const XsLilBlock *block, size_t index)

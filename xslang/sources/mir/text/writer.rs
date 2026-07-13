@@ -134,6 +134,22 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        target local {}", local.0);
       let _ = writeln!(output, "        value {value}");
     }
+    Statement::ConstF32 { local,
+                          bits,
+                          .. } =>
+    {
+      let _ = writeln!(output, "      statement const.f32");
+      let _ = writeln!(output, "        target local {}", local.0);
+      let _ = writeln!(output, "        bits 0x{bits:08x}");
+    }
+    Statement::ConstF64 { local,
+                          bits,
+                          .. } =>
+    {
+      let _ = writeln!(output, "      statement const.f64");
+      let _ = writeln!(output, "        target local {}", local.0);
+      let _ = writeln!(output, "        bits 0x{bits:016x}");
+    }
     Statement::ConstBool { local,
                            value,
                            .. } =>

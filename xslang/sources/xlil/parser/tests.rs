@@ -199,6 +199,18 @@ fn roundtrips_stack_slot_memory()
 }
 
 #[test]
+fn roundtrips_f32_and_f64_constant_bits()
+{
+  let text = ".xlil version 0\n.xlil module FloatConstants\n.func F32Value : () -> f32\nbb0.entry:\n  %r0:f32 = \
+              const.f32 0x3fc00000\n  ret %r0\n.end\n.func F64Value : () -> f64\nbb0.entry:\n  %r0:f64 = const.f64 \
+              0x3ff8000000000000\n  ret %r0\n.end\n";
+  let module = parse_module(text).expect("floating constants should parse");
+
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(module_to_string(&module), text);
+}
+
+#[test]
 fn rejects_legacy_plain_value_ids()
 {
   let text = ".xlil version 0\n.xlil module App\n.func xs$App$Legacy : () -> i64\nbb0.entry:\n  %0:i64 = const 42\n  \

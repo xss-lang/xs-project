@@ -834,6 +834,33 @@ mod tests
   }
 
   #[test]
+  fn roundtrips_floating_constant_bit_patterns()
+  {
+    let function =
+      Function { name: "float_bits".to_string(),
+                 parameters: vec![],
+                 return_type: crate::xlil::Type::F64,
+                 locals: vec![Local { id: LocalId(0),
+                                      name: "value".to_string(),
+                                      value_type: Some(crate::xlil::Type::F64),
+                                      mutable: false,
+                                      span: span() }],
+                 blocks: vec![BasicBlock { id: BlockId(0),
+                                           statements: vec![Statement::ConstF64 { local: LocalId(0),
+                                                                                  bits: 0x3ff8000000000000,
+                                                                                  span: span() }],
+                                           terminator: Some(Terminator::Return(Some(LocalId(0)))),
+                                           span: span() }] };
+    let text = function_to_xmir(&function);
+    assert!(text.contains("bits 0x3ff8000000000000"));
+    let parsed = parse_xmir_function(&text).expect("floating XMIR should parse");
+    assert_eq!(parsed.return_type, crate::xlil::Type::F64);
+    assert!(matches!(parsed.blocks[0].statements[0], Statement::ConstF64 { bits:
+                                                                             0x3ff8000000000000,
+                                                                           .. }));
+  }
+
+  #[test]
   fn roundtrips_i32_instruction_family()
   {
     let function =

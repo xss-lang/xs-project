@@ -114,6 +114,25 @@ impl MirToXlilLowerer
       {
         self.lower_const_i32(local, value, span, xlil_block, local_types, values, lowered);
       }
+      if let mir::Statement::ConstF32 { local,
+                                        bits,
+                                        span, } = *statement
+      {
+        self.lower_const_float(local,
+                               bits as u64,
+                               Type::F32,
+                               span,
+                               xlil_block,
+                               local_types,
+                               values,
+                               lowered);
+      }
+      if let mir::Statement::ConstF64 { local,
+                                        bits,
+                                        span, } = *statement
+      {
+        self.lower_const_float(local, bits, Type::F64, span, xlil_block, local_types, values, lowered);
+      }
       if let mir::Statement::ConstBool { local,
                                          value,
                                          span, } = *statement
@@ -412,6 +431,36 @@ impl MirToXlilLowerer
       None => self.report(DiagnosticCode::MissingLocalType,
                           "MIR const.i32 target local has no XLIL value type",
                           span),
+    }
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  fn lower_const_float(&mut self,
+                       local: mir::LocalId,
+                       bits: u64,
+                       expected: Type,
+                       span: Span,
+                       xlil_block: BlockId,
+                       local_types: &HashMap<mir::LocalId, Option<Type>>,
+                       values: &mut HashMap<mir::LocalId, ValueId>,
+                       lowered: &mut Function)
+  {
+    if local_types.get(&local).copied().flatten() != Some(expected)
+    {
+      self.report(DiagnosticCode::UnsupportedLocalType,
+                  "MIR floating constant target has the wrong XLIL type",
+                  span);
+      return;
+    }
+    let value = match expected
+    {
+      Type::F32 => lowered.add_const_f32_bits(xlil_block, bits as u32),
+      Type::F64 => lowered.add_const_f64_bits(xlil_block, bits),
+      _ => None,
+    };
+    if let Some(value) = value
+    {
+      values.insert(local, value);
     }
   }
 

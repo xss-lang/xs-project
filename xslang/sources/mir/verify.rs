@@ -159,6 +159,12 @@ impl<'a> Verifier<'a>
       Statement::ConstI32 { local,
                             span,
                             .. } => self.verify_const_i32(local, span),
+      Statement::ConstF32 { local,
+                            span,
+                            .. } => self.verify_const_float(local, crate::xlil::Type::F32, "const.f32", span),
+      Statement::ConstF64 { local,
+                            span,
+                            .. } => self.verify_const_float(local, crate::xlil::Type::F64, "const.f64", span),
       Statement::ConstBool { local,
                              span,
                              .. } => self.verify_const_bool(local, span),
@@ -390,6 +396,27 @@ impl<'a> Verifier<'a>
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           "const.i32 target local has no XLIL value type".to_string(),
+                          span),
+    }
+  }
+
+  fn verify_const_float(&mut self, local: LocalId, expected: crate::xlil::Type, instruction: &str, span: Span)
+  {
+    self.verify_local(local, span);
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(actual) if actual == expected =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             format!("{instruction} target local has the wrong XLIL type"),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          format!("{instruction} target local has no XLIL value type"),
                           span),
     }
   }

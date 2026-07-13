@@ -72,12 +72,13 @@ Borrow-checked and optimized MIR
     → linker invocation
 ```
 
-XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, and boolean constants, i32/i64
+XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, exact-bit f32/f64 constants, and boolean constants, i32/i64
 arithmetic/bitwise/shift/comparison instructions, direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
 typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated in the LLVM entry block and remain eligible
 for normal LLVM promotion and scalar optimization. The current source-native bridge uses this path for `Long` and `Bool`
 local initialization, reads, and simple mutable reassignment. `panic` emits an `llvm.trap` call followed by LLVM
-`unreachable`.
+`unreachable`. Floating constants are bitcast from integer constants so their XLIL bit patterns reach LLVM without a
+locale-sensitive decimal conversion.
 
 The source-native bridge lowers supported `if`, `while`, classic `for`, and statement-level `match` control flow into MIR
 branches before XLIL and LLVM lowering. A supported `match` over `Long` or `Bool` becomes ordered literal tests and branch

@@ -33,6 +33,7 @@ typedef struct
   XsLilInstructionKind kind;
   XsLilValueId result;
   int64_t immediate_i64;
+  uint64_t immediate_float_bits;
   bool immediate_bool;
   XsLilValueId left;
   XsLilValueId right;

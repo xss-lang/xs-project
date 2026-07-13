@@ -437,6 +437,29 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
     }
     if((size_t)(line + length - operation) >= 5U && strncmp(operation, "call ", 5) == 0)
       return parse_call(parser, block, operation, (size_t)(line + length - operation), &result_type, result, error);
+    const char *float_prefix = result_type.kind == XS_LIL_TYPE_F32 ? "const.f32 0x" : "const.f64 0x";
+    size_t float_digits = result_type.kind == XS_LIL_TYPE_F32 ? 8U : 16U;
+    size_t float_prefix_length = strlen(float_prefix);
+    size_t operation_length = (size_t)(line + length - operation);
+    if((result_type.kind == XS_LIL_TYPE_F32 || result_type.kind == XS_LIL_TYPE_F64) &&
+       operation_length == float_prefix_length + float_digits &&
+       strncmp(operation, float_prefix, float_prefix_length) == 0)
+    {
+      char digits[17] = {0};
+      memcpy(digits, operation + float_prefix_length, float_digits);
+      char *end = nullptr;
+      errno = 0;
+      unsigned long long bits = strtoull(digits, &end, 16);
+      if(errno != 0 || end == digits || *end != '\0')
+        return parse_error(parser, error, "XLIL floating constant bit pattern is invalid");
+      XsLilValueId actual = 0;
+      XsLilStatus status = result_type.kind == XS_LIL_TYPE_F32
+                               ? xs_lil_block_add_const_f32_bits(block, (uint32_t)bits, &actual, error)
+                               : xs_lil_block_add_const_f64_bits(block, (uint64_t)bits, &actual, error);
+      if(status != XS_LIL_OK)
+        return status;
+      return actual == result ? XS_LIL_OK : parse_error(parser, error, "XLIL value ids must be sequential");
+    }
     static const struct
     {
       const char *name;
@@ -476,7 +499,6 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"gt.i32 ", XS_LIL_INSTRUCTION_GT_I32, XS_LIL_TYPE_BOOL},
         {"ge.i32 ", XS_LIL_INSTRUCTION_GE_I32, XS_LIL_TYPE_BOOL},
     };
-    size_t operation_length = (size_t)(line + length - operation);
     for(size_t binary = 0; binary < sizeof(binary_instructions) / sizeof(binary_instructions[0]); ++binary)
     {
       size_t name_length = strlen(binary_instructions[binary].name);

@@ -42,6 +42,14 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:bool = const.bool %s\n", instruction->result,
                instruction->immediate_bool ? "true" : "false") < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.bool instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_CONST_F32 &&
+       fprintf(stream, "  %%r%u:f32 = const.f32 0x%08llx\n", instruction->result,
+               (unsigned long long)instruction->immediate_float_bits) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.f32 instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_CONST_F64 &&
+       fprintf(stream, "  %%r%u:f64 = const.f64 0x%016llx\n", instruction->result,
+               (unsigned long long)instruction->immediate_float_bits) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.f64 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_ADD_I64 &&
        fprintf(stream, "  %%r%u:i64 = add.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)

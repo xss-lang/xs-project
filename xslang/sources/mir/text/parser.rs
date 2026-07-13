@@ -9,6 +9,7 @@ use crate::xlil::{I64BinaryOperation, I64ComparisonOperation, Type, type_from_na
 
 use super::{SUPPORTED_XMIR_VERSION, is_supported_xmir_version};
 
+mod float;
 mod i64;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -269,6 +270,8 @@ impl Parser<'_>
       {
         "const.i64" => block.statements.push(self.const_i64_statement()),
         "const.i32" => block.statements.push(self.const_i32_statement()),
+        "const.f32" => block.statements.push(self.const_f32_statement()),
+        "const.f64" => block.statements.push(self.const_f64_statement()),
         "const.bool" => block.statements.push(self.const_bool_statement()),
         "store.local" => block.statements.push(self.store_local_statement()),
         "load.local" => block.statements.push(self.load_local_statement()),

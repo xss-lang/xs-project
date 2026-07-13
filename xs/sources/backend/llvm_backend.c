@@ -507,10 +507,9 @@ static XsBackendStatus lower_lil_binary_integer(LLVMBuilderRef builder, const Xs
 }
 
 static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilderRef builder,
-                                             const XsLilFunction *function, const XsLilBlock *block,
-                                             size_t index, LLVMValueRef *values, size_t value_count,
-                                             LLVMValueRef *slots, size_t slot_count,
-                                             XsBackendError *error)
+                                             const XsLilFunction *function, const XsLilBlock *block, size_t index,
+                                             LLVMValueRef *values, size_t value_count, LLVMValueRef *slots,
+                                             size_t slot_count, XsBackendError *error)
 {
   XsLilInstructionKind kind = xs_lil_block_instruction_kind(block, index);
   XsLilValueId result = xs_lil_block_instruction_result(block, index);
@@ -531,6 +530,20 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     if(status != XS_BACKEND_OK)
       return status;
     values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
+    return XS_BACKEND_OK;
+  }
+  if(kind == XS_LIL_INSTRUCTION_CONST_F32 || kind == XS_LIL_INSTRUCTION_CONST_F64)
+  {
+    XsLilTypeKind float_kind = kind == XS_LIL_INSTRUCTION_CONST_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64;
+    XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = float_kind}, &type, error);
+    if(status != XS_BACKEND_OK)
+      return status;
+    LLVMTypeRef bits_type = kind == XS_LIL_INSTRUCTION_CONST_F32 ? LLVMInt32TypeInContext(unit->backend->context)
+                                                                 : LLVMInt64TypeInContext(unit->backend->context);
+    LLVMValueRef bits = LLVMConstInt(bits_type, xs_lil_block_instruction_float_bits(block, index), false);
+    values[result] = LLVMConstBitCast(bits, type);
+    if(values[result] == nullptr)
+      return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL floating constant");
     return XS_BACKEND_OK;
   }
   if(kind == XS_LIL_INSTRUCTION_CONST_BOOL)
@@ -601,8 +614,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     XsLilSlotId slot = xs_lil_block_instruction_slot(block, index);
     if((size_t)slot >= slot_count || slots[slot] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL load references an unavailable stack slot");
-    XsBackendStatus status = xs_llvm_lil_type(unit->backend, xs_lil_function_value_type(function, result), &type,
-                                              error);
+    XsBackendStatus status =
+        xs_llvm_lil_type(unit->backend, xs_lil_function_value_type(function, result), &type, error);
     if(status != XS_BACKEND_OK)
       return status;
     values[result] = LLVMBuildLoad2(builder, type, slots[slot], "load");
@@ -755,7 +768,8 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
     for(size_t slot = 0; slot < slot_count; ++slot)
     {
       LLVMTypeRef slot_type = nullptr;
-      status = xs_llvm_lil_type(unit->backend, xs_lil_function_slot_type(function, (XsLilSlotId)slot), &slot_type, error);
+      status =
+          xs_llvm_lil_type(unit->backend, xs_lil_function_slot_type(function, (XsLilSlotId)slot), &slot_type, error);
       if(status != XS_BACKEND_OK)
         goto cleanup;
       slots[slot] = LLVMBuildAlloca(builder, slot_type, "slot");
@@ -773,8 +787,8 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
     size_t instruction_count = xs_lil_block_instruction_count(block);
     for(size_t instruction = 0; instruction < instruction_count; ++instruction)
     {
-      status =
-          lower_lil_instruction(unit, builder, function, block, instruction, values, value_count, slots, slot_count, error);
+      status = lower_lil_instruction(unit, builder, function, block, instruction, values, value_count, slots,
+                                     slot_count, error);
       if(status != XS_BACKEND_OK)
         goto cleanup;
     }

@@ -46,6 +46,8 @@ impl Type
   pub const BOOL: Self = Self { kind: TypeKind::Bool };
   pub const I32: Self = Self { kind: TypeKind::I32 };
   pub const I64: Self = Self { kind: TypeKind::I64 };
+  pub const F32: Self = Self { kind: TypeKind::F32 };
+  pub const F64: Self = Self { kind: TypeKind::F64 };
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -81,6 +83,14 @@ pub enum Instruction
   ConstI32
   {
     result: ValueId, value: i32
+  },
+  ConstF32
+  {
+    result: ValueId, bits: u32
+  },
+  ConstF64
+  {
+    result: ValueId, bits: u64
   },
   ConstBool
   {
@@ -300,6 +310,26 @@ impl Function
                              value_type: Type::I32 });
     self.block_mut(block)?.instructions.push(Instruction::ConstI32 { result,
                                                                      value });
+    Some(result)
+  }
+
+  pub fn add_const_f32_bits(&mut self, block: BlockId, bits: u32) -> Option<ValueId>
+  {
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::F32 });
+    self.block_mut(block)?.instructions.push(Instruction::ConstF32 { result,
+                                                                     bits });
+    Some(result)
+  }
+
+  pub fn add_const_f64_bits(&mut self, block: BlockId, bits: u64) -> Option<ValueId>
+  {
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::F64 });
+    self.block_mut(block)?.instructions.push(Instruction::ConstF64 { result,
+                                                                     bits });
     Some(result)
   }
 

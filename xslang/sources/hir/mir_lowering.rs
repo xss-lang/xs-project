@@ -46,6 +46,8 @@ pub struct HirToMirLowerer
 }
 
 #[cfg(test)]
+mod float_tests;
+#[cfg(test)]
 mod for_tests;
 #[cfg(test)]
 mod operator_tests;

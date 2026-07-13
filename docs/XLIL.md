@@ -66,6 +66,9 @@ Format notes:
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
 - `%rN:i32 = const.i32 N` creates a signed 32-bit integer constant.
+- `%rN:f32 = const.f32 0xXXXXXXXX` and `%rN:f64 = const.f64 0xXXXXXXXXXXXXXXXX` create IEEE-754 constants from exact
+  bit patterns. Fixed-width hexadecimal spelling preserves negative zero, infinities, and NaN payloads across text
+  round trips.
 - `%rN:i32 = add.i32 %rA, %rB`, `sub.i32`, `mul.i32`, `div.i32`, and `rem.i32` perform signed 32-bit integer arithmetic.
 - `%rN:i32 = and.i32 %rA, %rB`, `or.i32`, `xor.i32`, `shl.i32`, and arithmetic `shr.i32` perform bitwise 32-bit integer
   operations.

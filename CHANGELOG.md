@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- `SFloat` and `Float` literals now cross the C23 structural AST into Rust typed HIR, verified MIR/XMIR, XLIL v0, LLVM
+  IR, object emission, and native `.xse` builds. XMIR and XLIL store exact IEEE-754 f32/f64 bit patterns in fixed-width
+  hexadecimal `const.f32` and `const.f64` records.
 - Same-module `Int` functions now lower as real i64 functions through typed HIR, MIR/XMIR, XLIL, LLVM IR, object
   emission, and native `.xse` builds. Division, remainder, bitwise operations, signed shifts, and ordered comparisons use
   the complete i64 instruction family without changing the required `Long`/i32 process entry ABI.

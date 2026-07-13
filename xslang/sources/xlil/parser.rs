@@ -8,6 +8,7 @@ use crate::xlil::{
   SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator, Type, Value, ValueId, is_supported_xlil_version, type_from_name,
 };
 
+mod float;
 mod i64;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -476,6 +477,14 @@ impl Parser<'_>
     if let Some((result, rest)) = text.split_once(" = const.i32 ")
     {
       return self.const_i32(function, result, rest, line);
+    }
+    if let Some((result, rest)) = text.split_once(" = const.f32 ")
+    {
+      return self.const_float(function, result, rest, Type::F32, line);
+    }
+    if let Some((result, rest)) = text.split_once(" = const.f64 ")
+    {
+      return self.const_float(function, result, rest, Type::F64, line);
     }
     let Some((result, rest)) = text.split_once(" = const ")
     else

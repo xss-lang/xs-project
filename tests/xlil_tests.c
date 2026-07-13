@@ -107,6 +107,27 @@ static void test_function_body_rejects_missing_return_value(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_floating_constant_bits(void)
+{
+  const char *text = ".xlil version 0\n.xlil module FloatConstants\n"
+                     ".func F32Value : () -> f32\nbb0.entry:\n"
+                     "  %r0:f32 = const.f32 0x3fc00000\n  ret %r0\n.end\n"
+                     ".func F64Value : () -> f64\nbb0.entry:\n"
+                     "  %r0:f64 = const.f64 0x3ff8000000000000\n  ret %r0\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("FloatConstants.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  const XsLilFunction *f32 = xs_lil_module_function_at(module, 0);
+  const XsLilFunction *f64 = xs_lil_module_function_at(module, 1);
+  CHECK(xs_lil_block_instruction_kind(xs_lil_function_block_at(f32, 0), 0) == XS_LIL_INSTRUCTION_CONST_F32);
+  CHECK(xs_lil_block_instruction_float_bits(xs_lil_function_block_at(f32, 0), 0) == UINT32_C(0x3fc00000));
+  CHECK(xs_lil_block_instruction_kind(xs_lil_function_block_at(f64, 0), 0) == XS_LIL_INSTRUCTION_CONST_F64);
+  CHECK(xs_lil_block_instruction_float_bits(xs_lil_function_block_at(f64, 0), 0) == UINT64_C(0x3ff8000000000000));
+  xs_lil_module_destroy(module);
+}
+
 static void test_function_body_branch_text_writer(void)
 {
   XsLilError error = {0};
@@ -573,6 +594,8 @@ static void test_text_parser_rejects_invalid_inputs(void)
       "  call Import()\n  ret\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> bool\nbb0.entry:\n"
       "  %r0:i64 = const 1\n  %r1:bool = not.bool %r0\n  ret %r1\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> f32\nbb0.entry:\n"
+      "  %r0:f32 = const.f32 0x1234\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> void\n.slot %s0:void\nbb0.entry:\n  ret\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\n.slot %s0:i32\nbb0.entry:\n"
       "  %r0:i64 = load %s0\n  ret %r0\n.end\n",
@@ -594,6 +617,7 @@ int main(void)
   test_module_and_text_writer();
   test_function_body_text_writer();
   test_function_body_rejects_missing_return_value();
+  test_floating_constant_bits();
   test_function_body_branch_text_writer();
   test_function_body_branch_if_text_writer();
   test_function_body_rejects_non_bool_branch_if();
