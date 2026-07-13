@@ -7,7 +7,9 @@ use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::mir;
-use crate::xlil::{BlockId, Function, I32BinaryOperation, SlotId, Type, Utf16Encoding, ValueId};
+use crate::xlil::{BlockId, Function, I32BinaryOperation, IntegerConstant, SlotId, Type, Utf16Encoding, ValueId};
+
+mod integer;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -127,6 +129,12 @@ impl MirToXlilLowerer
                                         span, } = *statement
       {
         self.lower_const_u16(local, value, span, xlil_block, local_types, values, lowered);
+      }
+      if let mir::Statement::ConstInteger { local,
+                                            value,
+                                            span, } = *statement
+      {
+        self.lower_const_integer(local, value, span, xlil_block, local_types, values, lowered);
       }
       if let mir::Statement::ConstF32 { local,
                                         bits,
@@ -515,34 +523,6 @@ impl MirToXlilLowerer
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           "MIR const.i32 target local has no XLIL value type",
-                          span),
-    }
-  }
-
-  #[allow(clippy::too_many_arguments)]
-  fn lower_const_u16(&mut self,
-                     local: mir::LocalId,
-                     value: u16,
-                     span: Span,
-                     block: BlockId,
-                     local_types: &HashMap<mir::LocalId, Option<Type>>,
-                     values: &mut HashMap<mir::LocalId, ValueId>,
-                     function: &mut Function)
-  {
-    match local_types.get(&local).copied().flatten()
-    {
-      Some(Type::U16) =>
-      {
-        if let Some(value_id) = function.add_const_u16(block, value)
-        {
-          values.insert(local, value_id);
-        }
-      }
-      Some(_) => self.report(DiagnosticCode::UnsupportedLocalType,
-                             "MIR const.u16 target local must have XLIL u16 type",
-                             span),
-      None => self.report(DiagnosticCode::MissingLocalType,
-                          "MIR const.u16 target local has no XLIL value type",
                           span),
     }
   }

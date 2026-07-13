@@ -162,6 +162,12 @@ impl<'a> Verifier<'a>
       Statement::ConstU16 { local,
                             span,
                             .. } => self.verify_typed_const(local, crate::xlil::Type::U16, "const.u16", span),
+      Statement::ConstInteger { local,
+                                value,
+                                span, } =>
+      {
+        self.verify_typed_const(local, value.value_type(), &format!("const.{}", value.text_name()), span)
+      }
       Statement::ConstF32 { local,
                             span,
                             .. } => self.verify_typed_const(local, crate::xlil::Type::F32, "const.f32", span),

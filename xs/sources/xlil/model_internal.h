@@ -33,6 +33,7 @@ typedef struct
   XsLilInstructionKind kind;
   XsLilValueId result;
   int64_t immediate_i64;
+  XsUInt128 immediate_integer_bits;
   uint64_t immediate_float_bits;
   bool immediate_bool;
   XsLilUtf16Encoding utf16_encoding;
@@ -96,5 +97,10 @@ XsLilStatus xs_lil_parse_const_str(XsLilBlock *block, XsLilType result_type, con
 XsLilStatus xs_lil_parse_const_u16(XsLilBlock *block, XsLilType result_type, const char *operation,
                                    size_t operation_length, XsLilValueId expected_result, bool *matched,
                                    XsLilError *error);
+XsLilStatus xs_lil_parse_const_integer(XsLilBlock *block, XsLilType result_type, const char *operation,
+                                       size_t operation_length, XsLilValueId expected_result, bool *matched,
+                                       XsLilError *error);
+XsLilStatus xs_lil_add_const_integer_bits(XsLilBlock *block, XsLilType type, XsUInt128 bits, XsLilValueId *result,
+                                          XsLilError *error);
 
 #endif

@@ -273,6 +273,7 @@ impl Parser<'_>
         "const.i64" => block.statements.push(self.const_i64_statement()),
         "const.i32" => block.statements.push(self.const_i32_statement()),
         "const.u16" => block.statements.push(self.const_u16_statement()),
+        kind if scalar::is_integer_constant(kind) => block.statements.push(self.integer_constant_statement(kind)),
         "const.f32" => block.statements.push(self.const_f32_statement()),
         "const.f64" => block.statements.push(self.const_f64_statement()),
         "const.str" => block.statements.push(self.const_str_statement()),
@@ -517,7 +518,7 @@ impl Parser<'_>
 
   fn const_i64_statement(&mut self) -> Statement
   {
-    let local = self.const_i64_target();
+    let local = self.const_target();
     let value = self.const_i64_value();
     Statement::ConstI64 { local,
                           value,
@@ -526,7 +527,7 @@ impl Parser<'_>
 
   fn const_i32_statement(&mut self) -> Statement
   {
-    let local = self.const_i64_target();
+    let local = self.const_target();
     let value = self.const_i32_value();
     Statement::ConstI32 { local,
                           value,
@@ -595,7 +596,7 @@ impl Parser<'_>
     }
   }
 
-  fn const_i64_target(&mut self) -> LocalId
+  fn const_target(&mut self) -> LocalId
   {
     let Some(line) = self.current()
     else

@@ -80,6 +80,49 @@ static XsLilStatus write_float_instruction(FILE *stream, const XsLilInstruction 
   return XS_LIL_OK;
 }
 
+static const char *integer_constant_type(XsLilInstructionKind kind, size_t *digits)
+{
+  switch(kind)
+  {
+  case XS_LIL_INSTRUCTION_CONST_U8:
+    *digits = 2;
+    return "u8";
+  case XS_LIL_INSTRUCTION_CONST_I8:
+    *digits = 2;
+    return "i8";
+  case XS_LIL_INSTRUCTION_CONST_I16:
+    *digits = 4;
+    return "i16";
+  case XS_LIL_INSTRUCTION_CONST_U32:
+    *digits = 8;
+    return "u32";
+  case XS_LIL_INSTRUCTION_CONST_U64:
+    *digits = 16;
+    return "u64";
+  case XS_LIL_INSTRUCTION_CONST_U128:
+    *digits = 32;
+    return "u128";
+  case XS_LIL_INSTRUCTION_CONST_I128:
+    *digits = 32;
+    return "i128";
+  default:
+    return nullptr;
+  }
+}
+
+static XsLilStatus write_integer_constant(FILE *stream, const XsLilInstruction *instruction, XsLilError *error)
+{
+  size_t digits = 0;
+  const char *type = integer_constant_type(instruction->kind, &digits);
+  if(type == nullptr)
+    return XS_LIL_OK;
+  char hexadecimal[33];
+  xs_uint128_format_hex(instruction->immediate_integer_bits, hexadecimal);
+  if(fprintf(stream, "  %%r%u:%s = const.%s 0x%s\n", instruction->result, type, type, hexadecimal + 32U - digits) < 0)
+    return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL integer constant");
+  return XS_LIL_OK;
+}
+
 static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock *block)
 {
   if(fprintf(stream, "bb%u.%s:\n", block->id, block->label) < 0)
@@ -95,8 +138,10 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.i32 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_U16 &&
        fprintf(stream, "  %%r%u:u16 = const.u16 0x%04x\n", instruction->result,
-               (unsigned int)instruction->immediate_i64) < 0)
+               (unsigned int)instruction->immediate_integer_bits.low) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.u16 instruction");
+    if(write_integer_constant(stream, instruction, error) != XS_LIL_OK)
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_BOOL &&
        fprintf(stream, "  %%r%u:bool = const.bool %s\n", instruction->result,
                instruction->immediate_bool ? "true" : "false") < 0)

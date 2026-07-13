@@ -498,6 +498,10 @@ impl Parser<'_>
     {
       return Some(parsed);
     }
+    if let Some(parsed) = self.integer_constant(function, text, line)
+    {
+      return Some(parsed);
+    }
     if let Some((result, rest)) = text.split_once(" = const.i32 ")
     {
       return self.const_i32(function, result, rest, line);

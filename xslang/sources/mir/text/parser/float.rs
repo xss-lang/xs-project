@@ -60,7 +60,7 @@ impl Parser<'_>
 
   pub(super) fn const_f32_statement(&mut self) -> Statement
   {
-    let local = self.const_i64_target();
+    let local = self.const_target();
     Statement::ConstF32 { local,
                           bits: self.float_bits(8) as u32,
                           span: span() }
@@ -68,7 +68,7 @@ impl Parser<'_>
 
   pub(super) fn const_f64_statement(&mut self) -> Statement
   {
-    let local = self.const_i64_target();
+    let local = self.const_target();
     Statement::ConstF64 { local,
                           bits: self.float_bits(16),
                           span: span() }

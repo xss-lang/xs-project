@@ -122,8 +122,10 @@ HIR (THIR/XHIR), MIR, and XLIL route instead of requiring the temporary C source
 increment/decrement preserve their distinct result values through the current native local-storage slice. It does not imply
 that the complete X# language is executable yet. Earlier releases are compiler infrastructure snapshots.
 
-The signed integer widths are fixed: `Long` is i32, `Int` is i64, and `Integer` is i128. Unary `+`/`-` for `Long` and
-logical `!` for `Bool` now use the same Rust compiler-core route through XHIR, XMIR, XLIL, and LLVM native emission.
+The integer widths are fixed from `Byte`/`SByte` through `UInteger`/`Integer`. Context-typed literals for every width,
+including signed minimum values and full u128 values, now use the same Rust compiler-core route through XHIR, XMIR, XLIL,
+and LLVM native emission. The public C23 boundary carries 128-bit values with project-owned two-word types instead of a
+compiler extension. Unary `+`/`-` for supported signed literals and logical `!` for `Bool` use this route.
 Same-module `Int` helper functions also remain i64 through this route, including arithmetic, bitwise, signed-shift, and
 ordered-comparison operations. Native process entry remains `fn main() -> Long`.
 

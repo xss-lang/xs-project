@@ -10,7 +10,7 @@ impl Parser<'_>
 {
   pub(super) fn const_str_statement(&mut self) -> Statement
   {
-    let local = self.const_i64_target();
+    let local = self.const_target();
     let line = self.current();
     let units = match line.as_deref().and_then(|value| value.strip_prefix("value "))
     {

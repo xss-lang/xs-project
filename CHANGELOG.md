@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- The complete fixed-width integer literal family now lowers through typed HIR, decimal XMIR constants, fixed-width XLIL
+  hexadecimal bit patterns, LLVM IR, object emission, and native `.xse` builds. Range checking includes signed minimum
+  values and full u128 values. Public C23 `XsUInt128`/`XsInt128` types use two 64-bit words; no `__int128` extension is used.
 - `Char` literals now cross the structural AST into typed HIR as one UTF-16 code unit, lower through XMIR `const.u16`,
   XLIL `%rN:u16 = const.u16 0xXXXX`, LLVM `i16`, object emission, and native `.xse` builds. Parameters, locals, direct
   calls, and returns preserve the 16-bit value; the public C23 XLIL API can construct and inspect the record.

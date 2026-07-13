@@ -19,37 +19,9 @@ impl HirToMirLowerer
                             .and_then(|local| local.value_type);
     match (literal, value_type)
     {
-      (Literal::Integer(value), Some(XlilType { kind: TypeKind::I64 })) =>
+      (Literal::Integer(value), Some(value_type)) if value_type.integer_width().is_some() =>
       {
-        let Ok(value) = value.replace('\'', "").parse::<i64>()
-        else
-        {
-          self.report(DiagnosticCode::InvalidIntegerLiteral,
-                      "HIR integer literal does not fit MIR const.i64",
-                      span);
-          return;
-        };
-        self.current_block_mut(lowered)
-            .statements
-            .push(mir::Statement::ConstI64 { local: target,
-                                             value,
-                                             span });
-      }
-      (Literal::Integer(value), Some(XlilType { kind: TypeKind::I32 })) =>
-      {
-        let Ok(value) = value.replace('\'', "").parse::<i32>()
-        else
-        {
-          self.report(DiagnosticCode::InvalidIntegerLiteral,
-                      "HIR integer literal does not fit MIR const.i32",
-                      span);
-          return;
-        };
-        self.current_block_mut(lowered)
-            .statements
-            .push(mir::Statement::ConstI32 { local: target,
-                                             value,
-                                             span });
+        self.lower_integer_literal_into(target, value, value_type, span, lowered);
       }
       (Literal::Bool(value), Some(XlilType { kind: TypeKind::Bool })) =>
       {
@@ -121,9 +93,6 @@ impl HirToMirLowerer
                                              value: *value,
                                              span });
       }
-      (Literal::Integer(_), Some(_)) => self.report(DiagnosticCode::UnsupportedType,
-                                                    "only Long and Int literals can lower to MIR constants today",
-                                                    span),
       (Literal::None, _) => self.report(DiagnosticCode::UnsupportedExpression,
                                         "Optional None lowering is not implemented in MIR yet",
                                         span),

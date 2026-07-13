@@ -109,6 +109,27 @@ fn roundtrips_u16_code_unit_constant()
 }
 
 #[test]
+fn roundtrips_all_fixed_integer_bit_patterns()
+{
+  let text = ".xlil version 0\n.xlil module Integers\n.func values : () -> void\nbb0.entry:\n  %r0:u8 = const.u8 \
+              0xff\n  %r1:i8 = const.i8 0x80\n  %r2:i16 = const.i16 0x8000\n  %r3:u32 = const.u32 0xffffffff\n  \
+              %r4:u64 = const.u64 0xffffffffffffffff\n  %r5:i128 = const.i128 0x80000000000000000000000000000000\n  \
+              %r6:u128 = const.u128 0xffffffffffffffffffffffffffffffff\n  ret\n.end\n";
+  let module = parse_module(text).expect("integer constants should parse");
+
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(module_to_string(&module), text);
+}
+
+#[test]
+fn rejects_integer_bit_pattern_with_wrong_width()
+{
+  let text = ".xlil version 0\n.xlil module Integers\n.func bad : () -> u8\nbb0.entry:\n  %r0:u8 = const.u8 0x0001\n  \
+              ret %r0\n.end\n";
+  assert!(parse_module(text).is_err());
+}
+
+#[test]
 fn rejects_untagged_or_malformed_utf16_string_constants()
 {
   for instruction in ["%r0:str = const.str utf16 [0x0041]",

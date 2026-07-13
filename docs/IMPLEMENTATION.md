@@ -559,9 +559,10 @@ semantics.
   `branch_if` records with `condition local N`, `then block A`, and `else block B`; XLIL writes/parses assembly-like
   `br_if %rN, bbA, bbB` terminators. Verifiers require a `bool` condition and existing target blocks. HIR lowering does not
   emit conditional control-flow yet. The MIR optimizer can fold same-block constant `branch_if` conditions to `goto`.
-- Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Long`/`Int` locals,
-  non-negative `Long` i32 and `Int` i64 literals, and local returns into a single-entry MIR block with typed
-  XLIL-vocabulary local records. Negative literal/unary-expression lowering and other integer widths remain deferred.
+- Rust `xslang` lowers context-typed literals for the complete fixed-width integer family into MIR and XLIL records.
+  Positive values are range-checked against their declared type; negative literal forms cover every signed width,
+  including the exact i8/i16/i32/i64/i128 minimum values. XMIR keeps semantic decimal values while XLIL uses exact
+  fixed-width hexadecimal bit patterns for the newly added widths.
 - The same Rust bridge lowers `Long` division, remainder, bitwise AND/OR/XOR, and signed shifts to target-independent
   `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `xor.i32`, `shl.i32`, and arithmetic `shr.i32` records. Their model,
   XHIR/XMIR/XLIL text readers and writers, verifiers, MIR-to-XLIL lowering, and native compiler-core bridge are tested
@@ -585,15 +586,15 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - `xs build --xlil -file <input.xlil>` parses and verifies XLIL v0 text through `xs_lil_module_parse_text`, then lowers to
   LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native `.xse` executable beside the input.
   Native direct XLIL requires exactly one defined
-  `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.u16`, `const.f32`,
+  `.func main : () -> i32`; its supported body subset includes `.param`, all fixed-width integer constants, `const.f32`,
   `const.f64`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison
   instructions, typed `.slot`/`load`/`store`, `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`.
-- `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
-  source slice: one top-level `main` returning `Long` with optional explicit `Long`/`Bool` or inferred local bindings
-  and simple mutable-local assignments followed by one return statement whose expression is built from locals,
-  i32-range integer literals, unary `+`/`-`,
+- `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` use the same native path for supported compiler-core
+  sessions. Context-typed literals, parameters, locals, direct calls, and returns preserve every fixed integer width;
+  `main` remains `Long`. The broader expression slice includes `Long`/`Bool` mutable locals,
+  unary `+`/`-`,
   arithmetic, bitwise including `^`, shift, and top-level `if` expressions. This source bridge creates a temporary C MIR
   function, lowers it to XLIL, and then reuses the XLIL native builder.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured
@@ -633,7 +634,7 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - Direct file compilation entries are recognized as `xs build --output hir|mir|xlil -file <input>` and
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, verification, primitive types, text parsing/writing,
-  read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.u16`, exact-bit
+  read-only function/body inspection, function bodies, basic blocks, parameters, all fixed-width integer constants, exact-bit
   `const.f32`/`const.f64`, `const.bool`,
   typed stack slots and `load`/`store`, i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison,
   `call`, `br`, `br_if`, and `return`.
@@ -642,7 +643,7 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   `br_if %rN, bbA, bbB`, `panic`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
   to bind them to XLIL `.param` values. The bridge lowers MIR
-  parameter signatures, typed MIR `const.i64`, `const.i32`, `const.u16`, `const.f32`, `const.f64`, `const.bool`, i64 arithmetic/bitwise/shift/comparison local
+  parameter signatures, typed MIR fixed-width integer constants, `const.f32`, `const.f64`, `const.bool`, i64 arithmetic/bitwise/shift/comparison local
   statements,
   typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,

@@ -7,7 +7,7 @@ use crate::xlil::{
   FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation,
 };
 
-use super::{SlotId, Type, Utf16Encoding, ValueId};
+use super::{IntegerConstant, SlotId, Type, Utf16Encoding, ValueId};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Instruction
@@ -23,6 +23,10 @@ pub enum Instruction
   ConstU16
   {
     result: ValueId, value: u16
+  },
+  ConstInteger
+  {
+    result: ValueId, value: IntegerConstant
   },
   ConstF32
   {

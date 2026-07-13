@@ -5,6 +5,7 @@
 
 #include "xs/backend/llvm_backend.h"
 
+#include "llvm_integer.h"
 #include "llvm_string.h"
 
 #include <llvm-c/Analysis.h>
@@ -606,13 +607,9 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     values[result] = LLVMConstInt(type, (unsigned long long)xs_lil_block_instruction_i64(block, index), true);
     return XS_BACKEND_OK;
   }
-  if(kind == XS_LIL_INSTRUCTION_CONST_U16)
+  if(xs_llvm_is_integer_constant(kind))
   {
-    XsBackendStatus status = xs_llvm_lil_type(unit->backend, (XsLilType){.kind = XS_LIL_TYPE_U16}, &type, error);
-    if(status != XS_BACKEND_OK)
-      return status;
-    values[result] = LLVMConstInt(type, xs_lil_block_instruction_u16(block, index), false);
-    return XS_BACKEND_OK;
+    return xs_llvm_lower_integer_constant(unit->backend, block, index, &values[result], error);
   }
   if(kind == XS_LIL_INSTRUCTION_CONST_F32 || kind == XS_LIL_INSTRUCTION_CONST_F64)
   {

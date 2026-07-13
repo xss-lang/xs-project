@@ -67,6 +67,9 @@ Format notes:
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
 - `%rN:u16 = const.u16 0xXXXX` creates one unsigned 16-bit value. X# `Char` uses this record for one UTF-16 code unit;
   the hexadecimal immediate always has exactly four digits.
+- `%rN:T = const.T 0x...` creates fixed-width integer bit patterns for `u8`, `i8`, `i16`, `u32`, `u64`, `u128`, and
+  `i128`. The hexadecimal field has exactly two digits per byte. Signed records use two's-complement bits, so XLIL does
+  not depend on a host C implementation's native 128-bit extension.
 - `%rN:str = const.str utf16le [0x004c, ...]` and its `utf16be` form create a borrowed static string view from
   explicit UTF-16 code units. The tag fixes the byte order used by the target data object; the numeric list always
   contains Unicode UTF-16 code-unit values. Untagged string constants are invalid.
@@ -148,6 +151,9 @@ The API is intended to let:
 The C23 API currently includes module construction, verification, text writing, v0 text parsing, and read-only
 function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting verified and
 optimized LLVM IR, an object file, and a native `.xse` executable for the supported local-target subset.
+
+The public [integer support header](../include/xs/int128.h) defines `XsUInt128` and `XsInt128` as explicit high/low
+64-bit words. XLIL uses those project-owned C23 types for u128/i128 constants; GNU `__int128` is neither required nor used.
 
 ## Direct native entry point
 

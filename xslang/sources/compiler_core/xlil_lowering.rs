@@ -121,7 +121,15 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                                TypeRef::Primitive(PrimitiveType::Long |
                                                                                   PrimitiveType::Int |
                                                                                   PrimitiveType::Bool |
+                                                                                  PrimitiveType::Byte |
+                                                                                  PrimitiveType::SByte |
                                                                                   PrimitiveType::Char |
+                                                                                  PrimitiveType::Short |
+                                                                                  PrimitiveType::Integer |
+                                                                                  PrimitiveType::UShort |
+                                                                                  PrimitiveType::ULong |
+                                                                                  PrimitiveType::UInt |
+                                                                                  PrimitiveType::UInteger |
                                                                                   PrimitiveType::SFloat |
                                                                                   PrimitiveType::Float |
                                                                                   PrimitiveType::Str))
@@ -130,7 +138,15 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                            TypeRef::Primitive(PrimitiveType::Long |
                                                                               PrimitiveType::Int |
                                                                               PrimitiveType::Bool |
+                                                                              PrimitiveType::Byte |
+                                                                              PrimitiveType::SByte |
                                                                               PrimitiveType::Char |
+                                                                              PrimitiveType::Short |
+                                                                              PrimitiveType::Integer |
+                                                                              PrimitiveType::UShort |
+                                                                              PrimitiveType::ULong |
+                                                                              PrimitiveType::UInt |
+                                                                              PrimitiveType::UInteger |
                                                                               PrimitiveType::SFloat |
                                                                               PrimitiveType::Float |
                                                                               PrimitiveType::Str));

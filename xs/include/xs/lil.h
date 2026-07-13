@@ -6,6 +6,8 @@
 #ifndef XS_LIL_H
 #define XS_LIL_H
 
+#include "xs/int128.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -125,6 +127,13 @@ typedef enum
   XS_LIL_INSTRUCTION_GE_F64,
   XS_LIL_INSTRUCTION_CONST_STR,
   XS_LIL_INSTRUCTION_CONST_U16,
+  XS_LIL_INSTRUCTION_CONST_U8,
+  XS_LIL_INSTRUCTION_CONST_I8,
+  XS_LIL_INSTRUCTION_CONST_I16,
+  XS_LIL_INSTRUCTION_CONST_U32,
+  XS_LIL_INSTRUCTION_CONST_U64,
+  XS_LIL_INSTRUCTION_CONST_U128,
+  XS_LIL_INSTRUCTION_CONST_I128,
 } XsLilInstructionKind;
 
 typedef enum
@@ -190,6 +199,13 @@ XsLilStatus xs_lil_function_append_block(XsLilFunction *function, const char *la
 XsLilStatus xs_lil_block_add_const_i64(XsLilBlock *block, int64_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_i32(XsLilBlock *block, int32_t value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_u16(XsLilBlock *block, uint16_t value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_u8(XsLilBlock *block, uint8_t value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_i8(XsLilBlock *block, int8_t value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_i16(XsLilBlock *block, int16_t value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_u32(XsLilBlock *block, uint32_t value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_u64(XsLilBlock *block, uint64_t value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_u128(XsLilBlock *block, XsUInt128 value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_const_i128(XsLilBlock *block, XsInt128 value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_str(XsLilBlock *block, XsLilUtf16Encoding encoding, const uint16_t *units,
                                        size_t unit_count, XsLilValueId *result, XsLilError *error);
@@ -284,6 +300,7 @@ XsLilInstructionKind xs_lil_block_instruction_kind(const XsLilBlock *block, size
 XsLilValueId xs_lil_block_instruction_result(const XsLilBlock *block, size_t index);
 int64_t xs_lil_block_instruction_i64(const XsLilBlock *block, size_t index);
 uint16_t xs_lil_block_instruction_u16(const XsLilBlock *block, size_t index);
+XsUInt128 xs_lil_block_instruction_integer_bits(const XsLilBlock *block, size_t index);
 uint64_t xs_lil_block_instruction_float_bits(const XsLilBlock *block, size_t index);
 bool xs_lil_block_instruction_bool(const XsLilBlock *block, size_t index);
 XsLilUtf16Encoding xs_lil_block_instruction_utf16_encoding(const XsLilBlock *block, size_t index);

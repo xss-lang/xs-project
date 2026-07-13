@@ -80,6 +80,36 @@ static bool is_binary_i64(XsLilInstructionKind kind)
          kind == XS_LIL_INSTRUCTION_LE_I64 || kind == XS_LIL_INSTRUCTION_GT_I64 || kind == XS_LIL_INSTRUCTION_GE_I64;
 }
 
+static bool integer_constant_type(XsLilInstructionKind kind, XsLilTypeKind *type)
+{
+  switch(kind)
+  {
+  case XS_LIL_INSTRUCTION_CONST_U8:
+    *type = XS_LIL_TYPE_U8;
+    return true;
+  case XS_LIL_INSTRUCTION_CONST_I8:
+    *type = XS_LIL_TYPE_I8;
+    return true;
+  case XS_LIL_INSTRUCTION_CONST_I16:
+    *type = XS_LIL_TYPE_I16;
+    return true;
+  case XS_LIL_INSTRUCTION_CONST_U32:
+    *type = XS_LIL_TYPE_U32;
+    return true;
+  case XS_LIL_INSTRUCTION_CONST_U64:
+    *type = XS_LIL_TYPE_U64;
+    return true;
+  case XS_LIL_INSTRUCTION_CONST_U128:
+    *type = XS_LIL_TYPE_U128;
+    return true;
+  case XS_LIL_INSTRUCTION_CONST_I128:
+    *type = XS_LIL_TYPE_I128;
+    return true;
+  default:
+    return false;
+  }
+}
+
 static bool is_binary_i32(XsLilInstructionKind kind)
 {
   return kind == XS_LIL_INSTRUCTION_ADD_I32 || kind == XS_LIL_INSTRUCTION_SUB_I32 ||
@@ -200,6 +230,11 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
            ((size_t)current->result >= function->value_count ||
             function->values[current->result].type.kind != XS_LIL_TYPE_U16))
           return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL const.u16 result must have u16 type");
+        XsLilTypeKind integer_type = XS_LIL_TYPE_VOID;
+        if(integer_constant_type(current->kind, &integer_type) &&
+           ((size_t)current->result >= function->value_count ||
+            function->values[current->result].type.kind != integer_type))
+          return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL integer constant result type is invalid");
         if(is_binary_i64(current->kind) || is_binary_i32(current->kind))
         {
           status = verify_binary_integer(function, current, error);

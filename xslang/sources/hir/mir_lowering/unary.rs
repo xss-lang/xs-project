@@ -22,6 +22,13 @@ impl HirToMirLowerer
                   span);
       return;
     };
+    if operator == UnaryOperator::Negative &&
+       let Expression::Literal { literal: Literal::Integer(text),
+                                 .. } = operand &&
+       self.lower_negative_integer_literal_into(target, text, target_type, span, lowered)
+    {
+      return;
+    }
     let operand_type = match operator
     {
       UnaryOperator::LogicalNot => XlilType::BOOL,

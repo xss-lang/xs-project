@@ -53,6 +53,8 @@ mod float_tests;
 #[cfg(test)]
 mod for_tests;
 #[cfg(test)]
+mod integer_width_tests;
+#[cfg(test)]
 mod operator_tests;
 mod unary;
 #[cfg(test)]
@@ -664,6 +666,7 @@ mod control_flow_tests;
 mod desugar_tests;
 mod desugared;
 mod function_lowering;
+mod integer_literal;
 #[cfg(test)]
 mod match_tests;
 mod value_lowering;

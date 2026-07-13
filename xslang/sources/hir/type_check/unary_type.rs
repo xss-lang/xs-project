@@ -16,11 +16,8 @@ impl TypeChecker
     };
     match operator
     {
-      UnaryOperator::Positive | UnaryOperator::Negative
-        if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
-      {
-        Some(Type::Primitive(primitive))
-      }
+      UnaryOperator::Positive if is_integer(primitive) => Some(Type::Primitive(primitive)),
+      UnaryOperator::Negative if is_signed_integer(primitive) => Some(Type::Primitive(primitive)),
       UnaryOperator::LogicalNot if primitive == PrimitiveType::Bool => Some(Type::Primitive(PrimitiveType::Bool)),
       _ => None,
     }
@@ -34,8 +31,15 @@ impl TypeChecker
   {
     match (operator, expected)
     {
-      (UnaryOperator::Positive | UnaryOperator::Negative,
-       Type::Primitive(PrimitiveType::Long | PrimitiveType::Int)) => match operand
+      (UnaryOperator::Positive, Type::Primitive(primitive)) if is_integer(*primitive) => match operand
+      {
+        Expression::Literal { literal, .. } => literal_matches_type(literal, expected),
+        Expression::Unary { operator,
+                            operand,
+                            .. } => self.unary_expression_matches_type(*operator, operand, expected),
+        _ => self.expression_type(operand).as_ref() == Some(expected),
+      },
+      (UnaryOperator::Negative, Type::Primitive(primitive)) if is_signed_integer(*primitive) => match operand
       {
         Expression::Literal { literal, .. } => literal_matches_type(literal, expected),
         Expression::Unary { operator,
@@ -50,4 +54,29 @@ impl TypeChecker
       _ => false,
     }
   }
+}
+
+fn is_integer(value: PrimitiveType) -> bool
+{
+  matches!(value,
+           PrimitiveType::Byte |
+           PrimitiveType::SByte |
+           PrimitiveType::Short |
+           PrimitiveType::Long |
+           PrimitiveType::Int |
+           PrimitiveType::Integer |
+           PrimitiveType::UShort |
+           PrimitiveType::ULong |
+           PrimitiveType::UInt |
+           PrimitiveType::UInteger)
+}
+
+fn is_signed_integer(value: PrimitiveType) -> bool
+{
+  matches!(value,
+           PrimitiveType::SByte |
+           PrimitiveType::Short |
+           PrimitiveType::Long |
+           PrimitiveType::Int |
+           PrimitiveType::Integer)
 }

@@ -38,12 +38,18 @@ fn lowers_long_positive_and_negative_through_xhir_and_mir()
     let mir = HirToMirLowerer::new().lower_function(&parsed)
                                     .expect("unary Long should lower");
     assert!(crate::mir::verify::verify_function(&mir).is_empty());
-    if operator == UnaryOperator::Negative
+    let expected = if operator == UnaryOperator::Negative
     {
-      assert!(mir.blocks[0].statements
-                           .iter()
-                           .any(|statement| matches!(statement, mir::Statement::SubI32 { .. })));
+      -7
     }
+    else
+    {
+      7
+    };
+    assert!(mir.blocks[0]
+      .statements
+      .iter()
+      .any(|statement| matches!(statement, mir::Statement::ConstI32 { value, .. } if *value == expected)));
   }
 }
 

@@ -4,11 +4,13 @@
  */
 
 mod instruction;
+mod integer;
 mod types;
 
 use super::I32BinaryOperation;
 
 pub use instruction::Instruction;
+pub use integer::IntegerConstant;
 pub use types::{Type, TypeKind, Utf16Encoding};
 
 pub const SUPPORTED_XLIL_VERSION: u32 = 0;
@@ -152,6 +154,18 @@ impl Function
                              value_type: Type::U16 });
     self.block_mut(block)?.instructions.push(Instruction::ConstU16 { result,
                                                                      value });
+    Some(result)
+  }
+
+  pub fn add_const_integer(&mut self, block: BlockId, value: IntegerConstant) -> Option<ValueId>
+  {
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: value.value_type });
+    self.block_mut(block)?
+        .instructions
+        .push(Instruction::ConstInteger { result,
+                                          value });
     Some(result)
   }
 

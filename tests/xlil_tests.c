@@ -674,6 +674,48 @@ static void test_text_parser_round_trips_u16_constant(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_public_integer_constant_api(void)
+{
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  XsLilFunction *function = nullptr;
+  XsLilBlock *entry = nullptr;
+  CHECK(xs_lil_module_create("IntegerApi", &module, &error) == XS_LIL_OK);
+  CHECK(xs_lil_module_add_function_definition(module, "values", (XsLilType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
+                                              &function, &error) == XS_LIL_OK);
+  CHECK(xs_lil_function_append_block(function, "entry", &entry, &error) == XS_LIL_OK);
+  XsLilValueId value = 0;
+  CHECK(xs_lil_block_add_const_u8(entry, UINT8_MAX, &value, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_const_i8(entry, INT8_MIN, &value, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_const_i16(entry, INT16_MIN, &value, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_const_u32(entry, UINT32_MAX, &value, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_const_u64(entry, UINT64_MAX, &value, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_const_u128(entry, xs_uint128_from_words(UINT64_MAX, UINT64_MAX), &value, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_const_i128(entry, xs_int128_from_words(INT64_MIN, 0), &value, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return(entry, &error) == XS_LIL_OK);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  CHECK(xs_lil_block_instruction_count(entry) == 7);
+  CHECK(xs_lil_block_instruction_kind(entry, 0) == XS_LIL_INSTRUCTION_CONST_U8);
+  CHECK(xs_lil_block_instruction_integer_bits(entry, 0).low == UINT8_MAX);
+  CHECK(xs_lil_block_instruction_kind(entry, 6) == XS_LIL_INSTRUCTION_CONST_I128);
+  CHECK(xs_lil_block_instruction_integer_bits(entry, 6).high == UINT64_C(0x8000000000000000));
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char text[1024] = {0};
+    size_t read = fread(text, 1, sizeof(text) - 1U, stream);
+    text[read] = '\0';
+    CHECK(strstr(text, "%r0:u8 = const.u8 0xff") != nullptr);
+    CHECK(strstr(text, "%r5:u128 = const.u128 0xffffffffffffffffffffffffffffffff") != nullptr);
+    CHECK(strstr(text, "%r6:i128 = const.i128 0x80000000000000000000000000000000") != nullptr);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
@@ -697,6 +739,7 @@ int main(void)
   test_text_parser_round_trips_binary_i32_instructions();
   test_text_parser_round_trips_explicit_utf16_strings();
   test_text_parser_round_trips_u16_constant();
+  test_public_integer_constant_api();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

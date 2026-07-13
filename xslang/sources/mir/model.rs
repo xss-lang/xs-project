@@ -10,6 +10,10 @@ use crate::xlil::{
   FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Type,
 };
 
+mod integer;
+
+pub use integer::IntegerConstant;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LocalId(pub u32);
 
@@ -69,6 +73,12 @@ pub enum Statement
   ConstU16
   {
     local: LocalId, value: u16, span: Span
+  },
+  ConstInteger
+  {
+    local: LocalId,
+    value: IntegerConstant,
+    span: Span,
   },
   ConstF32
   {
@@ -379,6 +389,9 @@ impl BorrowChecker
       Statement::ConstU16 { local,
                             span,
                             .. } |
+      Statement::ConstInteger { local,
+                                span,
+                                .. } |
       Statement::ConstF32 { local,
                             span,
                             .. } |

@@ -491,6 +491,11 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
                                                     result, &matched_u16, error);
     if(matched_u16)
       return u16_status;
+    bool matched_integer = false;
+    XsLilStatus integer_status = xs_lil_parse_const_integer(
+        block, result_type, operation, (size_t)(line + length - operation), result, &matched_integer, error);
+    if(matched_integer)
+      return integer_status;
     static const char load_prefix[] = "load %s";
     if((size_t)(line + length - operation) > sizeof(load_prefix) - 1U &&
        strncmp(operation, load_prefix, sizeof(load_prefix) - 1U) == 0)
