@@ -71,6 +71,8 @@ void xs_compiler_core_syntax_packet_free(XsCompilerCoreSyntaxStorage *storage);
 
 XsCompilerCoreFfiStatus xslang_compiler_core_session_create(const XsCompilerCoreSyntaxPacket *packet,
                                                             XsCompilerCoreSession **session);
+XsCompilerCoreFfiStatus xslang_compiler_core_session_merge(const XsCompilerCoreSession *const *sessions,
+                                                           uint64_t session_count, XsCompilerCoreSession **merged);
 uint64_t xslang_compiler_core_session_syntax_node_count(const XsCompilerCoreSession *session);
 uint64_t xslang_compiler_core_session_function_count(const XsCompilerCoreSession *session);
 uint64_t xslang_compiler_core_session_mir_function_count(const XsCompilerCoreSession *session);

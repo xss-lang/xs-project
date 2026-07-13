@@ -14,6 +14,10 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Rust compiler-core sessions can merge multiple expanded structural-AST source trees into one program-wide declaration,
+  typed HIR, MIR, XLIL, and LLVM module. Same-module helper calls across project files now produce native `.xse` output.
+- Kotlin `sources` includes now expand `*`, `**`, and `?` globs, apply excludes, require exactly one resolved `main.xs`,
+  and emit a deterministic main-first source registry.
 - The Kotlin/JVM 25 `xs-project` resolver evaluates combined `xs.project.kts` files or split `xs.settings.kts` and
   `xs.build.kts` files through the required external `kotlin` script runner. Explicit source registries require one
   case-sensitive `main.xs` entry and are compiled by the JVM-free `/usr/bin/xs` process.

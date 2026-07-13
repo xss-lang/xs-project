@@ -4,7 +4,7 @@
  */
 
 sources {
-  include("sources/main.xs")
+  include("sources/**/*.xs")
 }
 
 compiler {

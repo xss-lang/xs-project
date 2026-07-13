@@ -134,6 +134,8 @@ native `.xse` emission, including signed/unsigned LLVM selection. Unary `+`/`-` 
 `!` for `Bool` use this route.
 Same-module `Int` helper functions also remain i64 through this route, including arithmetic, bitwise, signed-shift, and
 ordered-comparison operations. Native process entry remains `fn main() -> Long`.
+Supported project helpers may now live in separate source files: the Rust compiler core merges their expanded ASTs into a
+single program-wide signature, HIR, MIR, XLIL, and LLVM module before native `.xse` linking.
 
 ## CLI summary
 

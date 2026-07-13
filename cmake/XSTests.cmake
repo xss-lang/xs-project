@@ -243,12 +243,18 @@ set(XS_PROJECT_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/pr
 file(MAKE_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source")
 configure_file(tests/fixtures/projects/NativeMain.xsproj "${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj"
                COPYONLY)
+configure_file(tests/fixtures/projects/MultiFileNative.xsproj
+               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/MultiFileNative.xsproj" COPYONLY)
 configure_file(tests/fixtures/projects/IntegerWidths.xsproj "${XS_PROJECT_NATIVE_FIXTURE_DIR}/IntegerWidths.xsproj"
                COPYONLY)
 configure_file(tests/fixtures/projects/IntegerOperators.xsproj "${XS_PROJECT_NATIVE_FIXTURE_DIR}/IntegerOperators.xsproj"
                COPYONLY)
 configure_file(tests/fixtures/projects/source/NativeMain.xs "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xs"
                COPYONLY)
+configure_file(tests/fixtures/projects/source/MultiFileMain.xs
+               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.xs" COPYONLY)
+configure_file(tests/fixtures/projects/source/MultiFileHelper.xs
+               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileHelper.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainIntegerWidths.xs
                "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerWidths.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainIntegerOperators.xs
@@ -773,6 +779,16 @@ add_test(NAME project_native_artifacts COMMAND xs_xse_artifact_tests ${XS_PROJEC
                                            ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.o
                                            ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xse 7)
 set_tests_properties(project_native_artifacts PROPERTIES DEPENDS project_native_build TIMEOUT 5)
+add_test(NAME project_multi_file_native_build COMMAND xs build -proj
+                                                      ${XS_PROJECT_NATIVE_FIXTURE_DIR}/MultiFileNative.xsproj)
+set_tests_properties(project_multi_file_native_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME project_multi_file_native_artifacts COMMAND xs_xse_artifact_tests
+                                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.ll
+                                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.o
+                                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.xse 7
+                                                           "call i32 @add")
+set_tests_properties(project_multi_file_native_artifacts PROPERTIES DEPENDS project_multi_file_native_build TIMEOUT 5)
 add_test(NAME project_integer_widths_build COMMAND xs build -proj
                                                    ${XS_PROJECT_NATIVE_FIXTURE_DIR}/IntegerWidths.xsproj)
 set_tests_properties(project_integer_widths_build PROPERTIES TIMEOUT 5

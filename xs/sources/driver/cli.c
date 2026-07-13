@@ -455,6 +455,19 @@ static bool check_single_source_file(const char *path, bool build_native)
   return success;
 }
 
+static XsCompilerCoreSession *merge_compiler_core_sessions(CompilationUnit *units, size_t unit_count)
+{
+  const XsCompilerCoreSession **sessions = calloc(unit_count, sizeof(*sessions));
+  if(sessions == nullptr)
+    return nullptr;
+  for(size_t i = 0; i < unit_count; ++i)
+    sessions[i] = units[i].compiler_core;
+  XsCompilerCoreSession *merged = nullptr;
+  XsCompilerCoreFfiStatus status = xslang_compiler_core_session_merge(sessions, unit_count, &merged);
+  free(sessions);
+  return status == XS_COMPILER_CORE_FFI_OK ? merged : nullptr;
+}
+
 static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output,
                                   bool build_native)
 {
@@ -536,14 +549,24 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
   if(success && build_native)
   {
     success = unit_count != 0;
-    if(success && unit_count == 1 && xs_driver_compiler_core_native_available(units[0].compiler_core))
+    XsCompilerCoreSession *merged =
+        success && unit_count > 1 ? merge_compiler_core_sessions(units, unit_count) : nullptr;
+    const XsCompilerCoreSession *native_session = unit_count == 1 ? units[0].compiler_core : merged;
+    if(success && unit_count > 1 && merged == nullptr)
     {
       XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
-      success =
-          xs_driver_build_compiler_core_native(units[0].path, units[0].compiler_core, &units[0].diagnostics, span);
+      success = xs_diagnostics_add(&units[0].diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                                   "Rust compiler core could not merge the project source sessions") &&
+                false;
+    }
+    else if(success && xs_driver_compiler_core_native_available(native_session))
+    {
+      XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
+      success = xs_driver_build_compiler_core_native(units[0].path, native_session, &units[0].diagnostics, span);
     }
     else if(success)
       success = xs_driver_build_source_native(units[0].path, &units[0].tree, &units[0].diagnostics);
+    xslang_compiler_core_session_free(merged);
   }
   if(!success && build_native && unit_count != 0)
     xs_diagnostics_print(&units[0].diagnostics, &units[0].source, stderr);

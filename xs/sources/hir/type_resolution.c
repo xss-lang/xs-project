@@ -224,20 +224,30 @@ static bool symbol_is_type(const XsHirSymbol *symbol)
                                symbol->kind == XS_HIR_SYMBOL_ENUM || symbol->kind == XS_HIR_SYMBOL_DATA);
 }
 
-static bool symbol_visible_from(const XsHirSymbol *symbol, const char *namespace_name, uint64_t current_file_id)
-{
-  if(symbol == nullptr)
-    return false;
-  if(symbol->visibility == XS_SYNTAX_VISIBILITY_PUBLIC)
-    return true;
-  return strcmp(symbol->namespace_name, namespace_name) == 0 && symbol->span.file_id == current_file_id;
-}
-
 static bool same_root_module(const char *left, const char *right)
 {
   size_t left_length = strcspn(left, ".");
   size_t right_length = strcspn(right, ".");
   return left_length == right_length && strncmp(left, right, left_length) == 0;
+}
+
+static bool symbol_visible_from(const XsHirSymbol *symbol, const char *namespace_name, uint64_t current_file_id)
+{
+  if(symbol == nullptr)
+    return false;
+  switch(symbol->visibility)
+  {
+  case XS_SYNTAX_VISIBILITY_PUBLIC:
+    return true;
+  case XS_SYNTAX_VISIBILITY_INTERNAL:
+    return same_root_module(symbol->namespace_name, namespace_name);
+  case XS_SYNTAX_VISIBILITY_PRIVATE:
+  case XS_SYNTAX_VISIBILITY_DEFAULT:
+    return strcmp(symbol->namespace_name, namespace_name) == 0 && symbol->span.file_id == current_file_id;
+  case XS_SYNTAX_VISIBILITY_PROTECTED:
+    return false;
+  }
+  return false;
 }
 
 static bool symbol_module_available(const XsHirSymbol *symbol, const char *namespace_name,

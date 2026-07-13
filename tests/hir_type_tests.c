@@ -344,6 +344,31 @@ static void test_private_same_namespace_different_file_type_visibility(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_internal_same_module_different_file_type_visibility(void)
+{
+  const char *library = "module Model;\n"
+                        "internal data Shared { value: Int; }\n";
+  const char *main = "module Model;\n"
+                     "fn Main(value: Model::Shared) {}\n";
+  XsSyntaxTree library_tree;
+  XsSyntaxTree main_tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  CHECK(add_file(library, 89, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file(main, 90, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&main_tree);
+  xs_syntax_tree_free(&library_tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_generic_constraints(void)
 {
   const char *valid = "module App;\n"
@@ -484,6 +509,7 @@ int main(void)
   test_private_qualified_type_visibility();
   test_private_same_namespace_type_visibility();
   test_private_same_namespace_different_file_type_visibility();
+  test_internal_same_module_different_file_type_visibility();
   test_generic_constraints();
   test_imported_generic_constraint();
   test_unknown_type_errors();

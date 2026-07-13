@@ -9,36 +9,65 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.isRegularFile
+import kotlin.streams.toList
 
 object ProjectOutput {
   fun emit(plan: ProjectPlan) {
+    val sources = resolveSources(plan)
     when (System.getProperty("xs.project.output", "plan")) {
       "plan" -> println(PlanWriter.write(plan))
-      "sources0" -> writeSources(plan)
+      "sources0" -> writeSources(sources)
       else -> throw ProjectConfigurationException("unknown project output mode")
     }
   }
 
-  private fun writeSources(plan: ProjectPlan) {
+  private fun resolveSources(plan: ProjectPlan): List<Path> {
     val root = Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
     val excludes = plan.sourceExcludes.map(::globRegex)
     val sources =
       plan.sourceIncludes
-        .map { include -> root.resolve(include).normalize() }
-        .onEach { path ->
-          if (!path.startsWith(
-              root,
-            )
-          ) {
-            throw ProjectConfigurationException("source include escapes the project root: $path")
-          }
-          if (!path.isRegularFile()) throw ProjectConfigurationException("included source file does not exist: $path")
-        }.filter { path -> excludes.none { matcher -> matcher.matches(relative(root, path)) } }
+        .flatMap { include -> expandInclude(root, include) }
+        .filter { path -> excludes.none { matcher -> matcher.matches(relative(root, path)) } }
         .distinct()
         .sortedWith(compareBy<Path> { path -> path.fileName.toString() != "main.xs" }.thenBy(Path::toString))
-    if (sources.none { path -> path.fileName.toString() == "main.xs" }) {
-      throw ProjectConfigurationException("source exclusions removed required main.xs")
+    val mainCount = sources.count { path -> path.fileName.toString() == "main.xs" }
+    if (mainCount != 1) {
+      throw ProjectConfigurationException(
+        "source patterns must resolve exactly one case-sensitive main.xs; found $mainCount",
+      )
     }
+    return sources
+  }
+
+  private fun expandInclude(
+    root: Path,
+    include: String,
+  ): List<Path> {
+    val normalized = include.replace('\\', '/')
+    val includePath = Path.of(normalized)
+    if (includePath.isAbsolute || normalized.split('/').any { component -> component == ".." }) {
+      throw ProjectConfigurationException("source include escapes the project root: $include")
+    }
+    if (normalized.none { character -> character in "*?" }) {
+      val path = root.resolve(includePath).normalize()
+      if (!path.startsWith(root) || !path.isRegularFile()) {
+        throw ProjectConfigurationException("included source file does not exist: $path")
+      }
+      return listOf(path)
+    }
+    val matcher = globRegex(normalized)
+    val matches =
+      Files.walk(root).use { paths ->
+        paths
+          .filter(Path::isRegularFile)
+          .filter { path -> matcher.matches(relative(root, path)) }
+          .toList()
+      }
+    if (matches.isEmpty()) throw ProjectConfigurationException("source include pattern matched no files: $include")
+    return matches
+  }
+
+  private fun writeSources(sources: List<Path>) {
     val configuredOutput = System.getProperty("xs.project.sources")?.takeIf(String::isNotBlank)
     val output = configuredOutput?.let { path -> Files.newOutputStream(Path.of(path)) } ?: System.out
     output.useIfOwned(configuredOutput != null) { stream ->

@@ -117,10 +117,42 @@ pub struct SyntaxTree
 
 pub struct CompilerCoreSession
 {
-  syntax: SyntaxTree,
+  syntax: Vec<SyntaxTree>,
   declarations: crate::hir::declarations::Module,
   mir_functions: Vec<crate::mir::Function>,
   xlil_text: Option<Vec<u8>>,
+}
+
+fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_lowering::LoweringError>
+{
+  let declarations = hir_lowering::lower_program(&syntax)?;
+  let mir_functions: Vec<crate::mir::Function> =
+    declarations.functions
+                .iter()
+                .filter_map(|declaration| {
+                  let function = declaration.as_type_checked_input()?;
+                  if !crate::hir::type_check::TypeChecker::new().check_function(&function)
+                                                                .is_empty()
+                  {
+                    return None;
+                  }
+                  let mir = crate::hir::mir_lowering::HirToMirLowerer::new()
+                                      .lower_function_with_parameters(&function, declaration.parameters.len())
+                                      .ok()?;
+                  if !crate::mir::BorrowChecker::new().check_function(&mir).is_empty()
+                  {
+                    return None;
+                  }
+                  crate::mir::optimizer::optimize_verified_function(mir).ok()
+                                                                        .map(|optimized| optimized.function)
+                })
+                .collect();
+  let xlil_text = xlil_lowering::lower_module(&declarations, &mir_functions)
+    .map(|module| crate::xlil::writer::module_to_string(&module).into_bytes());
+  Ok(CompilerCoreSession { syntax,
+                           declarations,
+                           mir_functions,
+                           xlil_text })
 }
 
 fn table_length(value: u64) -> Result<usize, PacketError>
@@ -329,38 +361,63 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
   {
     return FfiStatus::InvalidPacket;
   };
-  let Ok(declarations) = hir_lowering::lower_declarations(&syntax)
+  let Ok(built) = build_session(vec![syntax])
   else
   {
     return FfiStatus::InvalidPacket;
   };
-  let mir_functions: Vec<crate::mir::Function> =
-    declarations.functions
-                .iter()
-                .filter_map(|declaration| {
-                  let function = declaration.as_type_checked_input()?;
-                  if !crate::hir::type_check::TypeChecker::new().check_function(&function)
-                                                                .is_empty()
-                  {
-                    return None;
-                  }
-                  let mir = crate::hir::mir_lowering::HirToMirLowerer::new()
-                                      .lower_function_with_parameters(&function, declaration.parameters.len())
-                                      .ok()?;
-                  if !crate::mir::BorrowChecker::new().check_function(&mir).is_empty()
-                  {
-                    return None;
-                  }
-                  crate::mir::optimizer::optimize_verified_function(mir).ok()
-                                                                        .map(|optimized| optimized.function)
-                })
-                .collect();
-  let xlil_text = xlil_lowering::lower_module(&declarations, &mir_functions)
-    .map(|module| crate::xlil::writer::module_to_string(&module).into_bytes());
-  *session = Box::into_raw(Box::new(CompilerCoreSession { syntax,
-                                                          declarations,
-                                                          mir_functions,
-                                                          xlil_text }));
+  *session = Box::into_raw(Box::new(built));
+  FfiStatus::Ok
+}
+
+/// Merges existing per-file sessions into one program-wide compiler-core session.
+///
+/// The merged session re-runs declaration/body lowering with signatures from every
+/// input tree, enabling direct calls across source-file boundaries.
+///
+/// # Safety
+///
+/// `sessions` must reference `session_count` live session pointers and `merged`
+/// must be writable. Input sessions remain owned by the caller.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_merge(sessions: *const *const CompilerCoreSession,
+                                                            session_count: u64,
+                                                            merged: *mut *mut CompilerCoreSession)
+                                                            -> FfiStatus
+{
+  let Some(merged) = (unsafe { merged.as_mut() })
+  else
+  {
+    return FfiStatus::NullArgument;
+  };
+  *merged = std::ptr::null_mut();
+  let Ok(count) = table_length(session_count)
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  if count == 0 || sessions.is_null()
+  {
+    return FfiStatus::NullArgument;
+  }
+  // SAFETY: The caller guarantees a live table with `count` session pointers.
+  let sessions = unsafe { slice::from_raw_parts(sessions, count) };
+  let mut syntax = Vec::new();
+  for session in sessions
+  {
+    let Some(session) = (unsafe { session.as_ref() })
+    else
+    {
+      return FfiStatus::NullArgument;
+    };
+    syntax.extend(session.syntax.iter().cloned());
+  }
+  let Ok(built) = build_session(syntax)
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  *merged = Box::into_raw(Box::new(built));
   FfiStatus::Ok
 }
 
@@ -374,7 +431,7 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
 pub unsafe extern "C" fn xslang_compiler_core_session_syntax_node_count(session: *const CompilerCoreSession) -> u64
 {
   // SAFETY: The pointer is only borrowed when it is non-null.
-  unsafe { session.as_ref() }.map_or(0, |value| value.syntax.nodes.len() as u64)
+  unsafe { session.as_ref() }.map_or(0, |value| value.syntax.iter().map(|tree| tree.nodes.len() as u64).sum())
 }
 
 /// Returns the number of top-level function declarations imported into HIR.

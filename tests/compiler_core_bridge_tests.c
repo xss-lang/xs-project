@@ -158,6 +158,8 @@ static void test_invalid_packet_inputs(void)
   XsCompilerCoreSession *session = nullptr;
   CHECK(xslang_compiler_core_session_create(nullptr, &session) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
   CHECK(xslang_compiler_core_session_create(nullptr, nullptr) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
+  CHECK(xslang_compiler_core_session_merge(nullptr, 0, &session) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
+  CHECK(xslang_compiler_core_session_merge(nullptr, 1, &session) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
   uint64_t xlil_length = 7;
   CHECK(xslang_compiler_core_session_xlil_text(nullptr, &xlil_length) == nullptr);
   CHECK(xlil_length == 0);

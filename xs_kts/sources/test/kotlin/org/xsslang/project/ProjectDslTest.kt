@@ -5,6 +5,8 @@
 
 package org.xsslang.project
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -56,7 +58,7 @@ class ProjectDslTest {
         project("Demo", "BETA", "0.1.0")
         sources { include("sources/**/*.xs") }
       }
-    assertFailsWith<ProjectConfigurationException> { glob.build() }
+    assertEquals(listOf("sources/**/*.xs"), glob.build().sourceIncludes)
   }
 
   @Test
@@ -70,5 +72,52 @@ class ProjectDslTest {
     val host = Host(OperatingSystem.FREEBSD, OperatingSystemFamily.BSD, Architecture.X86_64)
     assertTrue(host.family == OperatingSystemFamily.BSD)
     assertTrue(host.family == OperatingSystemFamily.UNIX)
+  }
+
+  @Test
+  fun expandsSourceGlobsWithMainFirstAndExcludes() {
+    val root = Files.createTempDirectory("xs-project-glob-test-")
+    val sources = Files.createDirectories(root.resolve("sources"))
+    val tests = Files.createDirectories(sources.resolve("tests"))
+    Files.writeString(sources.resolve("main.xs"), "fn main() -> Long { return helper(); }")
+    Files.writeString(sources.resolve("helper.xs"), "fn helper() -> Long { return 0; }")
+    Files.writeString(tests.resolve("ignored.xs"), "fn ignored() -> Long { return 1; }")
+    val output = root.resolve("sources.bin")
+    val context =
+      ProjectContext().apply {
+        project("Glob", "BETA", "0.1.0")
+        sources {
+          include("sources/**/*.xs")
+          exclude("sources/tests/**")
+        }
+      }
+    val oldRoot = System.getProperty("xs.project.root")
+    val oldOutput = System.getProperty("xs.project.output")
+    val oldSources = System.getProperty("xs.project.sources")
+    try {
+      System.setProperty("xs.project.root", root.toString())
+      System.setProperty("xs.project.output", "sources0")
+      System.setProperty("xs.project.sources", output.toString())
+      ProjectOutput.emit(context.build())
+      val paths =
+        Files
+          .readAllBytes(output)
+          .toString(StandardCharsets.UTF_8)
+          .split('\u0000')
+          .filter(String::isNotEmpty)
+      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths)
+    } finally {
+      restoreProperty("xs.project.root", oldRoot)
+      restoreProperty("xs.project.output", oldOutput)
+      restoreProperty("xs.project.sources", oldSources)
+      root.toFile().deleteRecursively()
+    }
+  }
+
+  private fun restoreProperty(
+    name: String,
+    value: String?,
+  ) {
+    if (value == null) System.clearProperty(name) else System.setProperty(name, value)
   }
 }

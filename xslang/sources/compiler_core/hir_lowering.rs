@@ -16,6 +16,7 @@ use super::{SyntaxNode, SyntaxTree};
 
 mod expression_type;
 mod match_expression;
+mod program;
 mod unary;
 
 use expression_type::expression_type;
@@ -94,6 +95,7 @@ pub enum LoweringError
   InvalidRoot,
   MissingIdentifier,
   MissingParameterType,
+  ModuleMismatch,
 }
 
 fn node(tree: &SyntaxTree, index: usize) -> Result<&SyntaxNode, LoweringError>
@@ -906,45 +908,12 @@ fn lower_function_signature(tree: &SyntaxTree, value: &SyntaxNode) -> Result<dec
 
 pub fn lower_declarations(tree: &SyntaxTree) -> Result<declarations::Module, LoweringError>
 {
-  let root = node(tree, tree.root)?;
-  if root.kind != FILE
-  {
-    return Err(LoweringError::InvalidRoot);
-  }
-  let name = root.children
-                 .iter()
-                 .filter_map(|index| tree.nodes.get(*index))
-                 .find(|child| child.kind == DECL_MODULE)
-                 .and_then(|module| first_child_kind(tree, module, PATH))
-                 .map(|path| path_text(tree, path));
-  let function_nodes = root.children
-                           .iter()
-                           .filter_map(|index| tree.nodes.get(*index))
-                           .filter(|child| child.kind == DECL_FUNCTION)
-                           .collect::<Vec<_>>();
-  let mut functions = function_nodes.iter()
-                                    .map(|function| lower_function_signature(tree, function))
-                                    .collect::<Result<Vec<_>, _>>()?;
-  let signatures = functions.iter()
-                            .filter_map(|function| {
-                              let parameters = function.parameters
-                                                       .iter()
-                                                       .map(|parameter| checked_type(&parameter.ty))
-                                                       .collect::<Option<Vec<_>>>()?;
-                              let return_type = checked_type(&function.return_type)?;
-                              Some((function.name.clone(),
-                                    CallSignature { parameters,
-                                                    return_type }))
-                            })
-                            .collect::<HashMap<_, _>>();
-  for (function, syntax) in functions.iter_mut().zip(function_nodes)
-  {
-    let parameters = function.parameters.clone();
-    let return_type = checked_type(&function.return_type);
-    function.body = lower_body(tree, syntax, &signatures, &parameters, return_type.as_ref());
-  }
-  Ok(declarations::Module { name,
-                            functions })
+  program::lower_program(std::slice::from_ref(tree))
+}
+
+pub fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module, LoweringError>
+{
+  program::lower_program(trees)
 }
 
 #[cfg(test)]

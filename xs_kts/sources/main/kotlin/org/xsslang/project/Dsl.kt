@@ -163,19 +163,21 @@ class ProjectContext internal constructor(
     val project = identity ?: throw ProjectConfigurationException("project(...) is required")
     if (sourceIncludes.isEmpty()) throw ProjectConfigurationException("sources.include(...) is required")
     sourceIncludes.forEach { path ->
-      if (path.any { character -> character in "*?[]{}" }) {
-        throw ProjectConfigurationException("source includes must name explicit .xs files: $path")
-      }
       if (!path.endsWith(".xs")) throw ProjectConfigurationException("source include must end in .xs: $path")
     }
     val mainCount =
       sourceIncludes.count { path ->
-        java.nio.file.Path
-          .of(path)
-          .fileName
-          .toString() == "main.xs"
+        !path.any { character -> character in "*?" } &&
+          java.nio.file.Path
+            .of(path)
+            .fileName
+            .toString() == "main.xs"
       }
-    if (mainCount != 1) throw ProjectConfigurationException("exactly one included file must be named main.xs")
+    if (mainCount > 1) throw ProjectConfigurationException("at most one explicit include may be named main.xs")
+    val hasPattern = sourceIncludes.any { path -> path.any { character -> character in "*?" } }
+    if (!hasPattern && mainCount != 1) {
+      throw ProjectConfigurationException("exactly one included file must be named main.xs")
+    }
     return ProjectPlan(
       project,
       variables.toSortedMap(),

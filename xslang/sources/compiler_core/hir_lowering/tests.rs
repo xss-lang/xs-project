@@ -178,3 +178,45 @@ fn lowers_long_return_body_for_hir_to_mir()
                    crate::mir::Statement::ConstI32 { value: 7,
                                                      .. }));
 }
+
+#[test]
+fn resolves_function_body_calls_across_program_trees()
+{
+  let mut helper_nodes = vec![syntax(FILE, "", None, vec![1]),
+                              syntax(DECL_FUNCTION, "fn answer() -> Long", Some(0), vec![2, 3, 6]),
+                              syntax(IDENTIFIER, "answer", Some(1), vec![]),
+                              syntax(TYPE_NAMED, "Long", Some(1), vec![4]),
+                              syntax(PATH, "Long", Some(3), vec![5]),
+                              syntax(IDENTIFIER, "Long", Some(4), vec![]),
+                              syntax(STMT_BLOCK, "{ return 7; }", Some(1), vec![7]),
+                              syntax(STMT_RETURN, "return 7;", Some(6), vec![8]),
+                              syntax(EXPR_LITERAL, "7", Some(7), vec![])];
+  helper_nodes[3].flags = RETURN_TYPE;
+  helper_nodes[8].token_kind = TOKEN_INTEGER;
+  let mut main_nodes = vec![syntax(FILE, "", None, vec![1]),
+                            syntax(DECL_FUNCTION, "fn main() -> Long", Some(0), vec![2, 3, 6]),
+                            syntax(IDENTIFIER, "main", Some(1), vec![]),
+                            syntax(TYPE_NAMED, "Long", Some(1), vec![4]),
+                            syntax(PATH, "Long", Some(3), vec![5]),
+                            syntax(IDENTIFIER, "Long", Some(4), vec![]),
+                            syntax(STMT_BLOCK, "{ return answer(); }", Some(1), vec![7]),
+                            syntax(STMT_RETURN, "return answer();", Some(6), vec![8]),
+                            syntax(EXPR_CALL, "answer()", Some(7), vec![9]),
+                            syntax(EXPR_IDENTIFIER, "answer", Some(8), vec![10]),
+                            syntax(PATH, "answer", Some(9), vec![11]),
+                            syntax(IDENTIFIER, "answer", Some(10), vec![])];
+  main_nodes[3].flags = RETURN_TYPE;
+  let module = lower_program(&[SyntaxTree { root: 0,
+                                            nodes: main_nodes },
+                               SyntaxTree { root: 0,
+                                            nodes: helper_nodes }]).expect("multi-tree program");
+  assert_eq!(module.functions.len(), 2);
+  let main = module.functions[0].as_type_checked_input().expect("main HIR body");
+  let Statement::Return { value: Some(Expression::Call { function, .. }),
+                          .. } = &main.body[0]
+  else
+  {
+    panic!("main should retain its cross-file direct call");
+  };
+  assert_eq!(function, "answer");
+}

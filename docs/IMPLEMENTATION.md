@@ -94,6 +94,8 @@ The documented compilation order is preserved:
 - Kotlin `xs.project.kts` or split `xs.settings.kts` + `xs.build.kts` projects are evaluated by `/usr/bin/xs-project` on
   exactly JRE 25 through an external `kotlin` scripting command. Argument-free `xs` starts this resolver and
   retains all `.xs` compilation work itself.
+- Kotlin source includes expand project-relative glob patterns and produce a deterministic registry with the sole
+  case-sensitive `main.xs` first.
 - `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
   reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macro_rules!` declaration.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
@@ -383,7 +385,8 @@ deferred at HIR-to-MIR lowering until error-return control-flow lowering exists.
 active in the C23 driver: the frontend flattens every macro-materialized AST into a versioned in-memory packet containing
 fixed node records, a child-index table, and a text-byte arena. Rust `xslang` validates the ABI version, indices,
 parent/child relationships, text ranges, and UTF-8 before creating an owned syntax tree in an opaque compiler-core session.
-The session lives for the C compilation unit and provides the input for the next typed-HIR construction step.
+Each per-file session owns its imported tree. Project builds merge those trees into a program session before body lowering,
+so signature collection runs across every selected source file while the C23 frontend retains source-specific diagnostics.
 The first construction slice is active: module names and top-level function signatures are imported, parameters retain
 their source spans, unit is represented explicitly, primitive type names are resolved, and other names remain nominal HIR
 type references. Remaining function-body forms and complete semantic diagnostics still need to move onto this session model.
@@ -417,11 +420,13 @@ Value-producing `match` expressions use the same ordered pattern CFG. Every arm 
 result type. MIR writes those mutually exclusive values to compiler-owned target-independent storage, joins at a merge
 block, and loads the result for its enclosing expression. XHIR v0 records the selector type, result type, arms, and value
 blocks explicitly; LLVM-specific phi or ABI semantics do not leak into HIR or MIR.
-For supported single-unit builds, this Rust path no longer stops at an internal MIR count. The session borrow-checks and
-optimizes each lowered function, lowers the module to XLIL v0 text, and exposes that text through a borrowed C ABI view. The
-C23 driver parses it with the public `xs/lil.h` API, verifies the reconstructed module, and reuses the established LLVM IR,
-object, and native `.xse` emission path. Unsupported source forms continue through the older narrow C23 source-native path
-until their Rust HIR/MIR lowering is complete; HIR and MIR remain independent of LLVM in both paths.
+For supported single-file and multi-file builds, this Rust path no longer stops at an internal MIR count. A program session
+collects all function signatures before lowering any body, allowing same-module forward calls across files. It then
+borrow-checks and optimizes each lowered function, lowers the combined module to XLIL v0 text, and exposes that text through
+a borrowed C ABI view. The C23 driver parses it with the public `xs/lil.h` API, verifies the reconstructed module, and
+reuses the established LLVM IR, object, and native `.xse` emission path. Unsupported source forms continue through the
+older narrow C23 source-native path until their Rust HIR/MIR lowering is complete; HIR and MIR remain independent of LLVM
+in both paths.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
 `Result<()>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the

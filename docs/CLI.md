@@ -70,6 +70,10 @@ fn add(left: Long, right: Long) -> Long { return left + right; }
 fn main() -> Long { return add(2, 5); }
 ```
 
+Project builds may place supported helper functions in separate selected source files. The compiler merges their expanded
+AST packets, collects all program signatures before lowering bodies, and emits one verified XLIL/LLVM module. Kotlin
+project source globs are resolved before this compiler stage and always put the sole `main.xs` entry first.
+
 The entry function must be top-level, named `main`, have no parameters, and return `Long`. Same-module helper functions may
 take `Long`, `Int`, or `Bool` parameters and return `Long`, `Int`, or `Bool`. Supported bodies may contain explicit
 `Long`/`Int`/`Bool` local bindings or
