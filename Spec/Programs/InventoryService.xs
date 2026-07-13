@@ -46,22 +46,22 @@ class InventoryRepository : Repository<Str, Product> {
     products: std::collections::hash_map<Str, Product>;
 
     InventoryRepository() {
-        this.products = std::collections::hash_map<Str, Product>::new();
+        self.products = std::collections::hash_map<Str, Product>::new();
     }
 
     fn Get(key: Str) -> Result<&Product, ServiceError> {
-        if (!this.products.contains(key)) {
+        if (!self.products.contains(key)) {
             return Error(ServiceError::UnknownProduct(key));
         }
-        return Ok(&this.products[key]);
+        return Ok(&self.products[key]);
     }
 
     fn Put(key: Str, value: Product) {
-        this.products[key] = value;
+        self.products[key] = value;
     }
 
     fn Reserve(line: OrderLine) -> Result<(), ServiceError> {
-        product: &mut Product = &mut this.products[line.sku];
+        product: &mut Product = &mut self.products[line.sku];
 
         if (product.stock < line.quantity) {
             return Error(ServiceError::NotEnoughStock(line.sku));
@@ -76,11 +76,11 @@ class OrderWorker {
     inventory: Arc<Mutex<InventoryRepository>>;
 
     OrderWorker(inventory: Arc<Mutex<InventoryRepository>>) {
-        this.inventory = inventory;
+        self.inventory = inventory;
     }
 
     fn Process(order: Order) -> Receipt {
-        guard: Mutex<InventoryRepository> = this.inventory.lock();
+        guard: Mutex<InventoryRepository> = self.inventory.lock();
 
         for (line: OrderLine in order.lines) {
             result: Result<(), ServiceError> = (*guard).Reserve(line);

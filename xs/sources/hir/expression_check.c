@@ -15,6 +15,7 @@ typedef struct
 {
   XsText name;
   const XsSyntaxNode *declaration;
+  const XsSyntaxNode *type_node;
   bool immutable;
 } LocalBinding;
 
@@ -43,6 +44,7 @@ struct CheckContext
   const XsSyntaxNode *root;
   const XsHirPrimitiveInfo *return_type;
   const XsSyntaxNode *return_type_node;
+  const XsSyntaxNode *active_property_name;
   bool inside_referential_op;
 };
 
@@ -537,38 +539,79 @@ static bool check_variable_initializer(const XsSyntaxNode *declaration, XsDiagno
                                                           diagnostics);
   return constant_ok && success;
 }
-
+static const XsSyntaxNode *class_field_type(const XsSyntaxNode *field)
+{
+  return field != nullptr && field->kind == XS_SYNTAX_CLASS_FIELD && field->child_count >= 2 ? field->children[1]
+                                                                                             : nullptr;
+}
+static const XsSyntaxNode *accessor_body(const XsSyntaxNode *accessor)
+{
+  if(accessor == nullptr)
+    return nullptr;
+  for(size_t i = 0; i < accessor->child_count; ++i)
+  {
+    if(accessor->children[i]->kind == XS_SYNTAX_STMT_BLOCK)
+      return accessor->children[i];
+  }
+  return nullptr;
+}
+static bool report_duplicate_property_accessor(XsDiagnostics *diagnostics, const XsSyntaxNode *accessor)
+{
+  const char *name = accessor->token_kind == XS_TOKEN_KW_GETTER ? "getter" : "setter";
+  char message[128];
+  snprintf(message, sizeof(message), "property already has a %s accessor", name);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(accessor), message);
+}
 static const XsSyntaxNode *declaration_identifier(const XsSyntaxNode *declaration)
 {
   return declaration->child_count == 0 || declaration->children[0]->kind != XS_SYNTAX_IDENTIFIER
              ? nullptr
              : declaration->children[0];
 }
-
+static bool local_scope_reserve_one(LocalScope *scope)
+{
+  if(scope->count < scope->capacity)
+    return true;
+  size_t capacity = scope->capacity == 0 ? 8 : scope->capacity * 2;
+  LocalBinding *bindings = realloc(scope->bindings, capacity * sizeof(*bindings));
+  if(bindings == nullptr)
+  {
+    scope->allocation_failed = true;
+    return false;
+  }
+  scope->bindings = bindings;
+  scope->capacity = capacity;
+  return true;
+}
 static bool local_scope_add(LocalScope *scope, const XsSyntaxNode *declaration)
 {
   const XsSyntaxNode *identifier = declaration_identifier(declaration);
   if(scope == nullptr || identifier == nullptr)
     return true;
-  if(scope->count == scope->capacity)
-  {
-    size_t capacity = scope->capacity == 0 ? 8 : scope->capacity * 2;
-    LocalBinding *bindings = realloc(scope->bindings, capacity * sizeof(*bindings));
-    if(bindings == nullptr)
-    {
-      scope->allocation_failed = true;
-      return false;
-    }
-    scope->bindings = bindings;
-    scope->capacity = capacity;
-  }
+  if(!local_scope_reserve_one(scope))
+    return false;
   bool immutable =
       (declaration->flags & (XS_SYNTAX_FLAG_IMMUTABLE | XS_SYNTAX_FLAG_CONSTANT | XS_SYNTAX_FLAG_STATIC_CONSTANT)) != 0;
-  scope->bindings[scope->count++] =
-      (LocalBinding){.name = identifier->text, .declaration = declaration, .immutable = immutable};
+  const XsSyntaxNode *type_node = declaration->child_count >= 2 ? declaration->children[1] : nullptr;
+  scope->bindings[scope->count++] = (LocalBinding){
+      .name = identifier->text, .declaration = declaration, .type_node = type_node, .immutable = immutable};
   return true;
 }
-
+static bool local_scope_add_value(LocalScope *scope, const XsSyntaxNode *type_node)
+{
+  if(scope == nullptr)
+    return true;
+  if(!local_scope_reserve_one(scope))
+    return false;
+  static const char value_name[] = "value";
+  scope->bindings[scope->count++] = (LocalBinding){
+      .name = {.data = value_name, .length = sizeof(value_name) - 1},
+      .declaration = nullptr,
+      .type_node = type_node,
+      .immutable = true,
+  };
+  return true;
+}
 static const LocalBinding *local_scope_find(const LocalScope *scope, XsText name)
 {
   for(const LocalScope *current = scope; current != nullptr; current = current->parent)
@@ -581,13 +624,11 @@ static const LocalBinding *local_scope_find(const LocalScope *scope, XsText name
   }
   return nullptr;
 }
-
 static void local_scope_free(LocalScope *scope)
 {
   free(scope->bindings);
   *scope = (LocalScope){0};
 }
-
 static bool has_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
 {
   if(node == nullptr)
@@ -702,10 +743,9 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
   if(binding == nullptr)
     return true;
   bool success = true;
-  const XsHirPrimitiveInfo *primitive =
-      binding->declaration->child_count >= 2 ? primitive_from_type(binding->declaration->children[1]) : nullptr;
+  const XsHirPrimitiveInfo *primitive = primitive_from_type(binding->type_node);
   const XsSyntaxNode *value = assignment_value(node);
-  if(binding->declaration->child_count >= 2 && type_is_optional(binding->declaration->children[1]))
+  if(type_is_optional(binding->type_node))
     success = check_expression_value_against_optional(value, diagnostics) && success;
   success =
       check_expression_value_against_primitive(value, primitive, LITERAL_CONTEXT_ASSIGNMENT, binding, diagnostics) &&
@@ -728,6 +768,23 @@ static bool check_result_propagation(const XsSyntaxNode *node, const CheckContex
   xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
                      "Result propagation with '@' requires an enclosing function returning Result.Result<T, E>");
   return false;
+}
+
+static bool member_access_is_active_property(const XsSyntaxNode *node, const CheckContext *context)
+{
+  if(node == nullptr || context == nullptr || context->active_property_name == nullptr ||
+     (node->kind != XS_SYNTAX_EXPR_MEMBER_ACCESS && node->kind != XS_SYNTAX_EXPR_METHOD_CALL) || node->child_count < 2)
+    return false;
+  const XsSyntaxNode *receiver = expression_identifier(node->children[0]);
+  const XsSyntaxNode *member = node->children[1];
+  return receiver != nullptr && member->kind == XS_SYNTAX_IDENTIFIER && text_matches_cstr(receiver->text, "self") &&
+         text_equal(member->text, context->active_property_name->text);
+}
+
+static bool report_recursive_property_access(XsDiagnostics *diagnostics, const XsSyntaxNode *node)
+{
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(node),
+                            "property accessor recursively references itself; use an explicit backing field");
 }
 
 static bool node_breaks_referential_transparency(const XsSyntaxNode *node)
@@ -824,6 +881,7 @@ static bool check_scoped_node(const XsSyntaxNode *node, const XsMacroDeclaration
       .root = parent.root,
       .return_type = return_type == nullptr ? parent.return_type : return_type,
       .return_type_node = return_type_node == nullptr ? parent.return_type_node : return_type_node,
+      .active_property_name = parent.active_property_name,
       .inside_referential_op = parent.inside_referential_op,
   };
   if(node->kind == XS_SYNTAX_DECL_FUNCTION)
@@ -841,6 +899,51 @@ static bool check_scoped_node(const XsSyntaxNode *node, const XsMacroDeclaration
   bool allocation_failed = scope.allocation_failed;
   local_scope_free(&scope);
   return success && !allocation_failed;
+}
+
+static bool check_property_field(const XsSyntaxNode *field, const XsMacroDeclarationExpansionSet *macro_declarations,
+                                 const XsMacroStatementExpansionSet *macro_statements, CheckContext context,
+                                 XsDiagnostics *diagnostics)
+{
+  const XsSyntaxNode *type_node = class_field_type(field);
+  const XsSyntaxNode *name = declaration_identifier(field);
+  const XsHirPrimitiveInfo *primitive = primitive_from_type(type_node);
+  bool getter_seen = false;
+  bool setter_seen = false;
+  bool success = true;
+  for(size_t i = 0; i < field->child_count; ++i)
+  {
+    const XsSyntaxNode *accessor = field->children[i];
+    if(accessor->kind != XS_SYNTAX_PROPERTY_ACCESSOR)
+      continue;
+    bool is_getter = accessor->token_kind == XS_TOKEN_KW_GETTER;
+    if((is_getter && getter_seen) || (!is_getter && setter_seen))
+      success = report_duplicate_property_accessor(diagnostics, accessor) && success;
+    getter_seen = getter_seen || is_getter;
+    setter_seen = setter_seen || !is_getter;
+    const XsSyntaxNode *body = accessor_body(accessor);
+    if(body == nullptr)
+      continue;
+    LocalScope scope = {.parent = context.scope};
+    CheckContext nested = {
+        .scope = &scope,
+        .root = context.root,
+        .active_property_name = name,
+        .inside_referential_op = context.inside_referential_op,
+    };
+    if(is_getter)
+    {
+      nested.return_type = primitive;
+      nested.return_type_node = type_node;
+    }
+    else
+      success = local_scope_add_value(&scope, type_node) && success;
+    success = check_node(body, macro_declarations, macro_statements, nested, diagnostics) && success;
+    bool allocation_failed = scope.allocation_failed;
+    local_scope_free(&scope);
+    success = success && !allocation_failed;
+  }
+  return success;
 }
 
 static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansionSet *macro_declarations,
@@ -865,6 +968,10 @@ static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansi
     success = check_result_propagation(node, &context, diagnostics) && success;
   if(node->kind == XS_SYNTAX_STMT_RETURN)
     success = check_return_statement(node, &context, diagnostics) && success;
+  if(member_access_is_active_property(node, &context))
+    success = report_recursive_property_access(diagnostics, node) && success;
+  if(node->kind == XS_SYNTAX_CLASS_FIELD)
+    return check_property_field(node, macro_declarations, macro_statements, context, diagnostics) && success;
   if(macro_declarations != nullptr && has_child_kind(node, XS_SYNTAX_DECL_MACRO_CALL))
     return check_expanded_declaration_children(node, macro_declarations, macro_statements, context, diagnostics) &&
            success;

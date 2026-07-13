@@ -33,9 +33,9 @@ class TodoStore {
     items: std::collections::vector<TodoItem>;
 
     TodoStore(path: Str) {
-        this.path = path;
-        this.nextId = 1;
-        this.items = std::collections::vector<TodoItem>::new();
+        self.path = path;
+        self.nextId = 1;
+        self.items = std::collections::vector<TodoItem>::new();
     }
 
     static fn Open(path: Str) -> Result<TodoStore, TodoError> {
@@ -46,22 +46,22 @@ class TodoStore {
 
     fn Add(title: Str) -> Result<(), TodoError> {
         item: TodoItem = TodoItem {
-            id: this.nextId,
+            id: self.nextId,
             title: title,
             done: false,
         };
 
-        this.nextId += 1;
-        this.items.push(item);
-        this.Save()@;
+        self.nextId += 1;
+        self.items.push(item);
+        self.Save()@;
         return Ok();
     }
 
     fn MarkDone(id: Int) -> Result<(), TodoError> {
-        for (index: Int = 0; index < this.items.length(); index = index + 1) {
-            if (this.items[index].id == id) {
-                this.items[index].done = true;
-                this.Save()@;
+        for (index: Int = 0; index < self.items.length(); index = index + 1) {
+            if (self.items[index].id == id) {
+                self.items[index].done = true;
+                self.Save()@;
                 return Ok();
             }
         }
@@ -70,12 +70,12 @@ class TodoStore {
     }
 
     fn Print() -> Result<(), IOException> {
-        if (this.items.length() == 0) {
+        if (self.items.length() == 0) {
             println!("No tasks yet.");
             return Ok();
         }
 
-        for (item: TodoItem in this.items) {
+        for (item: TodoItem in self.items) {
             status: Str = if (item.done) {
                 "x";
             }
@@ -88,11 +88,11 @@ class TodoStore {
     }
 
     fn Load() -> Result<(), TodoError> {
-        if (!std::fs::exists(this.path)) {
+        if (!std::fs::exists(self.path)) {
             return Ok();
         }
 
-        content: Str = std::fs::read_to_str(this.path);
+        content: Str = std::fs::read_to_str(self.path);
 
         for (line: Str in content.lines()) {
             if (line.length() == 0) {
@@ -100,25 +100,25 @@ class TodoStore {
             }
 
             item: TodoItem = TodoCodec::Parse(line)@;
-            this.items.push(item);
+            self.items.push(item);
 
-            if (item.id >= this.nextId) {
-                this.nextId = item.id + 1;
+            if (item.id >= self.nextId) {
+                self.nextId = item.id + 1;
             }
         }
         return Ok();
     }
 
     fn Save() -> Result<(), TodoError> {
-        if (!std::fs::exists(this.path)) {
-            std::fs::create_file(this.path);
+        if (!std::fs::exists(self.path)) {
+            std::fs::create_file(self.path);
         }
 
         opened: std::fs::File = std::fs::OpenOptions::new()
             .truncate(true)
-            .open(this.path);
+            .open(self.path);
 
-        for (item: TodoItem in this.items) {
+        for (item: TodoItem in self.items) {
             std::fs::write(opened, format!("{}\n", TodoCodec::Format(item)));
         }
         return Ok();

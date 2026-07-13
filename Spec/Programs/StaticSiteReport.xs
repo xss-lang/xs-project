@@ -39,12 +39,12 @@ class SiteReport {
     pages: std::collections::vector<PageInfo>;
 
     SiteReport() {
-        this.pages = std::collections::vector<PageInfo>::new();
+        self.pages = std::collections::vector<PageInfo>::new();
     }
 
     fn AddMarkdown(path: Str) -> Result<(), Error> {
         text: Str = std::fs::read_to_str(path);
-        this.pages.push(PageInfo {
+        self.pages.push(PageInfo {
             path: path,
             title: Markdown::Title(path, text)@,
             wordCount: Markdown::CountWords(text),
@@ -53,9 +53,9 @@ class SiteReport {
     }
 
     fn Print() -> Result<(), IOException> {
-        println!("pages: {}", this.pages.length());
+        println!("pages: {}", self.pages.length());
 
-        for (page: PageInfo in this.pages) {
+        for (page: PageInfo in self.pages) {
             println!("{:<32} {:>6} {}", page.title, page.wordCount, page.path);
         }
         return Ok();

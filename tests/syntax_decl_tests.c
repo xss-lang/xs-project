@@ -176,14 +176,15 @@ static void test_class_constructor_rules(void)
 
 static void test_class_property_accessors(void)
 {
-  const char *text = "class User { name: Str { getter; setter; } age: Int { getter { return this.age; } } }\n";
+  const char *text = "class User { private _age: Int; name: Str { getter; setter; } "
+                     "age: Int { getter { return self._age; } setter { self._age = value; } } }\n";
   XsSource source = {.path = "ClassProperties.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 65, &diagnostics, &tree));
-  CHECK(count_kind(tree.root, XS_SYNTAX_CLASS_FIELD) == 2);
-  CHECK(count_kind(tree.root, XS_SYNTAX_PROPERTY_ACCESSOR) == 3);
+  CHECK(count_kind(tree.root, XS_SYNTAX_CLASS_FIELD) == 3);
+  CHECK(count_kind(tree.root, XS_SYNTAX_PROPERTY_ACCESSOR) == 4);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }

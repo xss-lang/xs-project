@@ -292,6 +292,25 @@ static void test_op_referential_transparency_rules(void)
       !check_single_source_expressions("module App;\nmacro_rules! bad { (): { 1 }; }\nop Bad() -> Int { bad!(); }\n"));
 }
 
+static void test_property_accessor_expression_rules(void)
+{
+  const char *valid = "module App;\n"
+                      "class User {\n"
+                      "  private _age: Int;\n"
+                      "  age: Int { getter { return self._age; } setter { self._age = value; } }\n"
+                      "}\n";
+  CHECK(check_single_source_expressions(valid));
+  CHECK(!check_single_source_expressions("module App;\nclass User { age: Int { getter; getter; } }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nclass User { age: Int { getter { return \"bad\"; } } }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nclass User { age: Int { setter { copy: Int = value; copy = \"bad\"; } } }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nclass User { age: Int { getter { return self.age; } } }\n"));
+  CHECK(!check_single_source_expressions(
+      "module App;\nclass User { age: Int { setter { self.age = value; } } }\n"));
+}
+
 int main(void)
 {
   test_literal_initializer_expression_types();
@@ -310,5 +329,6 @@ int main(void)
   test_macro_assignment_literal_expression_errors();
   test_macro_return_literal_expression_errors();
   test_op_referential_transparency_rules();
+  test_property_accessor_expression_rules();
   return failures == 0 ? 0 : 1;
 }

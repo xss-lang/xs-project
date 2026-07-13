@@ -26,23 +26,23 @@ class BackupPlan {
     files: std::collections::vector<FileEntry>;
 
     BackupPlan(sourceRoot: Str, targetRoot: Str) {
-        this.sourceRoot = sourceRoot;
-        this.targetRoot = targetRoot;
-        this.files = std::collections::vector<FileEntry>::new();
+        self.sourceRoot = sourceRoot;
+        self.targetRoot = targetRoot;
+        self.files = std::collections::vector<FileEntry>::new();
     }
 
     fn Discover() -> Result<(), BackupError> {
-        if (!std::fs::is_dir(this.sourceRoot)) {
-            return Error(BackupError::InvalidSource(this.sourceRoot));
+        if (!std::fs::is_dir(self.sourceRoot)) {
+            return Error(BackupError::InvalidSource(self.sourceRoot));
         }
 
-        for (path: Str in std::fs::walk_dir(this.sourceRoot)) {
+        for (path: Str in std::fs::walk_dir(self.sourceRoot)) {
             if (std::fs::is_dir(path)) {
                 continue;
             }
 
-            relative: Str = std::fs::relative_path(this.sourceRoot, path);
-            this.files.push(FileEntry {
+            relative: Str = std::fs::relative_path(self.sourceRoot, path);
+            self.files.push(FileEntry {
                 path: path,
                 relative: relative,
                 bytes: std::fs::size(path),
@@ -53,10 +53,10 @@ class BackupPlan {
     }
 
     fn Execute() -> Result<(), IOException> {
-        for (entry: FileEntry in this.files) {
-            destination: Str = std::fs::join_path(this.targetRoot, entry.relative);
+        for (entry: FileEntry in self.files) {
+            destination: Str = std::fs::join_path(self.targetRoot, entry.relative);
 
-            if (this.ShouldCopy(entry, destination)) {
+            if (self.ShouldCopy(entry, destination)) {
                 std::fs::create_dir(std::fs::parent_dir(destination));
                 std::fs::copy_file(entry.path, destination);
                 println!("copied {}", entry.relative);

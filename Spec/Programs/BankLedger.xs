@@ -37,12 +37,12 @@ class Ledger {
     audit: std::collections::vector<Transfer>;
 
     Ledger() {
-        this.accounts = std::collections::hash_map<Str, Account>::new();
-        this.audit = std::collections::vector<Transfer>::new();
+        self.accounts = std::collections::hash_map<Str, Account>::new();
+        self.audit = std::collections::vector<Transfer>::new();
     }
 
     fn Open(id: Str, owner: Str, balance: Money) {
-        this.accounts[id] = Account {
+        self.accounts[id] = Account {
             id: id,
             owner: owner,
             balance: balance,
@@ -54,8 +54,8 @@ class Ledger {
             return Error(LedgerError::InvalidAmount(transfer.amount.cents));
         }
 
-        fromAccount: &mut Account = this.AccountMut(transfer.sourceAccount)@;
-        toAccount: &mut Account = this.AccountMut(transfer.targetAccount)@;
+        fromAccount: &mut Account = self.AccountMut(transfer.sourceAccount)@;
+        toAccount: &mut Account = self.AccountMut(transfer.targetAccount)@;
 
         if (fromAccount.balance.cents < transfer.amount.cents) {
             return Error(LedgerError::InsufficientFunds(fromAccount.id));
@@ -63,19 +63,19 @@ class Ledger {
 
         fromAccount.balance.cents -= transfer.amount.cents;
         toAccount.balance.cents += transfer.amount.cents;
-        this.audit.push(transfer);
+        self.audit.push(transfer);
         return Ok();
     }
 
     fn AccountMut(id: Str) -> Result<&mut Account, LedgerError> {
-        if (!this.accounts.contains(id)) {
+        if (!self.accounts.contains(id)) {
             return Error(LedgerError::UnknownAccount(id));
         }
-        return Ok(&mut this.accounts[id]);
+        return Ok(&mut self.accounts[id]);
     }
 
     fn Print() -> Result<(), IOException> {
-        for ((id, account): (Str, Account) in this.accounts) {
+        for ((id, account): (Str, Account) in self.accounts) {
             println!("{} {} {}", id, account.owner, account.balance.cents);
         }
         return Ok();

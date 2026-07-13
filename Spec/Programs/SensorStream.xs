@@ -30,17 +30,17 @@ class Sensor {
     unit: Str;
 
     Sensor(id: Str, unit: Str) {
-        this.id = id;
-        this.unit = unit;
+        self.id = id;
+        self.unit = unit;
     }
 
     async fn Read() -> Task<Result<Optional<Reading>, SensorError>> {
-        sample: Optional<Float> = await Hardware.readFloat(this.id);
+        sample: Optional<Float> = await Hardware.readFloat(self.id);
 
         return Ok(sample?.Map(fn(value: Float) -> Reading {
-            sensorId: this.id,
+            sensorId: self.id,
             value: value,
-            unit: this.unit,
+            unit: self.unit,
         }));
     }
 }
@@ -50,20 +50,20 @@ class Aggregator {
     counts: std::collections::hash_map<Str, Int>;
 
     Aggregator() {
-        this.totals = std::collections::hash_map<Str, Float>::new();
-        this.counts = std::collections::hash_map<Str, Int>::new();
+        self.totals = std::collections::hash_map<Str, Float>::new();
+        self.counts = std::collections::hash_map<Str, Int>::new();
     }
 
     fn Add(reading: Reading) {
-        this.totals[reading.sensorId] = (this.totals[reading.sensorId] ?? 0.0) + reading.value;
-        this.counts[reading.sensorId] = (this.counts[reading.sensorId] ?? 0) + 1;
+        self.totals[reading.sensorId] = (self.totals[reading.sensorId] ?? 0.0) + reading.value;
+        self.counts[reading.sensorId] = (self.counts[reading.sensorId] ?? 0) + 1;
     }
 
     fn Averages() -> std::collections::vector<Average> {
         result: std::collections::vector<Average> = std::collections::vector<Average>::new();
 
-        for ((sensorId, total): (Str, Float) in this.totals) {
-            count: Int = this.counts[sensorId]!;
+        for ((sensorId, total): (Str, Float) in self.totals) {
+            count: Int = self.counts[sensorId]!;
             result.push(Average {
                 sensorId: sensorId,
                 count: count,

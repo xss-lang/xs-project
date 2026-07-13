@@ -46,13 +46,13 @@ data Point {
     y: Int
 
     Point(x: Int, y: Int) {
-        this.x = x;
-        this.y = y;
+        self.x = x;
+        self.y = y;
     }
 
     Point(value: Int) {
-        this.x = value;
-        this.y = value;
+        self.x = value;
+        self.y = value;
     }
 
     fn Translate(dx: Int, dy: Int) { }

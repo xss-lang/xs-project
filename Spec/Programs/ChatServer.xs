@@ -29,20 +29,20 @@ class Room {
     members: std::collections::hash_map<ClientId, Thread.sender<Message>>;
 
     Room(name: Str) {
-        this.name = name;
-        this.members = std::collections::hash_map<ClientId, Thread.sender<Message>>::new();
+        self.name = name;
+        self.members = std::collections::hash_map<ClientId, Thread.sender<Message>>::new();
     }
 
     fn Join(id: ClientId, sender: Thread.sender<Message>) {
-        this.members[id] = sender;
+        self.members[id] = sender;
     }
 
     fn Leave(id: ClientId) {
-        this.members.remove(id);
+        self.members.remove(id);
     }
 
     fn Broadcast(message: Message) {
-        for ((else, sender): (ClientId, Thread.sender<Message>) in this.members) {
+        for ((else, sender): (ClientId, Thread.sender<Message>) in self.members) {
             sender.send(message);
         }
     }
@@ -53,17 +53,17 @@ class ChatHub {
     rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>>;
 
     ChatHub() {
-        this.nextId = Atomic::new(1);
-        this.rooms = Arc::new(Mutex::new(std::collections::hash_map<Str, Room>::new()));
+        self.nextId = Atomic::new(1);
+        self.rooms = Arc::new(Mutex::new(std::collections::hash_map<Str, Room>::new()));
     }
 
     async fn Serve(listener: Net.tcpListener) -> Task<Result<(), ChatError>> {
         while (true) {
             socket: Net.tcpStream = await listener.accept()@;
             id: ClientId = ClientId {
-                value: this.nextId.fetchAdd(1),
+                value: self.nextId.fetchAdd(1),
             };
-            rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>> = Arc.clone(&this.rooms);
+            rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>> = Arc.clone(&self.rooms);
 
             Thread.spawn(move async fn() {
                 session: ClientSession = new(id, socket, rooms);
@@ -79,55 +79,55 @@ class ClientSession {
     rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>>;
 
     ClientSession(id: ClientId, socket: Net.tcpStream, rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>>) {
-        this.id = id;
-        this.socket = socket;
-        this.rooms = rooms;
+        self.id = id;
+        self.socket = socket;
+        self.rooms = rooms;
     }
 
     async fn Run() -> Task<Result<(), ChatError>> {
         currentRoom: Str = "lobby";
         outbound: Thread.channel<Message> = Thread.channel<Message>();
-        this.Join(currentRoom, outbound.sender());
+        self.Join(currentRoom, outbound.sender());
 
         while (true) {
-            line: Optional<Str> = await this.socket.read_line();
+            line: Optional<Str> = await self.socket.read_line();
             command: Str = line ?? "/quit";
 
             if (command == "/quit") {
-                this.Leave(currentRoom);
+                self.Leave(currentRoom);
                 return Ok();
             }
 
             if (command.startsWith("/join ")) {
-                this.Leave(currentRoom);
+                self.Leave(currentRoom);
                 currentRoom = command.substring(6);
-                this.Join(currentRoom, outbound.sender());
+                self.Join(currentRoom, outbound.sender());
                 continue;
             }
 
-            this.Broadcast(Message {
+            self.Broadcast(Message {
                 room: currentRoom,
-                sender: this.id,
+                sender: self.id,
                 body: command,
             });
         }
     }
 
     fn Join(roomName: Str, sender: Thread.sender<Message>) {
-        guard: Mutex<std::collections::hash_map<Str, Room>> = this.rooms.lock();
+        guard: Mutex<std::collections::hash_map<Str, Room>> = self.rooms.lock();
         if (!(*guard).contains(roomName)) {
             (*guard)[roomName] = Room::new(roomName);
         }
-        (*guard)[roomName].Join(this.id, sender);
+        (*guard)[roomName].Join(self.id, sender);
     }
 
     fn Leave(roomName: Str) {
-        guard: Mutex<std::collections::hash_map<Str, Room>> = this.rooms.lock();
-        (*guard)[roomName].Leave(this.id);
+        guard: Mutex<std::collections::hash_map<Str, Room>> = self.rooms.lock();
+        (*guard)[roomName].Leave(self.id);
     }
 
     fn Broadcast(message: Message) {
-        guard: Mutex<std::collections::hash_map<Str, Room>> = this.rooms.lock();
+        guard: Mutex<std::collections::hash_map<Str, Room>> = self.rooms.lock();
         (*guard)[message.room].Broadcast(message);
     }
 }

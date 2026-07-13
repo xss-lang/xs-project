@@ -155,6 +155,10 @@ The documented compilation order is preserved:
   produce parser diagnostics.
 - Class fields may carry `getter` and `setter` property accessors. Accessors are represented as
   `XS_SYNTAX_PROPERTY_ACCESSOR` children; accessor bodies are parsed as ordinary blocks when present.
+- The C23 HIR expression checker performs the first property validation slice: duplicate accessors are rejected, getter
+  return values are checked against the field type where that type is currently understood, setter bodies get an implicit
+  immutable `value` binding of the field type, and `self.<property>` inside that property's own accessor is rejected as
+  recursive. Actual property read/write lowering remains future MIR work.
 - Body-less function declarations outside interfaces require `incomplete fn ...;`. An `incomplete fn` with a body produces a
   parser diagnostic.
 - Regular enum variants cannot contain payload types and must have unique names. `enum data` requires at least one typed

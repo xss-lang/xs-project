@@ -29,6 +29,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - X# follows the Rust-style path/member split: `::` separates modules, namespaces, types, associated items, and
   constructors; `.` is reserved for value member access and method calls. Generic arguments in expression paths use
   turbofish, for example `std::optional::Some::<Str>("value")`.
+- Instance members use `self` as the receiver name inside constructors, methods, and property accessors.
+- Property bodies should use explicit backing fields such as `self._age`; referencing the property itself as `self.age`
+  inside its own accessor is recursive and rejected.
 - X# evaluation is strict/eager. The language aims for referential transparency where practical, but standard-library APIs
   are not globally guaranteed to be referentially transparent.
 - `fn Name(...) -> Type` declares an ordinary function. `op Name(...) -> Type` declares a referentially transparent

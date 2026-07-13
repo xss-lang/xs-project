@@ -53,7 +53,7 @@ class HealthClient {
     client: Http::client;
 
     HealthClient() {
-        this.client = new();
+        self.client = new();
     }
 
     async fn Check(endpoint: Endpoint) -> Task<Result<HealthResult, HealthError>> {
@@ -63,7 +63,7 @@ class HealthClient {
             .build();
 
         response: Http::response<Str> =
-            await this.client.sendAsync(
+            await self.client.sendAsync(
                 request,
                 HttpResponse::BodyHandlers.ofstr()
             );

@@ -37,26 +37,26 @@ class Report {
     newestError: Optional<Str>;
 
     Report() {
-        this.counts = std::collections::hash_map<Str, Int>::new();
-        this.newestError = std::optional::None;
+        self.counts = std::collections::hash_map<Str, Int>::new();
+        self.newestError = std::optional::None;
     }
 
     fn Add(entry: LogEntry) {
-        current: Int = this.counts.get(entry.level).unwrapOr(0);
-        this.counts[entry.level] = current + 1;
+        current: Int = self.counts.get(entry.level).unwrapOr(0);
+        self.counts[entry.level] = current + 1;
 
         if (entry.level == "ERROR") {
-            this.newestError = std::optional::Some(entry.message);
+            self.newestError = std::optional::Some(entry.message);
         }
     }
 
     fn Print() -> Result<(), IOException> {
-        for ((level, count): (Str, Int) in this.counts) {
+        for ((level, count): (Str, Int) in self.counts) {
             println!("{:<8} {}", level, count);
         }
 
-        if (this.newestError != None) {
-            println!("newest error: {}", this.newestError!);
+        if (self.newestError != None) {
+            println!("newest error: {}", self.newestError!);
         }
 
         return Ok();

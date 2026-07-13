@@ -55,6 +55,8 @@ class User {
 
 // properties
 class User {
+    private _age: Int;
+
     name: Str {
         getter;
         setter;
@@ -62,11 +64,11 @@ class User {
 
     age: Int {
         getter {
-            return this.age;
+            return self._age;
         }
 
         setter {
-            this.age = value;
+            self._age = value;
         }
     }
 }
@@ -76,7 +78,7 @@ class User {
     name: Str;
 
     User(name: Str) {
-        this.name = name;
+        self.name = name;
     }
 }
 

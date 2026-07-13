@@ -46,24 +46,24 @@ class Analytics {
     totals: std::collections::hash_map<Str, RegionTotal>;
 
     Analytics() {
-        this.totals = std::collections::hash_map<Str, RegionTotal>::new();
+        self.totals = std::collections::hash_map<Str, RegionTotal>::new();
     }
 
     fn Add(sale: Sale) {
-        if (!this.totals.contains(sale.region)) {
-            this.totals[sale.region] = RegionTotal {
+        if (!self.totals.contains(sale.region)) {
+            self.totals[sale.region] = RegionTotal {
                 region: sale.region,
                 quantity: 0,
                 revenue: 0.0,
             };
         }
 
-        this.totals[sale.region].quantity += sale.quantity;
-        this.totals[sale.region].revenue += sale.revenue;
+        self.totals[sale.region].quantity += sale.quantity;
+        self.totals[sale.region].revenue += sale.revenue;
     }
 
     fn Print() -> Result<(), IOException> {
-        for ((else, total): (Str, RegionTotal) in this.totals) {
+        for ((else, total): (Str, RegionTotal) in self.totals) {
             println!(
                 "{}: units={} revenue={}",
                 total.region,

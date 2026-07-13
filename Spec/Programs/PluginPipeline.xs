@@ -46,8 +46,8 @@ class ReplacePlugin : TextPlugin {
     toText: Str;
 
     ReplacePlugin(fromText: Str, toText: Str) {
-        this.fromText = fromText;
-        this.toText = toText;
+        self.fromText = fromText;
+        self.toText = toText;
     }
 
     fn Name() -> Str {
@@ -55,7 +55,7 @@ class ReplacePlugin : TextPlugin {
     }
 
     fn Run(input: Str) -> Result<Str, PipelineError> {
-        return Ok(input.replace(this.fromText, this.toText));
+        return Ok(input.replace(self.fromText, self.toText));
     }
 }
 
@@ -63,17 +63,17 @@ class Pipeline {
     stages: std::collections::vector<TextPlugin>;
 
     Pipeline() {
-        this.stages = std::collections::vector<TextPlugin>::new();
+        self.stages = std::collections::vector<TextPlugin>::new();
     }
 
     fn Add(stage: TextPlugin) {
-        this.stages.push(stage);
+        self.stages.push(stage);
     }
 
     fn Run(input: Str) -> Result<Str, PipelineError> {
         output: Str = input;
 
-        for (stage: TextPlugin in this.stages) {
+        for (stage: TextPlugin in self.stages) {
             output = stage.Run(output)@;
         }
 

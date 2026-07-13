@@ -23,19 +23,19 @@ class Queue {
     jobs: std::collections::vector<Job>;
 
     Queue() {
-        this.jobs = std::collections::vector<Job>::new();
+        self.jobs = std::collections::vector<Job>::new();
     }
 
     fn Push(job: Job) {
-        this.jobs.push(job);
+        self.jobs.push(job);
     }
 
     fn Pop() -> Optional<Job> {
-        if (this.jobs.length() == 0) {
+        if (self.jobs.length() == 0) {
             return std::optional::None;
         }
 
-        return std::optional::Some(this.jobs.remove(0));
+        return std::optional::Some(self.jobs.remove(0));
     }
 }
 

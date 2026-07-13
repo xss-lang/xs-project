@@ -31,27 +31,27 @@ class PackageGraph {
     ordered: std::collections::vector<Package>;
 
     PackageGraph() {
-        this.packages = std::collections::hash_map<Str, Package>::new();
-        this.states = std::collections::hash_map<Str, VisitState>::new();
-        this.ordered = std::collections::vector<Package>::new();
+        self.packages = std::collections::hash_map<Str, Package>::new();
+        self.states = std::collections::hash_map<Str, VisitState>::new();
+        self.ordered = std::collections::vector<Package>::new();
     }
 
     fn Add(package: Package) {
-        this.packages[package.name] = package;
-        this.states[package.name] = VisitState::White;
+        self.packages[package.name] = package;
+        self.states[package.name] = VisitState::White;
     }
 
     fn Resolve(root: Str) -> Result<std::collections::vector<Package>, ResolveError> {
-        this.Visit(root)@;
-        return Ok(this.ordered);
+        self.Visit(root)@;
+        return Ok(self.ordered);
     }
 
     fn Visit(name: Str) -> Result<(), ResolveError> {
-        if (!this.packages.contains(name)) {
+        if (!self.packages.contains(name)) {
             return Error(ResolveError::UnknownPackage(name));
         }
 
-        state: VisitState = this.states[name];
+        state: VisitState = self.states[name];
         match (state) {
             VisitState::Black -> {
                 return;
@@ -63,15 +63,15 @@ class PackageGraph {
             },
         }
 
-        this.states[name] = VisitState::Gray;
-        package: Package = this.packages[name];
+        self.states[name] = VisitState::Gray;
+        package: Package = self.packages[name];
 
         for (dependency: Str in package.dependencies) {
-            this.Visit(dependency)@;
+            self.Visit(dependency)@;
         }
 
-        this.states[name] = VisitState::Black;
-        this.ordered.push(package);
+        self.states[name] = VisitState::Black;
+        self.ordered.push(package);
         return Ok();
     }
 }
