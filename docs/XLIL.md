@@ -69,6 +69,10 @@ Format notes:
 - `%rN:f32 = const.f32 0xXXXXXXXX` and `%rN:f64 = const.f64 0xXXXXXXXXXXXXXXXX` create IEEE-754 constants from exact
   bit patterns. Fixed-width hexadecimal spelling preserves negative zero, infinities, and NaN payloads across text
   round trips.
+- `%rN:f32 = add.f32 %rA, %rB`, `sub.f32`, `mul.f32`, `div.f32`, and `rem.f32` perform IEEE-754 binary32 arithmetic.
+  The corresponding `.f64` records perform IEEE-754 binary64 arithmetic.
+- `%rN:bool = eq.f32 %rA, %rB`, `lt.f32`, `le.f32`, `gt.f32`, and `ge.f32` use ordered IEEE comparisons. Their `.f64`
+  forms have the same semantics. Every listed comparison is false when either operand is NaN.
 - `%rN:i32 = add.i32 %rA, %rB`, `sub.i32`, `mul.i32`, `div.i32`, and `rem.i32` perform signed 32-bit integer arithmetic.
 - `%rN:i32 = and.i32 %rA, %rB`, `or.i32`, `xor.i32`, `shl.i32`, and arithmetic `shr.i32` perform bitwise 32-bit integer
   operations.

@@ -17,6 +17,8 @@ pub mod verify;
 pub mod writer;
 
 #[cfg(test)]
+mod float_operator_tests;
+#[cfg(test)]
 mod operator_tests;
 #[cfg(test)]
 mod unary_tests;

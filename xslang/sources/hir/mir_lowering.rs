@@ -14,7 +14,10 @@ use super::type_check::{
 use crate::mir;
 use crate::xlil::{Type as XlilType, TypeKind};
 
-use binary_operations::{binary_i32_operation, binary_i64_operation, comparison_i64_operation};
+use binary_operations::{
+  binary_float_operation, binary_i32_operation, binary_i64_operation, comparison_float_operation,
+  comparison_i64_operation,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -511,101 +514,39 @@ impl HirToMirLowerer
                                                right,
                                                span });
       }
+      (operator, value_type, operand_type)
+        if value_type == operand_type &&
+           matches!(value_type, XlilType::F32 | XlilType::F64) &&
+           binary_float_operation(operator).is_some() =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::BinaryFloat { operation:
+                                                  binary_float_operation(operator).expect("guarded float operation \
+                                                                                           must exist"),
+                                                value_type,
+                                                result: target,
+                                                left,
+                                                right,
+                                                span });
+      }
+      (operator, XlilType::BOOL, operand_type)
+        if matches!(operand_type, XlilType::F32 | XlilType::F64) && comparison_float_operation(operator).is_some() =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::CompareFloat { operation:
+                                                   comparison_float_operation(operator).expect("guarded float \
+                                                                                                comparison must exist"),
+                                                 value_type: operand_type,
+                                                 result: target,
+                                                 left,
+                                                 right,
+                                                 span });
+      }
       _ => self.report(DiagnosticCode::UnsupportedExpression,
                        "HIR binary expression has no MIR instruction for this type combination",
                        span),
-    }
-  }
-
-  fn binary_operand_type(&self,
-                         operator: BinaryOperator,
-                         target_type: XlilType,
-                         left: &Expression,
-                         right: &Expression,
-                         lowered: &mir::Function)
-                         -> Option<XlilType>
-  {
-    match (operator, target_type)
-    {
-      (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I32) => Some(XlilType::I32),
-      (operator, XlilType::I32) if binary_i32_operation(operator).is_some() => Some(XlilType::I32),
-      (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I64) => Some(XlilType::I64),
-      (operator, XlilType::I64) if binary_i64_operation(operator).is_some() => Some(XlilType::I64),
-      (BinaryOperator::Equal |
-       BinaryOperator::Less |
-       BinaryOperator::LessEqual |
-       BinaryOperator::Greater |
-       BinaryOperator::GreaterEqual,
-       XlilType::BOOL) => self.common_operand_type(left, right, lowered).or(Some(XlilType::I64)),
-      _ => None,
-    }
-  }
-
-  fn common_operand_type(&self, left: &Expression, right: &Expression, lowered: &mir::Function) -> Option<XlilType>
-  {
-    let left_type = self.expression_value_type(left, lowered);
-    let right_type = self.expression_value_type(right, lowered);
-    match (left_type, right_type)
-    {
-      (Some(left_type), Some(right_type)) if left_type == right_type => Some(left_type),
-      (Some(value_type), None) | (None, Some(value_type)) => Some(value_type),
-      _ => None,
-    }
-  }
-
-  fn expression_value_type(&self, expression: &Expression, lowered: &mir::Function) -> Option<XlilType>
-  {
-    match expression
-    {
-      Expression::Local { name, .. } =>
-      {
-        let local = self.locals.get(name)?;
-        self.local_value_type(*local, lowered)
-      }
-      Expression::Binary { operator,
-                           left,
-                           right,
-                           .. } => match operator
-      {
-        BinaryOperator::Add |
-        BinaryOperator::Sub |
-        BinaryOperator::Mul |
-        BinaryOperator::Div |
-        BinaryOperator::Rem |
-        BinaryOperator::BitAnd |
-        BinaryOperator::BitOr |
-        BinaryOperator::BitXor |
-        BinaryOperator::ShiftLeft |
-        BinaryOperator::ShiftRight => self.common_operand_type(left, right, lowered),
-        BinaryOperator::Equal |
-        BinaryOperator::Less |
-        BinaryOperator::LessEqual |
-        BinaryOperator::Greater |
-        BinaryOperator::GreaterEqual => Some(XlilType::BOOL),
-      },
-      Expression::Unary { operator,
-                          operand,
-                          .. } => match operator
-      {
-        UnaryOperator::LogicalNot => Some(XlilType::BOOL),
-        UnaryOperator::Positive | UnaryOperator::Negative => self.expression_value_type(operand, lowered),
-      },
-      Expression::Call { return_type, .. } => match return_type.as_ref()
-      {
-        Type::Primitive(value) => primitive_to_xlil(*value),
-        Type::Named(_) => None,
-      },
-      Expression::If { result_type, .. } => match result_type.as_ref()
-      {
-        Type::Primitive(value) => primitive_to_xlil(*value),
-        Type::Named(_) => None,
-      },
-      Expression::Match { result_type, .. } => match result_type.as_ref()
-      {
-        Type::Primitive(value) => primitive_to_xlil(*value),
-        Type::Named(_) => None,
-      },
-      Expression::Literal { .. } | Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
 
@@ -714,6 +655,7 @@ const fn expression_span(expression: &Expression) -> Span
 }
 
 mod binary_operations;
+mod binary_types;
 mod call_lowering;
 mod control_flow;
 #[cfg(test)]

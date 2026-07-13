@@ -596,6 +596,9 @@ static void test_text_parser_rejects_invalid_inputs(void)
       "  %r0:i64 = const 1\n  %r1:bool = not.bool %r0\n  ret %r1\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> f32\nbb0.entry:\n"
       "  %r0:f32 = const.f32 0x1234\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> f32\nbb0.entry:\n"
+      "  %r0:f32 = const.f32 0x3f800000\n  %r1:f64 = const.f64 0x3ff0000000000000\n"
+      "  %r2:f32 = add.f32 %r0, %r1\n  ret %r2\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> void\n.slot %s0:void\nbb0.entry:\n  ret\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\n.slot %s0:i32\nbb0.entry:\n"
       "  %r0:i64 = load %s0\n  ret %r0\n.end\n",

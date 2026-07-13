@@ -96,7 +96,45 @@ typedef enum
   XS_LIL_INSTRUCTION_STORE,
   XS_LIL_INSTRUCTION_CONST_F32,
   XS_LIL_INSTRUCTION_CONST_F64,
+  XS_LIL_INSTRUCTION_ADD_F32,
+  XS_LIL_INSTRUCTION_SUB_F32,
+  XS_LIL_INSTRUCTION_MUL_F32,
+  XS_LIL_INSTRUCTION_DIV_F32,
+  XS_LIL_INSTRUCTION_REM_F32,
+  XS_LIL_INSTRUCTION_EQ_F32,
+  XS_LIL_INSTRUCTION_LT_F32,
+  XS_LIL_INSTRUCTION_LE_F32,
+  XS_LIL_INSTRUCTION_GT_F32,
+  XS_LIL_INSTRUCTION_GE_F32,
+  XS_LIL_INSTRUCTION_ADD_F64,
+  XS_LIL_INSTRUCTION_SUB_F64,
+  XS_LIL_INSTRUCTION_MUL_F64,
+  XS_LIL_INSTRUCTION_DIV_F64,
+  XS_LIL_INSTRUCTION_REM_F64,
+  XS_LIL_INSTRUCTION_EQ_F64,
+  XS_LIL_INSTRUCTION_LT_F64,
+  XS_LIL_INSTRUCTION_LE_F64,
+  XS_LIL_INSTRUCTION_GT_F64,
+  XS_LIL_INSTRUCTION_GE_F64,
 } XsLilInstructionKind;
+
+typedef enum
+{
+  XS_LIL_FLOAT_ADD,
+  XS_LIL_FLOAT_SUB,
+  XS_LIL_FLOAT_MUL,
+  XS_LIL_FLOAT_DIV,
+  XS_LIL_FLOAT_REM,
+} XsLilFloatBinaryOperation;
+
+typedef enum
+{
+  XS_LIL_FLOAT_EQ,
+  XS_LIL_FLOAT_LT,
+  XS_LIL_FLOAT_LE,
+  XS_LIL_FLOAT_GT,
+  XS_LIL_FLOAT_GE,
+} XsLilFloatComparisonOperation;
 
 typedef enum
 {
@@ -145,6 +183,10 @@ XsLilStatus xs_lil_block_add_const_i32(XsLilBlock *block, int32_t value, XsLilVa
 XsLilStatus xs_lil_block_add_const_bool(XsLilBlock *block, bool value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_f32_bits(XsLilBlock *block, uint32_t bits, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_const_f64_bits(XsLilBlock *block, uint64_t bits, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_binary_float(XsLilBlock *block, XsLilFloatBinaryOperation operation, XsLilType type,
+                                      XsLilValueId left, XsLilValueId right, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_compare_float(XsLilBlock *block, XsLilFloatComparisonOperation operation, XsLilType type,
+                                       XsLilValueId left, XsLilValueId right, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,

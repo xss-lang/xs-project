@@ -890,13 +890,13 @@ mod tests
   #[test]
   fn rejects_unsupported_binary_expression()
   {
-    let function = Function { name: "compare".to_string(),
-                              return_type: Some(primitive(PrimitiveType::Bool)),
+    let function = Function { name: "bitwise_float".to_string(),
+                              return_type: Some(primitive(PrimitiveType::SFloat)),
                               locals: vec![local("left", primitive(PrimitiveType::SFloat), false),
                                            local("right", primitive(PrimitiveType::SFloat), false)],
                               body: vec![Statement::Return { value:
                                                                 Some(Expression::Binary {
-                                                                  operator: BinaryOperator::Less,
+                                                                  operator: BinaryOperator::BitAnd,
                                                                   left: Box::new(Expression::Local {
                                                                     name: "left".to_string(),
                                                                     span: span(10, 14),

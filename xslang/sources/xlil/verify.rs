@@ -129,6 +129,36 @@ impl Verifier
       Instruction::ConstF32 { result, .. } => self.float_value(function, result, Type::F32, "XLIL const.f32 result"),
       Instruction::ConstF64 { result, .. } => self.float_value(function, result, Type::F64, "XLIL const.f64 result"),
       Instruction::ConstBool { result, .. } => self.bool_value(function, result, "XLIL const.bool result"),
+      Instruction::BinaryFloat { operation,
+                                 value_type,
+                                 result,
+                                 left,
+                                 right, } =>
+      {
+        let name = format!("{}.{}", operation.text_stem(), crate::xlil::type_name(value_type));
+        if !self.floating_operation_type(value_type, &name)
+        {
+          return;
+        }
+        self.float_value(function, result, value_type, &format!("XLIL {name} result"));
+        self.float_value(function, left, value_type, &format!("XLIL {name} left operand"));
+        self.float_value(function, right, value_type, &format!("XLIL {name} right operand"));
+      }
+      Instruction::CompareFloat { operation,
+                                  value_type,
+                                  result,
+                                  left,
+                                  right, } =>
+      {
+        let name = format!("{}.{}", operation.text_stem(), crate::xlil::type_name(value_type));
+        if !self.floating_operation_type(value_type, &name)
+        {
+          return;
+        }
+        self.bool_value(function, result, &format!("XLIL {name} result"));
+        self.float_value(function, left, value_type, &format!("XLIL {name} left operand"));
+        self.float_value(function, right, value_type, &format!("XLIL {name} right operand"));
+      }
       Instruction::AddI64 { result,
                             left,
                             right, } =>
@@ -439,6 +469,17 @@ impl Verifier
       self.report(DiagnosticCode::InstructionResultUnknown,
                   &format!("{label} must reference an {} value", type_name(expected)));
     }
+  }
+
+  fn floating_operation_type(&mut self, value_type: Type, instruction: &str) -> bool
+  {
+    if matches!(value_type, Type::F32 | Type::F64)
+    {
+      return true;
+    }
+    self.report(DiagnosticCode::InstructionResultUnknown,
+                &format!("XLIL {instruction} must declare f32 or f64 operand type"));
+    false
   }
 
   fn report(&mut self, code: DiagnosticCode, message: &str)

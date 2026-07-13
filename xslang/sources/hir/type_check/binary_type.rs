@@ -43,9 +43,16 @@ impl TypeChecker
       {
         Some(Type::Primitive(primitive))
       }
-      BinaryOperator::Equal if is_supported_integer(primitive) => Some(Type::Primitive(PrimitiveType::Bool)),
+      operator if is_float_value_operator(operator) && is_supported_float(primitive) =>
+      {
+        Some(Type::Primitive(primitive))
+      }
+      BinaryOperator::Equal if is_supported_integer(primitive) || is_supported_float(primitive) =>
+      {
+        Some(Type::Primitive(PrimitiveType::Bool))
+      }
       BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual
-        if is_supported_integer(primitive) =>
+        if is_supported_integer(primitive) || is_supported_float(primitive) =>
       {
         Some(Type::Primitive(PrimitiveType::Bool))
       }
@@ -62,6 +69,11 @@ impl TypeChecker
   {
     if is_integer_value_operator(operator) &&
        matches!(expected, Type::Primitive(primitive) if is_supported_integer(*primitive))
+    {
+      return self.expression_matches_type(left, expected) && self.expression_matches_type(right, expected);
+    }
+    if is_float_value_operator(operator) &&
+       matches!(expected, Type::Primitive(primitive) if is_supported_float(*primitive))
     {
       return self.expression_matches_type(left, expected) && self.expression_matches_type(right, expected);
     }
@@ -88,6 +100,17 @@ impl TypeChecker
 const fn is_supported_integer(primitive: PrimitiveType) -> bool
 {
   matches!(primitive, PrimitiveType::Long | PrimitiveType::Int)
+}
+
+const fn is_supported_float(primitive: PrimitiveType) -> bool
+{
+  matches!(primitive, PrimitiveType::SFloat | PrimitiveType::Float)
+}
+
+const fn is_float_value_operator(operator: BinaryOperator) -> bool
+{
+  matches!(operator,
+           BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul | BinaryOperator::Div | BinaryOperator::Rem)
 }
 
 const fn is_integer_value_operator(operator: BinaryOperator) -> bool

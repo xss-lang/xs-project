@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use super::{I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation};
+use super::{
+  FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation,
+};
 
 pub const SUPPORTED_XLIL_VERSION: u32 = 0;
 
@@ -95,6 +97,22 @@ pub enum Instruction
   ConstBool
   {
     result: ValueId, value: bool
+  },
+  BinaryFloat
+  {
+    operation: FloatBinaryOperation,
+    value_type: Type,
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  CompareFloat
+  {
+    operation: FloatComparisonOperation,
+    value_type: Type,
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
   },
   AddI64
   {

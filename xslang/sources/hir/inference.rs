@@ -170,12 +170,20 @@ fn infer_binary_expression_type(operator: BinaryOperator,
     {
       Some(Type::Primitive(primitive))
     }
-    BinaryOperator::Equal if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+    BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul | BinaryOperator::Div | BinaryOperator::Rem
+      if matches!(primitive, PrimitiveType::SFloat | PrimitiveType::Float) =>
+    {
+      Some(Type::Primitive(primitive))
+    }
+    BinaryOperator::Equal
+      if matches!(primitive,
+                  PrimitiveType::Long | PrimitiveType::Int | PrimitiveType::SFloat | PrimitiveType::Float) =>
     {
       Some(Type::Primitive(PrimitiveType::Bool))
     }
     BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual
-      if primitive == PrimitiveType::Long =>
+      if matches!(primitive,
+                  PrimitiveType::Long | PrimitiveType::SFloat | PrimitiveType::Float) =>
     {
       Some(Type::Primitive(PrimitiveType::Bool))
     }

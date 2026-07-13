@@ -99,6 +99,30 @@ static bool is_bool_result_integer(XsLilInstructionKind kind)
          kind == XS_LIL_INSTRUCTION_LE_I32 || kind == XS_LIL_INSTRUCTION_GT_I32 || kind == XS_LIL_INSTRUCTION_GE_I32;
 }
 
+static bool is_binary_float(XsLilInstructionKind kind)
+{
+  return kind >= XS_LIL_INSTRUCTION_ADD_F32 && kind <= XS_LIL_INSTRUCTION_GE_F64;
+}
+
+static bool is_bool_result_float(XsLilInstructionKind kind)
+{
+  return (kind >= XS_LIL_INSTRUCTION_EQ_F32 && kind <= XS_LIL_INSTRUCTION_GE_F32) || kind >= XS_LIL_INSTRUCTION_EQ_F64;
+}
+
+static XsLilStatus verify_binary_float(const XsLilFunction *function, const XsLilInstruction *instruction,
+                                       XsLilError *error)
+{
+  XsLilTypeKind operand = instruction->kind <= XS_LIL_INSTRUCTION_GE_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64;
+  if((size_t)instruction->left >= function->value_count || (size_t)instruction->right >= function->value_count ||
+     (size_t)instruction->result >= function->value_count || function->values[instruction->left].type.kind != operand ||
+     function->values[instruction->right].type.kind != operand)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL floating instruction has invalid operands");
+  XsLilTypeKind result = is_bool_result_float(instruction->kind) ? XS_LIL_TYPE_BOOL : operand;
+  if(function->values[instruction->result].type.kind != result)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL floating instruction has an invalid result type");
+  return XS_LIL_OK;
+}
+
 static XsLilStatus verify_binary_integer(const XsLilFunction *function, const XsLilInstruction *instruction,
                                          XsLilError *error)
 {
@@ -171,6 +195,12 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(is_binary_i64(current->kind) || is_binary_i32(current->kind))
         {
           status = verify_binary_integer(function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(is_binary_float(current->kind))
+        {
+          status = verify_binary_float(function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

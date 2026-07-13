@@ -296,7 +296,8 @@ validation does not decide dispatch, override, or overload selection.
 - `Byte` is an unsigned 8-bit primitive and `SByte` is a signed 8-bit primitive at the HIR level.
 - `Char` is a 16-bit UTF-16 code-unit type.
 - Signed integer widths are `Short`/`Long`/`Int`/`Integer` = i16/i32/i64/i128; unsigned widths are
-  `UShort`/`ULong`/`UInt`/`UInteger` = u16/u32/u64/u128. `SFloat` and `Float` map to f32 and f64.
+  `UShort`/`ULong`/`UInt`/`UInteger` = u16/u32/u64/u128. `SFloat` means “Short Float” and maps to f32; `Float` maps
+  to f64. These widths are target-independent, and X# has no x86-32-specific primitive or native-width alias.
 - `Str` is encoded as UTF-16; the compiler/runtime selects UTF-16LE or UTF-16BE automatically for the target/runtime
   situation. Its length is considered unbounded except by the representation allowed by UTF-16.
 - Semantically, `Str` is the X# counterpart of Rust's `&'static str`: an immutable static string reference. Its runtime

@@ -26,8 +26,8 @@ design to x86-64; ARM64 compatibility must be preserved.
 - Direct `.xlil` parser/model-driven `.extern`/`.func` lowering to verified and optimized LLVM IR, objects, and local
   native `.xse` executable artifacts for `.func main : () -> i32`
 - Initial XLIL body lowering for parameters, constants, i32 arithmetic/bitwise/shift/comparison, i64
-  arithmetic/bitwise/shift/comparison, typed stack-slot `load`/`store`, `call`, `br`, `br_if`, `panic`, `ret`, and
-  `ret %rN`
+  arithmetic/bitwise/shift/comparison, f32/f64 arithmetic and ordered comparisons, typed stack-slot `load`/`store`,
+  `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`
 - LLVM optimization pipeline selection from `default<O0>` through `default<O3>`
 - LLVM module verification
 - Object file emission per codegen unit
@@ -72,13 +72,16 @@ Borrow-checked and optimized MIR
     → linker invocation
 ```
 
-XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, exact-bit f32/f64 constants, and boolean constants, i32/i64
-arithmetic/bitwise/shift/comparison instructions, direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
+XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, exact-bit f32/f64 constants, and
+boolean constants, i32/i64 arithmetic/bitwise/shift/comparison instructions, f32/f64 arithmetic and ordered comparisons,
+direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
 typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated in the LLVM entry block and remain eligible
 for normal LLVM promotion and scalar optimization. The current source-native bridge uses this path for `Long` and `Bool`
 local initialization, reads, and simple mutable reassignment. `panic` emits an `llvm.trap` call followed by LLVM
 `unreachable`. Floating constants are bitcast from integer constants so their XLIL bit patterns reach LLVM without a
-locale-sensitive decimal conversion.
+locale-sensitive decimal conversion. Ordered floating comparisons lower to LLVM ordered predicates, so NaN makes each
+supported comparison false. Native Linux links include the platform math library because optimized floating remainder may
+become an `fmod`/`fmodf` runtime call.
 
 The source-native bridge lowers supported `if`, `while`, classic `for`, and statement-level `match` control flow into MIR
 branches before XLIL and LLVM lowering. A supported `match` over `Long` or `Bool` becomes ordered literal tests and branch

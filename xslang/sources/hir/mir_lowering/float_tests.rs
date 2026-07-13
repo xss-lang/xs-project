@@ -40,3 +40,27 @@ fn lowers_sfloat_and_float_literals_through_mir_and_xlil()
                      Instruction::ConstF32 { .. } | Instruction::ConstF64 { .. }));
   }
 }
+
+#[test]
+fn lowers_float_arithmetic_expression_to_typed_mir()
+{
+  let span = Span::new(1, 0, 7);
+  let expression =
+    Expression::Binary { operator: crate::hir::BinaryOperator::Add,
+                         left: Box::new(Expression::Literal { literal: Literal::Float("1.5".to_string()),
+                                                              span }),
+                         right: Box::new(Expression::Literal { literal: Literal::Float("2.5".to_string()),
+                                                               span }),
+                         span };
+  let function = Function { name: "add".to_string(),
+                            return_type: Some(Type::Primitive(PrimitiveType::Float)),
+                            locals: vec![],
+                            body: vec![Statement::Return { value: Some(expression),
+                                                           span }] };
+  let lowered = HirToMirLowerer::new().lower_function(&function)
+                                      .expect("Float addition should lower");
+  assert!(matches!(lowered.blocks[0].statements[2],
+                   mir::Statement::BinaryFloat { operation: crate::xlil::FloatBinaryOperation::Add,
+                                                 value_type: XlilType::F64,
+                                                 .. }));
+}

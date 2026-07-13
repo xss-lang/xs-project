@@ -4,7 +4,35 @@
  */
 
 use crate::hir::type_check::BinaryOperator;
-use crate::xlil::{I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation};
+use crate::xlil::{
+  FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation,
+};
+
+pub(super) const fn binary_float_operation(operator: BinaryOperator) -> Option<FloatBinaryOperation>
+{
+  Some(match operator
+  {
+    BinaryOperator::Add => FloatBinaryOperation::Add,
+    BinaryOperator::Sub => FloatBinaryOperation::Sub,
+    BinaryOperator::Mul => FloatBinaryOperation::Mul,
+    BinaryOperator::Div => FloatBinaryOperation::Div,
+    BinaryOperator::Rem => FloatBinaryOperation::Rem,
+    _ => return None,
+  })
+}
+
+pub(super) const fn comparison_float_operation(operator: BinaryOperator) -> Option<FloatComparisonOperation>
+{
+  Some(match operator
+  {
+    BinaryOperator::Equal => FloatComparisonOperation::Equal,
+    BinaryOperator::Less => FloatComparisonOperation::Less,
+    BinaryOperator::LessEqual => FloatComparisonOperation::LessEqual,
+    BinaryOperator::Greater => FloatComparisonOperation::Greater,
+    BinaryOperator::GreaterEqual => FloatComparisonOperation::GreaterEqual,
+    _ => return None,
+  })
+}
 
 pub(super) const fn binary_i32_operation(operator: BinaryOperator) -> Option<I32BinaryOperation>
 {

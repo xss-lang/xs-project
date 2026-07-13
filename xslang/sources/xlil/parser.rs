@@ -6,6 +6,7 @@
 use crate::xlil::{
   Block, BlockId, Function, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Instruction, Module,
   SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator, Type, Value, ValueId, is_supported_xlil_version, type_from_name,
+  type_name,
 };
 
 mod float;
@@ -468,6 +469,19 @@ impl Parser<'_>
       if let Some((result, operands)) = text.split_once(&pattern)
       {
         return self.binary_i32(function, result, operands, instruction, line);
+      }
+    }
+    for value_type in [Type::F32, Type::F64]
+    {
+      let suffix = type_name(value_type);
+      for operation in ["add", "sub", "mul", "div", "rem", "eq", "lt", "le", "gt", "ge"]
+      {
+        let instruction = format!("{operation}.{suffix}");
+        let pattern = format!(" = {instruction} ");
+        if let Some((result, operands)) = text.split_once(&pattern)
+        {
+          return self.float_binary(function, result, operands, operation, value_type, line);
+        }
       }
     }
     if let Some((result, rest)) = text.split_once(" = const.bool ")

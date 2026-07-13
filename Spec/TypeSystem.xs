@@ -30,6 +30,12 @@ value_u_integer: UInteger = 340'000'000'000'000'000'000;
 value_s_float: SFloat = 1.0;
 value_float: Float = 1.0;
 
+// SFloat expands to "Short Float" and is the nominal 32-bit IEEE-754
+// floating-point type. Float is the nominal 64-bit IEEE-754 type.
+// Primitive widths are fixed by X# and do not follow the host pointer width.
+// X# defines no x86-32-specific primitive or native-width alias; current
+// native targets are x86-64 and ARM64.
+
 // Optional<T> is resolved as if the compiler had inserted
 // `imports optional; using namespace std::optional;` and brought
 // std::optional::Optional<T> into scope as Optional<T>.

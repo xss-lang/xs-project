@@ -168,6 +168,32 @@ impl<'a> Verifier<'a>
       Statement::ConstBool { local,
                              span,
                              .. } => self.verify_const_bool(local, span),
+      Statement::BinaryFloat { operation,
+                               value_type,
+                               result,
+                               left,
+                               right,
+                               span, } =>
+      {
+        self.verify_float_binary(result,
+                                 left,
+                                 right,
+                                 value_type,
+                                 &format!("{}.{}", operation.text_stem(), crate::xlil::type_name(value_type)),
+                                 span);
+      }
+      Statement::CompareFloat { operation,
+                                value_type,
+                                result,
+                                left,
+                                right,
+                                span, } =>
+      {
+        let instruction = format!("{}.{}", operation.text_stem(), crate::xlil::type_name(value_type));
+        self.verify_bool_local(result, &format!("{instruction} result local"), span);
+        self.verify_float_local(left, value_type, &format!("{instruction} left operand"), span);
+        self.verify_float_local(right, value_type, &format!("{instruction} right operand"), span);
+      }
       Statement::StoreLocal { local,
                               value,
                               span, } => self.verify_local_storage(local, value, "store.local", span),
@@ -426,6 +452,47 @@ impl<'a> Verifier<'a>
     self.verify_i64_local(result, &format!("{instruction} result local"), span);
     self.verify_i64_local(left, &format!("{instruction} left operand"), span);
     self.verify_i64_local(right, &format!("{instruction} right operand"), span);
+  }
+
+  fn verify_float_binary(&mut self,
+                         result: LocalId,
+                         left: LocalId,
+                         right: LocalId,
+                         value_type: crate::xlil::Type,
+                         instruction: &str,
+                         span: Span)
+  {
+    self.verify_float_local(result, value_type, &format!("{instruction} result local"), span);
+    self.verify_float_local(left, value_type, &format!("{instruction} left operand"), span);
+    self.verify_float_local(right, value_type, &format!("{instruction} right operand"), span);
+  }
+
+  fn verify_float_local(&mut self, local: LocalId, expected: crate::xlil::Type, label: &str, span: Span)
+  {
+    self.verify_local(local, span);
+    if !matches!(expected, crate::xlil::Type::F32 | crate::xlil::Type::F64)
+    {
+      self.report(DiagnosticCode::LocalTypeMismatch,
+                  format!("{label} declares a non-floating operation type"),
+                  span);
+      return;
+    }
+    let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)
+    else
+    {
+      return;
+    };
+    match local.value_type
+    {
+      Some(actual) if actual == expected =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             format!("{label} has the wrong XLIL floating type"),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          format!("{label} has no XLIL value type"),
+                          span),
+    }
   }
 
   fn verify_eq_i64(&mut self, result: LocalId, left: LocalId, right: LocalId, span: Span)

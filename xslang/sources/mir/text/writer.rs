@@ -158,6 +158,26 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        target local {}", local.0);
       let _ = writeln!(output, "        value {value}");
     }
+    Statement::BinaryFloat { operation,
+                             value_type,
+                             result,
+                             left,
+                             right,
+                             .. } => write_binary(output,
+                                                  &format!("{}.{}", operation.text_stem(), type_name(*value_type)),
+                                                  *result,
+                                                  *left,
+                                                  *right),
+    Statement::CompareFloat { operation,
+                              value_type,
+                              result,
+                              left,
+                              right,
+                              .. } => write_binary(output,
+                                                   &format!("{}.{}", operation.text_stem(), type_name(*value_type)),
+                                                   *result,
+                                                   *left,
+                                                   *right),
     Statement::StoreLocal { local,
                             value,
                             .. } =>

@@ -78,7 +78,7 @@ static bool target_is_native_host(const XsLlvmBackend *backend)
 
 static bool link_native_executable(const char *object_path, const char *executable_path, XsBackendError *error)
 {
-  const char *arguments[] = {"-fuse-ld=lld", object_path, "-o", executable_path};
+  const char *arguments[] = {"-fuse-ld=lld", object_path, "-lm", "-o", executable_path};
   XsLinkerInvocation invocation = {
       .program = XS_CLANG_EXECUTABLE,
       .arguments = arguments,

@@ -5,9 +5,59 @@
 
 use super::{Parser, span};
 use crate::mir::Statement;
+use crate::xlil::{FloatBinaryOperation, FloatComparisonOperation, Type};
+
+pub(super) fn is_float_instruction(name: &str) -> bool
+{
+  let Some((operation, suffix)) = name.split_once('.')
+  else
+  {
+    return false;
+  };
+  matches!(suffix, "f32" | "f64") &&
+  (FloatBinaryOperation::parse_text_stem(operation).is_some() ||
+   FloatComparisonOperation::parse_text_stem(operation).is_some())
+}
 
 impl Parser<'_>
 {
+  pub(super) fn float_statement(&mut self, instruction: &str) -> Statement
+  {
+    let (operation, suffix) = instruction.split_once('.')
+                                         .expect("guarded floating instruction must have suffix");
+    let value_type = if suffix == "f32"
+    {
+      Type::F32
+    }
+    else
+    {
+      Type::F64
+    };
+    let result = self.binary_local(instruction, "result");
+    let left = self.binary_local(instruction, "left");
+    let right = self.binary_local(instruction, "right");
+    if let Some(operation) = FloatComparisonOperation::parse_text_stem(operation)
+    {
+      Statement::CompareFloat { operation,
+                                value_type,
+                                result,
+                                left,
+                                right,
+                                span: span() }
+    }
+    else
+    {
+      Statement::BinaryFloat { operation:
+                                 FloatBinaryOperation::parse_text_stem(operation).expect("guarded floating operation \
+                                                                                          must parse"),
+                               value_type,
+                               result,
+                               left,
+                               right,
+                               span: span() }
+    }
+  }
+
   pub(super) fn const_f32_statement(&mut self) -> Statement
   {
     let local = self.const_i64_target();

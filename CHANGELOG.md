@@ -14,6 +14,10 @@ source-to-native executable pipeline.
 
 ### Added
 
+- `SFloat`/`Float` addition, subtraction, multiplication, division, remainder, equality, and ordered comparisons now
+  lower through typed HIR, MIR/XMIR, XLIL v0, LLVM IR, object emission, and native `.xse` builds. XLIL spells these as
+  width-explicit records such as `add.f32` and `lt.f64`; Linux native linking supplies the math runtime needed when LLVM
+  legalizes floating remainder to `fmod`/`fmodf`.
 - `SFloat` and `Float` literals now cross the C23 structural AST into Rust typed HIR, verified MIR/XMIR, XLIL v0, LLVM
   IR, object emission, and native `.xse` builds. XMIR and XLIL store exact IEEE-754 f32/f64 bit patterns in fixed-width
   hexadecimal `const.f32` and `const.f64` records.

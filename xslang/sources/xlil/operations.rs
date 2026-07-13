@@ -70,6 +70,86 @@ pub enum I64ComparisonOperation
   GreaterEqual,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FloatBinaryOperation
+{
+  Add,
+  Sub,
+  Mul,
+  Div,
+  Rem,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FloatComparisonOperation
+{
+  Equal,
+  Less,
+  LessEqual,
+  Greater,
+  GreaterEqual,
+}
+
+impl FloatBinaryOperation
+{
+  #[must_use]
+  pub const fn text_stem(self) -> &'static str
+  {
+    match self
+    {
+      Self::Add => "add",
+      Self::Sub => "sub",
+      Self::Mul => "mul",
+      Self::Div => "div",
+      Self::Rem => "rem",
+    }
+  }
+
+  #[must_use]
+  pub fn parse_text_stem(name: &str) -> Option<Self>
+  {
+    Some(match name
+    {
+      "add" => Self::Add,
+      "sub" => Self::Sub,
+      "mul" => Self::Mul,
+      "div" => Self::Div,
+      "rem" => Self::Rem,
+      _ => return None,
+    })
+  }
+}
+
+impl FloatComparisonOperation
+{
+  #[must_use]
+  pub const fn text_stem(self) -> &'static str
+  {
+    match self
+    {
+      Self::Equal => "eq",
+      Self::Less => "lt",
+      Self::LessEqual => "le",
+      Self::Greater => "gt",
+      Self::GreaterEqual => "ge",
+    }
+  }
+
+  #[must_use]
+  pub fn parse_text_stem(name: &str) -> Option<Self>
+  {
+    Some(match name
+    {
+      "eq" => Self::Equal,
+      "lt" => Self::Less,
+      "le" => Self::LessEqual,
+      "gt" => Self::Greater,
+      "ge" => Self::GreaterEqual,
+      _ => return None,
+    })
+  }
+}
+
 impl I64ComparisonOperation
 {
   #[must_use]
@@ -136,6 +216,63 @@ use super::{BlockId, Function, Instruction, Type, Value, ValueId};
 
 impl Function
 {
+  pub fn binary_float(&mut self,
+                      block: BlockId,
+                      operation: FloatBinaryOperation,
+                      value_type: Type,
+                      left: ValueId,
+                      right: ValueId)
+                      -> Option<ValueId>
+  {
+    self.add_float_operation(block, value_type, value_type, left, right, |result| {
+          Instruction::BinaryFloat { operation,
+                                     value_type,
+                                     result,
+                                     left,
+                                     right }
+        })
+  }
+
+  pub fn compare_float(&mut self,
+                       block: BlockId,
+                       operation: FloatComparisonOperation,
+                       value_type: Type,
+                       left: ValueId,
+                       right: ValueId)
+                       -> Option<ValueId>
+  {
+    self.add_float_operation(block, value_type, Type::BOOL, left, right, |result| {
+          Instruction::CompareFloat { operation,
+                                      value_type,
+                                      result,
+                                      left,
+                                      right }
+        })
+  }
+
+  fn add_float_operation(&mut self,
+                         block: BlockId,
+                         operand_type: Type,
+                         result_type: Type,
+                         left: ValueId,
+                         right: ValueId,
+                         instruction: impl FnOnce(ValueId) -> Instruction)
+                         -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !matches!(operand_type, Type::F32 | Type::F64) ||
+       !self.value(left).is_some_and(|value| value.value_type == operand_type) ||
+       !self.value(right).is_some_and(|value| value.value_type == operand_type)
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: result_type });
+    self.block_mut(block)?.instructions.push(instruction(result));
+    Some(result)
+  }
+
   pub fn binary_i64(&mut self,
                     block: BlockId,
                     operation: I64BinaryOperation,

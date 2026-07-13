@@ -506,6 +506,67 @@ static XsBackendStatus lower_lil_binary_integer(LLVMBuilderRef builder, const Xs
   return XS_BACKEND_OK;
 }
 
+static bool is_lil_binary_float(XsLilInstructionKind kind)
+{
+  return kind >= XS_LIL_INSTRUCTION_ADD_F32 && kind <= XS_LIL_INSTRUCTION_GE_F64;
+}
+
+static LLVMValueRef lower_lil_binary_float_op(LLVMBuilderRef builder, XsLilInstructionKind kind, LLVMValueRef left,
+                                              LLVMValueRef right)
+{
+  switch(kind)
+  {
+  case XS_LIL_INSTRUCTION_ADD_F32:
+  case XS_LIL_INSTRUCTION_ADD_F64:
+    return LLVMBuildFAdd(builder, left, right, "fadd");
+  case XS_LIL_INSTRUCTION_SUB_F32:
+  case XS_LIL_INSTRUCTION_SUB_F64:
+    return LLVMBuildFSub(builder, left, right, "fsub");
+  case XS_LIL_INSTRUCTION_MUL_F32:
+  case XS_LIL_INSTRUCTION_MUL_F64:
+    return LLVMBuildFMul(builder, left, right, "fmul");
+  case XS_LIL_INSTRUCTION_DIV_F32:
+  case XS_LIL_INSTRUCTION_DIV_F64:
+    return LLVMBuildFDiv(builder, left, right, "fdiv");
+  case XS_LIL_INSTRUCTION_REM_F32:
+  case XS_LIL_INSTRUCTION_REM_F64:
+    return LLVMBuildFRem(builder, left, right, "frem");
+  case XS_LIL_INSTRUCTION_EQ_F32:
+  case XS_LIL_INSTRUCTION_EQ_F64:
+    return LLVMBuildFCmp(builder, LLVMRealOEQ, left, right, "feq");
+  case XS_LIL_INSTRUCTION_LT_F32:
+  case XS_LIL_INSTRUCTION_LT_F64:
+    return LLVMBuildFCmp(builder, LLVMRealOLT, left, right, "flt");
+  case XS_LIL_INSTRUCTION_LE_F32:
+  case XS_LIL_INSTRUCTION_LE_F64:
+    return LLVMBuildFCmp(builder, LLVMRealOLE, left, right, "fle");
+  case XS_LIL_INSTRUCTION_GT_F32:
+  case XS_LIL_INSTRUCTION_GT_F64:
+    return LLVMBuildFCmp(builder, LLVMRealOGT, left, right, "fgt");
+  case XS_LIL_INSTRUCTION_GE_F32:
+  case XS_LIL_INSTRUCTION_GE_F64:
+    return LLVMBuildFCmp(builder, LLVMRealOGE, left, right, "fge");
+  default:
+    return nullptr;
+  }
+}
+
+static XsBackendStatus lower_lil_binary_float(LLVMBuilderRef builder, const XsLilBlock *block, size_t index,
+                                              LLVMValueRef *values, size_t value_count, XsBackendError *error)
+{
+  XsLilValueId result = xs_lil_block_instruction_result(block, index);
+  XsLilValueId left = xs_lil_block_instruction_left(block, index);
+  XsLilValueId right = xs_lil_block_instruction_right(block, index);
+  if((size_t)result >= value_count || (size_t)left >= value_count || (size_t)right >= value_count ||
+     values[left] == nullptr || values[right] == nullptr)
+    return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL floating instruction references an unavailable value");
+  values[result] =
+      lower_lil_binary_float_op(builder, xs_lil_block_instruction_kind(block, index), values[left], values[right]);
+  if(values[result] == nullptr)
+    return set_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL floating instruction");
+  return XS_BACKEND_OK;
+}
+
 static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilderRef builder,
                                              const XsLilFunction *function, const XsLilBlock *block, size_t index,
                                              LLVMValueRef *values, size_t value_count, LLVMValueRef *slots,
@@ -566,6 +627,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
   }
   if(is_lil_binary_integer(kind))
     return lower_lil_binary_integer(builder, block, index, values, value_count, error);
+  if(is_lil_binary_float(kind))
+    return lower_lil_binary_float(builder, block, index, values, value_count, error);
   if(kind == XS_LIL_INSTRUCTION_CALL)
   {
     const char *callee_name = xs_lil_block_instruction_callee(block, index);

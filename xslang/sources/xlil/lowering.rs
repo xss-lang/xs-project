@@ -139,6 +139,42 @@ impl MirToXlilLowerer
       {
         self.lower_const_bool(local, value, span, xlil_block, local_types, values, lowered);
       }
+      if let mir::Statement::BinaryFloat { operation,
+                                           value_type,
+                                           result,
+                                           left,
+                                           right,
+                                           span, } = *statement
+      {
+        self.lower_float_operation(result,
+                                   left,
+                                   right,
+                                   span,
+                                   xlil_block,
+                                   values,
+                                   lowered,
+                                   |function, block, left, right| {
+                                     function.binary_float(block, operation, value_type, left, right)
+                                   });
+      }
+      if let mir::Statement::CompareFloat { operation,
+                                            value_type,
+                                            result,
+                                            left,
+                                            right,
+                                            span, } = *statement
+      {
+        self.lower_float_operation(result,
+                                   left,
+                                   right,
+                                   span,
+                                   xlil_block,
+                                   values,
+                                   lowered,
+                                   |function, block, left, right| {
+                                     function.compare_float(block, operation, value_type, left, right)
+                                   });
+      }
       if let mir::Statement::StoreLocal { local,
                                           value,
                                           span, } = *statement
@@ -508,6 +544,44 @@ impl MirToXlilLowerer
       };
       values.insert(result, call_result);
     }
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  fn lower_float_operation(&mut self,
+                           result: mir::LocalId,
+                           left: mir::LocalId,
+                           right: mir::LocalId,
+                           span: Span,
+                           xlil_block: BlockId,
+                           values: &mut HashMap<mir::LocalId, ValueId>,
+                           lowered: &mut Function,
+                           operation: impl FnOnce(&mut Function, BlockId, ValueId, ValueId) -> Option<ValueId>)
+  {
+    let Some(left) = values.get(&left).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  "MIR floating instruction left operand has no lowered XLIL value",
+                  span);
+      return;
+    };
+    let Some(right) = values.get(&right).copied()
+    else
+    {
+      self.report(DiagnosticCode::MissingLocalValue,
+                  "MIR floating instruction right operand has no lowered XLIL value",
+                  span);
+      return;
+    };
+    let Some(value) = operation(lowered, xlil_block, left, right)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedLocalType,
+                  "MIR floating instruction operands have incompatible XLIL types",
+                  span);
+      return;
+    };
+    values.insert(result, value);
   }
 
   #[allow(clippy::too_many_arguments)]

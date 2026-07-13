@@ -4,10 +4,52 @@
  */
 
 use super::{DiagnosticCode, Parser};
-use crate::xlil::{Function, Instruction, Type, Value, type_name};
+use crate::xlil::{FloatBinaryOperation, FloatComparisonOperation, Function, Instruction, Type, Value, type_name};
 
 impl Parser<'_>
 {
+  pub(super) fn float_binary(&mut self,
+                             function: &mut Function,
+                             result: &str,
+                             operands: &str,
+                             operation: &str,
+                             value_type: Type,
+                             line: usize)
+                             -> Option<Instruction>
+  {
+    let comparison = FloatComparisonOperation::parse_text_stem(operation);
+    let result_type = if comparison.is_some()
+    {
+      Type::BOOL
+    }
+    else
+    {
+      value_type
+    };
+    let result = self.value_id(result.strip_suffix(&format!(":{}", type_name(result_type)))?, line)?;
+    let (left, right) = operands.split_once(", ")?;
+    let left = self.value_operand(left, line)?;
+    let right = self.value_operand(right, line)?;
+    function.values.push(Value { id: result,
+                                 value_type: result_type });
+    if let Some(operation) = comparison
+    {
+      Some(Instruction::CompareFloat { operation,
+                                       value_type,
+                                       result,
+                                       left,
+                                       right })
+    }
+    else
+    {
+      Some(Instruction::BinaryFloat { operation: FloatBinaryOperation::parse_text_stem(operation)?,
+                                      value_type,
+                                      result,
+                                      left,
+                                      right })
+    }
+  }
+
   pub(super) fn const_float(&mut self,
                             function: &mut Function,
                             result: &str,

@@ -25,6 +25,61 @@ static XsLilStatus write_signature(FILE *stream, XsLilError *error, const XsLilF
   return XS_LIL_OK;
 }
 
+static const char *float_instruction_name(XsLilInstructionKind kind)
+{
+  switch(kind)
+  {
+  case XS_LIL_INSTRUCTION_ADD_F32:
+  case XS_LIL_INSTRUCTION_ADD_F64:
+    return "add";
+  case XS_LIL_INSTRUCTION_SUB_F32:
+  case XS_LIL_INSTRUCTION_SUB_F64:
+    return "sub";
+  case XS_LIL_INSTRUCTION_MUL_F32:
+  case XS_LIL_INSTRUCTION_MUL_F64:
+    return "mul";
+  case XS_LIL_INSTRUCTION_DIV_F32:
+  case XS_LIL_INSTRUCTION_DIV_F64:
+    return "div";
+  case XS_LIL_INSTRUCTION_REM_F32:
+  case XS_LIL_INSTRUCTION_REM_F64:
+    return "rem";
+  case XS_LIL_INSTRUCTION_EQ_F32:
+  case XS_LIL_INSTRUCTION_EQ_F64:
+    return "eq";
+  case XS_LIL_INSTRUCTION_LT_F32:
+  case XS_LIL_INSTRUCTION_LT_F64:
+    return "lt";
+  case XS_LIL_INSTRUCTION_LE_F32:
+  case XS_LIL_INSTRUCTION_LE_F64:
+    return "le";
+  case XS_LIL_INSTRUCTION_GT_F32:
+  case XS_LIL_INSTRUCTION_GT_F64:
+    return "gt";
+  case XS_LIL_INSTRUCTION_GE_F32:
+  case XS_LIL_INSTRUCTION_GE_F64:
+    return "ge";
+  default:
+    return nullptr;
+  }
+}
+
+static XsLilStatus write_float_instruction(FILE *stream, const XsLilInstruction *instruction, XsLilError *error)
+{
+  const char *operation = float_instruction_name(instruction->kind);
+  if(operation == nullptr)
+    return XS_LIL_OK;
+  bool f32 = instruction->kind >= XS_LIL_INSTRUCTION_ADD_F32 && instruction->kind <= XS_LIL_INSTRUCTION_GE_F32;
+  bool comparison =
+      (instruction->kind >= XS_LIL_INSTRUCTION_EQ_F32 && instruction->kind <= XS_LIL_INSTRUCTION_GE_F32) ||
+      instruction->kind >= XS_LIL_INSTRUCTION_EQ_F64;
+  const char *type = f32 ? "f32" : "f64";
+  if(fprintf(stream, "  %%r%u:%s = %s.%s %%r%u, %%r%u\n", instruction->result, comparison ? "bool" : type, operation,
+             type, instruction->left, instruction->right) < 0)
+    return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL floating instruction");
+  return XS_LIL_OK;
+}
+
 static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock *block)
 {
   if(fprintf(stream, "bb%u.%s:\n", block->id, block->label) < 0)
@@ -50,6 +105,9 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:f64 = const.f64 0x%016llx\n", instruction->result,
                (unsigned long long)instruction->immediate_float_bits) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.f64 instruction");
+    if(float_instruction_name(instruction->kind) != nullptr &&
+       write_float_instruction(stream, instruction, error) != XS_LIL_OK)
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     if(instruction->kind == XS_LIL_INSTRUCTION_ADD_I64 &&
        fprintf(stream, "  %%r%u:i64 = add.i64 %%r%u, %%r%u\n", instruction->result, instruction->left,
                instruction->right) < 0)

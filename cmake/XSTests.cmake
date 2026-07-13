@@ -46,7 +46,7 @@ endforeach()
 
 set(XS_DIRECT_XLIL_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/intermediate")
 file(MAKE_DIRECTORY "${XS_DIRECT_XLIL_FIXTURE_DIR}")
-foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit StackSlotExit FloatConstants MissingMain ExternMain
+foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit StackSlotExit FloatConstants FloatOperators MissingMain ExternMain
                       ParameterizedMain VoidMain I64Main DuplicateMain)
   configure_file(tests/fixtures/intermediate/${entry_fixture}.xlil
                  "${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil" COPYONLY)
@@ -127,6 +127,17 @@ add_test(NAME direct_xlil_float_constants_artifacts COMMAND xs_xse_artifact_test
                                                       "define float @F32Value")
 set_tests_properties(direct_xlil_float_constants_artifacts PROPERTIES DEPENDS direct_xlil_float_constants_build
                                                                         TIMEOUT 5)
+add_test(NAME direct_xlil_float_operators_build COMMAND xs build --xlil -file
+                                                ${XS_DIRECT_XLIL_FIXTURE_DIR}/FloatOperators.xlil)
+set_tests_properties(direct_xlil_float_operators_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME direct_xlil_float_operators_artifacts COMMAND xs_xse_artifact_tests
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/FloatOperators.ll
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/FloatOperators.o
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/FloatOperators.xse 0
+                                                      "fadd float" "frem float" "fcmp olt double")
+set_tests_properties(direct_xlil_float_operators_artifacts PROPERTIES DEPENDS direct_xlil_float_operators_build
+                                                                        TIMEOUT 5)
 foreach(entry_fixture MissingMain ExternMain ParameterizedMain VoidMain I64Main DuplicateMain)
   add_test(NAME direct_xlil_invalid_${entry_fixture} COMMAND xs build --xlil -file ${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil)
   set_tests_properties(direct_xlil_invalid_${entry_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
@@ -134,7 +145,7 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -226,6 +237,17 @@ add_test(NAME source_native_float_constants_artifacts COMMAND xs_xse_artifact_te
                                                          "define float @single_value" "ret float 1.500000e+00"
                                                          "define double @double_value" "ret double 1.500000e+00")
 set_tests_properties(source_native_float_constants_artifacts PROPERTIES DEPENDS source_native_float_constants_build
+                                                                           TIMEOUT 5)
+add_test(NAME source_native_float_operators_build COMMAND xs build -file
+                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.xs)
+set_tests_properties(source_native_float_operators_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_float_operators_artifacts COMMAND xs_xse_artifact_tests
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.ll
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.o
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.xse 0
+                                                         "fadd float" "frem float" "fdiv double" "fcmp olt double")
+set_tests_properties(source_native_float_operators_artifacts PROPERTIES DEPENDS source_native_float_operators_build
                                                                            TIMEOUT 5)
 add_test(NAME source_native_negative_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainNegative.xs)
 set_tests_properties(source_native_negative_build PROPERTIES TIMEOUT 5

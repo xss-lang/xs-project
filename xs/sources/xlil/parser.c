@@ -394,6 +394,65 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
   case XS_LIL_INSTRUCTION_GE_I32:
     status = xs_lil_block_ge_i32(block, left, right, &result, error);
     break;
+  case XS_LIL_INSTRUCTION_ADD_F32:
+  case XS_LIL_INSTRUCTION_ADD_F64:
+    status = xs_lil_block_binary_float(
+        block, XS_LIL_FLOAT_ADD,
+        (XsLilType){.kind = kind == XS_LIL_INSTRUCTION_ADD_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64}, left, right,
+        &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_SUB_F32:
+  case XS_LIL_INSTRUCTION_SUB_F64:
+    status = xs_lil_block_binary_float(
+        block, XS_LIL_FLOAT_SUB,
+        (XsLilType){.kind = kind == XS_LIL_INSTRUCTION_SUB_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64}, left, right,
+        &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_MUL_F32:
+  case XS_LIL_INSTRUCTION_MUL_F64:
+    status = xs_lil_block_binary_float(
+        block, XS_LIL_FLOAT_MUL,
+        (XsLilType){.kind = kind == XS_LIL_INSTRUCTION_MUL_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64}, left, right,
+        &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_DIV_F32:
+  case XS_LIL_INSTRUCTION_DIV_F64:
+    status = xs_lil_block_binary_float(
+        block, XS_LIL_FLOAT_DIV,
+        (XsLilType){.kind = kind == XS_LIL_INSTRUCTION_DIV_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64}, left, right,
+        &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_REM_F32:
+  case XS_LIL_INSTRUCTION_REM_F64:
+    status = xs_lil_block_binary_float(
+        block, XS_LIL_FLOAT_REM,
+        (XsLilType){.kind = kind == XS_LIL_INSTRUCTION_REM_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64}, left, right,
+        &result, error);
+    break;
+  case XS_LIL_INSTRUCTION_EQ_F32:
+  case XS_LIL_INSTRUCTION_EQ_F64:
+  case XS_LIL_INSTRUCTION_LT_F32:
+  case XS_LIL_INSTRUCTION_LT_F64:
+  case XS_LIL_INSTRUCTION_LE_F32:
+  case XS_LIL_INSTRUCTION_LE_F64:
+  case XS_LIL_INSTRUCTION_GT_F32:
+  case XS_LIL_INSTRUCTION_GT_F64:
+  case XS_LIL_INSTRUCTION_GE_F32:
+  case XS_LIL_INSTRUCTION_GE_F64:
+  {
+    XsLilFloatComparisonOperation operation = XS_LIL_FLOAT_GE;
+    if(kind == XS_LIL_INSTRUCTION_EQ_F32 || kind == XS_LIL_INSTRUCTION_EQ_F64)
+      operation = XS_LIL_FLOAT_EQ;
+    else if(kind == XS_LIL_INSTRUCTION_LT_F32 || kind == XS_LIL_INSTRUCTION_LT_F64)
+      operation = XS_LIL_FLOAT_LT;
+    else if(kind == XS_LIL_INSTRUCTION_LE_F32 || kind == XS_LIL_INSTRUCTION_LE_F64)
+      operation = XS_LIL_FLOAT_LE;
+    else if(kind == XS_LIL_INSTRUCTION_GT_F32 || kind == XS_LIL_INSTRUCTION_GT_F64)
+      operation = XS_LIL_FLOAT_GT;
+    XsLilTypeKind type = kind <= XS_LIL_INSTRUCTION_GE_F32 ? XS_LIL_TYPE_F32 : XS_LIL_TYPE_F64;
+    status = xs_lil_block_compare_float(block, operation, (XsLilType){.kind = type}, left, right, &result, error);
+    break;
+  }
   default:
     return parse_error(parser, error, "unsupported XLIL binary instruction");
   }
@@ -498,6 +557,26 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"le.i32 ", XS_LIL_INSTRUCTION_LE_I32, XS_LIL_TYPE_BOOL},
         {"gt.i32 ", XS_LIL_INSTRUCTION_GT_I32, XS_LIL_TYPE_BOOL},
         {"ge.i32 ", XS_LIL_INSTRUCTION_GE_I32, XS_LIL_TYPE_BOOL},
+        {"add.f32 ", XS_LIL_INSTRUCTION_ADD_F32, XS_LIL_TYPE_F32},
+        {"sub.f32 ", XS_LIL_INSTRUCTION_SUB_F32, XS_LIL_TYPE_F32},
+        {"mul.f32 ", XS_LIL_INSTRUCTION_MUL_F32, XS_LIL_TYPE_F32},
+        {"div.f32 ", XS_LIL_INSTRUCTION_DIV_F32, XS_LIL_TYPE_F32},
+        {"rem.f32 ", XS_LIL_INSTRUCTION_REM_F32, XS_LIL_TYPE_F32},
+        {"eq.f32 ", XS_LIL_INSTRUCTION_EQ_F32, XS_LIL_TYPE_BOOL},
+        {"lt.f32 ", XS_LIL_INSTRUCTION_LT_F32, XS_LIL_TYPE_BOOL},
+        {"le.f32 ", XS_LIL_INSTRUCTION_LE_F32, XS_LIL_TYPE_BOOL},
+        {"gt.f32 ", XS_LIL_INSTRUCTION_GT_F32, XS_LIL_TYPE_BOOL},
+        {"ge.f32 ", XS_LIL_INSTRUCTION_GE_F32, XS_LIL_TYPE_BOOL},
+        {"add.f64 ", XS_LIL_INSTRUCTION_ADD_F64, XS_LIL_TYPE_F64},
+        {"sub.f64 ", XS_LIL_INSTRUCTION_SUB_F64, XS_LIL_TYPE_F64},
+        {"mul.f64 ", XS_LIL_INSTRUCTION_MUL_F64, XS_LIL_TYPE_F64},
+        {"div.f64 ", XS_LIL_INSTRUCTION_DIV_F64, XS_LIL_TYPE_F64},
+        {"rem.f64 ", XS_LIL_INSTRUCTION_REM_F64, XS_LIL_TYPE_F64},
+        {"eq.f64 ", XS_LIL_INSTRUCTION_EQ_F64, XS_LIL_TYPE_BOOL},
+        {"lt.f64 ", XS_LIL_INSTRUCTION_LT_F64, XS_LIL_TYPE_BOOL},
+        {"le.f64 ", XS_LIL_INSTRUCTION_LE_F64, XS_LIL_TYPE_BOOL},
+        {"gt.f64 ", XS_LIL_INSTRUCTION_GT_F64, XS_LIL_TYPE_BOOL},
+        {"ge.f64 ", XS_LIL_INSTRUCTION_GE_F64, XS_LIL_TYPE_BOOL},
     };
     for(size_t binary = 0; binary < sizeof(binary_instructions) / sizeof(binary_instructions[0]); ++binary)
     {

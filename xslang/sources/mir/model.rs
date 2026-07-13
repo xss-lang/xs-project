@@ -6,7 +6,9 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::hir::async_check::Span;
-use crate::xlil::{I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Type};
+use crate::xlil::{
+  FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Type,
+};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LocalId(pub u32);
@@ -75,6 +77,24 @@ pub enum Statement
   ConstBool
   {
     local: LocalId, value: bool, span: Span
+  },
+  BinaryFloat
+  {
+    operation: FloatBinaryOperation,
+    value_type: Type,
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  CompareFloat
+  {
+    operation: FloatComparisonOperation,
+    value_type: Type,
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
   },
   StoreLocal
   {
@@ -394,6 +414,16 @@ impl BorrowChecker
                               result,
                               span,
                               .. } |
+      Statement::BinaryFloat { left,
+                               right,
+                               result,
+                               span,
+                               .. } |
+      Statement::CompareFloat { left,
+                                right,
+                                result,
+                                span,
+                                .. } |
       Statement::AddI32 { left,
                           right,
                           result,

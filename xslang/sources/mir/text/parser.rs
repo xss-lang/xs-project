@@ -272,6 +272,7 @@ impl Parser<'_>
         "const.i32" => block.statements.push(self.const_i32_statement()),
         "const.f32" => block.statements.push(self.const_f32_statement()),
         "const.f64" => block.statements.push(self.const_f64_statement()),
+        kind if float::is_float_instruction(kind) => block.statements.push(self.float_statement(kind)),
         "const.bool" => block.statements.push(self.const_bool_statement()),
         "store.local" => block.statements.push(self.store_local_statement()),
         "load.local" => block.statements.push(self.load_local_statement()),
