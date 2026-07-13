@@ -9,7 +9,23 @@ import java.io.Serializable
 
 enum class OperatingSystem { LINUX, MACOS, WINDOWS, FREEBSD, OPENBSD, NETBSD, UNKNOWN }
 
-enum class OperatingSystemFamily { UNIX, BSD, WINDOWS, UNKNOWN }
+class OperatingSystemFamily private constructor(
+  private val membership: Int,
+  private val displayName: String,
+) {
+  override fun equals(other: Any?) = other is OperatingSystemFamily && membership and other.membership != 0
+
+  override fun hashCode() = 0
+
+  override fun toString() = displayName
+
+  companion object {
+    val UNIX = OperatingSystemFamily(0b0001, "UNIX")
+    val BSD = OperatingSystemFamily(0b0011, "BSD")
+    val WINDOWS = OperatingSystemFamily(0b0100, "WINDOWS")
+    val UNKNOWN = OperatingSystemFamily(0b1000, "UNKNOWN")
+  }
+}
 
 enum class Architecture { X86_64, AARCH64, ARMV7H, RISCV64, UNKNOWN }
 

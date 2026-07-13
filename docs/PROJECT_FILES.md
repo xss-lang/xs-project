@@ -35,6 +35,9 @@ case-sensitive filename `main.xs`; it is always the entry file. Include records 
 files rather than glob patterns. Optional DSL sections cover variables, authors, external modules, targets, tests,
 diagnostic settings, and host-dependent `cfg(...)` branches.
 
+BSD hosts are members of both the `BSD` and `UNIX` families. Consequently, `cfg(FAMILY == BSD)` and
+`cfg(FAMILY == UNIX)` are both true on FreeBSD, OpenBSD, and NetBSD.
+
 Argument-free `xs build`, `xs check`, and `xs run` search the current directory and its parents through `xs-project`.
 The resolver evaluates Kotlin and returns an exact source registry; it never reads or compiles `.xs` files. The JVM-free
 `xs` process owns source parsing, semantic analysis, code generation, and artifacts. `XS_KOTLIN` may select the required

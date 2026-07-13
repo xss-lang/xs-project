@@ -64,4 +64,11 @@ class ProjectDslTest {
     requireJava25()
     assertEquals(25, Runtime.version().feature())
   }
+
+  @Test
+  fun bsdBelongsToBothBsdAndUnixFamilies() {
+    val host = Host(OperatingSystem.FREEBSD, OperatingSystemFamily.BSD, Architecture.X86_64)
+    assertTrue(host.family == OperatingSystemFamily.BSD)
+    assertTrue(host.family == OperatingSystemFamily.UNIX)
+  }
 }

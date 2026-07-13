@@ -25,6 +25,7 @@ source-to-native executable pipeline.
 
 - The XSPROJ format and public C23 model are feature-frozen. Dependency records were removed; programmable dependencies
   and conditional configuration belong to the Kotlin project DSL.
+- Kotlin project host matching treats BSD systems as members of both the BSD and UNIX families.
 
 ## 0.1.6 - 2026-07-13
 
