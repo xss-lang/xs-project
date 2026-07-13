@@ -101,7 +101,7 @@ fn MoveValueToThread() {
 // invalid non-Send capture
 
 fn InvalidNonSendCapture() {
-    value: NonSendType = NonSendType.new();
+    value: NonSendType = NonSendType::new();
 
     Thread.spawn(move fn() {
         Use(value);
@@ -215,7 +215,7 @@ fn JoinedThreadFailure() {
 // detached thread failure
 
 fn DetachedThreadFailure() {
-    Thread.spawn(move fn() -> Result<Void, IOException> {
+    Thread.spawn(move fn() -> Result<(), IOException> {
         return Error(IOException());
     });
 }
@@ -419,7 +419,7 @@ imports mutex, rw_lock, arc;
 // moving a mutex into a thread
 
 fn MoveMutexIntoThread() {
-    mutex: Mutex<Int> = Mutex.new(42);
+    mutex: Mutex<Int> = Mutex::new(42);
 
     thread: Thread::handle<()> =
         Thread.spawn(move fn() {
@@ -435,7 +435,7 @@ fn MoveMutexIntoThread() {
 
 fn ShareMutexBetweenThreads() {
     shared: Arc<Mutex<Int>> =
-        Arc.new(Mutex.new(42));
+        Arc::new(Mutex::new(42));
 
     worker: Arc<Mutex<Int>> =
         Arc.clone(&shared);
@@ -456,7 +456,7 @@ fn ShareMutexBetweenThreads() {
 
 fn ShareRwLockBetweenThreads() {
     shared: Arc<RwLock<Int>> =
-        Arc.new(RwLock.new(42));
+        Arc::new(RwLock::new(42));
 
     worker: Arc<RwLock<Int>> =
         Arc.clone(&shared);

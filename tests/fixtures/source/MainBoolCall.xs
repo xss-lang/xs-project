@@ -6,5 +6,5 @@ fn IsPositive(value: Long) -> Bool {
 }
 
 fn main() -> Long {
-    return if (IsPositive(7)) { 7; } else { 3; };
+    return if (IsPositive(7)) { 7 } else { 3 };
 }

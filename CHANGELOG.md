@@ -12,6 +12,21 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Changed
+
+- X# source syntax now follows Rust-style semicolon value rules: `expression;` discards to unit, while a final block
+  expression without `;` remains value-producing and feeds implicit-return desugaring.
+- Class inheritance/interface syntax now uses a C#-style `:` base list. Legacy `extends` and `implements` spellings are
+  rejected with parser diagnostics.
+- Class property declarations now use `getter` and `setter` accessors. Plain `get` and `set` remain available as ordinary
+  identifiers.
+- Source examples now use `()` as the written unit type instead of source-level `void`; XLIL `void` and
+  `std::cffi::Void` remain backend/FFI markers.
+
+### Deprecated
+
+- Legacy exception syntax remains parseable for now but is scheduled for removal in X# 2.0.0.
+
 ## 0.0.7 - 2026-07-13
 
 ### Added

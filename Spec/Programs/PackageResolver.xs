@@ -31,14 +31,14 @@ class PackageGraph {
     ordered: std::collections::vector<Package>;
 
     PackageGraph() {
-        this.packages = std::collections::hash_map<Str, Package>.new();
-        this.states = std::collections::hash_map<Str, VisitState>.new();
-        this.ordered = std::collections::vector<Package>.new();
+        this.packages = std::collections::hash_map<Str, Package>::new();
+        this.states = std::collections::hash_map<Str, VisitState>::new();
+        this.ordered = std::collections::vector<Package>::new();
     }
 
     fn Add(package: Package) {
         this.packages[package.name] = package;
-        this.states[package.name] = VisitState.White;
+        this.states[package.name] = VisitState::White;
     }
 
     fn Resolve(root: Str) -> Result<std::collections::vector<Package>, ResolveError> {
@@ -46,31 +46,31 @@ class PackageGraph {
         return Ok(this.ordered);
     }
 
-    fn Visit(name: Str) -> Result<Void, ResolveError> {
+    fn Visit(name: Str) -> Result<(), ResolveError> {
         if (!this.packages.contains(name)) {
-            return Error(ResolveError.UnknownPackage(name));
+            return Error(ResolveError::UnknownPackage(name));
         }
 
         state: VisitState = this.states[name];
         match (state) {
-            VisitState.Black -> {
+            VisitState::Black -> {
                 return;
             },
-            VisitState.Gray -> {
-                return Error(ResolveError.Cycle(name));
+            VisitState::Gray -> {
+                return Error(ResolveError::Cycle(name));
             },
-            VisitState.White -> {
+            VisitState::White -> {
             },
         }
 
-        this.states[name] = VisitState.Gray;
+        this.states[name] = VisitState::Gray;
         package: Package = this.packages[name];
 
         for (dependency: Str in package.dependencies) {
             this.Visit(dependency)@;
         }
 
-        this.states[name] = VisitState.Black;
+        this.states[name] = VisitState::Black;
         this.ordered.push(package);
         return Ok();
     }
@@ -90,7 +90,7 @@ fn Main() -> Result<Int, Error> {
     graph.Add(PackageOf("app", "1.0.0", std::collections::vector<Str>.of("net", "json")));
     graph.Add(PackageOf("net", "2.1.0", std::collections::vector<Str>.of("runtime")));
     graph.Add(PackageOf("json", "3.0.0", std::collections::vector<Str>.of("runtime")));
-    graph.Add(PackageOf("runtime", "1.4.0", std::collections::vector<Str>.new()));
+    graph.Add(PackageOf("runtime", "1.4.0", std::collections::vector<Str>::new()));
 
     for (package: Package in graph.Resolve("app")@) {
         println!("{}@{}", package.name, package.version);

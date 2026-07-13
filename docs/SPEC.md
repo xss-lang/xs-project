@@ -49,6 +49,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
   `std::optional::Optional<T>` available as `Optional<T>`.
 - X# uses `else` for placeholder/default positions. Type and lifetime placeholders are written as `Type<else, Foo>` and
   `&'else T`; Rust-style `_` placeholders are not canonical X# syntax.
+- Statement/expression separation follows Rust: `expression;` evaluates and discards the value, while the final expression
+  in a block may omit `;` and becomes the block value. Function tail expressions are desugared as implicit returns when the
+  function return type expects a value.
 - Optional value constructors are `std::optional::None` and `std::optional::Some(...)`; the same implicit namespace using
   may make `None` and `Some(...)` available in source.
 - `Result` is a special standard namespace: `imports result;` is optional, and the compiler behaves as if
@@ -59,8 +62,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
   macros rather than compiler built-ins.
 - `Stdio` is not prelude and is not implicit. Its macros require `imports stdio;` or `using namespace stdio;`, except
   `format_args!`, which is built in.
-- Legacy exception syntax is deprecated. Active examples should prefer `Result<T, E>` plus postfix `@` propagation; old
-  `throws`/`throw`/`try`/`catch` spellings should appear only in explicitly marked legacy notes.
+- Legacy exception syntax is deprecated and scheduled for removal in X# 2.0.0. Active examples should prefer
+  `Result<T, E>` plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only in
+  explicitly marked legacy notes.
 
 ## Program examples
 

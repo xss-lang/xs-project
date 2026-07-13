@@ -4,5 +4,5 @@
 fn main() -> Long {
   val limit: Long = 4;
   val ok: Bool = !(limit < 4);
-  return if (ok) { 7; } else { 2; };
+  return if (ok) { 7 } else { 2 };
 }

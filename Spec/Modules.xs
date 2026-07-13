@@ -124,7 +124,7 @@ fn Main() {
 using namespace Math;
 
 fn Main() {
-    color: Color = Color.Red;
+    color: Color = Color::Red;
 }
 
 
@@ -132,7 +132,7 @@ fn Main() {
 using Math::Color;
 
 fn Main() {
-    color: Color = Color.Red;
+    color: Color = Color::Red;
 }
 
 
@@ -175,7 +175,7 @@ fn Add(a: Int, b: Int) -> Int {
 imports Calculator;
 
 fn Main() {
-    result: Int = Calculator.Add(1, 2);
+    result: Int = Calculator::Add(1, 2);
 }
 
 

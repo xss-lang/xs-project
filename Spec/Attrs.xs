@@ -78,7 +78,7 @@ fn RunAsync() -> Result<(), Error> {
 //
 // Diagnostics and lints:
 // Allow, Expect, Warn, Deny, Forbid, Deprecated, MustUse,
-// Diagnostic.OnUnimplemented, Diagnostic.DoNotRecommend.
+// Diagnostic::OnUnimplemented, Diagnostic::DoNotRecommend.
 //
 // ABI, linking, symbols, and FFI:
 // Link, LinkName, LinkOrdinal, NoLink, Repr, CrateType, NoMain,

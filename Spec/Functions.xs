@@ -16,8 +16,8 @@ fn Add(a: Int, b: Int) -> Int {
 }
 
 // -> declares the return type.
-// If -> is omitted, the function returns void.
-// There is no separate void keyword.
+// If -> is omitted, the function returns unit `()`.
+// Use `-> ()` when the unit return type must be written explicitly.
 
 class Program {
   fn Test() {
@@ -37,13 +37,12 @@ Add(1, 2);
 fn Main() {
 }
 
-// VALID: omitted -> means void.
+// VALID: omitted -> means unit.
 fn Test() {
 }
 
-// INVALID EXAMPLE:
-// `-> void` is not valid. Omit `->` for a void-returning function.
-fn Test() -> void {
+// VALID: explicit unit return.
+fn TestExplicitUnit() -> () {
 }
 
 
@@ -66,6 +65,6 @@ fn DescribeUser(name: Str, age: Int) -> Str {
 }
 
 fn TryParseId(text: Str) -> Result<Int, Error> {
-  parsed: Int = Int.Parse(text);
+  parsed: Int = Int::Parse(text);
   return Ok(parsed);
 }

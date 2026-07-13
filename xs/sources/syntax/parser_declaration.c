@@ -517,7 +517,7 @@ static bool callable_operator_equal(const XsSyntaxNode *left, const XsSyntaxNode
   return false;
 }
 
-static void validate_data_callables(SyntaxParser *parser, XsSyntaxNode *declaration)
+static void validate_callables(SyntaxParser *parser, XsSyntaxNode *declaration)
 {
   for(size_t index = 0; index < declaration->child_count; ++index)
   {
@@ -537,7 +537,7 @@ static void validate_data_callables(SyntaxParser *parser, XsSyntaxNode *declarat
       if(callable_parameter_types_equal(callable, previous))
         xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
                            (XsSpan){name->span.start_offset, name->span.end_offset},
-                           "data callable conflicts with an identical parameter type list");
+                           "callable conflicts with an identical parameter type list");
       else
         callable->flags |= XS_SYNTAX_FLAG_OVERLOAD;
       break;
@@ -605,9 +605,19 @@ static XsSyntaxNode *parse_data(SyntaxParser *parser, Modifiers modifiers, size_
     }
   }
   expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after data declaration");
-  validate_data_callables(parser, declaration);
+  validate_callables(parser, declaration);
   finish_node(parser, declaration, parser->previous.span.end);
   return declaration;
+}
+
+static void parse_base_list(SyntaxParser *parser, XsSyntaxNode *declaration)
+{
+  if(!accept(parser, XS_TOKEN_COLON))
+    return;
+  do
+  {
+    xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
+  } while(accept(parser, XS_TOKEN_COMMA));
 }
 
 static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size_t start, bool interface)
@@ -618,51 +628,22 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
   XsSyntaxNode *class_name = identifier(parser);
   xs_syntax_node_add(parser->tree, declaration, class_name);
   parse_generics(parser, declaration);
+  parse_base_list(parser, declaration);
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before declaration members");
-  bool constructor_seen = false;
-  bool extends_seen = false;
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
   {
     size_t before = parser->current.span.start;
     if(accept(parser, XS_TOKEN_KW_EXTENDS))
     {
-      if(interface)
-      {
-        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                           "interfaces may only contain function declarations");
-        skip_forbidden_data_member(parser);
-        continue;
-      }
-      if(extends_seen)
-        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                           "a class may contain at most one extends declaration");
-      extends_seen = true;
-      xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
-      if(accept(parser, XS_TOKEN_COMMA))
-      {
-        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                           "extends accepts exactly one base class");
-        do
-        {
-          (void)parse_type(parser);
-        } while(accept(parser, XS_TOKEN_COMMA));
-      }
-      expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after extends or implements");
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                         "use C#-style ':' base lists instead of extends");
+      skip_forbidden_data_member(parser);
     }
     else if(accept(parser, XS_TOKEN_KW_IMPLEMENTS))
     {
-      if(interface)
-      {
-        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                           "interfaces may only contain function declarations");
-        skip_forbidden_data_member(parser);
-        continue;
-      }
-      do
-      {
-        xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
-      } while(accept(parser, XS_TOKEN_COMMA));
-      expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after extends or implements");
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                         "use C#-style ':' base lists instead of implements");
+      skip_forbidden_data_member(parser);
     }
     else
     {
@@ -715,10 +696,6 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
            !syntax_text_equal(class_name->text, constructor_name->text))
           xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, constructor_span,
                              "constructor name must match the class name");
-        if(constructor_seen)
-          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, constructor_span,
-                             "a class may contain at most one constructor");
-        constructor_seen = true;
         xs_syntax_node_add(parser->tree, constructor, constructor_name);
         parse_parameters(parser, constructor);
         xs_syntax_node_add(parser->tree, constructor, parse_block(parser));
@@ -756,6 +733,7 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
     }
   }
   expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after declaration members");
+  validate_callables(parser, declaration);
   finish_node(parser, declaration, parser->previous.span.end);
   return declaration;
 }

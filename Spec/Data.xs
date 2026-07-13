@@ -22,13 +22,13 @@
 //
 // Data types support generics.
 //
-// Fields are assigned using:
+// Data values use ordinary field literals:
 //
-// set.field{value}
+// TypeName { field: value }
 //
-// Fields are accessed using:
+// Fields are accessed with ordinary member access:
 //
-// value get.field
+// value.field
 //
 
 // simple data
@@ -67,16 +67,16 @@ data Point {
 // initialization
 
 user: User = {
-    set.name{"Alpha"};
-    set.age{26};
+    name: "Alpha",
+    age: 26
 };
 
 
 // field access
 
-println!("{}", user get.name);
+println!("{}", user.name);
 
-println!("{}", user get.age);
+println!("{}", user.age);
 
 
 // nested data
@@ -102,16 +102,16 @@ data Pair<T, U> {
 // generic data initialization
 
 pair: Pair<Str, Int> = {
-    set.first{"Alpha"};
-    set.second{26};
+    first: "Alpha",
+    second: 26
 };
 
 
 // generic data access
 
-println!("{}", pair get.first);
+println!("{}", pair.first);
 
-println!("{}", pair get.second);
+println!("{}", pair.second);
 
 
 // multiple fields
@@ -123,14 +123,14 @@ data Point {
 
 
 point: Point = {
-    set.x{10};
-    set.y{20};
+    x: 10,
+    y: 20
 };
 
 
-println!("{}", point get.x);
+println!("{}", point.x);
 
-println!("{}", point get.y);
+println!("{}", point.y);
 
 
 // VALID
@@ -163,23 +163,23 @@ class Program {
 // VALID
 
 user: User = {
-    set.name{"Alpha"};
-    set.age{26};
+    name: "Alpha",
+    age: 26
 };
 
 
 // VALID
 
-user get.name
+user.name
 
-user get.age
+user.age
 
 
 // INVALID
 
 data User {
 
-    User.Drop() {
+    Drop() {
     }
 
 }
@@ -190,10 +190,7 @@ data User {
 
 // INVALID
 
-data User {
-
-    implements Runnable;
-
+data User : Runnable {
 }
 
 
@@ -202,10 +199,7 @@ data User {
 
 // INVALID
 
-data User {
-
-    extends Person;
-
+data User : Person {
 }
 
 
@@ -224,11 +218,11 @@ data User {
 // Data may be declared at top-level
 // or inside classes.
 //
-// Fields are assigned using:
+// Data values use ordinary field literals:
 //
-// set.field{value}
+// TypeName { field: value }
 //
-// Fields are accessed using:
+// Fields are accessed with ordinary member access:
 //
-// value get.field
+// value.field
 //

@@ -248,7 +248,7 @@ data PathNode {
 
 // Example:
 //
-// Http.Response.BodyHandlers
+// Http::Response.BodyHandlers
 
 // PathNode
 // ├── Http
@@ -365,8 +365,7 @@ data ClassDeclaration {
 
     genericParameters: GenericParameter[]
 
-    extendsTypes: TypeNode[]
-    implementsTypes: TypeNode[]
+    baseTypes: TypeNode[]
 
     members: ClassMember[]
     span: SourceSpan
@@ -435,7 +434,7 @@ data DestructorDeclaration {
 
 // Source form:
 //
-// File.Drop() {
+// File::Drop() {
 // }
 
 
@@ -706,8 +705,13 @@ data BlockStatement {
 
 data ExpressionStatement {
     expression: Expression
+    isDiscarded: Bool
     span: SourceSpan
 }
+
+// `expression;` sets isDiscarded to true.
+// A final block expression without `;` sets isDiscarded to false and may be
+// desugared into the block/function value, like Rust tail expressions.
 
 
 // ============================================================
@@ -1208,24 +1212,7 @@ data ObjectLiteralField {
 }
 
 
-// ============================================================
-// Data field set expressions
-// ============================================================
-
-data FieldSetExpression {
-    fieldName: IdentifierNode
-    value: Expression
-    span: SourceSpan
-}
-
-
-// Example:
-//
-// set.name{"Alpha"}
-
-
-//
-// println!("Hello")
+// Data values use object literals and fields use ordinary member access.
 
 
 // ============================================================

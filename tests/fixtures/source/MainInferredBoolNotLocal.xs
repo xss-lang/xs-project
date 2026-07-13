@@ -4,5 +4,5 @@
 fn main() -> Long {
   limit := 4;
   ok := !(limit < 4);
-  return if (ok) { 7; } else { 2; };
+  return if (ok) { 7 } else { 2 };
 }

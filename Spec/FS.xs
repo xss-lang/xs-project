@@ -15,7 +15,7 @@ imports fs, stdio, collections, result;
 
 // raw writes
 
-fn WriteText() -> Result<Void, IOException> {
+fn WriteText() -> Result<(), IOException> {
     std::fs::write("log.txt", "hello\n");
     std::fs::write(std::stdout, "stdout\n");
     std::fs::write(std::stderr, "stderr\n");
@@ -32,12 +32,12 @@ fn WriteText() -> Result<Void, IOException> {
 
 // raw reads
 
-fn ReadText() -> Result<Void, IOException> {
+fn ReadText() -> Result<(), IOException> {
     content: Str = std::fs::read_to_str("log.txt");
     println!("{}", content);
 }
 
-fn ReadBytes() -> Result<Void, IOException> {
+fn ReadBytes() -> Result<(), IOException> {
     bytes: std::collections::vector<Byte> = std::fs::read("image.png");
     println!("file size: {}", bytes.length());
 }
@@ -48,7 +48,7 @@ fn ReadBytes() -> Result<Void, IOException> {
 
 // create paths
 
-fn CreatePaths() -> Result<Void, IOException> {
+fn CreatePaths() -> Result<(), IOException> {
     std::fs::create_dir("data/backups");
     std::fs::create_file("data/backups/log.txt");
 }
@@ -68,7 +68,7 @@ fn CreatePaths() -> Result<Void, IOException> {
 
 // move, copy and remove
 
-fn MoveCopyRemove() -> Result<Void, IOException> {
+fn MoveCopyRemove() -> Result<(), IOException> {
     std::fs::copy_file("data/source.txt", "data/copy.txt");
     std::fs::move("data/copy.txt", "data/backups/copy.txt");
     std::fs::remove_file("data/source.txt");
@@ -83,7 +83,7 @@ fn MoveCopyRemove() -> Result<Void, IOException> {
 
 // list directory
 
-fn ListDirectory() -> Result<Void, IOException> {
+fn ListDirectory() -> Result<(), IOException> {
     for (entry: Str in std::fs::list_dir(".")) {
         println!("{}", entry.trim());
     }
@@ -95,7 +95,7 @@ fn ListDirectory() -> Result<Void, IOException> {
 
 // metadata and path helpers
 
-fn InspectPath(path: Str) -> Result<Void, IOException> {
+fn InspectPath(path: Str) -> Result<(), IOException> {
     if (std::fs::exists(path) && std::fs::is_dir(path)) {
         for (entry: Str in std::fs::walk_dir(path)) {
             relative: Str = std::fs::relative_path(path, entry);
@@ -123,7 +123,7 @@ fn BuildPath(root: Str, name: Str) -> Str {
 
 // file handles and open options
 
-fn OpenWithOptions() -> Result<Void, IOException> {
+fn OpenWithOptions() -> Result<(), IOException> {
     file: std::fs::File = std::fs::OpenOptions::new()
         .create(true)
         .append(true)

@@ -26,13 +26,12 @@ data HealthResult {
 }
 
 interface HealthReporter {
-    fn Report(result: HealthResult) -> Result<Void, IOException>;
+    fn Report(result: HealthResult) -> Result<(), IOException>;
 }
 
-class ConsoleReporter {
-    implements HealthReporter;
+class ConsoleReporter : HealthReporter {
 
-    fn Report(result: HealthResult) -> Result<Void, IOException> {
+    fn Report(result: HealthResult) -> Result<(), IOException> {
         state: Str = if (result.ok) {
             "OK";
         }
@@ -66,7 +65,7 @@ class HealthClient {
         response: Http::response<Str> =
             await this.client.sendAsync(
                 request,
-                HttpResponse.BodyHandlers.ofstr()
+                HttpResponse::BodyHandlers.ofstr()
             );
 
         body: Str = response.body();
@@ -91,7 +90,7 @@ async fn CheckAll(
     reporter: HealthReporter
 ) -> Task<Result<Int, Error>> {
     client: HealthClient = new();
-    tasks: std::collections::vector<Task<Result<HealthResult, HealthError>>> = std::collections::vector<Task<Result<HealthResult, HealthError>>>.new();
+    tasks: std::collections::vector<Task<Result<HealthResult, HealthError>>> = std::collections::vector<Task<Result<HealthResult, HealthError>>>::new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));
@@ -111,7 +110,7 @@ async fn CheckAll(
 }
 
 fn DefaultEndpoints() -> std::collections::vector<Endpoint> {
-    endpoints: std::collections::vector<Endpoint> = std::collections::vector<Endpoint>.new();
+    endpoints: std::collections::vector<Endpoint> = std::collections::vector<Endpoint>::new();
 
     endpoints.push(Endpoint {
         name: "example",

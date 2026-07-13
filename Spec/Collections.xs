@@ -123,7 +123,7 @@ users: std::collections::vector<Str> = {
 // vector constructor
 
 users: std::collections::vector<Str> =
-    std::collections::vector.new();
+    std::collections::vector::new();
 
 
 // vector push
@@ -164,7 +164,7 @@ count: Int =
 // hashmaps
 
 scores: std::collections::hash_map<Str, Int> =
-    std::collections::hash_map.new();
+    std::collections::hash_map::new();
 
 
 // insert
@@ -204,7 +204,7 @@ std::collections::hash_map.delete(
 imports collections, std, format;
 
 scores: std::collections::hash_map<Str, Int> =
-    std::collections::hash_map.new();
+    std::collections::hash_map::new();
 
 std::collections::hash_map.insert(
     scores,
@@ -239,7 +239,7 @@ nums: Int[3] = {1, 2};
 // VALID
 
 users: std::collections::vector<Str> =
-    std::collections::vector.new();
+    std::collections::vector::new();
 
 
 // VALID
@@ -268,7 +268,7 @@ std::collections::vector.adjust(
 // VALID
 
 scores: std::collections::hash_map<Str, Int> =
-    std::collections::hash_map.new();
+    std::collections::hash_map::new();
 
 
 // VALID

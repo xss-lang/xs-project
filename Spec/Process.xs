@@ -19,7 +19,7 @@ imports process, result, std;
 
 // process execution
 
-fn PullRepository() -> Result<Void, Error> {
+fn PullRepository() -> Result<(), Error> {
     std::process::execute("git", ["pull"])@;
     return Ok();
 }
@@ -27,7 +27,7 @@ fn PullRepository() -> Result<Void, Error> {
 
 // process execution with arguments
 
-fn InstallPackage(name: Str) -> Result<Void, Error> {
+fn InstallPackage(name: Str) -> Result<(), Error> {
     std::process::execute("pacman", ["-S", name])@;
     return Ok();
 }
@@ -35,7 +35,7 @@ fn InstallPackage(name: Str) -> Result<Void, Error> {
 
 // shell execution
 
-fn UpgradeSystem() -> Result<Void, Error> {
+fn UpgradeSystem() -> Result<(), Error> {
     std::process::execute("pacman -Syu")
         .shell(true)@;
 
@@ -45,7 +45,7 @@ fn UpgradeSystem() -> Result<Void, Error> {
 
 // INVALID
 
-fn InvalidShellExecution() -> Result<Void, Error> {
+fn InvalidShellExecution() -> Result<(), Error> {
     std::process::execute("pacman -Syu")@;
     return Ok();
 }
@@ -55,7 +55,7 @@ fn InvalidShellExecution() -> Result<Void, Error> {
 
 // explicit Result match
 
-fn PrintGitStatus() -> Result<Void, Error> {
+fn PrintGitStatus() -> Result<(), Error> {
     status = match (std::process::execute("git", ["status"])) {
         Ok(value) -> value,
         Error(error) -> return Error(error),
@@ -68,7 +68,7 @@ fn PrintGitStatus() -> Result<Void, Error> {
 
 // propagation with @
 
-fn RunFormatter() -> Result<Void, Error> {
+fn RunFormatter() -> Result<(), Error> {
     std::process::execute("xsfmt", ["--check"])@;
     std::process::execute("xstidy", ["--check"])@;
     return Ok();
@@ -82,13 +82,13 @@ enum data LoginError {
     Locked: Str,
 }
 
-fn Login(user: Str) -> Result<Void, LoginError> {
+fn Login(user: Str) -> Result<(), LoginError> {
     if (user.length() == 0) {
-        return Error(LoginError.InvalidUser(user));
+        return Error(LoginError::InvalidUser(user));
     }
 
     if (user == "root") {
-        return Error(LoginError.Locked(user));
+        return Error(LoginError::Locked(user));
     }
 
     return Ok();
@@ -116,18 +116,18 @@ fn ReadRequiredLine() -> Result<Str, Error> {
 // deterministic cleanup still applies
 
 class File {
-    File.Drop() {
+    File::Drop() {
         println!("File closed");
     }
 }
 
-fn UseFile() -> Result<Void, Error> {
+fn UseFile() -> Result<(), Error> {
     file: File = new();
     std::process::execute("git", ["rev-parse", "--is-inside-work-tree"])@;
     return Ok();
 }
 
-// File.Drop() runs before returning Error from @ propagation.
+// File::Drop() runs before returning Error from @ propagation.
 
 
 // legacy exception syntax

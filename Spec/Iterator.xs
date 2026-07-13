@@ -64,7 +64,7 @@ for (user in users.iter()) {
 // empty collection iteration
 
 users: std::collections::vector<Str> =
-    std::collections::vector.new();
+    std::collections::vector::new();
 
 for (user in users.iter()) {
 

@@ -22,7 +22,7 @@ class LogParser {
     static fn Parse(line: Str) -> Result<LogEntry, LogError> {
         parts: std::collections::vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
-            return Error(LogError.InvalidLine(line));
+            return Error(LogError::InvalidLine(line));
         }
 
         return Ok(LogEntry {
@@ -37,7 +37,7 @@ class Report {
     newestError: Optional<Str>;
 
     Report() {
-        this.counts = std::collections::hash_map<Str, Int>.new();
+        this.counts = std::collections::hash_map<Str, Int>::new();
         this.newestError = std::optional::None;
     }
 
@@ -50,7 +50,7 @@ class Report {
         }
     }
 
-    fn Print() -> Result<Void, IOException> {
+    fn Print() -> Result<(), IOException> {
         for ((level, count): (Str, Int) in this.counts) {
             println!("{:<8} {}", level, count);
         }
@@ -77,7 +77,7 @@ fn Main(args: std::process::Args) -> Result<Int, Error> {
             continue;
         }
 
-        report.Add(LogParser.Parse(line)@);
+        report.Add(LogParser::Parse(line)@);
     }
 
     report.Print()@;

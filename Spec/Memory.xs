@@ -182,7 +182,7 @@ fn GetUser() -> &User {
 // destructors
 
 class File {
-    File.Drop() {
+    File::Drop() {
         println!("File closed");
     }
 }
@@ -193,7 +193,7 @@ class File {
 fn Main() {
     file: File = new();
 
-} // File.Drop() runs here
+} // File::Drop() runs here
 
 
 // moved values
@@ -279,7 +279,7 @@ iter: Iterator<Int> = numbers.Iterator();
 // allocation is explicit
 
 users: std::collections::vector<User> =
-    std::collections::vector.new();
+    std::collections::vector::new();
 
 
 // INVALID DESIGN

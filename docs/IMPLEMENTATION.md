@@ -141,16 +141,20 @@ The documented compilation order is preserved:
   external/incomplete, and static foreign globals are marked external/static. HIR currently accepts the first explicit C ABI
   shape, `#[repr(C)] extern "C"`, and rejects unsupported ABI strings or missing/non-C representation attributes. Library
   resolution, symbol binding, and backend lowering remain HIR/backend work.
-- Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated. The
-  parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result<T, E>` and postfix `@`
-  propagation.
+- Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated and
+  scheduled for removal in X# 2.0.0. The parser emits warnings for `throws`, `throw`, and `try`; new code should use
+  `Result<T, E>` and postfix `@` propagation.
 - `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
   constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
   diagnostic. Data destructors, inheritance, and interface members remain invalid.
-- Class constructor names must match the class name. At most one constructor per class is validated with parser diagnostics.
+- Class constructor names must match the class name. Constructors may be overloaded by parameter type list; duplicate
+  parameter type lists produce parser diagnostics.
 - Interface declaration bodies accept only body-less function declaration signatures.
-- Class `extends` may be used at most once and with one base class; class `implements` accepts a list of interfaces.
-  `extends` or `implements` inside an interface body produces a diagnostic.
+- Classes and interfaces use a C#-style `:` base list. The parser stores the base/interface entries as type children; HIR
+  resolves which entry is the class base and which entries are interfaces. Legacy `extends` and `implements` spellings
+  produce parser diagnostics.
+- Class fields may carry `getter` and `setter` property accessors. Accessors are represented as
+  `XS_SYNTAX_PROPERTY_ACCESSOR` children; accessor bodies are parsed as ordinary blocks when present.
 - Body-less function declarations outside interfaces require `incomplete fn ...;`. An `incomplete fn` with a body produces a
   parser diagnostic.
 - Regular enum variants cannot contain payload types and must have unique names. `enum data` requires at least one typed
@@ -160,8 +164,7 @@ The documented compilation order is preserved:
   `XS_SYNTAX_EXPR_FUNCTION` nodes. `move` capture is a separate AST flag.
 - `new()` object creation is represented as `XS_SYNTAX_EXPR_NEW`; when the constructed type is not written in source, HIR will
   resolve it from context.
-- In data syntax, `set.field{value}` is represented as `XS_SYNTAX_EXPR_FIELD_SET`, while `value get.field` is represented as
-  member access.
+- Data object initialization uses normal object field literals, and field access uses ordinary member access.
 - Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 HIR
   expression checker now requires an enclosing function whose return type is `Result<T, E>` or shorthand
   `Result<T, E>`. It does not yet prove that the propagated operand itself has a matching Result type; full propagation
@@ -169,7 +172,8 @@ The documented compilation order is preserved:
 - `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
   `continue`, and `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous
   to a Rust discard binding, but X# spells the discard/default position as `else`.
-  structurally.
+- Expression statements follow Rust's semicolon split: `expression;` is marked with `XS_SYNTAX_FLAG_DISCARDED`, while a
+  final block expression without `;` stays value-producing and is the input for implicit-return desugaring.
 
 ### Module discovery and import graph
 
@@ -297,7 +301,7 @@ validation does not decide dispatch, override, or overload selection.
   immutable declarations inside local block/function scopes. Field, index, dereference, alias/borrow-based mutability rules
   are deferred to later borrow/type-check stages.
 - `op` bodies are checked for the first referential-transparency slice. Calls, method calls, assignment, macro calls, `new`,
-  `await`, result propagation, mutable borrow, field-set expressions, and legacy exception syntax
+  `await`, result propagation, mutable borrow, property accessors, and legacy exception syntax
   are rejected inside `op` until a fuller effect/purity model can classify them precisely.
 - `xs_hir_resolve_types_expanded`, when given a statement macro replacement set, traverses direct statement child lists
   through the `xs_macro_expand_child_statements` expanded view. This validates type uses produced after macro expansion

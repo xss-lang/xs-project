@@ -45,7 +45,7 @@ static size_t count_kind_with_flag(const XsSyntaxNode *node, XsSyntaxKind kind, 
 static void test_top_level_variable_declaration_structure(void)
 {
   const char *text = "data User { name: Str }\n"
-                     "user: User = { set.name{\"Alpha\"}; };\n"
+                     "user: User = { name: \"Alpha\" };\n"
                      "public static Pi: Float = 3.141592653589793;\n";
   XsSource source = {.path = "TopLevelData.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -111,7 +111,7 @@ static void test_data_callables_and_overloads(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *invalid_inheritance = "data User { extends Person; }\n";
+  const char *invalid_inheritance = "data User : Person { name: Str; }\n";
   source = (XsSource){
       .path = "DataInheritanceInvalid.xs", .text = invalid_inheritance, .length = strlen(invalid_inheritance)};
   xs_diagnostics_init(&diagnostics);
@@ -156,11 +156,34 @@ static void test_class_constructor_rules(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *duplicate = "class User { User() {} User(name: Str) {} }\n";
+  const char *overload = "class User { User() {} User(name: Str) {} }\n";
+  source = (XsSource){.path = "ConstructorOverload.xs", .text = overload, .length = strlen(overload)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 33, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_CLASS_CONSTRUCTOR) == 2);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_CLASS_CONSTRUCTOR, XS_SYNTAX_FLAG_OVERLOAD) == 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *duplicate = "class User { User(name: Str) {} User(value: Str) {} }\n";
   source = (XsSource){.path = "ConstructorDuplicate.xs", .text = duplicate, .length = strlen(duplicate)};
   xs_diagnostics_init(&diagnostics);
-  CHECK(!xs_syntax_parse(&source, 33, &diagnostics, &tree));
+  CHECK(!xs_syntax_parse(&source, 64, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_class_property_accessors(void)
+{
+  const char *text = "class User { name: Str { getter; setter; } age: Int { getter { return this.age; } } }\n";
+  XsSource source = {.path = "ClassProperties.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 65, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_CLASS_FIELD) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_PROPERTY_ACCESSOR) == 3);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -199,7 +222,7 @@ static void test_class_inheritance_rules(void)
   const char *valid = "class Animal {}\n"
                       "interface Runnable { fn Run(); }\n"
                       "interface Closeable { fn Close(); }\n"
-                      "class Program { extends Animal; implements Runnable, Closeable; }\n";
+                      "class Program : Animal, Runnable, Closeable { }\n";
   XsSource source = {.path = "ClassInheritanceValid.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -209,27 +232,26 @@ static void test_class_inheritance_rules(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *interface_extends = "interface Runnable { extends Base; fn Run(); }\n";
-  source =
-      (XsSource){.path = "InterfaceExtendsInvalid.xs", .text = interface_extends, .length = strlen(interface_extends)};
+  const char *interface_base = "interface Runnable : Base { fn Run(); }\n";
+  source = (XsSource){.path = "InterfaceBaseValid.xs", .text = interface_base, .length = strlen(interface_base)};
   xs_diagnostics_init(&diagnostics);
-  CHECK(!xs_syntax_parse(&source, 46, &diagnostics, &tree));
-  CHECK(xs_diagnostics_has_error(&diagnostics));
+  CHECK(xs_syntax_parse(&source, 46, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_NAMED) == 1);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *multiple_extends = "class Program { extends Animal, Machine; }\n";
+  const char *old_extends = "class Program { extends Animal; }\n";
   source =
-      (XsSource){.path = "MultipleExtendsInvalid.xs", .text = multiple_extends, .length = strlen(multiple_extends)};
+      (XsSource){.path = "OldExtendsInvalid.xs", .text = old_extends, .length = strlen(old_extends)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 47, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *duplicate_extends = "class Program { extends Animal; extends Machine; }\n";
+  const char *old_implements = "class Program { implements Runnable; }\n";
   source =
-      (XsSource){.path = "DuplicateExtendsInvalid.xs", .text = duplicate_extends, .length = strlen(duplicate_extends)};
+      (XsSource){.path = "OldImplementsInvalid.xs", .text = old_implements, .length = strlen(old_implements)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 48, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
@@ -428,6 +450,7 @@ int main(void)
   test_data_callables_and_overloads();
   test_op_declaration_structure();
   test_class_constructor_rules();
+  test_class_property_accessors();
   test_interface_member_rules();
   test_class_inheritance_rules();
   test_incomplete_function_rules();

@@ -41,18 +41,17 @@ interface Repository<K, V> {
     fn Put(key: K, value: V);
 }
 
-class InventoryRepository {
-    implements Repository<Str, Product>;
+class InventoryRepository : Repository<Str, Product> {
 
     products: std::collections::hash_map<Str, Product>;
 
     InventoryRepository() {
-        this.products = std::collections::hash_map<Str, Product>.new();
+        this.products = std::collections::hash_map<Str, Product>::new();
     }
 
     fn Get(key: Str) -> Result<&Product, ServiceError> {
         if (!this.products.contains(key)) {
-            return Error(ServiceError.UnknownProduct(key));
+            return Error(ServiceError::UnknownProduct(key));
         }
         return Ok(&this.products[key]);
     }
@@ -61,11 +60,11 @@ class InventoryRepository {
         this.products[key] = value;
     }
 
-    fn Reserve(line: OrderLine) -> Result<Void, ServiceError> {
+    fn Reserve(line: OrderLine) -> Result<(), ServiceError> {
         product: &mut Product = &mut this.products[line.sku];
 
         if (product.stock < line.quantity) {
-            return Error(ServiceError.NotEnoughStock(line.sku));
+            return Error(ServiceError::NotEnoughStock(line.sku));
         }
 
         product.stock -= line.quantity;
@@ -84,7 +83,7 @@ class OrderWorker {
         guard: Mutex<InventoryRepository> = this.inventory.lock();
 
         for (line: OrderLine in order.lines) {
-            result: Result<Void, ServiceError> = (*guard).Reserve(line);
+            result: Result<(), ServiceError> = (*guard).Reserve(line);
             match (result) {
                 Ok(else) -> {},
                 Error(error) -> {
@@ -120,11 +119,11 @@ fn SeedInventory() -> Arc<Mutex<InventoryRepository>> {
         stock: 5,
     });
 
-    return Arc.new(Mutex.new(repository));
+    return Arc::new(Mutex::new(repository));
 }
 
 fn MakeOrder(id: Int, sku: Str, quantity: Int) -> Order {
-    lines: std::collections::vector<OrderLine> = std::collections::vector<OrderLine>.new();
+    lines: std::collections::vector<OrderLine> = std::collections::vector<OrderLine>::new();
     lines.push(OrderLine {
         sku: sku,
         quantity: quantity,
@@ -136,7 +135,7 @@ fn MakeOrder(id: Int, sku: Str, quantity: Int) -> Order {
     };
 }
 
-fn Main() -> Result<Void, Error> {
+fn Main() -> Result<(), Error> {
     inventory: Arc<Mutex<InventoryRepository>> = SeedInventory();
 
     (orders, receipts): Thread.channel<Order> = Thread.channel<Order>();

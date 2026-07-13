@@ -7,5 +7,5 @@ fn IsZero(value: Long) -> Bool {
 
 fn main() -> Long {
     flag: Bool = IsZero(1);
-    return if (flag) { 3; } else { 7; };
+    return if (flag) { 3 } else { 7 };
 }

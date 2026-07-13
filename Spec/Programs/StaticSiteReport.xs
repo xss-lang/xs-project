@@ -27,7 +27,7 @@ class Markdown {
             }
         }
 
-        return Error(SiteError.MissingTitle(path));
+        return Error(SiteError::MissingTitle(path));
     }
 
     static fn CountWords(text: Str) -> Int {
@@ -39,20 +39,20 @@ class SiteReport {
     pages: std::collections::vector<PageInfo>;
 
     SiteReport() {
-        this.pages = std::collections::vector<PageInfo>.new();
+        this.pages = std::collections::vector<PageInfo>::new();
     }
 
-    fn AddMarkdown(path: Str) -> Result<Void, Error> {
+    fn AddMarkdown(path: Str) -> Result<(), Error> {
         text: Str = std::fs::read_to_str(path);
         this.pages.push(PageInfo {
             path: path,
-            title: Markdown.Title(path, text)@,
-            wordCount: Markdown.CountWords(text),
+            title: Markdown::Title(path, text)@,
+            wordCount: Markdown::CountWords(text),
         });
         return Ok();
     }
 
-    fn Print() -> Result<Void, IOException> {
+    fn Print() -> Result<(), IOException> {
         println!("pages: {}", this.pages.length());
 
         for (page: PageInfo in this.pages) {

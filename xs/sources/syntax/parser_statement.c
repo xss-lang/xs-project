@@ -5,6 +5,34 @@
 
 #include "parser_internal.h"
 
+static void parse_property_accessors(SyntaxParser *parser, XsSyntaxNode *declaration)
+{
+  if(!accept(parser, XS_TOKEN_LEFT_BRACE))
+    return;
+  while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+  {
+    size_t start = parser->current.span.start;
+    if(parser->current.kind != XS_TOKEN_KW_GETTER && parser->current.kind != XS_TOKEN_KW_SETTER)
+    {
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "expected getter or setter property accessor");
+      advance(parser);
+      continue;
+    }
+    XsTokenKind accessor_kind = parser->current.kind;
+    advance(parser);
+    XsSyntaxNode *accessor = node(parser, XS_SYNTAX_PROPERTY_ACCESSOR, (XsSpan){start, parser->previous.span.end});
+    accessor->token_kind = accessor_kind;
+    if(parser->current.kind == XS_TOKEN_LEFT_BRACE)
+      xs_syntax_node_add(parser->tree, accessor, parse_block(parser));
+    else
+      expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after property accessor");
+    finish_node(parser, accessor, parser->previous.span.end);
+    xs_syntax_node_add(parser->tree, declaration, accessor);
+  }
+  expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after property accessors");
+}
+
 XsSyntaxNode *parse_variable(SyntaxParser *parser, bool require_semicolon)
 {
   size_t start = parser->current.span.start;
@@ -33,7 +61,9 @@ XsSyntaxNode *parse_variable(SyntaxParser *parser, bool require_semicolon)
   xs_syntax_node_add(parser->tree, declaration, parse_type(parser));
   if(accept(parser, XS_TOKEN_ASSIGN))
     xs_syntax_node_add(parser->tree, declaration, parse_expression(parser, 1));
-  if(require_semicolon)
+  if(parser->current.kind == XS_TOKEN_LEFT_BRACE)
+    parse_property_accessors(parser, declaration);
+  else if(require_semicolon)
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after variable declaration");
   finish_node(parser, declaration, parser->previous.span.end);
   return declaration;
@@ -294,7 +324,10 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_EXPRESSION, (XsSpan){start, start});
   XsSyntaxNode *expression = parse_expression(parser, 1);
   xs_syntax_node_add(parser->tree, statement, expression);
-  expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after expression statement");
+  if(accept(parser, XS_TOKEN_SEMICOLON))
+    statement->flags |= XS_SYNTAX_FLAG_DISCARDED;
+  else if(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+    expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after non-tail expression statement");
   if(expression != nullptr && expression->kind == XS_SYNTAX_EXPR_MACRO_CALL)
     statement->kind = XS_SYNTAX_STMT_MACRO_CALL;
   finish_node(parser, statement, parser->previous.span.end);

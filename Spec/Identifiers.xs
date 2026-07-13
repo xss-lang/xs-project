@@ -30,7 +30,7 @@
 //
 // Canonical path shape:
 //
-//     PascalCase.PascalCase.snake_case.lowercase().camelCase()
+//     PascalCase::PascalCase.snake_case.lowercase().camelCase()
 //
 // Standard-library examples:
 //

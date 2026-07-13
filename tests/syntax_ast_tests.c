@@ -133,8 +133,8 @@ static void test_control_flow_structure(void)
 static void test_control_flow_expression_structure(void)
 {
   const char *text = "fn Choose(value: Int) -> Int {\n"
-                     "  selected: Int = if (value > 0) { 1; } else { 0; };\n"
-                     "  return match (selected) { 0 -> { 10; }, else -> { 20; }, };\n"
+                     "  selected: Int = if (value > 0) { 1 } else { 0 };\n"
+                     "  return match (selected) { 0 -> { 10 }, else -> { 20 }, };\n"
                      "}\n";
   XsSource source = {.path = "ControlFlowExpressions.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -150,7 +150,7 @@ static void test_control_flow_expression_structure(void)
 static void test_if_expression_requires_else(void)
 {
   const char *text = "fn Choose(value: Int) -> Int {\n"
-                     "  return if (value > 0) { 1; };\n"
+                     "  return if (value > 0) { 1 };\n"
                      "}\n";
   XsSource source = {.path = "InvalidIfExpression.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -219,6 +219,36 @@ static void test_else_discard_statement_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_tail_expression_semicolon_split(void)
+{
+  const char *text = "fn Value() -> Int { 42 }\n"
+                     "fn Discard() { 42; }\n";
+  XsSource source = {.path = "TailExpression.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 66, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_STMT_EXPRESSION) == 2);
+  const XsSyntaxNode *first = xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_EXPRESSION);
+  CHECK(first != nullptr);
+  CHECK(first == nullptr || (first->flags & XS_SYNTAX_FLAG_DISCARDED) == 0);
+  const XsSyntaxNode *second = nullptr;
+  if(first != nullptr)
+  {
+    const XsSyntaxNode *root = tree.root;
+    for(size_t index = 0; index < root->child_count; ++index)
+    {
+      const XsSyntaxNode *candidate = xs_syntax_find_first(root->children[index], XS_SYNTAX_STMT_EXPRESSION);
+      if(candidate != nullptr && candidate != first)
+        second = candidate;
+    }
+  }
+  CHECK(second != nullptr);
+  CHECK(second == nullptr || (second->flags & XS_SYNTAX_FLAG_DISCARDED) != 0);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_top_level_execution_stays_invalid(void)
 {
   const char *text = "Run();\n";
@@ -232,18 +262,19 @@ static void test_top_level_execution_stays_invalid(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_data_field_set_and_get_structure(void)
+static void test_data_literal_and_member_access_structure(void)
 {
   const char *text = "fn Update(user: User) {\n"
-                     "  set.name{\"Alpha\"};\n"
-                     "  name: Str = user get.name;\n"
+                     "  next: User = { name: \"Alpha\" };\n"
+                     "  name: Str = user.name;\n"
                      "}\n";
   XsSource source = {.path = "DataAccess.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 21, &diagnostics, &tree));
-  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_FIELD_SET) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_OBJECT_LITERAL) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_OBJECT_FIELD) == 1);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -454,8 +485,9 @@ int main(void)
   test_function_expression_structure();
   test_new_expression_structure();
   test_else_discard_statement_structure();
+  test_tail_expression_semicolon_split();
   test_top_level_execution_stays_invalid();
-  test_data_field_set_and_get_structure();
+  test_data_literal_and_member_access_structure();
   test_function_type_structure();
   test_character_literal_structure();
   test_optional_operator_structure();

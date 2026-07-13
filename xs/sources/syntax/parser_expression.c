@@ -127,19 +127,6 @@ static XsSyntaxNode *parse_match_expression(SyntaxParser *parser, size_t start)
   return expression;
 }
 
-static XsSyntaxNode *parse_field_set_expression(SyntaxParser *parser, size_t start)
-{
-  expect(parser, XS_TOKEN_KW_SET, "expected 'set'");
-  XsSyntaxNode *field_set = node(parser, XS_SYNTAX_EXPR_FIELD_SET, (XsSpan){start, parser->previous.span.end});
-  expect(parser, XS_TOKEN_DOT, "expected '.' after set");
-  xs_syntax_node_add(parser->tree, field_set, identifier(parser));
-  expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' around set field value");
-  xs_syntax_node_add(parser->tree, field_set, parse_expression(parser, 1));
-  expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after set field value");
-  finish_node(parser, field_set, parser->previous.span.end);
-  return field_set;
-}
-
 static void parse_expression_parameters(SyntaxParser *parser, XsSyntaxNode *function)
 {
   expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' before function expression parameters");
@@ -252,8 +239,7 @@ static XsSyntaxNode *parse_brace_literal(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{'");
-  bool object = (parser->current.kind == XS_TOKEN_KW_SET && parser->next.kind == XS_TOKEN_DOT) ||
-                (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON);
+  bool object = parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON;
   XsSyntaxNode *literal =
       node(parser, object ? XS_SYNTAX_EXPR_OBJECT_LITERAL : XS_SYNTAX_EXPR_ARRAY_LITERAL, (XsSpan){start, start});
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
@@ -262,23 +248,13 @@ static XsSyntaxNode *parse_brace_literal(SyntaxParser *parser)
     if(object)
     {
       XsSyntaxNode *field = node(parser, XS_SYNTAX_OBJECT_FIELD, (XsSpan){before, before});
-      if(accept(parser, XS_TOKEN_KW_SET))
-      {
-        expect(parser, XS_TOKEN_DOT, "expected '.' after set");
-        xs_syntax_node_add(parser->tree, field, identifier(parser));
-        expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' around set field value");
-        xs_syntax_node_add(parser->tree, field, parse_expression(parser, 1));
-        expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after set field value");
-      }
-      else
-      {
-        xs_syntax_node_add(parser->tree, field, identifier(parser));
-        expect(parser, XS_TOKEN_COLON, "expected ':' after object field name");
-        xs_syntax_node_add(parser->tree, field, parse_expression(parser, 1));
-      }
+      xs_syntax_node_add(parser->tree, field, identifier(parser));
+      expect(parser, XS_TOKEN_COLON, "expected ':' after object field name");
+      xs_syntax_node_add(parser->tree, field, parse_expression(parser, 1));
       finish_node(parser, field, parser->previous.span.end);
       xs_syntax_node_add(parser->tree, literal, field);
-      accept(parser, XS_TOKEN_SEMICOLON);
+      if(!accept(parser, XS_TOKEN_COMMA))
+        accept(parser, XS_TOKEN_SEMICOLON);
     }
     else
     {
@@ -380,8 +356,6 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
     return parse_if_expression(parser, start);
   case XS_TOKEN_KW_MATCH:
     return parse_match_expression(parser, start);
-  case XS_TOKEN_KW_SET:
-    return parse_field_set_expression(parser, start);
   default:
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected expression");
     if(parser->current.kind != XS_TOKEN_EOF)
@@ -529,15 +503,6 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
       xs_syntax_node_add(parser->tree, propagation, expression);
       finish_node(parser, propagation, parser->previous.span.end);
       expression = propagation;
-    }
-    else if(accept(parser, XS_TOKEN_KW_GET))
-    {
-      expect(parser, XS_TOKEN_DOT, "expected '.' after get");
-      XsSyntaxNode *member = node(parser, XS_SYNTAX_EXPR_MEMBER_ACCESS, (XsSpan){start, parser->previous.span.end});
-      xs_syntax_node_add(parser->tree, member, expression);
-      xs_syntax_node_add(parser->tree, member, parse_member_identifier(parser));
-      finish_node(parser, member, parser->previous.span.end);
-      expression = member;
     }
     else if(accept(parser, XS_TOKEN_LEFT_BRACKET))
     {

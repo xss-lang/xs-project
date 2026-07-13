@@ -3,5 +3,5 @@
 
 fn main() -> Long {
   val limit: Long = 4;
-  return if (limit >= 4) { 7; } else { 2; };
+  return if (limit >= 4) { 7 } else { 2 };
 }

@@ -23,7 +23,7 @@ class Queue {
     jobs: std::collections::vector<Job>;
 
     Queue() {
-        this.jobs = std::collections::vector<Job>.new();
+        this.jobs = std::collections::vector<Job>::new();
     }
 
     fn Push(job: Job) {
@@ -50,16 +50,16 @@ class Worker {
             }
 
             job: Job = maybeJob!;
-            result: Result<Void, JobError> = await Worker.Execute(job);
+            result: Result<(), JobError> = await Worker::Execute(job);
             result@;
             completed += 1;
         }
     }
 
-    static async fn Execute(job: Job) -> Result<Void, JobError> {
+    static async fn Execute(job: Job) -> Result<(), JobError> {
         status: Int = await std::process::run(job.command);
         if (status != 0) {
-            return Error(JobError.Failed(job.command));
+            return Error(JobError::Failed(job.command));
         }
 
         return Ok();
@@ -71,7 +71,7 @@ fn Main() -> Result<Int, Error> {
     queue.Push(Job { id: 1, command: "compile", retries: 0 });
     queue.Push(Job { id: 2, command: "test", retries: 0 });
 
-    completed: Int = await Worker.Run(&mut queue)@;
+    completed: Int = await Worker::Run(&mut queue)@;
     println!("completed {} jobs", completed);
     return Ok(0);
 }

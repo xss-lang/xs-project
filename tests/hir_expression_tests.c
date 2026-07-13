@@ -111,18 +111,19 @@ static void test_control_flow_initializer_expression_types(void)
 {
   const char *valid_if = "module App;\n"
                          "fn Main() {\n"
-                         "  value: Int = if (true) { 1; } else { 2; };\n"
+                         "  value: Int = if (true) { 1 } else { 2 };\n"
                          "}\n";
   const char *valid_match = "module App;\n"
                             "fn Main() {\n"
-                            "  value: Str = match (1) { 0 -> { \"zero\"; }, else -> { \"many\"; }, };\n"
+                            "  value: Str = match (1) { 0 -> { \"zero\" }, else -> { \"many\" }, };\n"
                             "}\n";
   CHECK(check_single_source_expressions(valid_if));
   CHECK(check_single_source_expressions(valid_match));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = if (true) { 1; } else { 2 }; }\n"));
   CHECK(!check_single_source_expressions(
-      "module App;\nfn Main() { value: Int = if (true) { \"bad\"; } else { 1; }; }\n"));
+      "module App;\nfn Main() { value: Int = if (true) { \"bad\" } else { 1 }; }\n"));
   CHECK(!check_single_source_expressions(
-      "module App;\nfn Main() { value: Bool = match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
+      "module App;\nfn Main() { value: Bool = match (1) { 0 -> { true }, else -> { 1 }, }; }\n"));
 }
 
 static void test_optional_expression_types(void)
@@ -136,7 +137,7 @@ static void test_optional_expression_types(void)
                       "}\n";
   CHECK(check_single_source_expressions(valid));
   CHECK(check_single_source_expressions(
-      "module App;\nfn Read(flag: Bool) -> Optional<Str> { return if (flag) { Some(\"ok\"); } else { None; }; }\n"));
+      "module App;\nfn Read(flag: Bool) -> Optional<Str> { return if (flag) { Some(\"ok\") } else { None }; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = None; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = std::optional::None; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = Some(1); }\n"));
@@ -189,11 +190,11 @@ static void test_control_flow_assignment_expression_types(void)
   const char *valid = "module App;\n"
                       "fn Main() {\n"
                       "  value: Int = 0;\n"
-                      "  value = if (true) { 1; } else { 2; };\n"
+                      "  value = if (true) { 1 } else { 2 };\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
   CHECK(!check_single_source_expressions(
-      "module App;\nfn Main() { value: Int = 0; value = if (true) { 1; } else { \"bad\"; }; }\n"));
+      "module App;\nfn Main() { value: Int = 0; value = if (true) { 1 } else { \"bad\"; }; }\n"));
 }
 
 static void test_return_literal_expression_types(void)
@@ -209,13 +210,13 @@ static void test_return_literal_expression_types(void)
 
 static void test_control_flow_return_expression_types(void)
 {
-  CHECK(check_single_source_expressions("module App;\nfn Count() -> Int { return if (true) { 1; } else { 2; }; }\n"));
+  CHECK(check_single_source_expressions("module App;\nfn Count() -> Int { return if (true) { 1 } else { 2 }; }\n"));
   CHECK(check_single_source_expressions(
-      "module App;\nfn Name() -> Str { return match (1) { 0 -> { \"zero\"; }, else -> { \"many\"; }, }; }\n"));
+      "module App;\nfn Name() -> Str { return match (1) { 0 -> { \"zero\" }, else -> { \"many\" }, }; }\n"));
   CHECK(!check_single_source_expressions(
-      "module App;\nfn Count() -> Int { return if (true) { 1; } else { \"bad\"; }; }\n"));
+      "module App;\nfn Count() -> Int { return if (true) { 1 } else { \"bad\" }; }\n"));
   CHECK(!check_single_source_expressions(
-      "module App;\nfn Flag() -> Bool { return match (1) { 0 -> { true; }, else -> { 1; }, }; }\n"));
+      "module App;\nfn Flag() -> Bool { return match (1) { 0 -> { true }, else -> { 1 }, }; }\n"));
 }
 
 static void test_result_propagation_requires_result_return(void)

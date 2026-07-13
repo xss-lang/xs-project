@@ -263,6 +263,20 @@ static bool report_optional_type_error(XsDiagnostics *diagnostics, const XsSynta
                             "expression is not assignable to Optional<T>; use None or Some(value)");
 }
 
+static bool report_missing_block_value(XsDiagnostics *diagnostics, const XsSyntaxNode *block,
+                                       const XsHirPrimitiveInfo *primitive)
+{
+  char message[192];
+  snprintf(message, sizeof(message), "block produces unit '()' but primitive type '%s' is required", primitive->name);
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block), message);
+}
+
+static bool report_missing_optional_block_value(XsDiagnostics *diagnostics, const XsSyntaxNode *block)
+{
+  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block),
+                            "block produces unit '()' but Optional<T> is required");
+}
+
 static bool expression_is_identifier_named(const XsSyntaxNode *expression, const char *name)
 {
   if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_IDENTIFIER || expression->child_count != 1)
@@ -346,6 +360,8 @@ static const XsSyntaxNode *block_tail_expression(const XsSyntaxNode *block)
   const XsSyntaxNode *tail = block->children[block->child_count - 1];
   if(tail->kind != XS_SYNTAX_STMT_EXPRESSION || tail->child_count == 0)
     return nullptr;
+  if((tail->flags & XS_SYNTAX_FLAG_DISCARDED) != 0)
+    return nullptr;
   return tail->children[0];
 }
 
@@ -359,8 +375,10 @@ static bool check_block_value_against_primitive(const XsSyntaxNode *block, const
                                                 LiteralContext context, const LocalBinding *binding,
                                                 XsDiagnostics *diagnostics)
 {
-  return check_expression_value_against_primitive(block_tail_expression(block), primitive, context, binding,
-                                                  diagnostics);
+  const XsSyntaxNode *tail = block_tail_expression(block);
+  if(tail == nullptr && primitive != nullptr)
+    return report_missing_block_value(diagnostics, block, primitive);
+  return check_expression_value_against_primitive(tail, primitive, context, binding, diagnostics);
 }
 
 static bool check_match_arm_value_against_primitive(const XsSyntaxNode *arm, const XsHirPrimitiveInfo *primitive,
@@ -410,7 +428,10 @@ static bool check_expression_value_against_primitive(const XsSyntaxNode *express
 
 static bool check_block_value_against_optional(const XsSyntaxNode *block, XsDiagnostics *diagnostics)
 {
-  return check_expression_value_against_optional(block_tail_expression(block), diagnostics);
+  const XsSyntaxNode *tail = block_tail_expression(block);
+  if(tail == nullptr)
+    return report_missing_optional_block_value(diagnostics, block);
+  return check_expression_value_against_optional(tail, diagnostics);
 }
 
 static bool check_match_arm_value_against_optional(const XsSyntaxNode *arm, XsDiagnostics *diagnostics)

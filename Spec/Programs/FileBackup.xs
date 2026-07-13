@@ -28,12 +28,12 @@ class BackupPlan {
     BackupPlan(sourceRoot: Str, targetRoot: Str) {
         this.sourceRoot = sourceRoot;
         this.targetRoot = targetRoot;
-        this.files = std::collections::vector<FileEntry>.new();
+        this.files = std::collections::vector<FileEntry>::new();
     }
 
-    fn Discover() -> Result<Void, BackupError> {
+    fn Discover() -> Result<(), BackupError> {
         if (!std::fs::is_dir(this.sourceRoot)) {
-            return Error(BackupError.InvalidSource(this.sourceRoot));
+            return Error(BackupError::InvalidSource(this.sourceRoot));
         }
 
         for (path: Str in std::fs::walk_dir(this.sourceRoot)) {
@@ -52,7 +52,7 @@ class BackupPlan {
         return Ok();
     }
 
-    fn Execute() -> Result<Void, IOException> {
+    fn Execute() -> Result<(), IOException> {
         for (entry: FileEntry in this.files) {
             destination: Str = std::fs::join_path(this.targetRoot, entry.relative);
 

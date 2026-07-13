@@ -40,7 +40,7 @@ enum Empty {
 }
 
 // enum usage
-color: Color = Color.Red;
+color: Color = Color::Red;
 
 
 // data enum
@@ -51,9 +51,9 @@ enum data Token {
 }
 
 // data enum usage
-token: Token = Token.Identifier("hello");
-number: Token = Token.Integer(42);
-plus: Token = Token.Plus;
+token: Token = Token::Identifier("hello");
+number: Token = Token::Integer(42);
+plus: Token = Token::Plus;
 
 
 // payload type examples
@@ -74,8 +74,8 @@ enum data Value {
 // A typed variant constructor is selected by its single argument type.
 // The argument type must identify exactly one variant in the overload set.
 
-value: Value = Value.Number(42);
-largeValue: Value = Value.Number(2'000'000'000);
+value: Value = Value::Number(42);
+largeValue: Value = Value::Number(2'000'000'000);
 
 
 // visibility
@@ -121,11 +121,11 @@ enum Color {
 // pattern matching
 fn Parse(token: Token) {
     match (token) {
-        Token.Identifier(value) -> {
+        Token::Identifier(value) -> {
         },
-        Token.Integer(value) -> {
+        Token::Integer(value) -> {
         },
-        Token.Plus -> {
+        Token::Plus -> {
         },
         else -> {
         },
@@ -162,15 +162,15 @@ enum data Token {
 
 
 // VALID
-token: Token = Token.Identifier("hello");
+token: Token = Token::Identifier("hello");
 
 
 // VALID
-token: Token = Token.Integer(42);
+token: Token = Token::Integer(42);
 
 
 // VALID
-token: Token = Token.Plus;
+token: Token = Token::Plus;
 
 
 // INVALID
@@ -234,7 +234,7 @@ enum data Value {
 
 
 // INVALID
-value: Int = Color.Red;
+value: Int = Color::Red;
 // enums cannot be converted to integers.
 
 

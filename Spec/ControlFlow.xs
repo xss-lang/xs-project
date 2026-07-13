@@ -117,10 +117,10 @@ fn TestElseIf(x: Int) {
 // VALID
 fn TestIfExpression(x: Int) -> Int {
     return if (x > 0) {
-        1;
+        1
     }
     else {
-        0;
+        0
     };
 }
 
@@ -130,16 +130,16 @@ fn TestIfExpression(x: Int) -> Int {
 fn HttpStatusText(status: Int) -> Str {
     return match (status) {
         200 -> {
-            "ok";
+            "ok"
         },
         404 -> {
-            "not found";
+            "not found"
         },
         500 -> {
-            "server error";
+            "server error"
         },
         else -> {
-            "unknown";
+            "unknown"
         },
     };
 }
@@ -149,10 +149,10 @@ fn HttpStatusText(status: Int) -> Str {
 
 fn SelectPort(debug: Bool) -> Int {
     port: Int = if (debug) {
-        8080;
+        8080
     }
     else {
-        80;
+        80
     };
 
     return port;
@@ -208,10 +208,10 @@ fn TestMatch(x: Int) {
 fn TestMatchExpression(x: Int) -> Int {
     return match (x) {
         0 -> {
-            10;
+            10
         },
         else -> {
-            0;
+            0
         },
     };
 }
@@ -236,7 +236,7 @@ fn InvalidContinue() {
 // INVALID
 fn InvalidIfExpression(x: Int) -> Int {
     return if (x > 0) {
-        1;
+        1
     };
 }
 // if expression requires else.

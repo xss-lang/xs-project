@@ -29,14 +29,14 @@ imports http, std, result;
 // Synchronous request
 // ============================================================
 
-fn Main() -> Result<Void, NetworkException> {
+fn Main() -> Result<(), NetworkException> {
     client: Http::client = new();
 
     request: Http.request = new()
         .uri(URI.create("https://httpbin.org/post"))
         .header("Content-Type", "application/json")
         .POST(
-            HttpRequest.BodyPublishers.ofstr(
+            HttpRequest::BodyPublishers.ofstr(
                 """
                 {
                     "name": "Alpha"
@@ -49,7 +49,7 @@ fn Main() -> Result<Void, NetworkException> {
     response: Http::response<Str> =
         client.send(
             request,
-            HttpResponse.BodyHandlers.ofstr()
+            HttpResponse::BodyHandlers.ofstr()
         )@;
 
     print!("{}", response.body());
@@ -87,7 +87,7 @@ fn StrRequestBody() {
         .uri(URI.create("https://httpbin.org/post"))
         .header("Content-Type", "application/json")
         .POST(
-            HttpRequest.BodyPublishers.ofstr(
+            HttpRequest::BodyPublishers.ofstr(
                 """
                 {
                     "name": "Alpha"
@@ -99,7 +99,7 @@ fn StrRequestBody() {
 }
 
 
-// HttpRequest.BodyPublishers.ofstr(...):
+// HttpRequest::BodyPublishers.ofstr(...):
 //
 // - Creates a request body from Str.
 // - May receive a multiline string.
@@ -109,7 +109,7 @@ fn StrRequestBody() {
 // Synchronous send
 // ============================================================
 
-fn SendRequest() -> Result<Void, NetworkException> {
+fn SendRequest() -> Result<(), NetworkException> {
     client: Http::client = new();
 
     request: Http.request = new()
@@ -119,7 +119,7 @@ fn SendRequest() -> Result<Void, NetworkException> {
     response: Http::response<Str> =
         client.send(
             request,
-            HttpResponse.BodyHandlers.ofstr()
+            HttpResponse::BodyHandlers.ofstr()
         )@;
 
     body: Str = response.body();
@@ -149,7 +149,7 @@ async fn SendRequestAsync() -> Task<()> {
     response: Http::response<Str> =
         await client.sendAsync(
             request,
-            Http.Response.BodyHandlers.ofstr()
+            Http::Response.BodyHandlers.ofstr()
         );
 
     print!("{}", response.body());
@@ -186,14 +186,14 @@ fn ReadResponseBody(
 // ============================================================
 
 fn StrBodyHandler() {
-    handler = HttpResponse.BodyHandlers.ofstr();
+    handler = HttpResponse::BodyHandlers.ofstr();
 }
 
 
 // Confirmed Str body-handler spellings appearing in HTTP code:
 //
-// - HttpResponse.BodyHandlers.ofstr()
-// - Http.Response.BodyHandlers.ofstr()
+// - HttpResponse::BodyHandlers.ofstr()
+// - Http::Response.BodyHandlers.ofstr()
 //
 // This file preserves both spellings exactly as provided.
 // No equivalence rule is inferred.
@@ -203,7 +203,7 @@ fn StrBodyHandler() {
 // Result error handling
 // ============================================================
 
-fn HandleNetworkError() -> Result<Void, NetworkException> {
+fn HandleNetworkError() -> Result<(), NetworkException> {
     client: Http::client = new();
 
     request: Http.request = new()
@@ -213,7 +213,7 @@ fn HandleNetworkError() -> Result<Void, NetworkException> {
     result: Result<Http::response<Str>, NetworkException> =
         client.send(
             request,
-            HttpResponse.BodyHandlers.ofstr()
+            HttpResponse::BodyHandlers.ofstr()
         );
 
     match (result) {

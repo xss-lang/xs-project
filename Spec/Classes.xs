@@ -9,6 +9,7 @@
 //
 // Fields are supported.
 // Field initializers are optional.
+// C#-style properties use getter and setter accessors.
 //
 // Constructors are supported.
 // Constructor name must match the class name.
@@ -24,8 +25,8 @@
 // Method merging is not supported.
 // Two methods with the same name and the same parameter type list are a duplicate declaration error.
 //
-// Single inheritance is supported through extends.
-// Interfaces are supported through implements.
+// Single inheritance and interfaces use a C#-style base list.
+// The first class type in the list is the base class; interface types are implemented interfaces.
 // Multiple interface implementation is supported.
 //
 // Visibility modifiers:
@@ -50,6 +51,24 @@ class User {
     age: Int;
 
     enabled: Bool = true;
+}
+
+// properties
+class User {
+    name: Str {
+        getter;
+        setter;
+    }
+
+    age: Int {
+        getter {
+            return this.age;
+        }
+
+        setter {
+            this.age = value;
+        }
+    }
 }
 
 // constructor
@@ -101,8 +120,7 @@ class Math {
 class Animal {
 }
 
-class Dog {
-    extends Animal;
+class Dog : Animal {
 }
 
 // interface
@@ -111,9 +129,7 @@ interface Runnable {
 }
 
 // interface implementation
-class Program {
-    implements Runnable;
-
+class Program : Runnable {
     fn Run() {
     }
 }
@@ -127,9 +143,7 @@ interface Closeable {
     fn Close();
 }
 
-class Program {
-    implements Runnable, Closeable;
-
+class Program : Runnable, Closeable {
     fn Run() {
     }
 
@@ -153,25 +167,18 @@ incomplete class Animal {
     incomplete fn Speak();
 }
 
-// method merging
+// method overloading
 class Math {
     fn Add(a: Int) -> Int {
-        x: Int = 1;
+        return a;
     }
 
     fn Add(a: Int, b: Int) -> Int {
-        y: Int = 2;
+        return a + b;
     }
 }
 
-// equivalent
-class Math {
-    fn Add(a: Int, b: Int) -> Int {
-        x: Int = 1;
-        y: Int = 2;
-    }
-}
-
+// These overloads stay distinct; X# does not merge method bodies.
 
 // VALID
 class User {
@@ -197,7 +204,7 @@ class User {
 }
 
 
-// INVALID
+// VALID
 class User {
     User() {
     }
@@ -205,7 +212,7 @@ class User {
     User(name: Str) {
     }
 }
-// A class can only have one constructor.
+// Constructors may be overloaded by parameter type list.
 
 
 // VALID
@@ -215,8 +222,7 @@ class Math {
 
 
 // VALID
-class Program {
-    implements Runnable, Closeable;
+class Program : Runnable, Closeable {
 }
 
 

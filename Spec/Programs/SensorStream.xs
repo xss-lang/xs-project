@@ -50,8 +50,8 @@ class Aggregator {
     counts: std::collections::hash_map<Str, Int>;
 
     Aggregator() {
-        this.totals = std::collections::hash_map<Str, Float>.new();
-        this.counts = std::collections::hash_map<Str, Int>.new();
+        this.totals = std::collections::hash_map<Str, Float>::new();
+        this.counts = std::collections::hash_map<Str, Int>::new();
     }
 
     fn Add(reading: Reading) {
@@ -60,14 +60,14 @@ class Aggregator {
     }
 
     fn Averages() -> std::collections::vector<Average> {
-        result: std::collections::vector<Average> = std::collections::vector<Average>.new();
+        result: std::collections::vector<Average> = std::collections::vector<Average>::new();
 
         for ((sensorId, total): (Str, Float) in this.totals) {
             count: Int = this.counts[sensorId]!;
             result.push(Average {
                 sensorId: sensorId,
                 count: count,
-                value: total / Float.From(count),
+                value: total / Float::From(count),
             });
         }
 
@@ -77,9 +77,9 @@ class Aggregator {
 
 async fn Main() -> Task<Result<Int, Error>> {
     sensors: std::collections::vector<Sensor> = std::collections::vector<Sensor>.of(
-        Sensor.new("temperature", "C"),
-        Sensor.new("humidity", "%"),
-        Sensor.new("pressure", "Pa")
+        Sensor::new("temperature", "C"),
+        Sensor::new("humidity", "%"),
+        Sensor::new("pressure", "Pa")
     );
     aggregator: Aggregator = new();
     cancellation: CancellationToken = CancellationToken.timeout(5.seconds());

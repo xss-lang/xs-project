@@ -111,13 +111,13 @@ fn OpenLibrary(path: Str) -> Result<NativeLibrary, Error> {
 #[Unsafe]
 #[repr(C)]
 extern "C" {
-    fn malloc(size: ULong) -> std::cffi::RawPtr<Void>;
+    fn malloc(size: ULong) -> std::cffi::RawPtr<std::cffi::Void>;
 
-    fn free(ptr: std::cffi::RawPtr<Void>);
+    fn free(ptr: std::cffi::RawPtr<std::cffi::Void>);
 }
 
-fn Allocate(size: ULong) -> Result<std::cffi::RawPtr<Void>, Error> {
-    ptr: std::cffi::RawPtr<Void> = malloc(size);
+fn Allocate(size: ULong) -> Result<std::cffi::RawPtr<std::cffi::Void>, Error> {
+    ptr: std::cffi::RawPtr<std::cffi::Void> = malloc(size);
     if (ptr.is_null()) {
         return Error({ message: "allocation failed" });
     }
@@ -133,8 +133,8 @@ data CompareContext {
 
 #[CFunctionPointer]
 type CompareFn = fn(
-    left: std::cffi::RawPtr<Void>,
-    right: std::cffi::RawPtr<Void>,
+    left: std::cffi::RawPtr<std::cffi::Void>,
+    right: std::cffi::RawPtr<std::cffi::Void>,
     context: std::cffi::RawPtr<CompareContext>,
 ) -> Int;
 
@@ -142,7 +142,7 @@ type CompareFn = fn(
 extern "C" {
     #[LinkName("qsort_r")]
     fn qsort_r(
-        base: std::cffi::RawPtr<Void>,
+        base: std::cffi::RawPtr<std::cffi::Void>,
         count: ULong,
         width: ULong,
         compare: CompareFn,
@@ -175,7 +175,7 @@ extern "C" {
 extern "C" {
     #[ForeignThreadSafe]
     #[NoCallbackIntoRuntime]
-    fn thread_safe_poll(handle: std::cffi::RawPtr<Void>) -> Int;
+    fn thread_safe_poll(handle: std::cffi::RawPtr<std::cffi::Void>) -> Int;
 
     #[MayBlock]
     #[CancellationUnsafe]

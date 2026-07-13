@@ -18,8 +18,7 @@ interface TextPlugin {
     fn Run(input: Str) -> Result<Str, PipelineError>;
 }
 
-class TrimPlugin {
-    implements TextPlugin;
+class TrimPlugin : TextPlugin {
 
     fn Name() -> Str {
         return "trim";
@@ -30,8 +29,7 @@ class TrimPlugin {
     }
 }
 
-class UppercasePlugin {
-    implements TextPlugin;
+class UppercasePlugin : TextPlugin {
 
     fn Name() -> Str {
         return "upper";
@@ -42,8 +40,7 @@ class UppercasePlugin {
     }
 }
 
-class ReplacePlugin {
-    implements TextPlugin;
+class ReplacePlugin : TextPlugin {
 
     fromText: Str;
     toText: Str;
@@ -66,7 +63,7 @@ class Pipeline {
     stages: std::collections::vector<TextPlugin>;
 
     Pipeline() {
-        this.stages = std::collections::vector<TextPlugin>.new();
+        this.stages = std::collections::vector<TextPlugin>::new();
     }
 
     fn Add(stage: TextPlugin) {
@@ -93,9 +90,9 @@ fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
     };
     pipeline: Pipeline = new();
 
-    pipeline.Add(TrimPlugin.new());
-    pipeline.Add(ReplacePlugin.new("x#", "X#"));
-    pipeline.Add(UppercasePlugin.new());
+    pipeline.Add(TrimPlugin::new());
+    pipeline.Add(ReplacePlugin::new("x#", "X#"));
+    pipeline.Add(UppercasePlugin::new());
 
     println!("{}", pipeline.Run(input)@);
     return Ok(0);

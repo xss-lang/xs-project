@@ -30,7 +30,7 @@ class Room {
 
     Room(name: Str) {
         this.name = name;
-        this.members = std::collections::hash_map<ClientId, Thread.sender<Message>>.new();
+        this.members = std::collections::hash_map<ClientId, Thread.sender<Message>>::new();
     }
 
     fn Join(id: ClientId, sender: Thread.sender<Message>) {
@@ -53,11 +53,11 @@ class ChatHub {
     rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>>;
 
     ChatHub() {
-        this.nextId = Atomic.new(1);
-        this.rooms = Arc.new(Mutex.new(std::collections::hash_map<Str, Room>.new()));
+        this.nextId = Atomic::new(1);
+        this.rooms = Arc::new(Mutex::new(std::collections::hash_map<Str, Room>::new()));
     }
 
-    async fn Serve(listener: Net.tcpListener) -> Task<Result<Void, ChatError>> {
+    async fn Serve(listener: Net.tcpListener) -> Task<Result<(), ChatError>> {
         while (true) {
             socket: Net.tcpStream = await listener.accept()@;
             id: ClientId = ClientId {
@@ -84,7 +84,7 @@ class ClientSession {
         this.rooms = rooms;
     }
 
-    async fn Run() -> Task<Result<Void, ChatError>> {
+    async fn Run() -> Task<Result<(), ChatError>> {
         currentRoom: Str = "lobby";
         outbound: Thread.channel<Message> = Thread.channel<Message>();
         this.Join(currentRoom, outbound.sender());
@@ -116,7 +116,7 @@ class ClientSession {
     fn Join(roomName: Str, sender: Thread.sender<Message>) {
         guard: Mutex<std::collections::hash_map<Str, Room>> = this.rooms.lock();
         if (!(*guard).contains(roomName)) {
-            (*guard)[roomName] = Room.new(roomName);
+            (*guard)[roomName] = Room::new(roomName);
         }
         (*guard)[roomName].Join(this.id, sender);
     }
