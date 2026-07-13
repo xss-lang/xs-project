@@ -67,8 +67,8 @@ static void test_csharp_style_public_property_members(void)
 {
   const char *text = "module App;\n"
                      "public class Person {\n"
-                     "  public Str Name { getter; setter; }\n"
-                     "  public Int Age { getter; setter; }\n"
+                     "  public Name: Str { getter; setter; }\n"
+                     "  public Age: Int { getter; setter; }\n"
                      "}\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;

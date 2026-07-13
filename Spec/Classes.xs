@@ -61,12 +61,12 @@ class User {
 
 // properties
 public class Person {
-    public Str Name {
+    public Name: Str {
         getter;
         setter;
     }
 
-    public Int Age {
+    public Age: Int {
         getter;
         setter;
     }

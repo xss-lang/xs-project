@@ -154,9 +154,8 @@ The documented compilation order is preserved:
   resolves which entry is the class base and which entries are interfaces. Legacy `extends` and `implements` spellings
   produce parser diagnostics.
 - Class fields may carry `getter` and `setter` property accessors. Accessors are represented as
-  `XS_SYNTAX_PROPERTY_ACCESSOR` children; accessor bodies are parsed as ordinary blocks when present. Class fields accept
-  both `name: Type` and C#-style `Type Name` spelling, so `public Str Name { getter; setter; }` is a structural property
-  declaration.
+  `XS_SYNTAX_PROPERTY_ACCESSOR` children; accessor bodies are parsed as ordinary blocks when present. Properties use the
+  canonical X# field spelling, for example `public Name: Str { getter; setter; }`.
 - Visibility modifiers use C# meanings: `public` is externally visible, `private` is limited to the declaring scope,
   `protected` is available to derived classes, and `internal` is limited to the current project/package boundary. Current HIR
   symbol collection applies C# defaults: top-level declarations are `internal` unless made public by a `public namespace`

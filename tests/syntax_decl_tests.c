@@ -188,9 +188,10 @@ static void test_class_property_accessors(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *csharp_style = "public class Person { public Str Name { getter; setter; } "
-                             "public Int Age { getter; setter; } }\n";
-  source = (XsSource){.path = "CSharpStyleProperties.xs", .text = csharp_style, .length = strlen(csharp_style)};
+  const char *property_visibility = "public class Person { public Name: Str { getter; setter; } "
+                                    "public Age: Int { getter; setter; } }\n";
+  source =
+      (XsSource){.path = "PropertyVisibility.xs", .text = property_visibility, .length = strlen(property_visibility)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 66, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_DECL_CLASS) == 1);

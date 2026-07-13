@@ -683,13 +683,6 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
         attach_modifiers(parser, field, member);
         xs_syntax_node_add(parser->tree, declaration, field);
       }
-      else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_IDENTIFIER)
-      {
-        XsSyntaxNode *field = parse_type_first_variable(parser, true);
-        field->kind = XS_SYNTAX_CLASS_FIELD;
-        attach_modifiers(parser, field, member);
-        xs_syntax_node_add(parser->tree, declaration, field);
-      }
       else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_LEFT_PAREN)
       {
         XsSyntaxNode *constructor =

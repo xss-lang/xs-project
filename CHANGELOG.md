@@ -19,7 +19,7 @@ source-to-native executable pipeline.
   `Option<String>`.
 - `macro_rules!` definitions now use `->` between a matcher and its expansion block, matching the current X# macro syntax
   direction.
-- Class properties now accept C#-style type-first declarations such as `public Str Name { getter; setter; }`.
+- Class properties now use canonical X# name-first declarations such as `public Name: Str { getter; setter; }`.
 - HIR symbol collection now applies C#-style visibility defaults: top-level declarations default to `internal`, and type
   members default to `private`.
 - X# source syntax now follows Rust-style semicolon value rules: `expression;` discards to unit, while a final block

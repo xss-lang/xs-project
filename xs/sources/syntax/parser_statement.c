@@ -69,23 +69,6 @@ XsSyntaxNode *parse_variable(SyntaxParser *parser, bool require_semicolon)
   return declaration;
 }
 
-XsSyntaxNode *parse_type_first_variable(SyntaxParser *parser, bool require_semicolon)
-{
-  size_t start = parser->current.span.start;
-  XsSyntaxNode *type = parse_type(parser);
-  XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_VARIABLE, (XsSpan){start, start});
-  xs_syntax_node_add(parser->tree, declaration, identifier(parser));
-  xs_syntax_node_add(parser->tree, declaration, type);
-  if(accept(parser, XS_TOKEN_ASSIGN))
-    xs_syntax_node_add(parser->tree, declaration, parse_expression(parser, 1));
-  if(parser->current.kind == XS_TOKEN_LEFT_BRACE)
-    parse_property_accessors(parser, declaration);
-  else if(require_semicolon)
-    expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after variable declaration");
-  finish_node(parser, declaration, parser->previous.span.end);
-  return declaration;
-}
-
 XsSyntaxNode *parse_block(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
