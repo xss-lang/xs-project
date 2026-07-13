@@ -60,6 +60,48 @@ fn lowers_returned_if_expression_to_branching_mir_and_xlil()
                    Some(crate::xlil::Terminator::Return(Some(_)))));
 }
 
+#[test]
+fn lowers_if_expression_initializer_through_merge_storage()
+{
+  let long = Type::Primitive(PrimitiveType::Long);
+  let result = Local { name: "result".to_string(),
+                       ty: long.clone(),
+                       mutable: false,
+                       span: span() };
+  let expression = Expression::If { condition: Box::new(Expression::Literal { literal: Literal::Bool(true),
+                                                                              span: span() }),
+                                    then_block: Box::new(value_block("7")),
+                                    else_block: Box::new(value_block("9")),
+                                    result_type: Box::new(long.clone()),
+                                    span: span() };
+  let function = Function { name: "choose_local".to_string(),
+                            return_type: Some(long),
+                            locals: Vec::new(),
+                            body: vec![Statement::Let { local: result,
+                                                        initializer: Some(expression) },
+                                       Statement::Return { value: Some(Expression::Local { name:
+                                                                                             "result".to_string(),
+                                                                                           span: span() }),
+                                                           span: span() }] };
+
+  let mir = HirToMirLowerer::new().lower_function(&function)
+                                  .expect("if expression initializer should lower");
+  assert!(verify_function(&mir).is_empty());
+  assert!(mir.blocks
+             .iter()
+             .flat_map(|block| &block.statements)
+             .filter(|statement| matches!(statement, mir::Statement::StoreLocal { .. }))
+             .count() >=
+          3);
+
+  let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                           .expect("if initializer MIR should lower to XLIL");
+  assert!(xlil.blocks
+              .iter()
+              .flat_map(|block| &block.instructions)
+              .any(|instruction| matches!(instruction, crate::xlil::Instruction::Load { .. })));
+}
+
 fn local(name: &str) -> Local
 {
   Local { name: name.to_string(),

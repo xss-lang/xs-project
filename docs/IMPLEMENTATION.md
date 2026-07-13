@@ -376,10 +376,11 @@ are recorded in typed HIR and lower through the existing target-independent MIR 
 generic calls, methods, imported targets, recursion policy, and function values remain later compiler-core work.
 The imported HIR body model now has explicit lexical blocks and distinguishes statement `if` from value-producing `if`.
 Both forms require a `Bool` condition during Rust type checking. Statement branches lower to MIR basic blocks with an
-explicit merge when control can continue. A returned `if` expression lowers each required value branch directly to its own
-MIR return terminator, avoiding an implicit target-specific phi representation. The same verified CFG lowers to XLIL
-`br_if`; arbitrary conditional values used by local initialization or assignment still await the general MIR place/merge
-model.
+explicit merge when control can continue. A directly returned `if` expression may lower each required value branch to its
+own MIR return terminator. In all other value contexts, both branches write their typed tail values to compiler-owned MIR
+storage and the merge block loads the selected result. This supports local initialization, assignment, call arguments, and
+nested supported expressions without introducing a target-specific phi representation. The verified CFG lowers to XLIL
+slots and `br_if` before entering LLVM.
 `while`, post-test `do`/`while` sugar, `break`, and `continue` now cross the same compiler-core boundary. Rust HIR requires a `Bool` loop condition and
 rejects loop jumps outside a loop. MIR lowering creates explicit header, body, and exit blocks; `continue` targets the
 header and `break` targets the exit. The resulting target-independent CFG is verified and lowered to XLIL `br`/`br_if`

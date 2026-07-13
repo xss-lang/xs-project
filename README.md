@@ -116,7 +116,8 @@ The project is now in the `0.1.5` development period. Supported source functions
 Rust typed HIR, verified and optimized MIR, and XLIL before the public C23 XLIL model drives LLVM native `.xse` emission.
 Rust compiler-core control flow now includes conditional loops, post-test `do`/`while` sugar, loop jumps, and statement
 and value-producing `match`; mutable locals and match results cross CFG edges through explicit target-independent MIR
-storage operations. Prefix and postfix
+storage operations. Value-producing `if` expressions use the same target-independent merge-storage model in local
+initializers and call arguments. Prefix and postfix
 increment/decrement preserve their distinct result values through the current native local-storage slice. It does not imply
 that the complete X# language is executable yet. Earlier releases are compiler infrastructure snapshots.
 

@@ -124,7 +124,8 @@ endforeach()
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
 foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainNegative MainPositive
-                       MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfNot
+                       MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
+                       MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
@@ -431,6 +432,13 @@ add_test(NAME source_native_if_artifacts COMMAND xs_xse_artifact_tests ${XS_SOUR
                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.o
                                           ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xse 7 "ret i32 7" "!br label")
 set_tests_properties(source_native_if_artifacts PROPERTIES DEPENDS source_native_if_build TIMEOUT 5)
+add_test(NAME source_native_if_value_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfValue.xs)
+set_tests_properties(source_native_if_value_build PROPERTIES TIMEOUT 5 FIXTURES_SETUP source_native_if_value)
+add_test(NAME source_native_if_value_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfValue.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfValue.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfValue.xse 7 "call i32 @identity")
+set_tests_properties(source_native_if_value_artifacts PROPERTIES DEPENDS source_native_if_value_build TIMEOUT 5)
 add_test(NAME source_native_if_not_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfNot.xs)
 set_tests_properties(source_native_if_not_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

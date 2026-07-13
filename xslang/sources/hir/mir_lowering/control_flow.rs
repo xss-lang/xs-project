@@ -78,12 +78,14 @@ impl HirToMirLowerer
                               arm.span,
                               lowered);
           self.switch_to(body);
-          open_arm |= self.lower_match_value_arm(&arm.body, result_storage, expected_type, merge, arm.span, lowered);
+          open_arm |=
+            self.lower_value_block_into_storage(&arm.body, result_storage, expected_type, merge, arm.span, lowered);
           test = next;
         }
         MatchPattern::Else =>
         {
-          open_arm |= self.lower_match_value_arm(&arm.body, result_storage, expected_type, merge, arm.span, lowered);
+          open_arm |=
+            self.lower_value_block_into_storage(&arm.body, result_storage, expected_type, merge, arm.span, lowered);
         }
       }
     }
@@ -145,14 +147,14 @@ impl HirToMirLowerer
     Some(condition)
   }
 
-  fn lower_match_value_arm(&mut self,
-                           block: &Block,
-                           result_storage: mir::LocalId,
-                           result_type: XlilType,
-                           merge: mir::BlockId,
-                           span: Span,
-                           lowered: &mut mir::Function)
-                           -> bool
+  fn lower_value_block_into_storage(&mut self,
+                                    block: &Block,
+                                    result_storage: mir::LocalId,
+                                    result_type: XlilType,
+                                    merge: mir::BlockId,
+                                    span: Span,
+                                    lowered: &mut mir::Function)
+                                    -> bool
   {
     for statement in &block.statements
     {
@@ -170,7 +172,7 @@ impl HirToMirLowerer
     else
     {
       self.report(DiagnosticCode::MissingReturn,
-                  "match expression arm requires a tail value",
+                  "value-producing block requires a tail value",
                   span);
       return false;
     };
@@ -519,6 +521,80 @@ impl HirToMirLowerer
     {
       self.switch_to(else_end);
     }
+  }
+
+  pub(super) fn lower_if_expression(&mut self,
+                                    expression: &Expression,
+                                    expected_type: XlilType,
+                                    lowered: &mut mir::Function)
+                                    -> Option<mir::LocalId>
+  {
+    let Expression::If { condition,
+                         then_block,
+                         else_block,
+                         result_type,
+                         span, } = expression
+    else
+    {
+      return None;
+    };
+    let actual_type = match result_type.as_ref()
+    {
+      Type::Primitive(value) => primitive_to_xlil(*value),
+      Type::Named(_) => None,
+    };
+    if actual_type != Some(expected_type)
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "if expression result type does not match MIR context",
+                  *span);
+      return None;
+    }
+    let condition = self.lower_expression_to_local(condition, XlilType::BOOL, lowered)?;
+    let result_storage = self.declare_storage_temp(expected_type, *span, lowered)?;
+    let branch = self.current_block;
+    let then_id = self.append_block(then_block.span, lowered);
+    let else_id = self.append_block(else_block.span, lowered);
+    let merge = self.append_block(*span, lowered);
+    self.switch_to(branch);
+    self.set_terminator(mir::Terminator::BranchIf { condition,
+                                                    then_block: then_id,
+                                                    else_block: else_id },
+                        *span,
+                        lowered);
+
+    let outer_locals = self.locals.clone();
+    self.switch_to(then_id);
+    let then_open = self.lower_value_block_into_storage(then_block,
+                                                        result_storage,
+                                                        expected_type,
+                                                        merge,
+                                                        then_block.span,
+                                                        lowered);
+    self.locals.clone_from(&outer_locals);
+    self.switch_to(else_id);
+    let else_open = self.lower_value_block_into_storage(else_block,
+                                                        result_storage,
+                                                        expected_type,
+                                                        merge,
+                                                        else_block.span,
+                                                        lowered);
+    self.locals = outer_locals;
+    if !then_open && !else_open
+    {
+      self.report(DiagnosticCode::MissingReturn,
+                  "if expression has no value-producing continuation",
+                  *span);
+      return None;
+    }
+    self.switch_to(merge);
+    let result = self.declare_temp(expected_type, *span, lowered)?;
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::LoadLocal { result,
+                                          local: result_storage,
+                                          span: *span });
+    Some(result)
   }
 
   pub(super) fn lower_if_return(&mut self, expression: &Expression, return_span: Span, lowered: &mut mir::Function)

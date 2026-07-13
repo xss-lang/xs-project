@@ -18,6 +18,8 @@ source-to-native executable pipeline.
   `format_args!`; neither formatting-argument intrinsic can be declared or shadowed through `macro_rules!`.
 - Value-producing `match` expressions with `Long`/`Bool` selectors, literal arms, and a final `else` now cross the C23
   structural AST into typed HIR, versioned XHIR, MIR control flow and storage, XLIL, LLVM IR, and native `.xse` output.
+- Value-producing `if` expressions now lower in general value contexts, including local initializers and function-call
+  arguments, through target-independent MIR merge storage and the existing XLIL/LLVM native pipeline.
 
 ### Changed
 

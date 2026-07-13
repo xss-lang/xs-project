@@ -340,11 +340,7 @@ impl HirToMirLowerer
         self.lower_call_into(local, expression, lowered);
         Some(local)
       }
-      Expression::If { .. } =>
-      {
-        self.unsupported_expression(expression);
-        None
-      }
+      Expression::If { .. } => self.lower_if_expression(expression, expected_type, lowered),
       Expression::Match { .. } => self.lower_match_expression(expression, expected_type, lowered),
     }
   }
