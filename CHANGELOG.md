@@ -12,6 +12,8 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.1 - 2026-07-13
+
 ### Added
 
 - The C23 driver now flattens every macro-materialized structural AST into the versioned compiler-core ABI v0 packet:

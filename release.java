@@ -30,7 +30,7 @@ class Release
           help    Show this help.
 
         examples:
-          java --source=21 release.java check 0.1.0
+          java --source=21 release.java check 0.1.1
         """);
   }
 

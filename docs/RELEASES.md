@@ -12,7 +12,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 
 ## Current status
 
-- Current project version: `0.1.0`.
+- Current project version: `0.1.1`.
 - `xs --version` reports the configured compiler version.
 - The root [../CHANGELOG.md](../CHANGELOG.md) file keeps `Unreleased` for work after the current numbered line.
 - Numbered `0.0.x` entries are development snapshots, not stable language releases.
@@ -22,7 +22,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 The root `release.java` source-file tool checks release metadata without using shell scripts:
 
 ```text
-java --source=21 release.java check 0.1.0
+java --source=21 release.java check 0.1.1
 ```
 
 It validates the CMake project version, changelog heading, release documentation, CLI version documentation, and the built
@@ -30,6 +30,8 @@ It validates the CMake project version, changelog heading, release documentation
 
 ## Version line
 
+- `0.1.1` establishes the live C23-to-Rust compiler-core boundary. Macro-expanded structural ASTs are imported into owned
+  sessions and top-level function signatures begin lowering into Rust HIR while the 0.1.0 ELF baseline remains active.
 - `0.1.0` is the first source-to-native Linux ELF milestone. The supported source subset lowers through MIR, XLIL, LLVM IR,
   ELF object emission, and LLD linking to a runnable `.xse` executable.
 - `0.0.8` is the XLIL stack-memory snapshot: target-independent stack slots and typed load/store operations lower through
@@ -45,8 +47,8 @@ It validates the CMake project version, changelog heading, release documentation
 - `0.0.3` is the direct XLIL LLVM pipeline snapshot: verified/optimized LLVM emission plus i32 arithmetic lowering.
 - Later `0.0.x` releases should keep landing narrow compiler infrastructure checkpoints without promising source-level
   completeness.
-- The `0.1.0` line starts when source/project `xs build` has a broader typed-MIR native path instead of the current narrow
-  source-native slice.
+- The `0.1.x` line keeps the native pipeline operational while progressively replacing the narrow source-native bridge with
+  the Rust typed-HIR/MIR compiler core.
 - The first `.xse` target format is Linux ELF; PE comes after ELF support.
 
 ## 0.1.0 threshold

@@ -112,9 +112,9 @@ example today.
 
 ## Release policy
 
-The project is now in the `0.1.0` development period. This milestone produces native Linux ELF `.xse` executables for the
-documented source-native subset; it does not imply that the complete X# language is executable yet. Earlier `0.0.x` entries are compiler infrastructure
-snapshots; they do not imply that the full X# source-to-native pipeline is complete.
+The project is now in the `0.1.1` development period. This line keeps native Linux ELF `.xse` output working while moving
+macro-expanded C23 syntax into owned Rust compiler-core sessions and typed HIR. It does not imply that the complete X#
+language is executable yet. Earlier releases are compiler infrastructure snapshots.
 
 ## CLI summary
 
