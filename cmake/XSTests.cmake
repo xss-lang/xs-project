@@ -21,6 +21,8 @@ endif()
 add_test(NAME cli_version COMMAND xs --version)
 string(REPLACE "." "\\." XS_PROJECT_VERSION_REGEX "${PROJECT_VERSION}")
 set_tests_properties(cli_version PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "xs ${XS_PROJECT_VERSION_REGEX}")
+add_test(NAME legacy_cli_version COMMAND xs_proj --version)
+set_tests_properties(legacy_cli_version PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "xs-proj ${XS_PROJECT_VERSION_REGEX}")
 
 xs_add_c_test(lexer tests/lexer_tests.c xs_compiler)
 xs_add_c_test(parser tests/parser_tests.c xs_compiler)
@@ -29,6 +31,14 @@ add_test(NAME example_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/te
 set_tests_properties(example_project PROPERTIES TIMEOUT 5)
 add_test(NAME macro_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/macro_project/MacroApp.xsproj)
 set_tests_properties(macro_project PROPERTIES TIMEOUT 5)
+add_test(NAME compiler_check_file COMMAND xs check -file
+  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+set_tests_properties(compiler_check_file PROPERTIES TIMEOUT 5)
+add_test(NAME legacy_project_parse COMMAND xs_proj
+  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
+set_tests_properties(legacy_project_parse PROPERTIES TIMEOUT 5)
+add_test(NAME legacy_project_parser_rejects_commands COMMAND xs_proj build)
+set_tests_properties(legacy_project_parser_rejects_commands PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
 foreach(output hir mir xlil)
   add_test(NAME build_output_${output} COMMAND xs build --output ${output} -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
@@ -199,6 +209,19 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
+file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject")
+configure_file(tests/fixtures/source/MainReturn0.xs
+               "${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.xs" COPYONLY)
+add_executable(xs_project_resolver_stub tests/project_resolver_stub.c)
+add_test(NAME kotlin_project_native_build COMMAND xs build)
+set_tests_properties(kotlin_project_native_build PROPERTIES TIMEOUT 5
+  ENVIRONMENT "XS_PROJECT_DRIVER=$<TARGET_FILE:xs_project_resolver_stub>;XS_TEST_PROJECT_SOURCE=${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.xs"
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME kotlin_project_native_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.xse 0)
+set_tests_properties(kotlin_project_native_artifacts PROPERTIES DEPENDS kotlin_project_native_build TIMEOUT 5)
 foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainCharFlow MainIntegerWidths MainIntegerOperators MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot

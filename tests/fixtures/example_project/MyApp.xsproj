@@ -31,14 +31,6 @@ compilerOptions {
     }
 }
 
-externalModules {
-    addModule {
-        moduleName: "xsmods.Foo"
-        moduleRepo: "https://github.com/xss-lang/externalModules"
-        moduleVersion: "0.1"
-    }
-}
-
 // Comment
 /// Doc Comment
 // Multiline comment .xsproj does not support multiline comments.

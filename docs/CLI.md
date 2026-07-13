@@ -5,19 +5,20 @@ SPDX-License-Identifier: Apache-2.0
 
 # CLI contract
 
-The `xs` command currently works through a project manifest. The manifest syntax is the `.xsproj` format; it is not JSON,
-TOML, or YAML.
+The command surface is split by responsibility. `/usr/bin/xs` is the JVM-free compiler, `/usr/bin/xs-project` evaluates
+modern Kotlin project files on JRE 25, and `/usr/bin/xs-proj` parses and validates feature-frozen `.xsproj` files.
 
 ## Supported forms
 
 ```text
+xs check
+xs build
+xs run
 xs check -proj MyApp.xsproj
 xs build -proj MyApp.xsproj
 xs run -proj MyApp.xsproj
+xs-proj MyApp.xsproj
 xs build -file Main.xs
-xs build --output hir -proj MyApp.xsproj
-xs build --output mir -proj MyApp.xsproj
-xs build --output xlil -proj MyApp.xsproj
 xs build --output hir -file Main.xs
 xs build --output mir -file Main.xs
 xs build --output xlil -file Main.xs
@@ -27,12 +28,17 @@ xs build --xlil -file Main.xs
 xs --version
 ```
 
-On usage errors, the CLI prints:
+The `-proj` flag is accepted only by `xs` and only for `.xsproj` input. Kotlin projects never use `-proj`; argument-free
+`xs check`, `xs build`, and `xs run` ask `xs-project` to discover and evaluate `xs.project.kts` or the
+`xs.settings.kts` + `xs.build.kts` pair. `xs-project` returns source metadata and never parses or compiles `.xs` files.
+`xs-proj` accepts a manifest path directly and performs parser/model validation only.
+
+The compiler usage is:
 
 ```text
-usage: xs <check|run> -proj <project.xsproj>
 usage: xs build -file <Main.xs>
-usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>
+usage: xs <check|build|run>
+usage: xs <check|build|run> -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -file <input>
 usage: xs build [--hir|--mir|--xlil] -file <input>
 usage: xs --version
@@ -46,17 +52,17 @@ usage: xs --version
 
 `xs check` does not produce objects. Current flow:
 
-1. `.xsproj` parse/model validation
-2. source discovery
-3. X# parse/structural AST
-4. macro validation and expansion preparation
-5. HIR symbol/import/name/type resolution
-6. early expression checks
+1. source input validation
+2. X# parse/structural AST
+3. macro validation and expansion preparation
+4. HIR symbol/import/name/type resolution
+5. early expression checks
 
 ## `xs build`
 
 `xs build` will eventually run the full check, MIR, borrow checker, monomorphization, XLIL, backend, object, and link flow.
-Today, plain `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can produce a native `.xse` only for the first
+Today, plain `xs build -file <main.xs>`, argument-free `xs build`, and `xs build -proj <App.xsproj>` can produce a native
+`.xse` only for the first
 supported source slice:
 
 ```xs
@@ -88,7 +94,8 @@ including `==`, `!=`, `<`, `<=`, `>`, and `>=`. Local storage passes through MIR
 stack operations before normal LLVM optimization. The compiler lowers that source `Long` slice to the direct native
 process `i32` entry ABI. General source-level function body lowering is still incomplete.
 
-`-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and
+For legacy manifests, `-proj` selects only `.xsproj`; it is not a Kotlin project flag. The `--output hir|mir|xlil`
+spelling and the short `--hir`, `--mir`, and
 `--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.
 
 ## `xs run`

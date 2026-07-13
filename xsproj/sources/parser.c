@@ -31,7 +31,6 @@ static bool parse_value(ProjectParser *parser, XsProjectValue *value)
     project_advance(parser);
   return false;
 }
-
 void finish_field(ProjectParser *parser)
 {
   if(project_accept(parser, PROJECT_SEMICOLON))
@@ -101,21 +100,6 @@ static bool append_target(ProjectParser *parser, XsProjectTarget target)
   parser->project->targets = items;
   items[count] = target;
   parser->project->target_count = count + 1;
-  return true;
-}
-
-static bool append_module(ProjectParser *parser, XsProjectModule module)
-{
-  size_t count = parser->project->external_module_count;
-  XsProjectModule *items = realloc(parser->project->external_modules, (count + 1) * sizeof(*items));
-  if(items == nullptr)
-  {
-    project_error(parser, module.name.span, "compiler ran out of memory while reading external modules");
-    return false;
-  }
-  parser->project->external_modules = items;
-  items[count] = module;
-  parser->project->external_module_count = count + 1;
   return true;
 }
 
@@ -376,72 +360,4 @@ void parse_compiler_options(ProjectParser *parser)
     project_error(parser, parser->current.span, "required compilerOptions field addFiles is missing");
   if((seen & 4U) == 0)
     project_error(parser, parser->current.span, "required compilerOptions field output is missing");
-}
-
-static XsProjectModule parse_external_module(ProjectParser *parser)
-{
-  XsProjectModule module = {0};
-  unsigned seen = 0;
-  if(!project_expect(parser, PROJECT_LEFT_BRACE, "expected '{' after addModule"))
-    return module;
-  skip_newlines(parser);
-  while(parser->current.kind != PROJECT_RIGHT_BRACE && parser->current.kind != PROJECT_EOF)
-  {
-    if(parser->current.kind != PROJECT_IDENTIFIER)
-    {
-      project_error(parser, parser->current.span, "expected addModule field");
-      skip_unknown(parser);
-      continue;
-    }
-    ProjectToken name = parser->current;
-    project_advance(parser);
-    if(token_is(parser, name, "moduleName"))
-    {
-      duplicate_field(parser, name, &seen, 1U);
-      parse_scalar_field(parser, &module.name);
-    }
-    else if(token_is(parser, name, "moduleRepo"))
-    {
-      duplicate_field(parser, name, &seen, 2U);
-      parse_scalar_field(parser, &module.repo);
-    }
-    else if(token_is(parser, name, "moduleVersion"))
-    {
-      duplicate_field(parser, name, &seen, 4U);
-      parse_scalar_field(parser, &module.version);
-    }
-    else
-    {
-      project_error(parser, name.span, "unknown addModule field");
-      skip_unknown(parser);
-    }
-  }
-  project_expect(parser, PROJECT_RIGHT_BRACE, "expected '}' after addModule");
-  if((seen & 1U) == 0)
-    project_error(parser, parser->current.span, "required addModule field moduleName is missing");
-  if((seen & 2U) == 0)
-    project_error(parser, parser->current.span, "required addModule field moduleRepo is missing");
-  if((seen & 4U) == 0)
-    project_error(parser, parser->current.span, "required addModule field moduleVersion is missing");
-  return module;
-}
-
-void parse_external_modules(ProjectParser *parser)
-{
-  if(!project_expect(parser, PROJECT_LEFT_BRACE, "expected '{' after externalModules"))
-    return;
-  skip_newlines(parser);
-  while(parser->current.kind != PROJECT_RIGHT_BRACE && parser->current.kind != PROJECT_EOF)
-  {
-    if(parser->current.kind != PROJECT_IDENTIFIER || !token_is(parser, parser->current, "addModule"))
-    {
-      project_error(parser, parser->current.span, "externalModules may contain only addModule blocks");
-      skip_unknown(parser);
-      continue;
-    }
-    project_advance(parser);
-    append_module(parser, parse_external_module(parser));
-    finish_field(parser);
-  }
-  project_expect(parser, PROJECT_RIGHT_BRACE, "expected '}' after externalModules");
 }

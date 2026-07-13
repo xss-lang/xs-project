@@ -14,6 +14,13 @@ if(XS_BUILD_PROJECT_XS OR XS_BUILD_PROJECT_XSPROJ)
   target_compile_options(xsproj PUBLIC -include "${XS_COMPILER_CHECK_HEADER}")
 endif()
 
+if(XS_BUILD_PROJECT_XS OR XS_BUILD_PROJECT_XSPROJ)
+  add_executable(xs_proj xsproj/sources/main.c)
+  set_target_properties(xs_proj PROPERTIES OUTPUT_NAME xs-proj)
+  target_link_libraries(xs_proj PRIVATE xsproj)
+  target_compile_definitions(xs_proj PRIVATE XS_PROJECT_VERSION="${PROJECT_VERSION}")
+endif()
+
 if(NOT XS_BUILD_PROJECT_XS)
   return()
 endif()
@@ -48,6 +55,7 @@ add_library(xs_compiler
   xs/sources/driver/compiler_core_native.c
   xs/sources/driver/direct_xlil.c
   xs/sources/driver/options.c
+  xs/sources/driver/project_driver.c
   xs/sources/driver/source_native.c
   xs/sources/driver/source_native_static.c
   xs/sources/driver/source_native_update.c
@@ -116,7 +124,7 @@ add_library(xs_lil
 target_include_directories(xs_compiler PUBLIC include xs/include xsproj/include)
 target_include_directories(xs_lil PUBLIC include xs/include)
 target_link_libraries(xs_compiler PUBLIC xsproj xs_lil PRIVATE xslang_compiler_core)
-target_compile_definitions(xs_compiler PRIVATE XS_PROJECT_VERSION="${PROJECT_VERSION}"
+target_compile_definitions(xs_compiler PRIVATE _POSIX_C_SOURCE=200809L XS_PROJECT_VERSION="${PROJECT_VERSION}"
                                             XS_CLANG_EXECUTABLE="${CMAKE_C_COMPILER}")
 if(CMAKE_C_COMPILER_TARGET)
   target_compile_definitions(xs_compiler PRIVATE XS_CONFIGURED_TARGET_TRIPLE="${CMAKE_C_COMPILER_TARGET}")

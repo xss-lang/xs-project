@@ -102,15 +102,6 @@ compilerOptions {
     }
 }
 
-externalModules {
-    addModule {
-        moduleName: "xsmods.JSON"
-        moduleRepo: "https://github.com/xss-lang/externalModules"
-        moduleVersion: "0.1"
-    }
-}
-
-
 // ============================================================
 // Separators
 // ============================================================
@@ -182,7 +173,6 @@ appName: "OtherApp"
 //
 // Optional:
 //
-// - externalModules
 
 
 // ============================================================
@@ -530,93 +520,6 @@ output {
 //
 // Output is only produced when the compiler has enough valid
 // compiler and target information.
-
-
-// ============================================================
-// External modules
-// ============================================================
-
-externalModules {
-    addModule {
-        moduleName: "xsmods.JSON"
-        moduleRepo: "https://github.com/xss-lang/externalModules"
-        moduleVersion: "0.1"
-    }
-
-    addModule {
-        moduleName: "xsmods.Xml"
-        moduleRepo: "https://github.com/xss-lang/externalModules"
-        moduleVersion: "1.2.0"
-    }
-}
-
-
-// externalModules is optional.
-//
-// Only one externalModules block may exist.
-//
-// An externalModules block may be empty:
-
-externalModules {
-}
-
-
-// externalModules may contain multiple addModule blocks.
-//
-// Each addModule requires:
-//
-// - moduleName
-// - moduleRepo
-// - moduleVersion
-
-
-// Values may be None:
-
-externalModules {
-    addModule {
-        moduleName: None
-        moduleRepo: None
-        moduleVersion: None
-    }
-}
-
-
-// Fields belonging to addModule cannot be written directly inside
-// externalModules.
-
-
-// Invalid:
-
-externalModules {
-    moduleName: "xs.Xml"
-
-    addModule {
-        moduleName: "xs.Json"
-        moduleRepo: "https://github.com/xss-lang/externalModules"
-        moduleVersion: "latest"
-    }
-}
-
-
-// Duplicate fields inside addModule are invalid:
-
-externalModules {
-    addModule {
-        moduleName: "xs.Json"
-        moduleName: "xs.Xml"
-        moduleRepo: "https://github.com/xss-lang/externalModules"
-        moduleVersion: "latest"
-    }
-}
-
-
-// Multiple externalModules blocks are invalid:
-
-externalModules {
-}
-
-externalModules {
-}
 
 
 // ============================================================

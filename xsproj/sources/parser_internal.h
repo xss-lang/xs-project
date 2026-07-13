@@ -53,7 +53,6 @@ void duplicate_field(ProjectParser *parser, ProjectToken name, unsigned *seen, u
 void parse_scalar_field(ProjectParser *parser, XsProjectValue *value);
 void parse_authors(ProjectParser *parser);
 void parse_compiler_options(ProjectParser *parser);
-void parse_external_modules(ProjectParser *parser);
 
 #define skip_newlines project_skip_newlines
 #define token_is project_token_is

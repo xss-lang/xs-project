@@ -24,6 +24,7 @@ The default value is `xs`. The value `all` selects all stable projects.
 
 - `xs`: the X# compiler, public C23 API headers, CLI, and current test targets.
 - `xsproj`: the public C23 `.xsproj` manifest parser/lexer/model API.
+- `xs_kts`: the Kotlin/JVM 25 `xs-project` resolver for programmable project files.
 - `xslang`: the Rust semantic compiler core. It is built as an internal static library of `xs`, not selected as a separate
   top-level CMake project.
 
@@ -53,8 +54,8 @@ they can become selectable through `XS_ENABLE_PROJECTS`. `xsrt` will use the sam
 
 ## Tool configuration standard
 
-`xsfmt`, `xstidy`, and future developer tool projects use TOML for user configuration. This applies to tool configuration
-files only; the `.xsproj` project manifest syntax remains a separate XSPROJ format.
+`xsfmt`, `xstidy`, and future developer tool projects use TOML for user configuration. Project build configuration uses
+Kotlin scripts; the feature-frozen `.xsproj` syntax remains a separate legacy XSPROJ format.
 
 ## CMake contract
 

@@ -13,8 +13,10 @@ without linking the whole compiler.
 
 Implementation files live under `xsproj/sources/`.
 
-`externalModules` records are manifest metadata only at this stage. Each
-`addModule` block carries `moduleName`, `moduleRepo`, and `moduleVersion`; the
-parser stores those fields but does not download or resolve external module
-repositories yet. Public accessors expose the external module list and each
-module field for third-party manifest readers.
+The format and public API are feature-frozen. Existing application metadata,
+source selection, compiler version, and output target records remain supported.
+Dependency declarations belong to the programmable `xs.project.kts` system and
+are not part of `.xsproj`.
+
+`xs-proj Example.xsproj` parses and validates a manifest through this API. It is not a build command. Legacy manifest
+compilation remains `xs build -proj Example.xsproj`; `-proj` is never used for Kotlin project files.

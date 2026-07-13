@@ -8,6 +8,7 @@
 #include "compiler_core_native.h"
 #include "direct_xlil.h"
 #include "options.h"
+#include "project_driver.h"
 #include "source_native.h"
 
 #include "xs/compiler_core.h"
@@ -591,6 +592,38 @@ static int run_project_command(const XsCliOptions *options)
   return success ? 0 : 1;
 }
 
+static int run_kotlin_project_command(const XsCliOptions *options)
+{
+  char **paths = nullptr;
+  size_t path_count = 0;
+  if(!xs_driver_resolve_kotlin_project(&paths, &path_count))
+    return 1;
+  XsProjectValue *additional = nullptr;
+  if(path_count > 1U)
+  {
+    additional = calloc(path_count - 1U, sizeof(*additional));
+    if(additional == nullptr)
+    {
+      xs_driver_free_project_paths(paths, path_count);
+      return 1;
+    }
+    for(size_t i = 1; i < path_count; ++i)
+      additional[i - 1U] = (XsProjectValue){.text = paths[i]};
+  }
+  XsProject project = {
+      .xs_version = {.text = "kotlin-project"},
+      .entry = {.text = paths[0]},
+      .additional_files = additional,
+      .additional_file_count = path_count - 1U,
+  };
+  bool success =
+      check_project_sources(".", &project, options->output,
+                            strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE);
+  free(additional);
+  xs_driver_free_project_paths(paths, path_count);
+  return success ? 0 : 1;
+}
+
 static int run_file_command(const XsCliOptions *options)
 {
   if(is_direct_ir_input(options))
@@ -641,5 +674,7 @@ int xs_driver_main(int argc, char **argv)
   }
   if(options.file_path != nullptr)
     return run_file_command(&options);
+  if(options.manifest_path == nullptr)
+    return run_kotlin_project_command(&options);
   return run_project_command(&options);
 }

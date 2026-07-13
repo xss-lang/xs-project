@@ -48,8 +48,18 @@ Preset details:
 - build directory: `build/clang-debug`
 - default project: `xs`
 
-The `xs` target builds the Rust `xslang` static library into the CMake build directory and links its compiler-core session
-API into the C23 driver. Building `xsproj` alone remains C23-only and does not require Rust or LLVM.
+The `xs` target builds `/usr/bin/xs` package payload code and the Rust `xslang` static library, then links its compiler-core
+session API into the C23 driver. The same CMake configuration builds the `xs-proj` parser/validator executable. Building
+`xsproj` alone remains C23-only and does not require Rust or LLVM.
+
+The modern `xs-project` Kotlin resolver is built separately with Gradle:
+
+```text
+gradle -p xs_kts --no-daemon test installDist
+```
+
+It targets and runs only on JRE 25. Runtime project evaluation also requires an external `kotlin` command with scripting
+support; neither is embedded. The compiler command itself remains JVM-free.
 
 ## OOM-safe workflow
 

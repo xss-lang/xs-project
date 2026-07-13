@@ -6,7 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 # xs-project
 
 `xs-project` is the LLVM-project-style monorepo root for the X# language and compiler family. The current focus is the X#
-compiler (`xs`) and the public `.xsproj` manifest lexer/parser/model API (`xsproj`) that third-party tools can use.
+compiler (`xs`), the programmable Kotlin project resolver (`xs-project`), and the feature-frozen public `.xsproj`
+lexer/parser/model API (`xsproj`) that third-party tools can use.
 
 This repository is experimental, but it is treated as serious compiler infrastructure: every step must remain buildable and
 testable, the HIR/MIR layers must not depend on LLVM, and the documented compilation flow must be preserved.
@@ -20,6 +21,7 @@ Required core tools:
 - Clang / LLVM tools
 - LLD
 - Rustup and Cargo; `xslang/rust-toolchain.toml` selects the pinned nightly compiler core toolchain
+- Exactly JRE 25 plus the `kotlin` scripting command when resolving Kotlin project files
 - Optional helper tools such as `fd`, `rg`, `bat -p`, `sd`, and `busybox wc` are useful for development
 
 Default debug build:
@@ -42,6 +44,7 @@ Check the example project:
 
 ```text
 ./build/clang-debug/xs check -proj tests/fixtures/example_project/MyApp.xsproj
+./build/clang-debug/xs-proj tests/fixtures/example_project/MyApp.xsproj
 ```
 
 ## Monorepo directories
@@ -51,6 +54,7 @@ Check the example project:
 | `include/` | active | Shared public C headers across projects |
 | `xs/` | active | X# compiler, CLI, lexer/parser, AST, macro, HIR, MIR, XLIL, LLVM backend infrastructure |
 | `xsproj/` | active | Public C23 `.xsproj` parser/lexer/model API |
+| `xs_kts/` | active | Kotlin/JVM 25 `xs-project` resolver and programmable project DSL |
 | `xslang/` | active | Rust semantic compiler core linked into the C23 driver through a versioned bulk AST boundary |
 | `Spec/` | active source documentation | X# syntax and language behavior examples/spec files |
 | `docs/` | active documentation | Architecture, build, CLI, backend, roadmap, and implementation status |
@@ -133,14 +137,15 @@ ordered-comparison operations. Native process entry remains `fn main() -> Long`.
 
 ## CLI summary
 
-Currently supported command shapes:
+The compiler, Kotlin project resolver, and legacy manifest parser are separate commands:
 
 ```text
+xs check
+xs build
+xs run
 xs check -proj MyApp.xsproj
 xs build -proj MyApp.xsproj
-xs build --output hir -proj MyApp.xsproj
-xs build --output mir -proj MyApp.xsproj
-xs build --output xlil -proj MyApp.xsproj
+xs-proj MyApp.xsproj
 xs build --output hir -file Main.xs
 xs build --output mir -file Main.xs
 xs build --output xlil -file Main.xs
@@ -150,11 +155,13 @@ xs build --xlil -file Main.xs
 xs run -proj MyApp.xsproj
 ```
 
-The `-proj` forms run through a project manifest. The `-file` forms are reserved for direct single-file/intermediate input
+The argument-free `xs` project forms use `xs-project` to discover and evaluate `xs.project.kts` or the
+`xs.settings.kts` + `xs.build.kts` pair, then compile the returned `.xs` source registry inside `xs` itself. The
+`xs -proj` forms compile a legacy manifest. `xs-proj MyApp.xsproj` only parses and validates that manifest. The `xs -file` forms are direct single-file/intermediate input
 flows; they are accepted by the CLI and may intentionally emit diagnostics until the corresponding pipeline is connected.
 The public C23 `.xsproj` parser and existing compiler path remain supported and tested, but the format is feature-frozen.
-Future programmable project features are assigned to `xs.project.kts`; `.xsproj` consumers keep their current API and
-build behavior without receiving those new project-language features.
+Programmable project features belong to the Kotlin project system. `.xsproj` dependencies have been removed; existing
+application/source/target fields keep their current C23 API without receiving new project-language features.
 Intermediate output extensions:
 
 - `.xhir`: human-readable XHIR text, intended for direct semantic inspection and review

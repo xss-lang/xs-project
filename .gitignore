@@ -5,6 +5,8 @@ build/
 XS/
 .codex/
 target/
+.gradle/
+.kotlin/
 Cargo.lock
 node_modules/
 dist/

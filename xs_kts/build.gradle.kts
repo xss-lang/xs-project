@@ -1,0 +1,51 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import org.gradle.api.JavaVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+  kotlin("jvm") version "2.4.0"
+  application
+}
+
+group = "org.xsslang"
+version = "0.1.6"
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  testImplementation(kotlin("test"))
+}
+
+kotlin {
+  jvmToolchain(25)
+  compilerOptions {
+    jvmTarget = JvmTarget.JVM_25
+    allWarningsAsErrors = true
+  }
+}
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_25
+  targetCompatibility = JavaVersion.VERSION_25
+}
+
+application {
+  mainClass = "org.xsslang.project.MainKt"
+  applicationName = "xs-project"
+}
+
+sourceSets {
+  main { kotlin.srcDir("sources/main/kotlin") }
+  test { kotlin.srcDir("sources/test/kotlin") }
+}
+
+tasks.test {
+  useJUnitPlatform()
+  maxHeapSize = "512m"
+}

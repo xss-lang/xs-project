@@ -12,6 +12,20 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- The Kotlin/JVM 25 `xs-project` resolver evaluates combined `xs.project.kts` files or split `xs.settings.kts` and
+  `xs.build.kts` files through the required external `kotlin` script runner. Explicit source registries require one
+  case-sensitive `main.xs` entry and are compiled by the JVM-free `/usr/bin/xs` process.
+- `/usr/bin/xs-proj` is the dedicated parser/validator for `.xsproj`; legacy builds remain
+  `xs build -proj App.xsproj`. The documented `xs-meta` package is a metapackage for compiler, project tools, and future
+  formatter/linter packages.
+
+### Changed
+
+- The XSPROJ format and public C23 model are feature-frozen. Dependency records were removed; programmable dependencies
+  and conditional configuration belong to the Kotlin project DSL.
+
 ## 0.1.6 - 2026-07-13
 
 ### Added

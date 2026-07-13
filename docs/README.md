@@ -17,21 +17,24 @@ Recommended order for newcomers:
 2. [BUILDING.md](BUILDING.md): build/test and toolchain
 3. [ARCHITECTURE.md](ARCHITECTURE.md): compiler pipeline and layer boundaries
 4. [CLI.md](CLI.md): user commands and current status
-5. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
-6. [SPEC.md](SPEC.md): guide to the `Spec/` language-example tree
-7. [XHIR.md](XHIR.md): human-readable XHIR text format direction
-8. [XMIR.md](XMIR.md): human-readable MIR text format direction
-9. [XLIL.md](XLIL.md): backend input text registry direction
-10. [TODO.md](TODO.md): public roadmap
-11. [RELEASES.md](RELEASES.md): pre-1.0 release policy
-12. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
-13. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
+5. [PROJECT_FILES.md](PROJECT_FILES.md): Kotlin project files, legacy XSPROJ, and package boundaries
+6. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
+7. [SPEC.md](SPEC.md): guide to the `Spec/` language-example tree
+8. [XHIR.md](XHIR.md): human-readable XHIR text format direction
+9. [XMIR.md](XMIR.md): human-readable MIR text format direction
+10. [XLIL.md](XLIL.md): backend input text registry direction
+11. [TODO.md](TODO.md): public roadmap
+12. [RELEASES.md](RELEASES.md): pre-1.0 release policy
+13. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
+14. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
 
 ## Documentation authority
 
 - For documented X# syntax, `Spec/` has priority.
 - For how to read the example/spec tree, start with [SPEC.md](SPEC.md).
 - For the `.xsproj` format, `Spec/ProjectSystem.xs` and the public C API headers have priority.
+- For modern project configuration, `PROJECT_FILES.md` and the `xs_kts/` DSL API have priority. The `-proj` flag is
+  exclusive to `.xsproj`; Kotlin project commands discover their files without it.
 - For XHIR/XMIR text-output behavior, read `docs/XHIR.md` and `docs/XMIR.md`.
 - For XLIL behavior, read `docs/XLIL.md` and `xs/include/xs/lil.h` together.
 - For implementation order, [IMPLEMENTATION.md](IMPLEMENTATION.md) is authoritative.

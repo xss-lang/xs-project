@@ -85,12 +85,15 @@ The documented compilation order is preserved:
   line boundaries.
 - The `.xsproj` parser is not just an internal compiler detail. A public C23 API surface under `#include <xs/project.h>` lets
   third-party tools read `.xsproj` files in a JSON-like model.
-- `externalModules.addModule` records include `moduleName`, `moduleRepo`, and `moduleVersion`. They are parsed and stored as
-  manifest metadata; repository fetching and external module resolution are future work.
+- XSPROJ is feature-frozen and no longer carries dependency records. Its application/source/target model remains public.
 - Required fields, duplicate fields, unknown fields, and `appRelease` values are validated.
 - When `entry: None`, the documented first additional source selection rule is applied.
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
-- `xs check -proj <project.xsproj>` works.
+- `xs check -proj <project.xsproj>` works. The `-proj` flag is exclusive to `.xsproj`; `xs-proj <project.xsproj>` only
+  parses and validates the manifest.
+- Kotlin `xs.project.kts` or split `xs.settings.kts` + `xs.build.kts` projects are evaluated by `/usr/bin/xs-project` on
+  exactly JRE 25 through an external `kotlin` scripting command. Argument-free `xs` starts this resolver and
+  retains all `.xs` compilation work itself.
 - `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
   reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macro_rules!` declaration.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
@@ -596,7 +599,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison
   instructions, typed `.slot`/`load`/`store`, `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`.
-- `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` use the same native path for supported compiler-core
+- `xs build -file <input.xs>`, argument-free `xs build`, and `xs build -proj <input.xsproj>` use the same native path for supported compiler-core
   sessions. Context-typed literals, parameters, locals, direct calls, and returns preserve every fixed integer width;
   `main` remains `Long`. The broader expression slice includes `Long`/`Bool` mutable locals,
   unary `+`/`-`,

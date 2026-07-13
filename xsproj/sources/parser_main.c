@@ -57,12 +57,6 @@ bool xs_project_parse(const XsSource *source, XsDiagnostics *diagnostics, XsProj
       parse_compiler_options(&parser);
       finish_field(&parser);
     }
-    else if(token_is(&parser, name, "externalModules"))
-    {
-      duplicate_field(&parser, name, &seen, 64U);
-      parse_external_modules(&parser);
-      finish_field(&parser);
-    }
     else
     {
       project_error(&parser, name.span, "unknown top-level project field");

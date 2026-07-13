@@ -64,11 +64,13 @@ static bool parse_output_flag(const char *flag, XsCliOptions *options)
 
 bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
 {
-  if(argc < 4)
+  if(argc < 2)
     return false;
   if(strcmp(argv[1], "check") != 0 && strcmp(argv[1], "build") != 0 && strcmp(argv[1], "run") != 0)
     return false;
   *options = (XsCliOptions){.command = argv[1]};
+  if(argc == 2)
+    return true;
   for(int i = 2; i < argc; ++i)
   {
     if(strcmp(argv[i], "-proj") == 0)
@@ -98,13 +100,18 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
   if(options->manifest_path == nullptr && options->file_path == nullptr)
     return false;
   if(options->file_path != nullptr)
+  {
+    if(strcmp(options->command, "check") == 0)
+      return options->output == XS_BUILD_OUTPUT_NONE;
     return strcmp(options->command, "build") == 0;
+  }
   return strcmp(options->command, "build") == 0 || options->output == XS_BUILD_OUTPUT_NONE;
 }
 
 void xs_cli_print_usage(FILE *stream)
 {
   fprintf(stream, "usage: xs --version\n");
+  fprintf(stream, "usage: xs <check|build|run>\n");
   fprintf(stream, "usage: xs <check|run> -proj <project.xsproj>\n");
   fprintf(stream, "usage: xs build -file <Main.xs>\n");
   fprintf(stream, "usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>\n");
