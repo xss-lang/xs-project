@@ -101,7 +101,9 @@ add_library(xs_lil
   xs/sources/xlil/memory.c
   xs/sources/xlil/model.c
   xs/sources/xlil/model_float.c
+  xs/sources/xlil/model_string.c
   xs/sources/xlil/parser.c
+  xs/sources/xlil/parser_string.c
   xs/sources/xlil/verify.c
   xs/sources/xlil/writer.c
 )
@@ -125,6 +127,7 @@ target_link_libraries(xs PRIVATE xs_compiler)
 add_library(xs_backend_llvm
   xs/sources/backend/linker.c
   xs/sources/backend/llvm_backend.c
+  xs/sources/backend/llvm_string.c
 )
 target_include_directories(xs_backend_llvm PUBLIC include xs/include PRIVATE ${LLVM_INCLUDE_DIRS})
 target_link_libraries(xs_backend_llvm PUBLIC xs_lil PRIVATE ${XS_LLVM_LIBRARY})

@@ -77,11 +77,14 @@ int main(int argc, char **argv)
   CHECK(LLVMGetIntTypeWidth(type) == 16);
   CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_SFLOAT, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetTypeKind(type) == LLVMFloatTypeKind);
-  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_STR, &type, &error) == XS_BACKEND_DEFERRED);
+  CHECK(xs_llvm_primitive_type(backend, XS_PRIMITIVE_STR, &type, &error) == XS_BACKEND_OK);
+  CHECK(LLVMGetTypeKind(type) == LLVMStructTypeKind && LLVMCountStructElementTypes(type) == 2);
   CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_BOOL}, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetIntTypeWidth(type) == 1);
   CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_I64}, &type, &error) == XS_BACKEND_OK);
   CHECK(LLVMGetIntTypeWidth(type) == 64);
+  CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_STR}, &type, &error) == XS_BACKEND_OK);
+  CHECK(LLVMGetTypeKind(type) == LLVMStructTypeKind && LLVMCountStructElementTypes(type) == 2);
   CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_F16}, &type, &error) == XS_BACKEND_DEFERRED);
 
   const XsPrimitiveType parameters[] = {XS_PRIMITIVE_INT, XS_PRIMITIVE_INT};
@@ -103,6 +106,10 @@ int main(int argc, char **argv)
   CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 1);
   CHECK(xs_llvm_declare_lil_function(first, "Sink", (XsLilType){.kind = XS_LIL_TYPE_VOID}, import_parameters, 1,
                                      &function, &error) == XS_BACKEND_OK);
+  const XsLilType str_parameters[] = {{.kind = XS_LIL_TYPE_STR}};
+  CHECK(xs_llvm_declare_lil_function(first, "KeepStr", (XsLilType){.kind = XS_LIL_TYPE_STR}, str_parameters, 1,
+                                     &function, &error) == XS_BACKEND_OK);
+  CHECK(LLVMCountParamTypes(LLVMGlobalGetValueType(function)) == 1);
   XsLilModule *lil_module = nullptr;
   CHECK(xs_lil_module_create("Lowering", &lil_module, nullptr) == XS_LIL_OK);
   XsLilFunction *lil_function = nullptr;
@@ -317,6 +324,19 @@ int main(int argc, char **argv)
   CHECK(xs_llvm_declare_lil_function(first, "Memory", (XsLilType){.kind = XS_LIL_TYPE_I32}, nullptr, 0, &function,
                                      &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_lower_lil_function_body(first, memory_function, &error) == XS_BACKEND_OK);
+  XsLilFunction *string_function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(lil_module, "Greeting", (XsLilType){.kind = XS_LIL_TYPE_STR}, nullptr, 0,
+                                              &string_function, nullptr) == XS_LIL_OK);
+  XsLilBlock *string_entry = nullptr;
+  CHECK(xs_lil_function_append_block(string_function, "entry", &string_entry, nullptr) == XS_LIL_OK);
+  const uint16_t string_units[] = {UINT16_C(0x004c), UINT16_C(0x0065), UINT16_C(0x0069)};
+  XsLilValueId string_value = 0;
+  CHECK(xs_lil_block_add_const_str(string_entry, XS_LIL_UTF16_BE, string_units, 3, &string_value, nullptr) ==
+        XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(string_entry, string_value, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_declare_lil_function(first, "Greeting", (XsLilType){.kind = XS_LIL_TYPE_STR}, nullptr, 0, &function,
+                                     &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(first, string_function, &error) == XS_BACKEND_OK);
   CHECK(xs_llvm_optimize_codegen_unit(first, &error) == XS_BACKEND_OK);
   char ir_path[4096] = {0};
   CHECK(snprintf(ir_path, sizeof(ir_path), "%s.ll", argv[1]) > 0);
@@ -374,6 +394,9 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "alloca i32"));
   CHECK(file_contains(ir_path, "store i32 7"));
   CHECK(file_contains(ir_path, "load i32"));
+  CHECK(file_contains(ir_path, "define { ptr, i64 } @Greeting()"));
+  CHECK(file_contains(ir_path, "private unnamed_addr constant [6 x i8]"));
+  CHECK(file_contains(ir_path, "c\"\\00L\\00e\\00i\""));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
 
   const char *linker_arguments[] = {"--version"};

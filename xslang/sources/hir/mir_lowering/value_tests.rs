@@ -29,11 +29,11 @@ fn maps_hir_primitives_to_xlil_value_types()
              Some(XlilType { kind: TypeKind::F32 }));
   assert_eq!(primitive_to_xlil(PrimitiveType::Float),
              Some(XlilType { kind: TypeKind::F64 }));
-  assert_eq!(primitive_to_xlil(PrimitiveType::Str), None);
+  assert_eq!(primitive_to_xlil(PrimitiveType::Str), Some(XlilType::STR));
 }
 
 #[test]
-fn rejects_str_literal_lowering_until_runtime_layout_exists()
+fn lowers_str_literal_through_target_independent_mir()
 {
   let function = Function { name: "Name".to_string(),
                             return_type: Some(primitive(PrimitiveType::Str)),
@@ -44,10 +44,28 @@ fn rejects_str_literal_lowering_until_runtime_layout_exists()
                                                           }),
                                                           span: span(3, 14) }] };
 
-  let diagnostics = HirToMirLowerer::new().lower_function(&function)
-                                          .expect_err("Str lowering is intentionally deferred");
-  assert!(diagnostics.iter()
-                     .any(|diagnostic| diagnostic.code == DiagnosticCode::UnsupportedType));
+  let xhir = crate::hir::text::function_to_xhir(&function);
+  assert!(xhir.contains("literal string \"xs\""));
+  assert!(!xhir.contains("utf16"));
+
+  let mir = HirToMirLowerer::new().lower_function(&function)
+                                  .expect("Str literal should lower");
+  assert!(matches!(&mir.blocks[0].statements[0],
+                   mir::Statement::ConstStr { units, .. } if units == &[0x0078, 0x0073]));
+  assert!(verify_function(&mir).is_empty());
+
+  let xmir = crate::mir::text::function_to_xmir(&mir);
+  assert!(xmir.contains("value utf16 [0x0078, 0x0073]"));
+  assert!(!xmir.contains("utf16le"));
+  assert!(!xmir.contains("utf16be"));
+
+  let xlil = crate::xlil::lowering::MirToXlilLowerer::new().with_utf16_encoding(crate::xlil::Utf16Encoding::BigEndian)
+                                                           .lower_function(&mir)
+                                                           .expect("Str MIR should lower to XLIL");
+  assert!(matches!(&xlil.blocks[0].instructions[0],
+                   crate::xlil::Instruction::ConstStr { encoding: crate::xlil::Utf16Encoding::BigEndian,
+                                                        units,
+                                                        .. } if units == &[0x0078, 0x0073]));
 }
 
 #[test]

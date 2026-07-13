@@ -76,6 +76,7 @@ static bool parse_type(const char *start, size_t length, XsLilType *type)
       {"u16", XS_LIL_TYPE_U16},   {"i16", XS_LIL_TYPE_I16},   {"u32", XS_LIL_TYPE_U32},   {"i32", XS_LIL_TYPE_I32},
       {"u64", XS_LIL_TYPE_U64},   {"i64", XS_LIL_TYPE_I64},   {"u128", XS_LIL_TYPE_U128}, {"i128", XS_LIL_TYPE_I128},
       {"f16", XS_LIL_TYPE_F16},   {"f32", XS_LIL_TYPE_F32},   {"f64", XS_LIL_TYPE_F64},   {"f128", XS_LIL_TYPE_F128},
+      {"str", XS_LIL_TYPE_STR},
   };
   for(size_t i = 0; i < sizeof(types) / sizeof(types[0]); ++i)
   {
@@ -480,6 +481,11 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
      equals < line + length && *equals == '=')
   {
     const char *operation = skip_space(equals + 1, line + length);
+    bool matched_string = false;
+    XsLilStatus string_status = xs_lil_parse_const_str(
+        block, result_type, operation, (size_t)(line + length - operation), result, &matched_string, error);
+    if(matched_string)
+      return string_status;
     static const char load_prefix[] = "load %s";
     if((size_t)(line + length - operation) > sizeof(load_prefix) - 1U &&
        strncmp(operation, load_prefix, sizeof(load_prefix) - 1U) == 0)

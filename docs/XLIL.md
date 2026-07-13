@@ -65,6 +65,9 @@ Format notes:
 - `bbN.<label>:` starts a basic block.
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
+- `%rN:str = const.str utf16le [0x004c, ...]` and its `utf16be` form create a borrowed static string view from
+  explicit UTF-16 code units. The tag fixes the byte order used by the target data object; the numeric list always
+  contains Unicode UTF-16 code-unit values. Untagged string constants are invalid.
 - `%rN:i32 = const.i32 N` creates a signed 32-bit integer constant.
 - `%rN:f32 = const.f32 0xXXXXXXXX` and `%rN:f64 = const.f64 0xXXXXXXXXXXXXXXXX` create IEEE-754 constants from exact
   bit patterns. Fixed-width hexadecimal spelling preserves negative zero, infinities, and NaN payloads across text
@@ -109,6 +112,14 @@ Call targets resolve only within the registry module. Forward references are acc
 Stack slots are function-local and target-independent. Slot ids are sequential, `void` slots are invalid, and load/store
 value types must exactly match the slot type. The LLVM backend currently materializes them with entry-block `alloca`
 instructions and typed `load`/`store` operations.
+
+MIR remains target-independent and writes string constants as `utf16 [0x004c, ...]`. Endianness becomes concrete only
+when MIR is lowered to XLIL. XHIR remains closer to X# source and represents the same value as a quoted string literal.
+
+The XLIL v0 `str` value is a borrowed view containing a pointer and a target-sized UTF-16 code-unit count. A constant's
+backing data is immutable and has static storage duration. Its length excludes any terminator; XLIL string constants do
+not add or require a null terminator. `Optional<Str>` ownership and allocation are separate higher-level semantics and
+are not represented by this `str` constant record.
 
 Version `0` is the only supported XLIL version today. The header exists so `xs build --xlil -file <input.xlil>` can select
 the correct XLIL grammar as the format evolves. It is not a bytecode VM version and does not make `.xlil` binary.

@@ -62,6 +62,7 @@ static void function_free(XsLilFunction *function)
     {
       free(block->instructions[instruction].callee);
       free(block->instructions[instruction].arguments);
+      free(block->instructions[instruction].utf16_units);
     }
     free(block->instructions);
     free(block);
@@ -968,7 +969,8 @@ XsLilBlockId xs_lil_block_terminator_else_block(const XsLilBlock *block)
 const char *xs_lil_type_name(XsLilType type)
 {
   static const char *const names[] = {
-      "void", "bool", "u8", "i8", "u16", "i16", "u32", "i32", "u64", "i64", "u128", "i128", "f16", "f32", "f64", "f128",
+      "void", "bool", "u8",   "i8",  "u16", "i16", "u32",  "i32", "u64",
+      "i64",  "u128", "i128", "f16", "f32", "f64", "f128", "str",
   };
   if((size_t)type.kind >= sizeof(names) / sizeof(names[0]))
     return "unknown";

@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Borrowed-static `Str` literals now lower through XHIR, endian-neutral `utf16 [...]` MIR/XMIR, explicit
+  `const.str utf16le|utf16be [...]` XLIL v0 records, LLVM static data, PIC object emission, and native `.xse` linking.
+  The public C23 XLIL API exposes the selected encoding and individual UTF-16 code units.
 - HIR now documents its coordinated THIR and XHIR sides explicitly: THIR carries typed/source-oriented facts, XHIR carries
   normalized operations for MIR lowering, and `.xhir` represents XHIR rather than THIR.
 - Explicit `String` annotations are source sugar for boxed `Optional<Str>`. String literal inference still produces the

@@ -5,6 +5,8 @@
 
 #include "xs/backend/llvm_backend.h"
 
+#include "llvm_string.h"
+
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Target.h>
 #include <llvm-c/Transforms/PassBuilder.h>
@@ -120,7 +122,7 @@ XsBackendStatus xs_llvm_backend_create(const XsLlvmBackendConfig *config, XsLlvm
   result->target_machine =
       LLVMCreateTargetMachine(target, requested_triple, config->cpu == nullptr ? "" : config->cpu,
                               config->features == nullptr ? "" : config->features, codegen_level(config->optimization),
-                              LLVMRelocDefault, LLVMCodeModelDefault);
+                              LLVMRelocPIC, LLVMCodeModelDefault);
   if(default_triple != nullptr)
     LLVMDisposeMessage(default_triple);
 
@@ -261,8 +263,12 @@ XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType p
     *type = LLVMDoubleTypeInContext(backend->context);
     break;
   case XS_PRIMITIVE_STR:
-    return set_error(error, XS_BACKEND_DEFERRED,
-                     "Str lowering is deferred until the UTF-16 runtime value layout is documented");
+  {
+    LLVMTypeRef fields[] = {LLVMPointerTypeInContext(backend->context, 0),
+                            LLVMIntPtrTypeInContext(backend->context, backend->target_data)};
+    *type = LLVMStructTypeInContext(backend->context, fields, 2, false);
+    break;
+  }
   default:
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "unknown X# primitive type");
   }
@@ -312,6 +318,13 @@ XsBackendStatus xs_llvm_lil_type(XsLlvmBackend *backend, XsLilType type, LLVMTyp
   case XS_LIL_TYPE_F16:
   case XS_LIL_TYPE_F128:
     return set_error(error, XS_BACKEND_DEFERRED, "XLIL f16 and f128 lowering is deferred");
+  case XS_LIL_TYPE_STR:
+  {
+    LLVMTypeRef fields[] = {LLVMPointerTypeInContext(backend->context, 0),
+                            LLVMIntPtrTypeInContext(backend->context, backend->target_data)};
+    *llvm_type = LLVMStructTypeInContext(backend->context, fields, 2, false);
+    break;
+  }
   default:
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "unknown XLIL type");
   }
@@ -615,6 +628,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     values[result] = LLVMConstInt(type, xs_lil_block_instruction_bool(block, index) ? 1 : 0, false);
     return XS_BACKEND_OK;
   }
+  if(kind == XS_LIL_INSTRUCTION_CONST_STR)
+    return xs_llvm_lower_lil_const_str(unit->backend, unit, block, index, &values[result], error);
   if(kind == XS_LIL_INSTRUCTION_NOT_BOOL)
   {
     XsLilValueId operand = xs_lil_block_instruction_left(block, index);

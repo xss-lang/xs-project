@@ -26,6 +26,7 @@ pub const fn type_name(value_type: Type) -> &'static str
     TypeKind::F32 => "f32",
     TypeKind::F64 => "f64",
     TypeKind::F128 => "f128",
+    TypeKind::Str => "str",
   }
 }
 
@@ -50,6 +51,7 @@ pub fn type_from_name(name: &str) -> Option<Type>
     "f32" => TypeKind::F32,
     "f64" => TypeKind::F64,
     "f128" => TypeKind::F128,
+    "str" => TypeKind::Str,
     _ => return None,
   };
   Some(Type { kind })

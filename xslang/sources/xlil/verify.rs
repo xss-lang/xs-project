@@ -128,6 +128,7 @@ impl Verifier
       Instruction::ConstI32 { result, .. } => self.i32_value(function, result, "XLIL const.i32 result"),
       Instruction::ConstF32 { result, .. } => self.float_value(function, result, Type::F32, "XLIL const.f32 result"),
       Instruction::ConstF64 { result, .. } => self.float_value(function, result, Type::F64, "XLIL const.f64 result"),
+      Instruction::ConstStr { result, .. } => self.float_value(function, result, Type::STR, "XLIL const.str result"),
       Instruction::ConstBool { result, .. } => self.bool_value(function, result, "XLIL const.bool result"),
       Instruction::BinaryFloat { operation,
                                  value_type,

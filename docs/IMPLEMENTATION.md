@@ -100,7 +100,9 @@ The documented compilation order is preserved:
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
 - Plain source native builds support the first expression/local/call slice for top-level `fn main() -> Long` plus
-  same-module helper functions with `Long`/`Bool` parameters and `Long`/`Bool` results: explicit
+  same-module helper functions with supported primitive signatures. A zero-parameter `Str` helper returning a string
+  literal now crosses XHIR, target-independent UTF-16 MIR/XMIR, explicit-endian XLIL, LLVM IR, and native `.xse` linking.
+  The existing local/control-flow slice covers helper functions with `Long`/`Bool` parameters and results: explicit
   `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, simple
   assignment to mutable `Long`/`Bool` locals, local
   identifier returns, direct helper calls,

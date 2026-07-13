@@ -7,49 +7,16 @@ use super::{
   FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation,
 };
 
+mod types;
+
+pub use types::{Type, TypeKind, Utf16Encoding};
+
 pub const SUPPORTED_XLIL_VERSION: u32 = 0;
 
 #[must_use]
 pub const fn is_supported_xlil_version(version: u32) -> bool
 {
   matches!(version, SUPPORTED_XLIL_VERSION)
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum TypeKind
-{
-  Void,
-  Bool,
-  U8,
-  I8,
-  U16,
-  I16,
-  U32,
-  I32,
-  U64,
-  I64,
-  U128,
-  I128,
-  F16,
-  F32,
-  F64,
-  F128,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct Type
-{
-  pub kind: TypeKind,
-}
-
-impl Type
-{
-  pub const VOID: Self = Self { kind: TypeKind::Void };
-  pub const BOOL: Self = Self { kind: TypeKind::Bool };
-  pub const I32: Self = Self { kind: TypeKind::I32 };
-  pub const I64: Self = Self { kind: TypeKind::I64 };
-  pub const F32: Self = Self { kind: TypeKind::F32 };
-  pub const F64: Self = Self { kind: TypeKind::F64 };
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -93,6 +60,12 @@ pub enum Instruction
   ConstF64
   {
     result: ValueId, bits: u64
+  },
+  ConstStr
+  {
+    result: ValueId,
+    encoding: Utf16Encoding,
+    units: Vec<u16>,
   },
   ConstBool
   {
@@ -348,6 +321,21 @@ impl Function
                              value_type: Type::F64 });
     self.block_mut(block)?.instructions.push(Instruction::ConstF64 { result,
                                                                      bits });
+    Some(result)
+  }
+
+  pub fn add_const_str(&mut self,
+                       block: BlockId,
+                       encoding: Utf16Encoding,
+                       units: impl Into<Vec<u16>>)
+                       -> Option<ValueId>
+  {
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::STR });
+    self.block_mut(block)?.instructions.push(Instruction::ConstStr { result,
+                                                                     encoding,
+                                                                     units: units.into() });
     Some(result)
   }
 
@@ -983,6 +971,7 @@ mod tests
     assert_eq!(type_name(Type::VOID), "void");
     assert_eq!(type_name(Type::I32), "i32");
     assert_eq!(type_name(Type::I64), "i64");
+    assert_eq!(type_name(Type::STR), "str");
   }
 
   #[test]
@@ -991,6 +980,7 @@ mod tests
     assert_eq!(type_from_name("void"), Some(Type::VOID));
     assert_eq!(type_from_name("i64"), Some(Type::I64));
     assert_eq!(type_from_name("i32"), Some(Type::I32));
+    assert_eq!(type_from_name("str"), Some(Type::STR));
     assert_eq!(type_from_name("unknown"), None);
   }
 }

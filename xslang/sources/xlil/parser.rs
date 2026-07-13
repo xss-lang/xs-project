@@ -11,6 +11,7 @@ use crate::xlil::{
 
 mod float;
 mod i64;
+mod string;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -488,6 +489,10 @@ impl Parser<'_>
     {
       return self.const_bool(function, result, rest, line);
     }
+    if let Some(parsed) = self.const_str(function, text, line)
+    {
+      return Some(parsed);
+    }
     if let Some((result, rest)) = text.split_once(" = const.i32 ")
     {
       return self.const_i32(function, result, rest, line);
@@ -772,35 +777,6 @@ impl Parser<'_>
                                  value_type: Type::BOOL });
     Some(Instruction::NotBool { result,
                                 operand })
-  }
-
-  fn const_bool(&mut self, function: &mut Function, result: &str, value: &str, line: usize) -> Option<Instruction>
-  {
-    let Some(result) = result.strip_suffix(":bool")
-    else
-    {
-      self.report(DiagnosticCode::InvalidInstruction,
-                  line,
-                  "XLIL const.bool result type is invalid");
-      return None;
-    };
-    let result = self.value_id(result, line)?;
-    let value = match value
-    {
-      "true" => true,
-      "false" => false,
-      _ =>
-      {
-        self.report(DiagnosticCode::InvalidInstruction,
-                    line,
-                    "XLIL const.bool immediate is invalid");
-        return None;
-      }
-    };
-    function.values.push(Value { id: result,
-                                 value_type: Type::BOOL });
-    Some(Instruction::ConstBool { result,
-                                  value })
   }
 
   fn value_call(&mut self, function: &mut Function, result: &str, call: &str, line: usize) -> Option<Instruction>

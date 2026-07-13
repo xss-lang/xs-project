@@ -635,7 +635,7 @@ pub const fn primitive_to_xlil(primitive: PrimitiveType) -> Option<XlilType>
     PrimitiveType::UInteger => TypeKind::U128,
     PrimitiveType::SFloat => TypeKind::F32,
     PrimitiveType::Float => TypeKind::F64,
-    PrimitiveType::Str => return None,
+    PrimitiveType::Str => TypeKind::Str,
   };
   Some(XlilType { kind })
 }

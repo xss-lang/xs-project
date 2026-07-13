@@ -122,14 +122,16 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                                                   PrimitiveType::Int |
                                                                                   PrimitiveType::Bool |
                                                                                   PrimitiveType::SFloat |
-                                                                                  PrimitiveType::Float))
+                                                                                  PrimitiveType::Float |
+                                                                                  PrimitiveType::Str))
                                                                                 });
                            let return_supported = matches!(function.return_type,
                                                            TypeRef::Primitive(PrimitiveType::Long |
                                                                               PrimitiveType::Int |
                                                                               PrimitiveType::Bool |
                                                                               PrimitiveType::SFloat |
-                                                                              PrimitiveType::Float));
+                                                                              PrimitiveType::Float |
+                                                                              PrimitiveType::Str));
                            let recursive =
                              function.body
                                      .as_ref()

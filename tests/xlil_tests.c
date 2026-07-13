@@ -32,13 +32,15 @@ static void test_module_and_text_writer(void)
       {.kind = XS_LIL_TYPE_U8},
       {.kind = XS_LIL_TYPE_I8},
       {.kind = XS_LIL_TYPE_BOOL},
+      {.kind = XS_LIL_TYPE_STR},
   };
-  CHECK(xs_lil_module_add_function(module, "Check", (XsLilType){.kind = XS_LIL_TYPE_BOOL}, parameters, 3, &error) ==
+  CHECK(xs_lil_module_add_function(module, "Check", (XsLilType){.kind = XS_LIL_TYPE_BOOL}, parameters, 4, &error) ==
         XS_LIL_OK);
   CHECK(xs_lil_module_function_count(module) == 1);
   CHECK(strcmp(xs_lil_type_name((XsLilType){.kind = XS_LIL_TYPE_BOOL}), "bool") == 0);
   CHECK(strcmp(xs_lil_type_name((XsLilType){.kind = XS_LIL_TYPE_U8}), "u8") == 0);
   CHECK(strcmp(xs_lil_type_name((XsLilType){.kind = XS_LIL_TYPE_I8}), "i8") == 0);
+  CHECK(strcmp(xs_lil_type_name((XsLilType){.kind = XS_LIL_TYPE_STR}), "str") == 0);
 
   FILE *stream = tmpfile();
   if(stream == nullptr)
@@ -55,7 +57,7 @@ static void test_module_and_text_writer(void)
   CHECK(fgets(buffer, sizeof(buffer), stream) != nullptr);
   CHECK(strstr(buffer, ".xlil module App.Main\n") != nullptr);
   CHECK(fgets(buffer, sizeof(buffer), stream) != nullptr);
-  CHECK(strstr(buffer, ".extern Check : (u8, i8, bool) -> bool\n") != nullptr);
+  CHECK(strstr(buffer, ".extern Check : (u8, i8, bool, str) -> bool\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -604,6 +606,12 @@ static void test_text_parser_rejects_invalid_inputs(void)
       "  %r0:i64 = load %s0\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> void\n.slot %s0:i32\nbb0.entry:\n"
       "  %r0:i64 = const 1\n  store %r0, %s0\n  ret\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> str\nbb0.entry:\n"
+      "  %r0:str = const.str utf16 [0x0041]\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> str\nbb0.entry:\n"
+      "  %r0:str = const.str utf16le [0xd800]\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> str\nbb0.entry:\n"
+      "  %r0:str = const.str utf16be [0x0041,]\n  ret %r0\n.end\n",
   };
   for(size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
@@ -613,6 +621,38 @@ static void test_text_parser_rejects_invalid_inputs(void)
           XS_LIL_INVALID_ARGUMENT);
     CHECK(module == nullptr);
   }
+}
+
+static void test_text_parser_round_trips_explicit_utf16_strings(void)
+{
+  static const char text[] = ".xlil version 0\n.xlil module Strings\n.func greeting : () -> str\nbb0.entry:\n"
+                             "  %r0:str = const.str utf16be [0x004c, 0x0065, 0x0069]\n  ret %r0\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("strings.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  if(module == nullptr)
+    return;
+  const XsLilBlock *block = xs_lil_function_block_at(xs_lil_module_function_at(module, 0), 0);
+  CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_CONST_STR);
+  CHECK(xs_lil_block_instruction_utf16_encoding(block, 0) == XS_LIL_UTF16_BE);
+  CHECK(xs_lil_block_instruction_utf16_length(block, 0) == 3);
+  CHECK(xs_lil_block_instruction_utf16_unit(block, 0, 0) == UINT16_C(0x004c));
+  CHECK(xs_lil_block_instruction_utf16_unit(block, 0, 2) == UINT16_C(0x0069));
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char buffer[512] = {0};
+    size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
+    buffer[read] = '\0';
+    CHECK(strcmp(buffer, text) == 0);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
 }
 
 int main(void)
@@ -636,6 +676,7 @@ int main(void)
   test_text_parser_round_trips_binary_i64_instructions();
   test_text_parser_round_trips_i32_constant();
   test_text_parser_round_trips_binary_i32_instructions();
+  test_text_parser_round_trips_explicit_utf16_strings();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

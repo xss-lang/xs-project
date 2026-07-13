@@ -1,0 +1,12 @@
+.xlil version 0
+.xlil module StringLiteral
+.func greeting : () -> str
+bb0.entry:
+  %r0:str = const.str utf16le [0x004c, 0x0065, 0x0069]
+  ret %r0
+.end
+.func main : () -> i32
+bb0.entry:
+  %r0:i32 = const.i32 0
+  ret %r0
+.end

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::mir;
-use crate::xlil::{BlockId, Function, I32BinaryOperation, SlotId, Type, ValueId};
+use crate::xlil::{BlockId, Function, I32BinaryOperation, SlotId, Type, Utf16Encoding, ValueId};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -32,6 +32,7 @@ pub struct Diagnostic
 pub struct MirToXlilLowerer
 {
   diagnostics: Vec<Diagnostic>,
+  utf16_encoding: Utf16Encoding,
 }
 
 impl MirToXlilLowerer
@@ -40,6 +41,13 @@ impl MirToXlilLowerer
   pub fn new() -> Self
   {
     Self::default()
+  }
+
+  #[must_use]
+  pub fn with_utf16_encoding(mut self, encoding: Utf16Encoding) -> Self
+  {
+    self.utf16_encoding = encoding;
+    self
   }
 
   pub fn lower_function(mut self, function: &mir::Function) -> Result<Function, Vec<Diagnostic>>
@@ -132,6 +140,12 @@ impl MirToXlilLowerer
                                         span, } = *statement
       {
         self.lower_const_float(local, bits, Type::F64, span, xlil_block, local_types, values, lowered);
+      }
+      if let mir::Statement::ConstStr { local,
+                                        ref units,
+                                        span, } = *statement
+      {
+        self.lower_const_str(local, units, span, xlil_block, local_types, values, lowered);
       }
       if let mir::Statement::ConstBool { local,
                                          value,
@@ -383,6 +397,35 @@ impl MirToXlilLowerer
                         values,
                         lowered);
       }
+    }
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  fn lower_const_str(&mut self,
+                     local: mir::LocalId,
+                     units: &[u16],
+                     span: Span,
+                     block: BlockId,
+                     local_types: &HashMap<mir::LocalId, Option<Type>>,
+                     values: &mut HashMap<mir::LocalId, ValueId>,
+                     function: &mut Function)
+  {
+    if local_types.get(&local) != Some(&Some(Type::STR))
+    {
+      self.report(DiagnosticCode::UnsupportedLocalType,
+                  "MIR const.str target must have str type",
+                  span);
+      return;
+    }
+    match function.add_const_str(block, self.utf16_encoding, units)
+    {
+      Some(result) =>
+      {
+        values.insert(local, result);
+      }
+      None => self.report(DiagnosticCode::MissingLocalValue,
+                          "could not lower MIR const.str value",
+                          span),
     }
   }
 

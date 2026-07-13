@@ -86,6 +86,31 @@ fn roundtrips_const_i32_function()
 }
 
 #[test]
+fn roundtrips_explicit_utf16_string_constants()
+{
+  let text = ".xlil version 0\n.xlil module Strings\n.func little : () -> str\nbb0.entry:\n  %r0:str = const.str \
+              utf16le [0x004c, 0x0065, 0x0069]\n  ret %r0\n.end\n.func big : () -> str\nbb0.entry:\n  %r0:str = \
+              const.str utf16be [0x004c, 0x0065, 0x0069]\n  ret %r0\n.end\n";
+  let module = parse_module(text).expect("explicit UTF-16 strings should parse");
+
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(module_to_string(&module), text);
+}
+
+#[test]
+fn rejects_untagged_or_malformed_utf16_string_constants()
+{
+  for instruction in ["%r0:str = const.str utf16 [0x0041]",
+                      "%r0:str = const.str utf16le [0xd800]"]
+  {
+    let text = format!(".xlil version 0\n.xlil module Strings\n.func value : () -> str\nbb0.entry:\n  \
+                        {instruction}\n  ret %r0\n.end\n");
+    assert!(parse_module(&text).is_err(),
+            "invalid instruction was accepted: {instruction}");
+  }
+}
+
+#[test]
 fn roundtrips_call_function()
 {
   let text = ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %r0:i64 = const 7\n  \

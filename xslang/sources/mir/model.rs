@@ -74,6 +74,12 @@ pub enum Statement
   {
     local: LocalId, bits: u64, span: Span
   },
+  ConstStr
+  {
+    local: LocalId,
+    units: Vec<u16>,
+    span: Span,
+  },
   ConstBool
   {
     local: LocalId, value: bool, span: Span
@@ -370,6 +376,9 @@ impl BorrowChecker
                             span,
                             .. } |
       Statement::ConstF64 { local,
+                            span,
+                            .. } |
+      Statement::ConstStr { local,
                             span,
                             .. } |
       Statement::ConstBool { local,

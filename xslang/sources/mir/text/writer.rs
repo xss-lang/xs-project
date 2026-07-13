@@ -150,6 +150,14 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        target local {}", local.0);
       let _ = writeln!(output, "        bits 0x{bits:016x}");
     }
+    Statement::ConstStr { local,
+                          units,
+                          .. } =>
+    {
+      let _ = writeln!(output, "      statement const.str");
+      let _ = writeln!(output, "        target local {}", local.0);
+      let _ = writeln!(output, "        value {}", crate::text_utf16::format_units(units));
+    }
     Statement::ConstBool { local,
                            value,
                            .. } =>

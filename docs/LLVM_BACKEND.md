@@ -21,12 +21,14 @@ design to x86-64; ARM64 compatibility must be preserved.
 - Target data layout generation
 - Independent LLVM module per codegen unit
 - Numeric X# primitive type mapping to LLVM types
+- Borrowed `Str` mapping to a `{ pointer, target-sized UTF-16 code-unit count }` view
 - Body-less function declaration and signature lowering
 - XLIL type mapping for function declarations
 - Direct `.xlil` parser/model-driven `.extern`/`.func` lowering to verified and optimized LLVM IR, objects, and local
   native `.xse` executable artifacts for `.func main : () -> i32`
 - Initial XLIL body lowering for parameters, constants, i32 arithmetic/bitwise/shift/comparison, i64
-  arithmetic/bitwise/shift/comparison, f32/f64 arithmetic and ordered comparisons, typed stack-slot `load`/`store`,
+  arithmetic/bitwise/shift/comparison, f32/f64 arithmetic and ordered comparisons, explicit UTF-16 string constants,
+  typed stack-slot `load`/`store`,
   `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`
 - LLVM optimization pipeline selection from `default<O0>` through `default<O3>`
 - LLVM module verification
@@ -36,16 +38,15 @@ design to x86-64; ARM64 compatibility must be preserved.
 Object file emission and linker invocation are wired into direct `.xlil` native builds. Project-based `xs build` still
 waits for the full frontend/HIR/MIR path to produce complete XLIL.
 
-## Intentionally deferred type mappings
+## String mapping and deferred owned strings
 
-`Str` is not lowered to an LLVM storage type yet:
+`Str` is an immutable borrowed UTF-16 view with an implicit static lifetime. LLVM represents the view as a pointer plus
+the target's pointer-sized integer count of UTF-16 code units. XLIL `const.str` carries an explicit `utf16le` or
+`utf16be` tag; lowering emits an immutable private byte array in that byte order and does not append a null terminator.
+Native objects use position-independent relocation so the view can safely refer to that static data from a PIE `.xse`.
 
-- `Str` is UTF-16. The compiler/runtime selects UTF-16LE or UTF-16BE automatically for the target/runtime situation.
-- `Str` length is unbounded except by the representation allowed by UTF-16/runtime/platform limits.
-- Semantically, `Str` is an immutable borrowed string with an implicit static lifetime.
-- `Optional<Str>` is the canonical boxed, owned optional-string type, so it will need an owned string payload
-  representation when Optional/String lowering reaches the backend.
-- Ownership, length-field type, and runtime value layout are not fully implemented in code yet.
+`Optional<Str>` is the canonical boxed, owned optional-string type. Its allocator, ownership, discriminant, and runtime
+layout remain deferred; the borrowed `Str` view does not invent those semantics.
 
 `Bool` is resolved as a 1-bit primitive in HIR and lowered to `i1` by the LLVM backend.
 
@@ -53,8 +54,6 @@ waits for the full frontend/HIR/MIR path to produce complete XLIL.
 both; signedness is selected later by typed MIR operations such as comparisons, conversions, and arithmetic.
 
 `Char` lowers to LLVM `i16` because its documented width is 16 bits.
-
-For `Str`, the backend returns `XS_BACKEND_DEFERRED`. This avoids inventing a temporary ABI or runtime layout.
 
 ## Preserved stage boundary
 
@@ -73,7 +72,8 @@ Borrow-checked and optimized MIR
 ```
 
 XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, exact-bit f32/f64 constants, and
-boolean constants, i32/i64 arithmetic/bitwise/shift/comparison instructions, f32/f64 arithmetic and ordered comparisons,
+boolean and explicit-endian UTF-16 string constants, i32/i64 arithmetic/bitwise/shift/comparison instructions, f32/f64
+arithmetic and ordered comparisons,
 direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
 typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated in the LLVM entry block and remain eligible
 for normal LLVM promotion and scalar optimization. The current source-native bridge uses this path for `Long` and `Bool`

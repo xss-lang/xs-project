@@ -35,6 +35,9 @@ typedef struct
   int64_t immediate_i64;
   uint64_t immediate_float_bits;
   bool immediate_bool;
+  XsLilUtf16Encoding utf16_encoding;
+  uint16_t *utf16_units;
+  size_t utf16_length;
   XsLilValueId left;
   XsLilValueId right;
   XsLilSlotId slot;
@@ -87,5 +90,8 @@ char *xs_lil_copy_span(const char *text, size_t length);
 XsLilStatus xs_lil_write_checked(FILE *stream, XsLilError *error, const char *text);
 XsLilStatus xs_lil_add_value(XsLilFunction *function, XsLilType type, XsLilValueId *value, XsLilError *error);
 XsLilStatus xs_lil_append_instruction(XsLilBlock *block, XsLilInstruction instruction, XsLilError *error);
+XsLilStatus xs_lil_parse_const_str(XsLilBlock *block, XsLilType result_type, const char *operation,
+                                   size_t operation_length, XsLilValueId expected_result, bool *matched,
+                                   XsLilError *error);
 
 #endif

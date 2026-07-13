@@ -97,6 +97,21 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
        fprintf(stream, "  %%r%u:bool = const.bool %s\n", instruction->result,
                instruction->immediate_bool ? "true" : "false") < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.bool instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_CONST_STR)
+    {
+      const char *encoding = instruction->utf16_encoding == XS_LIL_UTF16_LE ? "utf16le" : "utf16be";
+      if(fprintf(stream, "  %%r%u:str = const.str %s [", instruction->result, encoding) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.str instruction");
+      for(size_t unit = 0; unit < instruction->utf16_length; ++unit)
+      {
+        if(unit != 0 && fputs(", ", stream) == EOF)
+          return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.str separator");
+        if(fprintf(stream, "0x%04x", (unsigned int)instruction->utf16_units[unit]) < 0)
+          return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.str code unit");
+      }
+      if(fputs("]\n", stream) == EOF)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not finish XLIL const.str instruction");
+    }
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_F32 &&
        fprintf(stream, "  %%r%u:f32 = const.f32 0x%08llx\n", instruction->result,
                (unsigned long long)instruction->immediate_float_bits) < 0)
