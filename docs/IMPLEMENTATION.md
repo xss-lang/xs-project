@@ -72,8 +72,9 @@ The documented compilation order is preserved:
 
 - `.xsproj` files are parsed with the X# project manifest syntax.
 - The `.xsproj` lexer, parser, and project model implementation live under `xsproj/sources/`.
-- `.xsproj` lexer/parser code is not shared with the `.xs` lexer/parser. It supports only `//` and `///` line comments; it
-  does not support multiline comments.
+- `.xsproj` lexer/parser code is not shared with the `.xs` lexer/parser. It supports only `//` and `///` line comments.
+  Each comment ends at its physical newline; multiline comments are excluded so comments cannot split or hide manifest
+  line boundaries.
 - The `.xsproj` parser is not just an internal compiler detail. A public C23 API surface under `#include <xs/project.h>` lets
   third-party tools read `.xsproj` files in a JSON-like model.
 - `externalModules.addModule` records include `moduleName`, `moduleRepo`, and `moduleVersion`. They are parsed and stored as
@@ -137,7 +138,8 @@ The documented compilation order is preserved:
 ### Lexer and structural AST
 
 - Documented keywords, operators, line comments, and multiline text literals are tokenized. X# accepts `//`, `///`, and
-  `//!` line comments; multiline and nested comments are not supported.
+  `//!` line comments. Each comment ends at its physical newline; multiline and nested comments are excluded so comments
+  cannot split or hide source line boundaries.
 - ASCII identifier rules are applied.
 - Decimal integers, floating-point numbers, scientific notation, and `'` digit separators are validated.
 - String and character literal source spellings are carried into AST literal nodes; resolving `Char` as a 16-bit character is
@@ -158,9 +160,8 @@ The documented compilation order is preserved:
 - Lifetime spellings in reference types follow X# forms based on Rust lifetimes (`&'a T`, `&'a mut T`, `&'static T`,
   `&'else T`) and are carried into the AST as `XS_SYNTAX_LIFETIME` nodes. X# uses `else` where Rust examples often use
   `_`; lifetime elision and validation are left to the borrow-checker stage.
-- Function parameters, return type, deprecated `throws` types, and function bodies are structural nodes; bodies are not
-  stored as raw ranges. The `->` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not
-  interpreted as return types.
+- Function parameters, return type, and function bodies are structural nodes; bodies are not stored as raw ranges. The
+  `->` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`.
 - `op Name(...) -> Type` is parsed as a distinct referentially transparent operation declaration. The current C23 AST stores
   it on the function-shaped declaration node with `XS_SYNTAX_FLAG_REFERENTIAL_TRANSPARENT`, but the semantic category is
   separate from ordinary `fn`.
@@ -169,9 +170,8 @@ The documented compilation order is preserved:
   external/incomplete, and static foreign globals are marked external/static. HIR currently accepts the first explicit C ABI
   shape, `#[repr(C)] extern "C"`, and rejects unsupported ABI strings or missing/non-C representation attributes. Library
   resolution, symbol binding, and backend lowering remain HIR/backend work.
-- Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated and
-  scheduled for removal in X# 2.0.0. The parser emits warnings for `throws`, `throw`, and `try`; new code should use
-  `Result<T, E>` and postfix `@` propagation.
+- Recoverable failures use `Result<T, E>` and postfix `@` propagation. The removed exception spellings are ordinary
+  identifiers and no longer introduce declarations, statements, or control-flow regions.
 - `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
   constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
   diagnostic. Data destructors remain invalid.
@@ -211,8 +211,8 @@ The documented compilation order is preserved:
   expression checker now requires an enclosing function whose return type is `Result<T, E>` or shorthand
   `Result<T, E>`. It does not yet prove that the propagated operand itself has a matching Result type; full propagation
   control-flow lowering is handled by later HIR/MIR work.
-- `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
-  `continue`, and `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous
+- `if`, `for`, for-each, `while`, `match`, `return`, `break`, `continue`, and `else: expression;` are parsed. The `else:`
+  statement explicitly discards its expression value, analogous
   to a Rust discard binding, but X# spells the discard/default position as `else`.
 - Expression statements distinguish discarded and tail values: `expression;` is marked with `XS_SYNTAX_FLAG_DISCARDED`, while a
   final block expression without `;` stays value-producing and is the input for implicit-return desugaring.
@@ -301,8 +301,8 @@ validation does not decide dispatch, override, or overload selection.
   `std::optional::Optional<T>` available as `Optional<T>`. Optional value constructors are written as `None` and
   `Some(...)`, made available through that implicit namespace using. It is not an enum
   lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
-  `T`, and failed unboxing is modeled through the standard `Result`/`Error` direction rather than the deprecated exception
-  system. `Optional<Str>` is special at the language model level: it behaves like Rust's `Option<String>`, meaning the
+  `T`, and failed unboxing is modeled through the standard `Result`/`Error` direction. `Optional<Str>` is special at the
+  language model level: it behaves like Rust's `Option<String>`, meaning the
   optional string payload is owned/dynamic instead of an optional borrowed/static `Str` reference. Full flow-sensitive
   Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
@@ -347,7 +347,7 @@ validation does not decide dispatch, override, or overload selection.
   immutable declarations inside local block/function scopes. Field, index, dereference, alias/borrow-based mutability rules
   are deferred to later borrow/type-check stages.
 - `op` bodies are checked for the first referential-transparency slice. Calls, method calls, assignment, macro calls, `new`,
-  `await`, result propagation, mutable borrow, property accessors, and legacy exception syntax
+  `await`, result propagation, mutable borrow, and property accessors
   are rejected inside `op` until a fuller effect/purity model can classify them precisely.
 - `xs_hir_resolve_types_expanded`, when given a statement macro replacement set, traverses direct statement child lists
   through the `xs_macro_expand_child_statements` expanded view. This validates type uses produced after macro expansion
@@ -553,7 +553,7 @@ semantics.
   Unsupported HIR expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering
   diagnostics instead of inventing temporary backend semantics.
 
-This stage does not yet produce complete statement/expression lowering, the full instruction set, exception edges, async
+This stage does not yet produce complete statement/expression lowering, the full instruction set, async
 state machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.
 
 ### LLVM backend infrastructure
@@ -654,7 +654,7 @@ syntax, public APIs, and the current architecture stable.
 - Type, function-call, generic, and trait/interface dependency edges beyond module/import
 - Expression type checking and generic constraint validation
 - Send, Sync, mutability, and async/await validation
-- Complete MIR statement/expression lowering, exception paths, and async state machine generation
+- Complete MIR statement/expression lowering and async state machine generation
 - Borrow checker and drop-point validation
 - MIR optimizations
 - Monomorphization, codegen unit splitting, and incremental compilation cache

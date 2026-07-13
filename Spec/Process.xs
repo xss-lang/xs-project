@@ -6,9 +6,7 @@
 //
 // Process execution is provided by std::process::
 //
-// New X# code uses Result<T, E> for recoverable process and I/O
-// failures. The old exception syntax remains parseable for legacy code, but it
-// is deprecated and should not be used in new examples.
+// X# uses Result<T, E> for recoverable process and I/O failures.
 //
 // Raw shell execution is disabled by default. Shell execution must be
 // explicitly enabled with .shell(true).
@@ -132,20 +130,3 @@ fn use_file() -> Result<()> {
 }
 
 // File::Drop() runs before returning Error from @ propagation.
-
-
-// legacy exception syntax
-
-// Deprecated syntax remains parseable and produces compiler warnings:
-//
-// fn open_file(path: Str) throws IOException {
-//     throw IOException("File not found");
-// }
-//
-// try {
-//     open_file("missing.txt");
-// }
-// catch (error: Error) {
-// }
-//
-// New code should use Result<T, E> instead.

@@ -16,14 +16,12 @@
 // - Built-in async thread pool
 // - Thread channels
 //
-// Synchronization misuse may produce SyncException error payloads.
+// Synchronization misuse may produce SyncError error payloads.
 //
-// SyncException is carried through Error(SyncException).
-//
-// Writing legacy `throws SyncException` is deprecated.
+// SyncError is carried through Error(SyncError).
 //
 // Statically provable synchronization violations are compile-time errors.
-// Violations that can only be detected at runtime return Error(SyncException).
+// Violations that can only be detected at runtime return Error(SyncError).
 //
 
 
@@ -118,7 +116,7 @@ fn invalid_recursive_mutex_lock() {
 // If a thread terminates with an error while holding a mutex,
 // the mutex becomes poisoned.
 //
-// A later lock() operation returns Error(SyncException).
+// A later lock() operation returns Error(SyncError).
 
 
 // poisoned mutex recovery
@@ -126,7 +124,7 @@ fn invalid_recursive_mutex_lock() {
 fn recover_poisoned_mutex() {
     counter: Mutex<Long> = Mutex::new(0);
 
-    result: Result<Mutex<Long>, SyncException> = counter.lock();
+    result: Result<Mutex<Long>, SyncError> = counter.lock();
     match (result) {
         Ok(value) -> {},
         Error(error) -> {
@@ -142,9 +140,9 @@ fn recover_poisoned_mutex() {
 // - Manual unlocking during normal use is discouraged.
 // - Automatic scope-based unlocking should be preferred.
 // - Calling unlock() from a thread that does not own the
-//   lock returns Error(SyncException).
+//   lock returns Error(SyncError).
 // - Calling unlock() when the lock is already open returns
-//   Error(SyncException).
+//   Error(SyncError).
 
 
 // fairness
@@ -316,7 +314,7 @@ fn invalid_writer_reentry() {
 //
 // RwLock<T> is not reentrant.
 //
-// Dynamically detected reentry violations return Error(SyncException).
+// Dynamically detected reentry violations return Error(SyncError).
 
 
 // rwlock poisoning
@@ -324,7 +322,7 @@ fn invalid_writer_reentry() {
 // If a thread terminates with an error while holding a writer
 // lock, the RwLock becomes poisoned.
 //
-// Later read() or write() calls return Error(SyncException).
+// Later read() or write() calls return Error(SyncError).
 
 
 // poisoned rwlock recovery
@@ -332,7 +330,7 @@ fn invalid_writer_reentry() {
 fn recover_poisoned_rw_lock() {
     value: RwLock<Int> = RwLock::new(42);
 
-    result: Result<RwLock<Int>, SyncException> = value.write();
+    result: Result<RwLock<Int>, SyncError> = value.write();
     match (result) {
         Ok(writer) -> {},
         Error(error) -> {
@@ -347,9 +345,9 @@ fn recover_poisoned_rw_lock() {
 // - May manually unlock a normal RwLock.
 // - Manual use during normal operation is discouraged.
 // - Calling rwunlock() from a thread that does not own the
-//   relevant lock returns Error(SyncException).
+//   relevant lock returns Error(SyncError).
 // - Calling rwunlock() when no relevant lock is held returns
-//   Error(SyncException).
+//   Error(SyncError).
 
 
 // rwlock fairness
@@ -548,9 +546,8 @@ fn weak_upgrade() {
 // WeakControl.upgrade(&weak):
 //
 // - Atomically increments the strong counter when successful.
-// - Returns Arc<T>.
-// - Throws SyncException if the contained value has already
-//   been destroyed.
+// - Returns Result<Arc<T>, SyncError>.
+// - Returns Error(SyncError) if the contained value has already been destroyed.
 
 
 // weak destruction
@@ -1007,9 +1004,9 @@ fn channel_example() {
         tx.send(42);
     });
 
-    value: Int = rx.recv();
+    received: Result<Int, SyncError> = rx.recv();
 
-    println!("{}", value);
+    println!("{:?}", received);
 }
 
 // std::thread::Channel<T>:
@@ -1033,7 +1030,8 @@ fn channel_send_moves_value() {
     // message can no longer be used.
 }
 
-// send(value) transfers ownership of value into the channel.
+// send(value) transfers ownership of value into the channel and returns
+// Result<(), SyncError>.
 
 
 // receiving
@@ -1046,14 +1044,13 @@ fn channel_receive() {
         tx.send(42);
     });
 
-    value: Int = rx.recv();
+    received: Result<Int, SyncError> = rx.recv();
 }
 
 // recv():
 //
 // - Blocks until a value becomes available.
-// - Returns T.
-// - Returns Error(SyncException) if the channel is closed.
+// - Returns Result<T, SyncError>; Error means that the channel is closed.
 
 
 // receiver movement
@@ -1063,7 +1060,7 @@ fn move_receiver_to_thread() {
         std::thread::channel();
 
     std::thread::spawn(move fn() {
-        value: Int = rx.recv();
+        received: Result<Int, SyncError> = rx.recv();
     });
 
     tx.send(42);
@@ -1087,19 +1084,19 @@ fn invalid_sender_clone() {
 
 
 // ============================================================
-// SyncException
+// SyncError
 // ============================================================
 
-fn catch_sync_exception() {
+fn handle_sync_error() {
     mutex: Mutex<Int> = Mutex::new(42);
 
-    result: Result<Mutex<Int>, SyncException> = mutex.lock();
+    result: Result<Mutex<Int>, SyncError> = mutex.lock();
     if (result.is_error()) {
         println!("sync failure");
     }
 }
 
-// SyncException covers runtime synchronization failures,
+// SyncError covers runtime synchronization failures,
 // including:
 //
 // - Poisoned Mutex access

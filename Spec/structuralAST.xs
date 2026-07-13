@@ -325,7 +325,6 @@ data FunctionDeclaration {
     parameters: ParameterDeclaration[]
 
     return_type: TypeNode
-    throws_types: TypeNode[]
 
     body: BlockStatement
     span: SourceSpan
@@ -695,8 +694,6 @@ enum data Statement {
     Match: MatchStatement,
     Break: BreakStatement,
     Continue: ContinueStatement,
-    Try: TryStatement,
-    Throw: ThrowStatement,
     MacroCall: MacroCallStatement,
     Discard: DiscardStatement,
 }
@@ -858,39 +855,6 @@ data BreakStatement {
 
 
 data ContinueStatement {
-    span: SourceSpan
-}
-
-
-// ============================================================
-// Try statements
-// ============================================================
-
-data TryStatement {
-    try_block: BlockStatement
-    catches: CatchClause[]
-    finally_block: BlockStatement
-    span: SourceSpan
-}
-
-
-data CatchClause {
-    variable_name: IdentifierNode
-    exception_type: TypeNode
-    body: BlockStatement
-    span: SourceSpan
-}
-
-
-// finally_block may be None.
-
-
-// ============================================================
-// Throw statements
-// ============================================================
-
-data ThrowStatement {
-    value: Expression
     span: SourceSpan
 }
 
@@ -1567,7 +1531,6 @@ data TokenNode {
 // - Destructor calls
 // - Control-flow edges
 // - Match branching
-// - Exception unwinding
 // - Async state machines
 
 

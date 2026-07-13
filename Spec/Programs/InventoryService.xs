@@ -151,7 +151,7 @@ fn main() -> Result<()> {
         worker: OrderWorker = new OrderWorker(worker_inventory);
 
         while (true) {
-            maybe_order: Result<Order, SyncException> = receipts.recv();
+            maybe_order: Result<Order, SyncError> = receipts.recv();
             if (maybe_order.is_error()) {
                 break;
             }
@@ -160,12 +160,12 @@ fn main() -> Result<()> {
         }
     });
 
-    orders.send(make_order(1, "book", 2));
-    orders.send(make_order(2, "mug", 8));
+    orders.send(make_order(1, "book", 2))@;
+    orders.send(make_order(2, "mug", 8))@;
     orders.close();
 
     while (true) {
-        maybe_receipt: Result<Receipt, SyncException> = result_reader.recv();
+        maybe_receipt: Result<Receipt, SyncError> = result_reader.recv();
         if (maybe_receipt.is_error()) {
             break;
         }

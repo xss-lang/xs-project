@@ -36,7 +36,8 @@
 // //  line comment
 // /// documentation-style line comment
 //
-// Multiline comments are not supported in .xsproj files.
+// Multiline comments are not supported in .xsproj files. A comment ends at its
+// physical newline so comments never split or hide manifest line boundaries.
 //
 // Examples:
 //

@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 `.xmir` is the human-readable text form of X# MIR. It is not assembly-like, not binary, and not an opaque compiler
 serialization format.
 
-XMIR exists for ownership, borrow-checking, drop planning, exception edges, async lowering, and optimization inspection. MIR
+XMIR exists for ownership, borrow-checking, drop planning, async lowering, and optimization inspection. MIR
 is lower than HIR, so XMIR may expose blocks, places, temporaries, and terminators, but it should still read as a structured
 control-flow document rather than an assembly listing.
 
@@ -94,7 +94,7 @@ missing terminators, unknown local references, and unknown block targets before 
 Typed `store.local`/`load.local` records preserve source-local storage across CFG edges and lower to XLIL stack slots.
 The verified optimizer API uses the same structural verifier before and after MIR optimization.
 
-Place projections, exception edges, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
+Place projections, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
 
 ## Non-goals
 

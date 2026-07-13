@@ -58,7 +58,7 @@ display: Str = name ?? "guest";
 name ??= Some("guest");
 
 // Automatic unboxing from Optional<T> to T may fail. New code models that as
-// Error rather than legacy exceptions.
+// Error values through Result.
 
 unboxed_name: Str = name;
 forced_name: Str = name!;

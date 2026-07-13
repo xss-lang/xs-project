@@ -4,10 +4,8 @@
 // Result module:
 
 //
-// Result provides explicit success/error values.
-// The legacy exception syntax remains parseable, but it is deprecated.
-// New code should use Result<T> or Result<T, E> and postfix @ propagation instead of
-// throws, throw, try, catch, and finally.
+// Result provides explicit success/error values. Recoverable failures use
+// Result<T> or Result<T, E>, and postfix @ propagates an Error value.
 //
 
 imports fs, stdio;

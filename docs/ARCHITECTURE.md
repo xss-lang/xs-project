@@ -58,7 +58,7 @@ when needed.
 ### MIR
 
 MIR is the control-flow, local/place/value, and terminator model. The borrow checker and MIR optimizer operate on this model.
-MIR does not yet provide complete statement/expression lowering or exception/async state-machine generation.
+MIR does not yet provide complete statement/expression lowering or async state-machine generation.
 
 ### XLIL
 
@@ -76,7 +76,7 @@ API concepts.
 - Full AST macro replacement
 - General expression type inference and overload resolution
 - Nominal interface membership validation
-- Send/Sync, async/await, Result propagation, and legacy exception deprecation checks
+- Send/Sync, async/await, and Result propagation checks
 - MIR statement/expression lowering
 - Full borrow-checker region/loan/drop model
 - Monomorphization and incremental cache

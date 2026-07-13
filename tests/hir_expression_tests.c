@@ -202,7 +202,6 @@ static void test_return_literal_expression_types(void)
   CHECK(check_single_source_expressions("module App;\nfn Count() -> Int { return 1; }\n"));
   CHECK(check_single_source_expressions("module App;\nfn Flag() -> Bool { return true; }\n"));
   CHECK(check_single_source_expressions("module App;\nfn Name() -> Str { return \"xs\"; }\n"));
-  CHECK(check_single_source_expressions("module App;\nfn Main() throws Int { return \"not checked yet\"; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Count() -> Int { return \"bad\"; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Flag() -> Bool { return 1; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Name() -> Str { return 'x'; }\n"));

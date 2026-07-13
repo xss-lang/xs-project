@@ -42,8 +42,7 @@ declarations
     visibility public
     signature
       parameters []
-      returns void
-      throws []
+      returns ()
     body
       block
         let message

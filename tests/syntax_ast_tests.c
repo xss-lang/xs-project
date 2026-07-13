@@ -129,8 +129,7 @@ static void test_control_flow_structure(void)
                      "  for (i: Int = 0; i < 3; i = i + 1) { continue; }\n"
                      "  while (value > 0) { break; }\n"
                      "  do { continue; } while (false);\n"
-                     "  match (value) { 0 -> { return; }, else -> { throw IOException(\"x\"); }, }\n"
-                     "  try {} catch (error: IOException) {} finally {}\n"
+                     "  match (value) { 0 -> { return; }, else -> { return; }, }\n"
                      "}\n";
   XsSource source = {.path = "Flow.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -148,8 +147,6 @@ static void test_control_flow_structure(void)
   CHECK(post_test != nullptr);
   CHECK(post_test == nullptr || post_test->child_count == 2);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_MATCH) != nullptr);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_TRY) != nullptr);
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_CATCH) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -398,19 +395,15 @@ static void test_expression_turbofish_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_exception_syntax_is_deprecated(void)
+static void test_removed_exception_syntax_is_rejected(void)
 {
   const char *text = "fn Main() throws IOException { try { throw IOException(); } catch (error: IOException) {} }\n";
-  XsSource source = {.path = "DeprecatedExceptions.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "RemovedExceptions.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
-  CHECK(xs_syntax_parse(&source, 31, &diagnostics, &tree));
-  CHECK(!xs_diagnostics_has_error(&diagnostics));
-  CHECK(diagnostics.count == 3);
-  CHECK(diagnostics.items[0].severity == XS_DIAGNOSTIC_WARNING);
-  CHECK(diagnostics.items[1].severity == XS_DIAGNOSTIC_WARNING);
-  CHECK(diagnostics.items[2].severity == XS_DIAGNOSTIC_WARNING);
+  CHECK(!xs_syntax_parse(&source, 31, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -533,7 +526,7 @@ int main(void)
   test_character_literal_structure();
   test_optional_operator_structure();
   test_expression_turbofish_structure();
-  test_exception_syntax_is_deprecated();
+  test_removed_exception_syntax_is_rejected();
   test_result_propagation_structure();
   test_lifetime_type_structure();
   test_underscore_lifetime_is_rejected();

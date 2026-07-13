@@ -37,6 +37,8 @@ source-to-native executable pipeline.
 
 ### Removed
 
+- Legacy exception declarations and control-flow syntax were removed. Recoverable failures use `Result<T, E>` and postfix
+  `@`; panic remains a separate explicit termination mechanism.
 - The cancelled XS Backend project and the unused `.xsproj` `compilerOptions.xsBackend` forward-compatibility field were
   removed. LLVM is the compiler's native backend.
 
@@ -439,7 +441,7 @@ source-to-native executable pipeline.
 
 - Full AST macro replacement does not yet perform in-place parent-child rewrites.
 - General expression type inference, overload resolution, and nominal interface membership checks are incomplete.
-- MIR statement/expression lowering, exception edges, and async state machine generation are incomplete.
+- MIR statement/expression lowering and async state machine generation are incomplete.
 - Borrow checker is not yet a full region/loan/move/drop model.
 - End-to-end `xs build`/`xs run` object/link/native executable flow is incomplete.
 - Direct XLIL build mode currently lowers only the supported initial body subset.

@@ -233,31 +233,6 @@ static XsSyntaxNode *parse_match(SyntaxParser *parser, size_t start)
   return statement;
 }
 
-static XsSyntaxNode *parse_try(SyntaxParser *parser, size_t start)
-{
-  xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_WARNING, (XsSpan){start, parser->previous.span.end},
-                     "exception syntax is deprecated; prefer Result<T, E>");
-  XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_TRY, (XsSpan){start, parser->previous.span.end});
-  xs_syntax_node_add(parser->tree, statement, parse_block(parser));
-  while(accept(parser, XS_TOKEN_KW_CATCH))
-  {
-    size_t catch_start = parser->previous.span.start;
-    XsSyntaxNode *clause = node(parser, XS_SYNTAX_CATCH, (XsSpan){catch_start, parser->previous.span.end});
-    expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after catch");
-    xs_syntax_node_add(parser->tree, clause, identifier(parser));
-    expect(parser, XS_TOKEN_COLON, "catch type is required");
-    xs_syntax_node_add(parser->tree, clause, parse_type(parser));
-    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after catch clause");
-    xs_syntax_node_add(parser->tree, clause, parse_block(parser));
-    finish_node(parser, clause, parser->previous.span.end);
-    xs_syntax_node_add(parser->tree, statement, clause);
-  }
-  if(accept(parser, XS_TOKEN_KW_FINALLY))
-    xs_syntax_node_add(parser->tree, statement, parse_block(parser));
-  finish_node(parser, statement, parser->previous.span.end);
-  return statement;
-}
-
 XsSyntaxNode *parse_statement(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
@@ -280,8 +255,6 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     return parse_for(parser, start);
   if(accept(parser, XS_TOKEN_KW_MATCH))
     return parse_match(parser, start);
-  if(accept(parser, XS_TOKEN_KW_TRY))
-    return parse_try(parser, start);
   if(accept(parser, XS_TOKEN_KW_DO))
   {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_WHILE, (XsSpan){start, parser->previous.span.end});
@@ -322,16 +295,6 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
                                                      : (XsSpan){start, parser->previous.span.end},
                          is_break ? "break can only be used inside loops" : "continue can only be used inside loops");
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after loop control statement");
-    finish_node(parser, statement, parser->previous.span.end);
-    return statement;
-  }
-  if(accept(parser, XS_TOKEN_KW_THROW))
-  {
-    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_WARNING, parser->previous.span,
-                       "exception syntax is deprecated; prefer Result<T, E>");
-    XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_THROW, (XsSpan){start, parser->previous.span.end});
-    xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
-    expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after throw");
     finish_node(parser, statement, parser->previous.span.end);
     return statement;
   }

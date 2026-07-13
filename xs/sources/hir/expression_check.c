@@ -803,8 +803,6 @@ static bool node_breaks_referential_transparency(const XsSyntaxNode *node)
   case XS_SYNTAX_EXPR_AWAIT:
   case XS_SYNTAX_EXPR_MUTABLE_BORROW:
   case XS_SYNTAX_EXPR_FIELD_SET:
-  case XS_SYNTAX_STMT_THROW:
-  case XS_SYNTAX_STMT_TRY:
     return true;
   default:
     return false;

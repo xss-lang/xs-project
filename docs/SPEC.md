@@ -72,9 +72,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - `Stdio` is not prelude and is not implicit. Its `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` macros and
   `std::fmt::*` API require `imports stdio;` or `using namespace stdio;`. The writer and formatting-argument built-ins do
   not.
-- Legacy exception syntax is deprecated and scheduled for removal in X# 2.0.0. Active examples should prefer
-  `Result<T>`/`Result<T, E>` plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only in
-  explicitly marked legacy notes.
+- Recoverable failures use `Result<T>`/`Result<T, E>` plus postfix `@` propagation. Exception declarations and
+  control-flow syntax are not part of X#.
 
 ## Program examples
 

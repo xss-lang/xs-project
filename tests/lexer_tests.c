@@ -62,6 +62,15 @@ static void test_comments_and_strings(void)
   expect_tokens("// ordinary\n//{ former block-comment spelling is an ordinary line comment\n/// docs\n//! "
                 "module\n\"A\\n\" \"\"\"multi\nline\"\"\" 'A' '\\n'",
                 expected, sizeof(expected) / sizeof(expected[0]));
+  static const XsTokenKind next_line[] = {XS_TOKEN_KW_FN,       XS_TOKEN_IDENTIFIER, XS_TOKEN_LEFT_PAREN,
+                                          XS_TOKEN_RIGHT_PAREN, XS_TOKEN_LEFT_BRACE, XS_TOKEN_RIGHT_BRACE,
+                                          XS_TOKEN_EOF};
+  expect_tokens("// a comment cannot continue onto the next physical line\nfn next() {}", next_line,
+                sizeof(next_line) / sizeof(next_line[0]));
+  static const XsTokenKind block_delimiters[] = {XS_TOKEN_SLASH,      XS_TOKEN_STAR, XS_TOKEN_IDENTIFIER,
+                                                 XS_TOKEN_IDENTIFIER, XS_TOKEN_STAR, XS_TOKEN_SLASH,
+                                                 XS_TOKEN_EOF};
+  expect_tokens("/* split\nline */", block_delimiters, sizeof(block_delimiters) / sizeof(block_delimiters[0]));
 }
 
 static void test_documented_operators(void)
@@ -109,14 +118,19 @@ static void test_keywords(void)
   static const XsTokenKind expected[] = {
       XS_TOKEN_KW_MODULE,    XS_TOKEN_KW_NAMESPACE, XS_TOKEN_KW_IMPORTS, XS_TOKEN_KW_USING,  XS_TOKEN_KW_CLASS,
       XS_TOKEN_KW_INTERFACE, XS_TOKEN_KW_DATA,      XS_TOKEN_KW_ENUM,    XS_TOKEN_KW_ASYNC,  XS_TOKEN_KW_AWAIT,
-      XS_TOKEN_KW_MOVE,      XS_TOKEN_KW_MUT,       XS_TOKEN_KW_OP,      XS_TOKEN_KW_TRY,    XS_TOKEN_KW_CATCH,
-      XS_TOKEN_KW_FINALLY,   XS_TOKEN_KW_THROW,     XS_TOKEN_KW_THROWS,  XS_TOKEN_KW_EXTERN, XS_TOKEN_KW_NONE,
+      XS_TOKEN_KW_MOVE,      XS_TOKEN_KW_MUT,       XS_TOKEN_KW_OP,      XS_TOKEN_KW_EXTERN, XS_TOKEN_KW_NONE,
       XS_TOKEN_KW_VIRTUAL,   XS_TOKEN_KW_OVERRIDE,  XS_TOKEN_KW_SEALED,  XS_TOKEN_KW_DO,     XS_TOKEN_EOF,
   };
   expect_tokens(
-      "module namespace imports using class interface data enum async await move mut op try catch finally throw "
-      "throws extern None virtual override sealed do",
+      "module namespace imports using class interface data enum async await move mut op extern None virtual override "
+      "sealed do",
       expected, sizeof(expected) / sizeof(expected[0]));
+  static const XsTokenKind removed_exception_words[] = {
+      XS_TOKEN_IDENTIFIER, XS_TOKEN_IDENTIFIER, XS_TOKEN_IDENTIFIER,
+      XS_TOKEN_IDENTIFIER, XS_TOKEN_IDENTIFIER, XS_TOKEN_EOF,
+  };
+  expect_tokens("try catch finally throw throws", removed_exception_words,
+                sizeof(removed_exception_words) / sizeof(removed_exception_words[0]));
 }
 
 static void test_identifiers_and_numbers(void)

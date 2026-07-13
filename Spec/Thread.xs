@@ -15,7 +15,7 @@
 // - Cooperative yielding
 // - Single-sender, single-receiver channels
 //
-// Thread synchronization failures use SyncException through Error.
+// Thread synchronization failures use SyncError through Error.
 //
 // Thread values and channel endpoints follow the language's ownership,
 // move and Send rules.
@@ -165,7 +165,7 @@ fn join_thread() {
 // - Consumes the Thread::handle<T>.
 // - May only be called once.
 // - Carries thread failure through Error.
-// - Returns Error(SyncException) for invalid runtime join operations.
+// - Returns Error(SyncError) for invalid runtime join operations.
 
 
 // invalid second join
@@ -186,7 +186,7 @@ fn invalid_second_join() {
 
 // self join
 
-// A thread attempting to join itself returns Error(SyncException).
+// A thread attempting to join itself returns Error(SyncError).
 
 
 // ============================================================
@@ -292,7 +292,7 @@ fn channel_example() {
         tx.send(42);
     });
 
-    value: Int = rx.recv();
+    received: Result<Int, SyncError> = rx.recv();
 }
 
 
@@ -322,7 +322,7 @@ fn send_channel_value() {
 //
 // - Transfers ownership of value into the channel.
 // - The sent value can no longer be used by the sender.
-// - Throws SyncException if the channel is closed.
+// - Returns Result<(), SyncError>; Error means that the channel is closed.
 
 
 // receiving
@@ -335,16 +335,15 @@ fn receive_channel_value() {
         tx.send(42);
     });
 
-    value: Int = rx.recv();
+    received: Result<Int, SyncError> = rx.recv();
 }
 
 // rx.recv():
 //
 // - Blocks until a value becomes available.
-// - Returns T.
+// - Returns Result<T, SyncError>.
 // - Transfers ownership of the received value to the receiver.
-// - Throws SyncException if the channel is closed and no value
-//   can be received.
+// - Returns Error(SyncError) if the channel is closed and no value can be received.
 
 
 // moving receiver to another thread
@@ -355,7 +354,7 @@ fn move_receiver_to_thread() {
 
     receiver_thread: Thread::handle<()> =
         std::thread::spawn(move fn() {
-            value: Int = rx.recv();
+            received: Result<Int, SyncError> = rx.recv();
         });
 
     tx.send(42);
@@ -375,7 +374,7 @@ fn move_sender_to_thread() {
             tx.send(42);
         });
 
-    value: Int = rx.recv();
+    received: Result<Int, SyncError> = rx.recv();
 
     sender_thread.join();
 }

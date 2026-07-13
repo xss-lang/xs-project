@@ -228,7 +228,6 @@ fn handle_network_error() -> Result<()> {
 //
 // - Represents HTTP or network request failure.
 // - Is carried through the standard Error payload.
-// - New code should not use legacy `throws` or `catch`.
 
 
 // ============================================================
