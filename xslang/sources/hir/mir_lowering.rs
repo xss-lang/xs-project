@@ -43,6 +43,8 @@ pub struct HirToMirLowerer
 
 #[cfg(test)]
 mod for_tests;
+#[cfg(test)]
+mod operator_tests;
 
 impl HirToMirLowerer
 {
@@ -399,6 +401,18 @@ impl HirToMirLowerer
                                                                                                 left,
                                                                                                 right,
                                                                                                 span }),
+      (operator, XlilType::I32, XlilType::I32) if binary_i32_operation(operator).is_some() =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::BinaryI32 { operation: binary_i32_operation(operator).expect("guarded i32 \
+                                                                                                operation must \
+                                                                                                exist"),
+                                              result: target,
+                                              left,
+                                              right,
+                                              span });
+      }
       (BinaryOperator::Equal, XlilType::BOOL, XlilType::I32) => self.current_block_mut(lowered)
                                                                     .statements
                                                                     .push(mir::Statement::EqI32 { result: target,
@@ -470,6 +484,7 @@ impl HirToMirLowerer
     match (operator, target_type)
     {
       (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I32) => Some(XlilType::I32),
+      (operator, XlilType::I32) if binary_i32_operation(operator).is_some() => Some(XlilType::I32),
       (BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul, XlilType::I64) => Some(XlilType::I64),
       (BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual,
        XlilType::BOOL) => Some(XlilType::I32),
@@ -504,10 +519,16 @@ impl HirToMirLowerer
                            right,
                            .. } => match operator
       {
-        BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul =>
-        {
-          self.common_operand_type(left, right, lowered)
-        }
+        BinaryOperator::Add |
+        BinaryOperator::Sub |
+        BinaryOperator::Mul |
+        BinaryOperator::Div |
+        BinaryOperator::Rem |
+        BinaryOperator::BitAnd |
+        BinaryOperator::BitOr |
+        BinaryOperator::BitXor |
+        BinaryOperator::ShiftLeft |
+        BinaryOperator::ShiftRight => self.common_operand_type(left, right, lowered),
         BinaryOperator::Equal |
         BinaryOperator::Less |
         BinaryOperator::LessEqual |
@@ -598,6 +619,22 @@ impl HirToMirLowerer
                                        message: message.into(),
                                        span });
   }
+}
+
+const fn binary_i32_operation(operator: BinaryOperator) -> Option<crate::xlil::I32BinaryOperation>
+{
+  use crate::xlil::I32BinaryOperation;
+  Some(match operator
+  {
+    BinaryOperator::Div => I32BinaryOperation::Div,
+    BinaryOperator::Rem => I32BinaryOperation::Rem,
+    BinaryOperator::BitAnd => I32BinaryOperation::BitAnd,
+    BinaryOperator::BitOr => I32BinaryOperation::BitOr,
+    BinaryOperator::BitXor => I32BinaryOperation::BitXor,
+    BinaryOperator::ShiftLeft => I32BinaryOperation::ShiftLeft,
+    BinaryOperator::ShiftRight => I32BinaryOperation::ShiftRight,
+    _ => return None,
+  })
 }
 
 #[must_use]

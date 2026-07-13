@@ -61,6 +61,13 @@ const TOKEN_MINUS_MINUS: u32 = 42;
 const TOKEN_MINUS_ASSIGN: u32 = 43;
 const TOKEN_STAR: u32 = 44;
 const TOKEN_STAR_ASSIGN: u32 = 45;
+const TOKEN_SLASH: u32 = 46;
+const TOKEN_PERCENT: u32 = 48;
+const TOKEN_AMPERSAND: u32 = 50;
+const TOKEN_PIPE: u32 = 53;
+const TOKEN_CARET: u32 = 56;
+const TOKEN_SHIFT_RIGHT: u32 = 34;
+const TOKEN_SHIFT_LEFT: u32 = 37;
 const TOKEN_ASSIGN: u32 = 24;
 const IMMUTABLE: u32 = 1 << 4;
 const CONSTANT: u32 = 1 << 5;
@@ -220,6 +227,13 @@ fn lower_expression(tree: &SyntaxTree,
         TOKEN_PLUS => BinaryOperator::Add,
         TOKEN_MINUS => BinaryOperator::Sub,
         TOKEN_STAR => BinaryOperator::Mul,
+        TOKEN_SLASH => BinaryOperator::Div,
+        TOKEN_PERCENT => BinaryOperator::Rem,
+        TOKEN_AMPERSAND => BinaryOperator::BitAnd,
+        TOKEN_PIPE => BinaryOperator::BitOr,
+        TOKEN_CARET => BinaryOperator::BitXor,
+        TOKEN_SHIFT_LEFT => BinaryOperator::ShiftLeft,
+        TOKEN_SHIFT_RIGHT => BinaryOperator::ShiftRight,
         TOKEN_EQUAL => BinaryOperator::Equal,
         TOKEN_LESS => BinaryOperator::Less,
         TOKEN_LESS_EQUAL => BinaryOperator::LessEqual,
@@ -228,7 +242,16 @@ fn lower_expression(tree: &SyntaxTree,
         _ => return None,
       };
       let operand_type = if matches!(operator,
-                                     BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul)
+                                     BinaryOperator::Add |
+                                     BinaryOperator::Sub |
+                                     BinaryOperator::Mul |
+                                     BinaryOperator::Div |
+                                     BinaryOperator::Rem |
+                                     BinaryOperator::BitAnd |
+                                     BinaryOperator::BitOr |
+                                     BinaryOperator::BitXor |
+                                     BinaryOperator::ShiftLeft |
+                                     BinaryOperator::ShiftRight)
       {
         expected_type
       }

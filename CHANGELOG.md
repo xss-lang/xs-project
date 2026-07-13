@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- `Long` division, remainder, bitwise AND/OR/XOR, and left/arithmetic-right shifts now cross the C23 structural AST into
+  Rust typed HIR, XHIR, verified MIR/XMIR, XLIL, and the existing LLVM native `.xse` backend. Context-free integer
+  literals remain `Int`; an explicit `Long` return, binding, or parameter supplies the i32 lowering context.
 - `format_args_nl!` is now a source-callable compiler-special built-in and shares format-string validation with
   `format_args!`; neither formatting-argument intrinsic can be declared or shadowed through `macro_rules!`.
 - Value-producing `match` expressions with `Long`/`Bool` selectors, literal arms, and a final `else` now cross the C23
@@ -29,6 +32,8 @@ source-to-native executable pipeline.
 
 ### Fixed
 
+- Nested binary literals now retain an explicit `Long` target context recursively instead of reverting to the default
+  `Int` type inside the expression tree.
 - Fresh checkouts no longer require the intentionally untracked `xslang/Cargo.lock` as a Ninja input; the pinned Rust
   toolchain can generate the local lock file during the compiler-core build.
 - Formatting syntax and the `print!`, `println!`, `eprint!`, `eprintln!`, and `format!` expansion structures now follow

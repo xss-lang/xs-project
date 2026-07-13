@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+use super::I32BinaryOperation;
+
 pub const SUPPORTED_XLIL_VERSION: u32 = 0;
 
 #[must_use]
@@ -122,6 +124,13 @@ pub enum Instruction
   },
   MulI32
   {
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
+  BinaryI32
+  {
+    operation: I32BinaryOperation,
     result: ValueId,
     left: ValueId,
     right: ValueId,
@@ -369,6 +378,31 @@ impl Function
   pub fn mul_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>
   {
     self.add_i32_like(block, left, right, Type::I32, I32Op::Mul)
+  }
+
+  pub fn binary_i32(&mut self,
+                    block: BlockId,
+                    left: ValueId,
+                    right: ValueId,
+                    operation: I32BinaryOperation)
+                    -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !self.value(left).is_some_and(|value| value.value_type == Type::I32) ||
+       !self.value(right).is_some_and(|value| value.value_type == Type::I32)
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::I32 });
+    self.block_mut(block)?
+        .instructions
+        .push(Instruction::BinaryI32 { operation,
+                                       result,
+                                       left,
+                                       right });
+    Some(result)
   }
 
   pub fn eq_i32(&mut self, block: BlockId, left: ValueId, right: ValueId) -> Option<ValueId>

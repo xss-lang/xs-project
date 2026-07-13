@@ -1,0 +1,22 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
+fn combine(dividend: Long,
+           divisor: Long,
+           remainder_left: Long,
+           remainder_right: Long,
+           or_left: Long,
+           or_right: Long,
+           and_left: Long,
+           and_right: Long,
+           xor_left: Long,
+           xor_right: Long,
+           shift_value: Long,
+           shift_amount: Long) -> Long {
+  return (dividend / divisor) & (remainder_left % remainder_right) & (or_left | or_right) &
+         (and_left & and_right) & (xor_left ^ xor_right) & ((shift_value << shift_amount) >> shift_amount);
+}
+
+fn main() -> Long {
+  return combine(28, 4, 15, 8, 6, 1, 15, 7, 3, 4, 7, 1);
+}

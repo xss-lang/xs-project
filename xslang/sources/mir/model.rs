@@ -6,7 +6,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::hir::async_check::Span;
-use crate::xlil::Type;
+use crate::xlil::{I32BinaryOperation, Type};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LocalId(pub u32);
@@ -122,6 +122,14 @@ pub enum Statement
   },
   MulI32
   {
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
+  BinaryI32
+  {
+    operation: I32BinaryOperation,
     result: LocalId,
     left: LocalId,
     right: LocalId,
@@ -355,6 +363,11 @@ impl BorrowChecker
                           result,
                           span,
                           .. } |
+      Statement::BinaryI32 { left,
+                             right,
+                             result,
+                             span,
+                             .. } |
       Statement::EqI32 { left,
                          right,
                          result,

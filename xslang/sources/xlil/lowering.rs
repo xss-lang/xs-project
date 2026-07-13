@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::mir;
-use crate::xlil::{BlockId, Function, SlotId, Type, ValueId};
+use crate::xlil::{BlockId, Function, I32BinaryOperation, SlotId, Type, ValueId};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -217,6 +217,21 @@ impl MirToXlilLowerer
                                       span, } = *statement
       {
         self.lower_binary_i32(result, left, right, span, "mul.i32", xlil_block, values, lowered);
+      }
+      if let mir::Statement::BinaryI32 { operation,
+                                         result,
+                                         left,
+                                         right,
+                                         span, } = *statement
+      {
+        self.lower_binary_i32(result,
+                              left,
+                              right,
+                              span,
+                              operation.text_name(),
+                              xlil_block,
+                              values,
+                              lowered);
       }
       if let mir::Statement::EqI32 { result,
                                      left,
@@ -515,6 +530,13 @@ impl MirToXlilLowerer
       "add.i32" => lowered.add_i32(xlil_block, left, right),
       "sub.i32" => lowered.sub_i32(xlil_block, left, right),
       "mul.i32" => lowered.mul_i32(xlil_block, left, right),
+      name if I32BinaryOperation::parse_text(name).is_some() =>
+      {
+        lowered.binary_i32(xlil_block,
+                           left,
+                           right,
+                           I32BinaryOperation::parse_text(name).expect("guarded i32 operation must parse"))
+      }
       "eq.i32" => lowered.eq_i32(xlil_block, left, right),
       "lt.i32" => lowered.lt_i32(xlil_block, left, right),
       "le.i32" => lowered.le_i32(xlil_block, left, right),

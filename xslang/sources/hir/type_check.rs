@@ -59,6 +59,13 @@ pub enum BinaryOperator
   Add,
   Sub,
   Mul,
+  Div,
+  Rem,
+  BitAnd,
+  BitOr,
+  BitXor,
+  ShiftLeft,
+  ShiftRight,
   Equal,
   Less,
   LessEqual,
@@ -456,15 +463,13 @@ impl TypeChecker
                                message: "literal is not assignable to the target type".to_string(),
                                span: *span });
       }
-      Expression::Binary { span, .. } =>
+      Expression::Binary { operator,
+                           left,
+                           right,
+                           span, } =>
       {
         self.check_expression(expression);
-        let Some(result_type) = self.expression_type(expression)
-        else
-        {
-          return;
-        };
-        if result_type != *ty
+        if !self.binary_expression_matches_type(*operator, left, right, ty)
         {
           self.diagnostics
               .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
@@ -637,58 +642,13 @@ impl TypeChecker
     result_type_parts(&value_type)
   }
 
-  fn binary_expression_type(&self, operator: BinaryOperator, left: &Expression, right: &Expression) -> Option<Type>
-  {
-    let mut left_type = self.expression_type(left)?;
-    let mut right_type = self.expression_type(right)?;
-    if left_type != right_type
-    {
-      if let Expression::Literal { literal, .. } = left &&
-         literal_matches_type(literal, &right_type)
-      {
-        left_type = right_type.clone();
-      }
-      else if let Expression::Literal { literal, .. } = right &&
-                literal_matches_type(literal, &left_type)
-      {
-        right_type = left_type.clone();
-      }
-    }
-    if left_type != right_type
-    {
-      return None;
-    }
-    let Type::Primitive(primitive) = left_type
-    else
-    {
-      return None;
-    };
-    match operator
-    {
-      BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul
-        if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
-      {
-        Some(Type::Primitive(primitive))
-      }
-      BinaryOperator::Equal if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
-      {
-        Some(Type::Primitive(PrimitiveType::Bool))
-      }
-      BinaryOperator::Less | BinaryOperator::LessEqual | BinaryOperator::Greater | BinaryOperator::GreaterEqual
-        if primitive == PrimitiveType::Long =>
-      {
-        Some(Type::Primitive(PrimitiveType::Bool))
-      }
-      _ => None,
-    }
-  }
-
   fn find_local(&self, name: &str) -> Option<&Local>
   {
     self.locals.iter().rev().find(|local| local.name == name)
   }
 }
 
+mod binary_type;
 mod expression_type;
 mod for_check;
 mod match_check;

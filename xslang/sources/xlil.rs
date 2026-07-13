@@ -4,10 +4,15 @@
  */
 
 mod model;
+mod operations;
 
 pub use model::*;
+pub use operations::*;
 
 pub mod lowering;
 pub mod parser;
 pub mod verify;
 pub mod writer;
+
+#[cfg(test)]
+mod operator_tests;

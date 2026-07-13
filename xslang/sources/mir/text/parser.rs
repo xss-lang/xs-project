@@ -277,6 +277,10 @@ impl Parser<'_>
         "add.i32" => block.statements.push(self.i32_statement("add.i32")),
         "sub.i32" => block.statements.push(self.i32_statement("sub.i32")),
         "mul.i32" => block.statements.push(self.i32_statement("mul.i32")),
+        "div.i32" | "rem.i32" | "and.i32" | "or.i32" | "xor.i32" | "shl.i32" | "shr.i32" =>
+        {
+          block.statements.push(self.i32_statement(kind));
+        }
         "eq.i32" => block.statements.push(self.i32_statement("eq.i32")),
         "lt.i32" => block.statements.push(self.i32_statement("lt.i32")),
         "le.i32" => block.statements.push(self.i32_statement("le.i32")),
@@ -739,6 +743,16 @@ impl Parser<'_>
                                        left,
                                        right,
                                        span: span() },
+      name if crate::xlil::I32BinaryOperation::parse_text(name).is_some() =>
+      {
+        Statement::BinaryI32 { operation: crate::xlil::I32BinaryOperation::parse_text(name).expect("guarded i32 \
+                                                                                                    operation must \
+                                                                                                    parse"),
+                               result,
+                               left,
+                               right,
+                               span: span() }
+      }
       "eq.i32" => Statement::EqI32 { result,
                                      left,
                                      right,

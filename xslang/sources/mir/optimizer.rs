@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use super::verify::{Diagnostic as VerifyDiagnostic, verify_function};
 use super::{BasicBlock, Function, LocalId, Statement, Terminator, reachable_blocks};
+use crate::xlil::I32BinaryOperation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OptimizationPass
@@ -17,6 +18,7 @@ pub enum OptimizationPass
   FoldConstI64Sub,
   FoldConstI64Mul,
   FoldConstI64Eq,
+  FoldConstI32Binary,
   FoldConstBoolBranch,
 }
 
@@ -80,6 +82,12 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   {
     reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI64Eq,
                                       removed_items: folded_eqs });
+  }
+  let folded_i32 = fold_const_i32_binary(&mut function);
+  if folded_i32 != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI32Binary,
+                                      removed_items: folded_i32 });
   }
   let folded_branches = fold_const_bool_branches(&mut function);
   if folded_branches != 0
@@ -397,6 +405,82 @@ fn fold_const_i64_eqs_in_block(block: &mut BasicBlock) -> usize
   folded
 }
 
+fn fold_const_i32_binary(function: &mut Function) -> usize
+{
+  function.blocks.iter_mut().map(fold_const_i32_binary_in_block).sum()
+}
+
+fn fold_const_i32_binary_in_block(block: &mut BasicBlock) -> usize
+{
+  let mut constants = HashMap::new();
+  let mut folded = 0;
+  for statement in &mut block.statements
+  {
+    match statement
+    {
+      Statement::ConstI32 { local,
+                            value,
+                            .. } =>
+      {
+        constants.insert(*local, *value);
+      }
+      Statement::BinaryI32 { operation,
+                             result,
+                             left,
+                             right,
+                             span, } =>
+      {
+        let result = *result;
+        let span = *span;
+        let Some(value) = constants.get(left)
+                                   .copied()
+                                   .zip(constants.get(right).copied())
+                                   .and_then(|(left, right)| evaluate_i32_binary(*operation, left, right))
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        *statement = Statement::ConstI32 { local: result,
+                                           value,
+                                           span };
+        constants.insert(result, value);
+        folded += 1;
+      }
+      Statement::AddI32 { result, .. } |
+      Statement::SubI32 { result, .. } |
+      Statement::MulI32 { result, .. } |
+      Statement::EqI32 { result, .. } |
+      Statement::LtI32 { result, .. } |
+      Statement::LeI32 { result, .. } |
+      Statement::GtI32 { result, .. } |
+      Statement::GeI32 { result, .. } |
+      Statement::LoadLocal { result, .. } |
+      Statement::Call { result: Some(result), .. } =>
+      {
+        constants.remove(result);
+      }
+      _ =>
+      {}
+    }
+  }
+  folded
+}
+
+fn evaluate_i32_binary(operation: I32BinaryOperation, left: i32, right: i32) -> Option<i32>
+{
+  match operation
+  {
+    I32BinaryOperation::Div => left.checked_div(right),
+    I32BinaryOperation::Rem => left.checked_rem(right),
+    I32BinaryOperation::BitAnd => Some(left & right),
+    I32BinaryOperation::BitOr => Some(left | right),
+    I32BinaryOperation::BitXor => Some(left ^ right),
+    I32BinaryOperation::ShiftLeft => u32::try_from(right).ok().and_then(|amount| left.checked_shl(amount)),
+    I32BinaryOperation::ShiftRight => u32::try_from(right).ok().and_then(|amount| left.checked_shr(amount)),
+  }
+}
+
 fn fold_const_bool_branches(function: &mut Function) -> usize
 {
   let mut folded = 0;
@@ -431,6 +515,7 @@ fn fold_const_bool_branch_in_block(block: &mut BasicBlock) -> usize
       Statement::AddI32 { result, .. } |
       Statement::SubI32 { result, .. } |
       Statement::MulI32 { result, .. } |
+      Statement::BinaryI32 { result, .. } |
       Statement::EqI32 { result, .. } |
       Statement::LtI32 { result, .. } |
       Statement::LeI32 { result, .. } |

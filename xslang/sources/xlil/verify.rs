@@ -183,6 +183,16 @@ impl Verifier
         self.i32_value(function, left, "XLIL mul.i32 left operand");
         self.i32_value(function, right, "XLIL mul.i32 right operand");
       }
+      Instruction::BinaryI32 { operation,
+                               result,
+                               left,
+                               right, } =>
+      {
+        let name = operation.text_name();
+        self.i32_value(function, result, &format!("XLIL {name} result"));
+        self.i32_value(function, left, &format!("XLIL {name} left operand"));
+        self.i32_value(function, right, &format!("XLIL {name} right operand"));
+      }
       Instruction::EqI32 { result,
                            left,
                            right, } |

@@ -101,6 +101,9 @@ The documented compilation order is preserved:
   initializers. Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower
   only the selected branch in this slice. This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse`
   linking.
+- The Rust compiler-core route carries `Long` `/`, `%`, `&`, `|`, `^`, `<<`, and `>>` expressions through typed HIR,
+  versioned XHIR, verified MIR/XMIR, and XLIL. Integer literals still default to `Int` (i64) without an expected type;
+  an explicit `Long` (i32) return, binding, or parameter context is propagated through nested binary expressions.
 - Source-native locals use C MIR local/place records rather than remaining SSA aliases. Their initialization and later
   reads/assignments lower to XLIL slots and LLVM stack operations. MIR validation permits one initialization store for an
   immutable local and rejects a second store as reassignment. A place load additionally requires initialization on every
@@ -542,6 +545,10 @@ semantics.
 - Rust `xslang` contains the first target-independent HIR to MIR bridge. It lowers void functions, `Long`/`Int` locals,
   non-negative `Long` i32 and `Int` i64 literals, and local returns into a single-entry MIR block with typed
   XLIL-vocabulary local records. Negative literal/unary-expression lowering and other integer widths remain deferred.
+- The same Rust bridge lowers `Long` division, remainder, bitwise AND/OR/XOR, and signed shifts to target-independent
+  `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `xor.i32`, `shl.i32`, and arithmetic `shr.i32` records. Their model,
+  XHIR/XMIR/XLIL text readers and writers, verifiers, MIR-to-XLIL lowering, and native compiler-core bridge are tested
+  together. `Int` keeps its i64 representation and is not silently narrowed to this i32 instruction family.
   Unsupported HIR expressions and primitive values whose runtime layout is not ready, such as `Str`, produce lowering
   diagnostics instead of inventing temporary backend semantics.
 

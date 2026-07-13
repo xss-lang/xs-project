@@ -4,8 +4,8 @@
  */
 
 use crate::xlil::{
-  Block, BlockId, Function, Instruction, Module, SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator, Type, Value,
-  ValueId, is_supported_xlil_version, type_from_name,
+  Block, BlockId, Function, I32BinaryOperation, Instruction, Module, SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator,
+  Type, Value, ValueId, is_supported_xlil_version, type_from_name,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -445,7 +445,8 @@ impl Parser<'_>
     {
       return self.eq_i64(function, result, operands, line);
     }
-    for instruction in ["add.i32", "sub.i32", "mul.i32", "eq.i32", "lt.i32", "le.i32", "gt.i32", "ge.i32"]
+    for instruction in ["add.i32", "sub.i32", "mul.i32", "div.i32", "rem.i32", "and.i32", "or.i32", "xor.i32",
+                        "shl.i32", "shr.i32", "eq.i32", "lt.i32", "le.i32", "gt.i32", "ge.i32"]
     {
       let pattern = format!(" = {instruction} ");
       if let Some((result, operands)) = text.split_once(&pattern)
@@ -645,7 +646,8 @@ impl Parser<'_>
   {
     let result_type = match instruction
     {
-      "add.i32" | "sub.i32" | "mul.i32" => Type::I32,
+      "add.i32" | "sub.i32" | "mul.i32" | "div.i32" | "rem.i32" | "and.i32" | "or.i32" | "xor.i32" | "shl.i32" |
+      "shr.i32" => Type::I32,
       "eq.i32" | "lt.i32" | "le.i32" | "gt.i32" | "ge.i32" => Type::BOOL,
       _ => return None,
     };
@@ -689,6 +691,14 @@ impl Parser<'_>
       "mul.i32" => Instruction::MulI32 { result,
                                          left,
                                          right },
+      name if I32BinaryOperation::parse_text(name).is_some() =>
+      {
+        Instruction::BinaryI32 { operation: I32BinaryOperation::parse_text(name).expect("guarded i32 operation \
+                                                                                         must parse"),
+                                 result,
+                                 left,
+                                 right }
+      }
       "eq.i32" => Instruction::EqI32 { result,
                                        left,
                                        right },

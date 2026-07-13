@@ -4,6 +4,14 @@
 // operators system:
 
 //
+// Arithmetic Operators:
+// +
+// -
+// *
+// /
+// %
+//
+//
 // Comparison Operators:
 // ==
 // !=
@@ -20,6 +28,9 @@
 // Bitwise Operators:
 // &
 // |
+// ^
+// <<
+// >>
 //
 // Optional Operators:
 // ?.
@@ -41,6 +52,13 @@
 fn main() {
     a: Int = 10;
     b: Int = 20;
+
+    // arithmetic
+    sum: Int = a + b;
+    difference: Int = b - a;
+    product: Int = a * b;
+    quotient: Int = b / a;
+    remainder: Int = b % 3;
 
     // equality
     if (a == b) {
@@ -75,6 +93,9 @@ fn main() {
     // bitwise
     result: Int = a & b;
     result = a | b;
+    result = a ^ b;
+    result = a << 2;
+    result = b >> 1;
 
     // optional conditional access
     maybe_user: Optional<User> = None;
@@ -129,6 +150,22 @@ value: Int = 10 & 20;
 
 // VALID
 value: Int = 10 | 20;
+
+
+// VALID
+value: Int = 28 / 4;
+
+
+// VALID
+value: Int = 15 % 8;
+
+
+// VALID
+value: Int = 3 ^ 4;
+
+
+// VALID
+value: Int = (7 << 1) >> 1;
 
 
 // VALID

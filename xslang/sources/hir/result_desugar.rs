@@ -492,7 +492,16 @@ impl ResultDesugar
     };
     match operator
     {
-      BinaryOperator::Add | BinaryOperator::Sub | BinaryOperator::Mul
+      BinaryOperator::Add |
+      BinaryOperator::Sub |
+      BinaryOperator::Mul |
+      BinaryOperator::Div |
+      BinaryOperator::Rem |
+      BinaryOperator::BitAnd |
+      BinaryOperator::BitOr |
+      BinaryOperator::BitXor |
+      BinaryOperator::ShiftLeft |
+      BinaryOperator::ShiftRight
         if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
       {
         Some(Type::Primitive(primitive))

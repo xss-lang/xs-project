@@ -123,7 +123,7 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -184,6 +184,15 @@ add_test(NAME source_native_remainder_artifacts COMMAND xs_xse_artifact_tests
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainRemainder.o
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainRemainder.xse 7)
 set_tests_properties(source_native_remainder_artifacts PROPERTIES DEPENDS source_native_remainder_build TIMEOUT 5)
+add_test(NAME source_native_operator_call_build COMMAND xs build -file
+                                                       ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainOperatorCall.xs)
+set_tests_properties(source_native_operator_call_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_operator_call_artifacts COMMAND xs_xse_artifact_tests
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainOperatorCall.ll
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainOperatorCall.o
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainOperatorCall.xse 7)
+set_tests_properties(source_native_operator_call_artifacts PROPERTIES DEPENDS source_native_operator_call_build TIMEOUT 5)
 add_test(NAME source_native_negative_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainNegative.xs)
 set_tests_properties(source_native_negative_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

@@ -10,3 +10,6 @@ pub use model::*;
 pub mod optimizer;
 pub mod text;
 pub mod verify;
+
+#[cfg(test)]
+mod operator_optimizer_tests;
