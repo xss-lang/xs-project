@@ -24,6 +24,8 @@
 #define copy_cstr xs_source_native_copy_cstr
 #define set_mir_error xs_source_native_set_mir_error
 #define context_init_parameters xs_source_native_context_init_parameters
+#define context_enter_scope xs_source_native_context_enter_scope
+#define context_exit_scope xs_source_native_context_exit_scope
 #define context_add_local xs_source_native_context_add_local
 #define context_read xs_source_native_context_read
 #define context_type xs_source_native_context_type
@@ -613,13 +615,41 @@ static bool lower_assignment_expression(XsMirBlock *entry, const NativeContext *
   return context_assign(context, entry, target->text, type, value, diagnostics, node_span(target), error);
 }
 
+static bool lower_update_expression(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                    XsText current_function, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
+                                    XsMirError *error)
+{
+  if(expression != nullptr && expression->kind == XS_SYNTAX_EXPR_ASSIGNMENT)
+    return lower_assignment_expression(entry, context, program, current_function, expression, diagnostics, error);
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_UNARY || expression->child_count != 1 ||
+     (expression->token_kind != XS_TOKEN_PLUS_PLUS && expression->token_kind != XS_TOKEN_MINUS_MINUS) ||
+     expression->children[0]->kind != XS_SYNTAX_EXPR_IDENTIFIER)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+                              "native source update must be assignment or postfix increment/decrement") &&
+           false;
+  const XsSyntaxNode *target = expression->children[0];
+  XsMirValueId current = 0;
+  XsMirValueId one = 0;
+  XsMirValueId updated = 0;
+  if(!context_read(context, entry, target->text, XS_LIL_TYPE_I32, &current, error) ||
+     xs_mir_block_add_const_i32(entry, 1, &one, error) != XS_MIR_OK)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target),
+                              "native source postfix update requires a Long local") &&
+           false;
+  XsMirStatus status = expression->token_kind == XS_TOKEN_PLUS_PLUS
+                           ? xs_mir_block_add_i32(entry, current, one, &updated, error)
+                           : xs_mir_block_sub_i32(entry, current, one, &updated, error);
+  return status == XS_MIR_OK &&
+         context_assign(context, entry, target->text, XS_LIL_TYPE_I32, updated, diagnostics, node_span(target), error);
+}
+
 static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
                                        XsText current_function, const XsSyntaxNode *statement,
                                        XsDiagnostics *diagnostics, XsMirError *error)
 {
   const XsSyntaxNode *assignment =
       statement->kind == XS_SYNTAX_STMT_EXPRESSION && statement->child_count == 1 ? statement->children[0] : nullptr;
-  return lower_assignment_expression(entry, context, program, current_function, assignment, diagnostics, error);
+  return lower_update_expression(entry, context, program, current_function, assignment, diagnostics, error);
 }
 
 static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
@@ -670,7 +700,8 @@ static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current,
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block),
                               "native source if branches must contain one or more supported statements for now") &&
            false;
-  size_t scope_start = context->count;
+  if(!context_enter_scope(context, error))
+    return false;
   bool success = true;
   for(size_t index = 0; index < block->child_count; ++index)
   {
@@ -723,7 +754,7 @@ static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current,
     }
   }
 cleanup:
-  context->count = scope_start;
+  context_exit_scope(context);
   return success;
 }
 
@@ -837,7 +868,8 @@ static bool lower_for_statement(XsMirFunction *function, XsMirBlock **current, N
                diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
                "native source for requires variable initializer, Bool condition, assignment update, and body") &&
            false;
-  size_t scope_start = context->count;
+  if(!context_enter_scope(context, error))
+    return false;
   bool success = false;
   if(!lower_local_statement(function, *current, context, program, current_function, statement->children[0], diagnostics,
                             error))
@@ -864,14 +896,13 @@ static bool lower_for_statement(XsMirFunction *function, XsMirBlock **current, N
                             return_kind, &loop, diagnostics, error) ||
      (xs_mir_block_terminator_kind(body_current) == XS_MIR_TERMINATOR_NONE &&
       xs_mir_block_set_goto(body_current, update, error) != XS_MIR_OK) ||
-     !lower_assignment_expression(update, context, program, current_function, statement->children[2], diagnostics,
-                                  error) ||
+     !lower_update_expression(update, context, program, current_function, statement->children[2], diagnostics, error) ||
      xs_mir_block_set_goto(update, header, error) != XS_MIR_OK)
     goto cleanup;
   *current = exit;
   success = true;
 cleanup:
-  context->count = scope_start;
+  context_exit_scope(context);
   return success;
 }
 

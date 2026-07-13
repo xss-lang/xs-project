@@ -38,6 +38,10 @@ source-to-native executable pipeline.
 - Source-native `else if` chains now lower as ordered MIR conditional blocks with one shared merge target.
 - Source-native classic `for (initializer; condition; update)` loops now lower through MIR header/body/update/exit blocks;
   `continue` targets the update block and `break` targets the exit block.
+- Source-native lexical scopes now allow an inner block to shadow an enclosing local while still rejecting duplicate names
+  in the same scope; leaving the block restores the enclosing binding.
+- Postfix `++` and `--` are now represented by the structural AST and lower for supported mutable `Long` locals, including
+  canonical `for (...; i++)` updates.
 
 ## 0.0.8 - 2026-07-13
 

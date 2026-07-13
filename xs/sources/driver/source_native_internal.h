@@ -27,6 +27,8 @@ typedef struct
 {
   NativeBinding items[32];
   size_t count;
+  size_t scope_starts[32];
+  size_t scope_depth;
 } NativeContext;
 
 typedef struct
@@ -58,6 +60,8 @@ char *xs_source_native_copy_node_text(const XsSyntaxNode *node);
 char *xs_source_native_copy_cstr(const char *text);
 void xs_source_native_set_mir_error(XsMirError *error, XsMirStatus status, const char *message);
 void xs_source_native_context_init_parameters(NativeContext *context, const XsSyntaxNode *function);
+bool xs_source_native_context_enter_scope(NativeContext *context, XsMirError *error);
+void xs_source_native_context_exit_scope(NativeContext *context);
 bool xs_source_native_context_add_local(NativeContext *context, XsMirFunction *function, XsMirBlock *block, XsText name,
                                         XsMirValueId value, XsLilTypeKind type, bool is_mutable,
                                         XsDiagnostics *diagnostics, XsSpan span, XsMirError *error);

@@ -58,6 +58,7 @@ void xs_source_native_set_mir_error(XsMirError *error, XsMirStatus status, const
 void xs_source_native_context_init_parameters(NativeContext *context, const XsSyntaxNode *function)
 {
   *context = (NativeContext){0};
+  context->scope_depth = 1;
   XsMirValueId value = 0;
   for(size_t i = 0; i < function->child_count; ++i)
   {
@@ -67,6 +68,24 @@ void xs_source_native_context_init_parameters(NativeContext *context, const XsSy
     context->items[context->count++] =
         (NativeBinding){.name = parameter->children[0]->text, .value = value++, .type = XS_LIL_TYPE_I32};
   }
+}
+
+bool xs_source_native_context_enter_scope(NativeContext *context, XsMirError *error)
+{
+  if(context->scope_depth == sizeof(context->scope_starts) / sizeof(context->scope_starts[0]))
+  {
+    xs_source_native_set_mir_error(error, XS_MIR_UNSUPPORTED, "native source lexical scope nesting exceeds 32 levels");
+    return false;
+  }
+  context->scope_starts[context->scope_depth++] = context->count;
+  return true;
+}
+
+void xs_source_native_context_exit_scope(NativeContext *context)
+{
+  if(context->scope_depth <= 1)
+    return;
+  context->count = context->scope_starts[--context->scope_depth];
 }
 
 static const NativeBinding *context_find_binding(const NativeContext *context, XsText name)
@@ -79,13 +98,24 @@ static const NativeBinding *context_find_binding(const NativeContext *context, X
   return nullptr;
 }
 
+static bool context_current_scope_has_binding(const NativeContext *context, XsText name)
+{
+  size_t start = context->scope_depth == 0 ? 0 : context->scope_starts[context->scope_depth - 1];
+  for(size_t index = context->count; index > start; --index)
+  {
+    if(xs_source_native_text_equals(context->items[index - 1].name, name))
+      return true;
+  }
+  return false;
+}
+
 bool xs_source_native_context_add_local(NativeContext *context, XsMirFunction *function, XsMirBlock *block, XsText name,
                                         XsMirValueId value, XsLilTypeKind type, bool is_mutable,
                                         XsDiagnostics *diagnostics, XsSpan span, XsMirError *error)
 {
-  if(context_find_binding(context, name) != nullptr)
+  if(context_current_scope_has_binding(context, name))
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                              "native source local names must be unique in this compiler slice") &&
+                              "native source local names must be unique inside one lexical scope") &&
            false;
   if(context->count == sizeof(context->items) / sizeof(context->items[0]))
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,

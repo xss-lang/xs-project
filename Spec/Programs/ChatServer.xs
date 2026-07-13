@@ -26,11 +26,11 @@ data Message {
 
 class Room {
     name: Str;
-    members: std::collections::hash_map<ClientId, Thread.sender<Message>>;
+    members: std::collections::HashMap<ClientId, Thread.sender<Message>>;
 
     Room(name: Str) {
         self.name = name;
-        self.members = std::collections::hash_map<ClientId, Thread.sender<Message>>::new();
+        self.members = std::collections::HashMap<ClientId, Thread.sender<Message>>::new();
     }
 
     fn Join(id: ClientId, sender: Thread.sender<Message>) {
@@ -50,11 +50,11 @@ class Room {
 
 class ChatHub {
     nextId: Atomic<Int>;
-    rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>>;
+    rooms: Arc<Mutex<std::collections::HashMap<Str, Room>>>;
 
     ChatHub() {
         self.nextId = Atomic::new(1);
-        self.rooms = Arc::new(Mutex::new(std::collections::hash_map<Str, Room>::new()));
+        self.rooms = Arc::new(Mutex::new(std::collections::HashMap<Str, Room>::new()));
     }
 
     async fn Serve(listener: Net.tcpListener) -> Task<Result<()>> {
@@ -63,7 +63,7 @@ class ChatHub {
             id: ClientId = ClientId {
                 value: self.nextId.fetchAdd(1),
             };
-            rooms: Arc<Mutex<std::collections::hash_map<Str, Room>>> = Arc::clone(&self.rooms);
+            rooms: Arc<Mutex<std::collections::HashMap<Str, Room>>> = Arc::clone(&self.rooms);
 
             Thread.spawn(move async fn() {
                 session: ClientSession = new(id, socket, rooms);

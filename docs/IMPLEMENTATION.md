@@ -111,11 +111,12 @@ The documented compilation order is preserved:
   `Long` local assignments include `=`, arithmetic, and bitwise compound assignment forms already represented by the
   structural parser. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
   assignment-only body lowers to a MIR loop header, body, and exit. Supported conditional and loop blocks also accept
-  `Long`/`Bool` local declarations with lexical lifetime in the source-native context; same-name shadowing is rejected in
-  this slice. `break` and `continue` target that loop's exit and header, including when written in a nested supported
+  `Long`/`Bool` local declarations with lexical lifetime in the source-native context. Inner scopes may shadow enclosing
+  bindings; duplicates remain invalid within one lexical scope. `break` and `continue` target that loop's exit and header,
+  including when written in a nested supported
   conditional. Supported early return expressions lower to direct MIR return terminators from nested conditionals and loop
-  bodies. Classic `for` loops with a variable initializer, supported Bool condition, and supported assignment update lower
-  through distinct header/body/update/exit blocks; `continue` targets update and `break` targets exit. `for each`, arbitrary
+  bodies. Classic `for` loops with a variable initializer, supported Bool condition, and supported assignment or postfix
+  `++`/`--` update lower through distinct header/body/update/exit blocks; `continue` targets update and `break` targets exit. `for each`, arbitrary
   statement blocks, and general CFG lowering remain deferred.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.

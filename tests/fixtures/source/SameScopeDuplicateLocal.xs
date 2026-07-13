@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 fn main() -> Long {
-  sum: Long = 0;
-  for (i: Long = 0; i < 5; i++) {
-    if (i == 2) {
-      continue;
-    }
-    sum += i;
-  }
-  return sum;
+  value: Long = 0;
+  value: Long = 1;
+  return value;
 }

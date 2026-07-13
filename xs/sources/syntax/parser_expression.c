@@ -513,6 +513,16 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
       finish_node(parser, index, parser->previous.span.end);
       expression = index;
     }
+    else if(parser->current.kind == XS_TOKEN_PLUS_PLUS || parser->current.kind == XS_TOKEN_MINUS_MINUS)
+    {
+      XsTokenKind operator_kind = parser->current.kind;
+      advance(parser);
+      XsSyntaxNode *update = node(parser, XS_SYNTAX_EXPR_UNARY, (XsSpan){start, parser->previous.span.end});
+      update->token_kind = operator_kind;
+      xs_syntax_node_add(parser->tree, update, expression);
+      finish_node(parser, update, parser->previous.span.end);
+      expression = update;
+    }
     else
     {
       break;

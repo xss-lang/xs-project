@@ -129,7 +129,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainBlockLocals
-                       MainEarlyReturn MainElseIf MainFor ImmutableLocalReassignment BlockLocalShadow
+                       MainEarlyReturn MainElseIf MainFor MainPostfixDecrement ImmutableLocalReassignment BlockLocalShadow
+                       SameScopeDuplicateLocal
                        MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
                        BoolCallAsLongMain)
@@ -333,8 +334,19 @@ add_test(NAME source_native_block_locals_artifacts COMMAND xs_xse_artifact_tests
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBlockLocals.o
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBlockLocals.xse 10 "alloca i32")
 set_tests_properties(source_native_block_locals_artifacts PROPERTIES DEPENDS source_native_block_locals_build TIMEOUT 5)
-add_test(NAME source_native_block_local_shadow COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BlockLocalShadow.xs)
-set_tests_properties(source_native_block_local_shadow PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+add_test(NAME source_native_block_local_shadow_build COMMAND xs build -file
+                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BlockLocalShadow.xs)
+set_tests_properties(source_native_block_local_shadow_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_block_local_shadow_artifacts COMMAND xs_xse_artifact_tests
+                                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BlockLocalShadow.ll
+                                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BlockLocalShadow.o
+                                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BlockLocalShadow.xse 0)
+set_tests_properties(source_native_block_local_shadow_artifacts PROPERTIES
+                     DEPENDS source_native_block_local_shadow_build TIMEOUT 5)
+add_test(NAME source_native_same_scope_duplicate_local COMMAND xs build -file
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/SameScopeDuplicateLocal.xs)
+set_tests_properties(source_native_same_scope_duplicate_local PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 add_test(NAME source_native_early_return_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainEarlyReturn.xs)
 set_tests_properties(source_native_early_return_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
@@ -358,6 +370,16 @@ add_test(NAME source_native_for_artifacts COMMAND xs_xse_artifact_tests ${XS_SOU
                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFor.o
                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFor.xse 8 "for.update")
 set_tests_properties(source_native_for_artifacts PROPERTIES DEPENDS source_native_for_build TIMEOUT 5)
+add_test(NAME source_native_postfix_decrement_build COMMAND xs build -file
+                                                        ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainPostfixDecrement.xs)
+set_tests_properties(source_native_postfix_decrement_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_postfix_decrement_artifacts COMMAND xs_xse_artifact_tests
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainPostfixDecrement.ll
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainPostfixDecrement.o
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainPostfixDecrement.xse 7)
+set_tests_properties(source_native_postfix_decrement_artifacts PROPERTIES
+                     DEPENDS source_native_postfix_decrement_build TIMEOUT 5)
 add_test(NAME source_native_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIf.xs)
 set_tests_properties(source_native_if_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

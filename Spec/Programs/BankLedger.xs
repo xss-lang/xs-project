@@ -33,11 +33,11 @@ data Transfer {
 }
 
 class Ledger {
-    accounts: std::collections::hash_map<Str, Account>;
+    accounts: std::collections::HashMap<Str, Account>;
     audit: std::collections::Vector<Transfer>;
 
     Ledger() {
-        self.accounts = std::collections::hash_map<Str, Account>::new();
+        self.accounts = std::collections::HashMap<Str, Account>::new();
         self.audit = std::collections::Vector<Transfer>::new();
     }
 
@@ -89,7 +89,7 @@ class Ledger {
 }
 
 fn Main() -> Result<Int, Error> {
-    ledger: Ledger = new();
+    ledger := new Ledger();
 
     ledger.Open("checking", "Ada", Money {
         cents: 50'000,
