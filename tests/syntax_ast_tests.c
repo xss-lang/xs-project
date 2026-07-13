@@ -364,7 +364,7 @@ static void test_result_propagation_structure(void)
 
 static void test_lifetime_type_structure(void)
 {
-  const char *text = "fn Print(first: &'a User, second: &'b mut User, shared: &'static Str, inferred: &'_ User) {\n"
+  const char *text = "fn Print(first: &'a User, second: &'b mut User, shared: &'static Str, inferred: &'else User) {\n"
                      "  return;\n"
                      "}\n";
   XsSource source = {.path = "Lifetimes.xs", .text = text, .length = strlen(text)};
@@ -375,6 +375,33 @@ static void test_lifetime_type_structure(void)
   CHECK(count_kind(tree.root, XS_SYNTAX_LIFETIME) == 4);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_REFERENCE) != nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_TYPE_MUTABLE_REFERENCE) != nullptr);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_underscore_lifetime_is_rejected(void)
+{
+  const char *text = "fn Print(inferred: &'_ User) {}\n";
+  XsSource source = {.path = "BadLifetime.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 61, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_else_type_placeholder_structure(void)
+{
+  const char *text = "class Box<T> { value: T; }\n"
+                     "fn Use(value: Box<else>) {}\n";
+  XsSource source = {.path = "ElseTypePlaceholder.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 62, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_GENERIC) == 1);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -436,6 +463,8 @@ int main(void)
   test_exception_syntax_is_deprecated();
   test_result_propagation_structure();
   test_lifetime_type_structure();
+  test_underscore_lifetime_is_rejected();
+  test_else_type_placeholder_structure();
   test_nested_generic_type_closers();
   test_attribute_structure();
   return failures == 0 ? 0 : 1;

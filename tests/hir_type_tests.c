@@ -131,6 +131,15 @@ static void test_standard_generic_types(void)
   CHECK(!check_single_source("module App;\nfn BadError() -> Result::Error<Int> { return Result::Ok(1); }\n"));
 }
 
+static void test_else_type_placeholder(void)
+{
+  const char *valid = "module App;\n"
+                      "class Box<T> { value: T; }\n"
+                      "fn Main(box: Box<else>) {}\n";
+  CHECK(check_single_source(valid));
+  CHECK(!check_single_source("module App;\nclass Box<T> { value: T; }\nfn Main(box: Box<_>) {}\n"));
+}
+
 static void test_standard_cffi_types(void)
 {
   const char *valid = "module App;\n"
@@ -427,6 +436,7 @@ int main(void)
   test_local_user_type();
   test_generic_type_arity();
   test_standard_generic_types();
+  test_else_type_placeholder();
   test_standard_cffi_types();
   test_duplicate_generic_parameter_names();
   test_imported_user_type();

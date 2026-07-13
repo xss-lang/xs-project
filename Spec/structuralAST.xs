@@ -664,7 +664,7 @@ data LifetimeNode {
 // &'a User
 // &'a mut User
 // &'static Str
-// &'_ User
+// &'else User
 
 
 // ============================================================

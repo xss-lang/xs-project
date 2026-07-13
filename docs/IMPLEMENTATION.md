@@ -126,8 +126,9 @@ The documented compilation order is preserved:
   the structural AST.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
-- Lifetime spellings in reference types follow Rust base forms (`&'a T`, `&'a mut T`, `&'static T`, `&'_ T`) and are carried
-  into the AST as `XS_SYNTAX_LIFETIME` nodes. Lifetime elision and validation are left to the borrow-checker stage.
+- Lifetime spellings in reference types follow X# forms based on Rust lifetimes (`&'a T`, `&'a mut T`, `&'static T`,
+  `&'else T`) and are carried into the AST as `XS_SYNTAX_LIFETIME` nodes. X# uses `else` where Rust examples often use
+  `_`; lifetime elision and validation are left to the borrow-checker stage.
 - Function parameters, return type, deprecated `throws` types, and function bodies are structural nodes; bodies are not
   stored as raw ranges. The `->` return type is marked with `XS_SYNTAX_FLAG_RETURN_TYPE`; `throws` types are not
   interpreted as return types.
@@ -166,7 +167,7 @@ The documented compilation order is preserved:
   control-flow lowering is handled by later HIR/MIR work.
 - `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
   `continue`, and `else: expression;` are parsed. The `else:` statement explicitly discards its expression value, analogous
-  to Rust's `let _ = expression;`.
+  to a Rust discard binding, but X# spells the discard/default position as `else`.
   structurally.
 
 ### Module discovery and import graph
@@ -309,7 +310,7 @@ checks, trait/interface compatibility, or ABI/layout decisions.
 The growing semantic-analysis and type-checking implementation now starts in the isolated Rust `xslang` crate instead of
 adding new semantic rules to the old C23 HIR prototypes. The first checked Rust rule validates that `await` expressions occur
 only inside async function bodies. `xslang` also carries the first Result propagation type rule: `Result<T, E>@` has success
-type `T`, requires an enclosing `Result<_, E>` return type, and remains deferred at HIR-to-MIR lowering until error-return
+type `T`, requires an enclosing `Result<else, E>` return type, and remains deferred at HIR-to-MIR lowering until error-return
 control-flow lowering exists. The crate is not wired into the C23 driver yet; integration will use a bulk structural syntax
 transfer boundary so one compiler layer is not split across C and Rust.
 

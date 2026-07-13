@@ -198,6 +198,11 @@ static bool single_segment_standard_named_type(XsText name)
   return text_matches_cstr(name, "Optional") || text_matches_cstr(name, "Result");
 }
 
+static bool type_placeholder_name(XsText name)
+{
+  return text_matches_cstr(name, "else");
+}
+
 static bool generic_scope_contains(const GenericScope *scope, XsText name)
 {
   for(const GenericScope *current = scope; current != nullptr; current = current->parent)
@@ -374,7 +379,8 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
   if(first == nullptr)
     return true;
   if(path_segment_count(path) == 1 &&
-     (primitive_type_name(first->text) || generic_scope_contains(generics, first->text)))
+     (primitive_type_name(first->text) || generic_scope_contains(generics, first->text) ||
+      type_placeholder_name(first->text)))
     return true;
   if(path_segment_count(path) == 1 && single_segment_standard_named_type(first->text))
   {

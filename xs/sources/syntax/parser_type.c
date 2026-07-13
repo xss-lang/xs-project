@@ -9,10 +9,27 @@ static XsSyntaxNode *parse_lifetime(SyntaxParser *parser)
 {
   XsToken lifetime_token = parser->current;
   expect(parser, XS_TOKEN_LIFETIME, "expected lifetime");
+  if(lifetime_token.span.end == lifetime_token.span.start + 2 &&
+     parser->tree->source->text[lifetime_token.span.start + 1] == '_')
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, lifetime_token.span,
+                       "use 'else for inferred lifetimes");
   XsSyntaxNode *lifetime = node(parser, XS_SYNTAX_LIFETIME, lifetime_token.span);
   XsSpan name_span = {.start = lifetime_token.span.start + 1, .end = lifetime_token.span.end};
   xs_syntax_node_add(parser->tree, lifetime, node(parser, XS_SYNTAX_IDENTIFIER, name_span));
   return lifetime;
+}
+
+static XsSyntaxNode *parse_else_type_placeholder(SyntaxParser *parser)
+{
+  XsToken token = parser->current;
+  expect(parser, XS_TOKEN_KW_ELSE, "expected 'else' type placeholder");
+  XsSyntaxNode *named = node(parser, XS_SYNTAX_TYPE_NAMED, token.span);
+  XsSyntaxNode *path = node(parser, XS_SYNTAX_PATH, token.span);
+  xs_syntax_node_add(parser->tree, path, node(parser, XS_SYNTAX_IDENTIFIER, token.span));
+  finish_node(parser, path, token.span.end);
+  xs_syntax_node_add(parser->tree, named, path);
+  finish_node(parser, named, token.span.end);
+  return named;
 }
 
 static XsSyntaxNode *parse_function_type(SyntaxParser *parser, size_t start)
@@ -70,6 +87,8 @@ XsSyntaxNode *parse_type(SyntaxParser *parser)
     finish_node(parser, tuple, parser->previous.span.end);
     return tuple;
   }
+  if(parser->current.kind == XS_TOKEN_KW_ELSE)
+    return parse_else_type_placeholder(parser);
   if(parser->current.kind != XS_TOKEN_IDENTIFIER)
   {
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected type");

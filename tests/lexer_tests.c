@@ -136,7 +136,7 @@ static void test_lifetimes(void)
       XS_TOKEN_LIFETIME,  XS_TOKEN_KW_MUT,    XS_TOKEN_IDENTIFIER, XS_TOKEN_LIFETIME,
       XS_TOKEN_LIFETIME,  XS_TOKEN_CHARACTER, XS_TOKEN_EOF,
   };
-  expect_tokens("&'a User &'b mut User 'static '_ 'A'", expected, sizeof(expected) / sizeof(expected[0]));
+  expect_tokens("&'a User &'b mut User 'static 'else 'A'", expected, sizeof(expected) / sizeof(expected[0]));
 }
 
 static void test_macro_tokens(void)

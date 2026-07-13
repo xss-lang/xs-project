@@ -23,7 +23,8 @@
 // as a full statement.
 //
 // `else: expression;` evaluates and explicitly discards an expression value.
-// It is equivalent in intent to Rust's `let _ = expression;`.
+// It is equivalent in intent to Rust's discard-binding pattern, but X# spells
+// that default/discard position as `else`.
 //
 // match statement syntax ends with `}`.
 // match expression syntax ends with `};` when used as a full statement,

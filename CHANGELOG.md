@@ -26,7 +26,8 @@ source-to-native executable pipeline.
   std::optional;` and `imports result; using namespace std::result;` behavior.
 - The C23 HIR type resolver now accepts canonical `std::result::Result<T, E>` and `std::result::Error` names in addition
   to the existing transition spellings.
-- Pattern defaults use `else`; `_` is no longer produced as a wildcard pattern in the structural parser.
+- Pattern defaults and placeholder spellings use `else`; `_` is no longer produced as a wildcard pattern or inferred
+  lifetime/type placeholder.
 
 - HIR CFFI validation now checks the first standard CFFI attribute shapes and scopes for extern blocks, extern functions,
   and extern static declarations.
@@ -80,7 +81,7 @@ source-to-native executable pipeline.
   accepting it.
 - Rust `xslang` XHIR now models and round-trips Result propagation with a `propagate` expression record.
 - Rust `xslang` type checking and inference now implement the first Result propagation rule: `Result<T, E>@` yields `T`,
-  and the enclosing function must return `Result<_, E>`. HIR-to-MIR lowering still intentionally rejects propagation until
+  and the enclosing function must return `Result<else, E>`. HIR-to-MIR lowering still intentionally rejects propagation until
   control-flow lowering for error returns exists.
 - Rust `xslang` now includes an explicit Result propagation desugar pass. Surface `value@` is translated into a
   Result-match/early-return intent model before MIR lowering work begins, so backend stages do not need to treat `@` as a

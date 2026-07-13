@@ -45,6 +45,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
   before C foreign-function declarations and the canonical helper types under `std::cffi::*`.
 - `Optional<T>` is available as if the compiler had inserted `imports optional; using namespace std::optional;`, making
   `std::optional::Optional<T>` available as `Optional<T>`.
+- X# uses `else` for placeholder/default positions. Type and lifetime placeholders are written as `Type<else, Foo>` and
+  `&'else T`; Rust-style `_` placeholders are not canonical X# syntax.
 - Optional value constructors are `std::optional::None` and `std::optional::Some(...)`; the same implicit namespace using
   may make `None` and `Some(...)` available in source.
 - `Result` is a special standard import: the compiler behaves as if `imports result; using namespace std::result;` existed
