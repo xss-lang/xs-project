@@ -534,9 +534,9 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
                       "  format!(\"{:#x?}\", value);\n"
                       "  format!(\"{:X?}\", value);\n"
                       "  format_args!(\"{}\", value);\n"
-                      "  write!(std::stdout, \"{}\", value);\n"
-                      "  writeln!(std::stdout);\n"
-                      "  writeln!(std::stdout, \"{:#?}\", value);\n"
+                      "  write!(std::stdout(), \"{}\", value);\n"
+                      "  writeln!(std::stdout());\n"
+                      "  writeln!(std::stdout(), \"{:#?}\", value);\n"
                       "}\n";
   XsSource source = {.path = "StdioMacros.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
@@ -552,7 +552,7 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
 
   const char *selected = "using namespace stdio;\n"
                          "fn Main(value: Long) { println!(); format_args!(\"{}\", value); "
-                         "write!(std::stdout, \"{}\", value); writeln!(std::stdout); }\n";
+                         "write!(std::stdout(), \"{}\", value); writeln!(std::stdout()); }\n";
   source = (XsSource){.path = "SelectedStdioMacros.xs", .text = selected, .length = strlen(selected)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 38, &diagnostics, &tree));
@@ -589,9 +589,9 @@ static void test_imported_stdio_macros_reject_invalid_forms(void)
       "imports stdio;\nfn Main() { println!(\"{\"); }\n",
       "imports stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
       "imports stdio;\nfn Main() { write!(); }\n",
-      "imports stdio;\nfn Main() { write!(std::stdout); }\n",
-      "imports stdio;\nfn Main() { write!(std::stdout, 10); }\n",
-      "imports stdio;\nfn Main() { writeln!(std::stdout, \"{}\",); }\n",
+      "imports stdio;\nfn Main() { write!(std::stdout()); }\n",
+      "imports stdio;\nfn Main() { write!(std::stdout(), 10); }\n",
+      "imports stdio;\nfn Main() { writeln!(std::stdout(), \"{}\",); }\n",
   };
   for(size_t index = 0; index < sizeof(invalid_cases) / sizeof(invalid_cases[0]); ++index)
   {

@@ -17,8 +17,8 @@ imports fs, stdio, collections, result;
 
 fn WriteText() -> Result<(), IOException> {
     std::fs::write("log.txt", "hello\n");
-    std::fs::write(std::stdout, "stdout\n");
-    std::fs::write(std::stderr, "stderr\n");
+    std::fs::write(std::stdout(), "stdout\n");
+    std::fs::write(std::stderr(), "stderr\n");
 }
 
 // std::fs::write(path, text):

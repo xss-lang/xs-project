@@ -5,7 +5,7 @@
 
 //
 // Stdio provides formatted text output macros, formatted writer macros, and
-// standard stream handles.
+// standard stream functions.
 // print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
 // exported Stdio macros.
 // They are available through `imports stdio`, not as compiler built-ins.
@@ -53,15 +53,15 @@ fn ErrorNewlineOnly() -> Result<(), IOException> {
 // writer macros
 
 fn WriteToStream() -> Result<(), IOException> {
-    write!(std::stdout, "Hello");
+    write!(std::stdout(), "Hello");
 }
 
 fn WriteLineToStream() -> Result<(), IOException> {
-    writeln!(std::stdout, "{} is {}", "Alpha", 26);
+    writeln!(std::stdout(), "{} is {}", "Alpha", 26);
 }
 
 fn WriteNewlineOnlyToStream() -> Result<(), IOException> {
-    writeln!(std::stdout);
+    writeln!(std::stdout());
 }
 
 // formatting
@@ -116,29 +116,29 @@ fn BuildMessage() {
 }
 
 fn WriteReportLine(name: Str, score: Int) -> Result<(), IOException> {
-    writeln!(std::stdout, "{:<16} {:>4}", name, score);
+    writeln!(std::stdout(), "{:<16} {:>4}", name, score);
 }
 
 fn WriteDebugReport<T>(value: T) -> Result<(), IOException> {
-    write!(std::stderr, "{:#?}", value);
-    writeln!(std::stderr);
+    write!(std::stderr(), "{:#?}", value);
+    writeln!(std::stderr());
 }
 
 
-// standard stream handles
+// standard stream functions
 
 fn StandardHandles() -> Result<(), IOException> {
-    std::fs::write(std::stdout, "stdout text\n");
-    std::fs::write(std::stderr, "stderr text\n");
+    std::fs::write(std::stdout(), "stdout text\n");
+    std::fs::write(std::stderr(), "stderr text\n");
 
     text: Str = std::fs::read_to_str(std::stdin());
     println!("{}", text);
 }
 
-// std::stdout and std::stderr are stream handles.
+// std::stdout() and std::stderr() return standard output and error stream handles.
 // std::stdin() returns the standard input stream handle.
 // Raw reading and writing through these handles is provided by std::fs::
-// Stdio macros use std::stdout and std::stderr internally.
+// Stdio macros use std::stdout() and std::stderr() internally.
 
 
 // line input
