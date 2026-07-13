@@ -58,8 +58,8 @@ data SharedCounter {
 
 #[AsyncEntry]
 #[CancellationSafe]
-fn RunAsync() -> Result::Result<(), Result::Error> {
-    return Result::Ok(());
+fn RunAsync() -> Result<(), Error> {
+    return Ok(());
 }
 
 // Rust compatibility names exposed by the standard Attrs module:

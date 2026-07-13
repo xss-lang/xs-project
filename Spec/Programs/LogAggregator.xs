@@ -19,13 +19,13 @@ data LogEntry {
 }
 
 class LogParser {
-    static fn Parse(line: Str) -> Result::Result<LogEntry, LogError> {
+    static fn Parse(line: Str) -> Result<LogEntry, LogError> {
         parts: std::collections::vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
-            return Result::Error(LogError.InvalidLine(line));
+            return Error(LogError.InvalidLine(line));
         }
 
-        return Result::Ok(LogEntry {
+        return Ok(LogEntry {
             level: parts[0].trim(),
             message: parts[1].trim(),
         });
@@ -50,7 +50,7 @@ class Report {
         }
     }
 
-    fn Print() -> Result::Result<Void, IOException> {
+    fn Print() -> Result<Void, IOException> {
         for ((level, count): (Str, Int) in this.counts) {
             println!("{:<8} {}", level, count);
         }
@@ -59,11 +59,11 @@ class Report {
             println!("newest error: {}", this.newestError!);
         }
 
-        return Result::Ok();
+        return Ok();
     }
 }
 
-fn Main(args: std::process::Args) -> Result::Result<Int, Result::Error> {
+fn Main(args: std::process::Args) -> Result<Int, Error> {
     if (args.length() != 2) {
         eprintln!("usage: log-aggregator <log-file>");
         return 2;
@@ -81,5 +81,5 @@ fn Main(args: std::process::Args) -> Result::Result<Int, Result::Error> {
     }
 
     report.Print()@;
-    return Result::Ok(0);
+    return Ok(0);
 }

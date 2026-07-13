@@ -15,7 +15,7 @@ imports fs, stdio, collections, result;
 
 // raw writes
 
-fn WriteText() -> Result::Result<Void, IOException> {
+fn WriteText() -> Result<Void, IOException> {
     std::fs::write("log.txt", "hello\n");
     std::fs::write(std::stdout, "stdout\n");
     std::fs::write(std::stderr, "stderr\n");
@@ -27,17 +27,17 @@ fn WriteText() -> Result::Result<Void, IOException> {
 // - Does not apply formatting.
 // - Does not append a newline.
 // - Requires the file to exist.
-// - Returns Result::Error(IOException) if the file does not exist or cannot be written.
+// - Returns Error(IOException) if the file does not exist or cannot be written.
 
 
 // raw reads
 
-fn ReadText() -> Result::Result<Void, IOException> {
+fn ReadText() -> Result<Void, IOException> {
     content: Str = std::fs::read_to_str("log.txt");
     println!("{}", content);
 }
 
-fn ReadBytes() -> Result::Result<Void, IOException> {
+fn ReadBytes() -> Result<Void, IOException> {
     bytes: std::collections::vector<Byte> = std::fs::read("image.png");
     println!("file size: {}", bytes.length());
 }
@@ -48,7 +48,7 @@ fn ReadBytes() -> Result::Result<Void, IOException> {
 
 // create paths
 
-fn CreatePaths() -> Result::Result<Void, IOException> {
+fn CreatePaths() -> Result<Void, IOException> {
     std::fs::create_dir("data/backups");
     std::fs::create_file("data/backups/log.txt");
 }
@@ -57,18 +57,18 @@ fn CreatePaths() -> Result::Result<Void, IOException> {
 //
 // - Creates the directory and missing parent directories.
 // - Succeeds if the directory already exists.
-// - Returns Result::Error(IOException) if a non-directory path component blocks creation.
+// - Returns Error(IOException) if a non-directory path component blocks creation.
 //
 // std::fs::create_file(path):
 //
 // - Creates a new empty file.
-// - Returns Result::Error(IOException) if the file already exists.
-// - Returns Result::Error(IOException) if the parent directory does not exist.
+// - Returns Error(IOException) if the file already exists.
+// - Returns Error(IOException) if the parent directory does not exist.
 
 
 // move, copy and remove
 
-fn MoveCopyRemove() -> Result::Result<Void, IOException> {
+fn MoveCopyRemove() -> Result<Void, IOException> {
     std::fs::copy_file("data/source.txt", "data/copy.txt");
     std::fs::move("data/copy.txt", "data/backups/copy.txt");
     std::fs::remove_file("data/source.txt");
@@ -83,7 +83,7 @@ fn MoveCopyRemove() -> Result::Result<Void, IOException> {
 
 // list directory
 
-fn ListDirectory() -> Result::Result<Void, IOException> {
+fn ListDirectory() -> Result<Void, IOException> {
     for (entry: Str in std::fs::list_dir(".")) {
         println!("{}", entry.trim());
     }
@@ -95,7 +95,7 @@ fn ListDirectory() -> Result::Result<Void, IOException> {
 
 // metadata and path helpers
 
-fn InspectPath(path: Str) -> Result::Result<Void, IOException> {
+fn InspectPath(path: Str) -> Result<Void, IOException> {
     if (std::fs::exists(path) && std::fs::is_dir(path)) {
         for (entry: Str in std::fs::walk_dir(path)) {
             relative: Str = std::fs::relative_path(path, entry);
@@ -123,8 +123,8 @@ fn BuildPath(root: Str, name: Str) -> Str {
 
 // file handles and open options
 
-fn OpenWithOptions() -> Result::Result<Void, IOException> {
-    file: std::fs::File = std::fs::OpenOptions.new()
+fn OpenWithOptions() -> Result<Void, IOException> {
+    file: std::fs::File = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
         .open("log.txt");

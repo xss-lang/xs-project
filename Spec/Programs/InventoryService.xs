@@ -37,7 +37,7 @@ data Receipt {
 }
 
 interface Repository<K, V> {
-    fn Get(key: K) -> Result::Result<&V, ServiceError>;
+    fn Get(key: K) -> Result<&V, ServiceError>;
     fn Put(key: K, value: V);
 }
 
@@ -50,26 +50,26 @@ class InventoryRepository {
         this.products = std::collections::hash_map<Str, Product>.new();
     }
 
-    fn Get(key: Str) -> Result::Result<&Product, ServiceError> {
+    fn Get(key: Str) -> Result<&Product, ServiceError> {
         if (!this.products.contains(key)) {
-            return Result::Error(ServiceError.UnknownProduct(key));
+            return Error(ServiceError.UnknownProduct(key));
         }
-        return Result::Ok(&this.products[key]);
+        return Ok(&this.products[key]);
     }
 
     fn Put(key: Str, value: Product) {
         this.products[key] = value;
     }
 
-    fn Reserve(line: OrderLine) -> Result::Result<Void, ServiceError> {
+    fn Reserve(line: OrderLine) -> Result<Void, ServiceError> {
         product: &mut Product = &mut this.products[line.sku];
 
         if (product.stock < line.quantity) {
-            return Result::Error(ServiceError.NotEnoughStock(line.sku));
+            return Error(ServiceError.NotEnoughStock(line.sku));
         }
 
         product.stock -= line.quantity;
-        return Result::Ok();
+        return Ok();
     }
 }
 
@@ -84,10 +84,10 @@ class OrderWorker {
         guard: Mutex<InventoryRepository> = this.inventory.lock();
 
         for (line: OrderLine in order.lines) {
-            result: Result::Result<Void, ServiceError> = (*guard).Reserve(line);
+            result: Result<Void, ServiceError> = (*guard).Reserve(line);
             match (result) {
-                Result::Ok(else) -> {},
-                Result::Error(error) -> {
+                Ok(else) -> {},
+                Error(error) -> {
                     return Receipt {
                         orderId: order.id,
                         accepted: false,
@@ -136,7 +136,7 @@ fn MakeOrder(id: Int, sku: Str, quantity: Int) -> Order {
     };
 }
 
-fn Main() -> Result::Result<Void, Result::Error> {
+fn Main() -> Result<Void, Error> {
     inventory: Arc<Mutex<InventoryRepository>> = SeedInventory();
 
     (orders, receipts): Thread.channel<Order> = Thread.channel<Order>();
@@ -148,7 +148,7 @@ fn Main() -> Result::Result<Void, Result::Error> {
         worker: OrderWorker = new(workerInventory);
 
         while (true) {
-            maybeOrder: Result::Result<Order, SyncException> = receipts.recv();
+            maybeOrder: Result<Order, SyncException> = receipts.recv();
             if (maybeOrder.isError()) {
                 break;
             }
@@ -162,7 +162,7 @@ fn Main() -> Result::Result<Void, Result::Error> {
     orders.close();
 
     while (true) {
-        maybeReceipt: Result::Result<Receipt, SyncException> = resultReader.recv();
+        maybeReceipt: Result<Receipt, SyncException> = resultReader.recv();
         if (maybeReceipt.isError()) {
             break;
         }
@@ -175,5 +175,5 @@ fn Main() -> Result::Result<Void, Result::Error> {
         );
     }
 
-    return Result::Ok();
+    return Ok();
 }

@@ -41,14 +41,14 @@ class PackageGraph {
         this.states[package.name] = VisitState.White;
     }
 
-    fn Resolve(root: Str) -> Result::Result<std::collections::vector<Package>, ResolveError> {
+    fn Resolve(root: Str) -> Result<std::collections::vector<Package>, ResolveError> {
         this.Visit(root)@;
-        return Result::Ok(this.ordered);
+        return Ok(this.ordered);
     }
 
-    fn Visit(name: Str) -> Result::Result<Void, ResolveError> {
+    fn Visit(name: Str) -> Result<Void, ResolveError> {
         if (!this.packages.contains(name)) {
-            return Result::Error(ResolveError.UnknownPackage(name));
+            return Error(ResolveError.UnknownPackage(name));
         }
 
         state: VisitState = this.states[name];
@@ -57,7 +57,7 @@ class PackageGraph {
                 return;
             },
             VisitState.Gray -> {
-                return Result::Error(ResolveError.Cycle(name));
+                return Error(ResolveError.Cycle(name));
             },
             VisitState.White -> {
             },
@@ -72,7 +72,7 @@ class PackageGraph {
 
         this.states[name] = VisitState.Black;
         this.ordered.push(package);
-        return Result::Ok();
+        return Ok();
     }
 }
 
@@ -84,7 +84,7 @@ fn PackageOf(name: Str, version: Str, dependencies: std::collections::vector<Str
     };
 }
 
-fn Main() -> Result::Result<Int, Result::Error> {
+fn Main() -> Result<Int, Error> {
     graph: PackageGraph = new();
 
     graph.Add(PackageOf("app", "1.0.0", std::collections::vector<Str>.of("net", "json")));
@@ -96,5 +96,5 @@ fn Main() -> Result::Result<Int, Result::Error> {
         println!("{}@{}", package.name, package.version);
     }
 
-    return Result::Ok(0);
+    return Ok(0);
 }

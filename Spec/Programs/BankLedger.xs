@@ -49,40 +49,40 @@ class Ledger {
         };
     }
 
-    fn Apply(transfer: Transfer) -> Result::Result<Void, LedgerError> {
+    fn Apply(transfer: Transfer) -> Result<Void, LedgerError> {
         if (transfer.amount.cents <= 0) {
-            return Result::Error(LedgerError.InvalidAmount(transfer.amount.cents));
+            return Error(LedgerError.InvalidAmount(transfer.amount.cents));
         }
 
         fromAccount: &mut Account = this.AccountMut(transfer.sourceAccount)@;
         toAccount: &mut Account = this.AccountMut(transfer.targetAccount)@;
 
         if (fromAccount.balance.cents < transfer.amount.cents) {
-            return Result::Error(LedgerError.InsufficientFunds(fromAccount.id));
+            return Error(LedgerError.InsufficientFunds(fromAccount.id));
         }
 
         fromAccount.balance.cents -= transfer.amount.cents;
         toAccount.balance.cents += transfer.amount.cents;
         this.audit.push(transfer);
-        return Result::Ok();
+        return Ok();
     }
 
-    fn AccountMut(id: Str) -> Result::Result<&mut Account, LedgerError> {
+    fn AccountMut(id: Str) -> Result<&mut Account, LedgerError> {
         if (!this.accounts.contains(id)) {
-            return Result::Error(LedgerError.UnknownAccount(id));
+            return Error(LedgerError.UnknownAccount(id));
         }
-        return Result::Ok(&mut this.accounts[id]);
+        return Ok(&mut this.accounts[id]);
     }
 
-    fn Print() -> Result::Result<Void, IOException> {
+    fn Print() -> Result<Void, IOException> {
         for ((id, account): (Str, Account) in this.accounts) {
             println!("{} {} {}", id, account.owner, account.balance.cents);
         }
-        return Result::Ok();
+        return Ok();
     }
 }
 
-fn Main() -> Result::Result<Int, Result::Error> {
+fn Main() -> Result<Int, Error> {
     ledger: Ledger = new();
 
     ledger.Open("checking", "Ada", Money {
@@ -105,5 +105,5 @@ fn Main() -> Result::Result<Int, Result::Error> {
     })@;
 
     ledger.Print()@;
-    return Result::Ok(0);
+    return Ok(0);
 }

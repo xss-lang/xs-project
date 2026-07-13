@@ -57,7 +57,7 @@ class ChatHub {
         this.rooms = Arc.new(Mutex.new(std::collections::hash_map<Str, Room>.new()));
     }
 
-    async fn Serve(listener: Net.tcpListener) -> Task<Result::Result<Void, ChatError>> {
+    async fn Serve(listener: Net.tcpListener) -> Task<Result<Void, ChatError>> {
         while (true) {
             socket: Net.tcpStream = await listener.accept()@;
             id: ClientId = ClientId {
@@ -84,7 +84,7 @@ class ClientSession {
         this.rooms = rooms;
     }
 
-    async fn Run() -> Task<Result::Result<Void, ChatError>> {
+    async fn Run() -> Task<Result<Void, ChatError>> {
         currentRoom: Str = "lobby";
         outbound: Thread.channel<Message> = Thread.channel<Message>();
         this.Join(currentRoom, outbound.sender());
@@ -95,7 +95,7 @@ class ClientSession {
 
             if (command == "/quit") {
                 this.Leave(currentRoom);
-                return Result::Ok();
+                return Ok();
             }
 
             if (command.startsWith("/join ")) {
@@ -132,9 +132,9 @@ class ClientSession {
     }
 }
 
-async fn Main() -> Task<Result::Result<Int, ChatError>> {
+async fn Main() -> Task<Result<Int, ChatError>> {
     listener: Net.tcpListener = await Net.listen("127.0.0.1:9000")@;
     hub: ChatHub = new();
     await hub.Serve(listener)@;
-    return Result::Ok(0);
+    return Ok(0);
 }

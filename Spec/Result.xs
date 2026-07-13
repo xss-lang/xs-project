@@ -6,11 +6,11 @@
 //
 // Result provides explicit success/error values.
 // The legacy exception syntax remains parseable, but it is deprecated.
-// New code should use Result::Result<T, E> and postfix @ propagation instead of
+// New code should use Result<T, E> and postfix @ propagation instead of
 // throws, throw, try, catch, and finally.
 //
 
-imports result, fs, stdio;
+imports fs, stdio;
 
 
 // result data model
@@ -27,53 +27,53 @@ data Error {
 
 // success construction
 
-fn Succeed() -> Result::Result<(), Result::Error> {
-    return Result::Ok(());
+fn Succeed() -> Result<(), Error> {
+    return Ok(());
 }
 
 
 // propagation
 
-fn Propagate() -> Result::Result<(), Result::Error> {
+fn Propagate() -> Result<(), Error> {
     DoWork()@;
-    return Result::Ok(());
+    return Ok(());
 }
 
-fn DoWork() -> Result::Result<(), Result::Error> {
-    return Result::Ok(());
+fn DoWork() -> Result<(), Error> {
+    return Ok(());
 }
 
-// The postfix @ operator propagates Result::Error from the current function.
-// On Result::Ok(value), it evaluates to value.
-// On Result::Error(error), it returns that error from the enclosing function.
+// The postfix @ operator propagates Error from the current function.
+// On Ok(value), it evaluates to value.
+// On Error(error), it returns that error from the enclosing function.
 
 
 // explicit match without @
 
-fn ReadFileExplicit(path: Str) -> Result::Result<Optional<Str>, Result::Error> {
-    file = match (std::fs::File.open(path)) {
-        Result::Ok(value) -> value,
-        Result::Error(error) -> return Result::Error(error),
+fn ReadFileExplicit(path: Str) -> Result<Optional<Str>, Error> {
+    file = match (std::fs::File::open(path)) {
+        Ok(value) -> value,
+        Error(error) -> return Error(error),
     };
 
     content: Optional<Str> = std::optional::Some("");
 
     match (file.read_to_string(&mut content)) {
-        Result::Ok(else) -> {},
-        Result::Error(error) -> return Result::Error(error),
+        Ok(else) -> {},
+        Error(error) -> return Error(error),
     }
 
-    return Result::Ok(content);
+    return Ok(content);
 }
 
 
 // propagation with @
 
-fn ReadFile(path: Str) -> Result::Result<Optional<Str>, Result::Error> {
-    file = std::fs::File.open(path)@;
+fn ReadFile(path: Str) -> Result<Optional<Str>, Error> {
+    file = std::fs::File::open(path)@;
     content: Optional<Str> = std::optional::Some("");
     file.read_to_string(&mut content)@;
-    return Result::Ok(content);
+    return Ok(content);
 }
 
 

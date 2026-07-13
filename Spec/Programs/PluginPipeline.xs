@@ -15,7 +15,7 @@ enum data PipelineError {
 
 interface TextPlugin {
     fn Name() -> Str;
-    fn Run(input: Str) -> Result::Result<Str, PipelineError>;
+    fn Run(input: Str) -> Result<Str, PipelineError>;
 }
 
 class TrimPlugin {
@@ -25,8 +25,8 @@ class TrimPlugin {
         return "trim";
     }
 
-    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
-        return Result::Ok(input.trim());
+    fn Run(input: Str) -> Result<Str, PipelineError> {
+        return Ok(input.trim());
     }
 }
 
@@ -37,8 +37,8 @@ class UppercasePlugin {
         return "upper";
     }
 
-    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
-        return Result::Ok(input.uppercase());
+    fn Run(input: Str) -> Result<Str, PipelineError> {
+        return Ok(input.uppercase());
     }
 }
 
@@ -57,8 +57,8 @@ class ReplacePlugin {
         return "replace";
     }
 
-    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
-        return Result::Ok(input.replace(this.fromText, this.toText));
+    fn Run(input: Str) -> Result<Str, PipelineError> {
+        return Ok(input.replace(this.fromText, this.toText));
     }
 }
 
@@ -73,18 +73,18 @@ class Pipeline {
         this.stages.push(stage);
     }
 
-    fn Run(input: Str) -> Result::Result<Str, PipelineError> {
+    fn Run(input: Str) -> Result<Str, PipelineError> {
         output: Str = input;
 
         for (stage: TextPlugin in this.stages) {
             output = stage.Run(output)@;
         }
 
-        return Result::Ok(output);
+        return Ok(output);
     }
 }
 
-fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Error> {
+fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
     input: Str = if (args.length() > 1) {
         args[1];
     }
@@ -98,5 +98,5 @@ fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Erro
     pipeline.Add(UppercasePlugin.new());
 
     println!("{}", pipeline.Run(input)@);
-    return Result::Ok(0);
+    return Ok(0);
 }

@@ -39,12 +39,12 @@ valueFloat: Float = 1.0;
 name: Optional<Str> = None;
 name = Some("Leitwolf");
 
-// Result is also special. The compiler behaves as if
-// `imports result; using namespace std::result;` existed and brings the short
-// Result<T, E> wrapper name into scope. Most other std::* modules still require
-// qualified names or explicit using declarations.
+// Result is also special. `imports result;` is optional; the compiler behaves
+// as if `using namespace std::result;` existed for Result<T, E>, Ok(...), and
+// Error(...). Most other std::* modules still require qualified names or
+// explicit using declarations.
 
-status: Result<Int, std::result::Error> = std::result::Ok(0);
+status: Result<Int, Error> = Ok(0);
 
 emptyCanonical: std::optional::Optional<Str> = std::optional::None;
 canonicalName: std::optional::Optional<Str> = std::optional::Some("Leitwolf");
@@ -54,7 +54,7 @@ display: Str = name ?? "guest";
 name ??= std::optional::Some("guest");
 
 // Automatic unboxing from Optional<T> to T may fail. New code models that as
-// std::result::Error rather than legacy exceptions.
+// Error rather than legacy exceptions.
 
 unboxedName: Str = name;
 forcedName: Str = name!;
@@ -62,12 +62,12 @@ forcedName: Str = name!;
 user: Optional<User> = None;
 city: Optional<Str> = user?.Address?.City;
 
-fn NormalizeOptionalName(value: Optional<Str>) -> std::result::Result<Str, std::result::Error> {
+fn NormalizeOptionalName(value: Optional<Str>) -> Result<Str, Error> {
     if (value == None) {
-        return std::result::Error(std::result::Error {
+        return Error(Error {
             message: "name is missing",
         });
     }
 
-    return std::result::Ok(value!);
+    return Ok(value!);
 }

@@ -24,10 +24,10 @@ extern "C" {
 }
 
 
-fn PrintLine(message: Str) -> Result::Result<(), Result::Error> {
-    c_text: std::cffi::CString = std::cffi::CString.from_str(message)@;
+fn PrintLine(message: Str) -> Result<(), Error> {
+    c_text: std::cffi::CString = std::cffi::CString::from_str(message)@;
     else: puts(c_text.as_c_str());
-    return Result::Ok(());
+    return Ok(());
 }
 
 
@@ -101,8 +101,8 @@ data NativeLibrary {
 
 #[DynamicLibrary]
 #[NoUnwind]
-fn OpenLibrary(path: Str) -> Result::Result<NativeLibrary, Result::Error> {
-    return std::cffi::DynamicLibrary.open(path);
+fn OpenLibrary(path: Str) -> Result<NativeLibrary, Error> {
+    return std::cffi::DynamicLibrary::open(path);
 }
 
 
@@ -116,12 +116,12 @@ extern "C" {
     fn free(ptr: std::cffi::RawPtr<Void>);
 }
 
-fn Allocate(size: ULong) -> Result::Result<std::cffi::RawPtr<Void>, Result::Error> {
+fn Allocate(size: ULong) -> Result<std::cffi::RawPtr<Void>, Error> {
     ptr: std::cffi::RawPtr<Void> = malloc(size);
     if (ptr.is_null()) {
-        return Result::Error({ message: "allocation failed" });
+        return Error({ message: "allocation failed" });
     }
-    return Result::Ok(ptr);
+    return Ok(ptr);
 }
 
 

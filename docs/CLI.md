@@ -65,13 +65,13 @@ fn main() -> Long { return Add(2, 5); }
 ```
 
 The entry function must be top-level, named `main`, have no parameters, and return `Long`. Same-module helper functions may
-take `Long` parameters and return `Long`. Supported bodies may contain explicit `Long`/`Bool` local bindings or inferred
-`:=` local bindings with i32-compatible or bool-compatible initializers followed by one return statement. The supported
-return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary `-`, `+`,
-`-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression whose
-condition is a bool literal, a `Bool` local, unary `!`, or an i32 comparison, including `==`, `!=`, `<`, `<=`, `>`, and
-`>=`. The compiler lowers that source `Long` slice to the direct native process `i32` entry ABI. General source-level
-function body lowering is still incomplete.
+take `Long` parameters and return `Long` or `Bool`. Supported bodies may contain explicit `Long`/`Bool` local bindings or
+inferred `:=` local bindings with i32-compatible or bool-compatible initializers followed by one return statement. The
+supported return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary
+`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression
+whose condition is a bool literal, a `Bool` local, a direct same-module `Bool` helper call, unary `!`, or an i32 comparison,
+including `==`, `!=`, `<`, `<=`, `>`, and `>=`. The compiler lowers that source `Long` slice to the direct native process
+`i32` entry ABI. General source-level function body lowering is still incomplete.
 
 `-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and
 `--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.

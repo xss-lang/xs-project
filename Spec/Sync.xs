@@ -18,12 +18,12 @@
 //
 // Synchronization misuse may produce SyncException error payloads.
 //
-// SyncException is carried through Result::Error(SyncException).
+// SyncException is carried through Error(SyncException).
 //
 // Writing legacy `throws SyncException` is deprecated.
 //
 // Statically provable synchronization violations are compile-time errors.
-// Violations that can only be detected at runtime return Result::Error(SyncException).
+// Violations that can only be detected at runtime return Error(SyncException).
 //
 
 
@@ -118,7 +118,7 @@ fn InvalidRecursiveMutexLock() {
 // If a thread terminates with an error while holding a mutex,
 // the mutex becomes poisoned.
 //
-// A later lock() operation returns Result::Error(SyncException).
+// A later lock() operation returns Error(SyncException).
 
 
 // poisoned mutex recovery
@@ -126,10 +126,10 @@ fn InvalidRecursiveMutexLock() {
 fn RecoverPoisonedMutex() {
     counter: Mutex<Long> = Mutex.new(0);
 
-    result: Result::Result<Mutex<Long>, SyncException> = counter.lock();
+    result: Result<Mutex<Long>, SyncException> = counter.lock();
     match (result) {
-        Result::Ok(value) -> {},
-        Result::Error(error) -> {
+        Ok(value) -> {},
+        Error(error) -> {
             counter.unlock();
         },
     }
@@ -142,9 +142,9 @@ fn RecoverPoisonedMutex() {
 // - Manual unlocking during normal use is discouraged.
 // - Automatic scope-based unlocking should be preferred.
 // - Calling unlock() from a thread that does not own the
-//   lock returns Result::Error(SyncException).
+//   lock returns Error(SyncException).
 // - Calling unlock() when the lock is already open returns
-//   Result::Error(SyncException).
+//   Error(SyncException).
 
 
 // fairness
@@ -316,7 +316,7 @@ fn InvalidWriterReentry() {
 //
 // RwLock<T> is not reentrant.
 //
-// Dynamically detected reentry violations return Result::Error(SyncException).
+// Dynamically detected reentry violations return Error(SyncException).
 
 
 // rwlock poisoning
@@ -324,7 +324,7 @@ fn InvalidWriterReentry() {
 // If a thread terminates with an error while holding a writer
 // lock, the RwLock becomes poisoned.
 //
-// Later read() or write() calls return Result::Error(SyncException).
+// Later read() or write() calls return Error(SyncException).
 
 
 // poisoned rwlock recovery
@@ -332,10 +332,10 @@ fn InvalidWriterReentry() {
 fn RecoverPoisonedRwLock() {
     value: RwLock<Int> = RwLock.new(42);
 
-    result: Result::Result<RwLock<Int>, SyncException> = value.write();
+    result: Result<RwLock<Int>, SyncException> = value.write();
     match (result) {
-        Result::Ok(writer) -> {},
-        Result::Error(error) -> {
+        Ok(writer) -> {},
+        Error(error) -> {
             value.rwunlock();
         },
     }
@@ -347,9 +347,9 @@ fn RecoverPoisonedRwLock() {
 // - May manually unlock a normal RwLock.
 // - Manual use during normal operation is discouraged.
 // - Calling rwunlock() from a thread that does not own the
-//   relevant lock returns Result::Error(SyncException).
+//   relevant lock returns Error(SyncException).
 // - Calling rwunlock() when no relevant lock is held returns
-//   Result::Error(SyncException).
+//   Error(SyncException).
 
 
 // rwlock fairness
@@ -962,12 +962,12 @@ async fn MoveTask() -> Task<()> {
 
 // async Result handling
 
-async fn AsyncResultHandling() -> Task<Result::Result<Void, IOException>> {
+async fn AsyncResultHandling() -> Task<Result<Void, IOException>> {
     value: Int = await FailingTask()@;
-    return Result::Ok();
+    return Ok();
 }
 
-// Result::Error raised by an awaited task is transferred through the await
+// Error raised by an awaited task is transferred through the await
 // expression.
 //
 // A possible error must be handled at the await point or propagated with @.
@@ -1053,7 +1053,7 @@ fn ChannelReceive() {
 //
 // - Blocks until a value becomes available.
 // - Returns T.
-// - Returns Result::Error(SyncException) if the channel is closed.
+// - Returns Error(SyncException) if the channel is closed.
 
 
 // receiver movement
@@ -1093,7 +1093,7 @@ fn InvalidSenderClone() {
 fn CatchSyncException() {
     mutex: Mutex<Int> = Mutex.new(42);
 
-    result: Result::Result<Mutex<Int>, SyncException> = mutex.lock();
+    result: Result<Mutex<Int>, SyncException> = mutex.lock();
     if (result.isError()) {
         println!("sync failure");
     }

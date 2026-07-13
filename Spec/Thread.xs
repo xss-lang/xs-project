@@ -15,7 +15,7 @@
 // - Cooperative yielding
 // - Single-sender, single-receiver channels
 //
-// Thread synchronization failures use SyncException through Result::Error.
+// Thread synchronization failures use SyncException through Error.
 //
 // Thread values and channel endpoints follow the language's ownership,
 // move and Send rules.
@@ -161,11 +161,11 @@ fn JoinThread() {
 // join():
 //
 // - Blocks until the thread finishes.
-// - Returns Result::Result<T, ThreadError>.
+// - Returns Result<T, ThreadError>.
 // - Consumes the Thread::handle<T>.
 // - May only be called once.
-// - Carries thread failure through Result::Error.
-// - Returns Result::Error(SyncException) for invalid runtime join operations.
+// - Carries thread failure through Error.
+// - Returns Error(SyncException) for invalid runtime join operations.
 
 
 // invalid second join
@@ -186,7 +186,7 @@ fn InvalidSecondJoin() {
 
 // self join
 
-// A thread attempting to join itself returns Result::Error(SyncException).
+// A thread attempting to join itself returns Error(SyncException).
 
 
 // ============================================================
@@ -194,18 +194,18 @@ fn InvalidSecondJoin() {
 // ============================================================
 
 fn JoinedThreadFailure() {
-    thread: Thread::handle<Result::Result<Int, IOException>> =
-        Thread.spawn(move fn() -> Result::Result<Int, IOException> {
-            return Result::Error(IOException());
+    thread: Thread::handle<Result<Int, IOException>> =
+        Thread.spawn(move fn() -> Result<Int, IOException> {
+            return Error(IOException());
         });
 
-    result: Result::Result<Int, IOException> = thread.join()@;
+    result: Result<Int, IOException> = thread.join()@;
     if (result.isError()) {
         eprintln!("thread failed");
     }
 }
 
-// If a joined thread returns Result::Error:
+// If a joined thread returns Error:
 //
 // - The error is stored by the thread runtime.
 // - join() transfers that error to the joining thread.
@@ -215,12 +215,12 @@ fn JoinedThreadFailure() {
 // detached thread failure
 
 fn DetachedThreadFailure() {
-    Thread.spawn(move fn() -> Result::Result<Void, IOException> {
-        return Result::Error(IOException());
+    Thread.spawn(move fn() -> Result<Void, IOException> {
+        return Error(IOException());
     });
 }
 
-// If a detached thread returns Result::Error:
+// If a detached thread returns Error:
 //
 // - Only that thread is terminated.
 // - The runtime emits a diagnostic.

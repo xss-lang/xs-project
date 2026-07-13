@@ -29,7 +29,7 @@ imports http, std, result;
 // Synchronous request
 // ============================================================
 
-fn Main() -> Result::Result<Void, NetworkException> {
+fn Main() -> Result<Void, NetworkException> {
     client: Http::client = new();
 
     request: Http.request = new()
@@ -53,7 +53,7 @@ fn Main() -> Result::Result<Void, NetworkException> {
         )@;
 
     print!("{}", response.body());
-    return Result::Ok();
+    return Ok();
 }
 
 
@@ -109,7 +109,7 @@ fn StrRequestBody() {
 // Synchronous send
 // ============================================================
 
-fn SendRequest() -> Result::Result<Void, NetworkException> {
+fn SendRequest() -> Result<Void, NetworkException> {
     client: Http::client = new();
 
     request: Http.request = new()
@@ -123,7 +123,7 @@ fn SendRequest() -> Result::Result<Void, NetworkException> {
         )@;
 
     body: Str = response.body();
-    return Result::Ok();
+    return Ok();
 }
 
 
@@ -132,7 +132,7 @@ fn SendRequest() -> Result::Result<Void, NetworkException> {
 // - Sends the request synchronously.
 // - Blocks until a response is available.
 // - Returns Http::response<Str> when used with ofstr().
-// - Returns Result::Error(NetworkException) on network failure.
+// - Returns Error(NetworkException) on network failure.
 
 
 // ============================================================
@@ -161,7 +161,7 @@ async fn SendRequestAsync() -> Task<()> {
 // - Sends the request asynchronously.
 // - Returns Task<Http::response<Str>> when used with ofstr().
 // - Must be awaited according to Task<T> rules.
-// - A network failure is represented as Result::Error(NetworkException).
+// - A network failure is represented as Error(NetworkException).
 
 
 // ============================================================
@@ -203,37 +203,37 @@ fn StrBodyHandler() {
 // Result error handling
 // ============================================================
 
-fn HandleNetworkError() -> Result::Result<Void, NetworkException> {
+fn HandleNetworkError() -> Result<Void, NetworkException> {
     client: Http::client = new();
 
     request: Http.request = new()
         .uri(URI.create("https://example.com"))
         .build();
 
-    result: Result::Result<Http::response<Str>, NetworkException> =
+    result: Result<Http::response<Str>, NetworkException> =
         client.send(
             request,
             HttpResponse.BodyHandlers.ofstr()
         );
 
     match (result) {
-        Result::Ok(response) -> {
+        Ok(response) -> {
             println!("{}", response.body());
         },
-        Result::Error(error) -> {
+        Error(error) -> {
             eprintln!("Network request failed");
-            return Result::Error(error);
+            return Error(error);
         },
     }
 
-    return Result::Ok();
+    return Ok();
 }
 
 
 // NetworkException:
 //
 // - Represents HTTP or network request failure.
-// - Is carried through Result::Error(NetworkException).
+// - Is carried through Error(NetworkException).
 // - New code should not use legacy `throws` or `catch`.
 
 

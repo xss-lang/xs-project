@@ -91,11 +91,12 @@ The documented compilation order is preserved:
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
 - Plain source native builds support the first expression/local/call slice for top-level `fn main() -> Long` plus
-  same-module helper functions shaped as `fn Name(<Long params>) -> Long`: explicit `Long`/`Bool` local bindings, inferred
-  `:=` bindings with i32-compatible or bool-compatible initializers, local identifier returns, direct helper calls,
+  same-module helper functions shaped as `fn Name(<Long params>) -> Long` or `fn Name(<Long params>) -> Bool`: explicit
+  `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, local
+  identifier returns, direct helper calls,
   i32-range integer literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if`
-  expression with a bool literal, `Bool` local, unary `!`, or i32 comparison condition. `!=` and unary `!` can either swap
-  branch targets for condition-only control flow or materialize as a `not.bool` value for supported `Bool` local
+  expression with a bool literal, `Bool` local, direct same-module `Bool` helper call, unary `!`, or i32 comparison
+  condition. `!=` and unary `!` can either swap branch targets for condition-only control flow or materialize as a `not.bool` value for supported `Bool` local
   initializers. Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower
   only the selected branch in this slice. This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse`
   linking.
@@ -141,7 +142,7 @@ The documented compilation order is preserved:
   shape, `#[repr(C)] extern "C"`, and rejects unsupported ABI strings or missing/non-C representation attributes. Library
   resolution, symbol binding, and backend lowering remain HIR/backend work.
 - Legacy exception syntax (`throws`, `throw`, `try`, `catch`, and `finally`) remains parseable but is deprecated. The
-  parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result::Result<T, E>` and postfix `@`
+  parser emits warnings for `throws`, `throw`, and `try`; new code should use `Result<T, E>` and postfix `@`
   propagation.
 - `data` declaration bodies accept fields, constructors, methods, and `fn operator <token>(...)` declarations. Data
   constructors and methods form overload sets by parameter type list; identical parameter type lists produce a parser
@@ -162,7 +163,7 @@ The documented compilation order is preserved:
 - In data syntax, `set.field{value}` is represented as `XS_SYNTAX_EXPR_FIELD_SET`, while `value get.field` is represented as
   member access.
 - Postfix Result propagation syntax, `expression@`, is represented as `XS_SYNTAX_EXPR_RESULT_PROPAGATION`. The C23 HIR
-  expression checker now requires an enclosing function whose return type is `Result::Result<T, E>` or shorthand
+  expression checker now requires an enclosing function whose return type is `Result<T, E>` or shorthand
   `Result<T, E>`. It does not yet prove that the propagated operand itself has a matching Result type; full propagation
   control-flow lowering is handled by later HIR/MIR work.
 - `if`, `for`, for-each, `while`, `match`, deprecated `try`/`catch`/`finally`, `return`, deprecated `throw`, `break`,
@@ -260,11 +261,9 @@ validation does not decide dispatch, override, or overload selection.
   There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
   `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand `Result<T, E>`, and the standard error type
-  `std::result::Error`. Legacy `Result::Result<T, E>` and `Result::Error` spellings are still accepted during the current
-  transition. This is name and arity validation only; constructors, method calls, and propagation lowering are still
-  handled by later semantic passes.
-- `Result` is treated as if the compiler had inserted `imports result; using namespace std::result;`, making
-  `Result<T, E>` available without importing general `std::*` modules.
+  `Error`. The compiler treats the `std::result` namespace as implicitly usable, so `imports result;` is optional for
+  `Result<T, E>`, `Ok(...)`, and `Error(...)`. This is name and arity validation only; constructors, method calls, and
+  propagation lowering are still handled by later semantic passes.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`
@@ -315,7 +314,7 @@ control-flow lowering exists. The crate is not wired into the C23 driver yet; in
 transfer boundary so one compiler layer is not split across C and Rust.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
-`Result::Result<T, E>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
+`Result<T, E>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the
 callee must also return a Result type. Imported calls, method calls, local function values, and full success/error
 compatibility remain the Rust compiler-core direction and later C/Rust integration work.
 
@@ -323,8 +322,7 @@ compatibility remain the Rust compiler-core direction and later C/Rust integrati
 early-return intent model before MIR lowering. If a raw `ResultPropagation` expression reaches MIR lowering, that is treated
 as a pipeline ordering error and is rejected instead of becoming a backend primitive.
 
-For `xslang` propagation checking and desugaring, single-argument `Result<T>`/`Result::Result<T>` uses the standard
-`Result::Error` error type.
+For `xslang` propagation checking and desugaring, single-argument `Result<T>` uses the standard `Error` error type.
 
 The MIR lowerer has a separate `DesugaredFunction` entry point. It can lower desugared functions that contain only currently
 supported expression forms, but explicit ResultMatch nodes remain deferred until Result-aware MIR control-flow and return

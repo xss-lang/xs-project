@@ -116,9 +116,10 @@ file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
 foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
-                       MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MissingMain NonLiteralMain
-                       OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain WrongCallArityMain
-                       NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain)
+                       MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
+                       MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
+                       WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
+                       BoolCallAsLongMain)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -334,6 +335,26 @@ add_test(NAME source_native_local_call_artifacts COMMAND xs_xse_artifact_tests
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalCall.xse 7
                                                   "call i32 @Add")
 set_tests_properties(source_native_local_call_artifacts PROPERTIES DEPENDS source_native_local_call_build TIMEOUT 5)
+add_test(NAME source_native_bool_call_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCall.xs)
+set_tests_properties(source_native_bool_call_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_bool_call_artifacts COMMAND xs_xse_artifact_tests
+                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCall.ll
+                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCall.o
+                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCall.xse 7
+                                                 "call i1 @IsPositive")
+set_tests_properties(source_native_bool_call_artifacts PROPERTIES DEPENDS source_native_bool_call_build TIMEOUT 5)
+add_test(NAME source_native_bool_call_local_build COMMAND xs build -file
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCallLocal.xs)
+set_tests_properties(source_native_bool_call_local_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_bool_call_local_artifacts COMMAND xs_xse_artifact_tests
+                                                       ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCallLocal.ll
+                                                       ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCallLocal.o
+                                                       ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCallLocal.xse 7
+                                                       "call i1 @IsZero")
+set_tests_properties(source_native_bool_call_local_artifacts PROPERTIES DEPENDS source_native_bool_call_local_build
+                                                                        TIMEOUT 5)
 add_test(NAME project_native_build COMMAND xs build -proj ${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj)
 set_tests_properties(project_native_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
@@ -342,7 +363,8 @@ add_test(NAME project_native_artifacts COMMAND xs_xse_artifact_tests ${XS_PROJEC
                                            ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xse 7)
 set_tests_properties(project_native_artifacts PROPERTIES DEPENDS project_native_build TIMEOUT 5)
 foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
-                       WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain)
+                       WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
+                       BoolCallAsLongMain)
   add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file
                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs)
   set_tests_properties(source_native_invalid_${source_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)

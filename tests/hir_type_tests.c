@@ -119,16 +119,16 @@ static void test_standard_generic_types(void)
   const char *valid = "module App;\n"
                       "fn Read() -> Optional<Str> { return None; }\n"
                       "fn ReadCanonical() -> std::optional::Optional<Str> { return None; }\n"
-                      "fn Save() -> Result::Result<Int> { return Result::Ok(1); }\n"
-                      "fn Load() -> Result::Result<Int, Result::Error> { return Result::Ok(1); }\n"
-                      "fn LoadCanonical() -> std::result::Result<Int, std::result::Error> { return Result::Ok(1); }\n"
-                      "fn Compact() -> Result<Int, Result::Error> { return Result::Ok(1); }\n";
+                      "fn Save() -> Result<Int> { return Ok(1); }\n"
+                      "fn Load() -> Result<Int, Error> { return Ok(1); }\n"
+                      "fn LoadCanonical() -> std::result::Result<Int, Error> { return Ok(1); }\n"
+                      "fn Compact() -> Result<Int, Error> { return Ok(1); }\n";
   CHECK(check_single_source(valid));
   CHECK(!check_single_source("module App;\nfn Missing() -> Optional { return None; }\n"));
-  CHECK(!check_single_source("module App;\nfn Missing() -> Result::Result { return Result::Ok(1); }\n"));
-  CHECK(!check_single_source("module App;\nfn TooMany() -> Result::Result<Int, Result::Error, Int> { return "
-                             "Result::Ok(1); }\n"));
-  CHECK(!check_single_source("module App;\nfn BadError() -> Result::Error<Int> { return Result::Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn Missing() -> Result { return Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn TooMany() -> Result<Int, Error, Int> { return "
+                             "Ok(1); }\n"));
+  CHECK(!check_single_source("module App;\nfn BadError() -> Error<Int> { return Ok(1); }\n"));
 }
 
 static void test_else_type_placeholder(void)

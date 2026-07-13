@@ -169,6 +169,8 @@ static const StandardTypeInfo *find_standard_type(const char *name)
     name = "std.optional.Optional";
   if(strcmp(name, "Result") == 0)
     name = "std.result.Result";
+  if(strcmp(name, "Error") == 0)
+    name = "std.result.Error";
   for(size_t i = 0; i < sizeof(standard_types) / sizeof(standard_types[0]); ++i)
   {
     if(strcmp(standard_types[i].name, name) == 0)

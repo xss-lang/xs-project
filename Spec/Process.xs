@@ -6,7 +6,7 @@
 //
 // Process execution is provided by std::process::
 //
-// New X# code uses Result::Result<T, E> for recoverable process and I/O
+// New X# code uses Result<T, E> for recoverable process and I/O
 // failures. The old exception syntax remains parseable for legacy code, but it
 // is deprecated and should not be used in new examples.
 //
@@ -19,35 +19,35 @@ imports process, result, std;
 
 // process execution
 
-fn PullRepository() -> Result::Result<Void, Result::Error> {
+fn PullRepository() -> Result<Void, Error> {
     std::process::execute("git", ["pull"])@;
-    return Result::Ok();
+    return Ok();
 }
 
 
 // process execution with arguments
 
-fn InstallPackage(name: Str) -> Result::Result<Void, Result::Error> {
+fn InstallPackage(name: Str) -> Result<Void, Error> {
     std::process::execute("pacman", ["-S", name])@;
-    return Result::Ok();
+    return Ok();
 }
 
 
 // shell execution
 
-fn UpgradeSystem() -> Result::Result<Void, Result::Error> {
+fn UpgradeSystem() -> Result<Void, Error> {
     std::process::execute("pacman -Syu")
         .shell(true)@;
 
-    return Result::Ok();
+    return Ok();
 }
 
 
 // INVALID
 
-fn InvalidShellExecution() -> Result::Result<Void, Result::Error> {
+fn InvalidShellExecution() -> Result<Void, Error> {
     std::process::execute("pacman -Syu")@;
-    return Result::Ok();
+    return Ok();
 }
 
 // shell execution requires .shell(true)
@@ -55,23 +55,23 @@ fn InvalidShellExecution() -> Result::Result<Void, Result::Error> {
 
 // explicit Result match
 
-fn PrintGitStatus() -> Result::Result<Void, Result::Error> {
+fn PrintGitStatus() -> Result<Void, Error> {
     status = match (std::process::execute("git", ["status"])) {
-        Result::Ok(value) -> value,
-        Result::Error(error) -> return Result::Error(error),
+        Ok(value) -> value,
+        Error(error) -> return Error(error),
     };
 
     println!("{:?}", status);
-    return Result::Ok();
+    return Ok();
 }
 
 
 // propagation with @
 
-fn RunFormatter() -> Result::Result<Void, Result::Error> {
+fn RunFormatter() -> Result<Void, Error> {
     std::process::execute("xsfmt", ["--check"])@;
     std::process::execute("xstidy", ["--check"])@;
-    return Result::Ok();
+    return Ok();
 }
 
 
@@ -82,34 +82,34 @@ enum data LoginError {
     Locked: Str,
 }
 
-fn Login(user: Str) -> Result::Result<Void, LoginError> {
+fn Login(user: Str) -> Result<Void, LoginError> {
     if (user.length() == 0) {
-        return Result::Error(LoginError.InvalidUser(user));
+        return Error(LoginError.InvalidUser(user));
     }
 
     if (user == "root") {
-        return Result::Error(LoginError.Locked(user));
+        return Error(LoginError.Locked(user));
     }
 
-    return Result::Ok();
+    return Ok();
 }
 
 
 // built-in error-style values
 
-fn ReadRequiredLine() -> Result::Result<Str, Result::Error> {
+fn ReadRequiredLine() -> Result<Str, Error> {
     input: Optional<Str> = std::optional::Some("");
 
     std::stdin()
         .read_line(&mut input)@;
 
     if (input == None) {
-        return Result::Error(Result::Error {
+        return Error(Error {
             message: "no input",
         });
     }
 
-    return Result::Ok(input!);
+    return Ok(input!);
 }
 
 
@@ -121,13 +121,13 @@ class File {
     }
 }
 
-fn UseFile() -> Result::Result<Void, Result::Error> {
+fn UseFile() -> Result<Void, Error> {
     file: File = new();
     std::process::execute("git", ["rev-parse", "--is-inside-work-tree"])@;
-    return Result::Ok();
+    return Ok();
 }
 
-// File.Drop() runs before returning Result::Error from @ propagation.
+// File.Drop() runs before returning Error from @ propagation.
 
 
 // legacy exception syntax
@@ -144,4 +144,4 @@ fn UseFile() -> Result::Result<Void, Result::Error> {
 // catch (error: IOException) {
 // }
 //
-// New code should use Result::Result<T, E> instead.
+// New code should use Result<T, E> instead.

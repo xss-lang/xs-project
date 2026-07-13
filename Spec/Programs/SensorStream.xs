@@ -34,10 +34,10 @@ class Sensor {
         this.unit = unit;
     }
 
-    async fn Read() -> Task<Result::Result<Optional<Reading>, SensorError>> {
+    async fn Read() -> Task<Result<Optional<Reading>, SensorError>> {
         sample: Optional<Float> = await Hardware.readFloat(this.id);
 
-        return Result::Ok(sample?.Map(fn(value: Float) -> Reading {
+        return Ok(sample?.Map(fn(value: Float) -> Reading {
             sensorId: this.id,
             value: value,
             unit: this.unit,
@@ -75,7 +75,7 @@ class Aggregator {
     }
 }
 
-async fn Main() -> Task<Result::Result<Int, Result::Error>> {
+async fn Main() -> Task<Result<Int, Error>> {
     sensors: std::collections::vector<Sensor> = std::collections::vector<Sensor>.of(
         Sensor.new("temperature", "C"),
         Sensor.new("humidity", "%"),
@@ -97,5 +97,5 @@ async fn Main() -> Task<Result::Result<Int, Result::Error>> {
         println!("{} average={}", average.sensorId, average.value);
     }
 
-    return Result::Ok(0);
+    return Ok(0);
 }

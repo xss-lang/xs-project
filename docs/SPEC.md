@@ -35,7 +35,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
   operation for pure computation; operations are not just aliases for functions, and non-transparent operation bodies are
   compile-time errors.
 - `imports Module;` makes a module usable through its qualified name. It does not place the module's public symbols in
-  local scope. Use `using Module::Name;`, `using Alias = Module::Name;`, or `using namespace Module;` when short names are desired.
+  local scope. For example, `imports fs;` keeps file APIs qualified as `std::fs::File::open(...)`; users may add
+  `using namespace std::fs;` when they want `File::open(...)`. Use `using Module::Name;`, `using Alias = Module::Name;`,
+  or `using namespace Module;` when short names are desired.
 - `format_args!` and `include!` are built-in macros.
 - `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` come from `Stdio`.
 - Attribute delimiter syntax is built in: `#[...]` applies to the following declaration/member, and `#![...]` applies to the
@@ -49,16 +51,16 @@ syntax takes priority over ad-hoc implementation shortcuts.
   `&'else T`; Rust-style `_` placeholders are not canonical X# syntax.
 - Optional value constructors are `std::optional::None` and `std::optional::Some(...)`; the same implicit namespace using
   may make `None` and `Some(...)` available in source.
-- `Result` is a special standard import: the compiler behaves as if `imports result; using namespace std::result;` existed
-  and brings `Result<T, E>` into scope. Most other `std::*` modules are not automatically placed in local scope.
+- `Result` is a special standard namespace: `imports result;` is optional, and the compiler behaves as if
+  `using namespace std::result;` existed for `Result<T, E>`, `Ok(...)`, and `Error(...)`. Most other `std::*` modules are
+  not automatically placed in local scope.
 - `Panic` is also an implicit standard import for assertion and panic macros. `assert!`, `assert_eq!`, `assert_ne!`,
   `debug_assert!`, `debug_assert_eq!`, and `panic!` are available without an explicit import, but they are still library
   macros rather than compiler built-ins.
 - `Stdio` is not prelude and is not implicit. Its macros require `imports stdio;` or `using namespace stdio;`, except
   `format_args!`, which is built in.
-- Legacy exception syntax is deprecated. Active examples should prefer `std::result::Result<T, E>` or the implicit
-  `Result<T, E>` shorthand plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only
-  in explicitly marked legacy notes.
+- Legacy exception syntax is deprecated. Active examples should prefer `Result<T, E>` plus postfix `@` propagation; old
+  `throws`/`throw`/`try`/`catch` spellings should appear only in explicitly marked legacy notes.
 
 ## Program examples
 

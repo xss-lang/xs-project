@@ -26,13 +26,13 @@ data HealthResult {
 }
 
 interface HealthReporter {
-    fn Report(result: HealthResult) -> Result::Result<Void, IOException>;
+    fn Report(result: HealthResult) -> Result<Void, IOException>;
 }
 
 class ConsoleReporter {
     implements HealthReporter;
 
-    fn Report(result: HealthResult) -> Result::Result<Void, IOException> {
+    fn Report(result: HealthResult) -> Result<Void, IOException> {
         state: Str = if (result.ok) {
             "OK";
         }
@@ -46,7 +46,7 @@ class ConsoleReporter {
             result.statusCode,
             result.bodyPreview
         );
-        return Result::Ok();
+        return Ok();
     }
 }
 
@@ -57,7 +57,7 @@ class HealthClient {
         this.client = new();
     }
 
-    async fn Check(endpoint: Endpoint) -> Task<Result::Result<HealthResult, HealthError>> {
+    async fn Check(endpoint: Endpoint) -> Task<Result<HealthResult, HealthError>> {
         request: Http.request = new()
             .uri(URI.create(endpoint.url))
             .header("Accept", "text/plain")
@@ -77,7 +77,7 @@ class HealthClient {
             body;
         };
 
-        return Result::Ok(HealthResult {
+        return Ok(HealthResult {
             endpoint: endpoint,
             ok: response.statusCode() >= 200 && response.statusCode() < 300,
             statusCode: response.statusCode(),
@@ -89,9 +89,9 @@ class HealthClient {
 async fn CheckAll(
     endpoints: std::collections::vector<Endpoint>,
     reporter: HealthReporter
-) -> Task<Result::Result<Int, Result::Error>> {
+) -> Task<Result<Int, Error>> {
     client: HealthClient = new();
-    tasks: std::collections::vector<Task<Result::Result<HealthResult, HealthError>>> = std::collections::vector<Task<Result::Result<HealthResult, HealthError>>>.new();
+    tasks: std::collections::vector<Task<Result<HealthResult, HealthError>>> = std::collections::vector<Task<Result<HealthResult, HealthError>>>.new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));
@@ -107,7 +107,7 @@ async fn CheckAll(
         }
     }
 
-    return Result::Ok(failures);
+    return Ok(failures);
 }
 
 fn DefaultEndpoints() -> std::collections::vector<Endpoint> {
@@ -134,9 +134,9 @@ fn DefaultEndpoints() -> std::collections::vector<Endpoint> {
 async fn Main() -> Task<Int> {
     reporter: ConsoleReporter = new();
 
-    result: Result::Result<Int, Result::Error> = await CheckAll(DefaultEndpoints(), reporter);
+    result: Result<Int, Error> = await CheckAll(DefaultEndpoints(), reporter);
     match (result) {
-        Result::Ok(failures) -> {
+        Ok(failures) -> {
             if (failures == 0) {
                 println!("All endpoints are healthy.");
             } else {
@@ -144,7 +144,7 @@ async fn Main() -> Task<Int> {
             }
             return failures;
         },
-        Result::Error(error) -> {
+        Error(error) -> {
             eprintln!("Health check failed: {}", error.ToString());
             return 1;
         },

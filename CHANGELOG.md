@@ -18,14 +18,17 @@ source-to-native executable pipeline.
 
 - Source-native builds now lower same-module `Long -> Long` helper calls through C MIR, XLIL, LLVM IR, object emission, and
   native `.xse` linking.
+- Source-native builds now also lower same-module `Long -> Bool` helper calls for supported `if` conditions and explicit
+  `Bool` local initializers.
 - C MIR now has a call instruction and MIR-to-XLIL call lowering for the supported source-native direct-call slice.
 
 ### Changed
 
-- `Optional<T>` and `Result<T, E>` implicit imports are documented as compiler-inserted `imports optional; using namespace
-  std::optional;` and `imports result; using namespace std::result;` behavior.
-- The C23 HIR type resolver now accepts canonical `std::result::Result<T, E>` and `std::result::Error` names in addition
-  to the existing transition spellings.
+- `Optional<T>` and `Result<T, E>` implicit namespace behavior is documented: Optional still behaves as if
+  `imports optional; using namespace std::optional;` existed, while Result treats `imports result;` as optional and brings
+  `std::result` names such as `Result`, `Ok`, and `Error` into scope.
+- The C23 HIR type resolver now accepts canonical `std::result::Result<T, E>`, shorthand `Result<T, E>`, and short `Error`
+  names without a user-defined project symbol.
 - Pattern defaults and placeholder spellings use `else`; `_` is no longer produced as a wildcard pattern or inferred
   lifetime/type placeholder.
 
@@ -58,11 +61,11 @@ source-to-native executable pipeline.
 ### Deprecated
 
 - Legacy exception syntax is now deprecated. `throws`, `throw`, and `try` remain parseable but produce warnings; new code
-  should use `Result::Result<T, E>` and postfix `@` propagation.
+  should use `Result<T, E>` and postfix `@` propagation.
 
 ### Fixed
 
-- The C23 HIR expression checker now accepts postfix `@` inside functions returning `Result::Result<T, E>` or
+- The C23 HIR expression checker now accepts postfix `@` inside functions returning `Result<T, E>` or
   `Result<T, E>` and rejects it outside Result-returning functions. Direct same-file function call operands are now also
   checked to return a Result type.
 - `Spec/` examples now use Result-style error handling for active examples. Legacy `throws`/`throw`/`try`/`catch` syntax is
@@ -90,10 +93,10 @@ source-to-native executable pipeline.
   through the existing HIR path, while explicit ResultMatch nodes are rejected until MIR Result control-flow lowering exists.
 - Rust `xslang` XHIR text writing can now emit desugared functions, including explicit `result_match` records for `@`
   desugar output.
-- Rust `xslang` treats single-argument `Result<T>`/`Result::Result<T>` as using the standard `Result::Error` error type for
-  propagation type checking and desugaring.
-- The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result::Result<T>`,
-  `Result::Result<T, E>`, shorthand `Result<T, E>`, and `Result::Error` without requiring a user-defined project symbol.
+- Rust `xslang` treats single-argument `Result<T>` as using the standard `Error` error type for propagation type checking
+  and desugaring.
+- The C23 HIR type resolver now recognizes the standard wrapper type names `Optional<T>`, `Result<T>`,
+  `Result<T, E>`, shorthand `Result<T, E>`, and `Error` without requiring a user-defined project symbol.
 - C MIR, XLIL, MIR optimization, and LLVM lowering now support signed i64 bitwise operations, shifts, inequality, and
   signed ordering comparisons.
 - Plain source native builds now accept explicit `Long` and inferred i32-compatible local bindings before the final

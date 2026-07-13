@@ -31,9 +31,9 @@ class BackupPlan {
         this.files = std::collections::vector<FileEntry>.new();
     }
 
-    fn Discover() -> Result::Result<Void, BackupError> {
+    fn Discover() -> Result<Void, BackupError> {
         if (!std::fs::is_dir(this.sourceRoot)) {
-            return Result::Error(BackupError.InvalidSource(this.sourceRoot));
+            return Error(BackupError.InvalidSource(this.sourceRoot));
         }
 
         for (path: Str in std::fs::walk_dir(this.sourceRoot)) {
@@ -49,10 +49,10 @@ class BackupPlan {
                 modified_ticks: std::fs::modified_ticks(path),
             });
         }
-        return Result::Ok();
+        return Ok();
     }
 
-    fn Execute() -> Result::Result<Void, IOException> {
+    fn Execute() -> Result<Void, IOException> {
         for (entry: FileEntry in this.files) {
             destination: Str = std::fs::join_path(this.targetRoot, entry.relative);
 
@@ -62,7 +62,7 @@ class BackupPlan {
                 println!("copied {}", entry.relative);
             }
         }
-        return Result::Ok();
+        return Ok();
     }
 
     fn ShouldCopy(entry: FileEntry, destination: Str) -> Bool {
@@ -74,7 +74,7 @@ class BackupPlan {
     }
 }
 
-fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Error> {
+fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
     if (args.length() != 3) {
         eprintln!("usage: backup <source> <target>");
         return 2;
@@ -83,5 +83,5 @@ fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Erro
     plan: BackupPlan = new(args[1], args[2]);
     plan.Discover()@;
     plan.Execute()@;
-    return Result::Ok(0);
+    return Ok(0);
 }

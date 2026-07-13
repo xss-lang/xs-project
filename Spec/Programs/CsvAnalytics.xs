@@ -27,13 +27,13 @@ data RegionTotal {
 }
 
 class CsvParser {
-    static fn ParseLine(line: Str) -> Result::Result<Sale, CsvError> {
+    static fn ParseLine(line: Str) -> Result<Sale, CsvError> {
         fields: std::collections::vector<Str> = line.split(",");
         if (fields.length() != 4) {
-            return Result::Error(CsvError.BadRow(line));
+            return Error(CsvError.BadRow(line));
         }
 
-        return Result::Ok(Sale {
+        return Ok(Sale {
             region: fields[0],
             product: fields[1],
             quantity: Int.Parse(fields[2]),
@@ -62,7 +62,7 @@ class Analytics {
         this.totals[sale.region].revenue += sale.revenue;
     }
 
-    fn Print() -> Result::Result<Void, IOException> {
+    fn Print() -> Result<Void, IOException> {
         for ((else, total): (Str, RegionTotal) in this.totals) {
             println!(
                 "{}: units={} revenue={}",
@@ -71,11 +71,11 @@ class Analytics {
                 total.revenue
             );
         }
-        return Result::Ok();
+        return Ok();
     }
 }
 
-fn LoadSales(path: Str) -> Result::Result<std::collections::vector<Sale>, Result::Error> {
+fn LoadSales(path: Str) -> Result<std::collections::vector<Sale>, Error> {
     rows: std::collections::vector<Sale> = std::collections::vector<Sale>.new();
     content: Str = std::fs::read_to_str(path);
 
@@ -86,10 +86,10 @@ fn LoadSales(path: Str) -> Result::Result<std::collections::vector<Sale>, Result
         rows.push(CsvParser.ParseLine(line)@);
     }
 
-    return Result::Ok(rows);
+    return Ok(rows);
 }
 
-fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Error> {
+fn Main(args: std::collections::vector<Str>) -> Result<Int, Error> {
     path: Str = if (args.length() > 1) {
         args[1];
     }
@@ -103,5 +103,5 @@ fn Main(args: std::collections::vector<Str>) -> Result::Result<Int, Result::Erro
     }
 
     analytics.Print()@;
-    return Result::Ok(0);
+    return Ok(0);
 }

@@ -40,38 +40,38 @@ class Queue {
 }
 
 class Worker {
-    async fn Run(queue: &mut Queue) -> Result::Result<Int, JobError> {
+    async fn Run(queue: &mut Queue) -> Result<Int, JobError> {
         completed: Int = 0;
 
         loop {
             maybeJob: Optional<Job> = queue.Pop();
             if (maybeJob == None) {
-                return Result::Ok(completed);
+                return Ok(completed);
             }
 
             job: Job = maybeJob!;
-            result: Result::Result<Void, JobError> = await Worker.Execute(job);
+            result: Result<Void, JobError> = await Worker.Execute(job);
             result@;
             completed += 1;
         }
     }
 
-    static async fn Execute(job: Job) -> Result::Result<Void, JobError> {
+    static async fn Execute(job: Job) -> Result<Void, JobError> {
         status: Int = await std::process::run(job.command);
         if (status != 0) {
-            return Result::Error(JobError.Failed(job.command));
+            return Error(JobError.Failed(job.command));
         }
 
-        return Result::Ok();
+        return Ok();
     }
 }
 
-fn Main() -> Result::Result<Int, Result::Error> {
+fn Main() -> Result<Int, Error> {
     queue: Queue = new();
     queue.Push(Job { id: 1, command: "compile", retries: 0 });
     queue.Push(Job { id: 2, command: "test", retries: 0 });
 
     completed: Int = await Worker.Run(&mut queue)@;
     println!("completed {} jobs", completed);
-    return Result::Ok(0);
+    return Ok(0);
 }

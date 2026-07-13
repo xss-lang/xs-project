@@ -65,7 +65,7 @@ fn DescribeUser(name: Str, age: Int) -> Str {
   return format!("{} ({})", name, age);
 }
 
-fn TryParseId(text: Str) -> Result::Result<Int, Result::Error> {
+fn TryParseId(text: Str) -> Result<Int, Error> {
   parsed: Int = Int.Parse(text);
-  return Result::Ok(parsed);
+  return Ok(parsed);
 }
