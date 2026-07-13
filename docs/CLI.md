@@ -40,7 +40,7 @@ usage: xs --version
 
 ## `xs --version`
 
-`xs --version` prints the compiler version, such as `xs 0.0.6`.
+`xs --version` prints the compiler version, such as `xs 0.0.7`.
 
 ## `xs check`
 
@@ -60,15 +60,17 @@ Today, plain `xs build -file <Main.xs>` and `xs build -proj <App.xsproj>` can pr
 supported source slice:
 
 ```xs
-fn main() -> Long { return if (1 < 2) { 7; } else { 3; }; }
+fn Add(left: Long, right: Long) -> Long { return left + right; }
+fn main() -> Long { return Add(2, 5); }
 ```
 
-The function must be top-level, named `main`, have no parameters, and return `Long`. The body may contain explicit
-`Long`/`Bool` local bindings or inferred `:=` local bindings with i32-compatible or bool-compatible initializers followed
-by one return statement. The supported return expression subset is i32-range integer literals, local identifiers, unary
-`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression
-whose condition is a bool literal, a `Bool` local, unary `!`, or an i32 comparison, including `==`, `!=`, `<`, `<=`, `>`,
-and `>=`. The compiler lowers that source `Long` slice to the direct native process `i32` entry ABI. General source-level
+The entry function must be top-level, named `main`, have no parameters, and return `Long`. Same-module helper functions may
+take `Long` parameters and return `Long`. Supported bodies may contain explicit `Long`/`Bool` local bindings or inferred
+`:=` local bindings with i32-compatible or bool-compatible initializers followed by one return statement. The supported
+return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary `-`, `+`,
+`-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if (...) { expr; } else { expr; }` expression whose
+condition is a bool literal, a `Bool` local, unary `!`, or an i32 comparison, including `==`, `!=`, `<`, `<=`, `>`, and
+`>=`. The compiler lowers that source `Long` slice to the direct native process `i32` entry ABI. General source-level
 function body lowering is still incomplete.
 
 `-proj` and `-file` are mutually exclusive. The `--output hir|mir|xlil` spelling and the short `--hir`, `--mir`, and

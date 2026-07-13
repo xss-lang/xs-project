@@ -5,7 +5,9 @@
 
 #include "model_internal.h"
 
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 XsMirStatus xs_mir_function_append_block(XsMirFunction *function, const char *label, XsMirBlock **block,
                                          XsMirError *error)
@@ -526,6 +528,56 @@ XsMirStatus xs_mir_block_not_bool(XsMirBlock *block, XsMirValueId operand, XsMir
   return XS_MIR_OK;
 }
 
+XsMirStatus xs_mir_block_add_call(XsMirBlock *block, const char *callee, XsMirType return_type,
+                                  const XsMirValueId *arguments, size_t argument_count, XsMirValueId *result,
+                                  XsMirError *error)
+{
+  xs_mir_clear_error(error);
+  if(result != nullptr)
+    *result = 0;
+  if(block == nullptr || block->owner == nullptr || callee == nullptr || callee[0] == '\0' ||
+     (argument_count != 0 && arguments == nullptr))
+    return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "valid MIR call target and arguments are required");
+  XsMirInstruction instruction = {
+      .kind = XS_MIR_INSTRUCTION_CALL,
+      .result = UINT32_MAX,
+      .callee = xs_mir_copy_text(callee),
+      .argument_count = argument_count,
+  };
+  if(instruction.callee == nullptr)
+    return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while naming MIR callee");
+  if(argument_count != 0)
+  {
+    instruction.arguments = malloc(argument_count * sizeof(*instruction.arguments));
+    if(instruction.arguments == nullptr)
+    {
+      free(instruction.callee);
+      return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while copying MIR call arguments");
+    }
+    memcpy(instruction.arguments, arguments, argument_count * sizeof(*instruction.arguments));
+  }
+  if(return_type.kind != XS_LIL_TYPE_VOID)
+  {
+    XsMirStatus status = xs_mir_function_add_value(block->owner, return_type, &instruction.result, error);
+    if(status != XS_MIR_OK)
+    {
+      free(instruction.arguments);
+      free(instruction.callee);
+      return status;
+    }
+  }
+  XsMirStatus status = append_instruction(block, instruction, error);
+  if(status != XS_MIR_OK)
+  {
+    free(instruction.arguments);
+    free(instruction.callee);
+    return status;
+  }
+  if(result != nullptr && return_type.kind != XS_LIL_TYPE_VOID)
+    *result = instruction.result;
+  return XS_MIR_OK;
+}
+
 XsMirStatus xs_mir_block_add_load(XsMirBlock *block, const XsMirPlace *place, XsMirType result_type,
                                   XsMirValueId *result, XsMirError *error)
 {
@@ -575,4 +627,29 @@ XsMirInstructionKind xs_mir_block_instruction_kind(const XsMirBlock *block, size
   if(block == nullptr || index >= block->instruction_count)
     return XS_MIR_INSTRUCTION_CONST_I64;
   return block->instructions[index].kind;
+}
+
+const char *xs_mir_block_instruction_callee(const XsMirBlock *block, size_t index)
+{
+  if(block == nullptr || index >= block->instruction_count ||
+     block->instructions[index].kind != XS_MIR_INSTRUCTION_CALL)
+    return nullptr;
+  return block->instructions[index].callee;
+}
+
+size_t xs_mir_block_instruction_argument_count(const XsMirBlock *block, size_t index)
+{
+  if(block == nullptr || index >= block->instruction_count ||
+     block->instructions[index].kind != XS_MIR_INSTRUCTION_CALL)
+    return 0;
+  return block->instructions[index].argument_count;
+}
+
+XsMirValueId xs_mir_block_instruction_argument(const XsMirBlock *block, size_t index, size_t argument_index)
+{
+  if(block == nullptr || index >= block->instruction_count ||
+     block->instructions[index].kind != XS_MIR_INSTRUCTION_CALL ||
+     argument_index >= block->instructions[index].argument_count)
+    return 0;
+  return block->instructions[index].arguments[argument_index];
 }

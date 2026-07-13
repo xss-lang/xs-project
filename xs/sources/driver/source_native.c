@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct
@@ -27,6 +28,21 @@ typedef struct
   NativeBinding items[32];
   size_t count;
 } NativeContext;
+
+typedef struct
+{
+  const XsSyntaxNode *function;
+  const XsSyntaxNode *name;
+  const XsSyntaxNode *body;
+  size_t parameter_count;
+  bool is_main;
+} NativeFunction;
+
+typedef struct
+{
+  NativeFunction functions[32];
+  size_t count;
+} NativeProgram;
 
 static XsSpan node_span(const XsSyntaxNode *node)
 {
@@ -44,6 +60,50 @@ static bool node_text_equals(const XsSyntaxNode *node, const char *text)
   while(text[length] != '\0')
     ++length;
   return node != nullptr && node->text.length == length && memcmp(node->text.data, text, length) == 0;
+}
+
+static char *copy_node_text(const XsSyntaxNode *node)
+{
+  if(node == nullptr)
+    return nullptr;
+  char *result = malloc(node->text.length + 1U);
+  if(result == nullptr)
+    return nullptr;
+  memcpy(result, node->text.data, node->text.length);
+  result[node->text.length] = '\0';
+  return result;
+}
+
+static char *copy_cstr(const char *text)
+{
+  size_t length = strlen(text);
+  char *result = malloc(length + 1U);
+  if(result != nullptr)
+    memcpy(result, text, length + 1U);
+  return result;
+}
+
+static void set_mir_error(XsMirError *error, XsMirStatus status, const char *message)
+{
+  if(error != nullptr)
+  {
+    error->status = status;
+    snprintf(error->message, sizeof(error->message), "%s", message == nullptr ? "source native MIR error" : message);
+  }
+}
+
+static void context_init_parameters(NativeContext *context, const XsSyntaxNode *function)
+{
+  *context = (NativeContext){0};
+  XsMirValueId value = 0;
+  for(size_t i = 0; i < function->child_count; ++i)
+  {
+    const XsSyntaxNode *parameter = function->children[i];
+    if(parameter->kind != XS_SYNTAX_PARAMETER || parameter->child_count < 2)
+      continue;
+    context->items[context->count++] =
+        (NativeBinding){.name = parameter->children[0]->text, .value = value++, .type = XS_LIL_TYPE_I32};
+  }
 }
 
 static bool context_add(NativeContext *context, XsText name, XsMirValueId value, XsLilTypeKind type,
@@ -113,28 +173,19 @@ static const XsSyntaxNode *return_type(const XsSyntaxNode *function)
   return nullptr;
 }
 
-static const XsSyntaxNode *find_main(const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
+static const NativeFunction *program_find_function(const NativeProgram *program, XsText name)
 {
-  const XsSyntaxNode *main_function = nullptr;
-  size_t count = 0;
-  for(size_t i = 0; i < tree->root->child_count; ++i)
+  for(size_t i = 0; i < program->count; ++i)
   {
-    const XsSyntaxNode *child = tree->root->children[i];
-    if(child->kind != XS_SYNTAX_DECL_FUNCTION)
-      continue;
-    const XsSyntaxNode *name = first_child_kind(child, XS_SYNTAX_IDENTIFIER);
-    if(!node_text_equals(name, "main"))
-      continue;
-    main_function = child;
-    ++count;
+    if(text_equals(program->functions[i].name->text, name))
+      return &program->functions[i];
   }
-  if(count == 1)
-    return main_function;
-  XsSpan span = tree->root == nullptr ? (XsSpan){0} : node_span(tree->root);
-  const char *message = count == 0 ? "native source build requires one top-level 'main' function"
-                                   : "native source build supports exactly one top-level 'main' function";
-  xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, message);
   return nullptr;
+}
+
+static bool program_has_name(const NativeProgram *program, XsText name)
+{
+  return program_find_function(program, name) != nullptr;
 }
 
 static bool parse_i32_literal(const XsSyntaxNode *literal, int32_t *value)
@@ -160,9 +211,11 @@ static bool parse_i32_literal(const XsSyntaxNode *literal, int32_t *value)
   return true;
 }
 
-static bool validate_shape(const XsSyntaxNode *function, XsDiagnostics *diagnostics, const XsSyntaxNode **body)
+static bool validate_shape(const XsSyntaxNode *function, bool is_main, XsDiagnostics *diagnostics,
+                           const XsSyntaxNode **body, size_t *parameter_count)
 {
-  if(child_count_kind(function, XS_SYNTAX_PARAMETER) != 0)
+  *parameter_count = child_count_kind(function, XS_SYNTAX_PARAMETER);
+  if(is_main && *parameter_count != 0)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
                               "native source main must not have parameters") &&
            false;
@@ -173,8 +226,23 @@ static bool validate_shape(const XsSyntaxNode *function, XsDiagnostics *diagnost
   const XsSyntaxNode *type = return_type(function);
   if(!node_text_equals(type, "Long"))
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
-                              "native source main must return Long in this compiler slice") &&
+                              is_main ? "native source main must return Long in this compiler slice"
+                                      : "native source helper functions must return Long in this compiler slice") &&
            false;
+  if(!is_main)
+  {
+    for(size_t i = 0; i < function->child_count; ++i)
+    {
+      const XsSyntaxNode *parameter = function->children[i];
+      if(parameter->kind != XS_SYNTAX_PARAMETER)
+        continue;
+      const XsSyntaxNode *parameter_type = parameter->child_count >= 2 ? parameter->children[1] : nullptr;
+      if(!node_text_equals(parameter_type, "Long"))
+        return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(parameter),
+                                  "native source helper parameters must be Long in this compiler slice") &&
+               false;
+    }
+  }
   const XsSyntaxNode *block = first_child_kind(function, XS_SYNTAX_STMT_BLOCK);
   if(block == nullptr || block->child_count == 0)
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function),
@@ -200,8 +268,101 @@ static bool validate_shape(const XsSyntaxNode *function, XsDiagnostics *diagnost
   return true;
 }
 
-static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context, const XsSyntaxNode *expression,
-                                 XsDiagnostics *diagnostics, XsMirValueId *result, XsMirError *error);
+static const XsSyntaxNode *simple_call_name(const XsSyntaxNode *expression);
+
+static bool node_calls_function(const XsSyntaxNode *node, XsText name)
+{
+  if(node == nullptr)
+    return false;
+  const XsSyntaxNode *callee = simple_call_name(node);
+  if(callee != nullptr && text_equals(callee->text, name))
+    return true;
+  for(size_t i = 0; i < node->child_count; ++i)
+  {
+    if(node_calls_function(node->children[i], name))
+      return true;
+  }
+  return false;
+}
+
+static bool reject_recursive_calls_from(const NativeProgram *program, size_t index, uint8_t *state,
+                                        XsDiagnostics *diagnostics)
+{
+  state[index] = 1;
+  const NativeFunction *function = &program->functions[index];
+  for(size_t callee = 0; callee < program->count; ++callee)
+  {
+    if(!node_calls_function(function->body, program->functions[callee].name->text))
+      continue;
+    if(state[callee] == 1)
+      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(function->name),
+                                "native source direct calls do not support recursion in this compiler slice") &&
+             false;
+    if(state[callee] == 0 && !reject_recursive_calls_from(program, callee, state, diagnostics))
+      return false;
+  }
+  state[index] = 2;
+  return true;
+}
+
+static bool reject_recursive_calls(const NativeProgram *program, XsDiagnostics *diagnostics)
+{
+  uint8_t state[32] = {0};
+  for(size_t i = 0; i < program->count; ++i)
+  {
+    if(state[i] == 0 && !reject_recursive_calls_from(program, i, state, diagnostics))
+      return false;
+  }
+  return true;
+}
+
+static bool collect_program(const XsSyntaxTree *tree, XsDiagnostics *diagnostics, NativeProgram *program)
+{
+  *program = (NativeProgram){0};
+  size_t main_count = 0;
+  for(size_t i = 0; i < tree->root->child_count; ++i)
+  {
+    const XsSyntaxNode *child = tree->root->children[i];
+    if(child->kind != XS_SYNTAX_DECL_FUNCTION)
+      continue;
+    const XsSyntaxNode *name = first_child_kind(child, XS_SYNTAX_IDENTIFIER);
+    if(name == nullptr)
+      continue;
+    if(program->count == sizeof(program->functions) / sizeof(program->functions[0]))
+      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(child),
+                                "native source build supports at most 32 functions for now") &&
+             false;
+    if(program_has_name(program, name->text))
+      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(name),
+                                "native source build does not support overloaded or duplicate function names yet") &&
+             false;
+    bool is_main = node_text_equals(name, "main");
+    if(is_main)
+      ++main_count;
+    const XsSyntaxNode *body = nullptr;
+    size_t parameter_count = 0;
+    if(!validate_shape(child, is_main, diagnostics, &body, &parameter_count))
+      return false;
+    program->functions[program->count++] = (NativeFunction){
+        .function = child,
+        .name = name,
+        .body = body,
+        .parameter_count = parameter_count,
+        .is_main = is_main,
+    };
+  }
+  if(main_count == 1)
+    return reject_recursive_calls(program, diagnostics);
+  XsSpan span = tree->root == nullptr ? (XsSpan){0} : node_span(tree->root);
+  const char *message = main_count == 0 ? "native source build requires one top-level 'main' function"
+                                        : "native source build supports exactly one top-level 'main' function";
+  xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, message);
+  return false;
+}
+
+static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                 XsText current_function, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
+                                 XsMirValueId *result, XsMirError *error);
 
 static const XsSyntaxNode *single_block_expression(const XsSyntaxNode *block)
 {
@@ -213,15 +374,17 @@ static const XsSyntaxNode *single_block_expression(const XsSyntaxNode *block)
   return statement->children[0];
 }
 
-static bool lower_bool_expression(XsMirBlock *entry, const NativeContext *context, const XsSyntaxNode *expression,
-                                  XsDiagnostics *diagnostics, XsMirValueId *result, bool *invert, XsMirError *error)
+static bool lower_bool_expression(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                  XsText current_function, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
+                                  XsMirValueId *result, bool *invert, XsMirError *error)
 {
   *invert = false;
   if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_BANG &&
      expression->child_count == 1)
   {
     bool nested_invert = false;
-    if(!lower_bool_expression(entry, context, expression->children[0], diagnostics, result, &nested_invert, error))
+    if(!lower_bool_expression(entry, context, program, current_function, expression->children[0], diagnostics, result,
+                              &nested_invert, error))
       return false;
     *invert = !nested_invert;
     return true;
@@ -241,8 +404,10 @@ static bool lower_bool_expression(XsMirBlock *entry, const NativeContext *contex
   {
     XsMirValueId left = 0;
     XsMirValueId right = 0;
-    if(!lower_i32_expression(entry, context, expression->children[0], diagnostics, &left, error) ||
-       !lower_i32_expression(entry, context, expression->children[2], diagnostics, &right, error))
+    if(!lower_i32_expression(entry, context, program, current_function, expression->children[0], diagnostics, &left,
+                             error) ||
+       !lower_i32_expression(entry, context, program, current_function, expression->children[2], diagnostics, &right,
+                             error))
       return false;
     switch(expression->token_kind)
     {
@@ -399,8 +564,66 @@ static bool is_bool_expression_shape(const XsSyntaxNode *expression)
          expression->token_kind == XS_TOKEN_GREATER || expression->token_kind == XS_TOKEN_GREATER_EQUAL;
 }
 
-static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context, const XsSyntaxNode *expression,
-                                 XsDiagnostics *diagnostics, XsMirValueId *result, XsMirError *error)
+static const XsSyntaxNode *simple_call_name(const XsSyntaxNode *expression)
+{
+  if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_CALL || expression->child_count == 0)
+    return nullptr;
+  const XsSyntaxNode *callee = expression->children[0];
+  if(callee->kind != XS_SYNTAX_EXPR_IDENTIFIER || callee->child_count != 1 ||
+     callee->children[0]->kind != XS_SYNTAX_IDENTIFIER)
+    return nullptr;
+  return callee->children[0];
+}
+
+static bool lower_call_expression(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                  XsText current_function, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
+                                  XsMirValueId *result, XsMirError *error)
+{
+  const XsSyntaxNode *callee_name = simple_call_name(expression);
+  if(callee_name == nullptr)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+                              "native source direct calls must target a same-module function name") &&
+           false;
+  if(text_equals(callee_name->text, current_function))
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(callee_name),
+                              "native source direct calls do not support recursion in this compiler slice") &&
+           false;
+  const NativeFunction *callee = program_find_function(program, callee_name->text);
+  if(callee == nullptr)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(callee_name),
+                              "native source direct call target is unknown in this compiler slice") &&
+           false;
+  size_t argument_count = expression->child_count - 1U;
+  if(argument_count != callee->parameter_count)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+                              "native source direct call argument count does not match the callee") &&
+           false;
+  XsMirValueId arguments[16] = {0};
+  if(argument_count > sizeof(arguments) / sizeof(arguments[0]))
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
+                              "native source direct calls support at most 16 arguments for now") &&
+           false;
+  for(size_t i = 0; i < argument_count; ++i)
+  {
+    if(!lower_i32_expression(entry, context, program, current_function, expression->children[i + 1U], diagnostics,
+                             &arguments[i], error))
+      return false;
+  }
+  char *callee_text = copy_node_text(callee_name);
+  if(callee_text == nullptr)
+  {
+    set_mir_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while copying native source callee");
+    return false;
+  }
+  bool ok = xs_mir_block_add_call(entry, callee_text, (XsMirType){.kind = XS_LIL_TYPE_I32}, arguments, argument_count,
+                                  result, error) == XS_MIR_OK;
+  free(callee_text);
+  return ok;
+}
+
+static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                 XsText current_function, const XsSyntaxNode *expression, XsDiagnostics *diagnostics,
+                                 XsMirValueId *result, XsMirError *error)
 {
   if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_MINUS &&
      expression->child_count == 1)
@@ -408,12 +631,14 @@ static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context
     XsMirValueId zero = 0;
     XsMirValueId value = 0;
     return xs_mir_block_add_const_i32(entry, 0, &zero, error) == XS_MIR_OK &&
-           lower_i32_expression(entry, context, expression->children[0], diagnostics, &value, error) &&
+           lower_i32_expression(entry, context, program, current_function, expression->children[0], diagnostics, &value,
+                                error) &&
            xs_mir_block_sub_i32(entry, zero, value, result, error) == XS_MIR_OK;
   }
   if(expression->kind == XS_SYNTAX_EXPR_UNARY && expression->token_kind == XS_TOKEN_PLUS &&
      expression->child_count == 1)
-    return lower_i32_expression(entry, context, expression->children[0], diagnostics, result, error);
+    return lower_i32_expression(entry, context, program, current_function, expression->children[0], diagnostics, result,
+                                error);
   if(expression->kind == XS_SYNTAX_EXPR_IDENTIFIER)
   {
     if(context_find(context, expression->text, XS_LIL_TYPE_I32, result))
@@ -431,12 +656,16 @@ static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context
              false;
     return xs_mir_block_add_const_i32(entry, value, result, error) == XS_MIR_OK;
   }
+  if(expression->kind == XS_SYNTAX_EXPR_CALL)
+    return lower_call_expression(entry, context, program, current_function, expression, diagnostics, result, error);
   if(expression->kind == XS_SYNTAX_EXPR_BINARY && expression->child_count == 3)
   {
     XsMirValueId left = 0;
     XsMirValueId right = 0;
-    if(!lower_i32_expression(entry, context, expression->children[0], diagnostics, &left, error) ||
-       !lower_i32_expression(entry, context, expression->children[2], diagnostics, &right, error))
+    if(!lower_i32_expression(entry, context, program, current_function, expression->children[0], diagnostics, &left,
+                             error) ||
+       !lower_i32_expression(entry, context, program, current_function, expression->children[2], diagnostics, &right,
+                             error))
       return false;
     switch(expression->token_kind)
     {
@@ -466,12 +695,13 @@ static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context
   }
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
                             "native source main return expression supports only integer literals, unary +/-, +, -, *, "
-                            "/, %, &, |, ^, <<, >>, and top-level if for now") &&
+                            "/, %, &, |, ^, <<, >>, direct Long calls, and top-level if for now") &&
          false;
 }
 
 static bool lower_if_return(XsMirFunction *function, XsMirBlock *entry, const NativeContext *context,
-                            const XsSyntaxNode *expression, XsDiagnostics *diagnostics, XsMirError *error)
+                            const NativeProgram *program, XsText current_function, const XsSyntaxNode *expression,
+                            XsDiagnostics *diagnostics, XsMirError *error)
 {
   if(expression->kind != XS_SYNTAX_EXPR_IF || expression->child_count < 3)
     return false;
@@ -486,14 +716,16 @@ static bool lower_if_return(XsMirFunction *function, XsMirBlock *entry, const Na
   {
     XsMirValueId selected_value = 0;
     const XsSyntaxNode *selected = static_condition ? then_expression : else_expression;
-    return lower_i32_expression(entry, context, selected, diagnostics, &selected_value, error) &&
+    return lower_i32_expression(entry, context, program, current_function, selected, diagnostics, &selected_value,
+                                error) &&
            xs_mir_block_set_return_value(entry, selected_value, error) == XS_MIR_OK;
   }
   XsMirBlock *then_block = nullptr;
   XsMirBlock *else_block = nullptr;
   XsMirValueId condition = 0;
   bool invert_condition = false;
-  if(!lower_bool_expression(entry, context, expression->children[0], diagnostics, &condition, &invert_condition, error))
+  if(!lower_bool_expression(entry, context, program, current_function, expression->children[0], diagnostics, &condition,
+                            &invert_condition, error))
     return false;
   if(xs_mir_function_append_block(function, "then", &then_block, error) != XS_MIR_OK ||
      xs_mir_function_append_block(function, "else", &else_block, error) != XS_MIR_OK ||
@@ -502,9 +734,11 @@ static bool lower_if_return(XsMirFunction *function, XsMirBlock *entry, const Na
     return false;
   XsMirValueId then_value = 0;
   XsMirValueId else_value = 0;
-  return lower_i32_expression(then_block, context, then_expression, diagnostics, &then_value, error) &&
+  return lower_i32_expression(then_block, context, program, current_function, then_expression, diagnostics, &then_value,
+                              error) &&
          xs_mir_block_set_return_value(then_block, then_value, error) == XS_MIR_OK &&
-         lower_i32_expression(else_block, context, else_expression, diagnostics, &else_value, error) &&
+         lower_i32_expression(else_block, context, program, current_function, else_expression, diagnostics, &else_value,
+                              error) &&
          xs_mir_block_set_return_value(else_block, else_value, error) == XS_MIR_OK;
 }
 
@@ -517,8 +751,9 @@ static const XsSyntaxNode *variable_initializer(const XsSyntaxNode *declaration)
   return declaration->child_count >= 3 ? declaration->children[2] : nullptr;
 }
 
-static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, const XsSyntaxNode *statement,
-                                  XsDiagnostics *diagnostics, XsMirError *error)
+static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, const NativeProgram *program,
+                                  XsText current_function, const XsSyntaxNode *statement, XsDiagnostics *diagnostics,
+                                  XsMirError *error)
 {
   const XsSyntaxNode *declaration = statement->child_count == 1 ? statement->children[0] : nullptr;
   const XsSyntaxNode *name =
@@ -541,7 +776,8 @@ static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, con
   if(node_text_equals(type, "Bool") || (inferred && is_bool_expression_shape(initializer)))
   {
     bool invert = false;
-    if(!lower_bool_expression(entry, context, initializer, diagnostics, &value, &invert, error))
+    if(!lower_bool_expression(entry, context, program, current_function, initializer, diagnostics, &value, &invert,
+                              error))
       return false;
     if(invert)
     {
@@ -552,43 +788,61 @@ static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, con
     }
     return context_add(context, name->text, value, XS_LIL_TYPE_BOOL, diagnostics, node_span(name));
   }
-  if(!lower_i32_expression(entry, context, initializer, diagnostics, &value, error))
+  if(!lower_i32_expression(entry, context, program, current_function, initializer, diagnostics, &value, error))
     return false;
   return context_add(context, name->text, value, XS_LIL_TYPE_I32, diagnostics, node_span(name));
 }
 
-static bool lower_main_body(XsMirFunction *function, XsMirBlock *entry, const XsSyntaxNode *body,
-                            XsDiagnostics *diagnostics, XsMirError *error)
+static bool lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,
+                                const NativeProgram *program, XsDiagnostics *diagnostics, XsMirError *error)
 {
   NativeContext context = {0};
-  for(size_t i = 0; i + 1 < body->child_count; ++i)
+  context_init_parameters(&context, native->function);
+  for(size_t i = 0; i + 1 < native->body->child_count; ++i)
   {
-    if(!lower_local_statement(entry, &context, body->children[i], diagnostics, error))
+    if(!lower_local_statement(entry, &context, program, native->name->text, native->body->children[i], diagnostics,
+                              error))
       return false;
   }
-  const XsSyntaxNode *statement = body->children[body->child_count - 1];
+  const XsSyntaxNode *statement = native->body->children[native->body->child_count - 1];
   const XsSyntaxNode *expression = statement->children[0];
   if(expression->kind == XS_SYNTAX_EXPR_IF)
-    return lower_if_return(function, entry, &context, expression, diagnostics, error);
+    return lower_if_return(function, entry, &context, program, native->name->text, expression, diagnostics, error);
   XsMirValueId value = 0;
-  return lower_i32_expression(entry, &context, expression, diagnostics, &value, error) &&
+  return lower_i32_expression(entry, &context, program, native->name->text, expression, diagnostics, &value, error) &&
          xs_mir_block_set_return_value(entry, value, error) == XS_MIR_OK;
 }
 
-static bool build_native_module(const char *input_path, const XsSyntaxNode *body, XsDiagnostics *diagnostics)
+static bool build_native_module(const char *input_path, const NativeProgram *program, XsDiagnostics *diagnostics)
 {
   XsMirError mir_error = {0};
   XsMirModule *mir = nullptr;
-  XsMirFunction *function = nullptr;
-  XsMirBlock *entry = nullptr;
   bool success = xs_mir_module_create("source", &mir, &mir_error) == XS_MIR_OK;
-  if(success)
-    success = xs_mir_module_add_function_definition(mir, "main", (XsMirType){.kind = XS_LIL_TYPE_I32}, nullptr, 0,
-                                                    &function, &mir_error) == XS_MIR_OK;
-  if(success)
+  for(size_t i = 0; success && i < program->count; ++i)
+  {
+    const NativeFunction *native = &program->functions[i];
+    char *name = native->is_main ? copy_cstr("main") : copy_node_text(native->name);
+    XsMirType parameters[16] = {0};
+    if(name == nullptr)
+    {
+      success = false;
+      set_mir_error(&mir_error, XS_MIR_ALLOCATION_FAILED, "out of memory while naming native source function");
+      break;
+    }
+    for(size_t parameter = 0; parameter < native->parameter_count; ++parameter)
+      parameters[parameter] = (XsMirType){.kind = XS_LIL_TYPE_I32};
+    success = xs_mir_module_add_function_definition(mir, name, (XsMirType){.kind = XS_LIL_TYPE_I32}, parameters,
+                                                    native->parameter_count, nullptr, &mir_error) == XS_MIR_OK;
+    free(name);
+  }
+  for(size_t i = 0; success && i < program->count; ++i)
+  {
+    XsMirFunction *function = (XsMirFunction *)(void *)xs_mir_module_function_at(mir, i);
+    XsMirBlock *entry = nullptr;
     success = xs_mir_function_append_block(function, "entry", &entry, &mir_error) == XS_MIR_OK;
-  if(success)
-    success = lower_main_body(function, entry, body, diagnostics, &mir_error);
+    if(success)
+      success = lower_function_body(function, entry, &program->functions[i], program, diagnostics, &mir_error);
+  }
   if(success)
     success = xs_mir_borrow_check_module(mir, &mir_error) == XS_MIR_OK;
   if(success)
@@ -628,9 +882,8 @@ bool xs_driver_build_source_native(const char *input_path, const XsSyntaxTree *t
     fprintf(stderr, "xs: checked source tree is required for native source build\n");
     return false;
   }
-  const XsSyntaxNode *main_function = find_main(tree, diagnostics);
-  const XsSyntaxNode *body = nullptr;
-  if(main_function == nullptr || !validate_shape(main_function, diagnostics, &body))
+  NativeProgram program = {0};
+  if(!collect_program(tree, diagnostics, &program))
     return false;
-  return build_native_module(input_path, body, diagnostics);
+  return build_native_module(input_path, &program, diagnostics);
 }

@@ -36,6 +36,9 @@ typedef struct
   XsMirValueId operand_right;
   XsMirPlaceId place;
   int64_t immediate_i64;
+  char *callee;
+  XsMirValueId *arguments;
+  size_t argument_count;
 } XsMirInstruction;
 
 typedef struct

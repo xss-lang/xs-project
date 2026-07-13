@@ -43,12 +43,12 @@ syntax takes priority over ad-hoc implementation shortcuts.
   attribute scope automatically, so `imports attrs;` is optional.
 - CFFI is explicit. The standard CFFI module is not automatically imported or placed in scope; source uses `imports cffi;`
   before C foreign-function declarations and the canonical helper types under `std::cffi::*`.
-- `Optional<T>` is available as if the compiler had inserted `imports optional` and brought
-  `std::optional::Optional<T>` into scope as `Optional<T>`.
-- Optional value constructors are `std::optional::None` and `std::optional::Some(...)`; the same implicit import may make
-  `None` and `Some(...)` available in source.
-- `Result` is a special standard import: the compiler behaves as if `imports result;` existed and brings `Result<T, E>`
-  into scope. Most other `std::*` modules are not automatically placed in local scope.
+- `Optional<T>` is available as if the compiler had inserted `imports optional; using namespace std::optional;`, making
+  `std::optional::Optional<T>` available as `Optional<T>`.
+- Optional value constructors are `std::optional::None` and `std::optional::Some(...)`; the same implicit namespace using
+  may make `None` and `Some(...)` available in source.
+- `Result` is a special standard import: the compiler behaves as if `imports result; using namespace std::result;` existed
+  and brings `Result<T, E>` into scope. Most other `std::*` modules are not automatically placed in local scope.
 - `Panic` is also an implicit standard import for assertion and panic macros. `assert!`, `assert_eq!`, `assert_ne!`,
   `debug_assert!`, `debug_assert_eq!`, and `panic!` are available without an explicit import, but they are still library
   macros rather than compiler built-ins.

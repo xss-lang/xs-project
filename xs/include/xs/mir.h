@@ -90,6 +90,7 @@ typedef enum
   XS_MIR_INSTRUCTION_GT_I32,
   XS_MIR_INSTRUCTION_GE_I32,
   XS_MIR_INSTRUCTION_NOT_BOOL,
+  XS_MIR_INSTRUCTION_CALL,
   XS_MIR_INSTRUCTION_LOAD,
   XS_MIR_INSTRUCTION_STORE,
 } XsMirInstructionKind;
@@ -211,11 +212,17 @@ XsMirStatus xs_mir_block_gt_i32(XsMirBlock *block, XsMirValueId left, XsMirValue
 XsMirStatus xs_mir_block_ge_i32(XsMirBlock *block, XsMirValueId left, XsMirValueId right, XsMirValueId *result,
                                 XsMirError *error);
 XsMirStatus xs_mir_block_not_bool(XsMirBlock *block, XsMirValueId operand, XsMirValueId *result, XsMirError *error);
+XsMirStatus xs_mir_block_add_call(XsMirBlock *block, const char *callee, XsMirType return_type,
+                                  const XsMirValueId *arguments, size_t argument_count, XsMirValueId *result,
+                                  XsMirError *error);
 XsMirStatus xs_mir_block_add_load(XsMirBlock *block, const XsMirPlace *place, XsMirType result_type,
                                   XsMirValueId *result, XsMirError *error);
 XsMirStatus xs_mir_block_add_store(XsMirBlock *block, const XsMirPlace *place, XsMirValueId value, XsMirError *error);
 size_t xs_mir_block_instruction_count(const XsMirBlock *block);
 XsMirInstructionKind xs_mir_block_instruction_kind(const XsMirBlock *block, size_t index);
+const char *xs_mir_block_instruction_callee(const XsMirBlock *block, size_t index);
+size_t xs_mir_block_instruction_argument_count(const XsMirBlock *block, size_t index);
+XsMirValueId xs_mir_block_instruction_argument(const XsMirBlock *block, size_t index, size_t argument_index);
 
 XsMirStatus xs_mir_function_add_local_place(XsMirFunction *function, XsMirLocalId local, XsMirPlace **place,
                                             XsMirError *error);

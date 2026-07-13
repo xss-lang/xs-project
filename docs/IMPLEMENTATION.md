@@ -90,14 +90,15 @@ The documented compilation order is preserved:
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
-- Plain source native builds support the first expression/local slice for top-level `fn main() -> Long`: explicit
-  `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, local
-  identifier returns, i32-range integer literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and
-  one top-level `if` expression with a bool literal, `Bool` local, unary `!`, or i32 comparison condition. `!=` and unary
-  `!` can either swap branch targets for condition-only control flow or materialize as a `not.bool` value for supported
-  `Bool` local initializers. Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like
-  `1 < 2`, lower only the selected branch in this slice. This lowers through C MIR, XLIL, LLVM IR, object emission, and
-  native `.xse` linking.
+- Plain source native builds support the first expression/local/call slice for top-level `fn main() -> Long` plus
+  same-module helper functions shaped as `fn Name(<Long params>) -> Long`: explicit `Long`/`Bool` local bindings, inferred
+  `:=` bindings with i32-compatible or bool-compatible initializers, local identifier returns, direct helper calls,
+  i32-range integer literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if`
+  expression with a bool literal, `Bool` local, unary `!`, or i32 comparison condition. `!=` and unary `!` can either swap
+  branch targets for condition-only control flow or materialize as a `not.bool` value for supported `Bool` local
+  initializers. Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower
+  only the selected branch in this slice. This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse`
+  linking.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -248,9 +249,10 @@ validation does not decide dispatch, override, or overload selection.
 - `Str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
 - Semantically, `Str` is the UTF-16 X# counterpart of Rust's immutable static string reference; its runtime layout remains
   deferred and it is not yet lowered to XLIL storage.
-- `Optional<T>` resolves as if the compiler had inserted `imports optional` and brought `std::optional::Optional<T>` into
-  scope as `Optional<T>`. Optional value constructors are canonically `std::optional::None` and
-  `std::optional::Some(...)`, with `None` and `Some(...)` available through that implicit import. It is not an enum
+- `Optional<T>` resolves as if the compiler had inserted `imports optional; using namespace std::optional;`, making
+  `std::optional::Optional<T>` available as `Optional<T>`. Optional value constructors are canonically
+  `std::optional::None` and `std::optional::Some(...)`, with `None` and `Some(...)` available through that implicit
+  namespace using. It is not an enum
   lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
   `T`, which can throw `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full
   flow-sensitive Optional semantics are later HIR work.
@@ -259,8 +261,8 @@ validation does not decide dispatch, override, or overload selection.
   `Result::Result<T>`, `Result::Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result::Error`. This
   is name and arity validation only; constructors, method calls, and propagation lowering are still handled by later
   semantic passes.
-- `Result` is treated as an implicit standard import and shorthand scope entry for `Result<T, E>`. That exception does not
-  make general `std::*` modules scope-imported.
+- `Result` is treated as if the compiler had inserted `imports result; using namespace std::result;`, making
+  `Result<T, E>` available without importing general `std::*` modules.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`

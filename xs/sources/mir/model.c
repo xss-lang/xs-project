@@ -36,6 +36,11 @@ char *xs_mir_copy_text(const char *text)
 
 void xs_mir_block_free(XsMirBlock *block)
 {
+  for(size_t i = 0; i < block->instruction_count; ++i)
+  {
+    free(block->instructions[i].callee);
+    free(block->instructions[i].arguments);
+  }
   free(block->instructions);
   free(block->label);
   *block = (XsMirBlock){0};
@@ -144,6 +149,19 @@ static XsMirStatus make_function(const char *qualified_name, XsMirType return_ty
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while copying MIR parameters");
   }
   memcpy(function->parameters, parameters, parameter_count * sizeof(*function->parameters));
+  if(is_definition)
+  {
+    for(size_t index = 0; index < parameter_count; ++index)
+    {
+      XsMirValueId value = 0;
+      XsMirStatus status = xs_mir_function_add_value(function, parameters[index], &value, error);
+      if(status != XS_MIR_OK)
+      {
+        function_free(function);
+        return status;
+      }
+    }
+  }
   return XS_MIR_OK;
 }
 

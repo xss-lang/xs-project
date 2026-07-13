@@ -305,7 +305,10 @@ bool xs_hir_resolve_imports(const XsSyntaxTree *tree, const XsHirSymbolTable *pr
     return false;
   bool success = true;
   success = import_module_name(scope, "panic") && success;
+  success = import_module_name(scope, "optional") && success;
+  success = import_module_name(scope, "std.optional") && success;
   success = import_module_name(scope, "result") && success;
+  success = import_module_name(scope, "std.result") && success;
   for(size_t i = 0; i < tree->root->child_count; ++i)
   {
     const XsSyntaxNode *child = tree->root->children[i];

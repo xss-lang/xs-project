@@ -304,7 +304,10 @@ static void test_import_resolution(void)
   CHECK(add_file_symbols(main, 32, &main_tree, &symbols, &diagnostics));
   CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
   CHECK(xs_hir_import_scope_has_module(&imports, "panic"));
+  CHECK(xs_hir_import_scope_has_module(&imports, "optional"));
+  CHECK(xs_hir_import_scope_has_module(&imports, "std.optional"));
   CHECK(xs_hir_import_scope_has_module(&imports, "result"));
+  CHECK(xs_hir_import_scope_has_module(&imports, "std.result"));
   CHECK(xs_hir_import_scope_has_module(&imports, "Math"));
   CHECK(xs_hir_import_scope_find(&imports, "Math.Add") == nullptr);
   CHECK(xs_hir_import_scope_find(&imports, "Math.errno") == nullptr);

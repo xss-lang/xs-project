@@ -210,8 +210,6 @@ XsSyntaxNode *parse_pattern(SyntaxParser *parser)
   {
     XsToken first = parser->current;
     XsSyntaxNode *path = parse_expression_path(parser);
-    if(path->child_count == 1 && token_text_is(parser, first, "_"))
-      return node(parser, XS_SYNTAX_PATTERN_WILDCARD, first.span);
     if(parser->current.kind == XS_TOKEN_LEFT_PAREN || path->child_count > 1)
     {
       XsSyntaxNode *variant = node(parser, XS_SYNTAX_PATTERN_ENUM_VARIANT, (XsSpan){start, path->span.end_offset});
@@ -237,7 +235,7 @@ XsSyntaxNode *parse_pattern(SyntaxParser *parser)
   xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected pattern");
   if(parser->current.kind != XS_TOKEN_EOF)
     advance(parser);
-  return node(parser, XS_SYNTAX_PATTERN_WILDCARD, (XsSpan){start, parser->previous.span.end});
+  return node(parser, XS_SYNTAX_PATTERN_ELSE, (XsSpan){start, parser->previous.span.end});
 }
 
 static XsSyntaxNode *parse_literal(SyntaxParser *parser)

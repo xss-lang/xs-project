@@ -6,6 +6,7 @@
 #include "xs/mir/xlil_lowering.h"
 #include "model_internal.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -47,8 +48,8 @@ static XsMirStatus map_lil_status(XsLilStatus status, const XsLilError *lil_erro
   return set_error(error, XS_MIR_INVALID_ARGUMENT, lil_error->message);
 }
 
-static XsMirStatus lower_instruction(const XsMirInstruction *instruction, XsLilBlock *block, XsLilValueId *values,
-                                     XsMirError *error)
+static XsMirStatus lower_instruction(const XsMirFunction *function, const XsMirInstruction *instruction,
+                                     XsLilBlock *block, XsLilValueId *values, XsMirError *error)
 {
   switch(instruction->kind)
   {
@@ -336,6 +337,24 @@ static XsMirStatus lower_instruction(const XsMirInstruction *instruction, XsLilB
                             &values[instruction->result], &lil_error);
     return map_lil_status(status, &lil_error, error);
   }
+  case XS_MIR_INSTRUCTION_CALL:
+  {
+    XsLilValueId arguments[32] = {0};
+    if(instruction->argument_count > sizeof(arguments) / sizeof(arguments[0]))
+      return set_error(error, XS_MIR_UNSUPPORTED, "MIR to XLIL call lowering supports at most 32 arguments");
+    for(size_t index = 0; index < instruction->argument_count; ++index)
+      arguments[index] = values[instruction->arguments[index]];
+    XsLilError lil_error = {0};
+    XsLilType return_type = instruction->result == UINT32_MAX ? (XsLilType){.kind = XS_LIL_TYPE_VOID}
+                                                              : function->values[instruction->result].type;
+    XsLilValueId result = 0;
+    XsLilStatus status =
+        xs_lil_block_add_call(block, instruction->callee, return_type, arguments, instruction->argument_count,
+                              instruction->result == UINT32_MAX ? nullptr : &result, &lil_error);
+    if(status == XS_LIL_OK && instruction->result != UINT32_MAX)
+      values[instruction->result] = result;
+    return map_lil_status(status, &lil_error, error);
+  }
   case XS_MIR_INSTRUCTION_LOAD:
   case XS_MIR_INSTRUCTION_STORE:
     return set_error(error, XS_MIR_UNSUPPORTED, "MIR to XLIL body lowering does not support this instruction yet");
@@ -399,6 +418,8 @@ static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil
       return set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while lowering MIR blocks to XLIL");
     }
   }
+  for(size_t index = 0; index < function->parameter_count && index < function->value_count; ++index)
+    values[index] = (XsLilValueId)index;
   for(size_t block_index = 0; block_index < function->block_count; ++block_index)
   {
     const XsMirBlock *mir_block = function->blocks[block_index];
@@ -419,7 +440,8 @@ static XsMirStatus lower_body(const XsMirFunction *function, XsLilFunction *xlil
     XsLilBlock *xlil_block = blocks[block_index];
     for(size_t instruction_index = 0; instruction_index < mir_block->instruction_count; ++instruction_index)
     {
-      XsMirStatus status = lower_instruction(&mir_block->instructions[instruction_index], xlil_block, values, error);
+      XsMirStatus status =
+          lower_instruction(function, &mir_block->instructions[instruction_index], xlil_block, values, error);
       if(status != XS_MIR_OK)
       {
         free(blocks);

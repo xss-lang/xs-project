@@ -6,5 +6,6 @@ fn Add(left: Long, right: Long) -> Long {
 }
 
 fn main() -> Long {
-    return Add(2, 5);
+    value: Long = Add(3, 4);
+    return value;
 }

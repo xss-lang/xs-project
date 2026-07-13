@@ -1284,7 +1284,6 @@ enum data PatternNode {
     Literal: LiteralPattern,
     EnumVariant: EnumVariantPattern,
     Tuple: TuplePattern,
-    Wildcard: WildcardPattern,
     Else: ElsePattern,
 }
 
@@ -1310,11 +1309,6 @@ data EnumVariantPattern {
 
 data TuplePattern {
     elements: PatternNode[]
-    span: SourceSpan
-}
-
-
-data WildcardPattern {
     span: SourceSpan
 }
 

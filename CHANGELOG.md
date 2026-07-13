@@ -12,6 +12,20 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.0.7 - 2026-07-13
+
+### Added
+
+- Source-native builds now lower same-module `Long -> Long` helper calls through C MIR, XLIL, LLVM IR, object emission, and
+  native `.xse` linking.
+- C MIR now has a call instruction and MIR-to-XLIL call lowering for the supported source-native direct-call slice.
+
+### Changed
+
+- `Optional<T>` and `Result<T, E>` implicit imports are documented as compiler-inserted `imports optional; using namespace
+  std::optional;` and `imports result; using namespace std::result;` behavior.
+- Pattern defaults use `else`; `_` is no longer produced as a wildcard pattern in the structural parser.
+
 - HIR CFFI validation now checks the first standard CFFI attribute shapes and scopes for extern blocks, extern functions,
   and extern static declarations.
 - `imports Module;` now records module usability without placing module symbols in local scope. `Result` and `Panic` are

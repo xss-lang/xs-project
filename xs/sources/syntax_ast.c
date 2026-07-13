@@ -257,7 +257,6 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "literal pattern",
       "enum-variant pattern",
       "tuple pattern",
-      "wildcard pattern",
       "else pattern",
       "macro rule",
       "macro matcher",

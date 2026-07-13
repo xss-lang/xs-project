@@ -6,6 +6,8 @@
 #include "xs/mir/borrow_checker.h"
 #include "model_internal.h"
 
+#include <stdint.h>
+
 static bool type_equal(XsMirType left, XsMirType right)
 {
   return left.kind == right.kind;
@@ -147,6 +149,19 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
        !type_equal(function->values[instruction->operand_left].type, (XsMirType){.kind = XS_LIL_TYPE_BOOL}) ||
        !type_equal(function->values[instruction->result].type, (XsMirType){.kind = XS_LIL_TYPE_BOOL}))
       return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR not.bool instruction has invalid operands");
+    return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_CALL:
+    if(instruction->callee == nullptr || instruction->callee[0] == '\0')
+      return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR call target is missing");
+    if(instruction->result != UINT32_MAX && !value_exists(function, instruction->result))
+      return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR call result is unknown");
+    for(size_t index = 0; index < instruction->argument_count; ++index)
+    {
+      XsMirStatus status =
+          check_value_exists(function, instruction->arguments[index], "MIR call argument is unknown", error);
+      if(status != XS_MIR_OK)
+        return status;
+    }
     return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_LOAD:
   {

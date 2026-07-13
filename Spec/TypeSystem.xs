@@ -28,8 +28,9 @@ valueUInteger: UInteger = 340'000'000'000'000'000'000;
 valueSFloat: SFloat = 1.0;
 valueFloat: Float = 1.0;
 
-// Optional<T> is resolved as if the compiler had inserted `imports optional`
-// and brought std::optional::Optional<T> into scope as Optional<T>.
+// Optional<T> is resolved as if the compiler had inserted
+// `imports optional; using namespace std::optional;` and brought
+// std::optional::Optional<T> into scope as Optional<T>.
 // The value constructors are std::optional::None and std::optional::Some(...).
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
@@ -38,9 +39,10 @@ valueFloat: Float = 1.0;
 name: Optional<Str> = None;
 name = Some("Leitwolf");
 
-// Result is also special. The compiler behaves as if `imports result;` existed
-// and brings the short Result<T, E> wrapper name into scope. Most other STD
-// modules still require qualified std::* names or explicit using declarations.
+// Result is also special. The compiler behaves as if
+// `imports result; using namespace std::result;` existed and brings the short
+// Result<T, E> wrapper name into scope. Most other std::* modules still require
+// qualified names or explicit using declarations.
 
 status: Result<Int, Result::Error> = Result::Ok(0);
 

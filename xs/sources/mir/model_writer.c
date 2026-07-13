@@ -5,6 +5,7 @@
 
 #include "model_internal.h"
 
+#include <stdint.h>
 #include <stdio.h>
 
 static XsMirStatus write_signature(const XsMirFunction *function, FILE *stream, XsMirError *error)
@@ -252,6 +253,22 @@ static XsMirStatus write_instruction(const XsMirInstruction *instruction, FILE *
   case XS_MIR_INSTRUCTION_NOT_BOOL:
     if(fprintf(stream, "  v%u = not.bool v%u\n", instruction->result, instruction->operand_left) < 0)
       return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR not.bool instruction");
+    return XS_MIR_OK;
+  case XS_MIR_INSTRUCTION_CALL:
+    if(instruction->result == UINT32_MAX)
+    {
+      if(fprintf(stream, "  call %s(", instruction->callee) < 0)
+        return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR call instruction");
+    }
+    else if(fprintf(stream, "  v%u = call %s(", instruction->result, instruction->callee) < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR call instruction");
+    for(size_t index = 0; index < instruction->argument_count; ++index)
+    {
+      if(fprintf(stream, "%sv%u", index == 0 ? "" : ", ", instruction->arguments[index]) < 0)
+        return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not write MIR call argument");
+    }
+    if(fprintf(stream, ")\n") < 0)
+      return xs_mir_set_error(error, XS_MIR_IO_ERROR, "could not finish MIR call instruction");
     return XS_MIR_OK;
   case XS_MIR_INSTRUCTION_LOAD:
     if(fprintf(stream, "  v%u = load place%u\n", instruction->result, instruction->place) < 0)

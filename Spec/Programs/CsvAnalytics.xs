@@ -63,7 +63,7 @@ class Analytics {
     }
 
     fn Print() -> Result::Result<Void, IOException> {
-        for ((_, total): (Str, RegionTotal) in this.totals) {
+        for ((else, total): (Str, RegionTotal) in this.totals) {
             println!(
                 "{}: units={} revenue={}",
                 total.region,
