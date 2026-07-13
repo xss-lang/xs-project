@@ -12,6 +12,13 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- Source-native `Long` and `Bool` local declarations now lower to MIR places, XLIL stack slots, and LLVM
+  `alloca`/`store`/`load`; simple assignments update mutable locals through the same target-independent memory path.
+- MIR borrow validation now distinguishes the first initialization store of an immutable local from a rejected
+  reassignment.
+
 ## 0.0.8 - 2026-07-13
 
 ### Added

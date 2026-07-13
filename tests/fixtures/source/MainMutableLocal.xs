@@ -1,0 +1,8 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
+fn main() -> Long {
+    value: Long = 3;
+    value = value + 4;
+    return value;
+}

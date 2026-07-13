@@ -75,7 +75,9 @@ Borrow-checked and optimized MIR
 XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, and boolean constants, i32/i64
 arithmetic/bitwise/shift/comparison instructions, direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
 typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated in the LLVM entry block and remain eligible
-for normal LLVM promotion and scalar optimization. `panic` emits an `llvm.trap` call followed by LLVM `unreachable`.
+for normal LLVM promotion and scalar optimization. The current source-native bridge uses this path for `Long` and `Bool`
+local initialization, reads, and simple mutable reassignment. `panic` emits an `llvm.trap` call followed by LLVM
+`unreachable`.
 Parameter values are read from the declared
 LLVM function; calls use declarations emitted for the same XLIL registry module. The backend emits declarations from the
 public C API and direct `.xlil` files after they are parsed into the XLIL C model, can write verified LLVM IR text for the

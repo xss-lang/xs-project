@@ -7,6 +7,7 @@
 #include "model_internal.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 
 static bool type_equal(XsMirType left, XsMirType right)
 {
@@ -37,13 +38,14 @@ static XsMirStatus find_place(const XsMirFunction *function, XsMirPlaceId place_
   return XS_MIR_OK;
 }
 
-static XsMirStatus check_store_mutability(const XsMirFunction *function, const XsMirPlace *place, XsMirError *error)
+static XsMirStatus check_store_mutability(const XsMirFunction *function, const XsMirPlace *place,
+                                          size_t *immutable_store_counts, XsMirError *error)
 {
   if(place == nullptr)
     return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR store references an unknown place");
   const XsMirLocal *local = &function->locals[place->root_local];
-  if(!local->is_mutable)
-    return xs_mir_set_error(error, XS_MIR_UNSUPPORTED, "MIR store targets an immutable local");
+  if(!local->is_mutable && ++immutable_store_counts[place->root_local] > 1)
+    return xs_mir_set_error(error, XS_MIR_UNSUPPORTED, "MIR store reassigns an initialized immutable local");
   return XS_MIR_OK;
 }
 
@@ -98,7 +100,7 @@ static XsMirStatus check_i64_binary(const XsMirFunction *function, const XsMirIn
 }
 
 static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirInstruction *instruction,
-                                     XsMirError *error)
+                                     size_t *immutable_store_counts, XsMirError *error)
 {
   switch(instruction->kind)
   {
@@ -187,7 +189,7 @@ static XsMirStatus check_instruction(const XsMirFunction *function, const XsMirI
       return status;
     if(!type_equal(function->values[instruction->operand_left].type, function->locals[place->root_local].type))
       return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR store value type does not match place type");
-    return check_store_mutability(function, place, error);
+    return check_store_mutability(function, place, immutable_store_counts, error);
   }
   }
   return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR instruction has an unknown kind");
@@ -241,11 +243,12 @@ static XsMirStatus check_terminator(const XsMirFunction *function, const XsMirBl
   return xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT, "MIR terminator has an unknown kind");
 }
 
-static XsMirStatus check_block(const XsMirFunction *function, const XsMirBlock *block, XsMirError *error)
+static XsMirStatus check_block(const XsMirFunction *function, const XsMirBlock *block, size_t *immutable_store_counts,
+                               XsMirError *error)
 {
   for(size_t i = 0; i < block->instruction_count; ++i)
   {
-    XsMirStatus status = check_instruction(function, &block->instructions[i], error);
+    XsMirStatus status = check_instruction(function, &block->instructions[i], immutable_store_counts, error);
     if(status != XS_MIR_OK)
       return status;
   }
@@ -256,13 +259,25 @@ static XsMirStatus check_function(const XsMirFunction *function, XsMirError *err
 {
   if(!function->is_definition)
     return XS_MIR_OK;
+  size_t *immutable_store_counts = nullptr;
+  if(function->local_count != 0)
+  {
+    immutable_store_counts = calloc(function->local_count, sizeof(*immutable_store_counts));
+    if(immutable_store_counts == nullptr)
+      return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while checking MIR local initialization");
+  }
+  XsMirStatus result = XS_MIR_OK;
   for(size_t i = 0; i < function->block_count; ++i)
   {
-    XsMirStatus status = check_block(function, function->blocks[i], error);
+    XsMirStatus status = check_block(function, function->blocks[i], immutable_store_counts, error);
     if(status != XS_MIR_OK)
-      return status;
+    {
+      result = status;
+      break;
+    }
   }
-  return XS_MIR_OK;
+  free(immutable_store_counts);
+  return result;
 }
 
 XsMirStatus xs_mir_borrow_check_module(const XsMirModule *module, XsMirError *error)

@@ -136,7 +136,7 @@ static void test_function_definition_blocks_and_terminators(void)
   xs_mir_module_destroy(module);
 }
 
-static void test_borrow_checker_rejects_immutable_store(void)
+static void test_borrow_checker_allows_immutable_initialization_and_rejects_reassignment(void)
 {
   XsMirError error = {0};
   XsMirModule *module = nullptr;
@@ -155,6 +155,23 @@ static void test_borrow_checker_rejects_immutable_store(void)
   CHECK(xs_mir_block_add_const_i64(entry, 7, &value, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_store(entry, place, value, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_set_return(entry, &error) == XS_MIR_OK);
+  CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_OK);
+
+  XsMirFunction *bad = nullptr;
+  CHECK(xs_mir_module_add_function_definition(module, "App.BadReassign", (XsMirType){.kind = XS_LIL_TYPE_VOID}, nullptr,
+                                              0, &bad, &error) == XS_MIR_OK);
+  XsMirLocalId bad_local = 0;
+  CHECK(xs_mir_function_add_local(bad, XS_MIR_LOCAL_VARIABLE, "frozen", (XsMirType){.kind = XS_LIL_TYPE_I64}, false,
+                                  &bad_local, &error) == XS_MIR_OK);
+  XsMirPlace *bad_place = nullptr;
+  CHECK(xs_mir_function_add_local_place(bad, bad_local, &bad_place, &error) == XS_MIR_OK);
+  XsMirBlock *bad_entry = nullptr;
+  CHECK(xs_mir_function_append_block(bad, "entry", &bad_entry, &error) == XS_MIR_OK);
+  XsMirValueId bad_value = 0;
+  CHECK(xs_mir_block_add_const_i64(bad_entry, 9, &bad_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_store(bad_entry, bad_place, bad_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_store(bad_entry, bad_place, bad_value, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_set_return(bad_entry, &error) == XS_MIR_OK);
   CHECK(xs_mir_borrow_check_module(module, &error) == XS_MIR_UNSUPPORTED);
   xs_mir_module_destroy(module);
 }
@@ -884,8 +901,8 @@ static void test_xlil_body_lowering_for_panic(void)
   XsMirModule *mir = nullptr;
   CHECK(xs_mir_module_create("project", &mir, &error) == XS_MIR_OK);
   XsMirFunction *function = nullptr;
-  CHECK(xs_mir_module_add_function_definition(mir, "fail", (XsMirType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0,
-                                              &function, &error) == XS_MIR_OK);
+  CHECK(xs_mir_module_add_function_definition(mir, "fail", (XsMirType){.kind = XS_LIL_TYPE_VOID}, nullptr, 0, &function,
+                                              &error) == XS_MIR_OK);
   XsMirBlock *entry = nullptr;
   CHECK(xs_mir_function_append_block(function, "entry", &entry, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_set_panic(entry, &error) == XS_MIR_OK);
@@ -942,7 +959,7 @@ int main(void)
 {
   test_module_and_text_writer();
   test_function_definition_blocks_and_terminators();
-  test_borrow_checker_rejects_immutable_store();
+  test_borrow_checker_allows_immutable_initialization_and_rejects_reassignment();
   test_borrow_checker_rejects_missing_terminator();
   test_borrow_checker_rejects_unknown_value_operand();
   test_borrow_checker_rejects_wrong_i64_operand_type();

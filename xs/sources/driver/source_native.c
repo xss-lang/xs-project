@@ -24,8 +24,10 @@
 #define copy_cstr xs_source_native_copy_cstr
 #define set_mir_error xs_source_native_set_mir_error
 #define context_init_parameters xs_source_native_context_init_parameters
-#define context_add xs_source_native_context_add
-#define context_find xs_source_native_context_find
+#define context_add_local xs_source_native_context_add_local
+#define context_read xs_source_native_context_read
+#define context_type xs_source_native_context_type
+#define context_assign xs_source_native_context_assign
 #define first_child_kind xs_source_native_first_child_kind
 #define child_count_kind xs_source_native_child_count_kind
 #define parse_i32_literal xs_source_native_parse_i32_literal
@@ -116,9 +118,10 @@ static bool validate_shape(const XsSyntaxNode *function, bool is_main, XsDiagnos
            false;
   for(size_t i = 0; i + 1 < block->child_count; ++i)
   {
-    if(block->children[i]->kind != XS_SYNTAX_STMT_VARIABLE)
+    if(block->children[i]->kind != XS_SYNTAX_STMT_VARIABLE && block->children[i]->kind != XS_SYNTAX_STMT_EXPRESSION)
       return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(block->children[i]),
-                                "native source main body supports only local declarations before return for now") &&
+                                "native source main body supports only local declarations and assignments before "
+                                "return for now") &&
              false;
   }
   const XsSyntaxNode *statement = block->children[block->child_count - 1];
@@ -271,7 +274,7 @@ static bool lower_bool_expression(XsMirBlock *entry, const NativeContext *contex
     return xs_mir_block_add_const_bool(entry, expression->token_kind == XS_TOKEN_KW_TRUE, result, error) == XS_MIR_OK;
   if(expression->kind == XS_SYNTAX_EXPR_IDENTIFIER)
   {
-    if(context_find(context, expression->text, XS_LIL_TYPE_BOOL, result))
+    if(context_read(context, entry, expression->text, XS_LIL_TYPE_BOOL, result, error))
       return true;
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
                               "native source main condition identifier does not resolve to a supported Bool local") &&
@@ -553,7 +556,7 @@ static bool lower_i32_expression(XsMirBlock *entry, const NativeContext *context
                                 error);
   if(expression->kind == XS_SYNTAX_EXPR_IDENTIFIER)
   {
-    if(context_find(context, expression->text, XS_LIL_TYPE_I32, result))
+    if(context_read(context, entry, expression->text, XS_LIL_TYPE_I32, result, error))
       return true;
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(expression),
                               "native source main identifier does not resolve to a supported Long local binding") &&
@@ -664,9 +667,9 @@ static const XsSyntaxNode *variable_initializer(const XsSyntaxNode *declaration)
   return declaration->child_count >= 3 ? declaration->children[2] : nullptr;
 }
 
-static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, const NativeProgram *program,
-                                  XsText current_function, const XsSyntaxNode *statement, XsDiagnostics *diagnostics,
-                                  XsMirError *error)
+static bool lower_local_statement(XsMirFunction *function, XsMirBlock *entry, NativeContext *context,
+                                  const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                                  XsDiagnostics *diagnostics, XsMirError *error)
 {
   const XsSyntaxNode *declaration = statement->child_count == 1 ? statement->children[0] : nullptr;
   const XsSyntaxNode *name =
@@ -699,11 +702,64 @@ static bool lower_local_statement(XsMirBlock *entry, NativeContext *context, con
         return false;
       value = inverted;
     }
-    return context_add(context, name->text, value, XS_LIL_TYPE_BOOL, diagnostics, node_span(name));
+    bool is_mutable = (declaration->flags &
+                       (XS_SYNTAX_FLAG_IMMUTABLE | XS_SYNTAX_FLAG_CONSTANT | XS_SYNTAX_FLAG_STATIC_CONSTANT)) == 0;
+    return context_add_local(context, function, entry, name->text, value, XS_LIL_TYPE_BOOL, is_mutable, diagnostics,
+                             node_span(name), error);
   }
   if(!lower_i32_expression(entry, context, program, current_function, initializer, diagnostics, &value, error))
     return false;
-  return context_add(context, name->text, value, XS_LIL_TYPE_I32, diagnostics, node_span(name));
+  bool is_mutable =
+      (declaration->flags & (XS_SYNTAX_FLAG_IMMUTABLE | XS_SYNTAX_FLAG_CONSTANT | XS_SYNTAX_FLAG_STATIC_CONSTANT)) == 0;
+  return context_add_local(context, function, entry, name->text, value, XS_LIL_TYPE_I32, is_mutable, diagnostics,
+                           node_span(name), error);
+}
+
+static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                       XsText current_function, const XsSyntaxNode *statement,
+                                       XsDiagnostics *diagnostics, XsMirError *error)
+{
+  const XsSyntaxNode *assignment =
+      statement->kind == XS_SYNTAX_STMT_EXPRESSION && statement->child_count == 1 ? statement->children[0] : nullptr;
+  if(assignment == nullptr || assignment->kind != XS_SYNTAX_EXPR_ASSIGNMENT ||
+     assignment->token_kind != XS_TOKEN_ASSIGN || assignment->child_count != 3 ||
+     assignment->children[0]->kind != XS_SYNTAX_EXPR_IDENTIFIER)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+                              "native source statements before return must be local declarations or simple "
+                              "assignments") &&
+           false;
+  const XsSyntaxNode *target = assignment->children[0];
+  const XsSyntaxNode *value_expression = assignment->children[2];
+  XsLilTypeKind type = XS_LIL_TYPE_VOID;
+  if(!context_type(context, target->text, &type))
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target),
+                              "native source assignment target is unknown in this compiler slice") &&
+           false;
+  XsMirValueId value = 0;
+  if(type == XS_LIL_TYPE_BOOL)
+  {
+    bool invert = false;
+    if(!lower_bool_expression(entry, context, program, current_function, value_expression, diagnostics, &value, &invert,
+                              error))
+      return false;
+    if(invert)
+    {
+      XsMirValueId inverted = 0;
+      if(xs_mir_block_not_bool(entry, value, &inverted, error) != XS_MIR_OK)
+        return false;
+      value = inverted;
+    }
+  }
+  else if(type == XS_LIL_TYPE_I32)
+  {
+    if(!lower_i32_expression(entry, context, program, current_function, value_expression, diagnostics, &value, error))
+      return false;
+  }
+  else
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(target),
+                              "native source assignment supports only Long and Bool locals for now") &&
+           false;
+  return context_assign(context, entry, target->text, type, value, diagnostics, node_span(target), error);
 }
 
 static bool lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,
@@ -713,8 +769,13 @@ static bool lower_function_body(XsMirFunction *function, XsMirBlock *entry, cons
   context_init_parameters(&context, native->function);
   for(size_t i = 0; i + 1 < native->body->child_count; ++i)
   {
-    if(!lower_local_statement(entry, &context, program, native->name->text, native->body->children[i], diagnostics,
-                              error))
+    const XsSyntaxNode *statement = native->body->children[i];
+    bool lowered =
+        statement->kind == XS_SYNTAX_STMT_VARIABLE
+            ? lower_local_statement(function, entry, &context, program, native->name->text, statement, diagnostics,
+                                    error)
+            : lower_assignment_statement(entry, &context, program, native->name->text, statement, diagnostics, error);
+    if(!lowered)
       return false;
   }
   const XsSyntaxNode *statement = native->body->children[native->body->child_count - 1];

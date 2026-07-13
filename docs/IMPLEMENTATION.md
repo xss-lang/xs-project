@@ -92,7 +92,8 @@ The documented compilation order is preserved:
   Clang/LLD `.xse` executable path.
 - Plain source native builds support the first expression/local/call slice for top-level `fn main() -> Long` plus
   same-module helper functions shaped as `fn Name(<Long params>) -> Long` or `fn Name(<Long params>) -> Bool`: explicit
-  `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, local
+  `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, simple
+  assignment to mutable `Long`/`Bool` locals, local
   identifier returns, direct helper calls,
   i32-range integer literals, unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, and one top-level `if`
   expression with a bool literal, `Bool` local, direct same-module `Bool` helper call, unary `!`, or i32 comparison
@@ -100,6 +101,9 @@ The documented compilation order is preserved:
   initializers. Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower
   only the selected branch in this slice. This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse`
   linking.
+- Source-native locals use C MIR local/place records rather than remaining SSA aliases. Their initialization and later
+  reads/assignments lower to XLIL slots and LLVM stack operations. MIR validation permits one initialization store for an
+  immutable local and rejects a second store as reassignment.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
@@ -496,7 +500,8 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   instructions, typed `.slot`/`load`/`store`, `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`.
 - `xs build -file <input.xs>` and `xs build -proj <input.xsproj>` can now use the same native path for the first checked
   source slice: one top-level `main` returning `Long` with optional explicit `Long`/`Bool` or inferred local bindings
-  followed by one return statement whose expression is built from locals, i32-range integer literals, unary `+`/`-`,
+  and simple mutable-local assignments followed by one return statement whose expression is built from locals,
+  i32-range integer literals, unary `+`/`-`,
   arithmetic, bitwise including `^`, shift, and top-level `if` expressions. This source bridge creates a temporary C MIR
   function, lowers it to XLIL, and then reuses the XLIL native builder.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured

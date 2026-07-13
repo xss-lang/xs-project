@@ -69,35 +69,90 @@ void xs_source_native_context_init_parameters(NativeContext *context, const XsSy
   }
 }
 
-bool xs_source_native_context_add(NativeContext *context, XsText name, XsMirValueId value, XsLilTypeKind type,
-                                  XsDiagnostics *diagnostics, XsSpan span)
+static const NativeBinding *context_find_binding(const NativeContext *context, XsText name)
 {
-  for(size_t i = 0; i < context->count; ++i)
+  for(size_t i = context->count; i > 0; --i)
   {
-    if(xs_source_native_text_equals(context->items[i].name, name))
-      return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                                "native source local names must be unique in this compiler slice") &&
-             false;
+    if(xs_source_native_text_equals(context->items[i - 1].name, name))
+      return &context->items[i - 1];
   }
+  return nullptr;
+}
+
+bool xs_source_native_context_add_local(NativeContext *context, XsMirFunction *function, XsMirBlock *block, XsText name,
+                                        XsMirValueId value, XsLilTypeKind type, bool is_mutable,
+                                        XsDiagnostics *diagnostics, XsSpan span, XsMirError *error)
+{
+  if(context_find_binding(context, name) != nullptr)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                              "native source local names must be unique in this compiler slice") &&
+           false;
   if(context->count == sizeof(context->items) / sizeof(context->items[0]))
     return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
                               "native source main supports at most 32 local bindings for now") &&
            false;
-  context->items[context->count++] = (NativeBinding){.name = name, .value = value, .type = type};
+  char *local_name = malloc(name.length + 1U);
+  if(local_name == nullptr)
+  {
+    xs_source_native_set_mir_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while naming native source local");
+    return false;
+  }
+  memcpy(local_name, name.data, name.length);
+  local_name[name.length] = '\0';
+  XsMirLocalId local = 0;
+  XsMirPlace *place = nullptr;
+  XsMirType mir_type = {.kind = type};
+  XsMirStatus status =
+      xs_mir_function_add_local(function, XS_MIR_LOCAL_VARIABLE, local_name, mir_type, is_mutable, &local, error);
+  free(local_name);
+  if(status != XS_MIR_OK || xs_mir_function_add_local_place(function, local, &place, error) != XS_MIR_OK ||
+     xs_mir_block_add_store(block, place, value, error) != XS_MIR_OK)
+    return false;
+  context->items[context->count++] =
+      (NativeBinding){.name = name, .value = value, .place = place, .type = type, .is_mutable = is_mutable};
   return true;
 }
 
-bool xs_source_native_context_find(const NativeContext *context, XsText name, XsLilTypeKind type, XsMirValueId *value)
+bool xs_source_native_context_read(const NativeContext *context, XsMirBlock *block, XsText name, XsLilTypeKind type,
+                                   XsMirValueId *value, XsMirError *error)
 {
-  for(size_t i = context->count; i > 0; --i)
+  const NativeBinding *binding = context_find_binding(context, name);
+  if(binding == nullptr || binding->type != type)
+    return false;
+  if(binding->place == nullptr)
   {
-    if(xs_source_native_text_equals(context->items[i - 1].name, name) && context->items[i - 1].type == type)
-    {
-      *value = context->items[i - 1].value;
-      return true;
-    }
+    *value = binding->value;
+    return true;
   }
-  return false;
+  return xs_mir_block_add_load(block, binding->place, (XsMirType){.kind = type}, value, error) == XS_MIR_OK;
+}
+
+bool xs_source_native_context_type(const NativeContext *context, XsText name, XsLilTypeKind *type)
+{
+  const NativeBinding *binding = context_find_binding(context, name);
+  if(binding == nullptr)
+    return false;
+  *type = binding->type;
+  return true;
+}
+
+bool xs_source_native_context_assign(const NativeContext *context, XsMirBlock *block, XsText name, XsLilTypeKind type,
+                                     XsMirValueId value, XsDiagnostics *diagnostics, XsSpan span, XsMirError *error)
+{
+  const NativeBinding *binding = context_find_binding(context, name);
+  if(binding == nullptr)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                              "native source assignment target is unknown in this compiler slice") &&
+           false;
+  if(binding->type != type)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                              "native source assignment value does not match the local type") &&
+           false;
+  if(binding->place == nullptr || !binding->is_mutable)
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                              "native source assignment target is not mutable") &&
+           false;
+  return xs_mir_block_add_store(block, binding->place, value, error) == XS_MIR_OK;
 }
 
 const XsSyntaxNode *xs_source_native_first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
