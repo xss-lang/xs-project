@@ -57,6 +57,14 @@ static void test_top_level_variable_declaration_structure(void)
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_OBJECT_FIELD) != nullptr);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
+
+  const char *type_first = "public class Person { public Str Name { getter; setter; } }\n";
+  source = (XsSource){.path = "TypeFirstPropertyInvalid.xs", .text = type_first, .length = strlen(type_first)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 67, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
 }
 
 static void test_inferred_variable_declaration_structure(void)

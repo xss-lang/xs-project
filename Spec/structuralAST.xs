@@ -417,7 +417,8 @@ data ConstructorDeclaration {
 }
 
 
-// A class may contain at most one constructor.
+// A class may contain multiple overloaded constructors.
+// Constructors with an identical parameter type list conflict.
 
 
 // ============================================================
