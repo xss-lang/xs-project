@@ -126,9 +126,10 @@ impl Verifier
     {
       Instruction::ConstI64 { result, .. } => self.i64_value(function, result, "XLIL const result"),
       Instruction::ConstI32 { result, .. } => self.i32_value(function, result, "XLIL const.i32 result"),
-      Instruction::ConstF32 { result, .. } => self.float_value(function, result, Type::F32, "XLIL const.f32 result"),
-      Instruction::ConstF64 { result, .. } => self.float_value(function, result, Type::F64, "XLIL const.f64 result"),
-      Instruction::ConstStr { result, .. } => self.float_value(function, result, Type::STR, "XLIL const.str result"),
+      Instruction::ConstU16 { result, .. } => self.typed_value(function, result, Type::U16, "XLIL const.u16 result"),
+      Instruction::ConstF32 { result, .. } => self.typed_value(function, result, Type::F32, "XLIL const.f32 result"),
+      Instruction::ConstF64 { result, .. } => self.typed_value(function, result, Type::F64, "XLIL const.f64 result"),
+      Instruction::ConstStr { result, .. } => self.typed_value(function, result, Type::STR, "XLIL const.str result"),
       Instruction::ConstBool { result, .. } => self.bool_value(function, result, "XLIL const.bool result"),
       Instruction::BinaryFloat { operation,
                                  value_type,
@@ -141,9 +142,9 @@ impl Verifier
         {
           return;
         }
-        self.float_value(function, result, value_type, &format!("XLIL {name} result"));
-        self.float_value(function, left, value_type, &format!("XLIL {name} left operand"));
-        self.float_value(function, right, value_type, &format!("XLIL {name} right operand"));
+        self.typed_value(function, result, value_type, &format!("XLIL {name} result"));
+        self.typed_value(function, left, value_type, &format!("XLIL {name} left operand"));
+        self.typed_value(function, right, value_type, &format!("XLIL {name} right operand"));
       }
       Instruction::CompareFloat { operation,
                                   value_type,
@@ -157,8 +158,8 @@ impl Verifier
           return;
         }
         self.bool_value(function, result, &format!("XLIL {name} result"));
-        self.float_value(function, left, value_type, &format!("XLIL {name} left operand"));
-        self.float_value(function, right, value_type, &format!("XLIL {name} right operand"));
+        self.typed_value(function, left, value_type, &format!("XLIL {name} left operand"));
+        self.typed_value(function, right, value_type, &format!("XLIL {name} right operand"));
       }
       Instruction::AddI64 { result,
                             left,
@@ -463,7 +464,7 @@ impl Verifier
     }
   }
 
-  fn float_value(&mut self, function: &Function, value: ValueId, expected: Type, label: &str)
+  fn typed_value(&mut self, function: &Function, value: ValueId, expected: Type, label: &str)
   {
     if value_type(function, value) != Some(expected)
     {

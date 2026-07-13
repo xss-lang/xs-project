@@ -113,6 +113,14 @@ impl HirToMirLowerer
                                              units: value.encode_utf16().collect(),
                                              span });
       }
+      (Literal::Char(value), Some(XlilType { kind: TypeKind::U16 })) =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::ConstU16 { local: target,
+                                             value: *value,
+                                             span });
+      }
       (Literal::Integer(_), Some(_)) => self.report(DiagnosticCode::UnsupportedType,
                                                     "only Long and Int literals can lower to MIR constants today",
                                                     span),

@@ -666,7 +666,7 @@ fn literal_name(literal: &Literal) -> String
     Literal::Bool(value) => format!("bool {value}"),
     Literal::Integer(value) => format!("integer {value}"),
     Literal::Float(value) => format!("float {value}"),
-    Literal::Char(value) => format!("char {value}"),
+    Literal::Char(value) => format!("char {}", crate::text_literal::format_character(*value)),
     Literal::String(value) => format!("string {value:?}"),
     Literal::None => "None".to_string(),
   }

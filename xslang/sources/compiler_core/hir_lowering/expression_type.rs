@@ -16,6 +16,8 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     EXPR_LITERAL if value.text == "true" || value.text == "false" => Some(Type::Primitive(PrimitiveType::Bool)),
     EXPR_LITERAL if value.token_kind == TOKEN_INTEGER => Some(Type::Primitive(PrimitiveType::Int)),
     EXPR_LITERAL if value.token_kind == TOKEN_FLOAT => Some(Type::Primitive(PrimitiveType::Float)),
+    EXPR_LITERAL if value.token_kind == TOKEN_CHARACTER => Some(Type::Primitive(PrimitiveType::Char)),
+    EXPR_LITERAL if value.token_kind == TOKEN_STRING => Some(Type::Primitive(PrimitiveType::Str)),
     EXPR_IDENTIFIER => locals.get(&path_text(tree, value)).cloned(),
     EXPR_CALL =>
     {

@@ -196,6 +196,10 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
            ((size_t)current->result >= function->value_count ||
             function->values[current->result].type.kind != XS_LIL_TYPE_STR))
           return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL const.str result must have str type");
+        if(current->kind == XS_LIL_INSTRUCTION_CONST_U16 &&
+           ((size_t)current->result >= function->value_count ||
+            function->values[current->result].type.kind != XS_LIL_TYPE_U16))
+          return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL const.u16 result must have u16 type");
         if(is_binary_i64(current->kind) || is_binary_i32(current->kind))
         {
           status = verify_binary_integer(function, current, error);

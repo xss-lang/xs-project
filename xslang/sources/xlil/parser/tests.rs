@@ -98,6 +98,17 @@ fn roundtrips_explicit_utf16_string_constants()
 }
 
 #[test]
+fn roundtrips_u16_code_unit_constant()
+{
+  let text = ".xlil version 0\n.xlil module Character\n.func omega : () -> u16\nbb0.entry:\n  %r0:u16 = const.u16 \
+              0x03a9\n  ret %r0\n.end\n";
+  let module = parse_module(text).expect("u16 constant should parse");
+
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(module_to_string(&module), text);
+}
+
+#[test]
 fn rejects_untagged_or_malformed_utf16_string_constants()
 {
   for instruction in ["%r0:str = const.str utf16 [0x0041]",

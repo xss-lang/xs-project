@@ -486,6 +486,11 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         block, result_type, operation, (size_t)(line + length - operation), result, &matched_string, error);
     if(matched_string)
       return string_status;
+    bool matched_u16 = false;
+    XsLilStatus u16_status = xs_lil_parse_const_u16(block, result_type, operation, (size_t)(line + length - operation),
+                                                    result, &matched_u16, error);
+    if(matched_u16)
+      return u16_status;
     static const char load_prefix[] = "load %s";
     if((size_t)(line + length - operation) > sizeof(load_prefix) - 1U &&
        strncmp(operation, load_prefix, sizeof(load_prefix) - 1U) == 0)

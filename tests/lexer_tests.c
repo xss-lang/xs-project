@@ -183,7 +183,7 @@ static void test_invalid_numbers(void)
 
 static void test_invalid_characters(void)
 {
-  const char *texts[] = {"''", "'ab'", "'\n", "'\\q'"};
+  const char *texts[] = {"''", "'ab'", "'\n", "'\\q'", "'😀'", "'\\U00010000'"};
   for(size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); ++i)
   {
     XsSource source = {.path = "<test>", .text = texts[i], .length = strlen(texts[i])};
@@ -197,6 +197,12 @@ static void test_invalid_characters(void)
   }
 }
 
+static void test_utf16_character_literals(void)
+{
+  static const XsTokenKind expected[] = {XS_TOKEN_CHARACTER, XS_TOKEN_CHARACTER, XS_TOKEN_EOF};
+  expect_tokens("'Ω' '\\u03a9'", expected, sizeof(expected) / sizeof(expected[0]));
+}
+
 int main(void)
 {
   test_function();
@@ -208,5 +214,6 @@ int main(void)
   test_macro_tokens();
   test_invalid_numbers();
   test_invalid_characters();
+  test_utf16_character_literals();
   return failures == 0 ? 0 : 1;
 }

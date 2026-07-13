@@ -121,6 +121,7 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                                TypeRef::Primitive(PrimitiveType::Long |
                                                                                   PrimitiveType::Int |
                                                                                   PrimitiveType::Bool |
+                                                                                  PrimitiveType::Char |
                                                                                   PrimitiveType::SFloat |
                                                                                   PrimitiveType::Float |
                                                                                   PrimitiveType::Str))
@@ -129,6 +130,7 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                            TypeRef::Primitive(PrimitiveType::Long |
                                                                               PrimitiveType::Int |
                                                                               PrimitiveType::Bool |
+                                                                              PrimitiveType::Char |
                                                                               PrimitiveType::SFloat |
                                                                               PrimitiveType::Float |
                                                                               PrimitiveType::Str));

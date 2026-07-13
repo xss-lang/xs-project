@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use super::{
-  FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation,
-};
-
+mod instruction;
 mod types;
 
+use super::I32BinaryOperation;
+
+pub use instruction::Instruction;
 pub use types::{Type, TypeKind, Utf16Encoding};
 
 pub const SUPPORTED_XLIL_VERSION: u32 = 0;
@@ -40,165 +40,6 @@ pub struct Slot
 {
   pub id: SlotId,
   pub value_type: Type,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Instruction
-{
-  ConstI64
-  {
-    result: ValueId, value: i64
-  },
-  ConstI32
-  {
-    result: ValueId, value: i32
-  },
-  ConstF32
-  {
-    result: ValueId, bits: u32
-  },
-  ConstF64
-  {
-    result: ValueId, bits: u64
-  },
-  ConstStr
-  {
-    result: ValueId,
-    encoding: Utf16Encoding,
-    units: Vec<u16>,
-  },
-  ConstBool
-  {
-    result: ValueId, value: bool
-  },
-  BinaryFloat
-  {
-    operation: FloatBinaryOperation,
-    value_type: Type,
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  CompareFloat
-  {
-    operation: FloatComparisonOperation,
-    value_type: Type,
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  AddI64
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  SubI64
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  MulI64
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  EqI64
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  BinaryI64
-  {
-    operation: I64BinaryOperation,
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  CompareI64
-  {
-    operation: I64ComparisonOperation,
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  AddI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  SubI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  MulI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  BinaryI32
-  {
-    operation: I32BinaryOperation,
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  EqI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  LtI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  LeI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  GtI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  GeI32
-  {
-    result: ValueId,
-    left: ValueId,
-    right: ValueId,
-  },
-  NotBool
-  {
-    result: ValueId, operand: ValueId
-  },
-  Call
-  {
-    result: Option<ValueId>,
-    function: String,
-    arguments: Vec<ValueId>,
-    return_type: Type,
-  },
-  Load
-  {
-    result: ValueId, slot: SlotId
-  },
-  Store
-  {
-    slot: SlotId, value: ValueId
-  },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -300,6 +141,16 @@ impl Function
     self.values.push(Value { id: result,
                              value_type: Type::I32 });
     self.block_mut(block)?.instructions.push(Instruction::ConstI32 { result,
+                                                                     value });
+    Some(result)
+  }
+
+  pub fn add_const_u16(&mut self, block: BlockId, value: u16) -> Option<ValueId>
+  {
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::U16 });
+    self.block_mut(block)?.instructions.push(Instruction::ConstU16 { result,
                                                                      value });
     Some(result)
   }

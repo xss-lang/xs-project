@@ -66,6 +66,10 @@ pub enum Statement
   {
     local: LocalId, value: i32, span: Span
   },
+  ConstU16
+  {
+    local: LocalId, value: u16, span: Span
+  },
   ConstF32
   {
     local: LocalId, bits: u32, span: Span
@@ -370,6 +374,9 @@ impl BorrowChecker
                             span,
                             .. } |
       Statement::ConstI32 { local,
+                            span,
+                            .. } |
+      Statement::ConstU16 { local,
                             span,
                             .. } |
       Statement::ConstF32 { local,

@@ -48,7 +48,7 @@ pub enum Literal
   Bool(bool),
   Integer(String),
   Float(String),
-  Char(char),
+  Char(u16),
   String(String),
   None,
 }

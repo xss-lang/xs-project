@@ -11,6 +11,7 @@ use super::{SUPPORTED_XMIR_VERSION, is_supported_xmir_version};
 
 mod float;
 mod i64;
+mod scalar;
 mod string;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -271,6 +272,7 @@ impl Parser<'_>
       {
         "const.i64" => block.statements.push(self.const_i64_statement()),
         "const.i32" => block.statements.push(self.const_i32_statement()),
+        "const.u16" => block.statements.push(self.const_u16_statement()),
         "const.f32" => block.statements.push(self.const_f32_statement()),
         "const.f64" => block.statements.push(self.const_f64_statement()),
         "const.str" => block.statements.push(self.const_str_statement()),

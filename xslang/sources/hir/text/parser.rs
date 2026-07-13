@@ -708,7 +708,7 @@ impl Parser<'_>
     }
     if let Some(value) = text.strip_prefix("char ")
     {
-      return Literal::Char(value.chars().next().unwrap_or('\0'));
+      return Literal::Char(crate::text_literal::decode_character(value).unwrap_or(0));
     }
     if let Some(value) = text.strip_prefix("string ")
     {

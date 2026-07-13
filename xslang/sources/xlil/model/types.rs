@@ -35,6 +35,7 @@ impl Type
 {
   pub const VOID: Self = Self { kind: TypeKind::Void };
   pub const BOOL: Self = Self { kind: TypeKind::Bool };
+  pub const U16: Self = Self { kind: TypeKind::U16 };
   pub const I32: Self = Self { kind: TypeKind::I32 };
   pub const I64: Self = Self { kind: TypeKind::I64 };
   pub const F32: Self = Self { kind: TypeKind::F32 };

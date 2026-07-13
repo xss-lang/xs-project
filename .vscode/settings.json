@@ -11,6 +11,26 @@
     "*.ll": "llvm",
     "*.asm": "asm-intel-x86-generic"
   },
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/target/**": true,
+    "**/node_modules/**": true,
+    "**/out/**": true,
+    "**/dist/**": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/target": true,
+    "**/node_modules": true,
+    "**/out": true,
+    "**/dist": true
+  },
+  "rust-analyzer.files.excludeDirs": [
+    "build",
+    "node_modules",
+    "out",
+    "dist"
+  ],
   "FSharp.suggestGitignore": false,
   "r.lsp.promptToInstall": false
 }

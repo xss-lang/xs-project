@@ -26,7 +26,7 @@ design to x86-64; ARM64 compatibility must be preserved.
 - XLIL type mapping for function declarations
 - Direct `.xlil` parser/model-driven `.extern`/`.func` lowering to verified and optimized LLVM IR, objects, and local
   native `.xse` executable artifacts for `.func main : () -> i32`
-- Initial XLIL body lowering for parameters, constants, i32 arithmetic/bitwise/shift/comparison, i64
+- Initial XLIL body lowering for parameters, constants including 16-bit character code units, i32 arithmetic/bitwise/shift/comparison, i64
   arithmetic/bitwise/shift/comparison, f32/f64 arithmetic and ordered comparisons, explicit UTF-16 string constants,
   typed stack-slot `load`/`store`,
   `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`
@@ -35,8 +35,9 @@ design to x86-64; ARM64 compatibility must be preserved.
 - Object file emission per codegen unit
 - Linker invocation layer that does not use a shell and receives arguments from the caller
 
-Object file emission and linker invocation are wired into direct `.xlil` native builds. Project-based `xs build` still
-waits for the full frontend/HIR/MIR path to produce complete XLIL.
+Object file emission and linker invocation are wired into direct `.xlil` native builds and the supported `.xs`/`.xsproj`
+compiler-core slice. Unsupported source constructs are diagnosed or remain outside that incremental slice; they are not
+lowered by inventing LLVM-only semantics.
 
 ## String mapping and deferred owned strings
 
@@ -71,7 +72,7 @@ Borrow-checked and optimized MIR
     → linker invocation
 ```
 
-XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, exact-bit f32/f64 constants, and
+XLIL function body lowering currently covers explicit body parameters, `i64`, `i32`, `u16`, exact-bit f32/f64 constants, and
 boolean and explicit-endian UTF-16 string constants, i32/i64 arithmetic/bitwise/shift/comparison instructions, f32/f64
 arithmetic and ordered comparisons,
 direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,

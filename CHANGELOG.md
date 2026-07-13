@@ -14,6 +14,11 @@ source-to-native executable pipeline.
 
 ### Added
 
+- `Char` literals now cross the structural AST into typed HIR as one UTF-16 code unit, lower through XMIR `const.u16`,
+  XLIL `%rN:u16 = const.u16 0xXXXX`, LLVM `i16`, object emission, and native `.xse` builds. Parameters, locals, direct
+  calls, and returns preserve the 16-bit value; the public C23 XLIL API can construct and inspect the record.
+- Project-local VS Code settings exclude generated build, Cargo target, dependency, and output directories from file
+  watching and workspace search to avoid indexing multi-gigabyte artifact trees.
 - Borrowed-static `Str` literals now lower through XHIR, endian-neutral `utf16 [...]` MIR/XMIR, explicit
   `const.str utf16le|utf16be [...]` XLIL v0 records, LLVM static data, PIC object emission, and native `.xse` linking.
   The public C23 XLIL API exposes the selected encoding and individual UTF-16 code units.

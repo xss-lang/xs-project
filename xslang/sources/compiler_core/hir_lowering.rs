@@ -259,6 +259,11 @@ fn lower_expression(tree: &SyntaxTree,
       }
       Some(literal)
     }
+    EXPR_LITERAL if value.token_kind == TOKEN_CHARACTER =>
+    {
+      Some(Expression::Literal { literal: Literal::Char(crate::text_literal::decode_character(&value.text)?),
+                                 span: source_span })
+    }
     EXPR_LITERAL if value.text == "None" && expected_type.is_some_and(Type::is_boxed_optional_str) =>
     {
       Some(Expression::Literal { literal: Literal::None,

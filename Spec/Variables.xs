@@ -14,7 +14,7 @@ fn main() {
     x: Int = 5;
     name: Str = "Alpha";
     enabled: Bool = true;
-    letter: Char = "A";
+    letter: Char = 'A';
     data: Byte = 255;
 
     small: Short = 10;

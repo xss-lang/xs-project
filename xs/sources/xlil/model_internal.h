@@ -93,5 +93,8 @@ XsLilStatus xs_lil_append_instruction(XsLilBlock *block, XsLilInstruction instru
 XsLilStatus xs_lil_parse_const_str(XsLilBlock *block, XsLilType result_type, const char *operation,
                                    size_t operation_length, XsLilValueId expected_result, bool *matched,
                                    XsLilError *error);
+XsLilStatus xs_lil_parse_const_u16(XsLilBlock *block, XsLilType result_type, const char *operation,
+                                   size_t operation_length, XsLilValueId expected_result, bool *matched,
+                                   XsLilError *error);
 
 #endif

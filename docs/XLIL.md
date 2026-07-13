@@ -65,6 +65,8 @@ Format notes:
 - `bbN.<label>:` starts a basic block.
 - `%rN:type` names a typed SSA value.
 - `%rN:bool = const.bool true|false` creates a boolean SSA value.
+- `%rN:u16 = const.u16 0xXXXX` creates one unsigned 16-bit value. X# `Char` uses this record for one UTF-16 code unit;
+  the hexadecimal immediate always has exactly four digits.
 - `%rN:str = const.str utf16le [0x004c, ...]` and its `utf16be` form create a borrowed static string view from
   explicit UTF-16 code units. The tag fixes the byte order used by the target data object; the numeric list always
   contains Unicode UTF-16 code-unit values. Untagged string constants are invalid.
@@ -115,6 +117,8 @@ instructions and typed `load`/`store` operations.
 
 MIR remains target-independent and writes string constants as `utf16 [0x004c, ...]`. Endianness becomes concrete only
 when MIR is lowered to XLIL. XHIR remains closer to X# source and represents the same value as a quoted string literal.
+Similarly, XHIR preserves a source-like character literal, XMIR writes its 16-bit code-unit value as `const.u16`, and
+XLIL carries that value as a target-independent `u16` register.
 
 The XLIL v0 `str` value is a borrowed view containing a pointer and a target-sized UTF-16 code-unit count. A constant's
 backing data is immutable and has static storage duration. Its length excludes any terminator; XLIL string constants do

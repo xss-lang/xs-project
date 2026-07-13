@@ -69,6 +69,38 @@ fn lowers_str_literal_through_target_independent_mir()
 }
 
 #[test]
+fn lowers_char_literal_as_one_u16_code_unit()
+{
+  let function = Function { name: "omega".to_string(),
+                            return_type: Some(primitive(PrimitiveType::Char)),
+                            locals: vec![],
+                            body: vec![Statement::Return { value: Some(Expression::Literal { literal:
+                                                                                               Literal::Char(0x03a9),
+                                                                                             span: span(10,
+                                                                                                        18) }),
+                                                           span: span(3, 19) }] };
+  let xhir = crate::hir::text::function_to_xhir(&function);
+  assert!(xhir.contains("literal char '\\u03a9'"));
+
+  let mir = HirToMirLowerer::new().lower_function(&function)
+                                  .expect("Char literal should lower");
+  assert!(matches!(mir.blocks[0].statements[0], mir::Statement::ConstU16 { value: 0x03a9,
+                                                                           .. }));
+  assert!(verify_function(&mir).is_empty());
+  let xmir = crate::mir::text::function_to_xmir(&mir);
+  assert!(xmir.contains("statement const.u16"));
+  assert!(xmir.contains("value 0x03a9"));
+  let parsed = crate::mir::text::parse_xmir_function(&xmir).expect("Char XMIR should parse");
+  assert_eq!(crate::mir::text::function_to_xmir(&parsed), xmir);
+
+  let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                           .expect("Char MIR should lower");
+  assert!(matches!(xlil.blocks[0].instructions[0],
+                   crate::xlil::Instruction::ConstU16 { value: 0x03a9,
+                                                        .. }));
+}
+
+#[test]
 fn lowers_leading_hir_locals_as_real_mir_parameters()
 {
   let parameter = super::super::type_check::Local { name: "value".to_string(),

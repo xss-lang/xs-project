@@ -612,6 +612,8 @@ static void test_text_parser_rejects_invalid_inputs(void)
       "  %r0:str = const.str utf16le [0xd800]\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> str\nbb0.entry:\n"
       "  %r0:str = const.str utf16be [0x0041,]\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> u16\nbb0.entry:\n"
+      "  %r0:u16 = const.u16 0x041\n  ret %r0\n.end\n",
   };
   for(size_t i = 0; i < sizeof(invalid_inputs) / sizeof(invalid_inputs[0]); ++i)
   {
@@ -655,6 +657,23 @@ static void test_text_parser_round_trips_explicit_utf16_strings(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_u16_constant(void)
+{
+  static const char text[] = ".xlil version 0\n.xlil module Character\n.func omega : () -> u16\nbb0.entry:\n"
+                             "  %r0:u16 = const.u16 0x03a9\n  ret %r0\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("character.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  if(module == nullptr)
+    return;
+  const XsLilBlock *block = xs_lil_function_block_at(xs_lil_module_function_at(module, 0), 0);
+  CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_CONST_U16);
+  CHECK(xs_lil_block_instruction_u16(block, 0) == UINT16_C(0x03a9));
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  xs_lil_module_destroy(module);
+}
+
 int main(void)
 {
   test_module_and_text_writer();
@@ -677,6 +696,7 @@ int main(void)
   test_text_parser_round_trips_i32_constant();
   test_text_parser_round_trips_binary_i32_instructions();
   test_text_parser_round_trips_explicit_utf16_strings();
+  test_text_parser_round_trips_u16_constant();
   test_text_parser_rejects_invalid_inputs();
   return failures == 0 ? 0 : 1;
 }

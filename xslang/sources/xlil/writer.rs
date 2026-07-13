@@ -99,6 +99,8 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
                             value, } => writeln!(output, "  %r{}:i64 = const {}", result.0, value),
     Instruction::ConstI32 { result,
                             value, } => writeln!(output, "  %r{}:i32 = const.i32 {}", result.0, value),
+    Instruction::ConstU16 { result,
+                            value, } => writeln!(output, "  %r{}:u16 = const.u16 0x{value:04x}", result.0),
     Instruction::ConstF32 { result,
                             bits, } => writeln!(output, "  %r{}:f32 = const.f32 0x{bits:08x}", result.0),
     Instruction::ConstF64 { result,

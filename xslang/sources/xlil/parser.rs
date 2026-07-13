@@ -11,6 +11,7 @@ use crate::xlil::{
 
 mod float;
 mod i64;
+mod scalar;
 mod string;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -490,6 +491,10 @@ impl Parser<'_>
       return self.const_bool(function, result, rest, line);
     }
     if let Some(parsed) = self.const_str(function, text, line)
+    {
+      return Some(parsed);
+    }
+    if let Some(parsed) = self.const_u16(function, text, line)
     {
       return Some(parsed);
     }

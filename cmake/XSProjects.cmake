@@ -101,8 +101,10 @@ add_library(xs_lil
   xs/sources/xlil/memory.c
   xs/sources/xlil/model.c
   xs/sources/xlil/model_float.c
+  xs/sources/xlil/model_integer.c
   xs/sources/xlil/model_string.c
   xs/sources/xlil/parser.c
+  xs/sources/xlil/parser_scalar.c
   xs/sources/xlil/parser_string.c
   xs/sources/xlil/verify.c
   xs/sources/xlil/writer.c

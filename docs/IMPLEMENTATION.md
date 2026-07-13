@@ -152,8 +152,8 @@ The documented compilation order is preserved:
   cannot split or hide source line boundaries.
 - ASCII identifier rules are applied.
 - Decimal integers, floating-point numbers, scientific notation, and `'` digit separators are validated.
-- String and character literal source spellings are carried into AST literal nodes; resolving `Char` as a 16-bit character is
-  left to the HIR type stage.
+- String and character literal source spellings are carried into AST literal nodes. Typed HIR resolves `Char` as one
+  16-bit UTF-16 code unit; a literal may contain one BMP scalar directly or use a fixed-width escape for any code unit.
 - The parser produces an arena-based structural AST.
 - AST nodes carry full source location: file id, offset, line, and column.
 - Declaration, type, statement, expression, pattern, and macro node families are represented.
@@ -585,7 +585,7 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
 - `xs build --xlil -file <input.xlil>` parses and verifies XLIL v0 text through `xs_lil_module_parse_text`, then lowers to
   LLVM IR, verifies and optimizes the LLVM module, and emits an object file and native `.xse` executable beside the input.
   Native direct XLIL requires exactly one defined
-  `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.f32`,
+  `.func main : () -> i32`; its supported body subset includes `.param`, `const i64`, `const.i32`, `const.u16`, `const.f32`,
   `const.f64`, `const.bool`,
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison
@@ -626,14 +626,14 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - The stable XLIL registry/generation C23 API target is documented as `#include <xs/lil.h>`.
 - The XLIL AOT C23 API target is separated as `#include <xs/lil/aot.h>`; until concrete object/link behavior exists, it only
   marks the planned public surface.
-- External frontends and tools should eventually be able to produce XLIL and use the XS LLVM backend, and later the XS
-  Backend, to produce native executables.
+- External frontends and tools can produce the supported XLIL v0 subset through the public C23 model and use the LLVM
+  backend pipeline to produce native executables.
 - Third-party languages can generate XLIL through `xs/lil.h`; XLIL AOT, HIR baseline JIT, and MIR performance JIT are planned
   as separate public headers: `xs/lil/aot.h`, `xs/hir/jit.h`, and `xs/mir/jit.h`.
 - Direct file compilation entries are recognized as `xs build --output hir|mir|xlil -file <input>` and
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, verification, primitive types, text parsing/writing,
-  read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, exact-bit
+  read-only function/body inspection, function bodies, basic blocks, parameters, `const.i64`, `const.i32`, `const.u16`, exact-bit
   `const.f32`/`const.f64`, `const.bool`,
   typed stack slots and `load`/`store`, i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison,
   `call`, `br`, `br_if`, and `return`.
@@ -642,7 +642,7 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   `br_if %rN, bbA, bbB`, `panic`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
   to bind them to XLIL `.param` values. The bridge lowers MIR
-  parameter signatures, typed MIR `const.i64`, `const.i32`, `const.f32`, `const.f64`, `const.bool`, i64 arithmetic/bitwise/shift/comparison local
+  parameter signatures, typed MIR `const.i64`, `const.i32`, `const.u16`, `const.f32`, `const.f64`, `const.bool`, i64 arithmetic/bitwise/shift/comparison local
   statements,
   typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,

@@ -159,15 +159,18 @@ impl<'a> Verifier<'a>
       Statement::ConstI32 { local,
                             span,
                             .. } => self.verify_const_i32(local, span),
+      Statement::ConstU16 { local,
+                            span,
+                            .. } => self.verify_typed_const(local, crate::xlil::Type::U16, "const.u16", span),
       Statement::ConstF32 { local,
                             span,
-                            .. } => self.verify_const_float(local, crate::xlil::Type::F32, "const.f32", span),
+                            .. } => self.verify_typed_const(local, crate::xlil::Type::F32, "const.f32", span),
       Statement::ConstF64 { local,
                             span,
-                            .. } => self.verify_const_float(local, crate::xlil::Type::F64, "const.f64", span),
+                            .. } => self.verify_typed_const(local, crate::xlil::Type::F64, "const.f64", span),
       Statement::ConstStr { local,
                             span,
-                            .. } => self.verify_const_float(local, crate::xlil::Type::STR, "const.str", span),
+                            .. } => self.verify_typed_const(local, crate::xlil::Type::STR, "const.str", span),
       Statement::ConstBool { local,
                              span,
                              .. } => self.verify_const_bool(local, span),
@@ -429,7 +432,7 @@ impl<'a> Verifier<'a>
     }
   }
 
-  fn verify_const_float(&mut self, local: LocalId, expected: crate::xlil::Type, instruction: &str, span: Span)
+  fn verify_typed_const(&mut self, local: LocalId, expected: crate::xlil::Type, instruction: &str, span: Span)
   {
     self.verify_local(local, span);
     let Some(local) = self.function.locals.iter().find(|candidate| candidate.id == local)

@@ -46,7 +46,7 @@ endforeach()
 
 set(XS_DIRECT_XLIL_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/intermediate")
 file(MAKE_DIRECTORY "${XS_DIRECT_XLIL_FIXTURE_DIR}")
-foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit StackSlotExit FloatConstants FloatOperators StringLiteral MissingMain ExternMain
+foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit StackSlotExit FloatConstants FloatOperators StringLiteral StringFlow CharFlow MissingMain ExternMain
                       ParameterizedMain VoidMain I64Main DuplicateMain)
   configure_file(tests/fixtures/intermediate/${entry_fixture}.xlil
                  "${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil" COPYONLY)
@@ -149,6 +149,26 @@ add_test(NAME direct_xlil_string_literal_artifacts COMMAND xs_xse_artifact_tests
                                                       "define { ptr, i64 } @greeting" "constant [6 x i8]")
 set_tests_properties(direct_xlil_string_literal_artifacts PROPERTIES DEPENDS direct_xlil_string_literal_build
                                                                         TIMEOUT 5)
+add_test(NAME direct_xlil_string_flow_build COMMAND xs build --xlil -file
+                                             ${XS_DIRECT_XLIL_FIXTURE_DIR}/StringFlow.xlil)
+set_tests_properties(direct_xlil_string_flow_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME direct_xlil_string_flow_artifacts COMMAND xs_xse_artifact_tests
+                                                   ${XS_DIRECT_XLIL_FIXTURE_DIR}/StringFlow.ll
+                                                   ${XS_DIRECT_XLIL_FIXTURE_DIR}/StringFlow.o
+                                                   ${XS_DIRECT_XLIL_FIXTURE_DIR}/StringFlow.xse 0
+                                                   "define { ptr, i64 } @identity" "call { ptr, i64 } @identity")
+set_tests_properties(direct_xlil_string_flow_artifacts PROPERTIES DEPENDS direct_xlil_string_flow_build TIMEOUT 5)
+add_test(NAME direct_xlil_char_flow_build COMMAND xs build --xlil -file
+                                           ${XS_DIRECT_XLIL_FIXTURE_DIR}/CharFlow.xlil)
+set_tests_properties(direct_xlil_char_flow_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME direct_xlil_char_flow_artifacts COMMAND xs_xse_artifact_tests
+                                                 ${XS_DIRECT_XLIL_FIXTURE_DIR}/CharFlow.ll
+                                                 ${XS_DIRECT_XLIL_FIXTURE_DIR}/CharFlow.o
+                                                 ${XS_DIRECT_XLIL_FIXTURE_DIR}/CharFlow.xse 0
+                                                 "define i16 @identity" "store i16 937" "call i16 @identity")
+set_tests_properties(direct_xlil_char_flow_artifacts PROPERTIES DEPENDS direct_xlil_char_flow_build TIMEOUT 5)
 foreach(entry_fixture MissingMain ExternMain ParameterizedMain VoidMain I64Main DuplicateMain)
   add_test(NAME direct_xlil_invalid_${entry_fixture} COMMAND xs build --xlil -file ${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil)
   set_tests_properties(direct_xlil_invalid_${entry_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
@@ -156,7 +176,7 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainCharFlow MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -271,6 +291,26 @@ add_test(NAME source_native_string_literal_artifacts COMMAND xs_xse_artifact_tes
                                                          "define { ptr, i64 } @greeting" "constant [6 x i8]")
 set_tests_properties(source_native_string_literal_artifacts PROPERTIES DEPENDS source_native_string_literal_build
                                                                           TIMEOUT 5)
+add_test(NAME source_native_string_flow_build COMMAND xs build -file
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainStringFlow.xs)
+set_tests_properties(source_native_string_flow_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_string_flow_artifacts COMMAND xs_xse_artifact_tests
+                                                      ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainStringFlow.ll
+                                                      ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainStringFlow.o
+                                                      ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainStringFlow.xse 0
+                                                      "define { ptr, i64 } @identity" "call { ptr, i64 } @identity")
+set_tests_properties(source_native_string_flow_artifacts PROPERTIES DEPENDS source_native_string_flow_build TIMEOUT 5)
+add_test(NAME source_native_char_flow_build COMMAND xs build -file
+                                              ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainCharFlow.xs)
+set_tests_properties(source_native_char_flow_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_char_flow_artifacts COMMAND xs_xse_artifact_tests
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainCharFlow.ll
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainCharFlow.o
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainCharFlow.xse 0
+                                                    "define i16 @identity" "store i16 937" "call i16 @identity")
+set_tests_properties(source_native_char_flow_artifacts PROPERTIES DEPENDS source_native_char_flow_build TIMEOUT 5)
 add_test(NAME source_native_negative_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainNegative.xs)
 set_tests_properties(source_native_negative_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

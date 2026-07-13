@@ -252,7 +252,8 @@ mod tests
     assert_eq!(resolve_binding(&inferred(Literal::Float("3.14".to_string())), &[]).unwrap()
                                                                                   .ty,
                Type::Primitive(PrimitiveType::Float));
-    assert_eq!(resolve_binding(&inferred(Literal::Char('A')), &[]).unwrap().ty,
+    assert_eq!(resolve_binding(&inferred(Literal::Char(u16::from(b'A'))), &[]).unwrap()
+                                                                              .ty,
                Type::Primitive(PrimitiveType::Char));
     assert_eq!(resolve_binding(&inferred(Literal::String("A".to_string())), &[]).unwrap()
                                                                                 .ty,
