@@ -24,6 +24,8 @@ source-to-native executable pipeline.
 
 - `Optional<T>` and `Result<T, E>` implicit imports are documented as compiler-inserted `imports optional; using namespace
   std::optional;` and `imports result; using namespace std::result;` behavior.
+- The C23 HIR type resolver now accepts canonical `std::result::Result<T, E>` and `std::result::Error` names in addition
+  to the existing transition spellings.
 - Pattern defaults use `else`; `_` is no longer produced as a wildcard pattern in the structural parser.
 
 - HIR CFFI validation now checks the first standard CFFI attribute shapes and scopes for extern blocks, extern functions,

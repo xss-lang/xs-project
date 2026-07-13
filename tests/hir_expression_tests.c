@@ -222,8 +222,10 @@ static void test_result_propagation_requires_result_return(void)
 {
   const char *valid = "module App;\n"
                       "fn DoWork() -> Result::Result<Int, Result::Error> { return Result::Ok(1); }\n"
+                      "fn DoMore() -> std::result::Result<Int, std::result::Error> { return Result::Ok(2); }\n"
                       "fn Main() -> Result::Result<Int, Result::Error> {\n"
                       "  DoWork()@;\n"
+                      "  DoMore()@;\n"
                       "  return Result::Ok(1);\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));

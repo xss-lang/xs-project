@@ -138,7 +138,8 @@ static bool type_is_optional(const XsSyntaxNode *type)
 static bool named_type_is_result_base(const XsSyntaxNode *type)
 {
   const XsSyntaxNode *path = type_named_path(type);
-  return path_matches_single(path, "Result") || path_matches_two(path, "Result", "Result");
+  return path_matches_single(path, "Result") || path_matches_two(path, "Result", "Result") ||
+         path_matches_qualified(path, "std", "result", "Result");
 }
 
 static bool type_is_result(const XsSyntaxNode *type)

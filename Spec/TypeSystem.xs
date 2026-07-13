@@ -44,7 +44,7 @@ name = Some("Leitwolf");
 // Result<T, E> wrapper name into scope. Most other std::* modules still require
 // qualified names or explicit using declarations.
 
-status: Result<Int, Result::Error> = Result::Ok(0);
+status: Result<Int, std::result::Error> = std::result::Ok(0);
 
 emptyCanonical: std::optional::Optional<Str> = std::optional::None;
 canonicalName: std::optional::Optional<Str> = std::optional::Some("Leitwolf");
@@ -54,7 +54,7 @@ display: Str = name ?? "guest";
 name ??= std::optional::Some("guest");
 
 // Automatic unboxing from Optional<T> to T may fail. New code models that as
-// Result::Error rather than legacy exceptions.
+// std::result::Error rather than legacy exceptions.
 
 unboxedName: Str = name;
 forcedName: Str = name!;
@@ -62,12 +62,12 @@ forcedName: Str = name!;
 user: Optional<User> = None;
 city: Optional<Str> = user?.Address?.City;
 
-fn NormalizeOptionalName(value: Optional<Str>) -> Result::Result<Str, Result::Error> {
+fn NormalizeOptionalName(value: Optional<Str>) -> std::result::Result<Str, std::result::Error> {
     if (value == None) {
-        return Result::Error(Result::Error {
+        return std::result::Error(std::result::Error {
             message: "name is missing",
         });
     }
 
-    return Result::Ok(value!);
+    return std::result::Ok(value!);
 }

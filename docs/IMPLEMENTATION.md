@@ -258,9 +258,10 @@ validation does not decide dispatch, override, or overload selection.
   flow-sensitive Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
-  `Result::Result<T>`, `Result::Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result::Error`. This
-  is name and arity validation only; constructors, method calls, and propagation lowering are still handled by later
-  semantic passes.
+  `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand `Result<T, E>`, and the standard error type
+  `std::result::Error`. Legacy `Result::Result<T, E>` and `Result::Error` spellings are still accepted during the current
+  transition. This is name and arity validation only; constructors, method calls, and propagation lowering are still
+  handled by later semantic passes.
 - `Result` is treated as if the compiler had inserted `imports result; using namespace std::result;`, making
   `Result<T, E>` available without importing general `std::*` modules.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal

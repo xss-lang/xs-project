@@ -27,6 +27,9 @@ struct StandardTypeInfo
 
 static const StandardTypeInfo standard_types[] = {
     {.name = "std.optional.Optional", .min_arity = 1, .max_arity = 1},
+    {.name = "std.result.Result", .min_arity = 1, .max_arity = 2},
+    {.name = "std.result.Error", .min_arity = 0, .max_arity = 0},
+    {.name = "std.result.IO.error", .min_arity = 0, .max_arity = 0},
     {.name = "Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Error", .min_arity = 0, .max_arity = 0},
@@ -164,6 +167,8 @@ static const StandardTypeInfo *find_standard_type(const char *name)
 {
   if(strcmp(name, "Optional") == 0)
     name = "std.optional.Optional";
+  if(strcmp(name, "Result") == 0)
+    name = "std.result.Result";
   for(size_t i = 0; i < sizeof(standard_types) / sizeof(standard_types[0]); ++i)
   {
     if(strcmp(standard_types[i].name, name) == 0)

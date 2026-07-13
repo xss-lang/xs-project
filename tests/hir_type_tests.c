@@ -121,6 +121,7 @@ static void test_standard_generic_types(void)
                       "fn ReadCanonical() -> std::optional::Optional<Str> { return None; }\n"
                       "fn Save() -> Result::Result<Int> { return Result::Ok(1); }\n"
                       "fn Load() -> Result::Result<Int, Result::Error> { return Result::Ok(1); }\n"
+                      "fn LoadCanonical() -> std::result::Result<Int, std::result::Error> { return Result::Ok(1); }\n"
                       "fn Compact() -> Result<Int, Result::Error> { return Result::Ok(1); }\n";
   CHECK(check_single_source(valid));
   CHECK(!check_single_source("module App;\nfn Missing() -> Optional { return None; }\n"));

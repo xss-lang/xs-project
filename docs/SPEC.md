@@ -54,8 +54,9 @@ syntax takes priority over ad-hoc implementation shortcuts.
   macros rather than compiler built-ins.
 - `Stdio` is not prelude and is not implicit. Its macros require `imports stdio;` or `using namespace stdio;`, except
   `format_args!`, which is built in.
-- Legacy exception syntax is deprecated. Active examples should prefer `Result::Result<T, E>` and postfix `@` propagation;
-  old `throws`/`throw`/`try`/`catch` spellings should appear only in explicitly marked legacy notes.
+- Legacy exception syntax is deprecated. Active examples should prefer `std::result::Result<T, E>` or the implicit
+  `Result<T, E>` shorthand plus postfix `@` propagation; old `throws`/`throw`/`try`/`catch` spellings should appear only
+  in explicitly marked legacy notes.
 
 ## Program examples
 
