@@ -29,6 +29,8 @@ sources {
 Concrete includes may be mixed with `*`, `**`, and `?` patterns. Matching happens relative to the project root,
 excludes run after includes, and the deterministic result must contain exactly one case-sensitive `main.xs`. The
 resolver emits that exact registry with `main.xs` first; it does not pass unresolved patterns to the compiler.
+The internal registry also carries the evaluated `compiler {}` warning, warnings-as-errors, and verbose policy. The
+JVM-free compiler may replace those values for one invocation through its corresponding command-line overrides.
 
 ```text
 gradle -p xs_kts test

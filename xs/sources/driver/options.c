@@ -7,6 +7,65 @@
 
 #include <string.h>
 
+XsCompilerSettings xs_cli_default_compiler_settings(void)
+{
+  return (XsCompilerSettings){.warning_level = XS_WARNING_MEDIUM};
+}
+
+const char *xs_cli_warning_level_name(XsWarningLevel level)
+{
+  switch(level)
+  {
+  case XS_WARNING_ALL:
+    return "all";
+  case XS_WARNING_MEDIUM:
+    return "medium";
+  case XS_WARNING_LOW:
+    return "low";
+  case XS_WARNING_NONE:
+    return "none";
+  }
+  return "medium";
+}
+
+static bool parse_warning_level(const char *text, XsWarningLevel *level)
+{
+  for(XsWarningLevel candidate = XS_WARNING_NONE; candidate <= XS_WARNING_ALL; ++candidate)
+  {
+    if(strcmp(text, xs_cli_warning_level_name(candidate)) == 0)
+    {
+      *level = candidate;
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool parse_bool(const char *text, bool *value)
+{
+  if(strcmp(text, "true") == 0)
+  {
+    *value = true;
+    return true;
+  }
+  if(strcmp(text, "false") == 0)
+  {
+    *value = false;
+    return true;
+  }
+  return false;
+}
+
+void xs_cli_apply_compiler_overrides(const XsCliOptions *options, XsCompilerSettings *settings)
+{
+  if(options->warning_override)
+    settings->warning_level = options->compiler.warning_level;
+  if(options->werrror_override)
+    settings->warnings_as_errors = options->compiler.warnings_as_errors;
+  if(options->verbose_override)
+    settings->verbose = options->compiler.verbose;
+}
+
 const char *xs_cli_output_extension(XsBuildOutput output)
 {
   switch(output)
@@ -68,7 +127,7 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
     return false;
   if(strcmp(argv[1], "check") != 0 && strcmp(argv[1], "build") != 0 && strcmp(argv[1], "run") != 0)
     return false;
-  *options = (XsCliOptions){.command = argv[1]};
+  *options = (XsCliOptions){.command = argv[1], .compiler = xs_cli_default_compiler_settings()};
   if(argc == 2)
     return true;
   for(int i = 2; i < argc; ++i)
@@ -92,13 +151,31 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
       if(!parse_output_kind(argv[i], &options->output))
         return false;
     }
+    else if(strcmp(argv[i], "--warning") == 0)
+    {
+      if(++i >= argc || options->warning_override || !parse_warning_level(argv[i], &options->compiler.warning_level))
+        return false;
+      options->warning_override = true;
+    }
+    else if(strcmp(argv[i], "--werrror") == 0)
+    {
+      if(++i >= argc || options->werrror_override || !parse_bool(argv[i], &options->compiler.warnings_as_errors))
+        return false;
+      options->werrror_override = true;
+    }
+    else if(strcmp(argv[i], "--verbose") == 0)
+    {
+      if(++i >= argc || options->verbose_override || !parse_bool(argv[i], &options->compiler.verbose))
+        return false;
+      options->verbose_override = true;
+    }
     else if(!parse_output_flag(argv[i], options))
     {
       return false;
     }
   }
   if(options->manifest_path == nullptr && options->file_path == nullptr)
-    return false;
+    return options->output == XS_BUILD_OUTPUT_NONE;
   if(options->file_path != nullptr)
   {
     if(strcmp(options->command, "check") == 0)
@@ -112,6 +189,7 @@ void xs_cli_print_usage(FILE *stream)
 {
   fprintf(stream, "usage: xs --version\n");
   fprintf(stream, "usage: xs <check|build|run>\n");
+  fprintf(stream, "       [--warning all|medium|low|none] [--werrror true|false] [--verbose true|false]\n");
   fprintf(stream, "usage: xs <check|run> -proj <project.xsproj>\n");
   fprintf(stream, "usage: xs build -file <Main.xs>\n");
   fprintf(stream, "usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>\n");

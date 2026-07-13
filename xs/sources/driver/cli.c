@@ -44,6 +44,14 @@ static char *copy_text(const char *text)
   return copy;
 }
 
+static void print_verbose_settings(const XsCliOptions *options, const XsCompilerSettings *settings, const char *input)
+{
+  if(!settings->verbose)
+    return;
+  fprintf(stderr, "xs: verbose: command=%s input=%s warning=%s werrror=%s\n", options->command, input,
+          xs_cli_warning_level_name(settings->warning_level), settings->warnings_as_errors ? "true" : "false");
+}
+
 static char *read_file(const char *path, size_t *length)
 {
   FILE *file = fopen(path, "rb");
@@ -337,7 +345,8 @@ static bool import_compiler_core_syntax(CompilationUnit *unit)
          false;
 }
 
-static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHirSymbolTable *symbols)
+static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHirSymbolTable *symbols,
+                                   const XsCompilerSettings *settings)
 {
   size_t length = 0;
   unit->text = read_file(unit->path, &length);
@@ -347,6 +356,7 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
     return false;
   }
   xs_diagnostics_init(&unit->diagnostics);
+  xs_diagnostics_set_warning_policy(&unit->diagnostics, settings->warning_level, settings->warnings_as_errors);
   unit->diagnostics_initialized = true;
   unit->source = (XsSource){.path = unit->path, .text = unit->text, .length = length};
   xs_hir_import_scope_init(&unit->imports);
@@ -424,7 +434,7 @@ static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolT
          success;
 }
 
-static bool check_single_source_file(const char *path, bool build_native)
+static bool check_single_source_file(const char *path, bool build_native, const XsCompilerSettings *settings)
 {
   CompilationUnit unit = {.path = copy_text(path)};
   if(unit.path == nullptr)
@@ -434,7 +444,7 @@ static bool check_single_source_file(const char *path, bool build_native)
   }
   XsHirSymbolTable symbols;
   xs_hir_symbol_table_init(&symbols);
-  bool success = parse_compilation_unit(&unit, 1, &symbols);
+  bool success = parse_compilation_unit(&unit, 1, &symbols, settings);
   if(success)
     success = check_compilation_unit_semantics(&unit, &symbols);
   xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
@@ -469,7 +479,7 @@ static XsCompilerCoreSession *merge_compiler_core_sessions(CompilationUnit *unit
 }
 
 static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output,
-                                  bool build_native)
+                                  bool build_native, const XsCompilerSettings *settings)
 {
   if(project->xs_version.is_nil || xs_project_selected_entry(project) == nullptr)
   {
@@ -531,7 +541,11 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
   xs_hir_symbol_table_init(&symbols);
   uint64_t file_id = 1;
   for(size_t i = 0; i < unit_count; ++i)
-    success = parse_compilation_unit(&units[i], file_id++, &symbols) && success;
+  {
+    if(settings->verbose)
+      fprintf(stderr, "xs: verbose: source[%zu]=%s\n", i, units[i].path);
+    success = parse_compilation_unit(&units[i], file_id++, &symbols, settings) && success;
+  }
   if(success)
   {
     for(size_t i = 0; i < unit_count; ++i)
@@ -585,6 +599,9 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
 
 static int run_project_command(const XsCliOptions *options)
 {
+  XsCompilerSettings settings = xs_cli_default_compiler_settings();
+  xs_cli_apply_compiler_overrides(options, &settings);
+  print_verbose_settings(options, &settings, options->manifest_path);
   if(!has_suffix(options->manifest_path, ".xsproj"))
   {
     fprintf(stderr, "xs: -proj must be used with a .xsproj file path\n");
@@ -602,12 +619,14 @@ static int run_project_command(const XsCliOptions *options)
   XsDiagnostics diagnostics;
   XsProject project;
   xs_diagnostics_init(&diagnostics);
+  xs_diagnostics_set_warning_policy(&diagnostics, settings.warning_level, settings.warnings_as_errors);
   xs_project_init(&project);
   bool success = xs_project_parse(&source, &diagnostics, &project);
   xs_diagnostics_print(&diagnostics, &source, stderr);
   if(success)
     success = check_project_sources(options->manifest_path, &project, options->output,
-                                    strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE);
+                                    strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE,
+                                    &settings);
 
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
@@ -619,8 +638,11 @@ static int run_kotlin_project_command(const XsCliOptions *options)
 {
   char **paths = nullptr;
   size_t path_count = 0;
-  if(!xs_driver_resolve_kotlin_project(&paths, &path_count))
+  XsCompilerSettings settings;
+  if(!xs_driver_resolve_kotlin_project(&paths, &path_count, &settings))
     return 1;
+  xs_cli_apply_compiler_overrides(options, &settings);
+  print_verbose_settings(options, &settings, "Kotlin project");
   XsProjectValue *additional = nullptr;
   if(path_count > 1U)
   {
@@ -639,9 +661,9 @@ static int run_kotlin_project_command(const XsCliOptions *options)
       .additional_files = additional,
       .additional_file_count = path_count - 1U,
   };
-  bool success =
-      check_project_sources(".", &project, options->output,
-                            strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE);
+  bool success = check_project_sources(
+      ".", &project, options->output, strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE,
+      &settings);
   free(additional);
   xs_driver_free_project_paths(paths, path_count);
   return success ? 0 : 1;
@@ -649,6 +671,9 @@ static int run_kotlin_project_command(const XsCliOptions *options)
 
 static int run_file_command(const XsCliOptions *options)
 {
+  XsCompilerSettings settings = xs_cli_default_compiler_settings();
+  xs_cli_apply_compiler_overrides(options, &settings);
+  print_verbose_settings(options, &settings, options->file_path);
   if(is_direct_ir_input(options))
   {
     size_t length = 0;
@@ -676,7 +701,7 @@ static int run_file_command(const XsCliOptions *options)
     return 1;
   }
   if(options->output == XS_BUILD_OUTPUT_NONE)
-    return check_single_source_file(options->file_path, strcmp(options->command, "build") == 0) ? 0 : 1;
+    return check_single_source_file(options->file_path, strcmp(options->command, "build") == 0, &settings) ? 0 : 1;
   fprintf(stderr, "xs: %s emission for -file '%s' is not wired yet\n", xs_cli_output_extension(options->output),
           options->file_path);
   return 1;

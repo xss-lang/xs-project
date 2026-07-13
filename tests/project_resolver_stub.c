@@ -15,8 +15,13 @@ int main(int argc, char **argv)
   FILE *registry = fopen(argv[3], "wb");
   if(registry == nullptr)
     return 2;
-  size_t length = strlen(source) + 1U;
-  bool success = fwrite(source, 1, length, registry) == length;
+  const char *records[] = {"xs-project-sources-v1", "all", "true", "true", source};
+  bool success = true;
+  for(size_t i = 0; i < sizeof(records) / sizeof(records[0]); ++i)
+  {
+    size_t length = strlen(records[i]) + 1U;
+    success = fwrite(records[i], 1, length, registry) == length && success;
+  }
   success = fclose(registry) == 0 && success;
   return success ? 0 : 1;
 }

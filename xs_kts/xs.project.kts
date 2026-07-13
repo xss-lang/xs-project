@@ -12,7 +12,7 @@ if (cfg(OS == LINUX)) {
   set("PLATFORM", "linux")
 } else if (cfg(OS == MACOS)) {
   set("PLATFORM", "macos")
-} else if (cfg(OS == FREEBSD || OS == OPENBSD || OS == NETBSD)) {
+} else if (cfg(FAMILY == BSD)) {
   set("PLATFORM", "bsd")
 } else if (cfg(OS == WINDOWS)) {
   set("PLATFORM", "windows")

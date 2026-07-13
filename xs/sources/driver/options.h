@@ -6,6 +6,8 @@
 #ifndef XS_DRIVER_OPTIONS_H
 #define XS_DRIVER_OPTIONS_H
 
+#include "xs/diagnostic.h"
+
 #include <stdio.h>
 
 typedef enum
@@ -18,12 +20,26 @@ typedef enum
 
 typedef struct
 {
+  XsWarningLevel warning_level;
+  bool warnings_as_errors;
+  bool verbose;
+} XsCompilerSettings;
+
+typedef struct
+{
   const char *command;
   const char *manifest_path;
   const char *file_path;
   XsBuildOutput output;
+  XsCompilerSettings compiler;
+  bool warning_override;
+  bool werrror_override;
+  bool verbose_override;
 } XsCliOptions;
 
+XsCompilerSettings xs_cli_default_compiler_settings(void);
+void xs_cli_apply_compiler_overrides(const XsCliOptions *options, XsCompilerSettings *settings);
+const char *xs_cli_warning_level_name(XsWarningLevel level);
 const char *xs_cli_output_extension(XsBuildOutput output);
 bool xs_cli_parse(int argc, char **argv, XsCliOptions *options);
 void xs_cli_print_usage(FILE *stream);

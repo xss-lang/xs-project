@@ -26,6 +26,7 @@ set_tests_properties(legacy_cli_version PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRES
 
 xs_add_c_test(lexer tests/lexer_tests.c xs_compiler)
 xs_add_c_test(parser tests/parser_tests.c xs_compiler)
+xs_add_c_test(diagnostic tests/diagnostic_tests.c xs_compiler)
 
 add_test(NAME example_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
 set_tests_properties(example_project PROPERTIES TIMEOUT 5)
@@ -34,6 +35,14 @@ set_tests_properties(macro_project PROPERTIES TIMEOUT 5)
 add_test(NAME compiler_check_file COMMAND xs check -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
 set_tests_properties(compiler_check_file PROPERTIES TIMEOUT 5)
+add_test(NAME compiler_check_file_verbose COMMAND xs check -file
+  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs
+  --warning all --werrror true --verbose true)
+set_tests_properties(compiler_check_file_verbose PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "verbose: command=check.*warning=all.*werrror=true")
+add_test(NAME compiler_rejects_invalid_warning COMMAND xs check -file
+  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs --warning invalid)
+set_tests_properties(compiler_rejects_invalid_warning PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 add_test(NAME legacy_project_parse COMMAND xs_proj
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
 set_tests_properties(legacy_project_parse PROPERTIES TIMEOUT 5)

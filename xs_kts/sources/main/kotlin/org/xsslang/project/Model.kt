@@ -21,9 +21,18 @@ class OperatingSystemFamily private constructor(
 
   companion object {
     val UNIX = OperatingSystemFamily(0b0001, "UNIX")
-    val BSD = OperatingSystemFamily(0b0011, "BSD")
+    val BSD = OperatingSystemFamily(0b0010, "BSD")
     val WINDOWS = OperatingSystemFamily(0b0100, "WINDOWS")
     val UNKNOWN = OperatingSystemFamily(0b1000, "UNKNOWN")
+
+    internal fun forOperatingSystem(os: OperatingSystem) =
+      when (os) {
+        OperatingSystem.FREEBSD, OperatingSystem.OPENBSD, OperatingSystem.NETBSD ->
+          OperatingSystemFamily(0b0011, "BSD")
+        OperatingSystem.LINUX, OperatingSystem.MACOS -> UNIX
+        OperatingSystem.WINDOWS -> WINDOWS
+        OperatingSystem.UNKNOWN -> UNKNOWN
+      }
   }
 }
 
@@ -101,13 +110,7 @@ internal fun detectHost(): Host {
       osName.contains("netbsd") -> OperatingSystem.NETBSD
       else -> OperatingSystem.UNKNOWN
     }
-  val family =
-    when (os) {
-      OperatingSystem.FREEBSD, OperatingSystem.OPENBSD, OperatingSystem.NETBSD -> OperatingSystemFamily.BSD
-      OperatingSystem.LINUX, OperatingSystem.MACOS -> OperatingSystemFamily.UNIX
-      OperatingSystem.WINDOWS -> OperatingSystemFamily.WINDOWS
-      OperatingSystem.UNKNOWN -> OperatingSystemFamily.UNKNOWN
-    }
+  val family = OperatingSystemFamily.forOperatingSystem(os)
   val architecture =
     when (architectureName) {
       "amd64", "x86_64" -> Architecture.X86_64

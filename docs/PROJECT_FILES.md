@@ -17,7 +17,7 @@ project("Example", "BETA", "0.1.0")
 set("XS_VERSION", "0.1.6")
 set("XS_BACKEND", "LLVM")
 
-if (cfg(OS == LINUX && ARCH == X86_64)) {
+if (cfg(OS == LINUX) && cfg(ARCH == X86_64)) {
   set("NATIVE_TARGET", "x86_64-unknown-linux-gnu")
 } else if (cfg(FAMILY == BSD)) {
   set("NATIVE_TARGET", "x86_64-unknown-freebsd")
@@ -77,6 +77,10 @@ The DSL also provides:
 - `compiler { warnings(...); werror(...); verbose(...) }` for diagnostic policy;
 - `cfg(...)`, `OS`, `FAMILY`, and `ARCH` for ordinary Kotlin conditional configuration;
 - `panic(...)` to reject the project configuration.
+
+The compiler policy is transferred with the resolved source registry to the JVM-free `xs` process. Command-line
+`--warning`, `--werrror`, and `--verbose` values are one-shot overrides applied after KTS evaluation; they never rewrite
+the project script. XSPROJ intentionally has no persistent equivalent.
 
 ## Source registries
 
@@ -163,7 +167,8 @@ collections, loops, and conditionals remain available because these are real Kot
 Kotlin parser.
 
 BSD hosts are members of both the `BSD` and `UNIX` families. Consequently, `cfg(FAMILY == BSD)` and
-`cfg(FAMILY == UNIX)` are both true on FreeBSD, OpenBSD, and NetBSD.
+`cfg(FAMILY == UNIX)` are both true on FreeBSD, OpenBSD, and NetBSD. Linux and macOS satisfy only `FAMILY == UNIX`;
+they do not satisfy `FAMILY == BSD`.
 
 Argument-free `xs build`, `xs check`, and `xs run` search the current directory and its parents through `xs-project`.
 The resolver evaluates Kotlin, expands source metadata, and returns an exact source registry; it never parses or compiles

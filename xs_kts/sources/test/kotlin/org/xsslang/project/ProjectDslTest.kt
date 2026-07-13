@@ -69,9 +69,24 @@ class ProjectDslTest {
 
   @Test
   fun bsdBelongsToBothBsdAndUnixFamilies() {
-    val host = Host(OperatingSystem.FREEBSD, OperatingSystemFamily.BSD, Architecture.X86_64)
+    val host =
+      Host(
+        OperatingSystem.FREEBSD,
+        OperatingSystemFamily.forOperatingSystem(OperatingSystem.FREEBSD),
+        Architecture.X86_64,
+      )
     assertTrue(host.family == OperatingSystemFamily.BSD)
     assertTrue(host.family == OperatingSystemFamily.UNIX)
+  }
+
+  @Test
+  fun linuxAndMacosAreUnixButNotBsd() {
+    val linux = OperatingSystemFamily.forOperatingSystem(OperatingSystem.LINUX)
+    val macos = OperatingSystemFamily.forOperatingSystem(OperatingSystem.MACOS)
+    assertTrue(linux == OperatingSystemFamily.UNIX)
+    assertTrue(macos == OperatingSystemFamily.UNIX)
+    assertTrue(linux != OperatingSystemFamily.BSD)
+    assertTrue(macos != OperatingSystemFamily.BSD)
   }
 
   @Test
@@ -90,6 +105,11 @@ class ProjectDslTest {
           include("sources/**/*.xs")
           exclude("sources/tests/**")
         }
+        compiler {
+          warnings("all")
+          werror(true)
+          verbose(true)
+        }
       }
     val oldRoot = System.getProperty("xs.project.root")
     val oldOutput = System.getProperty("xs.project.output")
@@ -105,7 +125,11 @@ class ProjectDslTest {
           .toString(StandardCharsets.UTF_8)
           .split('\u0000')
           .filter(String::isNotEmpty)
-      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths)
+      assertEquals(
+        listOf("xs-project-sources-v1", "all", "true", "true"),
+        paths.take(4),
+      )
+      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths.drop(4))
     } finally {
       restoreProperty("xs.project.root", oldRoot)
       restoreProperty("xs.project.output", oldOutput)

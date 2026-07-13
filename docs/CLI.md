@@ -25,6 +25,7 @@ xs build --output xlil -file Main.xs
 xs build --hir -file Main.xs
 xs build --mir -file Main.xs
 xs build --xlil -file Main.xs
+xs build --warning all --werrror true --verbose true
 xs --version
 ```
 
@@ -33,11 +34,36 @@ The `-proj` flag is accepted only by `xs` and only for `.xsproj` input. Kotlin p
 `xs.settings.kts` + `xs.build.kts` pair. `xs-project` returns source metadata and never parses or compiles `.xs` files.
 `xs-proj` accepts a manifest path directly and performs parser/model validation only.
 
+## One-shot compiler policy
+
+The following options override compiler policy for one invocation and may be combined with an argument-free Kotlin
+project build, `-proj`, or `-file`:
+
+- `--warning all|medium|low|none` selects warning volume. A warning declares the minimum volume at which it is active;
+  `all` enables every warning, `medium` is the default, `low` keeps only the most important warnings, and `none` disables
+  warnings.
+- `--werrror true|false` controls whether enabled warnings fail the compilation.
+- `--verbose true|false` controls compiler progress output. When enabled, `xs` prints the effective policy and the
+  ordered source registry entering the frontend.
+
+For Kotlin projects these values override the evaluated `compiler {}` block without modifying either KTS file:
+
+```text
+xs build --warning low --werrror false --verbose true
+```
+
+XSPROJ has no persistent compiler-policy section. A legacy build uses the same options only as one-shot values:
+
+```text
+xs build -proj MyApp.xsproj --warning all --werrror true
+```
+
 The compiler usage is:
 
 ```text
 usage: xs build -file <Main.xs>
 usage: xs <check|build|run>
+       [--warning all|medium|low|none] [--werrror true|false] [--verbose true|false]
 usage: xs <check|build|run> -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -file <input>
 usage: xs build [--hir|--mir|--xlil] -file <input>

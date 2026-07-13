@@ -14,6 +14,8 @@
 
 extern char **environ;
 
+static const char *const REGISTRY_VERSION = "xs-project-sources-v1";
+
 static bool run_resolver(const char *output_path)
 {
   const char *program = getenv("XS_PROJECT_DRIVER");
@@ -67,7 +69,50 @@ void xs_driver_free_project_paths(char **paths, size_t path_count)
   free(paths);
 }
 
-bool xs_driver_resolve_kotlin_project(char ***paths, size_t *path_count)
+static bool parse_bool_record(const char *text, bool *value)
+{
+  if(strcmp(text, "true") == 0)
+  {
+    *value = true;
+    return true;
+  }
+  if(strcmp(text, "false") == 0)
+  {
+    *value = false;
+    return true;
+  }
+  return false;
+}
+
+static bool parse_settings(char *data, size_t record_count, size_t *source_offset, XsCompilerSettings *settings)
+{
+  *settings = xs_cli_default_compiler_settings();
+  *source_offset = 0;
+  if(strcmp(data, REGISTRY_VERSION) != 0)
+    return true;
+  if(record_count < 5U)
+    return false;
+  char *warning = data + strlen(data) + 1U;
+  char *werrror = warning + strlen(warning) + 1U;
+  char *verbose = werrror + strlen(werrror) + 1U;
+  bool parsed_warning = false;
+  for(XsWarningLevel level = XS_WARNING_NONE; level <= XS_WARNING_ALL; ++level)
+  {
+    if(strcmp(warning, xs_cli_warning_level_name(level)) == 0)
+    {
+      settings->warning_level = level;
+      parsed_warning = true;
+      break;
+    }
+  }
+  if(!parsed_warning || !parse_bool_record(werrror, &settings->warnings_as_errors) ||
+     !parse_bool_record(verbose, &settings->verbose))
+    return false;
+  *source_offset = 4U;
+  return true;
+}
+
+bool xs_driver_resolve_kotlin_project(char ***paths, size_t *path_count, XsCompilerSettings *settings)
 {
   char registry_path[] = "/tmp/xs-project-sources-XXXXXX";
   int registry = mkstemp(registry_path);
@@ -91,20 +136,24 @@ bool xs_driver_resolve_kotlin_project(char ***paths, size_t *path_count)
   size_t count = 0;
   for(size_t i = 0; i < length; ++i)
     count += data[i] == '\0';
-  if(count == 0U)
+  size_t source_offset = 0;
+  if(count == 0U || !parse_settings(data, count, &source_offset, settings) || source_offset >= count)
   {
     free(data);
-    fprintf(stderr, "xs: Kotlin project resolver returned no source files\n");
+    fprintf(stderr, "xs: Kotlin project resolver returned an invalid compiler/source registry\n");
     return false;
   }
-  char **result = calloc(count, sizeof(*result));
+  size_t source_count = count - source_offset;
+  char **result = calloc(source_count, sizeof(*result));
   if(result == nullptr)
   {
     free(data);
     return false;
   }
   size_t offset = 0;
-  for(size_t i = 0; i < count; ++i)
+  for(size_t i = 0; i < source_offset; ++i)
+    offset += strlen(data + offset) + 1U;
+  for(size_t i = 0; i < source_count; ++i)
   {
     size_t item_length = strlen(data + offset);
     result[i] = malloc(item_length + 1U);
@@ -119,6 +168,6 @@ bool xs_driver_resolve_kotlin_project(char ***paths, size_t *path_count)
   }
   free(data);
   *paths = result;
-  *path_count = count;
+  *path_count = source_count;
   return true;
 }

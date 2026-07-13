@@ -16,7 +16,7 @@ object ProjectOutput {
     val sources = resolveSources(plan)
     when (System.getProperty("xs.project.output", "plan")) {
       "plan" -> println(PlanWriter.write(plan))
-      "sources0" -> writeSources(sources)
+      "sources0" -> writeSources(sources, plan.compiler)
       else -> throw ProjectConfigurationException("unknown project output mode")
     }
   }
@@ -67,16 +67,30 @@ object ProjectOutput {
     return matches
   }
 
-  private fun writeSources(sources: List<Path>) {
+  private fun writeSources(
+    sources: List<Path>,
+    compiler: CompilerSettings,
+  ) {
     val configuredOutput = System.getProperty("xs.project.sources")?.takeIf(String::isNotBlank)
     val output = configuredOutput?.let { path -> Files.newOutputStream(Path.of(path)) } ?: System.out
     output.useIfOwned(configuredOutput != null) { stream ->
+      writeRecord(stream, "xs-project-sources-v1")
+      writeRecord(stream, compiler.warningLevel.name.lowercase())
+      writeRecord(stream, compiler.warningsAsErrors.toString())
+      writeRecord(stream, compiler.verbose.toString())
       sources.forEach { path ->
-        stream.write(path.toString().toByteArray(StandardCharsets.UTF_8))
-        stream.write(0)
+        writeRecord(stream, path.toString())
       }
       stream.flush()
     }
+  }
+
+  private fun writeRecord(
+    stream: java.io.OutputStream,
+    value: String,
+  ) {
+    stream.write(value.toByteArray(StandardCharsets.UTF_8))
+    stream.write(0)
   }
 
   private fun relative(
