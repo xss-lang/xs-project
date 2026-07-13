@@ -472,7 +472,9 @@ static bool lower_local_statement(XsMirFunction *function, XsMirBlock *entry, Na
                                   const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                   XsDiagnostics *diagnostics, XsMirError *error)
 {
-  const XsSyntaxNode *declaration = statement->child_count == 1 ? statement->children[0] : nullptr;
+  const XsSyntaxNode *declaration = statement->kind == XS_SYNTAX_DECL_VARIABLE ? statement
+                                    : statement->child_count == 1              ? statement->children[0]
+                                                                               : nullptr;
   const XsSyntaxNode *name =
       declaration != nullptr && declaration->child_count != 0 && declaration->children[0]->kind == XS_SYNTAX_IDENTIFIER
           ? declaration->children[0]
@@ -516,17 +518,14 @@ static bool lower_local_statement(XsMirFunction *function, XsMirBlock *entry, Na
                            node_span(name), error);
 }
 
-static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
-                                       XsText current_function, const XsSyntaxNode *statement,
-                                       XsDiagnostics *diagnostics, XsMirError *error)
+static bool lower_assignment_expression(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                        XsText current_function, const XsSyntaxNode *assignment,
+                                        XsDiagnostics *diagnostics, XsMirError *error)
 {
-  const XsSyntaxNode *assignment =
-      statement->kind == XS_SYNTAX_STMT_EXPRESSION && statement->child_count == 1 ? statement->children[0] : nullptr;
   if(assignment == nullptr || assignment->kind != XS_SYNTAX_EXPR_ASSIGNMENT || assignment->child_count != 3 ||
      assignment->children[0]->kind != XS_SYNTAX_EXPR_IDENTIFIER)
-    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
-                              "native source statements before return must be local declarations or simple "
-                              "assignments") &&
+    return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(assignment),
+                              "native source assignment must target one supported local") &&
            false;
   const XsSyntaxNode *target = assignment->children[0];
   const XsSyntaxNode *value_expression = assignment->children[2];
@@ -614,6 +613,15 @@ static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *c
   return context_assign(context, entry, target->text, type, value, diagnostics, node_span(target), error);
 }
 
+static bool lower_assignment_statement(XsMirBlock *entry, const NativeContext *context, const NativeProgram *program,
+                                       XsText current_function, const XsSyntaxNode *statement,
+                                       XsDiagnostics *diagnostics, XsMirError *error)
+{
+  const XsSyntaxNode *assignment =
+      statement->kind == XS_SYNTAX_STMT_EXPRESSION && statement->child_count == 1 ? statement->children[0] : nullptr;
+  return lower_assignment_expression(entry, context, program, current_function, assignment, diagnostics, error);
+}
+
 static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
                                const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                XsLilTypeKind return_kind, const NativeLoopTargets *loop, XsDiagnostics *diagnostics,
@@ -622,6 +630,10 @@ static bool lower_if_statement(XsMirFunction *function, XsMirBlock **current, Na
 static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
                                   const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
                                   XsLilTypeKind return_kind, XsDiagnostics *diagnostics, XsMirError *error);
+
+static bool lower_for_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
+                                const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                                XsLilTypeKind return_kind, XsDiagnostics *diagnostics, XsMirError *error);
 
 static bool lower_return_statement(XsMirFunction *function, XsMirBlock *block, const NativeContext *context,
                                    const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
@@ -700,6 +712,9 @@ static bool lower_statement_block(XsMirFunction *function, XsMirBlock **current,
         : statement->kind == XS_SYNTAX_STMT_WHILE
             ? lower_while_statement(function, current, context, program, current_function, statement, return_kind,
                                     diagnostics, error)
+        : statement->kind == XS_SYNTAX_STMT_FOR
+            ? lower_for_statement(function, current, context, program, current_function, statement, return_kind,
+                                  diagnostics, error)
             : lower_assignment_statement(*current, context, program, current_function, statement, diagnostics, error);
     if(!lowered)
     {
@@ -812,6 +827,54 @@ static bool lower_while_statement(XsMirFunction *function, XsMirBlock **current,
   return true;
 }
 
+static bool lower_for_statement(XsMirFunction *function, XsMirBlock **current, NativeContext *context,
+                                const NativeProgram *program, XsText current_function, const XsSyntaxNode *statement,
+                                XsLilTypeKind return_kind, XsDiagnostics *diagnostics, XsMirError *error)
+{
+  if(statement->child_count != 4 || statement->children[0]->kind != XS_SYNTAX_DECL_VARIABLE ||
+     statement->children[3]->kind != XS_SYNTAX_STMT_BLOCK)
+    return xs_diagnostics_add(
+               diagnostics, XS_DIAGNOSTIC_ERROR, node_span(statement),
+               "native source for requires variable initializer, Bool condition, assignment update, and body") &&
+           false;
+  size_t scope_start = context->count;
+  bool success = false;
+  if(!lower_local_statement(function, *current, context, program, current_function, statement->children[0], diagnostics,
+                            error))
+    goto cleanup;
+  XsMirBlock *header = nullptr;
+  XsMirBlock *body = nullptr;
+  XsMirBlock *update = nullptr;
+  XsMirBlock *exit = nullptr;
+  if(xs_mir_function_append_block(function, "for.header", &header, error) != XS_MIR_OK ||
+     xs_mir_function_append_block(function, "for.body", &body, error) != XS_MIR_OK ||
+     xs_mir_function_append_block(function, "for.update", &update, error) != XS_MIR_OK ||
+     xs_mir_function_append_block(function, "for.exit", &exit, error) != XS_MIR_OK ||
+     xs_mir_block_set_goto(*current, header, error) != XS_MIR_OK)
+    goto cleanup;
+  XsMirValueId condition = 0;
+  bool invert = false;
+  if(!lower_bool_expression(header, context, program, current_function, statement->children[1], diagnostics, &condition,
+                            &invert, error) ||
+     xs_mir_block_set_branch(header, condition, invert ? exit : body, invert ? body : exit, error) != XS_MIR_OK)
+    goto cleanup;
+  XsMirBlock *body_current = body;
+  NativeLoopTargets loop = {.continue_target = update, .break_target = exit};
+  if(!lower_statement_block(function, &body_current, context, program, current_function, statement->children[3],
+                            return_kind, &loop, diagnostics, error) ||
+     (xs_mir_block_terminator_kind(body_current) == XS_MIR_TERMINATOR_NONE &&
+      xs_mir_block_set_goto(body_current, update, error) != XS_MIR_OK) ||
+     !lower_assignment_expression(update, context, program, current_function, statement->children[2], diagnostics,
+                                  error) ||
+     xs_mir_block_set_goto(update, header, error) != XS_MIR_OK)
+    goto cleanup;
+  *current = exit;
+  success = true;
+cleanup:
+  context->count = scope_start;
+  return success;
+}
+
 bool xs_source_native_lower_function_body(XsMirFunction *function, XsMirBlock *entry, const NativeFunction *native,
                                           const NativeProgram *program, XsDiagnostics *diagnostics, XsMirError *error)
 {
@@ -831,6 +894,9 @@ bool xs_source_native_lower_function_body(XsMirFunction *function, XsMirBlock *e
         : statement->kind == XS_SYNTAX_STMT_WHILE
             ? lower_while_statement(function, &current, &context, program, native->name->text, statement,
                                     native->return_kind, diagnostics, error)
+        : statement->kind == XS_SYNTAX_STMT_FOR
+            ? lower_for_statement(function, &current, &context, program, native->name->text, statement,
+                                  native->return_kind, diagnostics, error)
             : lower_assignment_statement(current, &context, program, native->name->text, statement, diagnostics, error);
     if(!lowered)
       return false;

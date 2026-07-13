@@ -36,6 +36,8 @@ source-to-native executable pipeline.
 - Supported source-native nested `return <expression>;` statements now lower directly to MIR return terminators, including
   from a `while` body or conditional branch.
 - Source-native `else if` chains now lower as ordered MIR conditional blocks with one shared merge target.
+- Source-native classic `for (initializer; condition; update)` loops now lower through MIR header/body/update/exit blocks;
+  `continue` targets the update block and `break` targets the exit block.
 
 ## 0.0.8 - 2026-07-13
 

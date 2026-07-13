@@ -114,7 +114,9 @@ The documented compilation order is preserved:
   `Long`/`Bool` local declarations with lexical lifetime in the source-native context; same-name shadowing is rejected in
   this slice. `break` and `continue` target that loop's exit and header, including when written in a nested supported
   conditional. Supported early return expressions lower to direct MIR return terminators from nested conditionals and loop
-  bodies. Arbitrary statement blocks and general CFG lowering remain deferred.
+  bodies. Classic `for` loops with a variable initializer, supported Bool condition, and supported assignment update lower
+  through distinct header/body/update/exit blocks; `continue` targets update and `break` targets exit. `for each`, arbitrary
+  statement blocks, and general CFG lowering remain deferred.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 - `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
