@@ -59,8 +59,10 @@ static void test_module_namespace_symbols(void)
   CHECK(main != nullptr);
   CHECK(main != nullptr && main->kind == XS_HIR_SYMBOL_FUNCTION);
   CHECK(main != nullptr && main->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
-  CHECK(xs_hir_symbol_table_find(&symbols, "App.Core.Service") != nullptr);
-  CHECK(xs_hir_symbol_table_find(&symbols, "App.Util.Result") != nullptr);
+  const XsHirSymbol *service = xs_hir_symbol_table_find(&symbols, "App.Core.Service");
+  const XsHirSymbol *result = xs_hir_symbol_table_find(&symbols, "App.Util.Result");
+  CHECK(service != nullptr && service->visibility == XS_SYNTAX_VISIBILITY_INTERNAL);
+  CHECK(result != nullptr && result->visibility == XS_SYNTAX_VISIBILITY_INTERNAL);
   free_all(&tree, &symbols, &diagnostics);
 }
 

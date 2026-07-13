@@ -49,6 +49,7 @@ XsSyntaxNode *xs_syntax_parse_expression(SyntaxParser *parser, unsigned minimum_
 XsSyntaxNode *xs_syntax_parse_statement(SyntaxParser *parser);
 XsSyntaxNode *xs_syntax_parse_block(SyntaxParser *parser);
 XsSyntaxNode *xs_syntax_parse_variable(SyntaxParser *parser, bool require_semicolon);
+XsSyntaxNode *xs_syntax_parse_type_first_variable(SyntaxParser *parser, bool require_semicolon);
 XsSyntaxNode *xs_syntax_parse_declaration(SyntaxParser *parser, bool top_level);
 XsSyntaxNode *xs_syntax_parse_macro(SyntaxParser *parser, size_t start);
 
@@ -69,6 +70,7 @@ XsSyntaxNode *xs_syntax_parse_macro(SyntaxParser *parser, size_t start);
 #define parse_statement xs_syntax_parse_statement
 #define parse_block xs_syntax_parse_block
 #define parse_variable xs_syntax_parse_variable
+#define parse_type_first_variable xs_syntax_parse_type_first_variable
 #define parse_declaration xs_syntax_parse_declaration
 #define parse_macro xs_syntax_parse_macro
 

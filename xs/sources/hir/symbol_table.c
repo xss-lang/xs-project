@@ -140,9 +140,14 @@ static bool tree_has_public_namespace(const XsSyntaxTree *tree)
 
 static XsSyntaxVisibility declaration_visibility(const XsSyntaxNode *node, bool public_namespace)
 {
-  if(public_namespace && node->visibility == XS_SYNTAX_VISIBILITY_DEFAULT)
-    return XS_SYNTAX_VISIBILITY_PUBLIC;
-  return node->visibility;
+  if(node->visibility != XS_SYNTAX_VISIBILITY_DEFAULT)
+    return node->visibility;
+  return public_namespace ? XS_SYNTAX_VISIBILITY_PUBLIC : XS_SYNTAX_VISIBILITY_INTERNAL;
+}
+
+static XsSyntaxVisibility member_visibility(const XsSyntaxNode *node)
+{
+  return node->visibility == XS_SYNTAX_VISIBILITY_DEFAULT ? XS_SYNTAX_VISIBILITY_PRIVATE : node->visibility;
 }
 
 static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const char *namespace_name,
@@ -308,7 +313,7 @@ static bool collect_member_declaration(const XsSyntaxNode *node, const XsHirSymb
                               .name = name,
                               .owner_qualified_name = owner_name,
                               .qualified_name = qualified,
-                              .visibility = node->visibility,
+                              .visibility = member_visibility(node),
                               .span = name_node->span,
                               .syntax = node};
   if(!append_member_symbol(table, symbol))

@@ -53,8 +53,38 @@ static void test_class_member_symbols(void)
   const XsHirMemberSymbol *name = xs_hir_member_symbol_table_find(&members, "App.User", "name");
   const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "GetName");
   CHECK(name != nullptr && name->kind == XS_HIR_MEMBER_FIELD);
+  CHECK(name != nullptr && name->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
   CHECK(method != nullptr && method->kind == XS_HIR_MEMBER_METHOD);
+  CHECK(method != nullptr && method->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
   CHECK(method != nullptr && strcmp(method->qualified_name, "App.User.GetName") == 0);
+  xs_hir_member_symbol_table_free(&members);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_csharp_style_public_property_members(void)
+{
+  const char *text = "module App;\n"
+                     "public class Person {\n"
+                     "  public Str Name { getter; setter; }\n"
+                     "  public Int Age { getter; setter; }\n"
+                     "}\n";
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirMemberSymbolTable members;
+  XsDiagnostics diagnostics;
+  CHECK(parse_symbols(text, &tree, &symbols, &diagnostics));
+  xs_hir_member_symbol_table_init(&members);
+  const XsHirSymbol *person = xs_hir_symbol_table_find(&symbols, "App.Person");
+  CHECK(person != nullptr && person->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
+  CHECK(xs_hir_collect_member_symbols(person, nullptr, &members, &diagnostics));
+  const XsHirMemberSymbol *name = xs_hir_member_symbol_table_find(&members, "App.Person", "Name");
+  const XsHirMemberSymbol *age = xs_hir_member_symbol_table_find(&members, "App.Person", "Age");
+  CHECK(name != nullptr && name->kind == XS_HIR_MEMBER_FIELD);
+  CHECK(age != nullptr && age->kind == XS_HIR_MEMBER_FIELD);
+  CHECK(name != nullptr && name->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
+  CHECK(age != nullptr && age->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
   xs_hir_member_symbol_table_free(&members);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
@@ -308,6 +338,7 @@ static void test_macro_generated_method_call_resolution(void)
 int main(void)
 {
   test_class_member_symbols();
+  test_csharp_style_public_property_members();
   test_data_member_symbols_and_method_resolution();
   test_method_merge_uses_last_member_symbol();
   test_duplicate_field_member_errors();

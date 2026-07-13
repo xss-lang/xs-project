@@ -187,6 +187,17 @@ static void test_class_property_accessors(void)
   CHECK(count_kind(tree.root, XS_SYNTAX_PROPERTY_ACCESSOR) == 4);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
+
+  const char *csharp_style = "public class Person { public Str Name { getter; setter; } "
+                             "public Int Age { getter; setter; } }\n";
+  source = (XsSource){.path = "CSharpStyleProperties.xs", .text = csharp_style, .length = strlen(csharp_style)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 66, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_CLASS) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_CLASS_FIELD) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_PROPERTY_ACCESSOR) == 4);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
 }
 
 static void test_interface_member_rules(void)

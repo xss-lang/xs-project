@@ -35,6 +35,12 @@
 // - protected
 // - internal
 //
+// Visibility follows the C# access model:
+// - public: visible from any module that can name the type/member.
+// - private: visible only inside the declaring type or source scope.
+// - protected: visible inside the declaring type and derived classes.
+// - internal: visible inside the current project/package assembly boundary.
+//
 // Object creation uses new().
 // Method calls use the dot operator.
 //
@@ -54,6 +60,18 @@ class User {
 }
 
 // properties
+public class Person {
+    public Str Name {
+        getter;
+        setter;
+    }
+
+    public Int Age {
+        getter;
+        setter;
+    }
+}
+
 class User {
     private _age: Int;
 
