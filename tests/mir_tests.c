@@ -256,7 +256,10 @@ static void test_branch_terminator_checks_condition_and_reachability(void)
   CHECK(xs_mir_function_append_block(function, "then", &then_block, &error) == XS_MIR_OK);
   CHECK(xs_mir_function_append_block(function, "else", &else_block, &error) == XS_MIR_OK);
   CHECK(xs_mir_function_append_block(function, "dead", &dead, &error) == XS_MIR_OK);
+  XsMirValueId initial = 0;
   XsMirValueId condition = 0;
+  CHECK(xs_mir_block_add_const_bool(entry, true, &initial, &error) == XS_MIR_OK);
+  CHECK(xs_mir_block_add_store(entry, condition_place, initial, &error) == XS_MIR_OK);
   CHECK(xs_mir_block_add_load(entry, condition_place, (XsMirType){.kind = XS_LIL_TYPE_BOOL}, &condition, &error) ==
         XS_MIR_OK);
   CHECK(xs_mir_block_set_branch(entry, condition, then_block, else_block, &error) == XS_MIR_OK);
@@ -277,7 +280,7 @@ static void test_branch_terminator_checks_condition_and_reachability(void)
   char buffer[1024] = {0};
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
-  CHECK(strstr(buffer, "branch v0, bb1, bb2\n") != nullptr);
+  CHECK(strstr(buffer, "branch v1, bb1, bb2\n") != nullptr);
   fclose(stream);
 
   CHECK(xs_mir_optimize_module_cfg(module, &error) == XS_MIR_OK);

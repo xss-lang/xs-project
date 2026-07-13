@@ -29,6 +29,8 @@ source-to-native executable pipeline.
   XLIL branches, and LLVM IR.
 - Source-native `break` and `continue` now target the nearest supported `while` exit and header, including from nested
   conditional blocks.
+- MIR local-place validation now rejects a `load` unless the local is initialized on every reachable path; immutable-store
+  validation retains its conservative reassignment protection across control-flow joins.
 
 ## 0.0.8 - 2026-07-13
 

@@ -244,30 +244,56 @@ static XsMirStatus check_block(const XsMirFunction *function, const XsMirBlock *
   return check_terminator(function, block, error);
 }
 
-static XsMirStatus check_immutable_store_flow(const XsMirFunction *function, XsMirError *error)
+static size_t successor_ids(const XsMirBlock *block, XsMirBlockId targets[2])
 {
-  bool has_immutable = false;
-  for(size_t local = 0; local < function->local_count; ++local)
+  if(block->terminator.kind == XS_MIR_TERMINATOR_GOTO)
   {
-    if(!function->locals[local].is_mutable)
-      has_immutable = true;
+    targets[0] = block->terminator.target;
+    return 1;
   }
-  if(!has_immutable || function->block_count == 0)
+  if(block->terminator.kind == XS_MIR_TERMINATOR_BRANCH)
+  {
+    targets[0] = block->terminator.target;
+    targets[1] = block->terminator.else_target;
+    return 2;
+  }
+  return 0;
+}
+
+static XsMirStatus check_local_initialization_flow(const XsMirFunction *function, XsMirError *error)
+{
+  if(function->local_count == 0 || function->block_count == 0)
     return XS_MIR_OK;
   if(function->local_count > SIZE_MAX / function->block_count)
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "MIR initialization state is too large");
   size_t state_count = function->block_count * function->local_count;
-  uint8_t *incoming = calloc(state_count, sizeof(*incoming));
+  uint8_t *may_incoming = calloc(state_count, sizeof(*may_incoming));
+  uint8_t *definite_incoming = calloc(state_count, sizeof(*definite_incoming));
   uint8_t *reachable = calloc(function->block_count, sizeof(*reachable));
-  uint8_t *outgoing = calloc(function->local_count, sizeof(*outgoing));
-  if(incoming == nullptr || reachable == nullptr || outgoing == nullptr)
+  uint8_t *has_incoming = calloc(function->block_count, sizeof(*has_incoming));
+  uint8_t *may_outgoing = calloc(function->local_count, sizeof(*may_outgoing));
+  uint8_t *definite_outgoing = calloc(function->local_count, sizeof(*definite_outgoing));
+  if(may_incoming == nullptr || definite_incoming == nullptr || reachable == nullptr || has_incoming == nullptr ||
+     may_outgoing == nullptr || definite_outgoing == nullptr)
   {
-    free(incoming);
+    free(may_incoming);
+    free(definite_incoming);
     free(reachable);
-    free(outgoing);
+    free(has_incoming);
+    free(may_outgoing);
+    free(definite_outgoing);
     return xs_mir_set_error(error, XS_MIR_ALLOCATION_FAILED, "out of memory while checking MIR initialization flow");
   }
   reachable[0] = true;
+  has_incoming[0] = true;
+  for(size_t local = 0; local < function->local_count; ++local)
+  {
+    if(function->locals[local].kind == XS_MIR_LOCAL_PARAMETER)
+    {
+      may_incoming[local] = true;
+      definite_incoming[local] = true;
+    }
+  }
   bool changed = true;
   XsMirStatus result = XS_MIR_OK;
   while(changed && result == XS_MIR_OK)
@@ -278,32 +304,38 @@ static XsMirStatus check_immutable_store_flow(const XsMirFunction *function, XsM
       if(!reachable[index])
         continue;
       const XsMirBlock *block = function->blocks[index];
-      memcpy(outgoing, &incoming[index * function->local_count], function->local_count);
+      memcpy(may_outgoing, &may_incoming[index * function->local_count], function->local_count);
+      memcpy(definite_outgoing, &definite_incoming[index * function->local_count], function->local_count);
       for(size_t instruction = 0; instruction < block->instruction_count; ++instruction)
       {
         const XsMirInstruction *current = &block->instructions[instruction];
+        if(current->kind == XS_MIR_INSTRUCTION_LOAD)
+        {
+          const XsMirPlace *place = function->places[current->place];
+          if(!definite_outgoing[place->root_local])
+          {
+            result = xs_mir_set_error(error, XS_MIR_INVALID_ARGUMENT,
+                                      "MIR load reads a local that is not initialized on every reachable path");
+            break;
+          }
+          continue;
+        }
         if(current->kind != XS_MIR_INSTRUCTION_STORE)
           continue;
         const XsMirPlace *place = function->places[current->place];
         if(!function->locals[place->root_local].is_mutable)
         {
-          if(outgoing[place->root_local])
+          if(may_outgoing[place->root_local])
           {
             result = xs_mir_set_error(error, XS_MIR_UNSUPPORTED, "MIR store reassigns an initialized immutable local");
             break;
           }
-          outgoing[place->root_local] = true;
         }
+        may_outgoing[place->root_local] = true;
+        definite_outgoing[place->root_local] = true;
       }
       XsMirBlockId targets[2] = {0};
-      size_t target_count = 0;
-      if(block->terminator.kind == XS_MIR_TERMINATOR_GOTO)
-        targets[target_count++] = block->terminator.target;
-      else if(block->terminator.kind == XS_MIR_TERMINATOR_BRANCH)
-      {
-        targets[target_count++] = block->terminator.target;
-        targets[target_count++] = block->terminator.else_target;
-      }
+      size_t target_count = successor_ids(block, targets);
       for(size_t target_index = 0; target_index < target_count; ++target_index)
       {
         size_t target = targets[target_index];
@@ -312,22 +344,36 @@ static XsMirStatus check_immutable_store_flow(const XsMirFunction *function, XsM
           reachable[target] = true;
           changed = true;
         }
-        uint8_t *target_state = &incoming[target * function->local_count];
+        uint8_t *target_may = &may_incoming[target * function->local_count];
+        uint8_t *target_definite = &definite_incoming[target * function->local_count];
+        if(!has_incoming[target])
+        {
+          memcpy(target_may, may_outgoing, function->local_count);
+          memcpy(target_definite, definite_outgoing, function->local_count);
+          has_incoming[target] = true;
+          changed = true;
+          continue;
+        }
         for(size_t local = 0; local < function->local_count; ++local)
         {
-          uint8_t merged = target_state[local] | outgoing[local];
-          if(merged != target_state[local])
+          uint8_t merged_may = target_may[local] | may_outgoing[local];
+          uint8_t merged_definite = target_definite[local] & definite_outgoing[local];
+          if(merged_may != target_may[local] || merged_definite != target_definite[local])
           {
-            target_state[local] = merged;
+            target_may[local] = merged_may;
+            target_definite[local] = merged_definite;
             changed = true;
           }
         }
       }
     }
   }
-  free(incoming);
+  free(may_incoming);
+  free(definite_incoming);
   free(reachable);
-  free(outgoing);
+  free(has_incoming);
+  free(may_outgoing);
+  free(definite_outgoing);
   return result;
 }
 
@@ -341,7 +387,7 @@ static XsMirStatus check_function(const XsMirFunction *function, XsMirError *err
     if(status != XS_MIR_OK)
       return status;
   }
-  return check_immutable_store_flow(function, error);
+  return check_local_initialization_flow(function, error);
 }
 
 XsMirStatus xs_mir_borrow_check_module(const XsMirModule *module, XsMirError *error)
