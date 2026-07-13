@@ -9,12 +9,13 @@ use crate::hir::{
   MatchArm, MatchPattern,
   async_check::Span,
   declarations,
-  type_check::{BinaryOperator, Block, Expression, Literal, PrimitiveType, Statement, Type},
+  type_check::{BinaryOperator, Block, Expression, Literal, PrimitiveType, Statement, Type, UnaryOperator},
 };
 
 use super::{SyntaxNode, SyntaxTree};
 
 mod match_expression;
+mod unary;
 
 const FILE: u32 = 0;
 const DECL_MODULE: u32 = 1;
@@ -49,6 +50,7 @@ const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_EQUAL: u32 = 25;
+const TOKEN_BANG: u32 = 26;
 const TOKEN_GREATER: u32 = 32;
 const TOKEN_GREATER_EQUAL: u32 = 33;
 const TOKEN_LESS: u32 = 35;
@@ -220,6 +222,10 @@ fn lower_expression(tree: &SyntaxTree,
     }
     EXPR_IDENTIFIER => Some(Expression::Local { name: path_text(tree, value),
                                                 span: source_span }),
+    EXPR_UNARY if value.children.len() == 1 =>
+    {
+      unary::lower_unary_expression(tree, value, signatures, locals, expected_type, source_span)
+    }
     EXPR_BINARY if value.children.len() == 3 =>
     {
       let operator = match value.token_kind
@@ -444,6 +450,8 @@ fn expression_type(tree: &SyntaxTree,
       Some(Type::Primitive(PrimitiveType::Bool))
     }
     EXPR_BINARY => Some(Type::Primitive(PrimitiveType::Long)),
+    EXPR_UNARY if value.token_kind == TOKEN_BANG => Some(Type::Primitive(PrimitiveType::Bool)),
+    EXPR_UNARY => expression_type(tree, tree.nodes.get(*value.children.first()?)?, signatures, locals),
     _ => None,
   }
 }

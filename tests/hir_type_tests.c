@@ -72,6 +72,15 @@ static void test_hir_primitive_info(void)
   const XsHirPrimitiveInfo *character = xs_hir_primitive_find("Char", 4);
   CHECK(character != nullptr && character->bit_width == 16 && character->has_xlil_type &&
         character->xlil_type.kind == XS_LIL_TYPE_U16);
+  const XsHirPrimitiveInfo *long_type = xs_hir_primitive_find("Long", 4);
+  CHECK(long_type != nullptr && long_type->bit_width == 32 && long_type->is_signed && long_type->has_xlil_type &&
+        long_type->xlil_type.kind == XS_LIL_TYPE_I32);
+  const XsHirPrimitiveInfo *int_type = xs_hir_primitive_find("Int", 3);
+  CHECK(int_type != nullptr && int_type->bit_width == 64 && int_type->is_signed && int_type->has_xlil_type &&
+        int_type->xlil_type.kind == XS_LIL_TYPE_I64);
+  const XsHirPrimitiveInfo *integer = xs_hir_primitive_find("Integer", 7);
+  CHECK(integer != nullptr && integer->bit_width == 128 && integer->is_signed && integer->has_xlil_type &&
+        integer->xlil_type.kind == XS_LIL_TYPE_I128);
 }
 
 static void test_primitive_and_generic_types(void)

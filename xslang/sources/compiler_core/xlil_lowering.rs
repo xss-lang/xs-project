@@ -46,6 +46,7 @@ fn expression_calls(expression: &Expression, name: &str) -> bool
     Expression::Binary { left,
                          right,
                          .. } => expression_calls(left, name) || expression_calls(right, name),
+    Expression::Unary { operand, .. } => expression_calls(operand, name),
     Expression::ResultPropagation { value, .. } => expression_calls(value, name),
     Expression::Call { function,
                        arguments,

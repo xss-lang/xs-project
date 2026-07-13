@@ -40,7 +40,7 @@ class Report {
 
     report() {
         self.counts = std::collections::HashMap<Str, Int>::new();
-        self.newest_error = std::optional::None;
+        self.newest_error = None;
     }
 
     fn add(entry: LogEntry) {
@@ -48,7 +48,7 @@ class Report {
         self.counts[entry.level] = current + 1;
 
         if (entry.level == "ERROR") {
-            self.newest_error = std::optional::Some(entry.message);
+            self.newest_error = Some(entry.message);
         }
     }
 

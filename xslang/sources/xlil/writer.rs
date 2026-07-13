@@ -146,6 +146,8 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
     Instruction::GeI32 { result,
                          left,
                          right, } => writeln!(output, "  %r{}:bool = ge.i32 %r{}, %r{}", result.0, left.0, right.0),
+    Instruction::NotBool { result,
+                           operand, } => writeln!(output, "  %r{}:bool = not.bool %r{}", result.0, operand.0),
     Instruction::Call { result,
                         ref function,
                         ref arguments,

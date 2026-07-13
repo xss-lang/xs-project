@@ -6,13 +6,17 @@
 use crate::hir::async_check::Span;
 use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
 use crate::hir::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type,
+  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, UnaryOperator,
 };
 use crate::hir::{MatchArm, MatchPattern};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
 mod match_expression;
+mod type_parser;
+mod unary;
+
+use type_parser::{is_named_type, primitive_type, split_type_list};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XhirParseDiagnostic
@@ -561,6 +565,18 @@ impl Parser<'_>
                                        right: Box::new(right),
                                        span: span() });
     }
+    if let Some(operator) = rest.strip_prefix("unary ")
+    {
+      self.index += 1;
+      let operator = self.unary_operator(operator).unwrap_or(UnaryOperator::Positive);
+      self.consume_expression_field("operand");
+      let operand = self.expression()
+                        .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                         span: span() });
+      return Some(Expression::Unary { operator,
+                                      operand: Box::new(operand),
+                                      span: span() });
+    }
     if rest == "propagate"
     {
       self.index += 1;
@@ -905,84 +921,6 @@ fn parse_local_record(text: &str) -> Option<Local>
                ty: primitive_type(ty).map_or_else(|| Type::Named(ty.to_string()), Type::Primitive),
                mutable: mutability == "mutable",
                span: span() })
-}
-
-fn primitive_type(name: &str) -> Option<PrimitiveType>
-{
-  match name
-  {
-    "Bool" => Some(PrimitiveType::Bool),
-    "Byte" => Some(PrimitiveType::Byte),
-    "SByte" => Some(PrimitiveType::SByte),
-    "Char" => Some(PrimitiveType::Char),
-    "Short" => Some(PrimitiveType::Short),
-    "Long" => Some(PrimitiveType::Long),
-    "Int" => Some(PrimitiveType::Int),
-    "Integer" => Some(PrimitiveType::Integer),
-    "UShort" => Some(PrimitiveType::UShort),
-    "ULong" => Some(PrimitiveType::ULong),
-    "UInt" => Some(PrimitiveType::UInt),
-    "UInteger" => Some(PrimitiveType::UInteger),
-    "SFloat" => Some(PrimitiveType::SFloat),
-    "Float" => Some(PrimitiveType::Float),
-    "Str" => Some(PrimitiveType::Str),
-    _ => None,
-  }
-}
-
-fn is_named_type(name: &str) -> bool
-{
-  let name = name.trim();
-  if !name.starts_with(|value: char| value == '_' || value.is_alphabetic()) ||
-     name.ends_with([',', '<', ':', '.']) ||
-     name.contains("<>") ||
-     name.contains("<,") ||
-     name.contains(",>") ||
-     name.contains(",,")
-  {
-    return false;
-  }
-  let mut generic_depth = 0_u32;
-  let mut saw_identifier = false;
-  for character in name.chars()
-  {
-    match character
-    {
-      '<' => generic_depth += 1,
-      '>' if generic_depth > 0 => generic_depth -= 1,
-      '>' => return false,
-      ',' if generic_depth == 0 => return false,
-      '_' | '.' | ':' | ',' | ' ' | '(' | ')' =>
-      {}
-      value if value.is_alphanumeric() => saw_identifier = true,
-      _ => return false,
-    }
-  }
-  saw_identifier && generic_depth == 0
-}
-
-fn split_type_list(text: &str) -> Vec<&str>
-{
-  let mut result = Vec::new();
-  let mut depth = 0_u32;
-  let mut start = 0;
-  for (index, character) in text.char_indices()
-  {
-    match character
-    {
-      '<' => depth += 1,
-      '>' => depth = depth.saturating_sub(1),
-      ',' if depth == 0 =>
-      {
-        result.push(&text[start..index]);
-        start = index + character.len_utf8();
-      }
-      _ =>
-      {}
-    }
-  }
-  result.push(&text[start..]);
-  result
 }
 
 const fn span() -> Span

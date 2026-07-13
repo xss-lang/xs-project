@@ -18,6 +18,9 @@ impl TypeChecker
                            left,
                            right,
                            .. } => self.binary_expression_type(*operator, left, right),
+      Expression::Unary { operator,
+                          operand,
+                          .. } => self.unary_expression_type(*operator, operand),
       Expression::ResultPropagation { value, .. } => self.result_success_type(value),
       Expression::Call { return_type, .. } |
       Expression::If { result_type: return_type,

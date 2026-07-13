@@ -211,6 +211,14 @@ fn write_statement(output: &mut String, statement: &Statement)
                        left,
                        right,
                        .. } => write_binary(output, "ge.i32", *result, *left, *right),
+    Statement::NotBool { result,
+                         operand,
+                         .. } =>
+    {
+      let _ = writeln!(output, "      statement not.bool");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        operand local {}", operand.0);
+    }
     Statement::Call { result,
                       function,
                       arguments,

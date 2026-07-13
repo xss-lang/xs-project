@@ -87,8 +87,8 @@ cmake --preset clang-debug -DXS_ENABLE_PROJECTS=xsproj
 cmake --preset clang-debug -DXS_ENABLE_PROJECTS=all
 ```
 
-`xsproj` must not require the LLVM package when built by itself. Future projects (`xsfmt`, `xstidy`, `xs-analyzer`,
-`xs-backend`) intentionally produce CMake errors for now.
+`xsproj` must not require the LLVM package when built by itself. Future projects (`xsfmt`, `xstidy`, and `xs-analyzer`)
+intentionally produce CMake errors for now.
 
 ## Useful checks
 

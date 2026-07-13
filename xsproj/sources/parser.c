@@ -175,14 +175,6 @@ void parse_scalar_field(ProjectParser *parser, XsProjectValue *value)
   finish_field(parser);
 }
 
-static void validate_xs_backend(ProjectParser *parser)
-{
-  const XsProjectValue *backend = &parser->project->xs_backend;
-  if(backend->is_nil || backend->text == nullptr ||
-     (strcmp(backend->text, "LLVM") != 0 && strcmp(backend->text, "XS") != 0))
-    project_error(parser, backend->span, "compilerOptions.xsBackend must be LLVM or XS");
-}
-
 void parse_authors(ProjectParser *parser)
 {
   if(!project_expect(parser, PROJECT_LEFT_BRACE, "expected '{' after appAuthors"))
@@ -371,11 +363,6 @@ void parse_compiler_options(ProjectParser *parser)
       parse_output(parser);
       finish_field(parser);
     }
-    else if(token_is(parser, name, "xsBackend"))
-    {
-      duplicate_field(parser, name, &seen, 8U);
-      parse_scalar_field(parser, &parser->project->xs_backend);
-    }
     else
     {
       project_error(parser, name.span, "unknown compilerOptions field");
@@ -389,8 +376,6 @@ void parse_compiler_options(ProjectParser *parser)
     project_error(parser, parser->current.span, "required compilerOptions field addFiles is missing");
   if((seen & 4U) == 0)
     project_error(parser, parser->current.span, "required compilerOptions field output is missing");
-  if((seen & 8U) != 0)
-    validate_xs_backend(parser);
 }
 
 static XsProjectModule parse_external_module(ProjectParser *parser)

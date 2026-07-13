@@ -38,7 +38,6 @@ static void test_complete_project(void)
                      "appAuthors {\n[\"Alpha\", \"alfa@example.me\"]\n[\"Foo\", None]\n}\n"
                      "compilerOptions {\n"
                      "xsVersion: \"26\"\n"
-                     "xsBackend: \"LLVM\"\n"
                      "addFiles {\nentry: \"source/Main.xs\"\n[\"source/Foo.xs\", \"source/Bar.xs\",]\n}\n"
                      "output {\n[osName: \"Linux\"; osArch: \"x64\"]\n}\n"
                      "}\n"
@@ -65,7 +64,6 @@ static void test_complete_project(void)
   const XsProjectValue *repo = xs_project_external_module_repo(module);
   CHECK(repo != nullptr && repo->text != nullptr &&
         strcmp(repo->text, "https://github.com/xss-lang/externalModules") == 0);
-  CHECK(project.xs_backend.text != nullptr && strcmp(project.xs_backend.text, "LLVM") == 0);
   CHECK(xs_project_selected_entry(&project) == &project.entry);
   CHECK(xs_project_selected_entry(nullptr) == nullptr);
   xs_project_free(&project);
@@ -117,30 +115,18 @@ static void test_optimization_is_unknown(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_backend_option_validation(void)
+static void test_removed_backend_option_is_unknown(void)
 {
-  const char *valid = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
-                      "appAuthors { [None, None] }\n"
-                      "compilerOptions {\n"
-                      "xsVersion: \"26\"; xsBackend: \"XS\"\n"
-                      "addFiles { entry: None }\n"
-                      "output { [osName: None; osArch: None] }\n"
-                      "}\n";
+  const char *text = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
+                     "appAuthors { [None, None] }\n"
+                     "compilerOptions {\n"
+                     "xsVersion: \"26\"; xsBackend: \"LLVM\"\n"
+                     "addFiles { entry: None }\n"
+                     "output { [osName: None; osArch: None] }\n"
+                     "}\n";
   XsProject project;
   XsDiagnostics diagnostics;
-  CHECK(parse_project(valid, &project, &diagnostics));
-  CHECK(project.xs_backend.text != nullptr && strcmp(project.xs_backend.text, "XS") == 0);
-  xs_project_free(&project);
-  xs_diagnostics_free(&diagnostics);
-
-  const char *invalid = "appName: None\nappVersion: None\nappRelease: None\nappLicense: None\n"
-                        "appAuthors { [None, None] }\n"
-                        "compilerOptions {\n"
-                        "xsVersion: \"26\"; xsBackend: \"GCC\"\n"
-                        "addFiles { entry: None }\n"
-                        "output { [osName: None; osArch: None] }\n"
-                        "}\n";
-  CHECK(!parse_project(invalid, &project, &diagnostics));
+  CHECK(!parse_project(text, &project, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
@@ -204,7 +190,7 @@ int main(void)
   test_none_entry_selects_first_file();
   test_invalid_manifest();
   test_optimization_is_unknown();
-  test_backend_option_validation();
+  test_removed_backend_option_is_unknown();
   test_external_module_repo_is_required();
   test_project_comments_are_line_only();
   return failures == 0 ? 0 : 1;

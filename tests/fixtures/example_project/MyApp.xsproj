@@ -13,7 +13,6 @@ appAuthors {
 
 compilerOptions {
     xsVersion: "26"
-    xsBackend: "LLVM"
 
     addFiles {
         entry: "source/Main.xs"

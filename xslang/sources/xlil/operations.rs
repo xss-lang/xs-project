@@ -48,3 +48,23 @@ impl I32BinaryOperation
     })
   }
 }
+
+use super::{BlockId, Function, Instruction, Type, Value, ValueId};
+
+impl Function
+{
+  pub fn not_bool(&mut self, block: BlockId, operand: ValueId) -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !self.value(operand).is_some_and(|value| value.value_type == Type::BOOL)
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::BOOL });
+    self.block_mut(block)?.instructions.push(Instruction::NotBool { result,
+                                                                    operand });
+    Some(result)
+  }
+}

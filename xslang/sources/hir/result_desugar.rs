@@ -6,8 +6,8 @@
 use super::async_check::Span;
 use super::match_model::MatchPattern;
 use super::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, literal_matches_type,
-  result_type_parts,
+  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, UnaryOperator,
+  literal_matches_type, result_type_parts,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,6 +48,12 @@ pub enum DesugaredExpression
     operator: BinaryOperator,
     left: Box<DesugaredExpression>,
     right: Box<DesugaredExpression>,
+    span: Span,
+  },
+  Unary
+  {
+    operator: UnaryOperator,
+    operand: Box<DesugaredExpression>,
     span: Span,
   },
   Call
@@ -300,6 +306,12 @@ impl ResultDesugar
                                                                     left: Box::new(self.desugar_expression(left)),
                                                                     right: Box::new(self.desugar_expression(right)),
                                                                     span: *span },
+      Expression::Unary { operator,
+                          operand,
+                          span, } => DesugaredExpression::Unary { operator: *operator,
+                                                                  operand:
+                                                                    Box::new(self.desugar_expression(operand)),
+                                                                  span: *span },
       Expression::ResultPropagation { value,
                                       span, } => self.desugar_result_propagation(value, *span),
       Expression::Call { function,
@@ -438,6 +450,9 @@ impl ResultDesugar
                            left,
                            right,
                            .. } => self.binary_expression_type(*operator, left, right),
+      Expression::Unary { operator,
+                          operand,
+                          .. } => unary_expression_type(*operator, self.expression_type(operand)?),
       Expression::ResultPropagation { value,
                                       span, } => self.result_parts_of_expression(value, *span)
                                                      .map(|(success, _)| success),
@@ -522,6 +537,25 @@ impl ResultDesugar
   fn find_local(&self, name: &str) -> Option<&Local>
   {
     self.locals.iter().rev().find(|local| local.name == name)
+  }
+}
+
+fn unary_expression_type(operator: UnaryOperator, operand_type: Type) -> Option<Type>
+{
+  let Type::Primitive(primitive) = operand_type
+  else
+  {
+    return None;
+  };
+  match operator
+  {
+    UnaryOperator::Positive | UnaryOperator::Negative
+      if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+    {
+      Some(Type::Primitive(primitive))
+    }
+    UnaryOperator::LogicalNot if primitive == PrimitiveType::Bool => Some(Type::Primitive(PrimitiveType::Bool)),
+    _ => None,
   }
 }
 

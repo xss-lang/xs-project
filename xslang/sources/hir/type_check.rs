@@ -73,6 +73,14 @@ pub enum BinaryOperator
   GreaterEqual,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UnaryOperator
+{
+  LogicalNot,
+  Positive,
+  Negative,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Expression
 {
@@ -95,6 +103,12 @@ pub enum Expression
     operator: BinaryOperator,
     left: Box<Expression>,
     right: Box<Expression>,
+    span: Span,
+  },
+  Unary
+  {
+    operator: UnaryOperator,
+    operand: Box<Expression>,
     span: Span,
   },
   Call
@@ -208,6 +222,7 @@ pub enum DiagnosticCode
   UnknownLocal,
   DuplicateLocal,
   BinaryTypeMismatch,
+  UnaryTypeMismatch,
   ResultPropagationRequiresResult,
   ResultPropagationReturnMismatch,
   ConditionTypeMismatch,
@@ -397,6 +412,19 @@ impl TypeChecker
                                  span: *span });
         }
       }
+      Expression::Unary { operator,
+                          operand,
+                          span, } =>
+      {
+        self.check_expression(operand);
+        if self.unary_expression_type(*operator, operand).is_none()
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::UnaryTypeMismatch,
+                                 message: "unary expression operand is not valid for this operator".to_string(),
+                                 span: *span });
+        }
+      }
       Expression::ResultPropagation { value,
                                       span, } =>
       {
@@ -474,6 +502,19 @@ impl TypeChecker
           self.diagnostics
               .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
                                  message: "expression is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
+      Expression::Unary { operator,
+                          operand,
+                          span, } =>
+      {
+        self.check_expression(expression);
+        if !self.unary_expression_matches_type(*operator, operand, ty)
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "unary expression is not assignable to the target type".to_string(),
                                  span: *span });
         }
       }
@@ -653,6 +694,7 @@ mod expression_type;
 mod for_check;
 mod match_check;
 mod result_type;
+mod unary_type;
 
 pub(crate) use result_type::result_type_parts;
 

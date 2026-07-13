@@ -213,6 +213,12 @@ impl Verifier
         self.i32_value(function, left, "XLIL i32 comparison left operand");
         self.i32_value(function, right, "XLIL i32 comparison right operand");
       }
+      Instruction::NotBool { result,
+                             operand, } =>
+      {
+        self.bool_value(function, result, "XLIL not.bool result");
+        self.bool_value(function, operand, "XLIL not.bool operand");
+      }
       Instruction::Call { result,
                           function: ref callee_name,
                           ref arguments,

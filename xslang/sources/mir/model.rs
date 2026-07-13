@@ -170,6 +170,12 @@ pub enum Statement
     right: LocalId,
     span: Span,
   },
+  NotBool
+  {
+    result: LocalId,
+    operand: LocalId,
+    span: Span,
+  },
   Call
   {
     result: Option<LocalId>,
@@ -396,6 +402,13 @@ impl BorrowChecker
       {
         self.require_live(left, span);
         self.require_live(right, span);
+        let _ = self.state(result, span);
+      }
+      Statement::NotBool { result,
+                           operand,
+                           span, } =>
+      {
+        self.require_live(operand, span);
         let _ = self.state(result, span);
       }
       Statement::Call { result,

@@ -19,6 +19,7 @@ pub enum OptimizationPass
   FoldConstI64Mul,
   FoldConstI64Eq,
   FoldConstI32Binary,
+  FoldConstBoolNot,
   FoldConstBoolBranch,
 }
 
@@ -88,6 +89,12 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   {
     reports.push(OptimizationReport { pass: OptimizationPass::FoldConstI32Binary,
                                       removed_items: folded_i32 });
+  }
+  let folded_nots = fold_const_bool_nots(&mut function);
+  if folded_nots != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::FoldConstBoolNot,
+                                      removed_items: folded_nots });
   }
   let folded_branches = fold_const_bool_branches(&mut function);
   if folded_branches != 0
@@ -455,7 +462,62 @@ fn fold_const_i32_binary_in_block(block: &mut BasicBlock) -> usize
       Statement::LeI32 { result, .. } |
       Statement::GtI32 { result, .. } |
       Statement::GeI32 { result, .. } |
+      Statement::NotBool { result, .. } |
       Statement::LoadLocal { result, .. } |
+      Statement::Call { result: Some(result), .. } =>
+      {
+        constants.remove(result);
+      }
+      _ =>
+      {}
+    }
+  }
+  folded
+}
+
+fn fold_const_bool_nots(function: &mut Function) -> usize
+{
+  function.blocks.iter_mut().map(fold_const_bool_nots_in_block).sum()
+}
+
+fn fold_const_bool_nots_in_block(block: &mut BasicBlock) -> usize
+{
+  let mut constants = HashMap::new();
+  let mut folded = 0;
+  for statement in &mut block.statements
+  {
+    match statement
+    {
+      Statement::ConstBool { local,
+                             value,
+                             .. } =>
+      {
+        constants.insert(*local, *value);
+      }
+      Statement::NotBool { result,
+                           operand,
+                           span, } =>
+      {
+        let result = *result;
+        let span = *span;
+        let Some(value) = constants.get(operand).map(|value| !value)
+        else
+        {
+          constants.remove(&result);
+          continue;
+        };
+        *statement = Statement::ConstBool { local: result,
+                                            value,
+                                            span };
+        constants.insert(result, value);
+        folded += 1;
+      }
+      Statement::EqI64 { result, .. } |
+      Statement::EqI32 { result, .. } |
+      Statement::LtI32 { result, .. } |
+      Statement::LeI32 { result, .. } |
+      Statement::GtI32 { result, .. } |
+      Statement::GeI32 { result, .. } |
       Statement::Call { result: Some(result), .. } =>
       {
         constants.remove(result);
@@ -521,6 +583,10 @@ fn fold_const_bool_branch_in_block(block: &mut BasicBlock) -> usize
       Statement::LeI32 { result, .. } |
       Statement::GtI32 { result, .. } |
       Statement::GeI32 { result, .. } =>
+      {
+        constants.remove(result);
+      }
+      Statement::NotBool { result, .. } =>
       {
         constants.remove(result);
       }

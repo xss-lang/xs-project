@@ -83,7 +83,6 @@ appAuthors {
 
 compilerOptions {
     xsVersion: "26"
-    xsBackend: "LLVM"
 
     addFiles {
         entry: "source/Main.xs"
@@ -273,7 +272,6 @@ appAuthors {
 
 compilerOptions {
     xsVersion: "26"
-    xsBackend: "LLVM"
 
     addFiles {
         entry: "source/Main.xs"
@@ -295,21 +293,6 @@ compilerOptions {
 // - xsVersion
 // - addFiles
 // - output
-
-
-// Optional compilerOptions fields:
-//
-// - xsBackend
-//
-// xsBackend selects a future compiler backend preference.
-//
-// Valid xsBackend values:
-//
-// - "LLVM"
-// - "XS"
-//
-// This setting is accepted for forward compatibility.
-// It does not affect compilation behavior yet.
 
 
 // ============================================================

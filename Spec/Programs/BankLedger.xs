@@ -107,7 +107,7 @@ fn main() -> Result<Int, Error> {
             cents: 12'500,
             currency: "USD",
         },
-        memo: std::optional::Some("monthly savings"),
+        memo: Some("monthly savings"),
     })@;
 
     ledger.print()@;

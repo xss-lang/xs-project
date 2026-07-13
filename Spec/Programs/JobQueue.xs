@@ -32,10 +32,10 @@ class Queue {
 
     fn pop() -> Optional<Job> {
         if (self.jobs.length() == 0) {
-            return std::optional::None;
+            return None;
         }
 
-        return std::optional::Some(self.jobs.remove(0));
+        return Some(self.jobs.remove(0));
     }
 }
 

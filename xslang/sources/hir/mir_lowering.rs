@@ -8,7 +8,9 @@ use std::collections::{HashMap, HashSet};
 use super::async_check::Span;
 use super::match_model::{MatchArm, MatchPattern};
 use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
-use super::type_check::{BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type};
+use super::type_check::{
+  BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type, UnaryOperator,
+};
 use crate::mir;
 use crate::xlil::{Type as XlilType, TypeKind};
 
@@ -45,6 +47,9 @@ pub struct HirToMirLowerer
 mod for_tests;
 #[cfg(test)]
 mod operator_tests;
+mod unary;
+#[cfg(test)]
+mod unary_tests;
 
 impl HirToMirLowerer
 {
@@ -326,6 +331,17 @@ impl HirToMirLowerer
         self.lower_binary_into(local, *operator, left, right, *span, lowered);
         Some(local)
       }
+      Expression::Unary { operator: UnaryOperator::Positive,
+                          operand,
+                          .. } => self.lower_expression_to_local(operand, expected_type, lowered),
+      Expression::Unary { operator,
+                          operand,
+                          span, } =>
+      {
+        let local = self.declare_temp(expected_type, *span, lowered)?;
+        self.lower_unary_into(local, *operator, operand, *span, lowered);
+        Some(local)
+      }
       Expression::Assign { .. } =>
       {
         self.unsupported_expression(expression);
@@ -535,6 +551,13 @@ impl HirToMirLowerer
         BinaryOperator::Greater |
         BinaryOperator::GreaterEqual => Some(XlilType::BOOL),
       },
+      Expression::Unary { operator,
+                          operand,
+                          .. } => match operator
+      {
+        UnaryOperator::LogicalNot => Some(XlilType::BOOL),
+        UnaryOperator::Positive | UnaryOperator::Negative => self.expression_value_type(operand, lowered),
+      },
       Expression::Call { return_type, .. } => match return_type.as_ref()
       {
         Type::Primitive(value) => primitive_to_xlil(*value),
@@ -668,6 +691,7 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Local { span, .. } |
     Expression::Assign { span, .. } |
     Expression::Binary { span, .. } |
+    Expression::Unary { span, .. } |
     Expression::ResultPropagation { span, .. } => *span,
     Expression::Call { span, .. } | Expression::If { span, .. } | Expression::Match { span, .. } => *span,
   }

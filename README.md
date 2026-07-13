@@ -58,7 +58,6 @@ Check the example project:
 | `xsfmt/` | future | Rust nightly + Serde formatter |
 | `xstidy/` | future | Rust nightly + Serde linter |
 | `xs-analyzer/` | future | Rust language server + TypeScript VS Code extension |
-| `xs-backend/` | future | C23-heavy native XS Backend |
 
 ## Compiler pipeline
 
@@ -77,7 +76,7 @@ Documented order:
     → monomorphization
     → codegen units
     → XLIL
-    → LLVM IR / future XS Backend lowering
+    → LLVM IR lowering
     → optimization
     → object code
     → linking
@@ -121,6 +120,9 @@ initializers and call arguments. `Long` division, remainder, bitwise operations,
 typed-HIR/MIR/XLIL route instead of requiring the temporary C source-native fallback. Prefix and postfix
 increment/decrement preserve their distinct result values through the current native local-storage slice. It does not imply
 that the complete X# language is executable yet. Earlier releases are compiler infrastructure snapshots.
+
+The signed integer widths are fixed: `Long` is i32, `Int` is i64, and `Integer` is i128. Unary `+`/`-` for `Long` and
+logical `!` for `Bool` now use the same Rust compiler-core route through XHIR, XMIR, XLIL, and LLVM native emission.
 
 ## CLI summary
 

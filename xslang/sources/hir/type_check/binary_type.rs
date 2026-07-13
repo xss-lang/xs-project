@@ -77,6 +77,9 @@ impl TypeChecker
                            left,
                            right,
                            .. } => self.binary_expression_matches_type(*operator, left, right, expected),
+      Expression::Unary { operator,
+                          operand,
+                          .. } => self.unary_expression_matches_type(*operator, operand, expected),
       _ => self.expression_type(expression).as_ref() == Some(expected),
     }
   }

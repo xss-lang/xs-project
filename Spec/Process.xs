@@ -102,7 +102,7 @@ fn login(user: Str) -> Result<()> {
 // built-in error-style values
 
 fn read_required_line() -> Result<Str, Error> {
-    input: Optional<Str> = std::optional::Some("");
+    input: Optional<Str> = Some("");
 
     std::stdin()
         .read_line(&mut input)@;

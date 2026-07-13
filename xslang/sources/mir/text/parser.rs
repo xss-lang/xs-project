@@ -286,6 +286,7 @@ impl Parser<'_>
         "le.i32" => block.statements.push(self.i32_statement("le.i32")),
         "gt.i32" => block.statements.push(self.i32_statement("gt.i32")),
         "ge.i32" => block.statements.push(self.i32_statement("ge.i32")),
+        "not.bool" => block.statements.push(self.not_bool_statement()),
         "call" => block.statements.push(self.call_statement()),
         "use" | "move" | "borrow shared" | "borrow mutable" | "borrow end" | "drop" =>
         {
@@ -776,6 +777,15 @@ impl Parser<'_>
       _ => Statement::Use { local: result,
                             span: span() },
     }
+  }
+
+  fn not_bool_statement(&mut self) -> Statement
+  {
+    let result = self.binary_local("not.bool", "result");
+    let operand = self.binary_local("not.bool", "operand");
+    Statement::NotBool { result,
+                         operand,
+                         span: span() }
   }
 
   fn binary_i64_local(&mut self, instruction: &str, field: &str) -> LocalId

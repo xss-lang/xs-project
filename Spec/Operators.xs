@@ -59,6 +59,9 @@ fn main() {
     product: Int = a * b;
     quotient: Int = b / a;
     remainder: Int = b % 3;
+    positive: Int = +a;
+    negative: Int = -a;
+    inverted: Bool = !(a == b);
 
     // equality
     if (a == b) {
@@ -105,7 +108,7 @@ fn main() {
     display_name: Str = maybe_name ?? "guest";
 
     // optional coalescing assignment
-    maybe_name ??= std::optional::Some("guest");
+    maybe_name ??= Some("guest");
 
     // optional-forgiving unboxing
     forced_name: Str = maybe_name!;
@@ -174,7 +177,7 @@ display: Str = name ?? "fallback";
 
 
 // VALID
-name ??= std::optional::Some("fallback");
+name ??= Some("fallback");
 
 
 // VALID

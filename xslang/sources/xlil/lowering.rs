@@ -268,6 +268,28 @@ impl MirToXlilLowerer
       {
         self.lower_binary_i32(result, left, right, span, "ge.i32", xlil_block, values, lowered);
       }
+      if let mir::Statement::NotBool { result,
+                                       operand,
+                                       span, } = *statement
+      {
+        let Some(operand) = values.get(&operand).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR not.bool operand does not have a lowered XLIL value",
+                      span);
+          continue;
+        };
+        let Some(value) = lowered.not_bool(xlil_block, operand)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR not.bool operand must lower to an XLIL bool value",
+                      span);
+          continue;
+        };
+        values.insert(result, value);
+      }
       if let mir::Statement::Call { result,
                                     ref function,
                                     ref arguments,

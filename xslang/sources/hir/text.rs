@@ -8,7 +8,9 @@ use std::fmt::Write;
 use super::match_model::MatchPattern;
 use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::symbols::{Import, Module, SymbolKind, Visibility};
-use super::type_check::{BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type};
+use super::type_check::{
+  BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type, UnaryOperator,
+};
 use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
 
 pub mod parser;
@@ -275,6 +277,7 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::UnknownLocal => "unknown_local",
     TypeDiagnosticCode::DuplicateLocal => "duplicate_local",
     TypeDiagnosticCode::BinaryTypeMismatch => "binary_type_mismatch",
+    TypeDiagnosticCode::UnaryTypeMismatch => "unary_type_mismatch",
     TypeDiagnosticCode::ResultPropagationRequiresResult => "result_propagation_requires_result",
     TypeDiagnosticCode::ResultPropagationReturnMismatch => "result_propagation_return_mismatch",
     TypeDiagnosticCode::ConditionTypeMismatch => "condition_type_mismatch",
@@ -298,6 +301,7 @@ fn parse_type_diagnostic_code(name: &str,
     "unknown_local" => Some(TypeDiagnosticCode::UnknownLocal),
     "duplicate_local" => Some(TypeDiagnosticCode::DuplicateLocal),
     "binary_type_mismatch" => Some(TypeDiagnosticCode::BinaryTypeMismatch),
+    "unary_type_mismatch" => Some(TypeDiagnosticCode::UnaryTypeMismatch),
     "result_propagation_requires_result" => Some(TypeDiagnosticCode::ResultPropagationRequiresResult),
     "result_propagation_return_mismatch" => Some(TypeDiagnosticCode::ResultPropagationReturnMismatch),
     "condition_type_mismatch" => Some(TypeDiagnosticCode::ConditionTypeMismatch),
@@ -399,6 +403,14 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       let _ = writeln!(output, "{pad}  right");
       write_expression(output, right, indent + 2);
     }
+    Expression::Unary { operator,
+                        operand,
+                        .. } =>
+    {
+      let _ = writeln!(output, "{pad}unary {}", unary_operator_name(*operator));
+      let _ = writeln!(output, "{pad}  operand");
+      write_expression(output, operand, indent + 2);
+    }
     Expression::ResultPropagation { value, .. } =>
     {
       let _ = writeln!(output, "{pad}propagate");
@@ -497,6 +509,14 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
       write_desugared_expression(output, left, indent + 2);
       let _ = writeln!(output, "{pad}  right");
       write_desugared_expression(output, right, indent + 2);
+    }
+    DesugaredExpression::Unary { operator,
+                                 operand,
+                                 .. } =>
+    {
+      let _ = writeln!(output, "{pad}unary {}", unary_operator_name(*operator));
+      let _ = writeln!(output, "{pad}  operand");
+      write_desugared_expression(output, operand, indent + 2);
     }
     DesugaredExpression::ResultMatch { value,
                                        success_binding,
@@ -626,6 +646,16 @@ const fn binary_operator_name(operator: BinaryOperator) -> &'static str
     BinaryOperator::LessEqual => "le",
     BinaryOperator::Greater => "gt",
     BinaryOperator::GreaterEqual => "ge",
+  }
+}
+
+const fn unary_operator_name(operator: UnaryOperator) -> &'static str
+{
+  match operator
+  {
+    UnaryOperator::LogicalNot => "logical_not",
+    UnaryOperator::Positive => "positive",
+    UnaryOperator::Negative => "negative",
   }
 }
 

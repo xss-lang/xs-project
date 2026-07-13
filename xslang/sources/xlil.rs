@@ -16,3 +16,5 @@ pub mod writer;
 
 #[cfg(test)]
 mod operator_tests;
+#[cfg(test)]
+mod unary_tests;

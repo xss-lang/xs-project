@@ -4,7 +4,9 @@
  */
 
 use super::async_check::Span;
-use super::type_check::{BinaryOperator, Expression, Literal, Local, PrimitiveType, Type, result_type_parts};
+use super::type_check::{
+  BinaryOperator, Expression, Literal, Local, PrimitiveType, Type, UnaryOperator, result_type_parts,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BindingOperator
@@ -102,6 +104,9 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                          left,
                          right,
                          .. } => infer_binary_expression_type(*operator, left, right, locals),
+    Expression::Unary { operator,
+                        operand,
+                        .. } => infer_unary_expression_type(*operator, operand, locals),
     Expression::ResultPropagation { value, .. } =>
     {
       let result_type = infer_expression_type(value, locals)?;
@@ -110,6 +115,25 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
     Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
     Expression::If { result_type, .. } => Some(result_type.as_ref().clone()),
     Expression::Match { result_type, .. } => Some(result_type.as_ref().clone()),
+  }
+}
+
+fn infer_unary_expression_type(operator: UnaryOperator, operand: &Expression, locals: &[Local]) -> Option<Type>
+{
+  let Type::Primitive(primitive) = infer_expression_type(operand, locals)?
+  else
+  {
+    return None;
+  };
+  match operator
+  {
+    UnaryOperator::Positive | UnaryOperator::Negative
+      if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+    {
+      Some(Type::Primitive(primitive))
+    }
+    UnaryOperator::LogicalNot if primitive == PrimitiveType::Bool => Some(Type::Primitive(PrimitiveType::Bool)),
+    _ => None,
   }
 }
 

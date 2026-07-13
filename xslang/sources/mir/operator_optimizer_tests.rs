@@ -78,3 +78,35 @@ fn preserves_trapping_or_invalid_i32_operations()
     assert!(matches!(optimized.function.blocks[0].statements[2], Statement::BinaryI32 { .. }));
   }
 }
+
+#[test]
+fn folds_constant_logical_not()
+{
+  let function =
+    Function { name: "fold_not".to_string(),
+               parameters: vec![],
+               return_type: Type::BOOL,
+               locals: (0..2).map(|id| Local { id: LocalId(id),
+                                               name: format!("bool_{id}"),
+                                               value_type: Some(Type::BOOL),
+                                               mutable: false,
+                                               span: span() })
+                             .collect(),
+               blocks: vec![BasicBlock { id: BlockId(0),
+                                         statements: vec![Statement::ConstBool { local: LocalId(0),
+                                                                                 value: false,
+                                                                                 span: span() },
+                                                          Statement::NotBool { result: LocalId(1),
+                                                                               operand: LocalId(0),
+                                                                               span: span() }],
+                                         terminator: Some(Terminator::Return(Some(LocalId(1)))),
+                                         span: span() }] };
+  let optimized = optimize_verified_function(function).expect("logical not should optimize");
+
+  assert!(optimized.reports
+                   .iter()
+                   .any(|report| report.pass == OptimizationPass::FoldConstBoolNot));
+  assert!(matches!(optimized.function.blocks[0].statements[1],
+                   Statement::ConstBool { value: true,
+                                          .. }));
+}

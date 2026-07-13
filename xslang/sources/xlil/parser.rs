@@ -445,6 +445,10 @@ impl Parser<'_>
     {
       return self.eq_i64(function, result, operands, line);
     }
+    if let Some((result, operand)) = text.split_once(" = not.bool ")
+    {
+      return self.not_bool(function, result, operand, line);
+    }
     for instruction in ["add.i32", "sub.i32", "mul.i32", "div.i32", "rem.i32", "and.i32", "or.i32", "xor.i32",
                         "shl.i32", "shr.i32", "eq.i32", "lt.i32", "le.i32", "gt.i32", "ge.i32"]
     {
@@ -716,6 +720,24 @@ impl Parser<'_>
                                        right },
       _ => return None,
     })
+  }
+
+  fn not_bool(&mut self, function: &mut Function, result: &str, operand: &str, line: usize) -> Option<Instruction>
+  {
+    let Some(result) = result.strip_suffix(":bool")
+    else
+    {
+      self.report(DiagnosticCode::InvalidInstruction,
+                  line,
+                  "XLIL not.bool result type is invalid");
+      return None;
+    };
+    let result = self.value_id(result, line)?;
+    let operand = self.value_operand(operand, line)?;
+    function.values.push(Value { id: result,
+                                 value_type: Type::BOOL });
+    Some(Instruction::NotBool { result,
+                                operand })
   }
 
   fn const_bool(&mut self, function: &mut Function, result: &str, value: &str, line: usize) -> Option<Instruction>

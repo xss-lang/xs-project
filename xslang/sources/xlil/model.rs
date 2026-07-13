@@ -165,6 +165,10 @@ pub enum Instruction
     left: ValueId,
     right: ValueId,
   },
+  NotBool
+  {
+    result: ValueId, operand: ValueId
+  },
   Call
   {
     result: Option<ValueId>,
@@ -614,21 +618,21 @@ impl Function
     true
   }
 
-  fn block(&self, block: BlockId) -> Option<&Block>
+  pub(super) fn block(&self, block: BlockId) -> Option<&Block>
   {
     self.blocks
         .get(block.0 as usize)
         .filter(|candidate| candidate.id == block)
   }
 
-  fn block_mut(&mut self, block: BlockId) -> Option<&mut Block>
+  pub(super) fn block_mut(&mut self, block: BlockId) -> Option<&mut Block>
   {
     self.blocks
         .get_mut(block.0 as usize)
         .filter(|candidate| candidate.id == block)
   }
 
-  fn value(&self, value: ValueId) -> Option<&Value>
+  pub(super) fn value(&self, value: ValueId) -> Option<&Value>
   {
     self.values
         .get(value.0 as usize)

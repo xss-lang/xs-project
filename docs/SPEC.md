@@ -28,7 +28,7 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - Standard modules use `std::<module>` names, such as `std::fs` and `std::collections`.
 - `::` separates modules, namespaces, types, associated items, and
   constructors; `.` is reserved for value member access and method calls. Generic arguments in expression paths use
-  turbofish, for example `std::optional::Some::<Str>("value")`.
+  turbofish, for example `Some::<Str>("value")`.
 - Instance members use `self` as the receiver name inside constructors, methods, and property accessors.
 - Property bodies should use explicit backing fields such as `self._age`; referencing the property itself as `self.age`
   inside its own accessor is recursive and rejected.
@@ -59,8 +59,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - Statement/expression separation follows Rust: `expression;` evaluates and discards the value, while the final expression
   in a block may omit `;` and becomes the block value. Function tail expressions are desugared as implicit returns when the
   function return type expects a value.
-- Optional value constructors are `std::optional::None` and `std::optional::Some(...)`; the same implicit namespace using
-  may make `None` and `Some(...)` available in source.
+- Optional value constructors are `None` and `Some(...)`; the implicit namespace using makes both names available in
+  source.
 - `Result` is a special standard namespace: `imports result;` is optional, and the compiler behaves as if
   `using namespace std::result;` existed for `Result<T>`, `Result<T, E>`, `Ok(...)`, and `Error(...)`. Most other `std::*` modules are
   not automatically placed in local scope. `Result<T>` uses the standard `Error` channel; unit success is written as

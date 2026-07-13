@@ -36,6 +36,14 @@ impl HirToMirLowerer
                                   right: Box::new(self.surface_expression_from_desugared(right)?),
                                   span: *span })
       }
+      DesugaredExpression::Unary { operator,
+                                   operand,
+                                   span, } =>
+      {
+        Some(Expression::Unary { operator: *operator,
+                                 operand: Box::new(self.surface_expression_from_desugared(operand)?),
+                                 span: *span })
+      }
       DesugaredExpression::ResultMatch { span, .. } =>
       {
         self.report(DiagnosticCode::UnsupportedExpression,

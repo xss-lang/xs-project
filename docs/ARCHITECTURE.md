@@ -24,7 +24,7 @@ guess missing semantics inside the backend.
     → monomorphization
     → codegen unit planning
     → XLIL
-    → LLVM IR or future XS Backend lowering
+    → LLVM IR lowering
     → object emission
     → link
 ```

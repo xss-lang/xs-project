@@ -14,6 +14,8 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Unary `+`/`-` on explicitly typed `Long` values and logical `!` on `Bool` values now remain in the Rust typed-HIR,
+  XHIR, verified MIR/XMIR, optimized XLIL, LLVM, and native `.xse` route. `Long` is lowered as i32; `Int` remains i64.
 - `Long` division, remainder, bitwise AND/OR/XOR, and left/arithmetic-right shifts now cross the C23 structural AST into
   Rust typed HIR, XHIR, verified MIR/XMIR, XLIL, and the existing LLVM native `.xse` backend. Context-free integer
   literals remain `Int`; an explicit `Long` return, binding, or parameter supplies the i32 lowering context.
@@ -29,6 +31,11 @@ source-to-native executable pipeline.
 - The canonical `format!(...)` expansion is `std::fmt::format(format_args!(...))` with no synthetic source-level block.
 - `format!` and the `std::fmt::*` API are both provided by the non-prelude `Stdio` module; importing Stdio makes that
   standard formatting surface available.
+
+### Removed
+
+- The cancelled XS Backend project and the unused `.xsproj` `compilerOptions.xsBackend` forward-compatibility field were
+  removed. LLVM is the compiler's native backend.
 
 ### Fixed
 
@@ -244,7 +251,7 @@ source-to-native executable pipeline.
 - Formatting macro validation now accepts `write!` and `writeln!` forms plus common debug and alignment specs such
   as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` while still checking placeholder counts.
 - `Optional<T>` now resolves as an implicit compiler-provided `Optional` import alias for `std::optional::Optional<T>`, with
-  value constructors canonically named `std::optional::None` and `std::optional::Some(...)`.
+  value constructors available in source as `None` and `Some(...)`.
 
 ### Deprecated
 

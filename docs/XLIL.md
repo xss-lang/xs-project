@@ -14,7 +14,7 @@ XLIL sits before LLVM IR and is designed as the shared input point for all nativ
 - Provide a standard low-level intermediate language for X#.
 - Remove direct LLVM IR coupling from frontend and middle-end layers.
 - Give every backend a shared intermediate input.
-- Provide the foundation for the future XS Backend.
+- Keep the compiler's target-independent IR boundary separate from LLVM APIs.
 - Allow other programming languages to generate XLIL and use the XS native backend pipeline.
 
 ## Shape

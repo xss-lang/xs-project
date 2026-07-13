@@ -45,7 +45,6 @@ There is no buildable runtime today. A future X# runtime will be added as a sepa
 - `xsfmt`: future Rust nightly + Serde formatter project.
 - `xstidy`: future Rust nightly + Serde linter project.
 - `xs-analyzer`: future Rust language server + TypeScript VS Code extension project.
-- `xs-backend`: future native XS Backend project.
 - `xsrt`
 
 Future project directories live at their own roots, but are not included in the CMake build yet. Once implementation starts,

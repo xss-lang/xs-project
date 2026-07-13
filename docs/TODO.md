@@ -36,7 +36,6 @@ implementation notes and internal design logs are not part of the public documen
 - Extend XLIL-to-LLVM lowering from declarations and the initial body subset to full function bodies.
 - Emit object files and link project targets into native `.xse` executables, targeting ELF first and PE after ELF.
 - Complete `xs build`, `xs check`, and `xs run` artifact handling and diagnostics.
-- Keep the `compilerOptions.xsBackend` setting ready for the current LLVM backend and the future XS backend.
 
 ## Public APIs
 

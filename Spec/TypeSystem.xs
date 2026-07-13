@@ -33,7 +33,7 @@ value_float: Float = 1.0;
 // Optional<T> is resolved as if the compiler had inserted
 // `imports optional; using namespace std::optional;` and brought
 // std::optional::Optional<T> into scope as Optional<T>.
-// The value constructors are std::optional::None and std::optional::Some(...).
+// The compiler makes the None and Some(...) value constructors available.
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
 // There is no nullable T? type operator.
@@ -50,12 +50,12 @@ name = Some("Leitwolf");
 
 status: Result<Int, Error> = Ok(0);
 
-empty_canonical: std::optional::Optional<Str> = std::optional::None;
-canonical_name: std::optional::Optional<Str> = std::optional::Some("Leitwolf");
+empty_canonical: Optional<Str> = None;
+canonical_name: Optional<Str> = Some("Leitwolf");
 short_name: Optional<Str> = canonical_name;
 
 display: Str = name ?? "guest";
-name ??= std::optional::Some("guest");
+name ??= Some("guest");
 
 // Automatic unboxing from Optional<T> to T may fail. New code models that as
 // Error rather than legacy exceptions.

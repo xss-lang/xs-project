@@ -221,6 +221,13 @@ impl<'a> Verifier<'a>
                          left,
                          right,
                          span, } => self.verify_i32_compare(result, left, right, "ge.i32", span),
+      Statement::NotBool { result,
+                           operand,
+                           span, } =>
+      {
+        self.verify_bool_local(result, "not.bool result local", span);
+        self.verify_bool_local(operand, "not.bool operand local", span);
+      }
       Statement::Call { result,
                         ref arguments,
                         return_type,

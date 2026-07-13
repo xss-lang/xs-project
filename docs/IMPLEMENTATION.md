@@ -42,7 +42,7 @@ The documented compilation order is preserved:
   `xsproj/include/` is for `xsproj` only.
 - `xsfmt` and `xstidy` are future Rust nightly + Serde projects; `xs-analyzer` is a future Rust language server and
   TypeScript VS Code extension project. `xslang` is the active Rust compiler-core static library linked into `xs`;
-  `xs-backend` is a future native backend project and `xsrt` is a future runtime.
+  `xsrt` is a future runtime project.
 
 ### XLIL-bound middle-layer rule
 
@@ -104,6 +104,8 @@ The documented compilation order is preserved:
 - The Rust compiler-core route carries `Long` `/`, `%`, `&`, `|`, `^`, `<<`, and `>>` expressions through typed HIR,
   versioned XHIR, verified MIR/XMIR, and XLIL. Integer literals still default to `Int` (i64) without an expected type;
   an explicit `Long` (i32) return, binding, or parameter context is propagated through nested binary expressions.
+- Unary `+` and `-` use the same expected-type propagation. A `Long` negation lowers to target-independent i32 MIR,
+  while an `Int` negation lowers to i64 MIR. Logical `!` lowers as a typed `Bool` operation through XMIR and XLIL.
 - Source-native locals use C MIR local/place records rather than remaining SSA aliases. Their initialization and later
   reads/assignments lower to XLIL slots and LLVM stack operations. MIR validation permits one initialization store for an
   immutable local and rejects a second store as reassignment. A place load additionally requires initialization on every
@@ -128,9 +130,6 @@ The documented compilation order is preserved:
   deferred.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
-- `compilerOptions.xsBackend` optionally accepts `"LLVM"` or `"XS"`.
-- `xsBackend` is currently only validated and stored in the project model; it does not affect the compilation flow or backend
-  selection yet.
 
 ### Lexer and structural AST
 
@@ -296,9 +295,8 @@ validation does not decide dispatch, override, or overload selection.
 - Semantically, `Str` is the X# counterpart of Rust's `&'static str`: an immutable static string reference. Its runtime
   layout remains deferred and it is not yet lowered to XLIL storage.
 - `Optional<T>` resolves as if the compiler had inserted `imports optional; using namespace std::optional;`, making
-  `std::optional::Optional<T>` available as `Optional<T>`. Optional value constructors are canonically
-  `std::optional::None` and `std::optional::Some(...)`, with `None` and `Some(...)` available through that implicit
-  namespace using. It is not an enum
+  `std::optional::Optional<T>` available as `Optional<T>`. Optional value constructors are written as `None` and
+  `Some(...)`, made available through that implicit namespace using. It is not an enum
   lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
   `T`, and failed unboxing is modeled through the standard `Result`/`Error` direction rather than the deprecated exception
   system. `Optional<Str>` is special at the language model level: it behaves like Rust's `Option<String>`, meaning the
