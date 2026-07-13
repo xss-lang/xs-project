@@ -20,7 +20,6 @@ class Git
   static final String[] GENERATED_PATHS =
   {
       "build/",
-      ".agents/",
       ".codex",
       "target/",
       "node_modules/",
@@ -178,7 +177,7 @@ class Git
           local generated files stay on disk and remain ignored
 
         generated paths:
-          build/, .agents/, .codex, target/, node_modules/, dist/, out/, Cargo.lock
+          build/, .codex/, target/, node_modules/, dist/, out/, Cargo.lock
 
         update push:
           git push -u origin <current-branch> --force-with-lease
@@ -255,8 +254,6 @@ class Git
         || isGeneratedDirectory(path, "node_modules")
         || isGeneratedDirectory(path, "dist")
         || isGeneratedDirectory(path, "out")
-        || path.equals(".agents")
-        || path.startsWith(".agents/")
         || path.equals(".codex")
         || path.startsWith(".codex/")
         || path.equals("Cargo.lock")

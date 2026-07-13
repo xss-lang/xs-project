@@ -3,7 +3,6 @@
 
 build/
 XS/
-.agents/
 .codex/
 target/
 Cargo.lock
