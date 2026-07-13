@@ -6,7 +6,7 @@
 
 module Programs.ChatServer;
 
-imports Collections, Stdio, Sync, Thread, Net, Result;
+imports collections, stdio, sync, thread, net, result;
 
 enum data ChatError {
     Io: IOException,
@@ -26,11 +26,11 @@ data Message {
 
 class Room {
     name: Str;
-    members: STD.Collections.hash_map<ClientId, Thread.sender<Message>>;
+    members: std.collections.hash_map<ClientId, Thread.sender<Message>>;
 
     Room(name: Str) {
         this.name = name;
-        this.members = STD.Collections.hash_map<ClientId, Thread.sender<Message>>.new();
+        this.members = std.collections.hash_map<ClientId, Thread.sender<Message>>.new();
     }
 
     fn Join(id: ClientId, sender: Thread.sender<Message>) {
@@ -50,11 +50,11 @@ class Room {
 
 class ChatHub {
     nextId: Atomic<Int>;
-    rooms: Arc<Mutex<STD.Collections.hash_map<Str, Room>>>;
+    rooms: Arc<Mutex<std.collections.hash_map<Str, Room>>>;
 
     ChatHub() {
         this.nextId = Atomic.new(1);
-        this.rooms = Arc.new(Mutex.new(STD.Collections.hash_map<Str, Room>.new()));
+        this.rooms = Arc.new(Mutex.new(std.collections.hash_map<Str, Room>.new()));
     }
 
     async fn Serve(listener: Net.tcpListener) => Task<Result.Result<Void, ChatError>> {
@@ -63,7 +63,7 @@ class ChatHub {
             id: ClientId = ClientId {
                 value: this.nextId.fetchAdd(1),
             };
-            rooms: Arc<Mutex<STD.Collections.hash_map<Str, Room>>> = Arc.clone(&this.rooms);
+            rooms: Arc<Mutex<std.collections.hash_map<Str, Room>>> = Arc.clone(&this.rooms);
 
             Thread.spawn(move async fn() {
                 session: ClientSession = new(id, socket, rooms);
@@ -76,9 +76,9 @@ class ChatHub {
 class ClientSession {
     id: ClientId;
     socket: Net.tcpStream;
-    rooms: Arc<Mutex<STD.Collections.hash_map<Str, Room>>>;
+    rooms: Arc<Mutex<std.collections.hash_map<Str, Room>>>;
 
-    ClientSession(id: ClientId, socket: Net.tcpStream, rooms: Arc<Mutex<STD.Collections.hash_map<Str, Room>>>) {
+    ClientSession(id: ClientId, socket: Net.tcpStream, rooms: Arc<Mutex<std.collections.hash_map<Str, Room>>>) {
         this.id = id;
         this.socket = socket;
         this.rooms = rooms;
@@ -90,7 +90,7 @@ class ClientSession {
         this.Join(currentRoom, outbound.sender());
 
         while (true) {
-            line: Optional<Str> = await this.socket.readLine();
+            line: Optional<Str> = await this.socket.read_line();
             command: Str = line ?? "/quit";
 
             if (command == "/quit") {
@@ -114,7 +114,7 @@ class ClientSession {
     }
 
     fn Join(roomName: Str, sender: Thread.sender<Message>) {
-        guard: Mutex<STD.Collections.hash_map<Str, Room>> = this.rooms.lock();
+        guard: Mutex<std.collections.hash_map<Str, Room>> = this.rooms.lock();
         if (!(*guard).contains(roomName)) {
             (*guard)[roomName] = Room.new(roomName);
         }
@@ -122,12 +122,12 @@ class ClientSession {
     }
 
     fn Leave(roomName: Str) {
-        guard: Mutex<STD.Collections.hash_map<Str, Room>> = this.rooms.lock();
+        guard: Mutex<std.collections.hash_map<Str, Room>> = this.rooms.lock();
         (*guard)[roomName].Leave(this.id);
     }
 
     fn Broadcast(message: Message) {
-        guard: Mutex<STD.Collections.hash_map<Str, Room>> = this.rooms.lock();
+        guard: Mutex<std.collections.hash_map<Str, Room>> = this.rooms.lock();
         (*guard)[message.room].Broadcast(message);
     }
 }

@@ -4,7 +4,7 @@
 // Process module and error handling:
 
 //
-// Process execution is provided by STD.Process.
+// Process execution is provided by std.Process.
 //
 // New X# code uses Result.Result<T, E> for recoverable process and I/O
 // failures. The old exception syntax remains parseable for legacy code, but it
@@ -14,13 +14,13 @@
 // explicitly enabled with .shell(true).
 //
 
-imports Process, Result, Stdio;
+imports process, result, stdio;
 
 
 // process execution
 
 fn PullRepository() => Result.Result<Void, Result.Error> {
-    STD.Process.execute("git", ["pull"])@;
+    std.Process.execute("git", ["pull"])@;
     return Result.Ok();
 }
 
@@ -28,7 +28,7 @@ fn PullRepository() => Result.Result<Void, Result.Error> {
 // process execution with arguments
 
 fn InstallPackage(name: Str) => Result.Result<Void, Result.Error> {
-    STD.Process.execute("pacman", ["-S", name])@;
+    std.Process.execute("pacman", ["-S", name])@;
     return Result.Ok();
 }
 
@@ -36,7 +36,7 @@ fn InstallPackage(name: Str) => Result.Result<Void, Result.Error> {
 // shell execution
 
 fn UpgradeSystem() => Result.Result<Void, Result.Error> {
-    STD.Process.execute("pacman -Syu")
+    std.Process.execute("pacman -Syu")
         .shell(true)@;
 
     return Result.Ok();
@@ -46,7 +46,7 @@ fn UpgradeSystem() => Result.Result<Void, Result.Error> {
 // INVALID
 
 fn InvalidShellExecution() => Result.Result<Void, Result.Error> {
-    STD.Process.execute("pacman -Syu")@;
+    std.Process.execute("pacman -Syu")@;
     return Result.Ok();
 }
 
@@ -56,7 +56,7 @@ fn InvalidShellExecution() => Result.Result<Void, Result.Error> {
 // explicit Result match
 
 fn PrintGitStatus() => Result.Result<Void, Result.Error> {
-    status = match (STD.Process.execute("git", ["status"])) {
+    status = match (std.Process.execute("git", ["status"])) {
         Result.Ok(value) -> value,
         Result.Error(error) -> return Result.Error(error),
     };
@@ -69,8 +69,8 @@ fn PrintGitStatus() => Result.Result<Void, Result.Error> {
 // propagation with @
 
 fn RunFormatter() => Result.Result<Void, Result.Error> {
-    STD.Process.execute("xsfmt", ["--check"])@;
-    STD.Process.execute("xstidy", ["--check"])@;
+    std.Process.execute("xsfmt", ["--check"])@;
+    std.Process.execute("xstidy", ["--check"])@;
     return Result.Ok();
 }
 
@@ -98,10 +98,10 @@ fn Login(user: Str) => Result.Result<Void, LoginError> {
 // built-in error-style values
 
 fn ReadRequiredLine() => Result.Result<Str, Result.Error> {
-    input: Optional<Str> = STD.Optional.Some("");
+    input: Optional<Str> = std.optional.Some("");
 
-    STD.Stdin()
-        .readLine(&mut input)@;
+    std.stdin()
+        .read_line(&mut input)@;
 
     if (input == None) {
         return Result.Error(Result.Error {
@@ -123,7 +123,7 @@ class File {
 
 fn UseFile() => Result.Result<Void, Result.Error> {
     file: File = new();
-    STD.Process.execute("git", ["rev-parse", "--is-inside-work-tree"])@;
+    std.Process.execute("git", ["rev-parse", "--is-inside-work-tree"])@;
     return Result.Ok();
 }
 

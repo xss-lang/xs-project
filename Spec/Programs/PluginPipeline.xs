@@ -6,7 +6,7 @@
 
 module Programs.PluginPipeline;
 
-imports Collections, Stdio, Process, Result;
+imports collections, stdio, process, result;
 
 enum data PipelineError {
     Io: IOException,
@@ -63,10 +63,10 @@ class ReplacePlugin {
 }
 
 class Pipeline {
-    stages: STD.Collections.vector<TextPlugin>;
+    stages: std.collections.vector<TextPlugin>;
 
     Pipeline() {
-        this.stages = STD.Collections.vector<TextPlugin>.new();
+        this.stages = std.collections.vector<TextPlugin>.new();
     }
 
     fn Add(stage: TextPlugin) {
@@ -84,7 +84,7 @@ class Pipeline {
     }
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
+fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
     input: Str = if (args.length() > 1) {
         args[1];
     }

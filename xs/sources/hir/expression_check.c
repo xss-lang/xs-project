@@ -122,7 +122,7 @@ static bool path_matches_single(const XsSyntaxNode *path, const char *name)
 static bool named_type_is_optional_base(const XsSyntaxNode *type)
 {
   const XsSyntaxNode *path = type_named_path(type);
-  return path_matches_single(path, "Optional") || path_matches_qualified(path, "STD", "Optional", "Optional");
+  return path_matches_single(path, "Optional") || path_matches_qualified(path, "std", "optional", "Optional");
 }
 
 static bool type_is_optional(const XsSyntaxNode *type)
@@ -265,7 +265,8 @@ static bool expression_is_identifier_named(const XsSyntaxNode *expression, const
 {
   if(expression == nullptr || expression->kind != XS_SYNTAX_EXPR_IDENTIFIER || expression->child_count != 1)
     return false;
-  return expression->children[0]->kind == XS_SYNTAX_IDENTIFIER && text_matches_cstr(expression->children[0]->text, name);
+  return expression->children[0]->kind == XS_SYNTAX_IDENTIFIER &&
+         text_matches_cstr(expression->children[0]->text, name);
 }
 
 static bool expression_is_std_optional_member(const XsSyntaxNode *expression, const char *name)
@@ -277,9 +278,9 @@ static bool expression_is_std_optional_member(const XsSyntaxNode *expression, co
   const XsSyntaxNode *optional = expression->children[0];
   if(optional == nullptr || optional->kind != XS_SYNTAX_EXPR_MEMBER_ACCESS || optional->child_count != 2)
     return false;
-  return expression_is_identifier_named(optional->children[0], "STD") &&
+  return expression_is_identifier_named(optional->children[0], "std") &&
          optional->children[1]->kind == XS_SYNTAX_IDENTIFIER &&
-         text_matches_cstr(optional->children[1]->text, "Optional");
+         text_matches_cstr(optional->children[1]->text, "optional");
 }
 
 static bool expression_is_optional_none(const XsSyntaxNode *expression)
@@ -675,8 +676,7 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
   return success;
 }
 
-static bool check_result_propagation(const XsSyntaxNode *node, const CheckContext *context,
-                                     XsDiagnostics *diagnostics)
+static bool check_result_propagation(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
 {
   if(context != nullptr && type_is_result(context->return_type_node))
   {
@@ -801,7 +801,8 @@ bool xs_hir_check_expression_types_with_macros(const XsSyntaxTree *tree,
 {
   if(tree == nullptr || tree->root == nullptr || diagnostics == nullptr)
     return false;
-  return check_node(tree->root, macro_declarations, macro_statements, (CheckContext){.root = tree->root}, diagnostics) &&
+  return check_node(tree->root, macro_declarations, macro_statements, (CheckContext){.root = tree->root},
+                    diagnostics) &&
          !xs_diagnostics_has_error(diagnostics);
 }
 

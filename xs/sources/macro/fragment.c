@@ -102,13 +102,13 @@ static bool path_is_single_module(const XsSyntaxNode *path, const char *module_n
 
 static bool module_exports_macro(const char *module_name, XsText macro_name)
 {
-  if(strcmp(module_name, "Panic") == 0)
+  if(strcmp(module_name, "panic") == 0)
   {
     return text_is_cstr(macro_name, "assert") || text_is_cstr(macro_name, "assert_eq") ||
            text_is_cstr(macro_name, "assert_ne") || text_is_cstr(macro_name, "debug_assert") ||
            text_is_cstr(macro_name, "debug_assert_eq") || text_is_cstr(macro_name, "panic");
   }
-  if(strcmp(module_name, "Stdio") == 0)
+  if(strcmp(module_name, "stdio") == 0)
   {
     return text_is_cstr(macro_name, "print") || text_is_cstr(macro_name, "println") ||
            text_is_cstr(macro_name, "eprint") || text_is_cstr(macro_name, "eprintln") ||
@@ -151,7 +151,7 @@ static bool import_resolves_module_macro(const XsSyntaxNode *import_node, const 
 
 bool xs_macro_external_import_resolves(const XsSyntaxTree *tree, XsText name)
 {
-  if(module_exports_macro("Panic", name))
+  if(module_exports_macro("panic", name))
     return true;
   if(tree == nullptr || tree->root == nullptr)
     return false;
@@ -160,7 +160,7 @@ bool xs_macro_external_import_resolves(const XsSyntaxTree *tree, XsText name)
     const XsSyntaxNode *child = tree->root->children[index];
     if(child->kind != XS_SYNTAX_DECL_IMPORT)
       continue;
-    if(import_resolves_module_macro(child, "Panic", name) || import_resolves_module_macro(child, "Stdio", name))
+    if(import_resolves_module_macro(child, "panic", name) || import_resolves_module_macro(child, "stdio", name))
       return true;
   }
   return false;

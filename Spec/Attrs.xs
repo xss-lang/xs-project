@@ -11,13 +11,13 @@
 // Attribute names are not compiler keywords. The compiler implicitly imports
 // the standard Attrs module and places its exported names in scope for
 // attribute lookup.
-// An explicit `imports Attrs;` declaration is optional and may be used for
+// An explicit `imports attrs;` declaration is optional and may be used for
 // readability or aliasing, but it is not required.
 // Therefore examples normally use the short scoped form:
 //
 // #[Deprecated("use NewMain")]
 //
-// The official X# attribute registry is the Attrs module under STD.
+// The official X# attribute registry is the Attrs module under std.
 //
 // X# keeps Rust's attribute vocabulary as compatibility aliases, then adds
 // stronger async and thread-oriented attributes for the X# pipeline.

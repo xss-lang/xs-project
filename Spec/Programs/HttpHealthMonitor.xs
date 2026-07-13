@@ -6,7 +6,7 @@
 
 module Programs.HttpHealthMonitor;
 
-imports Http, Stdio, Collections, Thread, Sync, Result;
+imports http, stdio, collections, thread, sync, result;
 
 enum data HealthError {
     Network: NetworkException,
@@ -87,11 +87,11 @@ class HealthClient {
 }
 
 async fn CheckAll(
-    endpoints: STD.Collections.vector<Endpoint>,
+    endpoints: std.collections.vector<Endpoint>,
     reporter: HealthReporter
 ) => Task<Result.Result<Int, Result.Error>> {
     client: HealthClient = new();
-    tasks: STD.Collections.vector<Task<Result.Result<HealthResult, HealthError>>> = STD.Collections.vector<Task<Result.Result<HealthResult, HealthError>>>.new();
+    tasks: std.collections.vector<Task<Result.Result<HealthResult, HealthError>>> = std.collections.vector<Task<Result.Result<HealthResult, HealthError>>>.new();
 
     for (endpoint: Endpoint in endpoints) {
         tasks.push(client.Check(endpoint));
@@ -110,8 +110,8 @@ async fn CheckAll(
     return Result.Ok(failures);
 }
 
-fn DefaultEndpoints() => STD.Collections.vector<Endpoint> {
-    endpoints: STD.Collections.vector<Endpoint> = STD.Collections.vector<Endpoint>.new();
+fn DefaultEndpoints() => std.collections.vector<Endpoint> {
+    endpoints: std.collections.vector<Endpoint> = std.collections.vector<Endpoint>.new();
 
     endpoints.push(Endpoint {
         name: "example",

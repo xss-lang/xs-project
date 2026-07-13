@@ -118,7 +118,7 @@ static void test_standard_generic_types(void)
 {
   const char *valid = "module App;\n"
                       "fn Read() => Optional<Str> { return None; }\n"
-                      "fn ReadCanonical() => STD.Optional.Optional<Str> { return None; }\n"
+                      "fn ReadCanonical() => std.optional.Optional<Str> { return None; }\n"
                       "fn Save() => Result.Result<Int> { return Result.Ok(1); }\n"
                       "fn Load() => Result.Result<Int, Result.Error> { return Result.Ok(1); }\n"
                       "fn Compact() => Result<Int, Result.Error> { return Result.Ok(1); }\n";
@@ -133,20 +133,20 @@ static void test_standard_generic_types(void)
 static void test_standard_cffi_types(void)
 {
   const char *valid = "module App;\n"
-                      "imports CFFI;\n"
-                      "data NativeLibrary { handle: STD.CFFI.Handle<NativeLibrary>; }\n"
+                      "imports cffi;\n"
+                      "data NativeLibrary { handle: std.cffi.Handle<NativeLibrary>; }\n"
                       "#[repr(C)]\n"
                       "extern \"C\" {\n"
-                      "  fn puts(text: STD.CFFI.CStr) => Int;\n"
-                      "  fn free(ptr: STD.CFFI.RawPtr<Byte>);\n"
-                      "  fn read(out: STD.CFFI.Out<Int>) => Int;\n"
-                      "  static stdin_handle: STD.CFFI.RawPtr<STD.CFFI.FILE>;\n"
+                      "  fn puts(text: std.cffi.CStr) => Int;\n"
+                      "  fn free(ptr: std.cffi.RawPtr<Byte>);\n"
+                      "  fn read(out: std.cffi.Out<Int>) => Int;\n"
+                      "  static stdin_handle: std.cffi.RawPtr<std.cffi.File>;\n"
                       "}\n"
-                      "fn Load(symbol: STD.CFFI.Symbol<fn() => Int>, library: STD.CFFI.DynamicLibrary) {}\n";
+                      "fn Load(symbol: std.cffi.Symbol<fn() => Int>, library: std.cffi.DynamicLibrary) {}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nimports CFFI;\nextern \"C\" { fn Bad(ptr: STD.CFFI.RawPtr); }\n"));
-  CHECK(!check_single_source("module App;\nimports CFFI;\nextern \"C\" { fn Bad(ptr: STD.CFFI.CStr<Int>); }\n"));
-  CHECK(!check_single_source("module App;\nfn Bad(ptr: STD.CFFI.CStr) {}\n"));
+  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std.cffi.RawPtr); }\n"));
+  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std.cffi.CStr<Int>); }\n"));
+  CHECK(!check_single_source("module App;\nfn Bad(ptr: std.cffi.CStr) {}\n"));
 }
 
 static void test_duplicate_generic_parameter_names(void)
@@ -161,7 +161,7 @@ static void test_imported_user_type(void)
   const char *library = "module Model;\n"
                         "public data User { name: Str; }\n";
   const char *main = "module App;\n"
-                     "from Model imports User;\n"
+                     "using Model.User;\n"
                      "fn Main(value: User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
@@ -327,7 +327,7 @@ static void test_imported_generic_constraint(void)
   const char *library = "module Contract;\n"
                         "public interface Runnable { fn Run(); }\n";
   const char *main = "module App;\n"
-                     "from Contract imports Runnable;\n"
+                     "using Contract.Runnable;\n"
                      "fn Execute<T: Runnable>(value: T) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;

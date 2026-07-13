@@ -6,7 +6,7 @@
 
 module Programs.FileBackup;
 
-imports Collections, Stdio, FS, Process, Result;
+imports collections, stdio, fs, process, result;
 
 enum data BackupError {
     Io: IOException,
@@ -23,30 +23,30 @@ data FileEntry {
 class BackupPlan {
     sourceRoot: Str;
     targetRoot: Str;
-    files: STD.Collections.vector<FileEntry>;
+    files: std.collections.vector<FileEntry>;
 
     BackupPlan(sourceRoot: Str, targetRoot: Str) {
         this.sourceRoot = sourceRoot;
         this.targetRoot = targetRoot;
-        this.files = STD.Collections.vector<FileEntry>.new();
+        this.files = std.collections.vector<FileEntry>.new();
     }
 
     fn Discover() => Result.Result<Void, BackupError> {
-        if (!STD.FS.isDir(this.sourceRoot)) {
+        if (!std.fs.isDir(this.sourceRoot)) {
             return Result.Error(BackupError.InvalidSource(this.sourceRoot));
         }
 
-        for (path: Str in STD.FS.walkDir(this.sourceRoot)) {
-            if (STD.FS.isDir(path)) {
+        for (path: Str in std.fs.walkDir(this.sourceRoot)) {
+            if (std.fs.isDir(path)) {
                 continue;
             }
 
-            relative: Str = STD.FS.relativePath(this.sourceRoot, path);
+            relative: Str = std.fs.relativePath(this.sourceRoot, path);
             this.files.push(FileEntry {
                 path: path,
                 relative: relative,
-                bytes: STD.FS.size(path),
-                modifiedTicks: STD.FS.modifiedTicks(path),
+                bytes: std.fs.size(path),
+                modifiedTicks: std.fs.modifiedTicks(path),
             });
         }
         return Result.Ok();
@@ -54,11 +54,11 @@ class BackupPlan {
 
     fn Execute() => Result.Result<Void, IOException> {
         for (entry: FileEntry in this.files) {
-            destination: Str = STD.FS.joinPath(this.targetRoot, entry.relative);
+            destination: Str = std.fs.joinPath(this.targetRoot, entry.relative);
 
             if (this.ShouldCopy(entry, destination)) {
-                STD.FS.createDir(STD.FS.parentDir(destination));
-                STD.FS.copyFile(entry.path, destination);
+                std.fs.createDir(std.fs.parentDir(destination));
+                std.fs.copyFile(entry.path, destination);
                 println!("copied {}", entry.relative);
             }
         }
@@ -66,15 +66,15 @@ class BackupPlan {
     }
 
     fn ShouldCopy(entry: FileEntry, destination: Str) => Bool {
-        if (!STD.FS.exists(destination)) {
+        if (!std.fs.exists(destination)) {
             return true;
         }
 
-        return STD.FS.size(destination) != entry.bytes || STD.FS.modifiedTicks(destination) < entry.modifiedTicks;
+        return std.fs.size(destination) != entry.bytes || std.fs.modifiedTicks(destination) < entry.modifiedTicks;
     }
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
+fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
     if (args.length() != 3) {
         eprintln!("usage: backup <source> <target>");
         return 2;

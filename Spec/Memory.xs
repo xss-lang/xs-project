@@ -278,8 +278,8 @@ iter: Iterator<Int> = numbers.Iterator();
 // VALID
 // allocation is explicit
 
-users: STD.Collections.vector<User> =
-    STD.Collections.vector.new();
+users: std.collections.vector<User> =
+    std.collections.vector.new();
 
 
 // INVALID DESIGN

@@ -34,7 +34,8 @@ static bool parse(const char *text, XsAst *ast, XsDiagnostics *diagnostics)
 
 static void test_top_level_declarations(void)
 {
-  const char *text = "module Math; namespace Advanced; imports Stdio, Math; "
+  const char *text = "module Math; namespace Advanced; imports stdio, Math; "
+                     "using namespace stdio; using Sum = Math.Add; "
                      "public class Box<T> { value: T; } "
                      "interface Printable { fn Print(); } "
                      "data Pair<T, U> { first: T second: U } "
@@ -44,14 +45,16 @@ static void test_top_level_declarations(void)
   XsAst ast;
   XsDiagnostics diagnostics;
   CHECK(parse(text, &ast, &diagnostics));
-  CHECK(ast.count == 9);
+  CHECK(ast.count == 11);
   CHECK(ast.items[0].kind == XS_AST_MODULE);
   CHECK(ast.items[1].kind == XS_AST_NAMESPACE);
   CHECK(ast.items[2].kind == XS_AST_IMPORT);
-  CHECK(ast.items[3].kind == XS_AST_CLASS);
-  CHECK(ast.items[3].item.visibility == XS_VISIBILITY_PUBLIC);
-  CHECK(ast.items[7].kind == XS_AST_ENUM && ast.items[7].item.is_data_enum);
-  CHECK(ast.items[8].kind == XS_AST_FUNCTION && ast.items[8].item.is_async);
+  CHECK(ast.items[3].kind == XS_AST_IMPORT);
+  CHECK(ast.items[4].kind == XS_AST_IMPORT);
+  CHECK(ast.items[5].kind == XS_AST_CLASS);
+  CHECK(ast.items[5].item.visibility == XS_VISIBILITY_PUBLIC);
+  CHECK(ast.items[9].kind == XS_AST_ENUM && ast.items[9].item.is_data_enum);
+  CHECK(ast.items[10].kind == XS_AST_FUNCTION && ast.items[10].item.is_async);
   xs_ast_free(&ast);
   xs_diagnostics_free(&diagnostics);
 }

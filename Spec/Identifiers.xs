@@ -34,17 +34,17 @@
 //
 // Standard-library examples:
 //
-//     STD.Collections.hash_map.get(scores, "Alpha")
-//     STD.Stdin().readLine(&mut input)
+//     std.collections.hash_map.get(scores, "Alpha")
+//     std.stdin().read_line(&mut input)
 //
 // Segment roles:
 //
 // - STD is the standard-library root.
 // - PascalCase is used for public modules, namespaces, and nominal types.
-// - Short public acronyms may stay fully uppercase, for example STD.FS.
+// - Short public acronyms may stay fully uppercase, for example std.fs.
 // - snake_case is used for registry-like families such as collection kinds.
 // - lowercase is used for short free functions such as get().
-// - camelCase is used for methods and longer function names such as readLine().
+// - camelCase is used for methods and longer function names such as read_line().
 //
 // This is a style and standard-library naming rule. It does not make
 // differently cased identifiers equivalent.

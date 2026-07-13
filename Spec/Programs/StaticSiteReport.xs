@@ -6,7 +6,7 @@
 
 module Programs.StaticSiteReport;
 
-imports Collections, FS, Optional, Stdio, Process, Result;
+imports collections, fs, optional, stdio, process, result;
 
 enum data SiteError {
     Io: IOException,
@@ -31,19 +31,19 @@ class Markdown {
     }
 
     static fn CountWords(text: Str) => Int {
-        return text.splitWhitespace().length();
+        return text.split_whitespace().length();
     }
 }
 
 class SiteReport {
-    pages: STD.Collections.vector<PageInfo>;
+    pages: std.collections.vector<PageInfo>;
 
     SiteReport() {
-        this.pages = STD.Collections.vector<PageInfo>.new();
+        this.pages = std.collections.vector<PageInfo>.new();
     }
 
     fn AddMarkdown(path: Str) => Result.Result<Void, Result.Error> {
-        text: Str = STD.FS.readToStr(path);
+        text: Str = std.fs.read_to_str(path);
         this.pages.push(PageInfo {
             path: path,
             title: Markdown.Title(path, text)@,
@@ -62,7 +62,7 @@ class SiteReport {
     }
 }
 
-fn Main(args: STD.Process.Args) => Result.Result<Int, Result.Error> {
+fn Main(args: std.Process.Args) => Result.Result<Int, Result.Error> {
     root: Str = if (args.length() == 2) {
         args[1];
     }
@@ -71,7 +71,7 @@ fn Main(args: STD.Process.Args) => Result.Result<Int, Result.Error> {
     };
 
     report: SiteReport = new();
-    for (path: Str in STD.FS.walk(root)) {
+    for (path: Str in std.fs.walk(root)) {
         if (path.endsWith(".md")) {
             report.AddMarkdown(path)@;
         }

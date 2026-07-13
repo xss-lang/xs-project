@@ -6,7 +6,7 @@
 
 module Programs.JobQueue;
 
-imports Collections, Optional, Process, Result, Stdio, Sync;
+imports collections, optional, process, result, stdio, sync;
 
 enum data JobError {
     EmptyQueue,
@@ -20,10 +20,10 @@ data Job {
 }
 
 class Queue {
-    jobs: STD.Collections.vector<Job>;
+    jobs: std.collections.vector<Job>;
 
     Queue() {
-        this.jobs = STD.Collections.vector<Job>.new();
+        this.jobs = std.collections.vector<Job>.new();
     }
 
     fn Push(job: Job) {
@@ -32,10 +32,10 @@ class Queue {
 
     fn Pop() => Optional<Job> {
         if (this.jobs.length() == 0) {
-            return STD.Optional.None;
+            return std.optional.None;
         }
 
-        return STD.Optional.Some(this.jobs.remove(0));
+        return std.optional.Some(this.jobs.remove(0));
     }
 }
 
@@ -57,7 +57,7 @@ class Worker {
     }
 
     static async fn Execute(job: Job) => Result.Result<Void, JobError> {
-        status: Int = await STD.Process.run(job.command);
+        status: Int = await std.Process.run(job.command);
         if (status != 0) {
             return Result.Error(JobError.Failed(job.command));
         }

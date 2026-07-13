@@ -6,7 +6,7 @@
 
 module Programs.TodoCli;
 
-imports Stdio, FS, Collections, Process, Result;
+imports stdio, fs, collections, process, result;
 
 enum data TodoError {
     Io: IOException,
@@ -30,12 +30,12 @@ data TodoItem {
 class TodoStore {
     path: Str;
     nextId: Int;
-    items: STD.Collections.vector<TodoItem>;
+    items: std.collections.vector<TodoItem>;
 
     TodoStore(path: Str) {
         this.path = path;
         this.nextId = 1;
-        this.items = STD.Collections.vector<TodoItem>.new();
+        this.items = std.collections.vector<TodoItem>.new();
     }
 
     static fn Open(path: Str) => Result.Result<TodoStore, TodoError> {
@@ -88,11 +88,11 @@ class TodoStore {
     }
 
     fn Load() => Result.Result<Void, TodoError> {
-        if (!STD.FS.exists(this.path)) {
+        if (!std.fs.exists(this.path)) {
             return Result.Ok();
         }
 
-        content: Str = STD.FS.readToStr(this.path);
+        content: Str = std.fs.read_to_str(this.path);
 
         for (line: Str in content.lines()) {
             if (line.length() == 0) {
@@ -110,16 +110,16 @@ class TodoStore {
     }
 
     fn Save() => Result.Result<Void, TodoError> {
-        if (!STD.FS.exists(this.path)) {
-            STD.FS.createFile(this.path);
+        if (!std.fs.exists(this.path)) {
+            std.fs.createFile(this.path);
         }
 
-        opened: STD.FS.File = STD.FS.OpenOptions.new()
+        opened: std.fs.File = std.fs.OpenOptions.new()
             .truncate(true)
             .open(this.path);
 
         for (item: TodoItem in this.items) {
-            STD.FS.write(opened, format!("{}\n", TodoCodec.Format(item)));
+            std.fs.write(opened, format!("{}\n", TodoCodec.Format(item)));
         }
         return Result.Ok();
     }
@@ -127,7 +127,7 @@ class TodoStore {
 
 class TodoCodec {
     static fn Parse(line: Str) => Result.Result<TodoItem, TodoError> {
-        parts: STD.Collections.vector<Str> = line.split("|");
+        parts: std.collections.vector<Str> = line.split("|");
         if (parts.length() != 3) {
             return Result.Error(TodoError.InvalidCommand(line));
         }
@@ -150,7 +150,7 @@ class TodoCodec {
     }
 }
 
-fn ParseCommand(args: STD.Collections.vector<Str>) => Result.Result<Command, TodoError> {
+fn ParseCommand(args: std.collections.vector<Str>) => Result.Result<Command, TodoError> {
     if (args.length() < 2) {
         return Result.Ok(Command.Help);
     }
@@ -187,7 +187,7 @@ fn PrintHelp() => Result.Result<Void, IOException> {
     return Result.Ok();
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
+fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
     store: TodoStore = TodoStore.Open("todo.db")@;
     command: Command = ParseCommand(args)@;
 

@@ -4,24 +4,24 @@
 // FS module:
 
 //
-// STD.FS provides filesystem and raw stream operations.
+// std.fs provides filesystem and raw stream operations.
 //
 // Formatted output belongs to Stdio.
-// STD.FS.write does not format text and does not add a newline.
+// std.fs.write does not format text and does not add a newline.
 //
 
-imports FS, Stdio, Collections, Result;
+imports fs, stdio, collections, result;
 
 
 // raw writes
 
 fn WriteText() => Result.Result<Void, IOException> {
-    STD.FS.write("log.txt", "hello\n");
-    STD.FS.write(STD.Stdout, "stdout\n");
-    STD.FS.write(STD.Stderr, "stderr\n");
+    std.fs.write("log.txt", "hello\n");
+    std.fs.write(std.stdout, "stdout\n");
+    std.fs.write(std.stderr, "stderr\n");
 }
 
-// STD.FS.write(path, text):
+// std.fs.write(path, text):
 //
 // - Writes the exact Str bytes/text representation selected by the runtime.
 // - Does not apply formatting.
@@ -33,33 +33,33 @@ fn WriteText() => Result.Result<Void, IOException> {
 // raw reads
 
 fn ReadText() => Result.Result<Void, IOException> {
-    content: Str = STD.FS.readToStr("log.txt");
+    content: Str = std.fs.read_to_str("log.txt");
     println!("{}", content);
 }
 
 fn ReadBytes() => Result.Result<Void, IOException> {
-    bytes: STD.Collections.vector<Byte> = STD.FS.read("image.png");
+    bytes: std.collections.vector<Byte> = std.fs.read("image.png");
     println!("file size: {}", bytes.length());
 }
 
-// STD.FS.readToStr(path-or-stream) reads UTF-16 text into Str.
-// STD.FS.read(path-or-stream) reads raw bytes into STD.Collections.vector<Byte>.
+// std.fs.read_to_str(path-or-stream) reads UTF-16 text into Str.
+// std.fs.read(path-or-stream) reads raw bytes into std.collections.vector<Byte>.
 
 
 // create paths
 
 fn CreatePaths() => Result.Result<Void, IOException> {
-    STD.FS.createDir("data/backups");
-    STD.FS.createFile("data/backups/log.txt");
+    std.fs.createDir("data/backups");
+    std.fs.createFile("data/backups/log.txt");
 }
 
-// STD.FS.createDir(path):
+// std.fs.createDir(path):
 //
 // - Creates the directory and missing parent directories.
 // - Succeeds if the directory already exists.
 // - Returns Result.Error(IOException) if a non-directory path component blocks creation.
 //
-// STD.FS.createFile(path):
+// std.fs.createFile(path):
 //
 // - Creates a new empty file.
 // - Returns Result.Error(IOException) if the file already exists.
@@ -69,70 +69,70 @@ fn CreatePaths() => Result.Result<Void, IOException> {
 // move, copy and remove
 
 fn MoveCopyRemove() => Result.Result<Void, IOException> {
-    STD.FS.copyFile("data/source.txt", "data/copy.txt");
-    STD.FS.move("data/copy.txt", "data/backups/copy.txt");
-    STD.FS.removeFile("data/source.txt");
+    std.fs.copyFile("data/source.txt", "data/copy.txt");
+    std.fs.move("data/copy.txt", "data/backups/copy.txt");
+    std.fs.removeFile("data/source.txt");
 
-    STD.FS.copyDir("data/backups", "data/archive");
-    STD.FS.removeDir("data/archive");
+    std.fs.copyDir("data/backups", "data/archive");
+    std.fs.removeDir("data/archive");
 }
 
-// STD.FS.removeDir removes an empty directory.
+// std.fs.removeDir removes an empty directory.
 // Recursive directory deletion is intentionally not the default operation.
 
 
 // list directory
 
 fn ListDirectory() => Result.Result<Void, IOException> {
-    for (entry: Str in STD.FS.listDir(".")) {
+    for (entry: Str in std.fs.listDir(".")) {
         println!("{}", entry.trim());
     }
 }
 
-// STD.FS.listDir(path) returns STD.Collections.vector<Str>.
+// std.fs.listDir(path) returns std.collections.vector<Str>.
 // Entries are returned in deterministic lexicographic order.
 
 
 // metadata and path helpers
 
 fn InspectPath(path: Str) => Result.Result<Void, IOException> {
-    if (STD.FS.exists(path) && STD.FS.isDir(path)) {
-        for (entry: Str in STD.FS.walkDir(path)) {
-            relative: Str = STD.FS.relativePath(path, entry);
-            println!("{} {}", relative, STD.FS.size(entry));
+    if (std.fs.exists(path) && std.fs.isDir(path)) {
+        for (entry: Str in std.fs.walkDir(path)) {
+            relative: Str = std.fs.relativePath(path, entry);
+            println!("{} {}", relative, std.fs.size(entry));
         }
     }
 }
 
 fn BuildPath(root: Str, name: Str) => Str {
-    path: Str = STD.FS.joinPath(root, name);
-    return STD.FS.parentDir(path);
+    path: Str = std.fs.joinPath(root, name);
+    return std.fs.parentDir(path);
 }
 
-// STD.FS.exists(path) returns false instead of throwing for a missing path.
-// STD.FS.isFile(path) and STD.FS.isDir(path) return false for a missing path.
-// STD.FS.size(path) returns the byte length of a regular file.
-// STD.FS.modifiedTicks(path) returns a runtime-defined comparable timestamp.
-// STD.FS.joinPath(base, child) joins path components using the target platform.
-// STD.FS.parentDir(path) returns the lexical parent directory.
-// STD.FS.relativePath(root, path) returns a lexical relative path.
-// STD.FS.walkDir(path) recursively returns files and directories in
+// std.fs.exists(path) returns false instead of throwing for a missing path.
+// std.fs.isFile(path) and std.fs.isDir(path) return false for a missing path.
+// std.fs.size(path) returns the byte length of a regular file.
+// std.fs.modifiedTicks(path) returns a runtime-defined comparable timestamp.
+// std.fs.joinPath(base, child) joins path components using the target platform.
+// std.fs.parentDir(path) returns the lexical parent directory.
+// std.fs.relativePath(root, path) returns a lexical relative path.
+// std.fs.walkDir(path) recursively returns files and directories in
 // deterministic lexicographic order.
-// STD.FS.walkDir does not follow symbolic links by default.
+// std.fs.walkDir does not follow symbolic links by default.
 
 
 // file handles and open options
 
 fn OpenWithOptions() => Result.Result<Void, IOException> {
-    file: STD.FS.File = STD.FS.OpenOptions.new()
+    file: std.fs.File = std.fs.OpenOptions.new()
         .create(true)
         .append(true)
         .open("log.txt");
 
-    STD.FS.write(file, "new log line\n");
+    std.fs.write(file, "new log line\n");
 }
 
-// STD.FS.File is an owned file handle.
+// std.fs.File is an owned file handle.
 // File handles close through deterministic drop.
 // OpenOptions defaults:
 //

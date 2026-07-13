@@ -270,7 +270,7 @@ static bool parse_item(XsParser *parser, XsAst *ast)
     }
     return xs_ast_push(ast, (XsAstNode){.kind = kind, .item = item});
   }
-  if(accept(parser, XS_TOKEN_KW_IMPORTS) || accept(parser, XS_TOKEN_KW_FROM))
+  if(accept(parser, XS_TOKEN_KW_IMPORTS) || accept(parser, XS_TOKEN_KW_USING))
   {
     XsSpan import_span;
     if(!skip_until_semicolon(parser, &import_span))
@@ -308,7 +308,7 @@ static void synchronize(XsParser *parser)
     case XS_TOKEN_KW_MODULE:
     case XS_TOKEN_KW_NAMESPACE:
     case XS_TOKEN_KW_IMPORTS:
-    case XS_TOKEN_KW_FROM:
+    case XS_TOKEN_KW_USING:
     case XS_TOKEN_KW_FN:
     case XS_TOKEN_KW_CLASS:
     case XS_TOKEN_KW_INTERFACE:

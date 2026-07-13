@@ -252,6 +252,34 @@ static XsSyntaxNode *parse_import(SyntaxParser *parser, bool selected, size_t st
   return import;
 }
 
+static XsSyntaxNode *parse_using(SyntaxParser *parser, size_t start)
+{
+  XsSyntaxNode *using_decl = node(parser, XS_SYNTAX_DECL_IMPORT, (XsSpan){start, parser->previous.span.end});
+  using_decl->flags |= XS_SYNTAX_FLAG_USING;
+  if(accept(parser, XS_TOKEN_KW_NAMESPACE))
+  {
+    using_decl->flags |= XS_SYNTAX_FLAG_WILDCARD;
+    xs_syntax_node_add(parser->tree, using_decl, parse_path(parser));
+  }
+  else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_ASSIGN)
+  {
+    using_decl->flags |= XS_SYNTAX_FLAG_USING_ALIAS;
+    xs_syntax_node_add(parser->tree, using_decl, identifier(parser));
+    expect(parser, XS_TOKEN_ASSIGN, "expected '=' after using alias");
+    xs_syntax_node_add(parser->tree, using_decl, parse_path(parser));
+  }
+  else
+  {
+    xs_syntax_node_add(parser->tree, using_decl, parse_path(parser));
+  }
+  if(accept(parser, XS_TOKEN_STAR))
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                       "using does not support glob imports");
+  expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after using declaration");
+  finish_node(parser, using_decl, parser->previous.span.end);
+  return using_decl;
+}
+
 static XsSyntaxNode *parse_declaration_macro_call(SyntaxParser *parser, size_t start)
 {
   XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_MACRO_CALL, (XsSpan){start, start});
@@ -269,10 +297,7 @@ static XsSyntaxNode *extern_abi_token(SyntaxParser *parser, XsSpan span)
   return abi;
 }
 
-static XsSyntaxNode *parse_extern_static(SyntaxParser *parser,
-                                         Modifiers modifiers,
-                                         size_t start,
-                                         XsSpan abi_span,
+static XsSyntaxNode *parse_extern_static(SyntaxParser *parser, Modifiers modifiers, size_t start, XsSpan abi_span,
                                          bool static_consumed)
 {
   if(!static_consumed)
@@ -330,8 +355,9 @@ static XsSyntaxNode *parse_extern_block(SyntaxParser *parser, Modifiers modifier
     else if(parser->current.kind == XS_TOKEN_KW_STATIC ||
             ((member.flags & XS_SYNTAX_FLAG_STATIC) != 0 && parser->current.kind == XS_TOKEN_IDENTIFIER))
     {
-      xs_syntax_node_add(parser->tree, declaration,
-                         parse_extern_static(parser, member, before, abi_span, parser->current.kind != XS_TOKEN_KW_STATIC));
+      xs_syntax_node_add(
+          parser->tree, declaration,
+          parse_extern_static(parser, member, before, abi_span, parser->current.kind != XS_TOKEN_KW_STATIC));
     }
     else
     {
@@ -729,8 +755,8 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
   }
   if(accept(parser, XS_TOKEN_KW_IMPORTS))
     return parse_import(parser, false, start);
-  if(accept(parser, XS_TOKEN_KW_FROM))
-    return parse_import(parser, true, start);
+  if(accept(parser, XS_TOKEN_KW_USING))
+    return parse_using(parser, start);
   if(parser->current.kind == XS_TOKEN_KW_EXTERN)
     return parse_extern_block(parser, modifiers, start);
   if(accept(parser, XS_TOKEN_KW_FN))

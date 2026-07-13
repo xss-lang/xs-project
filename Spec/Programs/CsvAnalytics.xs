@@ -6,7 +6,7 @@
 
 module Programs.CsvAnalytics;
 
-imports Collections, Stdio, FS, Process, Result;
+imports collections, stdio, fs, process, result;
 
 enum data CsvError {
     Io: IOException,
@@ -28,7 +28,7 @@ data RegionTotal {
 
 class CsvParser {
     static fn ParseLine(line: Str) => Result.Result<Sale, CsvError> {
-        fields: STD.Collections.vector<Str> = line.split(",");
+        fields: std.collections.vector<Str> = line.split(",");
         if (fields.length() != 4) {
             return Result.Error(CsvError.BadRow(line));
         }
@@ -43,10 +43,10 @@ class CsvParser {
 }
 
 class Analytics {
-    totals: STD.Collections.hash_map<Str, RegionTotal>;
+    totals: std.collections.hash_map<Str, RegionTotal>;
 
     Analytics() {
-        this.totals = STD.Collections.hash_map<Str, RegionTotal>.new();
+        this.totals = std.collections.hash_map<Str, RegionTotal>.new();
     }
 
     fn Add(sale: Sale) {
@@ -75,9 +75,9 @@ class Analytics {
     }
 }
 
-fn LoadSales(path: Str) => Result.Result<STD.Collections.vector<Sale>, Result.Error> {
-    rows: STD.Collections.vector<Sale> = STD.Collections.vector<Sale>.new();
-    content: Str = STD.FS.readToStr(path);
+fn LoadSales(path: Str) => Result.Result<std.collections.vector<Sale>, Result.Error> {
+    rows: std.collections.vector<Sale> = std.collections.vector<Sale>.new();
+    content: Str = std.fs.read_to_str(path);
 
     for (line: Str in content.lines().skip(1)) {
         if (line.length() == 0) {
@@ -89,7 +89,7 @@ fn LoadSales(path: Str) => Result.Result<STD.Collections.vector<Sale>, Result.Er
     return Result.Ok(rows);
 }
 
-fn Main(args: STD.Collections.vector<Str>) => Result.Result<Int, Result.Error> {
+fn Main(args: std.collections.vector<Str>) => Result.Result<Int, Result.Error> {
     path: Str = if (args.length() > 1) {
         args[1];
     }

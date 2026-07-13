@@ -28,9 +28,9 @@ valueUInteger: UInteger = 340'000'000'000'000'000'000;
 valueSFloat: SFloat = 1.0;
 valueFloat: Float = 1.0;
 
-// Optional<T> is resolved as if the compiler had inserted `imports Optional`
-// and brought STD.Optional.Optional<T> into scope as Optional<T>.
-// The value constructors are STD.Optional.None and STD.Optional.Some(...).
+// Optional<T> is resolved as if the compiler had inserted `imports optional`
+// and brought std.optional.Optional<T> into scope as Optional<T>.
+// The value constructors are std.optional.None and std.optional.Some(...).
 // Users may import Optional explicitly, but normal source files do not need to.
 // Optional<T> is not lowered through the enum data mechanism.
 // There is no nullable T? type operator.
@@ -38,18 +38,18 @@ valueFloat: Float = 1.0;
 name: Optional<Str> = None;
 name = Some("Leitwolf");
 
-// Result is also special. The compiler behaves as if `imports Result;` existed
+// Result is also special. The compiler behaves as if `imports result;` existed
 // and brings the short Result<T, E> wrapper name into scope. Most other STD
-// modules still require qualified STD.* names or explicit selected imports.
+// modules still require qualified std.* names or explicit using declarations.
 
 status: Result<Int, Result.Error> = Result.Ok(0);
 
-emptyCanonical: STD.Optional.Optional<Str> = STD.Optional.None;
-canonicalName: STD.Optional.Optional<Str> = STD.Optional.Some("Leitwolf");
+emptyCanonical: std.optional.Optional<Str> = std.optional.None;
+canonicalName: std.optional.Optional<Str> = std.optional.Some("Leitwolf");
 shortName: Optional<Str> = canonicalName;
 
 display: Str = name ?? "guest";
-name ??= STD.Optional.Some("guest");
+name ??= std.optional.Some("guest");
 
 // Automatic unboxing from Optional<T> to T may fail. New code models that as
 // Result.Error rather than legacy exceptions.

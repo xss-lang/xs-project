@@ -51,7 +51,7 @@
 // argument value used by Stdio writer/output macros. It is not resolved
 // through Stdio.
 
-imports Stdio;
+imports stdio;
 
 // print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
 // normal macros exported by Stdio. They are not compiler built-ins.

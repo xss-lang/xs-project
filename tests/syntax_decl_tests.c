@@ -338,11 +338,11 @@ static void test_generic_constraint_structure(void)
 
 static void test_extern_c_function_structure(void)
 {
-  const char *text = "imports CFFI;\n"
+  const char *text = "imports cffi;\n"
                      "#[repr(C)]\n"
                      "extern \"C\" {\n"
                      "  #[LinkName(\"puts\")]\n"
-                     "  fn puts(text: STD.CFFI.CStr) => Int;\n"
+                     "  fn puts(text: std.cffi.CStr) => Int;\n"
                      "  #[ThreadLocal]\n"
                      "  static errno: Int;\n"
                      "}\n";
@@ -363,7 +363,7 @@ static void test_extern_c_function_structure(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *body = "extern \"C\" { fn puts(text: STD.CFFI.CStr) => Int {} }\n";
+  const char *body = "extern \"C\" { fn puts(text: std.cffi.CStr) => Int {} }\n";
   source = (XsSource){.path = "ExternCBodyInvalid.xs", .text = body, .length = strlen(body)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 48, &diagnostics, &tree));
@@ -375,6 +375,32 @@ static void test_extern_c_function_structure(void)
   source = (XsSource){.path = "ExternCStaticInitializerInvalid.xs", .text = initializer, .length = strlen(initializer)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 49, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_using_declaration_structure(void)
+{
+  const char *text = "using namespace Math.Advanced;\n"
+                     "using Math.Add;\n"
+                     "using Sum = Math.Add;\n";
+  XsSource source = {.path = "Using.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 50, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_IMPORT) == 3);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_USING) == 3);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_WILDCARD) == 1);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_USING_ALIAS) == 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *glob = "using Math.*;\n";
+  source = (XsSource){.path = "UsingGlobInvalid.xs", .text = glob, .length = strlen(glob)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 51, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -392,5 +418,6 @@ int main(void)
   test_enum_payload_rules();
   test_generic_constraint_structure();
   test_extern_c_function_structure();
+  test_using_declaration_structure();
   return failures == 0 ? 0 : 1;
 }

@@ -164,6 +164,8 @@ enum
   XS_SYNTAX_FLAG_OVERLOAD = 1U << 15,
   XS_SYNTAX_FLAG_INNER_ATTRIBUTE = 1U << 16,
   XS_SYNTAX_FLAG_EXTERN = 1U << 17,
+  XS_SYNTAX_FLAG_USING = 1U << 18,
+  XS_SYNTAX_FLAG_USING_ALIAS = 1U << 19,
 };
 
 typedef struct XsSyntaxNode XsSyntaxNode;

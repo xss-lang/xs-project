@@ -6,7 +6,7 @@
 
 module Programs.BankLedger;
 
-imports Collections, Stdio, Process, Result;
+imports collections, stdio, process, result;
 
 enum data LedgerError {
     UnknownAccount: Str,
@@ -33,12 +33,12 @@ data Transfer {
 }
 
 class Ledger {
-    accounts: STD.Collections.hash_map<Str, Account>;
-    audit: STD.Collections.vector<Transfer>;
+    accounts: std.collections.hash_map<Str, Account>;
+    audit: std.collections.vector<Transfer>;
 
     Ledger() {
-        this.accounts = STD.Collections.hash_map<Str, Account>.new();
-        this.audit = STD.Collections.vector<Transfer>.new();
+        this.accounts = std.collections.hash_map<Str, Account>.new();
+        this.audit = std.collections.vector<Transfer>.new();
     }
 
     fn Open(id: Str, owner: Str, balance: Money) {
@@ -101,7 +101,7 @@ fn Main() => Result.Result<Int, Result.Error> {
             cents: 12'500,
             currency: "USD",
         },
-        memo: STD.Optional.Some("monthly savings"),
+        memo: std.optional.Some("monthly savings"),
     })@;
 
     ledger.Print()@;

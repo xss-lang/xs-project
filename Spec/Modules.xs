@@ -66,36 +66,29 @@ fn Main() {
 
 
 // multiple imports
-imports Stdio, Math, Collections;
+imports stdio, Math, collections;
 
 
-// import alias
-imports Math as M;
-
-fn Main() {
-    result: Int = M.Add(1, 2);
-}
-
-
-// wildcard import
-from Math imports *;
+// namespace using declaration
+using namespace Math;
 
 fn Main() {
     result: Int = Add(1, 2);
 }
 
 
-// selected import
-// selected imports place the selected public name in local scope.
-from Math imports Add;
+// using declaration
+// using declarations place one selected public name in local scope.
+using Math.Add;
 
 fn Main() {
     result: Int = Add(1, 2);
 }
 
 
-// selected multiple import
-from Math imports Add, Subtract;
+// multiple using declarations
+using Math.Add;
+using Math.Subtract;
 
 fn Main() {
     a: Int = Add(1, 2);
@@ -103,8 +96,8 @@ fn Main() {
 }
 
 
-// selected import alias
-from Math imports Add as Sum;
+// using alias declaration
+using Sum = Math.Add;
 
 fn Main() {
     result: Int = Sum(1, 2);
@@ -127,16 +120,16 @@ fn Main() {
 }
 
 
-// direct enum access after wildcard import
-from Math imports *;
+// direct enum access after namespace using
+using namespace Math;
 
 fn Main() {
     color: Color = Color.Red;
 }
 
 
-// direct enum access after selected import
-from Math imports Color;
+// direct enum access after using declaration
+using Math.Color;
 
 fn Main() {
     color: Color = Color.Red;
@@ -149,25 +142,23 @@ imports Math;
 
 imports Math, Math;
 
-from Math imports Add;
-from Math imports Add;
+using Math.Add;
+using Math.Add;
 
 // Duplicate imports are valid and treated as one import.
 
 
-// import name collision
-from Math imports Add;
-from Utils imports Add;
+// using name collision
+using Math.Add;
+using Utils.Add;
 
 fn Main() {
-    M.Add(1, 2);
-    U.Add(1, 2);
+    Math.Add(1, 2);
+    Utils.Add(1, 2);
 }
 
-// If the same member name is imported from multiple modules,
-// the names are accessed through automatic module aliases.
-// Math -> M
-// Utils -> U
+// If the same local name is opened from multiple modules,
+// it is a diagnostic. Keep the calls qualified instead.
 
 
 // VALID
@@ -242,6 +233,6 @@ fn InternalHelper() {
 }
 
 // from another file:
-from Math imports InternalHelper;
+using Math.InternalHelper;
 
 // Non-public members are not visible from other modules.

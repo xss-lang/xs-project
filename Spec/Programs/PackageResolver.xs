@@ -6,7 +6,7 @@
 
 module Programs.PackageResolver;
 
-imports Collections, Stdio, Process, Result;
+imports collections, stdio, process, result;
 
 enum data ResolveError {
     UnknownPackage: Str,
@@ -22,18 +22,18 @@ enum VisitState {
 data Package {
     name: Str;
     version: Str;
-    dependencies: STD.Collections.vector<Str>;
+    dependencies: std.collections.vector<Str>;
 }
 
 class PackageGraph {
-    packages: STD.Collections.hash_map<Str, Package>;
-    states: STD.Collections.hash_map<Str, VisitState>;
-    ordered: STD.Collections.vector<Package>;
+    packages: std.collections.hash_map<Str, Package>;
+    states: std.collections.hash_map<Str, VisitState>;
+    ordered: std.collections.vector<Package>;
 
     PackageGraph() {
-        this.packages = STD.Collections.hash_map<Str, Package>.new();
-        this.states = STD.Collections.hash_map<Str, VisitState>.new();
-        this.ordered = STD.Collections.vector<Package>.new();
+        this.packages = std.collections.hash_map<Str, Package>.new();
+        this.states = std.collections.hash_map<Str, VisitState>.new();
+        this.ordered = std.collections.vector<Package>.new();
     }
 
     fn Add(package: Package) {
@@ -41,7 +41,7 @@ class PackageGraph {
         this.states[package.name] = VisitState.White;
     }
 
-    fn Resolve(root: Str) => Result.Result<STD.Collections.vector<Package>, ResolveError> {
+    fn Resolve(root: Str) => Result.Result<std.collections.vector<Package>, ResolveError> {
         this.Visit(root)@;
         return Result.Ok(this.ordered);
     }
@@ -76,7 +76,7 @@ class PackageGraph {
     }
 }
 
-fn PackageOf(name: Str, version: Str, dependencies: STD.Collections.vector<Str>) => Package {
+fn PackageOf(name: Str, version: Str, dependencies: std.collections.vector<Str>) => Package {
     return Package {
         name: name,
         version: version,
@@ -87,10 +87,10 @@ fn PackageOf(name: Str, version: Str, dependencies: STD.Collections.vector<Str>)
 fn Main() => Result.Result<Int, Result.Error> {
     graph: PackageGraph = new();
 
-    graph.Add(PackageOf("app", "1.0.0", STD.Collections.vector<Str>.of("net", "json")));
-    graph.Add(PackageOf("net", "2.1.0", STD.Collections.vector<Str>.of("runtime")));
-    graph.Add(PackageOf("json", "3.0.0", STD.Collections.vector<Str>.of("runtime")));
-    graph.Add(PackageOf("runtime", "1.4.0", STD.Collections.vector<Str>.new()));
+    graph.Add(PackageOf("app", "1.0.0", std.collections.vector<Str>.of("net", "json")));
+    graph.Add(PackageOf("net", "2.1.0", std.collections.vector<Str>.of("runtime")));
+    graph.Add(PackageOf("json", "3.0.0", std.collections.vector<Str>.of("runtime")));
+    graph.Add(PackageOf("runtime", "1.4.0", std.collections.vector<Str>.new()));
 
     for (package: Package in graph.Resolve("app")@) {
         println!("{}@{}", package.name, package.version);

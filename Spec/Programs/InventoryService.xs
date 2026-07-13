@@ -6,7 +6,7 @@
 
 module Programs.InventoryService;
 
-imports Collections, Stdio, Thread, Sync, Result;
+imports collections, stdio, thread, sync, result;
 
 enum data ServiceError {
     UnknownProduct: Str,
@@ -27,7 +27,7 @@ data OrderLine {
 
 data Order {
     id: Int;
-    lines: STD.Collections.vector<OrderLine>;
+    lines: std.collections.vector<OrderLine>;
 }
 
 data Receipt {
@@ -44,10 +44,10 @@ interface Repository<K, V> {
 class InventoryRepository {
     implements Repository<Str, Product>;
 
-    products: STD.Collections.hash_map<Str, Product>;
+    products: std.collections.hash_map<Str, Product>;
 
     InventoryRepository() {
-        this.products = STD.Collections.hash_map<Str, Product>.new();
+        this.products = std.collections.hash_map<Str, Product>.new();
     }
 
     fn Get(key: Str) => Result.Result<&Product, ServiceError> {
@@ -124,7 +124,7 @@ fn SeedInventory() => Arc<Mutex<InventoryRepository>> {
 }
 
 fn MakeOrder(id: Int, sku: Str, quantity: Int) => Order {
-    lines: STD.Collections.vector<OrderLine> = STD.Collections.vector<OrderLine>.new();
+    lines: std.collections.vector<OrderLine> = std.collections.vector<OrderLine>.new();
     lines.push(OrderLine {
         sku: sku,
         quantity: quantity,

@@ -7,7 +7,7 @@
 // injection. The official module is the standard CFFI module. User code imports
 // it explicitly:
 
-imports CFFI;
+imports cffi;
 
 
 // extern function declarations
@@ -16,17 +16,17 @@ imports CFFI;
 extern "C" {
     #[LinkName("puts")]
     #[NoUnwind]
-    fn puts(text: STD.CFFI.CStr) => Int;
+    fn puts(text: std.cffi.CStr) => Int;
 
     #[LinkName("strlen")]
     #[NoUnwind]
-    fn strlen(text: STD.CFFI.CStr) => ULong;
+    fn strlen(text: std.cffi.CStr) => ULong;
 }
 
 
 fn PrintLine(message: Str) => Result.Result<(), Result.Error> {
-    c_text: STD.CFFI.CString = STD.CFFI.CString.fromStr(message)@;
-    else: puts(c_text.asCStr());
+    c_text: std.cffi.CString = std.cffi.CString.from_str(message)@;
+    else: puts(c_text.as_c_str());
     return Result.Ok(());
 }
 
@@ -37,17 +37,17 @@ fn PrintLine(message: Str) => Result.Result<(), Result.Error> {
 #[Header("stdio.h")]
 #[repr(C)]
 extern "C" {
-    fn printf(format: STD.CFFI.CStr, args: STD.CFFI.VarArgs) => Int;
+    fn printf(format: std.cffi.CStr, args: std.cffi.VarArgs) => Int;
 
     #[ThreadLocal]
     #[LinkName("errno")]
     static errno: Int;
 
     #[LinkName("stdin")]
-    static stdin_handle: STD.CFFI.RawPtr<STD.CFFI.FILE>;
+    static stdin_handle: std.cffi.RawPtr<std.cffi.File>;
 
     #[LinkName("stdout")]
-    static stdout_handle: STD.CFFI.RawPtr<STD.CFFI.FILE>;
+    static stdout_handle: std.cffi.RawPtr<std.cffi.File>;
 }
 
 #[LinkLibrary("m")]
@@ -93,7 +93,7 @@ data FileDescriptor {
 
 #[Opaque]
 data NativeLibrary {
-    handle: STD.CFFI.Handle<NativeLibrary>,
+    handle: std.cffi.Handle<NativeLibrary>,
 }
 
 
@@ -102,7 +102,7 @@ data NativeLibrary {
 #[DynamicLibrary]
 #[NoUnwind]
 fn OpenLibrary(path: Str) => Result.Result<NativeLibrary, Result.Error> {
-    return STD.CFFI.DynamicLibrary.open(path);
+    return std.cffi.DynamicLibrary.open(path);
 }
 
 
@@ -111,14 +111,14 @@ fn OpenLibrary(path: Str) => Result.Result<NativeLibrary, Result.Error> {
 #[Unsafe]
 #[repr(C)]
 extern "C" {
-    fn malloc(size: ULong) => STD.CFFI.RawPtr<Void>;
+    fn malloc(size: ULong) => std.cffi.RawPtr<Void>;
 
-    fn free(ptr: STD.CFFI.RawPtr<Void>);
+    fn free(ptr: std.cffi.RawPtr<Void>);
 }
 
-fn Allocate(size: ULong) => Result.Result<STD.CFFI.RawPtr<Void>, Result.Error> {
-    ptr: STD.CFFI.RawPtr<Void> = malloc(size);
-    if (ptr.isNull()) {
+fn Allocate(size: ULong) => Result.Result<std.cffi.RawPtr<Void>, Result.Error> {
+    ptr: std.cffi.RawPtr<Void> = malloc(size);
+    if (ptr.is_null()) {
         return Result.Error({ message: "allocation failed" });
     }
     return Result.Ok(ptr);
@@ -133,20 +133,20 @@ data CompareContext {
 
 #[CFunctionPointer]
 type CompareFn = fn(
-    left: STD.CFFI.RawPtr<Void>,
-    right: STD.CFFI.RawPtr<Void>,
-    context: STD.CFFI.RawPtr<CompareContext>,
+    left: std.cffi.RawPtr<Void>,
+    right: std.cffi.RawPtr<Void>,
+    context: std.cffi.RawPtr<CompareContext>,
 ) => Int;
 
 #[repr(C)]
 extern "C" {
     #[LinkName("qsort_r")]
     fn qsort_r(
-        base: STD.CFFI.RawPtr<Void>,
+        base: std.cffi.RawPtr<Void>,
         count: ULong,
         width: ULong,
         compare: CompareFn,
-        context: STD.CFFI.RawPtr<CompareContext>,
+        context: std.cffi.RawPtr<CompareContext>,
     );
 }
 
@@ -156,16 +156,16 @@ extern "C" {
 #[repr(C)]
 extern "C" {
     #[Ownership(ReturnsOwned)]
-    fn make_buffer(length: ULong) => STD.CFFI.Owned<STD.CFFI.RawPtr<u8>>;
+    fn make_buffer(length: ULong) => std.cffi.Owned<std.cffi.RawPtr<u8>>;
 
     #[Ownership(TakesOwnership)]
-    fn destroy_buffer(buffer: STD.CFFI.Owned<STD.CFFI.RawPtr<u8>>);
+    fn destroy_buffer(buffer: std.cffi.Owned<std.cffi.RawPtr<u8>>);
 
     #[Ownership(Borrows)]
-    fn inspect_buffer(buffer: STD.CFFI.Borrowed<STD.CFFI.RawPtr<u8>>, length: ULong) => Int;
+    fn inspect_buffer(buffer: std.cffi.Borrowed<std.cffi.RawPtr<u8>>, length: ULong) => Int;
 
     #[Ownership(OutParameter)]
-    fn read_status(status: STD.CFFI.Out<Int>) => Int;
+    fn read_status(status: std.cffi.Out<Int>) => Int;
 }
 
 
@@ -175,27 +175,27 @@ extern "C" {
 extern "C" {
     #[ForeignThreadSafe]
     #[NoCallbackIntoRuntime]
-    fn thread_safe_poll(handle: STD.CFFI.RawPtr<Void>) => Int;
+    fn thread_safe_poll(handle: std.cffi.RawPtr<Void>) => Int;
 
     #[MayBlock]
     #[CancellationUnsafe]
-    fn blocking_read(fd: Int, buffer: STD.CFFI.RawPtr<u8>, length: ULong) => Long;
+    fn blocking_read(fd: Int, buffer: std.cffi.RawPtr<u8>, length: ULong) => Long;
 }
 
 
 // Strong CFFI surface model:
 //
-// - STD.CFFI.RawPtr<T>: nullable raw pointer.
-// - STD.CFFI.NonNull<T>: non-null raw pointer.
-// - STD.CFFI.CStr: borrowed null-terminated C string.
-// - STD.CFFI.CString: owned null-terminated C string.
-// - STD.CFFI.Slice<T>: pointer plus length view for explicit FFI boundaries.
-// - STD.CFFI.VarArgs: marker for C varargs positions.
-// - STD.CFFI.Handle<T>: opaque native handle with explicit ownership policy.
-// - STD.CFFI.FILE: opaque C FILE handle marker.
-// - STD.CFFI.Owned<T>, STD.CFFI.Borrowed<T>, and STD.CFFI.Out<T>: FFI ownership markers.
-// - STD.CFFI.DynamicLibrary: runtime loader with explicit symbol lookup.
-// - STD.CFFI.Symbol<T>: typed dynamic symbol wrapper.
+// - std.cffi.RawPtr<T>: nullable raw pointer.
+// - std.cffi.NonNull<T>: non-null raw pointer.
+// - std.cffi.CStr: borrowed null-terminated C string.
+// - std.cffi.CString: owned null-terminated C string.
+// - std.cffi.Slice<T>: pointer plus length view for explicit FFI boundaries.
+// - std.cffi.VarArgs: marker for C varargs positions.
+// - std.cffi.Handle<T>: opaque native handle with explicit ownership policy.
+// - std.cffi.File: opaque C FILE handle marker.
+// - std.cffi.Owned<T>, std.cffi.Borrowed<T>, and std.cffi.Out<T>: FFI ownership markers.
+// - std.cffi.DynamicLibrary: runtime loader with explicit symbol lookup.
+// - std.cffi.Symbol<T>: typed dynamic symbol wrapper.
 //
 // CFFI does not infer safety. Calls marked Unsafe require an unsafe boundary in
 // the completed language. Layout, ABI, unwind, thread, callback, ownership, and

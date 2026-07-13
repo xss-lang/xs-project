@@ -35,6 +35,13 @@ static void free_imports(ImportList *imports)
   *imports = (ImportList){0};
 }
 
+static void trim_last_path_segment(char *path)
+{
+  char *dot = strrchr(path, '.');
+  if(dot != nullptr)
+    *dot = '\0';
+}
+
 static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *issues)
 {
   size_t length = 0;
@@ -92,12 +99,26 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
       } while(true);
       continue;
     }
-    if(brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_FROM)
+    if(brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_USING)
     {
       scanner_advance(&scanner);
+      bool namespace_using = false;
+      if(scanner.current.kind == XS_TOKEN_KW_NAMESPACE)
+      {
+        namespace_using = true;
+        scanner_advance(&scanner);
+      }
       size_t start = 0;
       size_t end = 0;
       char *name = scan_path(&scanner, &start, &end);
+      if(name != nullptr && scanner.current.kind == XS_TOKEN_ASSIGN)
+      {
+        free(name);
+        scanner_advance(&scanner);
+        name = scan_path(&scanner, &start, &end);
+      }
+      if(name != nullptr && !namespace_using)
+        trim_last_path_segment(name);
       if(name == nullptr || !append_import(imports, name, start, end))
         success = false;
       continue;

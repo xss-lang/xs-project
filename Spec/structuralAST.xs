@@ -146,8 +146,8 @@ data AttributeNameValue {
 
 
 // Attribute delimiter syntax is built into the parser.
-// Official X# attributes live in the Attrs module under STD. That module is
-// implicitly available for attribute lookup. Explicit `imports Attrs;` is
+// Official X# attributes live in the Attrs module under std. That module is
+// implicitly available for attribute lookup. Explicit `imports attrs;` is
 // optional.
 // Outer attributes use #[...]. Inner file attributes use #![...].
 // Attribute semantic names are not keywords.
@@ -295,7 +295,7 @@ data ExternBlockDeclaration {
 //
 // #[repr(C)]
 // extern "C" {
-//     fn puts(text: STD.CFFI.CStr) => Int;
+//     fn puts(text: std.CFFI.CStr) => Int;
 //     static errno: Int;
 // }
 //

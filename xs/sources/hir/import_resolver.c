@@ -134,6 +134,17 @@ static const XsHirSymbol *find_symbol_in_namespace(const XsHirSymbolTable *table
   return nullptr;
 }
 
+static bool split_qualified_name(char *qualified, const char **namespace_name, const char **name)
+{
+  char *dot = strrchr(qualified, '.');
+  if(dot == nullptr || dot == qualified || dot[1] == '\0')
+    return false;
+  *dot = '\0';
+  *namespace_name = qualified;
+  *name = dot + 1;
+  return true;
+}
+
 static bool import_selected_name(const XsSyntaxNode *name_node, const char *module_name,
                                  const XsHirSymbolTable *project_symbols, XsHirImportScope *scope,
                                  XsDiagnostics *diagnostics)
@@ -155,7 +166,7 @@ static bool import_selected_name(const XsSyntaxNode *name_node, const char *modu
   if(symbol == nullptr)
   {
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(imported),
-                       "selected import does not name a public symbol in the imported module");
+                       "using declaration does not name a public symbol in the target namespace");
     free(imported_name);
     free(local_name);
     return true;
@@ -179,6 +190,8 @@ static bool import_selected(const XsSyntaxNode *import_node, const XsHirSymbolTa
   bool ok = true;
   if((import_node->flags & XS_SYNTAX_FLAG_WILDCARD) != 0)
   {
+    if((import_node->flags & XS_SYNTAX_FLAG_USING) != 0)
+      ok = import_module_name(scope, module_name) && ok;
     for(size_t i = 0; i < project_symbols->count; ++i)
     {
       if(!xs_hir_symbol_is_public_child_of_namespace(&project_symbols->symbols[i], module_name))
@@ -197,6 +210,47 @@ static bool import_selected(const XsSyntaxNode *import_node, const XsHirSymbolTa
     }
   }
   free(module_name);
+  return ok;
+}
+
+static bool import_using_declaration(const XsSyntaxNode *import_node, const XsHirSymbolTable *project_symbols,
+                                     XsHirImportScope *scope, XsDiagnostics *diagnostics)
+{
+  const XsSyntaxNode *path = xs_hir_first_child_kind(import_node, XS_SYNTAX_PATH);
+  char *qualified = xs_hir_path_to_string(path);
+  if(qualified == nullptr)
+  {
+    scope->allocation_failed = true;
+    return false;
+  }
+  const char *namespace_name = nullptr;
+  const char *symbol_name = nullptr;
+  if(!split_qualified_name(qualified, &namespace_name, &symbol_name))
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(import_node),
+                       "using declaration requires a qualified name");
+    free(qualified);
+    return true;
+  }
+  const XsHirSymbol *symbol = find_symbol_in_namespace(project_symbols, namespace_name, symbol_name);
+  if(symbol == nullptr)
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(import_node),
+                       "using declaration does not name a public symbol");
+    free(qualified);
+    return true;
+  }
+  const XsSyntaxNode *alias = xs_hir_first_child_kind(import_node, XS_SYNTAX_IDENTIFIER);
+  char *local_name = alias == nullptr ? xs_hir_copy_cstr(symbol_name) : xs_hir_copy_text(alias->text);
+  if(local_name == nullptr)
+  {
+    scope->allocation_failed = true;
+    free(qualified);
+    return false;
+  }
+  bool ok = import_symbol_as(scope, symbol, local_name, import_node->span, diagnostics);
+  free(local_name);
+  free(qualified);
   return ok;
 }
 
@@ -250,15 +304,17 @@ bool xs_hir_resolve_imports(const XsSyntaxTree *tree, const XsHirSymbolTable *pr
      diagnostics == nullptr)
     return false;
   bool success = true;
-  success = import_module_name(scope, "Panic") && success;
-  success = import_module_name(scope, "Result") && success;
+  success = import_module_name(scope, "panic") && success;
+  success = import_module_name(scope, "result") && success;
   for(size_t i = 0; i < tree->root->child_count; ++i)
   {
     const XsSyntaxNode *child = tree->root->children[i];
     if(child->kind != XS_SYNTAX_DECL_IMPORT)
       continue;
-    if(xs_hir_first_child_kind(child, XS_SYNTAX_IMPORT_NAME) != nullptr ||
-       (child->flags & XS_SYNTAX_FLAG_WILDCARD) != 0)
+    if((child->flags & XS_SYNTAX_FLAG_USING) != 0 && (child->flags & XS_SYNTAX_FLAG_WILDCARD) == 0)
+      success = import_using_declaration(child, project_symbols, scope, diagnostics) && success;
+    else if(xs_hir_first_child_kind(child, XS_SYNTAX_IMPORT_NAME) != nullptr ||
+            (child->flags & XS_SYNTAX_FLAG_WILDCARD) != 0)
       success = import_selected(child, project_symbols, scope, diagnostics) && success;
     else
     {

@@ -130,15 +130,15 @@ static void test_optional_expression_types(void)
   const char *valid = "module App;\n"
                       "fn Read() => Optional<Str> {\n"
                       "  value: Optional<Str> = None;\n"
-                      "  value = STD.Optional.Some(\"xs\");\n"
-                      "  other: STD.Optional.Optional<Str> = STD.Optional.None;\n"
+                      "  value = std.optional.Some(\"xs\");\n"
+                      "  other: std.optional.Optional<Str> = std.optional.None;\n"
                       "  return Some(\"ok\");\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
   CHECK(check_single_source_expressions(
       "module App;\nfn Read(flag: Bool) => Optional<Str> { return if (flag) { Some(\"ok\"); } else { None; }; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = None; }\n"));
-  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = STD.Optional.None; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = std.optional.None; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Int = Some(1); }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Optional<Int> = 1; }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Main() { value: Optional<Int> = Some(); }\n"));

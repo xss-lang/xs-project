@@ -32,7 +32,6 @@ static const Keyword keywords[] = {
     {"finally", XS_TOKEN_KW_FINALLY},
     {"fn", XS_TOKEN_KW_FN},
     {"for", XS_TOKEN_KW_FOR},
-    {"from", XS_TOKEN_KW_FROM},
     {"get", XS_TOKEN_KW_GET},
     {"if", XS_TOKEN_KW_IF},
     {"implements", XS_TOKEN_KW_IMPLEMENTS},
@@ -59,6 +58,7 @@ static const Keyword keywords[] = {
     {"throws", XS_TOKEN_KW_THROWS},
     {"true", XS_TOKEN_KW_TRUE},
     {"try", XS_TOKEN_KW_TRY},
+    {"using", XS_TOKEN_KW_USING},
     {"val", XS_TOKEN_KW_VAL},
     {"while", XS_TOKEN_KW_WHILE},
 };
@@ -157,7 +157,6 @@ const char *xs_token_kind_name(XsTokenKind kind)
       "finally",
       "fn",
       "for",
-      "from",
       "get",
       "if",
       "implements",
@@ -185,6 +184,7 @@ const char *xs_token_kind_name(XsTokenKind kind)
       "true",
       "false",
       "try",
+      "using",
       "val",
       "while",
   };

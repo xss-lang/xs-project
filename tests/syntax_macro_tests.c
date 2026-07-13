@@ -473,7 +473,7 @@ static void test_declaration_macro_expansion(void)
 
 static void test_imported_panic_macros_resolve_without_expansion(void)
 {
-  const char *text = "imports Panic;\nfn Main() { assert!(true); assert_eq!(1, 1); assert_ne!(1, 2); panic!(); }\n";
+  const char *text = "imports panic;\nfn Main() { assert!(true); assert_eq!(1, 1); assert_ne!(1, 2); panic!(); }\n";
   XsSource source = {.path = "PanicMacros.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -497,7 +497,7 @@ static void test_imported_panic_macros_resolve_without_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *selected = "from Panic imports debug_assert, debug_assert_eq;\n"
+  const char *selected = "using namespace panic;\n"
                          "fn Main() { debug_assert!(true); debug_assert_eq!(1, 1); }\n";
   source = (XsSource){.path = "SelectedPanicMacros.xs", .text = selected, .length = strlen(selected)};
   xs_diagnostics_init(&diagnostics);
@@ -517,7 +517,7 @@ static void test_imported_panic_macros_resolve_without_expansion(void)
 
 static void test_imported_stdio_macros_match_rust_output_forms(void)
 {
-  const char *valid = "imports Stdio;\n"
+  const char *valid = "imports stdio;\n"
                       "fn Main(value: Long) {\n"
                       "  print!(\"{}\", value);\n"
                       "  println!();\n"
@@ -534,9 +534,9 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
                       "  format!(\"{:#x?}\", value);\n"
                       "  format!(\"{:X?}\", value);\n"
                       "  format_args!(\"{}\", value);\n"
-                      "  write!(STD.Stdout, \"{}\", value);\n"
-                      "  writeln!(STD.Stdout);\n"
-                      "  writeln!(STD.Stdout, \"{:#?}\", value);\n"
+                      "  write!(std.stdout, \"{}\", value);\n"
+                      "  writeln!(std.stdout);\n"
+                      "  writeln!(std.stdout, \"{:#?}\", value);\n"
                       "}\n";
   XsSource source = {.path = "StdioMacros.xs", .text = valid, .length = strlen(valid)};
   XsDiagnostics diagnostics;
@@ -550,9 +550,9 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *selected = "from Stdio imports println, write, writeln;\n"
+  const char *selected = "using namespace stdio;\n"
                          "fn Main(value: Long) { println!(); format_args!(\"{}\", value); "
-                         "write!(STD.Stdout, \"{}\", value); writeln!(STD.Stdout); }\n";
+                         "write!(std.stdout, \"{}\", value); writeln!(std.stdout); }\n";
   source = (XsSource){.path = "SelectedStdioMacros.xs", .text = selected, .length = strlen(selected)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 38, &diagnostics, &tree));
@@ -580,18 +580,18 @@ static void test_imported_stdio_macros_match_rust_output_forms(void)
 static void test_imported_stdio_macros_reject_invalid_forms(void)
 {
   const char *invalid_cases[] = {
-      "imports Stdio;\nfn Main() { print!(); }\n",
-      "imports Stdio;\nfn Main() { eprint!(); }\n",
-      "imports Stdio;\nfn Main() { println!(10); }\n",
-      "imports Stdio;\nfn Main() { println!(\"value\", 10); }\n",
-      "imports Stdio;\nfn Main() { println!(\"{}\",); }\n",
+      "imports stdio;\nfn Main() { print!(); }\n",
+      "imports stdio;\nfn Main() { eprint!(); }\n",
+      "imports stdio;\nfn Main() { println!(10); }\n",
+      "imports stdio;\nfn Main() { println!(\"value\", 10); }\n",
+      "imports stdio;\nfn Main() { println!(\"{}\",); }\n",
       "fn Main() { format_args!(); }\n",
-      "imports Stdio;\nfn Main() { println!(\"{\"); }\n",
-      "imports Stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
-      "imports Stdio;\nfn Main() { write!(); }\n",
-      "imports Stdio;\nfn Main() { write!(STD.Stdout); }\n",
-      "imports Stdio;\nfn Main() { write!(STD.Stdout, 10); }\n",
-      "imports Stdio;\nfn Main() { writeln!(STD.Stdout, \"{}\",); }\n",
+      "imports stdio;\nfn Main() { println!(\"{\"); }\n",
+      "imports stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
+      "imports stdio;\nfn Main() { write!(); }\n",
+      "imports stdio;\nfn Main() { write!(std.stdout); }\n",
+      "imports stdio;\nfn Main() { write!(std.stdout, 10); }\n",
+      "imports stdio;\nfn Main() { writeln!(std.stdout, \"{}\",); }\n",
   };
   for(size_t index = 0; index < sizeof(invalid_cases) / sizeof(invalid_cases[0]); ++index)
   {

@@ -8,7 +8,7 @@
 // standard stream handles.
 // print!, println!, eprint!, eprintln!, write!, writeln!, and format! are
 // exported Stdio macros.
-// They are available through `imports Stdio`, not as compiler built-ins.
+// They are available through `imports stdio`, not as compiler built-ins.
 // format_args! is a built-in macro, not a Stdio export.
 //
 // Stdio does not provide filesystem operations.
@@ -18,7 +18,7 @@
 // Formatted output uses placeholder-based formatting.
 //
 
-imports Stdio, FS, Collections, Result;
+imports stdio, fs, collections, result;
 
 
 // standard output macros
@@ -53,15 +53,15 @@ fn ErrorNewlineOnly() => Result.Result<Void, IOException> {
 // writer macros
 
 fn WriteToStream() => Result.Result<Void, IOException> {
-    write!(STD.Stdout, "Hello");
+    write!(std.stdout, "Hello");
 }
 
 fn WriteLineToStream() => Result.Result<Void, IOException> {
-    writeln!(STD.Stdout, "{} is {}", "Alpha", 26);
+    writeln!(std.stdout, "{} is {}", "Alpha", 26);
 }
 
 fn WriteNewlineOnlyToStream() => Result.Result<Void, IOException> {
-    writeln!(STD.Stdout);
+    writeln!(std.stdout);
 }
 
 // formatting
@@ -116,48 +116,48 @@ fn BuildMessage() {
 }
 
 fn WriteReportLine(name: Str, score: Int) => Result.Result<Void, IOException> {
-    writeln!(STD.Stdout, "{:<16} {:>4}", name, score);
+    writeln!(std.stdout, "{:<16} {:>4}", name, score);
 }
 
 fn WriteDebugReport<T>(value: T) => Result.Result<Void, IOException> {
-    write!(STD.Stderr, "{:#?}", value);
-    writeln!(STD.Stderr);
+    write!(std.stderr, "{:#?}", value);
+    writeln!(std.stderr);
 }
 
 
 // standard stream handles
 
 fn StandardHandles() => Result.Result<Void, IOException> {
-    STD.FS.write(STD.Stdout, "stdout text\n");
-    STD.FS.write(STD.Stderr, "stderr text\n");
+    std.fs.write(std.stdout, "stdout text\n");
+    std.fs.write(std.stderr, "stderr text\n");
 
-    text: Str = STD.FS.readToStr(STD.Stdin());
+    text: Str = std.fs.read_to_str(std.stdin());
     println!("{}", text);
 }
 
-// STD.Stdout and STD.Stderr are stream handles.
-// STD.Stdin() returns the standard input stream handle.
-// Raw reading and writing through these handles is provided by STD.FS.
-// Stdio macros use STD.Stdout and STD.Stderr internally.
+// std.stdout and std.stderr are stream handles.
+// std.stdin() returns the standard input stream handle.
+// Raw reading and writing through these handles is provided by std.fs.
+// Stdio macros use std.stdout and std.stderr internally.
 
 
 // line input
 
 fn ReadLine() {
-    input: Optional<Str> = STD.Optional.Some("");
+    input: Optional<Str> = std.optional.Some("");
 
-    STD.Stdin()
-        .readLine(&mut input)
+    std.stdin()
+        .read_line(&mut input)
         .expect("input could not be read");
 
     println!("Input: {}", input.trim());
 }
 
 fn ReadNumber() {
-    input: Optional<Str> = STD.Optional.Some("");
+    input: Optional<Str> = std.optional.Some("");
 
-    STD.Stdin()
-        .readLine(&mut input)
+    std.stdin()
+        .read_line(&mut input)
         .expect("input could not be read");
 
     number: Int = input.trim().parse().expect("expected a valid number");
@@ -165,14 +165,14 @@ fn ReadNumber() {
 }
 
 fn ReadManyNumbers() {
-    input: Optional<Str> = STD.Optional.Some("");
+    input: Optional<Str> = std.optional.Some("");
 
-    STD.Stdin()
-        .readLine(&mut input)
+    std.stdin()
+        .read_line(&mut input)
         .unwrap();
 
-    numbers: STD.Collections.vector<Int> = input
-        .splitWhitespace()
+    numbers: std.collections.vector<Int> = input
+        .split_whitespace()
         .map(fn(value) {
             return value.parse().expect("invalid number");
         });

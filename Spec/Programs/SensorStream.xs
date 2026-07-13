@@ -6,7 +6,7 @@
 
 module Programs.SensorStream;
 
-imports Collections, Stdio, Thread, Sync, Result;
+imports collections, stdio, thread, sync, result;
 
 enum data SensorError {
     Disconnected: Str,
@@ -46,12 +46,12 @@ class Sensor {
 }
 
 class Aggregator {
-    totals: STD.Collections.hash_map<Str, Float>;
-    counts: STD.Collections.hash_map<Str, Int>;
+    totals: std.collections.hash_map<Str, Float>;
+    counts: std.collections.hash_map<Str, Int>;
 
     Aggregator() {
-        this.totals = STD.Collections.hash_map<Str, Float>.new();
-        this.counts = STD.Collections.hash_map<Str, Int>.new();
+        this.totals = std.collections.hash_map<Str, Float>.new();
+        this.counts = std.collections.hash_map<Str, Int>.new();
     }
 
     fn Add(reading: Reading) {
@@ -59,8 +59,8 @@ class Aggregator {
         this.counts[reading.sensorId] = (this.counts[reading.sensorId] ?? 0) + 1;
     }
 
-    fn Averages() => STD.Collections.vector<Average> {
-        result: STD.Collections.vector<Average> = STD.Collections.vector<Average>.new();
+    fn Averages() => std.collections.vector<Average> {
+        result: std.collections.vector<Average> = std.collections.vector<Average>.new();
 
         for ((sensorId, total): (Str, Float) in this.totals) {
             count: Int = this.counts[sensorId]!;
@@ -76,7 +76,7 @@ class Aggregator {
 }
 
 async fn Main() => Task<Result.Result<Int, Result.Error>> {
-    sensors: STD.Collections.vector<Sensor> = STD.Collections.vector<Sensor>.of(
+    sensors: std.collections.vector<Sensor> = std.collections.vector<Sensor>.of(
         Sensor.new("temperature", "C"),
         Sensor.new("humidity", "%"),
         Sensor.new("pressure", "Pa")

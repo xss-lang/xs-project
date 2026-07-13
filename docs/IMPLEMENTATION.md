@@ -117,7 +117,7 @@ The documented compilation order is preserved:
 - Declaration, type, statement, expression, pattern, and macro node families are represented.
 - Outer `#[...]` attributes are parsed before declarations and declaration members into `XS_SYNTAX_ATTRIBUTE` nodes.
   File-level inner `#![...]` attributes are parsed before declarations. Attribute syntax is built in, but official X#
-  attribute names live under `STD.Attrs.*`; semantic validation of each attribute remains a HIR/name-resolution step.
+  attribute names live under `std.Attrs.*`; semantic validation of each attribute remains a HIR/name-resolution step.
 - In top-level and class-member contexts, `name!();` macro calls are represented as `XS_SYNTAX_DECL_MACRO_CALL` declaration
   nodes. This node is the entry point for item/declaration-producing macro expansion; inserting produced items as real AST
   replacements in scope is a later macro-expansion step.
@@ -172,7 +172,7 @@ The documented compilation order is preserved:
 - `.xs` files under the project root are scanned recursively.
 - Modules are registered by their declared full module path, not by file name.
 - Declaring the same module name in multiple files is an error.
-- `imports` and `from ... imports ...` dependencies are resolved by declared module name.
+- `imports` and `using` dependencies are resolved by declared module name.
 - Missing import targets produce errors.
 - Imported sources that are not listed in `addFiles` are added to the dependency graph and checked.
 
@@ -207,8 +207,8 @@ This layer lives under the HIR directory.
 - The same short name may be used under different namespaces.
 - `imports Module;` records that the module is usable through its qualified name. It does not place public symbols into the
   local import scope.
-- `from Module imports Name;`, `from Module imports Name as Alias;`, and `from Module imports *;` open public top-level
-  symbols into the local import scope.
+- `using Module.Name;` and `using Alias = Module.Name;` open one public top-level symbol into the local import scope.
+- `using namespace Module;` opens public top-level symbols from that namespace into the local import scope.
 - Non-public symbols are not opened through external module imports.
 - Qualified external names and types require a matching `imports Module;` or `imports Module.Namespace;` declaration unless
   they share the same root module as the current namespace.
@@ -243,26 +243,26 @@ validation does not decide dispatch, override, or overload selection.
 - `Str` is UTF-16 and its length is considered unbounded except by the representation allowed by UTF-16.
 - Semantically, `Str` is the UTF-16 X# counterpart of Rust's immutable static string reference; its runtime layout remains
   deferred and it is not yet lowered to XLIL storage.
-- `Optional<T>` resolves as if the compiler had inserted `imports Optional` and brought `STD.Optional.Optional<T>` into
-  scope as `Optional<T>`. Optional value constructors are canonically `STD.Optional.None` and
-  `STD.Optional.Some(...)`, with `None` and `Some(...)` available through that implicit import. It is not an enum
+- `Optional<T>` resolves as if the compiler had inserted `imports optional` and brought `std.optional.Optional<T>` into
+  scope as `Optional<T>`. Optional value constructors are canonically `std.optional.None` and
+  `std.optional.Some(...)`, with `None` and `Some(...)` available through that implicit import. It is not an enum
   lowering. `?.`, `??`, `??=`, and postfix `!` are represented syntactically; `Optional<T>` has automatic unboxing to
   `T`, which can throw `OptionalUnboxingException` for `None`. Runtime Optional failures use `OptionalException`; full
   flow-sensitive Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
-- The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `STD.Optional.Optional<T>`,
+- The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std.optional.Optional<T>`,
   `Result.Result<T>`, `Result.Result<T, E>`, shorthand `Result<T, E>`, and the standard error type `Result.Error`. This
   is name and arity validation only; constructors, method calls, and propagation lowering are still handled by later
   semantic passes.
 - `Result` is treated as an implicit standard import and shorthand scope entry for `Result<T, E>`. That exception does not
-  make general `STD.*` modules scope-imported.
+  make general `std.*` modules scope-imported.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
   imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!`
-  still require `imports Stdio;` or selected imports. `format_args!` remains built in.
-- The C23 HIR type resolver also recognizes the initial standard CFFI family: `STD.CFFI.CStr`, `STD.CFFI.CString`,
-  `STD.CFFI.RawPtr<T>`, `STD.CFFI.NonNull<T>`, `STD.CFFI.Slice<T>`, `STD.CFFI.Handle<T>`, `STD.CFFI.Owned<T>`, `STD.CFFI.Borrowed<T>`,
-  `STD.CFFI.Out<T>`, `STD.CFFI.DynamicLibrary`, `STD.CFFI.Symbol<T>`, `STD.CFFI.FILE`, and `STD.CFFI.VarArgs`.
+  still require `imports stdio;` or `using namespace stdio;`. `format_args!` remains built in.
+- The C23 HIR type resolver also recognizes the initial standard CFFI family: `std.cffi.CStr`, `std.cffi.CString`,
+  `std.cffi.RawPtr<T>`, `std.cffi.NonNull<T>`, `std.cffi.Slice<T>`, `std.cffi.Handle<T>`, `std.cffi.Owned<T>`, `std.cffi.Borrowed<T>`,
+  `std.cffi.Out<T>`, `std.cffi.DynamicLibrary`, `std.cffi.Symbol<T>`, `std.cffi.File`, and `std.cffi.VarArgs`.
 - X# uses nominal typing. HIR type identity for user-defined types is based on name/symbol identity; identical structural
   shape does not imply compatibility.
 - HIR primitive metadata carries XLIL type mappings for primitive types with documented runtime layout.
@@ -335,7 +335,7 @@ complete.
 - `include!` and `format_args!` are built-in macros. `format_args!` uses the same Rust 1.57-style format string validation
   as Stdio formatting macros.
 - Imported `Stdio` macros are treated as external macros, not built-ins. The validator recognizes `print!`, `println!`,
-  `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` through `imports Stdio` or selected imports. `println!()`
+  `eprint!`, `eprintln!`, `write!`, `writeln!`, and `format!` through `imports stdio` or `using namespace stdio;`. `println!()`
   and `eprintln!()` accept the Rust 1.57 newline-only form, while `writeln!(destination)` accepts the destination-only
   newline form. The other Stdio formatting forms require a string literal format template and matching placeholder argument
   count. Rust 1.57-style debug/pretty-debug and common formatting specs such as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}`

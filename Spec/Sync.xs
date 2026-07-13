@@ -31,7 +31,7 @@
 // Mutex
 // ============================================================
 
-imports Mutex, Result;
+imports mutex, result;
 
 
 // mutex creation
@@ -165,7 +165,7 @@ fn RecoverPoisonedMutex() {
 
 // mutex movement between threads
 
-imports Thread;
+imports thread;
 
 fn MoveMutexToThread() {
     counter: Mutex<Long> = Mutex.new(42);
@@ -183,7 +183,7 @@ fn MoveMutexToThread() {
 // RwLock
 // ============================================================
 
-imports RwLock;
+imports rw_lock;
 
 
 // rwlock creation
@@ -400,7 +400,7 @@ fn RecoverPoisonedRwLock() {
 // Arc
 // ============================================================
 
-imports Arc;
+imports arc;
 
 
 // arc creation
@@ -578,7 +578,7 @@ fn WeakUpgrade() {
 // Atomic
 // ============================================================
 
-imports Atomic;
+imports atomic;
 
 
 // atomic creation
@@ -994,7 +994,7 @@ async fn AsyncResultHandling() => Task<Result.Result<Void, IOException>> {
 // Thread channels
 // ============================================================
 
-imports Thread, Stdio;
+imports thread, stdio;
 
 
 // channel creation and communication

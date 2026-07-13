@@ -9,7 +9,7 @@
 // Top-level functions are allowed.
 //
 
-imports Stdio, Result;
+imports stdio, result;
 
 fn Add(a: Int, b: Int) => Int {
   return a + b;

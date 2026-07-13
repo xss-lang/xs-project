@@ -26,24 +26,24 @@ struct StandardTypeInfo
 };
 
 static const StandardTypeInfo standard_types[] = {
-    {.name = "STD.Optional.Optional", .min_arity = 1, .max_arity = 1},
+    {.name = "std.optional.Optional", .min_arity = 1, .max_arity = 1},
     {.name = "Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Result", .min_arity = 1, .max_arity = 2},
     {.name = "Result.Error", .min_arity = 0, .max_arity = 0},
     {.name = "Result.IO.error", .min_arity = 0, .max_arity = 0},
-    {.name = "STD.CFFI.CStr", .min_arity = 0, .max_arity = 0},
-    {.name = "STD.CFFI.CString", .min_arity = 0, .max_arity = 0},
-    {.name = "STD.CFFI.FILE", .min_arity = 0, .max_arity = 0},
-    {.name = "STD.CFFI.VarArgs", .min_arity = 0, .max_arity = 0},
-    {.name = "STD.CFFI.RawPtr", .min_arity = 1, .max_arity = 1},
-    {.name = "STD.CFFI.NonNull", .min_arity = 1, .max_arity = 1},
-    {.name = "STD.CFFI.Slice", .min_arity = 1, .max_arity = 1},
-    {.name = "STD.CFFI.Handle", .min_arity = 1, .max_arity = 1},
-    {.name = "STD.CFFI.Owned", .min_arity = 1, .max_arity = 1},
-    {.name = "STD.CFFI.Borrowed", .min_arity = 1, .max_arity = 1},
-    {.name = "STD.CFFI.Out", .min_arity = 1, .max_arity = 1},
-    {.name = "STD.CFFI.DynamicLibrary", .min_arity = 0, .max_arity = 0},
-    {.name = "STD.CFFI.Symbol", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.CStr", .min_arity = 0, .max_arity = 0},
+    {.name = "std.cffi.CString", .min_arity = 0, .max_arity = 0},
+    {.name = "std.cffi.File", .min_arity = 0, .max_arity = 0},
+    {.name = "std.cffi.VarArgs", .min_arity = 0, .max_arity = 0},
+    {.name = "std.cffi.RawPtr", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.NonNull", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.Slice", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.Handle", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.Owned", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.Borrowed", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.Out", .min_arity = 1, .max_arity = 1},
+    {.name = "std.cffi.DynamicLibrary", .min_arity = 0, .max_arity = 0},
+    {.name = "std.cffi.Symbol", .min_arity = 1, .max_arity = 1},
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
@@ -163,7 +163,7 @@ static char *path_to_string(const XsSyntaxNode *path)
 static const StandardTypeInfo *find_standard_type(const char *name)
 {
   if(strcmp(name, "Optional") == 0)
-    name = "STD.Optional.Optional";
+    name = "std.optional.Optional";
   for(size_t i = 0; i < sizeof(standard_types) / sizeof(standard_types[0]); ++i)
   {
     if(strcmp(standard_types[i].name, name) == 0)
@@ -387,7 +387,7 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
   if(standard != nullptr)
   {
     bool success = true;
-    if(standard_type_is_from_module(name, "STD.CFFI") && !xs_hir_import_scope_has_module(imports, "CFFI"))
+    if(standard_type_is_from_module(name, "std.cffi") && !xs_hir_import_scope_has_module(imports, "cffi"))
       success = report_unimported_type(diagnostics, type, name) && success;
     if(check_arity && standard->max_arity != 0)
       success =

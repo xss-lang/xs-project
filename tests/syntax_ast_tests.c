@@ -307,7 +307,7 @@ static void test_optional_operator_structure(void)
 {
   const char *text = "fn Main(user: Optional<User>, fallback: Str) {\n"
                      "  name: Optional<Str> = user?.Name;\n"
-                     "  name = STD.Optional.None;\n"
+                     "  name = std.optional.None;\n"
                      "  display: Str = name ?? fallback;\n"
                      "  name ?"
                      "?= Some(\"guest\");\n"
@@ -348,7 +348,7 @@ static void test_result_propagation_structure(void)
 {
   const char *text = "fn Main() {\n"
                      "  DoWork()@;\n"
-                     "  file.readToString(&mut content)@;\n"
+                     "  file.read_to_string(&mut content)@;\n"
                      "}\n";
   XsSource source = {.path = "ResultPropagation.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
@@ -397,7 +397,7 @@ static void test_attribute_structure(void)
 {
   const char *text = "#![NoMain]\n"
                      "#[Deprecated(\"use NewMain\")]\n"
-                     "#[Derive(STD.Attrs.Ord, STD.Attrs.Partial)]\n"
+                     "#[Derive(std.Attrs.Ord, std.Attrs.Partial)]\n"
                      "fn Main() {}\n";
   XsSource source = {.path = "Attributes.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;

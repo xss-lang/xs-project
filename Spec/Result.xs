@@ -10,7 +10,7 @@
 // throws, throw, try, catch, and finally.
 //
 
-imports Result, FS, Stdio;
+imports result, fs, stdio;
 
 
 // result data model
@@ -51,14 +51,14 @@ fn DoWork() => Result.Result<(), Result.Error> {
 // explicit match without @
 
 fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
-    file = match (STD.FS.File.open(path)) {
+    file = match (std.fs.File.open(path)) {
         Result.Ok(value) -> value,
         Result.Error(error) -> return Result.Error(error),
     };
 
-    content: Optional<Str> = STD.Optional.Some("");
+    content: Optional<Str> = std.optional.Some("");
 
-    match (file.readToString(&mut content)) {
+    match (file.read_to_string(&mut content)) {
         Result.Ok(else) -> {},
         Result.Error(error) -> return Result.Error(error),
     }
@@ -70,9 +70,9 @@ fn ReadFileExplicit(path: Str) => Result.Result<Optional<Str>, Result.Error> {
 // propagation with @
 
 fn ReadFile(path: Str) => Result.Result<Optional<Str>, Result.Error> {
-    file = STD.FS.File.open(path)@;
-    content: Optional<Str> = STD.Optional.Some("");
-    file.readToString(&mut content)@;
+    file = std.fs.File.open(path)@;
+    content: Optional<Str> = std.optional.Some("");
+    file.read_to_string(&mut content)@;
     return Result.Ok(content);
 }
 
@@ -80,10 +80,10 @@ fn ReadFile(path: Str) => Result.Result<Optional<Str>, Result.Error> {
 // expect and unwrap
 
 fn ReadRequiredLine() => Str {
-    line: Optional<Str> = STD.Optional.Some("");
+    line: Optional<Str> = std.optional.Some("");
 
-    STD.Stdin()
-        .readLine(&mut line)
+    std.stdin()
+        .read_line(&mut line)
         .expect("input could not be read");
 
     return line.unwrap();

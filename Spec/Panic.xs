@@ -6,9 +6,9 @@
 //
 // Panic exports assertion and panic macros.
 //
-// The compiler behaves as if `imports Panic;` existed. The following macros
-// are available without an explicit import, through explicit `imports Panic`,
-// or through selected imports from Panic. They are not compiler built-ins:
+// The compiler behaves as if `imports panic;` existed. The following macros
+// are available without an explicit import, through explicit `imports panic`,
+// or through imports panic or using namespace panic. They are not compiler built-ins:
 //
 // - assert!
 // - assert_eq!
@@ -31,7 +31,7 @@
 // Stdio formatting. Runtime formatting and unwinding ABI are implementation
 // details of the Panic runtime.
 
-// imports Panic; is optional.
+// imports panic; is optional.
 
 
 fn ValidatePositive(value: Long) {
@@ -63,9 +63,9 @@ fn StopWithMessage(name: Str) {
 
 // Selected imports are valid:
 
-from Panic imports assert, panic;
+using namespace panic;
 
 fn SelectedPanicMacros(value: Long) {
     assert!(value != 0);
-    panic!("selected import example");
+    panic!("namespace using example");
 }

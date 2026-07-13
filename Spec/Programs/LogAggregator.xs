@@ -6,7 +6,7 @@
 
 module Programs.LogAggregator;
 
-imports Collections, FS, Optional, Stdio, Process, Result;
+imports collections, fs, optional, stdio, process, result;
 
 enum data LogError {
     Io: IOException,
@@ -20,7 +20,7 @@ data LogEntry {
 
 class LogParser {
     static fn Parse(line: Str) => Result.Result<LogEntry, LogError> {
-        parts: STD.Collections.vector<Str> = line.split(" ", 2);
+        parts: std.collections.vector<Str> = line.split(" ", 2);
         if (parts.length() != 2) {
             return Result.Error(LogError.InvalidLine(line));
         }
@@ -33,12 +33,12 @@ class LogParser {
 }
 
 class Report {
-    counts: STD.Collections.hash_map<Str, Int>;
+    counts: std.collections.hash_map<Str, Int>;
     newestError: Optional<Str>;
 
     Report() {
-        this.counts = STD.Collections.hash_map<Str, Int>.new();
-        this.newestError = STD.Optional.None;
+        this.counts = std.collections.hash_map<Str, Int>.new();
+        this.newestError = std.optional.None;
     }
 
     fn Add(entry: LogEntry) {
@@ -46,7 +46,7 @@ class Report {
         this.counts[entry.level] = current + 1;
 
         if (entry.level == "ERROR") {
-            this.newestError = STD.Optional.Some(entry.message);
+            this.newestError = std.optional.Some(entry.message);
         }
     }
 
@@ -63,14 +63,14 @@ class Report {
     }
 }
 
-fn Main(args: STD.Process.Args) => Result.Result<Int, Result.Error> {
+fn Main(args: std.Process.Args) => Result.Result<Int, Result.Error> {
     if (args.length() != 2) {
         eprintln!("usage: log-aggregator <log-file>");
         return 2;
     }
 
     report: Report = new();
-    content: Str = STD.FS.readToStr(args[1]);
+    content: Str = std.fs.read_to_str(args[1]);
 
     for (line: Str in content.lines()) {
         if (line.trim().length() == 0) {
