@@ -132,7 +132,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainFor MainPostfixDecrement
                        ImmutableLocalReassignment BlockLocalShadow SameScopeDuplicateLocal
                        MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
-                       WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
+                       WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain RecursiveCallMain
                        BoolCallAsLongMain MatchMissingElse MatchPatternTypeMismatch)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
@@ -229,7 +229,7 @@ add_test(NAME source_native_local_arithmetic_artifacts COMMAND xs_xse_artifact_t
                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalArithmetic.ll
                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalArithmetic.o
                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalArithmetic.xse 7
-                                                        "load i32")
+                                                        "ret i32 7")
 set_tests_properties(source_native_local_arithmetic_artifacts PROPERTIES DEPENDS source_native_local_arithmetic_build
                                                                          TIMEOUT 5)
 add_test(NAME source_native_local_if_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalIf.xs)
@@ -278,7 +278,7 @@ set_tests_properties(source_native_if_assignment_build PROPERTIES TIMEOUT 5
 add_test(NAME source_native_if_assignment_artifacts COMMAND xs_xse_artifact_tests
                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.ll
                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.o
-                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.xse 7 "br i1")
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfAssignment.xse 7 "ret i32 7")
 set_tests_properties(source_native_if_assignment_artifacts PROPERTIES DEPENDS source_native_if_assignment_build TIMEOUT 5)
 add_test(NAME source_native_compound_assignment_build COMMAND xs build -file
                                                          ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainCompoundAssignment.xs)
@@ -415,8 +415,7 @@ set_tests_properties(source_native_if_false_build PROPERTIES TIMEOUT 5
 add_test(NAME source_native_if_false_artifacts COMMAND xs_xse_artifact_tests
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.ll
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.o
-                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.xse 7 "ret i32 7"
-                                                "!br label")
+                                                ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfFalse.xse 7 "ret i32 7")
 set_tests_properties(source_native_if_false_artifacts PROPERTIES DEPENDS source_native_if_false_build TIMEOUT 5)
 add_test(NAME source_native_if_not_equal_build COMMAND xs build -file
                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainIfNotEqual.xs)
@@ -513,6 +512,17 @@ add_test(NAME source_native_bool_call_local_artifacts COMMAND xs_xse_artifact_te
                                                        "call i1 @IsZero")
 set_tests_properties(source_native_bool_call_local_artifacts PROPERTIES DEPENDS source_native_bool_call_local_build
                                                                         TIMEOUT 5)
+add_test(NAME source_native_bool_parameter_call_build COMMAND xs build -file
+                                                        ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BoolParameterCallMain.xs)
+set_tests_properties(source_native_bool_parameter_call_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_bool_parameter_call_artifacts COMMAND xs_xse_artifact_tests
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BoolParameterCallMain.ll
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BoolParameterCallMain.o
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/BoolParameterCallMain.xse 1
+                                                            "call i32 @Choose")
+set_tests_properties(source_native_bool_parameter_call_artifacts PROPERTIES
+                     DEPENDS source_native_bool_parameter_call_build TIMEOUT 5)
 add_test(NAME project_native_build COMMAND xs build -proj ${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj)
 set_tests_properties(project_native_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
@@ -521,7 +531,7 @@ add_test(NAME project_native_artifacts COMMAND xs_xse_artifact_tests ${XS_PROJEC
                                            ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xse 7)
 set_tests_properties(project_native_artifacts PROPERTIES DEPENDS project_native_build TIMEOUT 5)
 foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain ParameterizedMain WrongReturnMain UnknownCallMain
-                       WrongCallArityMain NonLongParameterCallMain NonLongReturnCallMain RecursiveCallMain
+                       WrongCallArityMain NonLongReturnCallMain RecursiveCallMain
                        BoolCallAsLongMain ImmutableLocalReassignment MatchMissingElse MatchPatternTypeMismatch)
   add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file
                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs)

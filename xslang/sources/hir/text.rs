@@ -5,16 +5,20 @@
 
 use std::fmt::Write;
 
-use super::result_desugar::{DesugaredExpression, DesugaredFunction, DesugaredStatement};
+use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::symbols::{Import, Module, SymbolKind, Visibility};
-use super::type_check::{BinaryOperator, Expression, Function, Literal, PrimitiveType, Statement, Type};
+use super::type_check::{BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type};
 use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
 
 pub mod parser;
 
+mod block_writer;
 #[cfg(test)]
 mod call_tests;
+#[cfg(test)]
+mod conditional_tests;
 
+use block_writer::{mutability_name, write_block, write_desugared_block};
 pub use parser::{XhirParseDiagnostic, parse_xhir_function, parse_xhir_module_symbols};
 
 pub const SUPPORTED_XHIR_VERSION: u32 = 0;
@@ -262,9 +266,12 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::LiteralTypeMismatch => "literal_type_mismatch",
     TypeDiagnosticCode::ImmutableAssignment => "immutable_assignment",
     TypeDiagnosticCode::UnknownLocal => "unknown_local",
+    TypeDiagnosticCode::DuplicateLocal => "duplicate_local",
     TypeDiagnosticCode::BinaryTypeMismatch => "binary_type_mismatch",
     TypeDiagnosticCode::ResultPropagationRequiresResult => "result_propagation_requires_result",
     TypeDiagnosticCode::ResultPropagationReturnMismatch => "result_propagation_return_mismatch",
+    TypeDiagnosticCode::ConditionTypeMismatch => "condition_type_mismatch",
+    TypeDiagnosticCode::MissingBlockValue => "missing_block_value",
   }
 }
 
@@ -278,9 +285,12 @@ fn parse_type_diagnostic_code(name: &str,
     "literal_type_mismatch" => Some(TypeDiagnosticCode::LiteralTypeMismatch),
     "immutable_assignment" => Some(TypeDiagnosticCode::ImmutableAssignment),
     "unknown_local" => Some(TypeDiagnosticCode::UnknownLocal),
+    "duplicate_local" => Some(TypeDiagnosticCode::DuplicateLocal),
     "binary_type_mismatch" => Some(TypeDiagnosticCode::BinaryTypeMismatch),
     "result_propagation_requires_result" => Some(TypeDiagnosticCode::ResultPropagationRequiresResult),
     "result_propagation_return_mismatch" => Some(TypeDiagnosticCode::ResultPropagationReturnMismatch),
+    "condition_type_mismatch" => Some(TypeDiagnosticCode::ConditionTypeMismatch),
+    "missing_block_value" => Some(TypeDiagnosticCode::MissingBlockValue),
     _ =>
     {
       diagnostics.push(XhirParseDiagnostic { line,
@@ -381,6 +391,22 @@ fn write_statement(output: &mut String, statement: &Statement, indent: usize)
         write_expression(output, value, indent + 1);
       }
     }
+    Statement::If { condition,
+                    then_block,
+                    else_block,
+                    .. } =>
+    {
+      let _ = writeln!(output, "{pad}if");
+      let _ = writeln!(output, "{pad}  condition");
+      write_expression(output, condition, indent + 2);
+      let _ = writeln!(output, "{pad}  then");
+      write_block(output, then_block, indent + 2);
+      if let Some(else_block) = else_block
+      {
+        let _ = writeln!(output, "{pad}  else");
+        write_block(output, else_block, indent + 2);
+      }
+    }
     Statement::Panic { .. } =>
     {
       let _ = writeln!(output, "{pad}panic");
@@ -417,6 +443,22 @@ fn write_desugared_statement(output: &mut String, statement: &DesugaredStatement
       if let Some(value) = value
       {
         write_desugared_expression(output, value, indent + 1);
+      }
+    }
+    DesugaredStatement::If { condition,
+                             then_block,
+                             else_block,
+                             .. } =>
+    {
+      let _ = writeln!(output, "{pad}if");
+      let _ = writeln!(output, "{pad}  condition");
+      write_desugared_expression(output, condition, indent + 2);
+      let _ = writeln!(output, "{pad}  then");
+      write_desugared_block(output, then_block, indent + 2);
+      if let Some(else_block) = else_block
+      {
+        let _ = writeln!(output, "{pad}  else");
+        write_desugared_block(output, else_block, indent + 2);
       }
     }
     DesugaredStatement::Panic { .. } =>
@@ -477,6 +519,20 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
         let _ = writeln!(output, "{pad}  argument");
         write_expression(output, argument, indent + 2);
       }
+    }
+    Expression::If { condition,
+                     then_block,
+                     else_block,
+                     result_type,
+                     .. } =>
+    {
+      let _ = writeln!(output, "{pad}if_expression {}", type_name(result_type));
+      let _ = writeln!(output, "{pad}  condition");
+      write_expression(output, condition, indent + 2);
+      let _ = writeln!(output, "{pad}  then");
+      write_block(output, then_block, indent + 2);
+      let _ = writeln!(output, "{pad}  else");
+      write_block(output, else_block, indent + 2);
     }
   }
 }
@@ -541,6 +597,20 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
         write_desugared_expression(output, argument, indent + 2);
       }
     }
+    DesugaredExpression::If { condition,
+                              then_block,
+                              else_block,
+                              result_type,
+                              .. } =>
+    {
+      let _ = writeln!(output, "{pad}if_expression {}", type_name(result_type));
+      let _ = writeln!(output, "{pad}  condition");
+      write_desugared_expression(output, condition, indent + 2);
+      let _ = writeln!(output, "{pad}  then");
+      write_desugared_block(output, then_block, indent + 2);
+      let _ = writeln!(output, "{pad}  else");
+      write_desugared_block(output, else_block, indent + 2);
+    }
   }
 }
 
@@ -575,18 +645,6 @@ fn write_locals(output: &mut String, locals: &[super::type_check::Local])
                      mutability_name(local.mutable));
   }
   let _ = writeln!(output, "  .end");
-}
-
-const fn mutability_name(mutable: bool) -> &'static str
-{
-  if mutable
-  {
-    "mutable"
-  }
-  else
-  {
-    "immutable"
-  }
 }
 
 const fn binary_operator_name(operator: BinaryOperator) -> &'static str

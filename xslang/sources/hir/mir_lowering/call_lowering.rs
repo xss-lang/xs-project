@@ -52,11 +52,12 @@ impl HirToMirLowerer
       };
       lowered_arguments.push(argument);
     }
-    lowered.blocks[0].statements
-                     .push(mir::Statement::Call { result: Some(target),
-                                                  function: function.clone(),
-                                                  arguments: lowered_arguments,
-                                                  return_type,
-                                                  span: *span });
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::Call { result: Some(target),
+                                     function: function.clone(),
+                                     arguments: lowered_arguments,
+                                     return_type,
+                                     span: *span });
   }
 }

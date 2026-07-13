@@ -5,7 +5,7 @@
 
 use super::async_check::Span;
 use super::type_check::{
-  BinaryOperator, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, result_type_parts,
+  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, result_type_parts,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -56,6 +56,14 @@ pub enum DesugaredExpression
     return_type: Box<Type>,
     span: Span,
   },
+  If
+  {
+    condition: Box<DesugaredExpression>,
+    then_block: Box<DesugaredBlock>,
+    else_block: Box<DesugaredBlock>,
+    result_type: Box<Type>,
+    span: Span,
+  },
   ResultMatch
   {
     value: Box<DesugaredExpression>,
@@ -81,10 +89,25 @@ pub enum DesugaredStatement
     value: Option<DesugaredExpression>,
     span: Span,
   },
+  If
+  {
+    condition: DesugaredExpression,
+    then_block: DesugaredBlock,
+    else_block: Option<DesugaredBlock>,
+    span: Span,
+  },
   Panic
   {
     span: Span,
   },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DesugaredBlock
+{
+  pub statements: Vec<DesugaredStatement>,
+  pub tail: Option<Box<DesugaredExpression>>,
+  pub span: Span,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -156,6 +179,14 @@ impl ResultDesugar
         DesugaredStatement::Return { value,
                                      span: *span }
       }
+      Statement::If { condition,
+                      then_block,
+                      else_block,
+                      span, } => DesugaredStatement::If { condition: self.desugar_expression(condition),
+                                                          then_block: self.desugar_block(then_block),
+                                                          else_block:
+                                                            else_block.as_ref().map(|block| self.desugar_block(block)),
+                                                          span: *span },
       Statement::Panic { span } => DesugaredStatement::Panic { span: *span },
     }
   }
@@ -196,6 +227,15 @@ impl ResultDesugar
                                     return_type: return_type.clone(),
                                     span: *span }
       }
+      Expression::If { condition,
+                       then_block,
+                       else_block,
+                       result_type,
+                       span, } => DesugaredExpression::If { condition: Box::new(self.desugar_expression(condition)),
+                                                            then_block: Box::new(self.desugar_block(then_block)),
+                                                            else_block: Box::new(self.desugar_block(else_block)),
+                                                            result_type: result_type.clone(),
+                                                            span: *span },
     }
   }
 
@@ -299,7 +339,24 @@ impl ResultDesugar
                                       span, } => self.result_parts_of_expression(value, *span)
                                                      .map(|(success, _)| success),
       Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
+      Expression::If { result_type, .. } => Some(result_type.as_ref().clone()),
     }
+  }
+
+  fn desugar_block(&mut self, block: &Block) -> DesugaredBlock
+  {
+    let local_count = self.locals.len();
+    let statements = block.statements
+                          .iter()
+                          .map(|statement| self.desugar_statement(statement))
+                          .collect();
+    let tail = block.tail
+                    .as_ref()
+                    .map(|expression| Box::new(self.desugar_expression(expression)));
+    self.locals.truncate(local_count);
+    DesugaredBlock { statements,
+                     tail,
+                     span: block.span }
   }
 
   fn binary_expression_type(&mut self, operator: BinaryOperator, left: &Expression, right: &Expression)

@@ -11,7 +11,7 @@ use crate::xlil::Type;
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LocalId(pub u32);
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct BlockId(pub u32);
 
 #[derive(Clone, Debug, Eq, PartialEq)]

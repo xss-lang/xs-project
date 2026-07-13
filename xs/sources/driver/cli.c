@@ -5,6 +5,7 @@
 
 #include "xs/driver.h"
 
+#include "compiler_core_native.h"
 #include "direct_xlil.h"
 #include "options.h"
 #include "source_native.h"
@@ -435,7 +436,15 @@ static bool check_single_source_file(const char *path, bool build_native)
     success = check_compilation_unit_semantics(&unit, &symbols);
   xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
   if(success && build_native)
-    success = xs_driver_build_source_native(path, &unit.tree, &unit.diagnostics);
+  {
+    if(xs_driver_compiler_core_native_available(unit.compiler_core))
+    {
+      XsSpan span = {.start = unit.tree.root->span.start_offset, .end = unit.tree.root->span.end_offset};
+      success = xs_driver_build_compiler_core_native(path, unit.compiler_core, &unit.diagnostics, span);
+    }
+    else
+      success = xs_driver_build_source_native(path, &unit.tree, &unit.diagnostics);
+  }
   if(!success && build_native)
     xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
   xs_hir_symbol_table_free(&symbols);
@@ -522,7 +531,17 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
   if(success)
     success = emit_requested_output(output, &symbols, manifest_path);
   if(success && build_native)
-    success = unit_count != 0 && xs_driver_build_source_native(units[0].path, &units[0].tree, &units[0].diagnostics);
+  {
+    success = unit_count != 0;
+    if(success && unit_count == 1 && xs_driver_compiler_core_native_available(units[0].compiler_core))
+    {
+      XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
+      success =
+          xs_driver_build_compiler_core_native(units[0].path, units[0].compiler_core, &units[0].diagnostics, span);
+    }
+    else if(success)
+      success = xs_driver_build_source_native(units[0].path, &units[0].tree, &units[0].diagnostics);
+  }
   if(!success && build_native && unit_count != 0)
     xs_diagnostics_print(&units[0].diagnostics, &units[0].source, stderr);
 

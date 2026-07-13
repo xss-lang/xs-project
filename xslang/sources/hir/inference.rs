@@ -108,6 +108,7 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
       result_type_parts(&result_type).map(|(success_type, _)| success_type)
     }
     Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
+    Expression::If { result_type, .. } => Some(result_type.as_ref().clone()),
   }
 }
 

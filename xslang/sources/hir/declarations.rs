@@ -31,6 +31,7 @@ pub struct Function
   pub return_type: TypeRef,
   pub flags: u32,
   pub span: SourceSpan,
+  pub body_present: bool,
   pub body: Option<Vec<type_check::Statement>>,
 }
 
@@ -46,10 +47,10 @@ impl Function
       TypeRef::Primitive(value) => Some(type_check::Type::Primitive(*value)),
       TypeRef::Named(value) => Some(type_check::Type::Named(value.clone())),
     };
-    let mut locals = self.parameters
-                         .iter()
-                         .map(|parameter| {
-                           Some(type_check::Local { name: parameter.name.clone(),
+    let locals = self.parameters
+                     .iter()
+                     .map(|parameter| {
+                       Some(type_check::Local { name: parameter.name.clone(),
                                                                ty: match &parameter.ty
                                                                {
                                                                  TypeRef::Primitive(value) =>
@@ -63,13 +64,8 @@ impl Function
                                                                  parameter.span.file_id,
                                                                  u32::try_from(parameter.span.start_offset).ok()?,
                                                                  u32::try_from(parameter.span.end_offset).ok()?), })
-                         })
-                         .collect::<Option<Vec<_>>>()?;
-    locals.extend(body.iter().filter_map(|statement| match statement
-                             {
-                               type_check::Statement::Let { local, .. } => Some(local.clone()),
-                               _ => None,
-                             }));
+                     })
+                     .collect::<Option<Vec<_>>>()?;
     Some(type_check::Function { name: self.name.clone(),
                                 return_type,
                                 locals,

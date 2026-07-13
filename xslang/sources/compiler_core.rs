@@ -6,6 +6,7 @@
 use std::{slice, str};
 
 pub mod hir_lowering;
+mod xlil_lowering;
 
 pub const SYNTAX_ABI_VERSION: u32 = 0;
 pub const NO_NODE: u64 = u64::MAX;
@@ -119,6 +120,7 @@ pub struct CompilerCoreSession
   syntax: SyntaxTree,
   declarations: crate::hir::declarations::Module,
   mir_functions: Vec<crate::mir::Function>,
+  xlil_text: Option<Vec<u8>>,
 }
 
 fn table_length(value: u64) -> Result<usize, PacketError>
@@ -332,23 +334,33 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
   {
     return FfiStatus::InvalidPacket;
   };
-  let mir_functions = declarations.functions
-                                  .iter()
-                                  .filter_map(|declaration| {
-                                    let function = declaration.as_type_checked_input()?;
-                                    if !crate::hir::type_check::TypeChecker::new().check_function(&function)
-                                                                                  .is_empty()
-                                    {
-                                      return None;
-                                    }
-                                    crate::hir::mir_lowering::HirToMirLowerer::new()
+  let mir_functions: Vec<crate::mir::Function> =
+    declarations.functions
+                .iter()
+                .filter_map(|declaration| {
+                  let function = declaration.as_type_checked_input()?;
+                  if !crate::hir::type_check::TypeChecker::new().check_function(&function)
+                                                                .is_empty()
+                  {
+                    return None;
+                  }
+                  let mir = crate::hir::mir_lowering::HirToMirLowerer::new()
                                       .lower_function_with_parameters(&function, declaration.parameters.len())
-                                      .ok()
-                                  })
-                                  .collect();
+                                      .ok()?;
+                  if !crate::mir::BorrowChecker::new().check_function(&mir).is_empty()
+                  {
+                    return None;
+                  }
+                  crate::mir::optimizer::optimize_verified_function(mir).ok()
+                                                                        .map(|optimized| optimized.function)
+                })
+                .collect();
+  let xlil_text = xlil_lowering::lower_module(&declarations, &mir_functions)
+    .map(|module| crate::xlil::writer::module_to_string(&module).into_bytes());
   *session = Box::into_raw(Box::new(CompilerCoreSession { syntax,
                                                           declarations,
-                                                          mir_functions }));
+                                                          mir_functions,
+                                                          xlil_text }));
   FfiStatus::Ok
 }
 
@@ -387,6 +399,38 @@ pub unsafe extern "C" fn xslang_compiler_core_session_mir_function_count(session
 {
   // SAFETY: The pointer is only borrowed when it is non-null.
   unsafe { session.as_ref() }.map_or(0, |value| value.mir_functions.len() as u64)
+}
+
+/// Returns borrowed XLIL v0 text when every source body reached verified XLIL.
+///
+/// The returned bytes remain valid until the session is released. On failure or
+/// a null session this returns null and writes zero to `length` when non-null.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live compiler-core session. `length`
+/// must be null or writable for one `u64`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_xlil_text(session: *const CompilerCoreSession,
+                                                                length: *mut u64)
+                                                                -> *const u8
+{
+  if !length.is_null()
+  {
+    // SAFETY: The caller contract requires a writable length pointer.
+    unsafe { *length = 0 };
+  }
+  let Some(text) = (unsafe { session.as_ref() }).and_then(|value| value.xlil_text.as_ref())
+  else
+  {
+    return std::ptr::null();
+  };
+  if !length.is_null()
+  {
+    // SAFETY: The caller contract requires a writable length pointer.
+    unsafe { *length = text.len() as u64 };
+  }
+  text.as_ptr()
 }
 
 /// Releases a compiler-core session. Null is accepted.

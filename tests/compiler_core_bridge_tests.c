@@ -5,6 +5,7 @@
 
 #include "xs/compiler_core.h"
 #include "xs/diagnostic.h"
+#include "xs/lil.h"
 #include "xs/macro.h"
 #include "xs/syntax_parser.h"
 
@@ -36,7 +37,8 @@ static void test_materialized_syntax_packet(void)
                      "macro_rules! make { () -> { incomplete fn generated(); }; }\n"
                      "make!();\n"
                      "fn add(a: Long, b: Long) -> Long { return a + b; }\n"
-                     "fn main() -> Long { value: Long = add(3, 4); value = 7; return value; }\n";
+                     "fn choose(flag: Bool) -> Long { return if (flag) { 1 } else { 2 }; }\n"
+                     "fn main() -> Long { if (true) { return add(3, 4); } else { return choose(false); } }\n";
   XsSource source = {.path = "Bridge.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -59,8 +61,19 @@ static void test_materialized_syntax_packet(void)
   XsCompilerCoreSession *session = nullptr;
   CHECK(packet == nullptr || xslang_compiler_core_session_create(packet, &session) == XS_COMPILER_CORE_FFI_OK);
   CHECK(packet == nullptr || xslang_compiler_core_session_syntax_node_count(session) == packet->node_count);
-  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 3);
-  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 2);
+  CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 4);
+  CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 3);
+  uint64_t xlil_length = 0;
+  const uint8_t *xlil_text = xslang_compiler_core_session_xlil_text(session, &xlil_length);
+  CHECK(packet == nullptr || xlil_text != nullptr);
+  CHECK(packet == nullptr || xlil_length != 0);
+  XsLilModule *xlil = nullptr;
+  XsLilError xlil_error = {0};
+  CHECK(packet == nullptr || xs_lil_module_parse_text("Bridge.xlil", (const char *)xlil_text, (size_t)xlil_length,
+                                                      &xlil, &xlil_error) == XS_LIL_OK);
+  CHECK(packet == nullptr || xs_lil_module_verify(xlil, &xlil_error) == XS_LIL_OK);
+  CHECK(packet == nullptr || xs_lil_module_function_count(xlil) == 4);
+  xs_lil_module_destroy(xlil);
   if(packet != nullptr)
   {
     const XsCompilerCoreSyntaxNode *root = &packet->nodes[packet->root_index];
@@ -102,6 +115,9 @@ static void test_invalid_packet_inputs(void)
   XsCompilerCoreSession *session = nullptr;
   CHECK(xslang_compiler_core_session_create(nullptr, &session) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
   CHECK(xslang_compiler_core_session_create(nullptr, nullptr) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
+  uint64_t xlil_length = 7;
+  CHECK(xslang_compiler_core_session_xlil_text(nullptr, &xlil_length) == nullptr);
+  CHECK(xlil_length == 0);
   XsCompilerCoreSyntaxPacket invalid = {.abi_version = XS_COMPILER_CORE_SYNTAX_ABI_VERSION + 1U};
   CHECK(xslang_compiler_core_session_create(&invalid, &session) == XS_COMPILER_CORE_FFI_INVALID_PACKET);
   xs_compiler_core_syntax_packet_free(nullptr);

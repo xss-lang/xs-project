@@ -112,9 +112,9 @@ example today.
 
 ## Release policy
 
-The project is now in the `0.1.1` development period. This line keeps native Linux ELF `.xse` output working while moving
-macro-expanded C23 syntax into owned Rust compiler-core sessions and typed HIR. It does not imply that the complete X#
-language is executable yet. Earlier releases are compiler infrastructure snapshots.
+The project is now in the `0.1.2` development period. Supported source functions cross the C23 structural-AST boundary into
+Rust typed HIR, verified and optimized MIR, and XLIL before the public C23 XLIL model drives LLVM native `.xse` emission. It
+does not imply that the complete X# language is executable yet. Earlier releases are compiler infrastructure snapshots.
 
 ## CLI summary
 

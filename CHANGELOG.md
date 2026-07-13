@@ -12,6 +12,8 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.2 - 2026-07-13
+
 ### Added
 
 - Compiler-core sessions now lower supported integer/boolean return expressions and arithmetic/comparison trees into the
@@ -21,11 +23,19 @@ source-to-native executable pipeline.
   lower as real MIR parameters instead of uninitialized locals.
 - Same-module direct calls with resolved parameter and return types now cross the compiler-core import boundary and lower
   through typed Rust HIR, MIR, and XLIL call records.
+- Statement `if`/`else` and value-producing `if` expressions now import into typed Rust HIR blocks. Returned conditional
+  values lower to verified multi-block MIR and XLIL `branch_if` control flow.
+- Supported single-unit source builds now consume compiler-core XLIL through the public C23 XLIL parser and continue through
+  LLVM IR, object emission, LLD linking, and native `.xse` generation. Unsupported source forms retain the existing C23
+  source-native fallback while the Rust compiler core grows.
+- Same-module compiler-core functions may carry `Long` and `Bool` parameters through MIR, XLIL, LLVM calls, and native
+  execution.
 
 ### Changed
 
 - Rust `hir.rs`, `mir.rs`, and `xlil.rs` are now small module/re-export surfaces. MIR and XLIL data models live in dedicated
   `model.rs` modules, while the canonical checked-HIR model is re-exported from `hir.rs`.
+- HIR value lowering and XHIR block writing were split into focused modules as conditional control-flow support grew.
 
 ## 0.1.1 - 2026-07-13
 

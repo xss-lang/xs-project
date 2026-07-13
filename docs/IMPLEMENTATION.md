@@ -91,7 +91,7 @@ The documented compilation order is preserved:
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
 - Plain source native builds support the first expression/local/call slice for top-level `fn main() -> Long` plus
-  same-module helper functions shaped as `fn Name(<Long params>) -> Long` or `fn Name(<Long params>) -> Bool`: explicit
+  same-module helper functions with `Long`/`Bool` parameters and `Long`/`Bool` results: explicit
   `Long`/`Bool` local bindings, inferred `:=` bindings with i32-compatible or bool-compatible initializers, simple
   assignment to mutable `Long`/`Bool` locals, local
   identifier returns, direct helper calls,
@@ -368,6 +368,17 @@ local types and compound assignments remain outside this Rust import slice for n
 body import, so direct calls to functions in the same module can resolve forward references. Their argument and result types
 are recorded in typed HIR and lower through the existing target-independent MIR and XLIL call models. Overload selection,
 generic calls, methods, imported targets, recursion policy, and function values remain later compiler-core work.
+The imported HIR body model now has explicit lexical blocks and distinguishes statement `if` from value-producing `if`.
+Both forms require a `Bool` condition during Rust type checking. Statement branches lower to MIR basic blocks with an
+explicit merge when control can continue. A returned `if` expression lowers each required value branch directly to its own
+MIR return terminator, avoiding an implicit target-specific phi representation. The same verified CFG lowers to XLIL
+`br_if`; arbitrary conditional values used by local initialization or assignment still await the general MIR place/merge
+model.
+For supported single-unit builds, this Rust path no longer stops at an internal MIR count. The session borrow-checks and
+optimizes each lowered function, lowers the module to XLIL v0 text, and exposes that text through a borrowed C ABI view. The
+C23 driver parses it with the public `xs/lil.h` API, verifies the reconstructed module, and reuses the established LLVM IR,
+object, and native `.xse` emission path. Unsupported source forms continue through the older narrow C23 source-native path
+until their Rust HIR/MIR lowering is complete; HIR and MIR remain independent of LLVM in both paths.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
 `Result<T>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the

@@ -45,11 +45,11 @@ impl HirToMirLowerer
     {
       self.lower_statement(statement, &mut lowered);
     }
-    if lowered.blocks[0].terminator.is_none()
+    if !self.current_is_terminated(&mut lowered)
     {
       if lowered.return_type == XlilType::VOID
       {
-        lowered.blocks[0].terminator = Some(mir::Terminator::Return(None));
+        self.set_terminator(mir::Terminator::Return(None), Span::new(0, 0, 0), &mut lowered);
       }
       else
       {

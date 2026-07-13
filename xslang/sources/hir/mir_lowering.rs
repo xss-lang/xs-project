@@ -6,8 +6,8 @@
 use std::collections::HashMap;
 
 use super::async_check::Span;
-use super::result_desugar::{DesugaredExpression, DesugaredFunction, DesugaredStatement};
-use super::type_check::{BinaryOperator, Expression, Function, Literal, PrimitiveType, Statement, Type};
+use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
+use super::type_check::{BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type};
 use crate::mir;
 use crate::xlil::{Type as XlilType, TypeKind};
 
@@ -35,6 +35,7 @@ pub struct HirToMirLowerer
   diagnostics: Vec<Diagnostic>,
   locals: HashMap<String, mir::LocalId>,
   next_local: u32,
+  current_block: mir::BlockId,
 }
 
 impl HirToMirLowerer
@@ -91,6 +92,17 @@ impl HirToMirLowerer
                          .and_then(|expression| self.surface_expression_from_desugared(expression));
         Some(Statement::Return { value,
                                  span: *span })
+      }
+      DesugaredStatement::If { condition,
+                               then_block,
+                               else_block,
+                               span, } =>
+      {
+        Some(Statement::If { condition: self.surface_expression_from_desugared(condition)?,
+                             then_block: self.surface_block_from_desugared(then_block)?,
+                             else_block: else_block.as_ref()
+                                                   .and_then(|block| self.surface_block_from_desugared(block)),
+                             span: *span })
       }
       DesugaredStatement::Panic { span } => Some(Statement::Panic { span: *span }),
     }
@@ -149,7 +161,35 @@ impl HirToMirLowerer
                                 return_type: return_type.clone(),
                                 span: *span })
       }
+      DesugaredExpression::If { condition,
+                                then_block,
+                                else_block,
+                                result_type,
+                                span, } =>
+      {
+        Some(Expression::If { condition: Box::new(self.surface_expression_from_desugared(condition)?),
+                              then_block: Box::new(self.surface_block_from_desugared(then_block)?),
+                              else_block: Box::new(self.surface_block_from_desugared(else_block)?),
+                              result_type: result_type.clone(),
+                              span: *span })
+      }
     }
+  }
+
+  fn surface_block_from_desugared(&mut self, block: &DesugaredBlock) -> Option<Block>
+  {
+    let statements = block.statements
+                          .iter()
+                          .map(|statement| self.surface_statement_from_desugared(statement))
+                          .collect::<Option<Vec<_>>>()?;
+    let tail = match &block.tail
+    {
+      Some(expression) => Some(Box::new(self.surface_expression_from_desugared(expression)?)),
+      None => None,
+    };
+    Some(Block { statements,
+                 tail,
+                 span: block.span })
   }
 
   fn lower_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
@@ -182,18 +222,20 @@ impl HirToMirLowerer
       Statement::Expr(expression) => self.unsupported_expression(expression),
       Statement::Return { value,
                           span, } => self.lower_return(value.as_ref(), *span, lowered),
+      Statement::If { .. } => self.lower_if_statement(statement, lowered),
       Statement::Panic { span } => self.lower_panic(*span, lowered),
     }
   }
 
   fn lower_panic(&mut self, span: Span, lowered: &mut mir::Function)
   {
-    if lowered.blocks[0].terminator.is_some()
+    if self.current_block_mut(lowered).terminator.is_some()
     {
       return;
     }
-    lowered.blocks[0].terminator = Some(mir::Terminator::Panic);
-    lowered.blocks[0].span = span;
+    let block = self.current_block_mut(lowered);
+    block.terminator = Some(mir::Terminator::Panic);
+    block.span = span;
   }
 
   fn lower_assignment(&mut self, target: mir::LocalId, expression: &Expression, lowered: &mut mir::Function)
@@ -213,7 +255,7 @@ impl HirToMirLowerer
 
   fn lower_return(&mut self, value: Option<&Expression>, span: Span, lowered: &mut mir::Function)
   {
-    if lowered.blocks[0].terminator.is_some()
+    if self.current_block_mut(lowered).terminator.is_some()
     {
       return;
     }
@@ -267,14 +309,20 @@ impl HirToMirLowerer
         self.lower_call_into(local, expression, lowered);
         mir::Terminator::Return(Some(local))
       }
+      Some(expression @ Expression::If { .. }) =>
+      {
+        self.lower_if_return(expression, span, lowered);
+        return;
+      }
       Some(expression) =>
       {
         self.unsupported_expression(expression);
         return;
       }
     };
-    lowered.blocks[0].terminator = Some(terminator);
-    lowered.blocks[0].span = span;
+    let block = self.current_block_mut(lowered);
+    block.terminator = Some(terminator);
+    block.span = span;
   }
 
   fn lower_expression_to_local(&mut self,
@@ -296,6 +344,13 @@ impl HirToMirLowerer
                       *span);
           return None;
         };
+        if self.local_value_type(local, lowered) != Some(expected_type)
+        {
+          self.report(DiagnosticCode::UnsupportedType,
+                      "HIR local type does not match the expected MIR expression type",
+                      *span);
+          return None;
+        }
         Some(local)
       }
       Expression::Literal { literal,
@@ -329,6 +384,11 @@ impl HirToMirLowerer
         let local = self.declare_temp(expected_type, *span, lowered)?;
         self.lower_call_into(local, expression, lowered);
         Some(local)
+      }
+      Expression::If { .. } =>
+      {
+        self.unsupported_expression(expression);
+        None
       }
     }
   }
@@ -369,102 +429,78 @@ impl HirToMirLowerer
     };
     match (operator, target_type, operand_type)
     {
-      (BinaryOperator::Add, XlilType::I32, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::AddI32 { result: target,
-                                                        left,
-                                                        right,
-                                                        span })
-      }
-      (BinaryOperator::Sub, XlilType::I32, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::SubI32 { result: target,
-                                                        left,
-                                                        right,
-                                                        span })
-      }
-      (BinaryOperator::Mul, XlilType::I32, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::MulI32 { result: target,
-                                                        left,
-                                                        right,
-                                                        span })
-      }
-      (BinaryOperator::Equal, XlilType::BOOL, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::EqI32 { result: target,
-                                                       left,
-                                                       right,
-                                                       span })
-      }
-      (BinaryOperator::Less, XlilType::BOOL, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::LtI32 { result: target,
-                                                       left,
-                                                       right,
-                                                       span })
-      }
-      (BinaryOperator::LessEqual, XlilType::BOOL, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::LeI32 { result: target,
-                                                       left,
-                                                       right,
-                                                       span })
-      }
-      (BinaryOperator::Greater, XlilType::BOOL, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::GtI32 { result: target,
-                                                       left,
-                                                       right,
-                                                       span })
-      }
-      (BinaryOperator::GreaterEqual, XlilType::BOOL, XlilType::I32) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::GeI32 { result: target,
-                                                       left,
-                                                       right,
-                                                       span })
-      }
-      (BinaryOperator::Add, XlilType::I64, XlilType::I64) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::AddI64 { result: target,
-                                                        left,
-                                                        right,
-                                                        span })
-      }
-      (BinaryOperator::Sub, XlilType::I64, XlilType::I64) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::SubI64 { result: target,
-                                                        left,
-                                                        right,
-                                                        span })
-      }
-      (BinaryOperator::Mul, XlilType::I64, XlilType::I64) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::MulI64 { result: target,
-                                                        left,
-                                                        right,
-                                                        span })
-      }
-      (BinaryOperator::Equal, XlilType::BOOL, XlilType::I64) =>
-      {
-        lowered.blocks[0].statements
-                         .push(mir::Statement::EqI64 { result: target,
-                                                       left,
-                                                       right,
-                                                       span })
-      }
+      (BinaryOperator::Add, XlilType::I32, XlilType::I32) => self.current_block_mut(lowered)
+                                                                 .statements
+                                                                 .push(mir::Statement::AddI32 { result: target,
+                                                                                                left,
+                                                                                                right,
+                                                                                                span }),
+      (BinaryOperator::Sub, XlilType::I32, XlilType::I32) => self.current_block_mut(lowered)
+                                                                 .statements
+                                                                 .push(mir::Statement::SubI32 { result: target,
+                                                                                                left,
+                                                                                                right,
+                                                                                                span }),
+      (BinaryOperator::Mul, XlilType::I32, XlilType::I32) => self.current_block_mut(lowered)
+                                                                 .statements
+                                                                 .push(mir::Statement::MulI32 { result: target,
+                                                                                                left,
+                                                                                                right,
+                                                                                                span }),
+      (BinaryOperator::Equal, XlilType::BOOL, XlilType::I32) => self.current_block_mut(lowered)
+                                                                    .statements
+                                                                    .push(mir::Statement::EqI32 { result: target,
+                                                                                                  left,
+                                                                                                  right,
+                                                                                                  span }),
+      (BinaryOperator::Less, XlilType::BOOL, XlilType::I32) => self.current_block_mut(lowered)
+                                                                   .statements
+                                                                   .push(mir::Statement::LtI32 { result: target,
+                                                                                                 left,
+                                                                                                 right,
+                                                                                                 span }),
+      (BinaryOperator::LessEqual, XlilType::BOOL, XlilType::I32) => self.current_block_mut(lowered)
+                                                                        .statements
+                                                                        .push(mir::Statement::LeI32 { result: target,
+                                                                                                      left,
+                                                                                                      right,
+                                                                                                      span }),
+      (BinaryOperator::Greater, XlilType::BOOL, XlilType::I32) => self.current_block_mut(lowered)
+                                                                      .statements
+                                                                      .push(mir::Statement::GtI32 { result: target,
+                                                                                                    left,
+                                                                                                    right,
+                                                                                                    span }),
+      (BinaryOperator::GreaterEqual, XlilType::BOOL, XlilType::I32) => self.current_block_mut(lowered)
+                                                                           .statements
+                                                                           .push(mir::Statement::GeI32 { result: target,
+                                                                                                         left,
+                                                                                                         right,
+                                                                                                         span }),
+      (BinaryOperator::Add, XlilType::I64, XlilType::I64) => self.current_block_mut(lowered)
+                                                                 .statements
+                                                                 .push(mir::Statement::AddI64 { result: target,
+                                                                                                left,
+                                                                                                right,
+                                                                                                span }),
+      (BinaryOperator::Sub, XlilType::I64, XlilType::I64) => self.current_block_mut(lowered)
+                                                                 .statements
+                                                                 .push(mir::Statement::SubI64 { result: target,
+                                                                                                left,
+                                                                                                right,
+                                                                                                span }),
+      (BinaryOperator::Mul, XlilType::I64, XlilType::I64) => self.current_block_mut(lowered)
+                                                                 .statements
+                                                                 .push(mir::Statement::MulI64 { result: target,
+                                                                                                left,
+                                                                                                right,
+                                                                                                span }),
+      (BinaryOperator::Equal, XlilType::BOOL, XlilType::I64) => self.current_block_mut(lowered)
+                                                                    .statements
+                                                                    .push(mir::Statement::EqI64 { result: target,
+                                                                                                  left,
+                                                                                                  right,
+                                                                                                  span }),
       _ => self.report(DiagnosticCode::UnsupportedExpression,
                        "HIR binary expression has no MIR instruction for this type combination",
                        span),
@@ -531,6 +567,11 @@ impl HirToMirLowerer
         Type::Primitive(value) => primitive_to_xlil(*value),
         Type::Named(_) => None,
       },
+      Expression::If { result_type, .. } => match result_type.as_ref()
+      {
+        Type::Primitive(value) => primitive_to_xlil(*value),
+        Type::Named(_) => None,
+      },
       Expression::Literal { .. } | Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
@@ -549,128 +590,49 @@ impl HirToMirLowerer
            })
   }
 
-  fn lower_literal_into(&mut self, target: mir::LocalId, literal: &Literal, span: Span, lowered: &mut mir::Function)
-  {
-    let value_type = lowered.locals
-                            .iter()
-                            .find(|local| local.id == target)
-                            .and_then(|local| local.value_type);
-    match (literal, value_type)
-    {
-      (Literal::Integer(value), Some(XlilType { kind: TypeKind::I64 })) =>
-      {
-        let Ok(value) = value.replace('\'', "").parse::<i64>()
-        else
-        {
-          self.report(DiagnosticCode::InvalidIntegerLiteral,
-                      "HIR integer literal does not fit MIR const.i64",
-                      span);
-          return;
-        };
-        lowered.blocks[0].statements
-                         .push(mir::Statement::ConstI64 { local: target,
-                                                          value,
-                                                          span });
-      }
-      (Literal::Integer(value), Some(XlilType { kind: TypeKind::I32 })) =>
-      {
-        let Ok(value) = value.replace('\'', "").parse::<i32>()
-        else
-        {
-          self.report(DiagnosticCode::InvalidIntegerLiteral,
-                      "HIR integer literal does not fit MIR const.i32",
-                      span);
-          return;
-        };
-        lowered.blocks[0].statements
-                         .push(mir::Statement::ConstI32 { local: target,
-                                                          value,
-                                                          span });
-      }
-      (Literal::Integer(_), Some(_)) => self.report(DiagnosticCode::UnsupportedType,
-                                                    "only Long and Int literals can lower to MIR constants today",
-                                                    span),
-      (Literal::None, _) => self.report(DiagnosticCode::UnsupportedExpression,
-                                        "Optional None lowering is not implemented in MIR yet",
-                                        span),
-      _ => self.report(DiagnosticCode::UnsupportedExpression,
-                       "HIR literal kind cannot lower to MIR yet",
-                       span),
-    }
-  }
-
-  fn declare_local(&mut self,
-                   name: String,
-                   ty: &Type,
-                   mutable: bool,
-                   span: Span,
-                   lowered: &mut mir::Function)
-                   -> mir::LocalId
-  {
-    if let Some(id) = self.locals.get(&name).copied()
-    {
-      return id;
-    }
-    let id = mir::LocalId(self.next_local);
-    self.next_local += 1;
-    let value_type = self.lower_value_type(ty, span);
-    lowered.locals.push(mir::Local { id,
-                                     name: name.clone(),
-                                     value_type,
-                                     mutable,
-                                     span });
-    self.locals.insert(name, id);
-    id
-  }
-
-  fn declare_temp(&mut self, value_type: XlilType, span: Span, lowered: &mut mir::Function) -> Option<mir::LocalId>
-  {
-    if value_type == XlilType::VOID
-    {
-      self.report(DiagnosticCode::UnsupportedType,
-                  "void return value cannot allocate a MIR local",
-                  span);
-      return None;
-    }
-    let id = mir::LocalId(self.next_local);
-    self.next_local += 1;
-    lowered.locals.push(mir::Local { id,
-                                     name: format!("$tmp{}", id.0),
-                                     value_type: Some(value_type),
-                                     mutable: false,
-                                     span });
-    Some(id)
-  }
-
-  fn lower_return_type(&mut self, ty: Option<&Type>, span: Span) -> XlilType
-  {
-    ty.and_then(|ty| self.lower_value_type(ty, span))
-      .unwrap_or(XlilType::VOID)
-  }
-
-  fn lower_value_type(&mut self, ty: &Type, span: Span) -> Option<XlilType>
-  {
-    let Type::Primitive(primitive) = ty
-    else
-    {
-      self.report(DiagnosticCode::UnsupportedType,
-                  "user-defined HIR type has no MIR value model yet",
-                  span);
-      return None;
-    };
-    primitive_to_xlil(*primitive).or_else(|| {
-                                   self.report(DiagnosticCode::UnsupportedType,
-                                               "HIR primitive has no XLIL-backed MIR value type yet",
-                                               span);
-                                   None
-                                 })
-  }
-
   fn unsupported_expression(&mut self, expression: &Expression)
   {
     self.report(DiagnosticCode::UnsupportedExpression,
                 "HIR expression cannot lower to MIR yet",
                 expression_span(expression));
+  }
+
+  fn current_block_mut<'a>(&self, lowered: &'a mut mir::Function) -> &'a mut mir::BasicBlock
+  {
+    lowered.blocks
+           .iter_mut()
+           .find(|block| block.id == self.current_block)
+           .expect("HIR lowering current MIR block must exist")
+  }
+
+  fn append_block(&mut self, span: Span, lowered: &mut mir::Function) -> mir::BlockId
+  {
+    let id = mir::BlockId(u32::try_from(lowered.blocks.len()).expect("MIR block count must fit u32"));
+    lowered.blocks.push(mir::BasicBlock { id,
+                                          statements: Vec::new(),
+                                          terminator: None,
+                                          span });
+    id
+  }
+
+  fn switch_to(&mut self, block: mir::BlockId)
+  {
+    self.current_block = block;
+  }
+
+  fn set_terminator(&mut self, terminator: mir::Terminator, span: Span, lowered: &mut mir::Function)
+  {
+    let block = self.current_block_mut(lowered);
+    if block.terminator.is_none()
+    {
+      block.terminator = Some(terminator);
+      block.span = span;
+    }
+  }
+
+  fn current_is_terminated(&self, lowered: &mut mir::Function) -> bool
+  {
+    self.current_block_mut(lowered).terminator.is_some()
   }
 
   fn report(&mut self, code: DiagnosticCode, message: impl Into<String>, span: Span)
@@ -713,14 +675,18 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Assign { span, .. } |
     Expression::Binary { span, .. } |
     Expression::ResultPropagation { span, .. } => *span,
-    Expression::Call { span, .. } => *span,
+    Expression::Call { span, .. } | Expression::If { span, .. } => *span,
   }
 }
 
 mod call_lowering;
+mod control_flow;
+#[cfg(test)]
+mod control_flow_tests;
 #[cfg(test)]
 mod desugar_tests;
 mod function_lowering;
+mod value_lowering;
 #[cfg(test)]
 mod value_tests;
 

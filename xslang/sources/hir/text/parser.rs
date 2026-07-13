@@ -5,7 +5,9 @@
 
 use crate::hir::async_check::Span;
 use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
-use crate::hir::type_check::{BinaryOperator, Expression, Function, Literal, Local, PrimitiveType, Statement, Type};
+use crate::hir::type_check::{
+  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type,
+};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
@@ -202,19 +204,30 @@ impl Parser<'_>
     self.index += 1;
     while let Some(line) = self.current()
     {
-      match line.as_str()
+      if line == ".end"
       {
-        ".end" =>
-        {
-          self.index += 1;
-          break;
-        }
-        line if line.starts_with("let ") => function.body.push(self.let_statement()),
-        "expression" => function.body.push(self.expression_statement()),
-        "return" => function.body.push(self.return_statement()),
-        "panic" => function.body.push(self.panic_statement()),
-        _ => break,
+        self.index += 1;
+        break;
       }
+      let Some(statement) = self.statement()
+      else
+      {
+        break;
+      };
+      function.body.push(statement);
+    }
+  }
+
+  fn statement(&mut self) -> Option<Statement>
+  {
+    match self.current()?.as_str()
+    {
+      line if line.starts_with("let ") => Some(self.let_statement()),
+      "expression" => Some(self.expression_statement()),
+      "return" => Some(self.return_statement()),
+      "if" => Some(self.if_statement()),
+      "panic" => Some(self.panic_statement()),
+      _ => None,
     }
   }
 
@@ -262,6 +275,67 @@ impl Parser<'_>
   {
     self.index += 1;
     Statement::Panic { span: span() }
+  }
+
+  fn if_statement(&mut self) -> Statement
+  {
+    self.index += 1;
+    self.consume_expression_field("condition");
+    let condition = self.expression()
+                        .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                         span: span() });
+    let then_block = self.named_block("then");
+    let else_block = if self.current().as_deref() == Some("else")
+    {
+      Some(self.named_block("else"))
+    }
+    else
+    {
+      None
+    };
+    Statement::If { condition,
+                    then_block,
+                    else_block,
+                    span: span() }
+  }
+
+  fn named_block(&mut self, name: &str) -> Block
+  {
+    if self.current().as_deref() == Some(name)
+    {
+      self.index += 1;
+    }
+    else
+    {
+      self.report(format!("expected {name} block"));
+    }
+    let mut statements = Vec::new();
+    let mut tail = None;
+    while let Some(line) = self.current()
+    {
+      if line == ".end"
+      {
+        self.index += 1;
+        break;
+      }
+      if line == "tail"
+      {
+        self.index += 1;
+        tail = self.expression().map(Box::new);
+        continue;
+      }
+      let Some(statement) = self.statement()
+      else
+      {
+        self.report(format!("unexpected record '{line}' in {name} block"));
+        self.index += 1;
+        continue;
+      };
+      statements.push(statement);
+    }
+    Block { statements,
+            tail,
+            span: span() }
   }
 
   fn expression(&mut self) -> Option<Expression>
@@ -333,6 +407,23 @@ impl Parser<'_>
                                      parameter_types,
                                      return_type: Box::new(return_type),
                                      span: span() });
+    }
+    if let Some(result_type) = rest.strip_prefix("if_expression ")
+    {
+      self.index += 1;
+      let result_type = self.parse_type(result_type)
+                            .unwrap_or(Type::Named(result_type.to_string()));
+      self.consume_expression_field("condition");
+      let condition = self.expression()
+                          .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                           span: span() });
+      let then_block = self.named_block("then");
+      let else_block = self.named_block("else");
+      return Some(Expression::If { condition: Box::new(condition),
+                                   then_block: Box::new(then_block),
+                                   else_block: Box::new(else_block),
+                                   result_type: Box::new(result_type),
+                                   span: span() });
     }
     if let Some(operator) = rest.strip_prefix("binary ")
     {

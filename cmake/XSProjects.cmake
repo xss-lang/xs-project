@@ -45,6 +45,7 @@ add_library(xs_compiler
   xs/sources/codegen/units.c
   xs/sources/compiler_core/syntax_packet.c
   xs/sources/driver/cli.c
+  xs/sources/driver/compiler_core_native.c
   xs/sources/driver/direct_xlil.c
   xs/sources/driver/options.c
   xs/sources/driver/source_native.c

@@ -97,6 +97,14 @@ pub enum Expression
     return_type: Box<Type>,
     span: Span,
   },
+  If
+  {
+    condition: Box<Expression>,
+    then_block: Box<Block>,
+    else_block: Box<Block>,
+    result_type: Box<Type>,
+    span: Span,
+  },
   ResultPropagation
   {
     value: Box<Expression>, span: Span
@@ -117,10 +125,25 @@ pub enum Statement
     value: Option<Expression>,
     span: Span,
   },
+  If
+  {
+    condition: Expression,
+    then_block: Block,
+    else_block: Option<Block>,
+    span: Span,
+  },
   Panic
   {
     span: Span,
   },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Block
+{
+  pub statements: Vec<Statement>,
+  pub tail: Option<Box<Expression>>,
+  pub span: Span,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -138,9 +161,12 @@ pub enum DiagnosticCode
   LiteralTypeMismatch,
   ImmutableAssignment,
   UnknownLocal,
+  DuplicateLocal,
   BinaryTypeMismatch,
   ResultPropagationRequiresResult,
   ResultPropagationReturnMismatch,
+  ConditionTypeMismatch,
+  MissingBlockValue,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -157,6 +183,7 @@ pub struct TypeChecker
   locals: Vec<Local>,
   diagnostics: Vec<Diagnostic>,
   return_type: Option<Type>,
+  scope_starts: Vec<usize>,
 }
 
 impl TypeChecker
@@ -171,6 +198,7 @@ impl TypeChecker
   pub fn check_function(mut self, function: &Function) -> Vec<Diagnostic>
   {
     self.locals.extend(function.locals.iter().cloned());
+    self.scope_starts.push(0);
     self.return_type = function.return_type.clone();
     for statement in &function.body
     {
@@ -190,7 +218,19 @@ impl TypeChecker
         {
           self.check_expression_against_type(initializer, &local.ty);
         }
-        self.locals.push(local.clone());
+        let scope_start = self.scope_starts.last().copied().unwrap_or(0);
+        if self.locals[scope_start..].iter()
+                                     .any(|existing| existing.name == local.name)
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::DuplicateLocal,
+                                 message: format!("local '{}' is already declared in this scope", local.name),
+                                 span: local.span });
+        }
+        else
+        {
+          self.locals.push(local.clone());
+        }
       }
       Statement::Expr(expression) => self.check_expression(expression),
       Statement::Return { value,
@@ -207,6 +247,18 @@ impl TypeChecker
                                  message:
                                    "return without a value is not assignable to the function return type".to_string(),
                                  span: *span });
+        }
+      }
+      Statement::If { condition,
+                      then_block,
+                      else_block,
+                      span, } =>
+      {
+        self.check_condition(condition, *span);
+        self.check_block(then_block, None);
+        if let Some(else_block) = else_block
+        {
+          self.check_block(else_block, None);
         }
       }
       Statement::Panic { .. } =>
@@ -278,6 +330,16 @@ impl TypeChecker
         {
           self.check_expression_against_type(argument, parameter_type);
         }
+      }
+      Expression::If { condition,
+                       then_block,
+                       else_block,
+                       result_type,
+                       span, } =>
+      {
+        self.check_condition(condition, *span);
+        self.check_block(then_block, Some(result_type));
+        self.check_block(else_block, Some(result_type));
       }
       Expression::Local { name,
                           span, } =>
@@ -371,6 +433,17 @@ impl TypeChecker
                                  span: *span });
         }
       }
+      Expression::If { span, .. } =>
+      {
+        self.check_expression(expression);
+        if self.expression_type(expression).as_ref() != Some(ty)
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "if expression result is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
@@ -389,7 +462,43 @@ impl TypeChecker
                            .. } => self.binary_expression_type(*operator, left, right),
       Expression::ResultPropagation { value, .. } => self.result_success_type(value),
       Expression::Call { return_type, .. } => Some(return_type.as_ref().clone()),
+      Expression::If { result_type, .. } => Some(result_type.as_ref().clone()),
     }
+  }
+
+  fn check_condition(&mut self, condition: &Expression, span: Span)
+  {
+    self.check_expression(condition);
+    if self.expression_type(condition) != Some(Type::Primitive(PrimitiveType::Bool))
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::ConditionTypeMismatch,
+                             message: "if condition must have type Bool".to_string(),
+                             span });
+    }
+  }
+
+  fn check_block(&mut self, block: &Block, expected_tail: Option<&Type>)
+  {
+    let local_count = self.locals.len();
+    self.scope_starts.push(local_count);
+    for statement in &block.statements
+    {
+      self.check_statement(statement, self.return_type.clone().as_ref());
+    }
+    match (block.tail.as_deref(), expected_tail)
+    {
+      (Some(tail), Some(expected)) => self.check_expression_against_type(tail, expected),
+      (None, Some(_)) => self.diagnostics
+                             .push(Diagnostic { code: DiagnosticCode::MissingBlockValue,
+                                                message: "if expression branch must produce a value".to_string(),
+                                                span: block.span }),
+      (Some(tail), None) => self.check_expression(tail),
+      (None, None) =>
+      {}
+    }
+    self.locals.truncate(local_count);
+    self.scope_starts.pop();
   }
 
   fn check_result_propagation(&mut self, value: &Expression, span: Span)
