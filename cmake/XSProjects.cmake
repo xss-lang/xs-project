@@ -71,6 +71,8 @@ add_library(xs_compiler
   xs/sources/hir/cffi.c
   xs/sources/hir/dump.c
   xs/sources/hir/expression_check.c
+  xs/sources/hir/expression_check_api.c
+  xs/sources/hir/expression_check_string.c
   xs/sources/hir/result_constructor.c
   xs/sources/hir/module_graph.c
   xs/sources/hir/module_model.c

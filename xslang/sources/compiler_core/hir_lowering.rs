@@ -53,6 +53,8 @@ const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_FLOAT: u32 = 4;
+const TOKEN_STRING: u32 = 5;
+const TOKEN_CHARACTER: u32 = 6;
 const TOKEN_EQUAL: u32 = 25;
 const TOKEN_BANG: u32 = 26;
 const TOKEN_GREATER: u32 = 32;
@@ -158,6 +160,10 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
   if value.kind == TYPE_NAMED
   {
     let name = path_text(tree, value);
+    if name == "String"
+    {
+      return declarations::TypeRef::Named("Optional<Str>".to_string());
+    }
     if let Some(primitive) = primitive(&name)
     {
       return declarations::TypeRef::Primitive(primitive);
@@ -175,6 +181,23 @@ fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check:
     declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(*value),
     declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value.clone()),
   })
+}
+
+fn inferred_literal_type(value: &SyntaxNode) -> Option<Type>
+{
+  if value.kind != EXPR_LITERAL
+  {
+    return None;
+  }
+  Some(Type::Primitive(match value.token_kind
+       {
+         TOKEN_INTEGER => PrimitiveType::Int,
+         TOKEN_FLOAT => PrimitiveType::Float,
+         TOKEN_STRING => PrimitiveType::Str,
+         TOKEN_CHARACTER => PrimitiveType::Char,
+         _ if value.text == "true" || value.text == "false" => PrimitiveType::Bool,
+         _ => return None,
+       }))
 }
 
 fn lower_parameter(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Parameter, LoweringError>
@@ -222,6 +245,25 @@ fn lower_expression(tree: &SyntaxTree,
     EXPR_LITERAL if value.token_kind == TOKEN_FLOAT => Some(Expression::Literal { literal:
                                                                                     Literal::Float(value.text.clone()),
                                                                                   span: source_span }),
+    EXPR_LITERAL if value.token_kind == TOKEN_STRING =>
+    {
+      let literal = Expression::Literal { literal: Literal::String(value.text.trim_matches('"').to_string()),
+                                          span: source_span };
+      if expected_type.is_some_and(Type::is_boxed_optional_str)
+      {
+        return Some(Expression::Call { function: "Some".to_string(),
+                                       arguments: vec![literal],
+                                       parameter_types: vec![Type::Primitive(PrimitiveType::Str)],
+                                       return_type: Box::new(Type::Named("Optional<Str>".to_string())),
+                                       span: source_span });
+      }
+      Some(literal)
+    }
+    EXPR_LITERAL if value.text == "None" && expected_type.is_some_and(Type::is_boxed_optional_str) =>
+    {
+      Some(Expression::Literal { literal: Literal::None,
+                                 span: source_span })
+    }
     EXPR_LITERAL if value.text == "true" || value.text == "false" =>
     {
       Some(Expression::Literal { literal: Literal::Bool(value.text == "true"),
@@ -332,6 +374,19 @@ fn lower_expression(tree: &SyntaxTree,
         return None;
       }
       let function = path_text(tree, callee);
+      if function == "Some" && expected_type.is_some_and(Type::is_boxed_optional_str) && value.children.len() == 2
+      {
+        let argument = lower_expression(tree,
+                                        tree.nodes.get(value.children[1])?,
+                                        signatures,
+                                        locals,
+                                        Some(&Type::Primitive(PrimitiveType::Str)))?;
+        return Some(Expression::Call { function,
+                                       arguments: vec![argument],
+                                       parameter_types: vec![Type::Primitive(PrimitiveType::Str)],
+                                       return_type: Box::new(Type::Named("Optional<Str>".to_string())),
+                                       span: source_span });
+      }
       let signature = signatures.get(&function)?;
       if value.children.len() - 1 != signature.parameters.len()
       {
@@ -447,20 +502,23 @@ fn lower_local(tree: &SyntaxTree,
   {
     first_child_kind(tree, statement, DECL_VARIABLE)?
   };
-  if declaration.flags & INFERRED_TYPE != 0
-  {
-    return None;
-  }
   let name = first_child_kind(tree, declaration, IDENTIFIER)?;
-  let ty = declaration.children
-                      .iter()
-                      .filter_map(|index| tree.nodes.get(*index))
-                      .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))?;
   let initializer_node = declaration.children
                                     .iter()
                                     .filter_map(|index| tree.nodes.get(*index))
                                     .find(|child| child.kind >= EXPR_IDENTIFIER);
-  let checked_type = checked_type(&lower_type(tree, ty))?;
+  let checked_type = if declaration.flags & INFERRED_TYPE != 0
+  {
+    inferred_literal_type(initializer_node?)?
+  }
+  else
+  {
+    let ty = declaration.children
+                        .iter()
+                        .filter_map(|index| tree.nodes.get(*index))
+                        .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))?;
+    checked_type(&lower_type(tree, ty))?
+  };
   let initializer = match initializer_node
   {
     Some(value) => Some(lower_expression(tree, value, signatures, locals, Some(&checked_type))?),
@@ -885,80 +943,4 @@ pub fn lower_declarations(tree: &SyntaxTree) -> Result<declarations::Module, Low
 }
 
 #[cfg(test)]
-mod tests
-{
-  use super::*;
-  use crate::compiler_core::SourceSpan;
-
-  fn syntax(kind: u32, text: &str, parent: Option<usize>, children: Vec<usize>) -> SyntaxNode
-  {
-    SyntaxNode { kind,
-                 token_kind: 0,
-                 visibility: 0,
-                 flags: 0,
-                 parent,
-                 children,
-                 text: text.to_owned(),
-                 span: SourceSpan { file_id: 1,
-                                    start_offset: 0,
-                                    end_offset: text.len() as u64,
-                                    start_line: 1,
-                                    start_column: 1,
-                                    end_line: 1,
-                                    end_column: text.len() as u64 + 1 } }
-  }
-
-  #[test]
-  fn lowers_module_and_function_signature()
-  {
-    let mut nodes = vec![syntax(FILE, "", None, vec![1, 4]),
-                         syntax(DECL_MODULE, "module app;", Some(0), vec![2]),
-                         syntax(PATH, "app", Some(1), vec![3]),
-                         syntax(IDENTIFIER, "app", Some(2), vec![]),
-                         syntax(DECL_FUNCTION, "fn main(value: Long) -> Long", Some(0), vec![5, 6, 9]),
-                         syntax(IDENTIFIER, "main", Some(4), vec![]),
-                         syntax(PARAMETER, "value: Long", Some(4), vec![7, 8]),
-                         syntax(IDENTIFIER, "value", Some(6), vec![]),
-                         syntax(TYPE_NAMED, "Long", Some(6), vec![10]),
-                         syntax(TYPE_NAMED, "Long", Some(4), vec![11])];
-    nodes.push(syntax(PATH, "Long", Some(8), vec![12]));
-    nodes.push(syntax(PATH, "Long", Some(9), vec![13]));
-    nodes.push(syntax(IDENTIFIER, "Long", Some(10), vec![]));
-    nodes.push(syntax(IDENTIFIER, "Long", Some(11), vec![]));
-    nodes[9].flags = RETURN_TYPE;
-    let module = lower_declarations(&SyntaxTree { root: 0,
-                                                  nodes }).expect("signature module");
-    assert_eq!(module.name.as_deref(), Some("app"));
-    assert_eq!(module.functions[0].name, "main");
-    assert_eq!(module.functions[0].parameters[0].ty,
-               declarations::TypeRef::Primitive(PrimitiveType::Long));
-    assert_eq!(module.functions[0].return_type,
-               declarations::TypeRef::Primitive(PrimitiveType::Long));
-  }
-
-  #[test]
-  fn lowers_long_return_body_for_hir_to_mir()
-  {
-    let mut nodes = vec![syntax(FILE, "", None, vec![1]),
-                         syntax(DECL_FUNCTION, "fn main() -> Long { return 7; }", Some(0), vec![2, 3, 6]),
-                         syntax(IDENTIFIER, "main", Some(1), vec![]),
-                         syntax(TYPE_NAMED, "Long", Some(1), vec![4]),
-                         syntax(PATH, "Long", Some(3), vec![5]),
-                         syntax(IDENTIFIER, "Long", Some(4), vec![]),
-                         syntax(STMT_BLOCK, "{ return 7; }", Some(1), vec![7]),
-                         syntax(STMT_RETURN, "return 7;", Some(6), vec![8]),
-                         syntax(EXPR_LITERAL, "7", Some(7), vec![])];
-    nodes[3].flags = RETURN_TYPE;
-    nodes[8].token_kind = TOKEN_INTEGER;
-    let module = lower_declarations(&SyntaxTree { root: 0,
-                                                  nodes }).expect("body module");
-    let hir = module.functions[0].as_type_checked_input().expect("HIR body");
-    assert!(crate::hir::type_check::TypeChecker::new().check_function(&hir)
-                                                      .is_empty());
-    let mir = crate::hir::mir_lowering::HirToMirLowerer::new().lower_function(&hir)
-                                                              .expect("MIR body");
-    assert!(matches!(mir.blocks[0].statements[0],
-                     crate::mir::Statement::ConstI32 { value: 7,
-                                                       .. }));
-  }
-}
+mod tests;

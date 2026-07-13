@@ -98,7 +98,7 @@ ready until native executable generation is complete.
 
 ## Intermediate outputs
 
-- `.xhir`: human-readable HIR text
+- `.xhir`: human-readable XHIR text
 - `.xmir`: human-readable MIR text
 - `.xlil`: XLIL text registry
 

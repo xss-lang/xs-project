@@ -5,12 +5,16 @@ SPDX-License-Identifier: Apache-2.0
 
 # XHIR text format
 
-`.xhir` is the human-readable text form of checked X# HIR. It is not assembly-like, not binary, and not an opaque compiler
-serialization format.
+`.xhir` is the human-readable text form of XHIR, the normalized operational side of X# HIR. It is not assembly-like, not
+binary, and not an opaque compiler serialization format.
 
-XHIR exists for semantic inspection: names, modules, imports, declarations, resolved types, generic parameters, interfaces,
-macro expansion results, and expression/type-check information. It should read like a structured semantic tree, not like an
-instruction stream.
+HIR is split into coordinated THIR and XHIR sides. THIR carries the typed, source-oriented semantic structure; XHIR carries
+the normalized high-level operations used by MIR lowering. These are parts of one HIR layer, not unrelated pipeline IRs.
+A `.xhir` document represents XHIR only and is not a textual THIR dump.
+
+XHIR exists for MIR input and semantic inspection: names, modules, imports, declarations, resolved types, generic
+parameters, interfaces, macro expansion results, and expression/type-check information. It should read like a structured
+semantic tree, not like an instruction stream.
 
 ## Design rules
 
@@ -161,6 +165,7 @@ Any omitted initializer, condition, or update section is absent from the record.
 ## Non-goals
 
 - XHIR is not executable input for a backend.
+- XHIR is not THIR, and `.xhir` is not a THIR serialization.
 - XHIR is not a lossless source-code pretty-printer.
 - XHIR is not the public XLIL API surface.
 - XHIR is not required to preserve trivia such as comments or exact whitespace.

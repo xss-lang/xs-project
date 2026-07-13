@@ -14,6 +14,11 @@ source-to-native executable pipeline.
 
 ### Added
 
+- HIR now documents its coordinated THIR and XHIR sides explicitly: THIR carries typed/source-oriented facts, XHIR carries
+  normalized operations for MIR lowering, and `.xhir` represents XHIR rather than THIR.
+- Explicit `String` annotations are source sugar for boxed `Optional<Str>`. String literal inference still produces the
+  borrowed-static `Str` type; C23 semantic checks and the Rust compiler core preserve this distinction through canonical
+  XHIR text.
 - `SFloat`/`Float` addition, subtraction, multiplication, division, remainder, equality, and ordered comparisons now
   lower through typed HIR, MIR/XMIR, XLIL v0, LLVM IR, object emission, and native `.xse` builds. XLIL spells these as
   width-explicit records such as `add.f32` and `lt.f64`; Linux native linking supplies the math runtime needed when LLVM

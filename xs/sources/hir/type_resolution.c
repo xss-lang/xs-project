@@ -26,6 +26,7 @@ struct StandardTypeInfo
 };
 
 static const StandardTypeInfo standard_types[] = {
+    {.name = "String", .min_arity = 0, .max_arity = 0},
     {.name = "std.optional.Optional", .min_arity = 1, .max_arity = 1},
     {.name = "std.result.Result", .min_arity = 1, .max_arity = 2},
     {.name = "std.result.Error", .min_arity = 0, .max_arity = 0},
@@ -331,8 +332,9 @@ static bool standard_enum_data_family_base(const XsSyntaxNode *specifier)
 
 static bool report_incomplete_result_type(XsDiagnostics *diagnostics, const XsSyntaxNode *type)
 {
-  return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type),
-                            "single-argument Result is valid only as Result<()>; write both Result<T, E> payload types");
+  return xs_diagnostics_add(
+      diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type),
+      "single-argument Result is valid only as Result<()>; write both Result<T, E> payload types");
 }
 
 static bool report_constraint_kind(XsDiagnostics *diagnostics, const XsSyntaxNode *type, const char *path)

@@ -143,6 +143,19 @@ static void test_standard_generic_types(void)
   CHECK(!check_single_source("module App;\nfn BadError() -> Error<Int> { return Ok(1); }\n"));
 }
 
+static void test_string_source_sugar(void)
+{
+  const char *valid = "module App;\n"
+                      "fn Main() {\n"
+                      "  borrowed := \"Leitwolf\";\n"
+                      "  boxed_literal: String = \"Leitwolf\";\n"
+                      "  boxed_some: String = Some(\"Leitwolf\");\n"
+                      "  boxed_none: String = None;\n"
+                      "}\n";
+  CHECK(check_single_source(valid));
+  CHECK(!check_single_source("module App;\nfn Bad(value: String<Int>) {}\n"));
+}
+
 static void test_result_payload_types_and_error_inheritance(void)
 {
   const char *valid = "module App;\n"
@@ -460,6 +473,7 @@ int main(void)
   test_local_user_type();
   test_generic_type_arity();
   test_standard_generic_types();
+  test_string_source_sugar();
   test_result_payload_types_and_error_inheritance();
   test_else_type_placeholder();
   test_standard_cffi_types();

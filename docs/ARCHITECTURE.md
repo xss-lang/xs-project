@@ -16,8 +16,8 @@ guess missing semantics inside the backend.
     → parser
     → structural AST
     → macro validation and expansion view
-    → HIR symbol/import/name/type resolution
-    → expression/type checks
+    → semantic analysis and type checking
+    → HIR (THIR + XHIR)
     → MIR
     → borrow checker
     → MIR optimization
@@ -43,7 +43,14 @@ replacement is not complete yet. HIR consumers read macro-call replacements thro
 
 ### HIR
 
-HIR is responsible for:
+HIR has two coordinated parts rather than two unrelated intermediate representations:
+
+- THIR is its typed, source-oriented semantic side. It retains the structure needed for diagnostics and records resolved
+  symbols, nominal types, overload choices, generic substitutions, and checked expressions.
+- XHIR is its normalized operational side. It makes the checked operations needed by MIR lowering explicit while remaining
+  high-level and target-independent.
+
+HIR construction is responsible for:
 
 - module/namespace/import resolution
 - symbol table generation
@@ -52,12 +59,13 @@ HIR is responsible for:
 - generic arity and constraint resolution
 - early expression/mutability diagnostics
 
-HIR does not depend on the LLVM API. Type information remains target-independent and may reference the XLIL type vocabulary
-when needed.
+`.xhir` is the versioned, human-readable text representation of the XHIR side. It is not a THIR dump. HIR does not depend on
+the LLVM API. Type information remains target-independent and may reference the XLIL type vocabulary when needed.
 
 ### MIR
 
-MIR is the control-flow, local/place/value, and terminator model. The borrow checker and MIR optimizer operate on this model.
+MIR is lowered from HIR's XHIR side and is the control-flow, local/place/value, and terminator model. The borrow checker and
+MIR optimizer operate on this model.
 MIR does not yet provide complete statement/expression lowering or async state-machine generation.
 
 ### XLIL

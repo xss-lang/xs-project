@@ -146,6 +146,22 @@ static void test_optional_expression_types(void)
   CHECK(!check_single_source_expressions("module App;\nfn Read() -> Optional<Int> { return 1; }\n"));
 }
 
+static void test_string_sugar_expression_types(void)
+{
+  const char *valid = "module App;\n"
+                      "fn Keep(value: String) -> String { return value; }\n"
+                      "fn Main() {\n"
+                      "  literal: String = \"Leitwolf\";\n"
+                      "  present: String = Some(\"Leitwolf\");\n"
+                      "  absent: String = None;\n"
+                      "  literal = Some(\"Luna\");\n"
+                      "}\n";
+  CHECK(check_single_source_expressions(valid));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { bad: String = 1; }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Main() { bad: String = Some(1); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nfn Bad() -> String { return 1; }\n"));
+}
+
 static void test_binding_reassignment_errors(void)
 {
   const char *valid = "module App;\n"
@@ -315,6 +331,7 @@ int main(void)
   test_literal_initializer_expression_types();
   test_control_flow_initializer_expression_types();
   test_optional_expression_types();
+  test_string_sugar_expression_types();
   test_binding_reassignment_errors();
   test_constant_initializer_errors();
   test_assignment_literal_expression_types();

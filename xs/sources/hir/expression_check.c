@@ -533,6 +533,8 @@ static bool check_variable_initializer(const XsSyntaxNode *declaration, XsDiagno
   const XsSyntaxNode *initializer = variable_initializer(declaration);
   if(type_is_optional(declaration->children[1]))
     return check_expression_value_against_optional(initializer, diagnostics) && constant_ok;
+  if(xs_hir_type_is_string_sugar(declaration->children[1]))
+    return xs_hir_check_string_sugar_value(initializer, diagnostics) && constant_ok;
   bool success = check_expression_value_against_primitive(initializer, primitive, LITERAL_CONTEXT_INITIALIZER, nullptr,
                                                           diagnostics);
   return constant_ok && success;
@@ -723,11 +725,14 @@ static const XsSyntaxNode *assignment_value(const XsSyntaxNode *node)
 static bool check_return_statement(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
 {
   if(node == nullptr || node->kind != XS_SYNTAX_STMT_RETURN || node->child_count == 0 ||
-     (context->return_type == nullptr && !type_is_optional(context->return_type_node)))
+     (context->return_type == nullptr && !type_is_optional(context->return_type_node) &&
+      !xs_hir_type_is_string_sugar(context->return_type_node)))
     return true;
   const XsSyntaxNode *value = node->children[0];
   if(type_is_optional(context->return_type_node))
     return check_expression_value_against_optional(value, diagnostics);
+  if(xs_hir_type_is_string_sugar(context->return_type_node))
+    return xs_hir_check_string_sugar_value(value, diagnostics);
   return check_expression_value_against_primitive(value, context->return_type, LITERAL_CONTEXT_RETURN, nullptr,
                                                   diagnostics);
 }
@@ -745,6 +750,8 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
   const XsSyntaxNode *value = assignment_value(node);
   if(type_is_optional(binding->type_node))
     success = check_expression_value_against_optional(value, diagnostics) && success;
+  else if(xs_hir_type_is_string_sugar(binding->type_node))
+    success = xs_hir_check_string_sugar_value(value, diagnostics) && success;
   success =
       check_expression_value_against_primitive(value, primitive, LITERAL_CONTEXT_ASSIGNMENT, binding, diagnostics) &&
       success;
@@ -990,9 +997,4 @@ bool xs_hir_check_expression_types_with_macros(const XsSyntaxTree *tree,
   return check_node(tree->root, macro_declarations, macro_statements, (CheckContext){.root = tree->root},
                     diagnostics) &&
          !xs_diagnostics_has_error(diagnostics);
-}
-
-bool xs_hir_check_expression_types(const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
-{
-  return xs_hir_check_expression_types_with_macros(tree, nullptr, nullptr, diagnostics);
 }

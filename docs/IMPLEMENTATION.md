@@ -15,8 +15,8 @@ The documented compilation order is preserved:
     → lexing and parsing
     → structural AST
     → macro expansion
-    → HIR and dependency graph
-    → type checking
+    → semantic analysis, dependency graph, and type checking
+    → HIR (THIR + XHIR)
     → MIR
     → borrow checker
     → MIR optimization
@@ -43,6 +43,14 @@ The documented compilation order is preserved:
 - `xsfmt` and `xstidy` are future Rust nightly + Serde projects; `xs-analyzer` is a future Rust language server and
   TypeScript VS Code extension project. `xslang` is the active Rust compiler-core static library linked into `xs`;
   `xsrt` is a future runtime project.
+
+### HIR model boundary
+
+- HIR is one intermediate layer with two coordinated sides, not two unrelated IR stages.
+- THIR is the typed/source-oriented side; XHIR is the normalized operational side consumed by MIR lowering.
+- `.xhir` serializes XHIR only. It is not a text form of THIR.
+- The Rust implementation currently shares model types between typed checking and XHIR text support. Making the
+  THIR/XHIR boundary explicit inside HIR without inventing a second pipeline stage is active compiler-core work.
 
 ### XLIL-bound middle-layer rule
 
@@ -300,16 +308,17 @@ validation does not decide dispatch, override, or overload selection.
   to f64. These widths are target-independent, and X# has no x86-32-specific primitive or native-width alias.
 - `Str` is encoded as UTF-16; the compiler/runtime selects UTF-16LE or UTF-16BE automatically for the target/runtime
   situation. Its length is considered unbounded except by the representation allowed by UTF-16.
-- Semantically, `Str` is the X# counterpart of Rust's `&'static str`: an immutable static string reference. Its runtime
-  layout remains deferred and it is not yet lowered to XLIL storage.
+- Semantically, `Str` is an immutable, borrowed static-lifetime string reference. The lifetime is implicit in source. Its
+  runtime layout remains deferred and it is not yet lowered to XLIL storage.
 - `Optional<T>` resolves as if the compiler had inserted `imports optional; using namespace std::optional;`, making
   `std::optional::Optional<T>` available as `Optional<T>`. It is compiler-provided enum data with `Some: T` and
   payload-free `None` variants, made available through that implicit namespace using. `?.`, `??`, `??=`, and postfix `!`
   are represented syntactically; `Optional<T>` has automatic unboxing to
-  `T`, and failed unboxing is modeled through the standard `Result`/`Error` direction. `Optional<Str>` is special at the
-  language model level: it behaves like Rust's `Option<String>`, meaning the
-  optional string payload is owned/dynamic instead of an optional borrowed/static `Str` reference. Full flow-sensitive
-  Optional semantics are later HIR work.
+  `T`, and failed unboxing is modeled through the standard `Result`/`Error` direction. `Optional<Str>` owns and boxes its
+  string payload instead of carrying an optional borrowed/static `Str` reference. `String` is source-only sugar for this
+  canonical type: an explicit `String` annotation accepts a string value, `Some(Str)`, or `None` and is recorded as
+  `Optional<Str>` in HIR. Literal inference never produces `String`; `name := "Leitwolf";` infers `Str`. This sugar does
+  not apply to numeric types. Full flow-sensitive Optional semantics are later HIR work.
   There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
   `std::result::Result<(), E>`, `std::result::Result<T, E>`, the special shorthand `Result<()>`, and the standard error type `Error`.

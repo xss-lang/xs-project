@@ -6,11 +6,18 @@
 // Primitive type names are nominal language types.
 // Even when two user-defined types have the same fields, type identity is
 // based on the declared name.
-// Str is an immutable UTF-16 static string reference, like Rust &'static str.
+// Str is an immutable borrowed UTF-16 string with an implicit static lifetime.
 // The compiler selects UTF-16LE or UTF-16BE automatically for the target/runtime situation.
-// Optional<Str> is an owned optional string value, like Rust Option<String>.
+// Optional<Str> is an owned, boxed optional string value.
+// String is source-only sugar for boxed Optional<Str>. It is never inferred
+// as a distinct type and does not exist as a primitive. A string literal used
+// with := has type Str.
 
 value_str: Str = "text";
+inferred_str := "Leitwolf";
+boxed_string: String = "Leitwolf";
+boxed_some: String = Some("Leitwolf");
+boxed_none: String = None;
 value_bool: Bool = true;
 
 value_byte: Byte = 255;

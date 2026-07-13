@@ -57,7 +57,7 @@ It validates the CMake project version, changelog heading, release documentation
 - Later `0.0.x` releases should keep landing narrow compiler infrastructure checkpoints without promising source-level
   completeness.
 - The `0.1.x` line keeps the native pipeline operational while progressively replacing the narrow source-native bridge with
-  the Rust typed-HIR/MIR compiler core.
+  the Rust HIR (THIR/XHIR) and MIR compiler core.
 - The first `.xse` target format is Linux ELF; PE comes after ELF support.
 
 ## 0.1.0 threshold

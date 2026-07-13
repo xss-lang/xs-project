@@ -694,9 +694,11 @@ mod expression_type;
 mod for_check;
 mod match_check;
 mod result_type;
+mod type_semantics;
 mod unary_type;
 
 pub(crate) use result_type::result_type_parts;
+pub use type_semantics::ValueOwnership;
 
 fn literal_default_type(literal: &Literal) -> Option<Type>
 {
@@ -715,6 +717,10 @@ fn literal_default_type(literal: &Literal) -> Option<Type>
 #[must_use]
 pub fn literal_matches_type(literal: &Literal, ty: &Type) -> bool
 {
+  if ty.is_boxed_optional_str()
+  {
+    return matches!(literal, Literal::None);
+  }
   let Type::Primitive(primitive) = ty
   else
   {

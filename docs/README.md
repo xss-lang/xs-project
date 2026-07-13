@@ -19,7 +19,7 @@ Recommended order for newcomers:
 4. [CLI.md](CLI.md): user commands and current status
 5. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
 6. [SPEC.md](SPEC.md): guide to the `Spec/` language-example tree
-7. [XHIR.md](XHIR.md): human-readable HIR text format direction
+7. [XHIR.md](XHIR.md): human-readable XHIR text format direction
 8. [XMIR.md](XMIR.md): human-readable MIR text format direction
 9. [XLIL.md](XLIL.md): backend input text registry direction
 10. [TODO.md](TODO.md): public roadmap

@@ -1,0 +1,180 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+use super::*;
+use crate::compiler_core::SourceSpan;
+
+fn syntax(kind: u32, text: &str, parent: Option<usize>, children: Vec<usize>) -> SyntaxNode
+{
+  SyntaxNode { kind,
+               token_kind: 0,
+               visibility: 0,
+               flags: 0,
+               parent,
+               children,
+               text: text.to_owned(),
+               span: SourceSpan { file_id: 1,
+                                  start_offset: 0,
+                                  end_offset: text.len() as u64,
+                                  start_line: 1,
+                                  start_column: 1,
+                                  end_line: 1,
+                                  end_column: text.len() as u64 + 1 } }
+}
+
+#[test]
+fn lowers_module_and_function_signature()
+{
+  let mut nodes = vec![syntax(FILE, "", None, vec![1, 4]),
+                       syntax(DECL_MODULE, "module app;", Some(0), vec![2]),
+                       syntax(PATH, "app", Some(1), vec![3]),
+                       syntax(IDENTIFIER, "app", Some(2), vec![]),
+                       syntax(DECL_FUNCTION, "fn main(value: Long) -> Long", Some(0), vec![5, 6, 9]),
+                       syntax(IDENTIFIER, "main", Some(4), vec![]),
+                       syntax(PARAMETER, "value: Long", Some(4), vec![7, 8]),
+                       syntax(IDENTIFIER, "value", Some(6), vec![]),
+                       syntax(TYPE_NAMED, "Long", Some(6), vec![10]),
+                       syntax(TYPE_NAMED, "Long", Some(4), vec![11])];
+  nodes.push(syntax(PATH, "Long", Some(8), vec![12]));
+  nodes.push(syntax(PATH, "Long", Some(9), vec![13]));
+  nodes.push(syntax(IDENTIFIER, "Long", Some(10), vec![]));
+  nodes.push(syntax(IDENTIFIER, "Long", Some(11), vec![]));
+  nodes[9].flags = RETURN_TYPE;
+  let module = lower_declarations(&SyntaxTree { root: 0,
+                                                nodes }).expect("signature module");
+  assert_eq!(module.name.as_deref(), Some("app"));
+  assert_eq!(module.functions[0].name, "main");
+  assert_eq!(module.functions[0].parameters[0].ty,
+             declarations::TypeRef::Primitive(PrimitiveType::Long));
+  assert_eq!(module.functions[0].return_type,
+             declarations::TypeRef::Primitive(PrimitiveType::Long));
+}
+
+#[test]
+fn canonicalizes_explicit_string_without_changing_literal_inference()
+{
+  let mut nodes = vec![syntax(FILE, "", None, vec![1]),
+                       syntax(DECL_FUNCTION, "fn keep(value: String) -> String", Some(0), vec![2, 3,
+                                                                                               6]),
+                       syntax(IDENTIFIER, "keep", Some(1), vec![]),
+                       syntax(PARAMETER, "value: String", Some(1), vec![4, 5]),
+                       syntax(IDENTIFIER, "value", Some(3), vec![]),
+                       syntax(TYPE_NAMED, "String", Some(3), vec![7]),
+                       syntax(TYPE_NAMED, "String", Some(1), vec![8])];
+  nodes.push(syntax(PATH, "String", Some(5), vec![9]));
+  nodes.push(syntax(PATH, "String", Some(6), vec![10]));
+  nodes.push(syntax(IDENTIFIER, "String", Some(7), vec![]));
+  nodes.push(syntax(IDENTIFIER, "String", Some(8), vec![]));
+  nodes[6].flags = RETURN_TYPE;
+  let module = lower_declarations(&SyntaxTree { root: 0,
+                                                nodes }).expect("String sugar signature");
+  let boxed = declarations::TypeRef::Named("Optional<Str>".to_string());
+  assert_eq!(module.functions[0].parameters[0].ty, boxed);
+  assert_eq!(module.functions[0].return_type, boxed);
+  let inferred = crate::hir::inference::resolve_binding(
+    &crate::hir::inference::Binding {
+      name: "inferred".to_string(),
+      annotation: None,
+      initializer: Some(Expression::Literal { literal: Literal::String("Leitwolf".to_string()),
+                                               span: Span::new(1, 0, 10) }),
+      mutable: true,
+      operator: crate::hir::inference::BindingOperator::InferAssign,
+      span: Span::new(1, 0, 10),
+    },
+    &[],
+  ).expect("string literal inference");
+  assert_eq!(inferred.ty, Type::Primitive(PrimitiveType::Str));
+}
+
+#[test]
+fn imports_inferred_str_and_desugars_explicit_string_initializer()
+{
+  let mut nodes = vec![syntax(FILE, "", None, vec![1]),
+                       syntax(DECL_FUNCTION, "fn names()", Some(0), vec![2, 3]),
+                       syntax(IDENTIFIER, "names", Some(1), vec![]),
+                       syntax(STMT_BLOCK, "{ ... }", Some(1), vec![4, 8]),
+                       syntax(STMT_VARIABLE, "borrowed := \"Leitwolf\";", Some(3), vec![5]),
+                       syntax(DECL_VARIABLE, "borrowed := \"Leitwolf\"", Some(4), vec![6, 7]),
+                       syntax(IDENTIFIER, "borrowed", Some(5), vec![]),
+                       syntax(EXPR_LITERAL, "\"Leitwolf\"", Some(5), vec![]),
+                       syntax(STMT_VARIABLE, "boxed: String = \"Luna\";", Some(3), vec![9]),
+                       syntax(DECL_VARIABLE, "boxed: String = \"Luna\"", Some(8), vec![10, 11, 14]),
+                       syntax(IDENTIFIER, "boxed", Some(9), vec![]),
+                       syntax(TYPE_NAMED, "String", Some(9), vec![12]),
+                       syntax(PATH, "String", Some(11), vec![13]),
+                       syntax(IDENTIFIER, "String", Some(12), vec![]),
+                       syntax(EXPR_LITERAL, "\"Luna\"", Some(9), vec![])];
+  nodes[5].flags = INFERRED_TYPE;
+  nodes[7].token_kind = TOKEN_STRING;
+  nodes[14].token_kind = TOKEN_STRING;
+  let module = lower_declarations(&SyntaxTree { root: 0,
+                                                nodes }).expect("string local module");
+  let body = module.functions[0].body.as_ref().expect("lowered string locals");
+  let Statement::Let { local: borrowed,
+                       initializer:
+                         Some(Expression::Literal { literal: Literal::String(_),
+                                                    .. }), } = &body[0]
+  else
+  {
+    panic!("inferred string literal should stay a borrowed Str");
+  };
+  assert_eq!(borrowed.ty, Type::Primitive(PrimitiveType::Str));
+  let Statement::Let { local: boxed,
+                       initializer:
+                         Some(Expression::Call { function,
+                                                 return_type,
+                                                 .. }), } = &body[1]
+  else
+  {
+    panic!("explicit String should desugar to Some(Str)");
+  };
+  assert_eq!(boxed.ty, Type::Named("Optional<Str>".to_string()));
+  assert_eq!(function, "Some");
+  assert_eq!(return_type.as_ref(), &boxed.ty);
+  let checked = module.functions[0].as_type_checked_input()
+                                   .expect("checked string body");
+  assert!(crate::hir::type_check::TypeChecker::new().check_function(&checked)
+                                                    .is_empty());
+  let xhir = crate::hir::text::function_to_xhir(&checked);
+  assert!(xhir.contains("type Optional<Str>"));
+  assert!(!xhir.contains("type String\n"));
+  let parsed = crate::hir::text::parse_xhir_function(&xhir).expect("canonical String XHIR");
+  let Statement::Let { local: parsed_boxed,
+                       initializer:
+                         Some(Expression::Call { return_type: parsed_return,
+                                                 .. }), } = &parsed.body[1]
+  else
+  {
+    panic!("canonical XHIR should retain boxed String desugaring");
+  };
+  assert_eq!(parsed_boxed.ty, Type::Named("Optional<Str>".to_string()));
+  assert_eq!(parsed_return.as_ref(), &parsed_boxed.ty);
+}
+
+#[test]
+fn lowers_long_return_body_for_hir_to_mir()
+{
+  let mut nodes = vec![syntax(FILE, "", None, vec![1]),
+                       syntax(DECL_FUNCTION, "fn main() -> Long { return 7; }", Some(0), vec![2, 3, 6]),
+                       syntax(IDENTIFIER, "main", Some(1), vec![]),
+                       syntax(TYPE_NAMED, "Long", Some(1), vec![4]),
+                       syntax(PATH, "Long", Some(3), vec![5]),
+                       syntax(IDENTIFIER, "Long", Some(4), vec![]),
+                       syntax(STMT_BLOCK, "{ return 7; }", Some(1), vec![7]),
+                       syntax(STMT_RETURN, "return 7;", Some(6), vec![8]),
+                       syntax(EXPR_LITERAL, "7", Some(7), vec![])];
+  nodes[3].flags = RETURN_TYPE;
+  nodes[8].token_kind = TOKEN_INTEGER;
+  let module = lower_declarations(&SyntaxTree { root: 0,
+                                                nodes }).expect("body module");
+  let hir = module.functions[0].as_type_checked_input().expect("HIR body");
+  assert!(crate::hir::type_check::TypeChecker::new().check_function(&hir)
+                                                    .is_empty());
+  let mir = crate::hir::mir_lowering::HirToMirLowerer::new().lower_function(&hir)
+                                                            .expect("MIR body");
+  assert!(matches!(mir.blocks[0].statements[0],
+                   crate::mir::Statement::ConstI32 { value: 7,
+                                                     .. }));
+}
