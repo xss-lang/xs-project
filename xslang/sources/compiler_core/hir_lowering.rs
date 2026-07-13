@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use crate::hir::{declarations, type_check::PrimitiveType};
+use crate::hir::{
+  async_check::Span,
+  declarations,
+  type_check::{BinaryOperator, Expression, Literal, PrimitiveType, Statement},
+};
 
 use super::{SyntaxNode, SyntaxTree};
 
@@ -15,7 +19,23 @@ const IDENTIFIER: u32 = 24;
 const PATH: u32 = 25;
 const TYPE_NAMED: u32 = 27;
 const TYPE_UNIT: u32 = 36;
+const STMT_BLOCK: u32 = 38;
+const STMT_EXPRESSION: u32 = 39;
+const STMT_RETURN: u32 = 41;
+const EXPR_IDENTIFIER: u32 = 56;
+const EXPR_LITERAL: u32 = 57;
+const EXPR_BINARY: u32 = 58;
+const TOKEN_INTEGER: u32 = 3;
+const TOKEN_EQUAL: u32 = 25;
+const TOKEN_GREATER: u32 = 32;
+const TOKEN_GREATER_EQUAL: u32 = 33;
+const TOKEN_LESS: u32 = 35;
+const TOKEN_LESS_EQUAL: u32 = 36;
+const TOKEN_PLUS: u32 = 38;
+const TOKEN_MINUS: u32 = 41;
+const TOKEN_STAR: u32 = 44;
 const RETURN_TYPE: u32 = 1 << 11;
+const DISCARDED: u32 = 1 << 21;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LoweringError
@@ -111,6 +131,96 @@ fn lower_parameter(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations
                                span: value.span.clone() })
 }
 
+fn span(value: &SyntaxNode) -> Option<Span>
+{
+  Some(Span::new(value.span.file_id,
+                 u32::try_from(value.span.start_offset).ok()?,
+                 u32::try_from(value.span.end_offset).ok()?))
+}
+
+fn lower_expression(tree: &SyntaxTree, value: &SyntaxNode) -> Option<Expression>
+{
+  let source_span = span(value)?;
+  match value.kind
+  {
+    EXPR_LITERAL if value.token_kind == TOKEN_INTEGER =>
+    {
+      Some(Expression::Literal { literal: Literal::Integer(value.text.clone()),
+                                 span: source_span })
+    }
+    EXPR_LITERAL if value.text == "true" || value.text == "false" =>
+    {
+      Some(Expression::Literal { literal: Literal::Bool(value.text == "true"),
+                                 span: source_span })
+    }
+    EXPR_IDENTIFIER => Some(Expression::Local { name: path_text(tree, value),
+                                                span: source_span }),
+    EXPR_BINARY if value.children.len() == 3 =>
+    {
+      let operator = match value.token_kind
+      {
+        TOKEN_PLUS => BinaryOperator::Add,
+        TOKEN_MINUS => BinaryOperator::Sub,
+        TOKEN_STAR => BinaryOperator::Mul,
+        TOKEN_EQUAL => BinaryOperator::Equal,
+        TOKEN_LESS => BinaryOperator::Less,
+        TOKEN_LESS_EQUAL => BinaryOperator::LessEqual,
+        TOKEN_GREATER => BinaryOperator::Greater,
+        TOKEN_GREATER_EQUAL => BinaryOperator::GreaterEqual,
+        _ => return None,
+      };
+      let left = lower_expression(tree, tree.nodes.get(value.children[0])?)?;
+      let right = lower_expression(tree, tree.nodes.get(value.children[2])?)?;
+      Some(Expression::Binary { operator,
+                                left: Box::new(left),
+                                right: Box::new(right),
+                                span: source_span })
+    }
+    _ => None,
+  }
+}
+
+fn lower_body(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Statement>>
+{
+  let block = first_child_kind(tree, function, STMT_BLOCK)?;
+  let mut body = Vec::with_capacity(block.children.len());
+  for (position, child_index) in block.children.iter().enumerate()
+  {
+    let statement = tree.nodes.get(*child_index)?;
+    match statement.kind
+    {
+      STMT_RETURN =>
+      {
+        let value = statement.children
+                             .first()
+                             .and_then(|index| tree.nodes.get(*index))
+                             .and_then(|value| lower_expression(tree, value));
+        if !statement.children.is_empty() && value.is_none()
+        {
+          return None;
+        }
+        body.push(Statement::Return { value,
+                                      span: span(statement)? });
+      }
+      STMT_EXPRESSION if statement.children.len() == 1 =>
+      {
+        let expression = lower_expression(tree, tree.nodes.get(statement.children[0])?)?;
+        if position + 1 == block.children.len() && statement.flags & DISCARDED == 0
+        {
+          body.push(Statement::Return { value: Some(expression),
+                                        span: span(statement)? });
+        }
+        else
+        {
+          body.push(Statement::Expr(expression));
+        }
+      }
+      _ => return None,
+    }
+  }
+  Some(body)
+}
+
 fn lower_function(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Function, LoweringError>
 {
   let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
@@ -129,7 +239,8 @@ fn lower_function(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations:
                               parameters,
                               return_type,
                               flags: value.flags,
-                              span: value.span.clone() })
+                              span: value.span.clone(),
+                              body: lower_body(tree, value) })
 }
 
 pub fn lower_declarations(tree: &SyntaxTree) -> Result<declarations::Module, LoweringError>
@@ -205,5 +316,31 @@ mod tests
                declarations::TypeRef::Primitive(PrimitiveType::Long));
     assert_eq!(module.functions[0].return_type,
                declarations::TypeRef::Primitive(PrimitiveType::Long));
+  }
+
+  #[test]
+  fn lowers_long_return_body_for_hir_to_mir()
+  {
+    let mut nodes = vec![syntax(FILE, "", None, vec![1]),
+                         syntax(DECL_FUNCTION, "fn main() -> Long { return 7; }", Some(0), vec![2, 3, 6]),
+                         syntax(IDENTIFIER, "main", Some(1), vec![]),
+                         syntax(TYPE_NAMED, "Long", Some(1), vec![4]),
+                         syntax(PATH, "Long", Some(3), vec![5]),
+                         syntax(IDENTIFIER, "Long", Some(4), vec![]),
+                         syntax(STMT_BLOCK, "{ return 7; }", Some(1), vec![7]),
+                         syntax(STMT_RETURN, "return 7;", Some(6), vec![8]),
+                         syntax(EXPR_LITERAL, "7", Some(7), vec![])];
+    nodes[3].flags = RETURN_TYPE;
+    nodes[8].token_kind = TOKEN_INTEGER;
+    let module = lower_declarations(&SyntaxTree { root: 0,
+                                                  nodes }).expect("body module");
+    let hir = module.functions[0].as_type_checked_input().expect("HIR body");
+    assert!(crate::hir::type_check::TypeChecker::new().check_function(&hir)
+                                                      .is_empty());
+    let mir = crate::hir::mir_lowering::HirToMirLowerer::new().lower_function(&hir)
+                                                              .expect("MIR body");
+    assert!(matches!(mir.blocks[0].statements[0],
+                     crate::mir::Statement::ConstI32 { value: 7,
+                                                       .. }));
   }
 }

@@ -12,6 +12,12 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- Compiler-core sessions now lower supported integer/boolean return expressions and arithmetic/comparison trees into the
+  existing Rust HIR type checker and HIR-to-MIR pipeline. Unsupported function bodies remain deferred without invalidating
+  the imported declaration module.
+
 ## 0.1.1 - 2026-07-13
 
 ### Added

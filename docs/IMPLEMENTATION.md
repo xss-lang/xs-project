@@ -357,7 +357,11 @@ parent/child relationships, text ranges, and UTF-8 before creating an owned synt
 The session lives for the C compilation unit and provides the input for the next typed-HIR construction step.
 The first construction slice is active: module names and top-level function signatures are imported, parameters retain
 their source spans, unit is represented explicitly, primitive type names are resolved, and other names remain nominal HIR
-type references. Function-body construction and semantic diagnostics still need to move onto this session model.
+type references. Remaining function-body forms and complete semantic diagnostics still need to move onto this session model.
+Supported single-block bodies now cross the next boundary as well: explicit returns and tail expressions containing
+integer/boolean literals, local references, and the current arithmetic/comparison operator subset are built as Rust HIR,
+type-checked, and lowered to target-independent Rust MIR. Unsupported body shapes remain deferred while their declarations
+stay available to the session.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
 `Result<T>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the

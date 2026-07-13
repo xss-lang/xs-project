@@ -118,6 +118,7 @@ pub struct CompilerCoreSession
 {
   syntax: SyntaxTree,
   declarations: crate::hir::declarations::Module,
+  mir_functions: Vec<crate::mir::Function>,
 }
 
 fn table_length(value: u64) -> Result<usize, PacketError>
@@ -331,8 +332,21 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
   {
     return FfiStatus::InvalidPacket;
   };
+  let mir_functions = declarations.functions
+                                  .iter()
+                                  .filter_map(crate::hir::declarations::Function::as_type_checked_input)
+                                  .filter(|function| {
+                                    crate::hir::type_check::TypeChecker::new().check_function(function)
+                                                                              .is_empty()
+                                  })
+                                  .filter_map(|function| {
+                                    crate::hir::mir_lowering::HirToMirLowerer::new().lower_function(&function)
+                                                                                    .ok()
+                                  })
+                                  .collect();
   *session = Box::into_raw(Box::new(CompilerCoreSession { syntax,
-                                                          declarations }));
+                                                          declarations,
+                                                          mir_functions }));
   FfiStatus::Ok
 }
 
@@ -359,6 +373,18 @@ pub unsafe extern "C" fn xslang_compiler_core_session_function_count(session: *c
 {
   // SAFETY: The pointer is only borrowed when it is non-null.
   unsafe { session.as_ref() }.map_or(0, |value| value.declarations.functions.len() as u64)
+}
+
+/// Returns the number of function bodies currently lowered through Rust MIR.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live compiler-core session.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_mir_function_count(session: *const CompilerCoreSession) -> u64
+{
+  // SAFETY: The pointer is only borrowed when it is non-null.
+  unsafe { session.as_ref() }.map_or(0, |value| value.mir_functions.len() as u64)
 }
 
 /// Releases a compiler-core session. Null is accepted.

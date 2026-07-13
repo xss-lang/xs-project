@@ -73,6 +73,7 @@ XsCompilerCoreFfiStatus xslang_compiler_core_session_create(const XsCompilerCore
                                                             XsCompilerCoreSession **session);
 uint64_t xslang_compiler_core_session_syntax_node_count(const XsCompilerCoreSession *session);
 uint64_t xslang_compiler_core_session_function_count(const XsCompilerCoreSession *session);
+uint64_t xslang_compiler_core_session_mir_function_count(const XsCompilerCoreSession *session);
 void xslang_compiler_core_session_free(XsCompilerCoreSession *session);
 
 #endif
