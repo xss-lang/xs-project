@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use std::collections::HashMap;
+pub(crate) use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::mir;
