@@ -18,6 +18,13 @@ bb0.entry:
   %r2:bool = lt.f64 %r0, %r1
   ret %r2
 .end
+.func F64NotEqual : (f64, f64) -> bool
+.param %r0:f64
+.param %r1:f64
+bb0.entry:
+  %r2:bool = ne.f64 %r0, %r1
+  ret %r2
+.end
 .func main : () -> i32
 bb0.entry:
   %r0:f64 = const.f64 0x3ff8000000000000
@@ -25,11 +32,14 @@ bb0.entry:
   %r2:f64 = add.f64 %r0, %r1
   %r3:f64 = const.f64 0x4010000000000000
   %r4:bool = eq.f64 %r2, %r3
-  br_if %r4, bb1, bb2
-bb1.pass:
-  %r5:i32 = const.i32 0
-  ret %r5
-bb2.fail:
-  %r6:i32 = const.i32 1
+  %r5:bool = ne.f64 %r0, %r1
+  br_if %r4, bb1, bb3
+bb1.check_not_equal:
+  br_if %r5, bb2, bb3
+bb2.pass:
+  %r6:i32 = const.i32 0
   ret %r6
+bb3.fail:
+  %r7:i32 = const.i32 1
+  ret %r7
 .end

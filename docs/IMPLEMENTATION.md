@@ -428,9 +428,9 @@ For supported single-file and multi-file builds, this Rust path no longer stops 
 collects all function signatures before lowering any body, allowing same-module forward calls across files. It then
 borrow-checks and optimizes each lowered function, lowers the combined module to XLIL v0 text, and exposes that text through
 a borrowed C ABI view. The C23 driver parses it with the public `xs/lil.h` API, verifies the reconstructed module, and
-reuses the established LLVM IR, object, and native `.xse` emission path. Unsupported source forms continue through the
-older narrow C23 source-native path until their Rust HIR/MIR lowering is complete; HIR and MIR remain independent of LLVM
-in both paths.
+reuses the established LLVM IR, object, and native `.xse` emission path. This is the only source-body compilation route;
+unsupported source forms stop with a compiler diagnostic instead of entering a second fallback compiler. HIR and MIR
+remain independent of LLVM.
 
 The C23 HIR prototype mirrors the first parts of that rule: `@` is accepted inside functions returning
 `Result<()>`/`Result<T, E>` and rejected elsewhere. When the operand is a direct same-file function call, the

@@ -551,7 +551,8 @@ impl ResultDesugar
       {
         Some(Type::Primitive(primitive))
       }
-      BinaryOperator::Equal if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
+      BinaryOperator::Equal | BinaryOperator::NotEqual
+        if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
       {
         Some(Type::Primitive(PrimitiveType::Bool))
       }

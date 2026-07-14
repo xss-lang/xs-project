@@ -481,7 +481,7 @@ impl Parser<'_>
     for value_type in [Type::F32, Type::F64]
     {
       let suffix = type_name(value_type);
-      for operation in ["add", "sub", "mul", "div", "rem", "eq", "lt", "le", "gt", "ge"]
+      for operation in ["add", "sub", "mul", "div", "rem", "eq", "ne", "lt", "le", "gt", "ge"]
       {
         let instruction = format!("{operation}.{suffix}");
         let pattern = format!(" = {instruction} ");

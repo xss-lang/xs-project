@@ -47,6 +47,9 @@ static const char *float_instruction_name(XsLilInstructionKind kind)
   case XS_LIL_INSTRUCTION_EQ_F32:
   case XS_LIL_INSTRUCTION_EQ_F64:
     return "eq";
+  case XS_LIL_INSTRUCTION_NE_F32:
+  case XS_LIL_INSTRUCTION_NE_F64:
+    return "ne";
   case XS_LIL_INSTRUCTION_LT_F32:
   case XS_LIL_INSTRUCTION_LT_F64:
     return "lt";

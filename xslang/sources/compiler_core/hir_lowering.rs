@@ -61,6 +61,7 @@ const TOKEN_STRING: u32 = 5;
 const TOKEN_CHARACTER: u32 = 6;
 const TOKEN_EQUAL: u32 = 25;
 const TOKEN_BANG: u32 = 26;
+const TOKEN_NOT_EQUAL: u32 = 27;
 const TOKEN_GREATER: u32 = 32;
 const TOKEN_GREATER_EQUAL: u32 = 33;
 const TOKEN_LESS: u32 = 35;
@@ -293,6 +294,7 @@ fn lower_expression(tree: &SyntaxTree,
         TOKEN_SHIFT_LEFT => BinaryOperator::ShiftLeft,
         TOKEN_SHIFT_RIGHT => BinaryOperator::ShiftRight,
         TOKEN_EQUAL => BinaryOperator::Equal,
+        TOKEN_NOT_EQUAL => BinaryOperator::NotEqual,
         TOKEN_LESS => BinaryOperator::Less,
         TOKEN_LESS_EQUAL => BinaryOperator::LessEqual,
         TOKEN_GREATER => BinaryOperator::Greater,

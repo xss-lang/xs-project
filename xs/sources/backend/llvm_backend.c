@@ -548,6 +548,9 @@ static LLVMValueRef lower_lil_binary_float_op(LLVMBuilderRef builder, XsLilInstr
   case XS_LIL_INSTRUCTION_EQ_F32:
   case XS_LIL_INSTRUCTION_EQ_F64:
     return LLVMBuildFCmp(builder, LLVMRealOEQ, left, right, "feq");
+  case XS_LIL_INSTRUCTION_NE_F32:
+  case XS_LIL_INSTRUCTION_NE_F64:
+    return LLVMBuildFCmp(builder, LLVMRealONE, left, right, "fne");
   case XS_LIL_INSTRUCTION_LT_F32:
   case XS_LIL_INSTRUCTION_LT_F64:
     return LLVMBuildFCmp(builder, LLVMRealOLT, left, right, "flt");

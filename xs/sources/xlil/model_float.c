@@ -18,12 +18,12 @@ static XsLilInstructionKind binary_kind(XsLilFloatBinaryOperation operation, XsL
 
 static XsLilInstructionKind comparison_kind(XsLilFloatComparisonOperation operation, XsLilTypeKind type)
 {
-  static const XsLilInstructionKind f32[] = {XS_LIL_INSTRUCTION_EQ_F32, XS_LIL_INSTRUCTION_LT_F32,
-                                             XS_LIL_INSTRUCTION_LE_F32, XS_LIL_INSTRUCTION_GT_F32,
-                                             XS_LIL_INSTRUCTION_GE_F32};
-  static const XsLilInstructionKind f64[] = {XS_LIL_INSTRUCTION_EQ_F64, XS_LIL_INSTRUCTION_LT_F64,
-                                             XS_LIL_INSTRUCTION_LE_F64, XS_LIL_INSTRUCTION_GT_F64,
-                                             XS_LIL_INSTRUCTION_GE_F64};
+  static const XsLilInstructionKind f32[] = {XS_LIL_INSTRUCTION_EQ_F32, XS_LIL_INSTRUCTION_NE_F32,
+                                             XS_LIL_INSTRUCTION_LT_F32, XS_LIL_INSTRUCTION_LE_F32,
+                                             XS_LIL_INSTRUCTION_GT_F32, XS_LIL_INSTRUCTION_GE_F32};
+  static const XsLilInstructionKind f64[] = {XS_LIL_INSTRUCTION_EQ_F64, XS_LIL_INSTRUCTION_NE_F64,
+                                             XS_LIL_INSTRUCTION_LT_F64, XS_LIL_INSTRUCTION_LE_F64,
+                                             XS_LIL_INSTRUCTION_GT_F64, XS_LIL_INSTRUCTION_GE_F64};
   return type == XS_LIL_TYPE_F32 ? f32[operation] : f64[operation];
 }
 

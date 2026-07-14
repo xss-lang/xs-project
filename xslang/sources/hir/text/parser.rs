@@ -659,6 +659,7 @@ impl Parser<'_>
       "shift_left" => Some(BinaryOperator::ShiftLeft),
       "shift_right" => Some(BinaryOperator::ShiftRight),
       "eq" => Some(BinaryOperator::Equal),
+      "ne" => Some(BinaryOperator::NotEqual),
       "lt" => Some(BinaryOperator::Less),
       "le" => Some(BinaryOperator::LessEqual),
       "gt" => Some(BinaryOperator::Greater),

@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Floating-point `!=` now crosses XHIR, XMIR, XLIL `ne.f32`/`ne.f64`, the public C23 XLIL model, and LLVM ordered
+  not-equal comparison lowering. Contextual unary `+` and expression-inferred call locals also use the compiler-core
+  path.
 - Boolean `&&` and `||` now lower as real short-circuit control flow through typed HIR, MIR branches, XLIL `br_if`, LLVM,
   and native `.xse` builds. Inferred `:=` locals now derive their type from supported expressions rather than literals
   alone, so chained logical results retain `Bool` without an explicit annotation.
@@ -23,6 +26,12 @@ source-to-native executable pipeline.
 - Prefix and postfix integer updates now preserve their different expression results through typed HIR, MIR local
   storage, XLIL, LLVM, and native `.xse` output. The remaining arithmetic/bitwise compound assignments also use the Rust
   compiler-core route instead of the temporary C source bridge.
+
+### Changed
+
+- Source-native body compilation now has one authoritative implementation: structural AST enters the Rust compiler core,
+  then returns verified XLIL through the public C23 boundary for LLVM emission. The obsolete C source-body fallback was
+  removed after the complete source-native fixture matrix passed with it disabled.
 - Native project tests now evaluate real `xs.project.kts` files with the external Kotlin 2.4.0 runner and JRE 25, including
   multi-file and fixed-width integer projects.
 - Rust compiler-core sessions can merge multiple expanded structural-AST source trees into one program-wide declaration,

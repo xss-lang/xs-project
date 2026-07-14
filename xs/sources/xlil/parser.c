@@ -432,6 +432,8 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
     break;
   case XS_LIL_INSTRUCTION_EQ_F32:
   case XS_LIL_INSTRUCTION_EQ_F64:
+  case XS_LIL_INSTRUCTION_NE_F32:
+  case XS_LIL_INSTRUCTION_NE_F64:
   case XS_LIL_INSTRUCTION_LT_F32:
   case XS_LIL_INSTRUCTION_LT_F64:
   case XS_LIL_INSTRUCTION_LE_F32:
@@ -444,6 +446,8 @@ static XsLilStatus parse_binary_integer(Parser *parser, XsLilBlock *block, const
     XsLilFloatComparisonOperation operation = XS_LIL_FLOAT_GE;
     if(kind == XS_LIL_INSTRUCTION_EQ_F32 || kind == XS_LIL_INSTRUCTION_EQ_F64)
       operation = XS_LIL_FLOAT_EQ;
+    else if(kind == XS_LIL_INSTRUCTION_NE_F32 || kind == XS_LIL_INSTRUCTION_NE_F64)
+      operation = XS_LIL_FLOAT_NE;
     else if(kind == XS_LIL_INSTRUCTION_LT_F32 || kind == XS_LIL_INSTRUCTION_LT_F64)
       operation = XS_LIL_FLOAT_LT;
     else if(kind == XS_LIL_INSTRUCTION_LE_F32 || kind == XS_LIL_INSTRUCTION_LE_F64)
@@ -584,6 +588,7 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"div.f32 ", XS_LIL_INSTRUCTION_DIV_F32, XS_LIL_TYPE_F32},
         {"rem.f32 ", XS_LIL_INSTRUCTION_REM_F32, XS_LIL_TYPE_F32},
         {"eq.f32 ", XS_LIL_INSTRUCTION_EQ_F32, XS_LIL_TYPE_BOOL},
+        {"ne.f32 ", XS_LIL_INSTRUCTION_NE_F32, XS_LIL_TYPE_BOOL},
         {"lt.f32 ", XS_LIL_INSTRUCTION_LT_F32, XS_LIL_TYPE_BOOL},
         {"le.f32 ", XS_LIL_INSTRUCTION_LE_F32, XS_LIL_TYPE_BOOL},
         {"gt.f32 ", XS_LIL_INSTRUCTION_GT_F32, XS_LIL_TYPE_BOOL},
@@ -594,6 +599,7 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         {"div.f64 ", XS_LIL_INSTRUCTION_DIV_F64, XS_LIL_TYPE_F64},
         {"rem.f64 ", XS_LIL_INSTRUCTION_REM_F64, XS_LIL_TYPE_F64},
         {"eq.f64 ", XS_LIL_INSTRUCTION_EQ_F64, XS_LIL_TYPE_BOOL},
+        {"ne.f64 ", XS_LIL_INSTRUCTION_NE_F64, XS_LIL_TYPE_BOOL},
         {"lt.f64 ", XS_LIL_INSTRUCTION_LT_F64, XS_LIL_TYPE_BOOL},
         {"le.f64 ", XS_LIL_INSTRUCTION_LE_F64, XS_LIL_TYPE_BOOL},
         {"gt.f64 ", XS_LIL_INSTRUCTION_GT_F64, XS_LIL_TYPE_BOOL},

@@ -164,6 +164,7 @@ pub enum FloatBinaryOperation
 pub enum FloatComparisonOperation
 {
   Equal,
+  NotEqual,
   Less,
   LessEqual,
   Greater,
@@ -208,6 +209,7 @@ impl FloatComparisonOperation
     match self
     {
       Self::Equal => "eq",
+      Self::NotEqual => "ne",
       Self::Less => "lt",
       Self::LessEqual => "le",
       Self::Greater => "gt",
@@ -221,6 +223,7 @@ impl FloatComparisonOperation
     Some(match name
     {
       "eq" => Self::Equal,
+      "ne" => Self::NotEqual,
       "lt" => Self::Less,
       "le" => Self::LessEqual,
       "gt" => Self::Greater,

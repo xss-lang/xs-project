@@ -183,7 +183,7 @@ fn infer_binary_expression_type(operator: BinaryOperator,
     {
       Some(Type::Primitive(primitive))
     }
-    BinaryOperator::Equal
+    BinaryOperator::Equal | BinaryOperator::NotEqual
       if matches!(primitive,
                   PrimitiveType::Long | PrimitiveType::Int | PrimitiveType::SFloat | PrimitiveType::Float) =>
     {

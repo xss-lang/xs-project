@@ -72,6 +72,7 @@ pub enum BinaryOperator
   ShiftLeft,
   ShiftRight,
   Equal,
+  NotEqual,
   Less,
   LessEqual,
   Greater,

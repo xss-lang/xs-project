@@ -122,7 +122,7 @@ Rust compiler-core control flow now includes conditional loops, post-test `do`/`
 and value-producing `match`; mutable locals and match results cross CFG edges through explicit target-independent MIR
 storage operations. Value-producing `if` expressions use the same target-independent merge-storage model in local
 initializers and call arguments. `Long` division, remainder, bitwise operations, and shifts now remain in that Rust
-HIR (THIR/XHIR), MIR, and XLIL route instead of requiring the temporary C source-native fallback. Prefix and postfix
+HIR (THIR/XHIR), MIR, and XLIL route. Prefix and postfix
 increment/decrement preserve their distinct result values through the current native local-storage slice. It does not imply
 that the complete X# language is executable yet. Earlier releases are compiler infrastructure snapshots.
 

@@ -17,8 +17,12 @@ fn double_less(a: Float, b: Float) -> Bool {
     return a < b;
 }
 
+fn double_not_equal(a: Float, b: Float) -> Bool {
+    return a != b;
+}
+
 fn main() -> Long {
-    if (double_less(1.5, 2.5)) {
+    if (double_less(1.5, 2.5) && double_not_equal(1.5, 2.5)) {
         return 0;
     } else {
         return 1;

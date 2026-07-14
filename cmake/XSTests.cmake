@@ -154,7 +154,7 @@ add_test(NAME direct_xlil_float_operators_artifacts COMMAND xs_xse_artifact_test
                                                       ${XS_DIRECT_XLIL_FIXTURE_DIR}/FloatOperators.ll
                                                       ${XS_DIRECT_XLIL_FIXTURE_DIR}/FloatOperators.o
                                                       ${XS_DIRECT_XLIL_FIXTURE_DIR}/FloatOperators.xse 0
-                                                      "fadd float" "frem float" "fcmp olt double")
+                                                      "fadd float" "frem float" "fcmp olt double" "fcmp one double")
 set_tests_properties(direct_xlil_float_operators_artifacts PROPERTIES DEPENDS direct_xlil_float_operators_build
                                                                         TIMEOUT 5)
 add_test(NAME direct_xlil_string_literal_build COMMAND xs build --xlil -file
@@ -317,8 +317,8 @@ set_tests_properties(source_native_float_operators_build PROPERTIES TIMEOUT 5
 add_test(NAME source_native_float_operators_artifacts COMMAND xs_xse_artifact_tests
                                                          ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.ll
                                                          ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.o
-                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.xse 0
-                                                         "fadd float" "frem float" "fdiv double" "fcmp olt double")
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFloatOperators.xse 0
+  "fadd float" "frem float" "fdiv double" "fcmp olt double" "fcmp one double")
 set_tests_properties(source_native_float_operators_artifacts PROPERTIES DEPENDS source_native_float_operators_build
                                                                            TIMEOUT 5)
 add_test(NAME source_native_string_literal_build COMMAND xs build -file

@@ -9,7 +9,6 @@
 #include "direct_xlil.h"
 #include "options.h"
 #include "project_driver.h"
-#include "source_native.h"
 
 #include "xs/compiler_core.h"
 #include "xs/diagnostic.h"
@@ -456,7 +455,12 @@ static bool check_single_source_file(const char *path, bool build_native, const 
       success = xs_driver_build_compiler_core_native(path, unit.compiler_core, &unit.diagnostics, span);
     }
     else
-      success = xs_driver_build_source_native(path, &unit.tree, &unit.diagnostics);
+    {
+      XsSpan span = {.start = unit.tree.root->span.start_offset, .end = unit.tree.root->span.end_offset};
+      (void)xs_diagnostics_add(&unit.diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                               "Rust compiler core does not yet support this source body for native emission");
+      success = false;
+    }
   }
   if(!success && build_native)
     xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
@@ -579,7 +583,12 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
       success = xs_driver_build_compiler_core_native(units[0].path, native_session, &units[0].diagnostics, span);
     }
     else if(success)
-      success = xs_driver_build_source_native(units[0].path, &units[0].tree, &units[0].diagnostics);
+    {
+      XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
+      (void)xs_diagnostics_add(&units[0].diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                               "Rust compiler core does not yet support this project body for native emission");
+      success = false;
+    }
     xslang_compiler_core_session_free(merged);
   }
   if(!success && build_native && unit_count != 0)

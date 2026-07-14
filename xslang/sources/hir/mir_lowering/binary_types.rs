@@ -24,6 +24,7 @@ impl HirToMirLowerer
       (operator, XlilType::I64) if binary_i64_operation(operator).is_some() => Some(XlilType::I64),
       (operator, XlilType::F32 | XlilType::F64) if binary_float_operation(operator).is_some() => Some(target_type),
       (BinaryOperator::Equal |
+       BinaryOperator::NotEqual |
        BinaryOperator::Less |
        BinaryOperator::LessEqual |
        BinaryOperator::Greater |
@@ -68,6 +69,7 @@ impl HirToMirLowerer
         BinaryOperator::ShiftRight => self.common_operand_type(left, right, lowered),
         BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr => Some(XlilType::BOOL),
         BinaryOperator::Equal |
+        BinaryOperator::NotEqual |
         BinaryOperator::Less |
         BinaryOperator::LessEqual |
         BinaryOperator::Greater |

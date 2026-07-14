@@ -665,6 +665,7 @@ const fn binary_operator_name(operator: BinaryOperator) -> &'static str
     BinaryOperator::ShiftLeft => "shift_left",
     BinaryOperator::ShiftRight => "shift_right",
     BinaryOperator::Equal => "eq",
+    BinaryOperator::NotEqual => "ne",
     BinaryOperator::Less => "lt",
     BinaryOperator::LessEqual => "le",
     BinaryOperator::Greater => "gt",

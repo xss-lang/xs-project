@@ -37,6 +37,10 @@ impl TypeChecker
         Expression::Unary { operator,
                             operand,
                             .. } => self.unary_expression_matches_type(*operator, operand, expected),
+        Expression::Binary { operator,
+                             left,
+                             right,
+                             .. } => self.binary_expression_matches_type(*operator, left, right, expected),
         _ => self.expression_type(operand).as_ref() == Some(expected),
       },
       (UnaryOperator::Negative, Type::Primitive(primitive)) if is_signed_integer(*primitive) => match operand
@@ -45,6 +49,10 @@ impl TypeChecker
         Expression::Unary { operator,
                             operand,
                             .. } => self.unary_expression_matches_type(*operator, operand, expected),
+        Expression::Binary { operator,
+                             left,
+                             right,
+                             .. } => self.binary_expression_matches_type(*operator, left, right, expected),
         _ => self.expression_type(operand).as_ref() == Some(expected),
       },
       (UnaryOperator::LogicalNot, Type::Primitive(PrimitiveType::Bool)) =>

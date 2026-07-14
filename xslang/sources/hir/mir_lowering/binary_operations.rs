@@ -24,6 +24,7 @@ pub(super) const fn integer_operation(operator: BinaryOperator) -> Option<Intege
     BinaryOperator::ShiftLeft => IntegerBinaryOperation::ShiftLeft,
     BinaryOperator::ShiftRight => IntegerBinaryOperation::ShiftRight,
     BinaryOperator::Equal => IntegerBinaryOperation::Equal,
+    BinaryOperator::NotEqual => IntegerBinaryOperation::NotEqual,
     BinaryOperator::Less => IntegerBinaryOperation::Less,
     BinaryOperator::LessEqual => IntegerBinaryOperation::LessEqual,
     BinaryOperator::Greater => IntegerBinaryOperation::Greater,
@@ -50,6 +51,7 @@ pub(super) const fn comparison_float_operation(operator: BinaryOperator) -> Opti
   Some(match operator
   {
     BinaryOperator::Equal => FloatComparisonOperation::Equal,
+    BinaryOperator::NotEqual => FloatComparisonOperation::NotEqual,
     BinaryOperator::Less => FloatComparisonOperation::Less,
     BinaryOperator::LessEqual => FloatComparisonOperation::LessEqual,
     BinaryOperator::Greater => FloatComparisonOperation::Greater,

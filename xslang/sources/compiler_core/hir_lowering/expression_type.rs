@@ -28,6 +28,7 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     EXPR_BINARY
       if matches!(value.token_kind,
                   TOKEN_EQUAL |
+                  TOKEN_NOT_EQUAL |
                   TOKEN_GREATER |
                   TOKEN_GREATER_EQUAL |
                   TOKEN_LESS |

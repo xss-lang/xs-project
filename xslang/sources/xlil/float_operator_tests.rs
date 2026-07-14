@@ -40,6 +40,7 @@ fn roundtrips_all_float_operations_for_both_widths()
                        .expect("typed floating operation");
     }
     for operation in [FloatComparisonOperation::Equal,
+                      FloatComparisonOperation::NotEqual,
                       FloatComparisonOperation::Less,
                       FloatComparisonOperation::LessEqual,
                       FloatComparisonOperation::Greater,
