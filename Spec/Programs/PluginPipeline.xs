@@ -6,7 +6,7 @@
 
 module programs::plugin_pipeline;
 
-imports collections, process;
+imports collections, stdio, process;
 
 interface TextPlugin {
     fn name() -> Str;

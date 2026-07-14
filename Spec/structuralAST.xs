@@ -691,6 +691,7 @@ enum data Statement {
     For: ForStatement,
     ForEach: ForEachStatement,
     While: WhileStatement,
+    Loop: LoopStatement,
     Match: MatchStatement,
     Break: BreakStatement,
     Continue: ContinueStatement,
@@ -827,6 +828,12 @@ data WhileStatement {
 }
 
 
+data LoopStatement {
+    body: BlockStatement
+    span: SourceSpan
+}
+
+
 // ============================================================
 // Match statements
 // ============================================================
@@ -869,6 +876,7 @@ enum data Expression {
     Binary: BinaryExpression,
     Unary: UnaryExpression,
     Assignment: AssignmentExpression,
+    GenericQualifier: GenericQualifierExpression,
     Call: CallExpression,
     MethodCall: MethodCallExpression,
     MemberAccess: MemberAccessExpression,
@@ -882,6 +890,7 @@ enum data Expression {
     Dereference: DereferenceExpression,
     ArrayLiteral: ArrayLiteralExpression,
     ObjectLiteral: ObjectLiteralExpression,
+    TypedObjectLiteral: TypedObjectLiteralExpression,
     FieldSet: FieldSetExpression,
     Tuple: TupleExpression,
     If: IfExpression,
@@ -898,6 +907,17 @@ data IdentifierExpression {
     identifier: IdentifierNode
     span: SourceSpan
 }
+
+
+data GenericQualifierExpression {
+    base: PathNode
+    type_arguments: TypeNode[]
+    associated_path: PathNode
+    span: SourceSpan
+}
+
+
+// associated_path is absent for expression turbofish such as Factory::<Int>().
 
 
 // ============================================================
@@ -1177,6 +1197,13 @@ data ObjectLiteralExpression {
 }
 
 
+data TypedObjectLiteralExpression {
+    constructor: Expression
+    fields: ObjectLiteralField[]
+    span: SourceSpan
+}
+
+
 data ObjectLiteralField {
     name: IdentifierNode
     value: Expression
@@ -1243,6 +1270,7 @@ enum data PatternNode {
     Literal: LiteralPattern,
     EnumVariant: EnumVariantPattern,
     Tuple: TuplePattern,
+    Typed: TypedPattern,
     Else: ElsePattern,
 }
 
@@ -1268,6 +1296,13 @@ data EnumVariantPattern {
 
 data TuplePattern {
     elements: PatternNode[]
+    span: SourceSpan
+}
+
+
+data TypedPattern {
+    pattern: PatternNode
+    type: TypeNode
     span: SourceSpan
 }
 

@@ -270,6 +270,11 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "macro argument",
       "token",
       "base specifier",
+      "generic qualifier expression",
+      "typed object literal",
+      "typed pattern",
+      "pattern variable declaration",
+      "loop statement",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown syntax node";

@@ -76,16 +76,27 @@ XsSyntaxNode *parse_path(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
   XsSyntaxNode *path = node(parser, XS_SYNTAX_PATH, (XsSpan){start, start});
-  XsSyntaxNode *segment = identifier(parser);
+  XsSyntaxNode *segment = nullptr;
+  if(parser->current.kind == XS_TOKEN_IDENTIFIER || parser->current.kind == XS_TOKEN_KW_ATOMIC)
+  {
+    XsToken token = parser->current;
+    advance(parser);
+    segment = node(parser, XS_SYNTAX_IDENTIFIER, token.span);
+  }
+  else
+  {
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected identifier");
+  }
   if(segment == nullptr)
     return path;
   xs_syntax_node_add(parser->tree, path, segment);
-  while(parser->current.kind == XS_TOKEN_DOUBLE_COLON && parser->next.kind == XS_TOKEN_IDENTIFIER)
+  while(parser->current.kind == XS_TOKEN_DOUBLE_COLON &&
+        (parser->next.kind == XS_TOKEN_IDENTIFIER || parser->next.kind == XS_TOKEN_KW_ATOMIC))
   {
     advance(parser);
-    segment = identifier(parser);
-    if(segment == nullptr)
-      break;
+    XsToken token = parser->current;
+    advance(parser);
+    segment = node(parser, XS_SYNTAX_IDENTIFIER, token.span);
     xs_syntax_node_add(parser->tree, path, segment);
   }
   finish_node(parser, path, parser->previous.span.end);

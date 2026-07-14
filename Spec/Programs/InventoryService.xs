@@ -6,7 +6,7 @@
 
 module programs::inventory_service;
 
-imports collections, thread, sync;
+imports collections, thread, sync, stdio;
 
 data Product {
     sku: Str;

@@ -6,7 +6,7 @@
 
 module programs::job_queue;
 
-imports collections, optional, process, sync;
+imports collections, optional, process, sync, stdio;
 
 data Job {
     id: Int;

@@ -6,7 +6,7 @@
 
 module programs::http_health_monitor;
 
-imports http, collections, thread, sync;
+imports http, collections, thread, sync, stdio;
 
 data Endpoint {
     name: Str;

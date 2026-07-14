@@ -194,6 +194,21 @@ fn test_while() {
 
 
 // VALID
+// `loop` is an unconditional loop. `break` exits it and `continue` starts the
+// next iteration.
+fn test_loop() {
+    x: Int = 0;
+
+    loop {
+        x += 1;
+        if (x == 10) {
+            break;
+        }
+    }
+}
+
+
+// VALID
 // A do/while body executes before its condition is tested. The construct is
 // syntax sugar for an unconditional loop with a conditional break at its tail.
 fn test_do_while() {

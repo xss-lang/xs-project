@@ -153,6 +153,13 @@ add_test(NAME source_native_do_while_artifacts COMMAND xs_xse_artifact_tests
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDoWhile.o
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDoWhile.xse 7 "store i32 7")
 set_tests_properties(source_native_do_while_artifacts PROPERTIES DEPENDS source_native_do_while_build TIMEOUT 5)
+add_test(NAME source_native_loop_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLoop.xs)
+set_tests_properties(source_native_loop_build PROPERTIES TIMEOUT 5
+                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_loop_artifacts COMMAND xs_xse_artifact_tests ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLoop.ll
+                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLoop.o
+                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLoop.xse 7 "br label %bb1")
+set_tests_properties(source_native_loop_artifacts PROPERTIES DEPENDS source_native_loop_build TIMEOUT 5)
 add_test(NAME source_native_block_locals_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBlockLocals.xs)
 set_tests_properties(source_native_block_locals_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
@@ -320,4 +327,3 @@ add_test(NAME source_native_inferred_bool_not_local_artifacts COMMAND xs_xse_art
                                                               7)
 set_tests_properties(source_native_inferred_bool_not_local_artifacts PROPERTIES
                      DEPENDS source_native_inferred_bool_not_local_build TIMEOUT 5)
-

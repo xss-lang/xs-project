@@ -6,7 +6,7 @@
 
 module programs::bank_ledger;
 
-imports collections, process;
+imports collections, stdio, process;
 
 data Money {
     cents: Int;

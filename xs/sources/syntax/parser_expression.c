@@ -11,7 +11,8 @@ static XsSyntaxNode *parse_literal(SyntaxParser *parser);
 
 static bool token_can_continue_expression_path(XsTokenKind kind)
 {
-  return kind == XS_TOKEN_IDENTIFIER || kind == XS_TOKEN_KW_NONE;
+  return kind == XS_TOKEN_IDENTIFIER || kind == XS_TOKEN_KW_ATOMIC || kind == XS_TOKEN_KW_NEW ||
+         kind == XS_TOKEN_KW_NONE;
 }
 
 static XsSyntaxNode *expression_path_segment(SyntaxParser *parser)
@@ -30,7 +31,7 @@ static XsSyntaxNode *parse_expression_path(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
   XsSyntaxNode *path = node(parser, XS_SYNTAX_PATH, (XsSpan){start, start});
-  XsSyntaxNode *segment = identifier(parser);
+  XsSyntaxNode *segment = expression_path_segment(parser);
   if(segment == nullptr)
     return path;
   xs_syntax_node_add(parser->tree, path, segment);
@@ -46,22 +47,50 @@ static XsSyntaxNode *parse_expression_path(SyntaxParser *parser)
   return path;
 }
 
-static void skip_turbofish_arguments(SyntaxParser *parser)
+static bool generic_qualifier_follows(const SyntaxParser *parser)
 {
-  if(!accept(parser, XS_TOKEN_DOUBLE_COLON))
-    return;
-  if(!expect(parser, XS_TOKEN_LESS, "expected '<' after '::' in turbofish"))
-    return;
+  SyntaxParser lookahead = *parser;
+  if(!accept(&lookahead, XS_TOKEN_LESS))
+    return false;
   size_t depth = 1;
-  while(depth != 0 && parser->current.kind != XS_TOKEN_EOF)
+  while(depth != 0 && lookahead.current.kind != XS_TOKEN_EOF)
   {
-    if(accept(parser, XS_TOKEN_LESS))
+    if(accept(&lookahead, XS_TOKEN_LESS))
       ++depth;
-    else if(accept(parser, XS_TOKEN_GREATER))
+    else if(accept(&lookahead, XS_TOKEN_GREATER))
       --depth;
     else
-      advance(parser);
+      advance(&lookahead);
   }
+  return depth == 0 && lookahead.current.kind == XS_TOKEN_DOUBLE_COLON &&
+         token_can_continue_expression_path(lookahead.next.kind);
+}
+
+static XsSyntaxNode *parse_generic_qualifier(SyntaxParser *parser, XsSyntaxNode *path)
+{
+  size_t start = path->span.start_offset;
+  XsSyntaxNode *qualifier = node(parser, XS_SYNTAX_EXPR_GENERIC_QUALIFIER, (XsSpan){start, path->span.end_offset});
+  xs_syntax_node_add(parser->tree, qualifier, path);
+  bool turbofish = accept(parser, XS_TOKEN_DOUBLE_COLON);
+  if(turbofish)
+    expect(parser, XS_TOKEN_LESS, "expected '<' after '::' in turbofish");
+  else
+    expect(parser, XS_TOKEN_LESS, "expected '<' in generic qualifier");
+  if(parser->current.kind != XS_TOKEN_GREATER)
+  {
+    do
+    {
+      xs_syntax_node_add(parser->tree, qualifier, parse_type(parser));
+    } while(accept(parser, XS_TOKEN_COMMA));
+  }
+  expect(parser, XS_TOKEN_GREATER, "expected '>' after generic arguments");
+  if(!turbofish)
+  {
+    expect(parser, XS_TOKEN_DOUBLE_COLON, "expected '::' after generic type qualifier");
+    xs_syntax_node_add(parser->tree, qualifier, parse_expression_path(parser));
+  }
+  finish_node(parser, qualifier, parser->previous.span.end);
+  return qualifier;
 }
 
 static XsSyntaxNode *parse_member_identifier(SyntaxParser *parser)
@@ -144,19 +173,21 @@ static void parse_expression_parameters(SyntaxParser *parser, XsSyntaxNode *func
   expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after function expression parameters");
 }
 
-static XsSyntaxNode *parse_function_expression(SyntaxParser *parser, size_t start, bool move_capture)
+static XsSyntaxNode *parse_function_expression(SyntaxParser *parser, size_t start, bool move_capture, bool asynchronous)
 {
   expect(parser, XS_TOKEN_KW_FN, "expected 'fn' in function expression");
   XsSyntaxNode *function = node(parser, XS_SYNTAX_EXPR_FUNCTION, (XsSpan){start, parser->previous.span.end});
   if(move_capture)
     function->flags |= XS_SYNTAX_FLAG_MOVE_CAPTURE;
+  if(asynchronous)
+    function->flags |= XS_SYNTAX_FLAG_ASYNC;
   parse_expression_parameters(parser, function);
   xs_syntax_node_add(parser->tree, function, parse_block(parser));
   finish_node(parser, function, parser->previous.span.end);
   return function;
 }
 
-XsSyntaxNode *parse_pattern(SyntaxParser *parser)
+static XsSyntaxNode *parse_untyped_pattern(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
   if(accept(parser, XS_TOKEN_KW_ELSE))
@@ -217,6 +248,19 @@ XsSyntaxNode *parse_pattern(SyntaxParser *parser)
   return node(parser, XS_SYNTAX_PATTERN_ELSE, (XsSpan){start, parser->previous.span.end});
 }
 
+XsSyntaxNode *parse_pattern(SyntaxParser *parser)
+{
+  XsSyntaxNode *pattern = parse_untyped_pattern(parser);
+  if(!accept(parser, XS_TOKEN_COLON))
+    return pattern;
+  XsSyntaxNode *typed =
+      node(parser, XS_SYNTAX_PATTERN_TYPED, (XsSpan){pattern->span.start_offset, parser->previous.span.end});
+  xs_syntax_node_add(parser->tree, typed, pattern);
+  xs_syntax_node_add(parser->tree, typed, parse_type(parser));
+  finish_node(parser, typed, parser->previous.span.end);
+  return typed;
+}
+
 static XsSyntaxNode *parse_literal(SyntaxParser *parser)
 {
   XsToken token = parser->current;
@@ -227,13 +271,18 @@ static XsSyntaxNode *parse_literal(SyntaxParser *parser)
   return literal;
 }
 
-static XsSyntaxNode *parse_brace_literal(SyntaxParser *parser)
+static XsSyntaxNode *parse_brace_literal(SyntaxParser *parser, XsSyntaxNode *type_expression)
 {
-  size_t start = parser->current.span.start;
+  size_t start = type_expression == nullptr ? parser->current.span.start : type_expression->span.start_offset;
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{'");
-  bool object = parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON;
-  XsSyntaxNode *literal =
-      node(parser, object ? XS_SYNTAX_EXPR_OBJECT_LITERAL : XS_SYNTAX_EXPR_ARRAY_LITERAL, (XsSpan){start, start});
+  bool object = type_expression != nullptr ||
+                (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON);
+  XsSyntaxKind kind = type_expression != nullptr
+                          ? XS_SYNTAX_EXPR_TYPED_OBJECT_LITERAL
+                          : (object ? XS_SYNTAX_EXPR_OBJECT_LITERAL : XS_SYNTAX_EXPR_ARRAY_LITERAL);
+  XsSyntaxNode *literal = node(parser, kind, (XsSpan){start, start});
+  if(type_expression != nullptr)
+    xs_syntax_node_add(parser->tree, literal, type_expression);
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
   {
     size_t before = parser->current.span.start;
@@ -280,6 +329,7 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
   case XS_TOKEN_KW_NONE:
     return parse_literal(parser);
   case XS_TOKEN_IDENTIFIER:
+  case XS_TOKEN_KW_ATOMIC:
   {
     XsToken name = parser->current;
     XsSyntaxNode *path = parse_expression_path(parser);
@@ -310,13 +360,18 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
       finish_node(parser, call, parser->previous.span.end);
       return call;
     }
-    skip_turbofish_arguments(parser);
+    XsSyntaxNode *value = path;
+    if((parser->current.kind == XS_TOKEN_DOUBLE_COLON && parser->next.kind == XS_TOKEN_LESS) ||
+       (parser->current.kind == XS_TOKEN_LESS && generic_qualifier_follows(parser)))
+      value = parse_generic_qualifier(parser, path);
+    if(value != path)
+      return value;
     XsSyntaxNode *expression =
-        node(parser, XS_SYNTAX_EXPR_IDENTIFIER, (XsSpan){path->span.start_offset, path->span.end_offset});
+        node(parser, XS_SYNTAX_EXPR_IDENTIFIER, (XsSpan){value->span.start_offset, value->span.end_offset});
     if(path->child_count == 1 && path->children[0]->kind == XS_SYNTAX_IDENTIFIER)
       xs_syntax_node_add(parser->tree, expression, path->children[0]);
     else
-      xs_syntax_node_add(parser->tree, expression, path);
+      xs_syntax_node_add(parser->tree, expression, value);
     return expression;
   }
   case XS_TOKEN_LEFT_PAREN:
@@ -341,9 +396,9 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
     return tuple;
   }
   case XS_TOKEN_LEFT_BRACE:
-    return parse_brace_literal(parser);
+    return parse_brace_literal(parser, nullptr);
   case XS_TOKEN_KW_FN:
-    return parse_function_expression(parser, start, false);
+    return parse_function_expression(parser, start, false, false);
   case XS_TOKEN_KW_IF:
     return parse_if_expression(parser, start);
   case XS_TOKEN_KW_MATCH:
@@ -377,10 +432,23 @@ static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
     kind = XS_SYNTAX_EXPR_AWAIT;
     break;
   case XS_TOKEN_KW_MOVE:
+  {
+    advance(parser);
+    bool asynchronous = accept(parser, XS_TOKEN_KW_ASYNC);
+    if(parser->current.kind == XS_TOKEN_KW_FN)
+      return parse_function_expression(parser, start, true, asynchronous);
+    if(asynchronous)
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "expected 'fn' after 'move async'");
+    kind = XS_SYNTAX_EXPR_MOVE;
+    break;
+  }
+  case XS_TOKEN_KW_ASYNC:
     advance(parser);
     if(parser->current.kind == XS_TOKEN_KW_FN)
-      return parse_function_expression(parser, start, true);
-    kind = XS_SYNTAX_EXPR_MOVE;
+      return parse_function_expression(parser, start, false, true);
+    xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected 'fn' after 'async'");
+    kind = XS_SYNTAX_EXPR_AWAIT;
     break;
   case XS_TOKEN_AMPERSAND:
     kind = XS_SYNTAX_EXPR_BORROW;
@@ -407,7 +475,7 @@ static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
   default:
     return parse_primary(parser);
   }
-  if(operator_kind != XS_TOKEN_KW_MOVE)
+  if(operator_kind != XS_TOKEN_KW_MOVE && operator_kind != XS_TOKEN_KW_ASYNC)
     advance(parser);
   if(kind == XS_SYNTAX_EXPR_BORROW && accept(parser, XS_TOKEN_KW_MUT))
     kind = XS_SYNTAX_EXPR_MUTABLE_BORROW;
@@ -523,6 +591,11 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
       xs_syntax_node_add(parser->tree, update, expression);
       finish_node(parser, update, parser->previous.span.end);
       expression = update;
+    }
+    else if(parser->current.kind == XS_TOKEN_LEFT_BRACE && expression != nullptr &&
+            (expression->kind == XS_SYNTAX_EXPR_IDENTIFIER || expression->kind == XS_SYNTAX_EXPR_GENERIC_QUALIFIER))
+    {
+      expression = parse_brace_literal(parser, expression);
     }
     else
     {

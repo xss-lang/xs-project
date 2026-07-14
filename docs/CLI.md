@@ -112,7 +112,8 @@ read after the branches merge. Supported `Long` assignments are `=`, `+=`, `-=`,
 `^=`; a branch may contain multiple such assignments. `val`, `const`, and `static` locals can be initialized but not
 reassigned. Supported conditional assignment blocks, including `else if` chains, may nest. A supported `while` has a Bool condition and one or more
 supported assignment statements and `Long`/`Bool` local declarations in its body; it lowers through the same native
-control-flow path. `break` and `continue` target the innermost supported loop. Block-local bindings are unavailable
+control-flow path. An unconditional `loop { ... }` uses that same CFG with a constant true condition. `break` and
+`continue` target the innermost supported loop. Block-local bindings are unavailable
 after their enclosing block; an inner scope may shadow an enclosing binding, which becomes visible again after scope exit.
 The same supported
 return-expression subset may be used by an early `return` inside a supported conditional or loop block. The

@@ -6,7 +6,7 @@
 
 module programs::sensor_stream;
 
-imports collections, hardware, thread, sync;
+imports collections, hardware, thread, sync, stdio;
 
 data Reading {
     sensor_id: Str;

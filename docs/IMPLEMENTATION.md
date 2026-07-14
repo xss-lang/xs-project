@@ -138,8 +138,9 @@ The documented compilation order is preserved:
   returns the updated local value; postfix increment/decrement returns its prior value. Both perform one checked
   mutable-local store. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
   assignment-only body lowers to a MIR loop header, body, and exit. Supported conditional and loop blocks also accept
-  `Long`/`Bool` local declarations with lexical lifetime in the source-native context. `do { ... } while (condition);`
-  is post-test syntax sugar: its body executes once before the first condition test and it uses the existing loop CFG
+  `Long`/`Bool` local declarations with lexical lifetime in the source-native context. `loop { ... }` lowers with a
+  constant true condition through the same HIR/MIR CFG. `do { ... } while (condition);` is post-test syntax sugar: its
+  body executes once before the first condition test and it uses the existing loop CFG
   rather than introducing a MIR or XLIL instruction. Inner scopes may shadow enclosing
   bindings; duplicates remain invalid within one lexical scope. `break` and `continue` target that loop's exit and header,
   including when written in a nested supported
@@ -174,6 +175,10 @@ The documented compilation order is preserved:
   the structural AST.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
+- Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,
+  typed for-each patterns, tuple-pattern bindings, asynchronous function expressions, and unconditional `loop` statements
+  have dedicated structural nodes. The `Spec/Programs` syntax suite parses every complete-language example before later
+  symbol and standard-library checks run.
 - Lifetime spellings in reference types follow X# forms based on Rust lifetimes (`&'a T`, `&'a mut T`, `&'static T`,
   `&'else T`) and are carried into the AST as `XS_SYNTAX_LIFETIME` nodes. X# uses `else` where Rust examples often use
   `_`; lifetime elision and validation are left to the borrow-checker stage.

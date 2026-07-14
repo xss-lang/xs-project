@@ -6,7 +6,7 @@
 
 module programs::package_resolver;
 
-imports collections, process;
+imports collections, stdio, process;
 
 enum VisitState {
     White,
@@ -82,9 +82,9 @@ fn package_of(name: Str, version: Str, dependencies: std::collections::Vector<St
 fn main() -> Result<Int, Error> {
     graph: PackageGraph = new PackageGraph();
 
-    graph.add(package_of("app", "1.0.0", std::collections::Vector<Str>.of("net", "json")));
-    graph.add(package_of("net", "2.1.0", std::collections::Vector<Str>.of("runtime")));
-    graph.add(package_of("json", "3.0.0", std::collections::Vector<Str>.of("runtime")));
+    graph.add(package_of("app", "1.0.0", std::collections::Vector<Str>::of("net", "json")));
+    graph.add(package_of("net", "2.1.0", std::collections::Vector<Str>::of("runtime")));
+    graph.add(package_of("json", "3.0.0", std::collections::Vector<Str>::of("runtime")));
     graph.add(package_of("runtime", "1.4.0", std::collections::Vector<Str>::new()));
 
     for (package: Package in graph.resolve("app")@) {

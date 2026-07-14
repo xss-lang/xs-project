@@ -163,6 +163,42 @@ static bool for_header_is_each(const SyntaxParser *parser)
   return false;
 }
 
+static bool starts_pattern_variable(const SyntaxParser *parser)
+{
+  if(parser->current.kind != XS_TOKEN_LEFT_PAREN)
+    return false;
+  SyntaxParser lookahead = *parser;
+  size_t depth = 0;
+  do
+  {
+    if(lookahead.current.kind == XS_TOKEN_LEFT_PAREN)
+      ++depth;
+    else if(lookahead.current.kind == XS_TOKEN_RIGHT_PAREN)
+      --depth;
+    advance(&lookahead);
+  } while(depth != 0 && lookahead.current.kind != XS_TOKEN_EOF);
+  return depth == 0 && (lookahead.current.kind == XS_TOKEN_COLON || lookahead.current.kind == XS_TOKEN_INFER_ASSIGN);
+}
+
+static XsSyntaxNode *parse_pattern_variable(SyntaxParser *parser)
+{
+  size_t start = parser->current.span.start;
+  XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_PATTERN_VARIABLE, (XsSpan){start, start});
+  xs_syntax_node_add(parser->tree, declaration, parse_pattern(parser));
+  if(accept(parser, XS_TOKEN_INFER_ASSIGN))
+  {
+    declaration->flags |= XS_SYNTAX_FLAG_INFERRED_TYPE;
+    xs_syntax_node_add(parser->tree, declaration, parse_expression(parser, 1));
+  }
+  else if(accept(parser, XS_TOKEN_ASSIGN))
+  {
+    xs_syntax_node_add(parser->tree, declaration, parse_expression(parser, 1));
+  }
+  expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after pattern variable declaration");
+  finish_node(parser, declaration, parser->previous.span.end);
+  return declaration;
+}
+
 static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
 {
   expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after for");
@@ -284,6 +320,15 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     finish_node(parser, statement, parser->previous.span.end);
     return statement;
   }
+  if(accept(parser, XS_TOKEN_KW_LOOP))
+  {
+    XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_LOOP, (XsSpan){start, parser->previous.span.end});
+    ++parser->loop_depth;
+    xs_syntax_node_add(parser->tree, statement, parse_block(parser));
+    --parser->loop_depth;
+    finish_node(parser, statement, parser->previous.span.end);
+    return statement;
+  }
   if(accept(parser, XS_TOKEN_KW_BREAK) || accept(parser, XS_TOKEN_KW_CONTINUE))
   {
     bool is_break = parser->previous.kind == XS_TOKEN_KW_BREAK;
@@ -310,6 +355,13 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   }
   if(parser->current.kind == XS_TOKEN_KW_MACRO_RULES)
     return parse_declaration(parser, false);
+  if(starts_pattern_variable(parser))
+  {
+    XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_VARIABLE, (XsSpan){start, start});
+    xs_syntax_node_add(parser->tree, statement, parse_pattern_variable(parser));
+    finish_node(parser, statement, parser->previous.span.end);
+    return statement;
+  }
 
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_EXPRESSION, (XsSpan){start, start});
   XsSyntaxNode *expression = parse_expression(parser, 1);

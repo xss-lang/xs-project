@@ -390,7 +390,7 @@ static void test_expression_turbofish_structure(void)
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 60, &diagnostics, &tree));
   CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_CALL) == 2);
-  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_IDENTIFIER) >= 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_GENERIC_QUALIFIER) == 2);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -507,6 +507,33 @@ static void test_attribute_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_complete_program_expression_shapes(void)
+{
+  const char *text = "fn Build(items: Items, pair: (Int, Int)) {\n"
+                     "  map := std::collections::HashMap<Str, Int>::new();\n"
+                     "  entry := Entry { name: \"Alpha\", value: 7 };\n"
+                     "  for (item: Entry in items) { item.run(); }\n"
+                     "  (left, right): (Int, Int) = pair;\n"
+                     "  task := move async fn(value) { value };\n"
+                     "  loop { break; }\n"
+                     "}\n";
+  XsSource source = {.path = "CompleteShapes.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 63, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_GENERIC_QUALIFIER) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_TYPED_OBJECT_LITERAL) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_PATTERN_TYPED) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_PATTERN_VARIABLE) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_STMT_LOOP) == 1);
+  const XsSyntaxNode *function = find_kind_with_flag(tree.root, XS_SYNTAX_EXPR_FUNCTION, XS_SYNTAX_FLAG_ASYNC);
+  CHECK(function != nullptr);
+  CHECK(function == nullptr || (function->flags & XS_SYNTAX_FLAG_MOVE_CAPTURE) != 0);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_function_tree();
@@ -533,5 +560,6 @@ int main(void)
   test_else_type_placeholder_structure();
   test_nested_generic_type_closers();
   test_attribute_structure();
+  test_complete_program_expression_shapes();
   return failures == 0 ? 0 : 1;
 }

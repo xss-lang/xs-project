@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- The structural frontend now retains generic type-qualified associated expressions, typed object literals, typed
+  patterns and tuple-pattern bindings, async function expressions, and unconditional `loop` statements. `loop` also
+  crosses the compiler-core, MIR, XLIL, LLVM, and native `.xse` path for the supported body subset.
 - `Str` `==` and `!=` now lower through typed HIR, XMIR `eq.str`/`ne.str`, XLIL, the public C23 model, and hosted LLVM
   native emission. Equality compares UTF-16 code-unit length and content rather than backing-pointer identity.
 - Floating-point `!=` now crosses XHIR, XMIR, XLIL `ne.f32`/`ne.f64`, the public C23 XLIL model, and LLVM ordered

@@ -89,7 +89,7 @@ XsSyntaxNode *parse_type(SyntaxParser *parser)
   }
   if(parser->current.kind == XS_TOKEN_KW_ELSE)
     return parse_else_type_placeholder(parser);
-  if(parser->current.kind != XS_TOKEN_IDENTIFIER)
+  if(parser->current.kind != XS_TOKEN_IDENTIFIER && parser->current.kind != XS_TOKEN_KW_ATOMIC)
   {
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span, "expected type");
     if(parser->current.kind != XS_TOKEN_EOF)

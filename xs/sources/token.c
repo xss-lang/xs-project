@@ -39,6 +39,7 @@ static const Keyword keywords[] = {
     {"incomplete", XS_TOKEN_KW_INCOMPLETE},
     {"interface", XS_TOKEN_KW_INTERFACE},
     {"internal", XS_TOKEN_KW_INTERNAL},
+    {"loop", XS_TOKEN_KW_LOOP},
     {"macro_rules", XS_TOKEN_KW_MACRO_RULES},
     {"match", XS_TOKEN_KW_MATCH},
     {"module", XS_TOKEN_KW_MODULE},
@@ -185,6 +186,7 @@ const char *xs_token_kind_name(XsTokenKind kind)
       "override",
       "sealed",
       "do",
+      "loop",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown token";

@@ -55,6 +55,7 @@ const EXPR_IF: u32 = 81;
 const EXPR_MATCH: u32 = 82;
 const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
+const STMT_LOOP: u32 = 105;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_FLOAT: u32 = 4;
 const TOKEN_STRING: u32 = 5;
@@ -565,6 +566,7 @@ fn lower_statement_node(tree: &SyntaxTree,
     STMT_IF => lower_if_statement(tree, statement, signatures, locals, return_type),
     STMT_FOR => lower_for_statement(tree, statement, signatures, locals, return_type),
     STMT_WHILE => lower_while_statement(tree, statement, signatures, locals, return_type),
+    STMT_LOOP => lower_loop_statement(tree, statement, signatures, locals, return_type),
     STMT_MATCH => lower_match_statement(tree, statement, signatures, locals, return_type),
     STMT_BREAK => Some(Statement::Break { span: span(statement)? }),
     STMT_CONTINUE => Some(Statement::Continue { span: span(statement)? }),
@@ -715,6 +717,26 @@ fn lower_while_statement(tree: &SyntaxTree,
     condition
   };
   Some(Statement::While { condition,
+                          body,
+                          span: span(statement)? })
+}
+
+fn lower_loop_statement(tree: &SyntaxTree,
+                        statement: &SyntaxNode,
+                        signatures: &HashMap<String, CallSignature>,
+                        locals: &HashMap<String, Type>,
+                        return_type: Option<&Type>)
+                        -> Option<Statement>
+{
+  let mut body_locals = locals.clone();
+  let body = lower_hir_block(tree,
+                             tree.nodes.get(*statement.children.first()?)?,
+                             signatures,
+                             &mut body_locals,
+                             return_type,
+                             None)?;
+  Some(Statement::While { condition: Expression::Literal { literal: Literal::Bool(true),
+                                                           span: span(statement)? },
                           body,
                           span: span(statement)? })
 }

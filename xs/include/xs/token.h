@@ -120,6 +120,7 @@ typedef enum
   XS_TOKEN_KW_OVERRIDE,
   XS_TOKEN_KW_SEALED,
   XS_TOKEN_KW_DO,
+  XS_TOKEN_KW_LOOP,
 } XsTokenKind;
 
 typedef struct

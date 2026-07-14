@@ -10,7 +10,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
                        MainRecursiveCall MainUnitCalls MainShortCircuit
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
-                       MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainBlockLocals
+                       MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainLoop
+                       MainBlockLocals
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
                        ImmutableLocalReassignment BlockLocalShadow SameScopeDuplicateLocal
@@ -171,4 +172,3 @@ add_test(NAME source_native_integer_operators_artifacts COMMAND xs_xse_artifact_
                                                         "lshr i128" "icmp slt i128" "ashr i128")
 set_tests_properties(source_native_integer_operators_artifacts PROPERTIES
                      DEPENDS source_native_integer_operators_build TIMEOUT 5)
-

@@ -31,7 +31,7 @@ class Report {
     counts: std::collections::HashMap<Str, Int>;
     newest_error: Optional<Str>;
 
-    report() {
+    Report() {
         self.counts = std::collections::HashMap<Str, Int>::new();
         self.newest_error = None;
     }
