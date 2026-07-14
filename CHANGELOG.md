@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Same-module direct calls now support self recursion and mutual recursion across KTS-selected source files through typed
+  HIR, MIR, XLIL, LLVM, and native `.xse` emission. Unit-returning call statements lower without a result register, while
+  semicolon-terminated value calls retain evaluation and explicitly discard their result.
 - Prefix and postfix integer updates now preserve their different expression results through typed HIR, MIR local
   storage, XLIL, LLVM, and native `.xse` output. The remaining arithmetic/bitwise compound assignments also use the Rust
   compiler-core route instead of the temporary C source bridge.

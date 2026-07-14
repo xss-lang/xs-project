@@ -91,6 +91,6 @@ fn type_to_xlil(value: &Type) -> Option<XlilType>
   match value
   {
     Type::Primitive(value) => primitive_to_xlil(*value),
-    Type::Named(_) => None,
+    Type::Unit | Type::Named(_) => None,
   }
 }

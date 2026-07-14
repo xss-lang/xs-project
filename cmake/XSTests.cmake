@@ -223,6 +223,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
+                       MainRecursiveCall MainUnitCalls
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainBlockLocals
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
@@ -230,8 +231,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        ImmutableLocalReassignment BlockLocalShadow SameScopeDuplicateLocal
                        MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteMain OutOfRangeUIntegerMain
                        ParameterizedMain WrongReturnMain UnknownCallMain
-                       WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain RecursiveCallMain
-                       BoolCallAsLongMain MatchMissingElse MatchPatternTypeMismatch)
+                       WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain
+                       BoolCallAsLongMain UnitCallAsLongMain MatchMissingElse MatchPatternTypeMismatch)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -719,6 +720,27 @@ add_test(NAME source_native_local_call_artifacts COMMAND xs_xse_artifact_tests
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainLocalCall.xse 7
                                                   "call i32 @Add")
 set_tests_properties(source_native_local_call_artifacts PROPERTIES DEPENDS source_native_local_call_build TIMEOUT 5)
+add_test(NAME source_native_recursive_call_build COMMAND xs build -file
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainRecursiveCall.xs)
+set_tests_properties(source_native_recursive_call_build PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_recursive_call_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainRecursiveCall.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainRecursiveCall.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainRecursiveCall.xse 120 "call i32 @factorial")
+set_tests_properties(source_native_recursive_call_artifacts PROPERTIES
+  DEPENDS source_native_recursive_call_build TIMEOUT 5)
+add_test(NAME source_native_unit_calls_build COMMAND xs build -file
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainUnitCalls.xs)
+set_tests_properties(source_native_unit_calls_build PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_unit_calls_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainUnitCalls.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainUnitCalls.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainUnitCalls.xse 7
+  "call void @touch" "call i32 @identity" "call void @countdown")
+set_tests_properties(source_native_unit_calls_artifacts PROPERTIES
+  DEPENDS source_native_unit_calls_build TIMEOUT 5)
 add_test(NAME source_native_bool_call_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCall.xs)
 set_tests_properties(source_native_bool_call_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
@@ -762,6 +784,19 @@ add_test(NAME kotlin_project_call_artifacts COMMAND xs_xse_artifact_tests
   ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/sources/main.xse 7)
 set_tests_properties(kotlin_project_call_artifacts PROPERTIES TIMEOUT 5
   FIXTURES_REQUIRED kotlin_project_call_native)
+add_test(NAME kotlin_project_recursive_build COMMAND xs build)
+set_tests_properties(kotlin_project_recursive_build PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/recursive"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver FIXTURES_SETUP kotlin_project_recursive
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME kotlin_project_recursive_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/recursive/sources/main.ll
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/recursive/sources/main.o
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/recursive/sources/main.xse 7
+  "call i1 @is_even" "call i1 @is_odd")
+set_tests_properties(kotlin_project_recursive_artifacts PROPERTIES
+  TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_recursive)
 add_test(NAME kotlin_project_multi_file_native_build COMMAND xs build)
 set_tests_properties(kotlin_project_multi_file_native_build PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file"
@@ -804,14 +839,16 @@ set_tests_properties(kotlin_project_integer_operators_artifacts PROPERTIES
 set_tests_properties(
   kotlin_project_resolver_build
   kotlin_project_call_build kotlin_project_call_artifacts
+  kotlin_project_recursive_build kotlin_project_recursive_artifacts
   kotlin_project_multi_file_native_build kotlin_project_multi_file_native_artifacts
   kotlin_project_integer_widths_build kotlin_project_integer_widths_artifacts
   kotlin_project_integer_operators_build kotlin_project_integer_operators_artifacts
   PROPERTIES LABELS jvm)
 foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteMain OutOfRangeUIntegerMain
                        ParameterizedMain WrongReturnMain UnknownCallMain
-                       WrongCallArityMain NonLongReturnCallMain RecursiveCallMain
-                       BoolCallAsLongMain ImmutableLocalReassignment MatchMissingElse MatchPatternTypeMismatch)
+                       WrongCallArityMain NonLongReturnCallMain
+                       BoolCallAsLongMain UnitCallAsLongMain ImmutableLocalReassignment MatchMissingElse
+                       MatchPatternTypeMismatch)
   add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file
                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs)
   set_tests_properties(source_native_invalid_${source_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)

@@ -92,6 +92,8 @@ call add : (Long, Long) -> Long
 ```
 
 Parameter types are part of checked HIR. Commas inside nested generic types do not split the outer parameter list.
+Unit is written as `()` in call signatures. A call used as a semicolon-terminated statement remains a call record; MIR
+decides whether it has no result register (`-> ()`) or evaluates and discards a typed value result.
 
 Increment and decrement preserve whether the source expression returns the old or updated binding value:
 

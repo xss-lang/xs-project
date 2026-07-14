@@ -158,3 +158,41 @@ fn lowers_typed_hir_call_through_mir_and_xlil()
                    crate::xlil::Instruction::Call { function, arguments, .. }
                      if function == "add" && arguments.len() == 2));
 }
+
+#[test]
+fn lowers_unit_and_discarded_value_call_statements()
+{
+  let long = primitive(PrimitiveType::Long);
+  let function = Function { name: "main".to_string(),
+                            return_type: None,
+                            locals: vec![],
+                            body: vec![Statement::Expr(Expression::Call { function: "touch".to_string(),
+                                                                          arguments: vec![],
+                                                                          parameter_types: vec![],
+                                                                          return_type: Box::new(Type::Unit),
+                                                                          span: span(1, 2) }),
+                                       Statement::Expr(Expression::Call { function: "identity".to_string(),
+                                                                          arguments: vec![Expression::Literal {
+                                           literal: Literal::Integer("7".to_string()),
+                                           span: span(3, 4),
+                                         }],
+                                                                          parameter_types: vec![long.clone()],
+                                                                          return_type: Box::new(long),
+                                                                          span: span(3, 5) }),] };
+
+  let mir = HirToMirLowerer::new().lower_function(&function)
+                                  .expect("call statements should lower");
+  assert!(matches!(&mir.blocks[0].statements[0],
+                   mir::Statement::Call { result: None, function, return_type, .. }
+                     if function == "touch" && *return_type == crate::xlil::Type::VOID));
+  assert!(matches!(&mir.blocks[0].statements[2],
+                   mir::Statement::Call { result: Some(_), function, .. } if function == "identity"));
+  assert!(verify_function(&mir).is_empty());
+
+  let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
+                                                           .expect("MIR calls should lower to XLIL");
+  assert!(matches!(&xlil.blocks[0].instructions[0],
+                   crate::xlil::Instruction::Call { result: None, function, .. } if function == "touch"));
+  assert!(matches!(&xlil.blocks[0].instructions[2],
+                   crate::xlil::Instruction::Call { result: Some(_), function, .. } if function == "identity"));
+}

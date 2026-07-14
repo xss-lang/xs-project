@@ -221,6 +221,7 @@ impl HirToMirLowerer
         };
         let _ = self.lower_update_expression(expression, value_type, lowered);
       }
+      Statement::Expr(expression @ Expression::Call { .. }) => self.lower_call_statement(expression, lowered),
       Statement::Expr(expression) => self.unsupported_expression(expression),
       Statement::Return { value,
                           span, } => self.lower_return(value.as_ref(), *span, lowered),

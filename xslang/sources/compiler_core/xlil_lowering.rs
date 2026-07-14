@@ -4,7 +4,7 @@
  */
 
 use crate::hir::declarations::{Module as HirModule, TypeRef};
-use crate::hir::type_check::{Block, Expression, PrimitiveType, Statement};
+use crate::hir::type_check::PrimitiveType;
 use crate::mir;
 use crate::xlil::{self, Function, Module, Type};
 
@@ -38,81 +38,6 @@ fn matches_signature(function: &mir::Function, name: &str, return_type: Type, pa
           .eq(parameters.iter().copied())
 }
 
-fn expression_calls(expression: &Expression, name: &str) -> bool
-{
-  match expression
-  {
-    Expression::Assign { value, .. } => expression_calls(value, name),
-    Expression::Binary { left,
-                         right,
-                         .. } => expression_calls(left, name) || expression_calls(right, name),
-    Expression::Unary { operand, .. } => expression_calls(operand, name),
-    Expression::ResultPropagation { value, .. } => expression_calls(value, name),
-    Expression::Call { function,
-                       arguments,
-                       .. } => function == name || arguments.iter().any(|argument| expression_calls(argument, name)),
-    Expression::If { condition,
-                     then_block,
-                     else_block,
-                     .. } =>
-    {
-      expression_calls(condition, name) || block_calls(then_block, name) || block_calls(else_block, name)
-    }
-    Expression::Match { selector,
-                        arms,
-                        .. } => expression_calls(selector, name) || arms.iter().any(|arm| block_calls(&arm.body, name)),
-    Expression::Literal { .. } | Expression::Local { .. } | Expression::Update { .. } => false,
-  }
-}
-
-fn block_calls(block: &Block, name: &str) -> bool
-{
-  block.statements
-       .iter()
-       .any(|statement| statement_calls(statement, name)) ||
-  block.tail.as_deref().is_some_and(|tail| expression_calls(tail, name))
-}
-
-fn statement_calls(statement: &Statement, name: &str) -> bool
-{
-  match statement
-  {
-    Statement::Let { initializer, .. } => initializer.as_ref().is_some_and(|value| expression_calls(value, name)),
-    Statement::Expr(value) => expression_calls(value, name),
-    Statement::Return { value, .. } => value.as_ref().is_some_and(|value| expression_calls(value, name)),
-    Statement::If { condition,
-                    then_block,
-                    else_block,
-                    .. } =>
-    {
-      expression_calls(condition, name) ||
-      block_calls(then_block, name) ||
-      else_block.as_ref().is_some_and(|block| block_calls(block, name))
-    }
-    Statement::While { condition,
-                       body,
-                       .. } => expression_calls(condition, name) || block_calls(body, name),
-    Statement::For { initializer,
-                     condition,
-                     update,
-                     body,
-                     .. } =>
-    {
-      initializer.as_deref()
-                 .is_some_and(|statement| statement_calls(statement, name)) ||
-      condition.as_ref()
-               .is_some_and(|expression| expression_calls(expression, name)) ||
-      update.as_ref()
-            .is_some_and(|expression| expression_calls(expression, name)) ||
-      block_calls(body, name)
-    }
-    Statement::Match { selector,
-                       arms,
-                       .. } => expression_calls(selector, name) || arms.iter().any(|arm| block_calls(&arm.body, name)),
-    Statement::Break { .. } | Statement::Continue { .. } | Statement::Panic { .. } => false,
-  }
-}
-
 fn supports_source_native_subset(module: &HirModule) -> bool
 {
   module.functions.iter().all(|function| {
@@ -135,6 +60,7 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                                                   PrimitiveType::Str))
                                                                                 });
                            let return_supported = matches!(function.return_type,
+                                                           TypeRef::Unit |
                                                            TypeRef::Primitive(PrimitiveType::Long |
                                                                               PrimitiveType::Int |
                                                                               PrimitiveType::Bool |
@@ -150,13 +76,7 @@ fn supports_source_native_subset(module: &HirModule) -> bool
                                                                               PrimitiveType::SFloat |
                                                                               PrimitiveType::Float |
                                                                               PrimitiveType::Str));
-                           let recursive =
-                             function.body
-                                     .as_ref()
-                                     .is_some_and(|body| {
-                                       body.iter().any(|statement| statement_calls(statement, &function.name))
-                                     });
-                           !function.body_present || (parameters_supported && return_supported && !recursive)
+                           !function.body_present || (parameters_supported && return_supported)
                          })
 }
 

@@ -136,6 +136,9 @@ Same-module `Int` helper functions also remain i64 through this route, including
 ordered-comparison operations. Native process entry remains `fn main() -> Long`.
 Supported project helpers may now live in separate source files: the Rust compiler core merges their expanded ASTs into a
 single program-wide signature, HIR, MIR, XLIL, and LLVM module before native `.xse` linking.
+Direct and mutually recursive same-module calls use that program-wide signature registry. Unit-returning helpers, including
+explicit `-> ()` functions, lower to result-free MIR/XLIL/LLVM calls; a value-returning call followed by `;` is evaluated
+and its typed result is discarded.
 
 ## CLI summary
 

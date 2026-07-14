@@ -188,7 +188,7 @@ fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check:
 {
   Some(match value
   {
-    declarations::TypeRef::Unit => return None,
+    declarations::TypeRef::Unit => crate::hir::type_check::Type::Unit,
     declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(*value),
     declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value.clone()),
   })

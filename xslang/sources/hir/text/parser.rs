@@ -715,6 +715,10 @@ impl Parser<'_>
 
   fn parse_type(&mut self, name: &str) -> Option<Type>
   {
+    if name == "()"
+    {
+      return Some(Type::Unit);
+    }
     if let Some(primitive) = primitive_type(name)
     {
       return Some(Type::Primitive(primitive));

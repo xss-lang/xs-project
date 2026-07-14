@@ -715,6 +715,7 @@ fn type_name(ty: &Type) -> String
 {
   match ty
   {
+    Type::Unit => "()".to_string(),
     Type::Primitive(primitive) => primitive_type_name(*primitive).to_string(),
     Type::Named(name) => name.clone(),
   }

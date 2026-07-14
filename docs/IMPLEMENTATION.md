@@ -396,12 +396,14 @@ Supported single-block bodies now cross the next boundary as well: explicit retu
 integer/boolean literals, local references, and the current arithmetic/comparison operator subset are built as Rust HIR,
 type-checked, and lowered to target-independent Rust MIR. Unsupported body shapes remain deferred while their declarations
 stay available to the session.
-Explicitly typed local declarations and simple `=` assignments are included in this body slice. Function parameters occupy
-the MIR parameter table and are immediately live values; they no longer masquerade as uninitialized MIR locals. Inferred
-local types and compound assignments remain outside this Rust import slice for now. Function signatures are collected before
-body import, so direct calls to functions in the same module can resolve forward references. Their argument and result types
-are recorded in typed HIR and lower through the existing target-independent MIR and XLIL call models. Overload selection,
-generic calls, methods, imported targets, recursion policy, and function values remain later compiler-core work.
+Explicitly typed and inferred local declarations, simple `=`, integer compound assignments, and prefix/postfix integer
+updates are included in this body slice. Function parameters occupy the MIR parameter table and are immediately live values;
+they no longer masquerade as uninitialized MIR locals. Function signatures are collected before body import, so direct calls
+to functions in the same module resolve forward references, self recursion, and mutual recursion across selected source
+files. Their argument and result types are recorded in typed HIR and lower through the existing target-independent MIR and
+XLIL call models. Unit-returning calls carry an explicit HIR unit result and become result-free MIR/XLIL calls. A non-unit
+call used as a semicolon-terminated expression is still evaluated, but its typed result is discarded. Overload selection,
+generic calls, methods, imported targets, and function values remain later compiler-core work.
 The imported HIR body model now has explicit lexical blocks and distinguishes statement `if` from value-producing `if`.
 Both forms require a `Bool` condition during Rust type checking. Statement branches lower to MIR basic blocks with an
 explicit merge when control can continue. A directly returned `if` expression may lower each required value branch to its

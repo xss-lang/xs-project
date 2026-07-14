@@ -45,3 +45,23 @@ fn roundtrips_typed_call_with_nested_generic_parameter()
                    } if parameter_types == &vec![result_type, Type::Primitive(PrimitiveType::Long)]
                      && arguments.len() == 2));
 }
+
+#[test]
+fn roundtrips_unit_call_statement()
+{
+  let function = Function { name: "main".to_string(),
+                            return_type: None,
+                            locals: vec![],
+                            body: vec![Statement::Expr(Expression::Call { function: "touch".to_string(),
+                                                                          arguments: vec![],
+                                                                          parameter_types: vec![],
+                                                                          return_type: Box::new(Type::Unit),
+                                                                          span: span() })] };
+
+  let text = function_to_xhir(&function);
+  let parsed = parse_xhir_function(&text).expect("unit call XHIR should parse");
+
+  assert!(text.contains("call touch : () -> ()"));
+  assert!(matches!(&parsed.body[0],
+                   Statement::Expr(Expression::Call { return_type, .. }) if return_type.as_ref() == &Type::Unit));
+}

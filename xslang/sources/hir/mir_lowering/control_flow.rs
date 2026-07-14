@@ -25,7 +25,7 @@ impl HirToMirLowerer
     if primitive_to_xlil(match result_type.as_ref()
     {
       Type::Primitive(value) => *value,
-      Type::Named(_) =>
+      Type::Unit | Type::Named(_) =>
       {
         self.report(DiagnosticCode::UnsupportedType,
                     "named match result cannot lower to MIR yet",
@@ -541,7 +541,7 @@ impl HirToMirLowerer
     let actual_type = match result_type.as_ref()
     {
       Type::Primitive(value) => primitive_to_xlil(*value),
-      Type::Named(_) => None,
+      Type::Unit | Type::Named(_) => None,
     };
     if actual_type != Some(expected_type)
     {

@@ -31,6 +31,7 @@ pub enum PrimitiveType
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Type
 {
+  Unit,
   Primitive(PrimitiveType),
   Named(String),
 }

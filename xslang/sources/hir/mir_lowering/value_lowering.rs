@@ -176,6 +176,10 @@ impl HirToMirLowerer
 
   pub(super) fn lower_return_type(&mut self, ty: Option<&Type>, span: Span) -> XlilType
   {
+    if matches!(ty, Some(Type::Unit))
+    {
+      return XlilType::VOID;
+    }
     ty.and_then(|ty| self.lower_value_type(ty, span))
       .unwrap_or(XlilType::VOID)
   }
