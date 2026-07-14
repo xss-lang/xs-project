@@ -59,7 +59,7 @@ The modern `xs-project` Kotlin resolver is built separately with Gradle:
 gradle -p xs_kts --no-daemon test installDist
 ```
 
-It targets and runs only on JRE 25. Runtime project evaluation also requires an external `kotlin` command with scripting
+It targets JVM 25 and runs on JRE 25 or newer. Runtime project evaluation also requires an external `kotlin` command with scripting
 support; neither is embedded. The compiler command itself remains JVM-free.
 
 ## OOM-safe workflow

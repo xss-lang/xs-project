@@ -66,6 +66,7 @@ impl HirToMirLowerer
         BinaryOperator::BitXor |
         BinaryOperator::ShiftLeft |
         BinaryOperator::ShiftRight => self.common_operand_type(left, right, lowered),
+        BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr => Some(XlilType::BOOL),
         BinaryOperator::Equal |
         BinaryOperator::Less |
         BinaryOperator::LessEqual |

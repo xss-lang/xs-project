@@ -21,7 +21,7 @@ Required core tools:
 - Clang / LLVM tools
 - LLD
 - Rustup and Cargo; `xslang/rust-toolchain.toml` selects the pinned nightly compiler core toolchain
-- Exactly JRE 25 plus the `kotlin` scripting command when resolving Kotlin project files
+- JRE 25 or newer plus the `kotlin` scripting command when resolving Kotlin project files
 - Optional helper tools such as `fd`, `rg`, `bat -p`, `sd`, and `busybox wc` are useful for development
 
 Default debug build:
@@ -164,7 +164,8 @@ The argument-free `xs` project forms use `xs-project` to discover and evaluate `
 `xs.settings.kts` + `xs.build.kts` pair, then compile the returned `.xs` source registry inside `xs` itself. The
 `xs -proj` forms compile a legacy manifest. `xs-proj MyApp.xsproj` only parses and validates that manifest. The `xs -file` forms are direct single-file/intermediate input
 flows; they are accepted by the CLI and may intentionally emit diagnostics until the corresponding pipeline is connected.
-The public C23 `.xsproj` parser and existing compiler path remain supported and tested, but the format is feature-frozen.
+The public C23 `.xsproj` parser and existing compiler path remain buildable, but the format is feature-frozen and excluded
+from the active compiler/project test suites. It is permanent legacy compatibility and will never be removed.
 Programmable project features belong to the Kotlin project system. `.xsproj` dependencies have been removed; existing
 application/source/target fields keep their current C23 API without receiving new project-language features.
 Intermediate output extensions:

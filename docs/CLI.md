@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 # CLI contract
 
 The command surface is split by responsibility. `/usr/bin/xs` is the JVM-free compiler, `/usr/bin/xs-project` evaluates
-modern Kotlin project files on JRE 25, and `/usr/bin/xs-proj` parses and validates feature-frozen `.xsproj` files.
+modern Kotlin project files on JRE 25 or newer, and `/usr/bin/xs-proj` parses and validates feature-frozen `.xsproj` files.
 
 ## Supported forms
 

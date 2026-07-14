@@ -533,6 +533,10 @@ impl ResultDesugar
     };
     match operator
     {
+      BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr if primitive == PrimitiveType::Bool =>
+      {
+        Some(Type::Primitive(PrimitiveType::Bool))
+      }
       BinaryOperator::Add |
       BinaryOperator::Sub |
       BinaryOperator::Mul |

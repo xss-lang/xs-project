@@ -38,6 +38,7 @@ implementation notes and internal design logs are not part of the public documen
 
 ## Public APIs
 
-- Stabilize the `.xsproj` C23 parser API for third-party tools.
+- Preserve the feature-frozen `.xsproj` C23 parser API as permanent, buildable legacy compatibility without adding new
+  format features or active compiler/project tests.
 - Grow the XLIL C23 API under `#include <xs/lil.h>` for external frontends and language implementations.
 - Add AOT/JIT-facing APIs only when their behavior is implemented and testable.

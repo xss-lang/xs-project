@@ -71,7 +71,7 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - explicit `.end` section markers and `.program end` document marker
 - primitive and named type records
 - literal, local, assignment, prefix/postfix update, typed direct-call, conditional block, loop, classic-for,
-  statement-match, `propagate`, let, expression, and return records
+  statement-match, short-circuit logical binary, `propagate`, let, expression, and return records
 - `analysis typecheck` records for type-check diagnostics, spans, and messages
 
 The version header is part of the `xs build` input contract. It tells the compiler which XHIR text grammar version it is
@@ -103,6 +103,9 @@ update prefix decrement value
 ```
 
 MIR lowering turns these semantic records into explicit load, integer operation, store, and selected result-value steps.
+
+`logical_and` and `logical_or` remain typed semantic expressions in XHIR. MIR lowering expands them into branch, short,
+right-operand, and merge blocks so `&&` and `||` never become eager binary instructions.
 
 Statement match records retain the checked selector type and semantic arms. A final `else` arm is required:
 

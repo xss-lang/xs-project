@@ -160,6 +160,10 @@ fn infer_binary_expression_type(operator: BinaryOperator,
   };
   match operator
   {
+    BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr if primitive == PrimitiveType::Bool =>
+    {
+      Some(Type::Primitive(PrimitiveType::Bool))
+    }
     BinaryOperator::Add |
     BinaryOperator::Sub |
     BinaryOperator::Mul |

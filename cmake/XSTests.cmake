@@ -223,7 +223,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
-                       MainRecursiveCall MainUnitCalls
+                       MainRecursiveCall MainUnitCalls MainShortCircuit
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainBlockLocals
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
@@ -232,7 +232,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteMain OutOfRangeUIntegerMain
                        ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain
-                       BoolCallAsLongMain UnitCallAsLongMain MatchMissingElse MatchPatternTypeMismatch)
+                       BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands MatchMissingElse
+                       MatchPatternTypeMismatch)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -741,6 +742,16 @@ add_test(NAME source_native_unit_calls_artifacts COMMAND xs_xse_artifact_tests
   "call void @touch" "call i32 @identity" "call void @countdown")
 set_tests_properties(source_native_unit_calls_artifacts PROPERTIES
   DEPENDS source_native_unit_calls_build TIMEOUT 5)
+add_test(NAME source_native_short_circuit_build COMMAND xs build -file
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainShortCircuit.xs)
+set_tests_properties(source_native_short_circuit_build PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_short_circuit_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainShortCircuit.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainShortCircuit.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainShortCircuit.xse 7 "define i1 @fail_if_called")
+set_tests_properties(source_native_short_circuit_artifacts PROPERTIES
+  DEPENDS source_native_short_circuit_build TIMEOUT 5)
 add_test(NAME source_native_bool_call_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainBoolCall.xs)
 set_tests_properties(source_native_bool_call_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
@@ -847,8 +858,8 @@ set_tests_properties(
 foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteMain OutOfRangeUIntegerMain
                        ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain NonLongReturnCallMain
-                       BoolCallAsLongMain UnitCallAsLongMain ImmutableLocalReassignment MatchMissingElse
-                       MatchPatternTypeMismatch)
+                       BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands ImmutableLocalReassignment
+                       MatchMissingElse MatchPatternTypeMismatch)
   add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file
                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs)
   set_tests_properties(source_native_invalid_${source_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)

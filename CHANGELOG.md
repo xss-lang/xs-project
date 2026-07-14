@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Boolean `&&` and `||` now lower as real short-circuit control flow through typed HIR, MIR branches, XLIL `br_if`, LLVM,
+  and native `.xse` builds. Inferred `:=` locals now derive their type from supported expressions rather than literals
+  alone, so chained logical results retain `Bool` without an explicit annotation.
 - Same-module direct calls now support self recursion and mutual recursion across KTS-selected source files through typed
   HIR, MIR, XLIL, LLVM, and native `.xse` emission. Unit-returning call statements lower without a result register, while
   semicolon-terminated value calls retain evaluation and explicitly discard their result.
@@ -42,6 +45,8 @@ source-to-native executable pipeline.
 
 ### Changed
 
+- The Kotlin project resolver now accepts JRE 25 and newer releases; 25 is the minimum runtime version rather than an
+  exact-version requirement.
 - The XSPROJ format and public C23 model are permanent legacy compatibility. They are feature-frozen, receive no new
   features, are excluded from compiler conformance/project tests, and will never be removed. Dependency records were
   removed; programmable dependencies and conditional configuration belong to the Kotlin project DSL.

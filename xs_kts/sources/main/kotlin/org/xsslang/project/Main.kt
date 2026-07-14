@@ -11,7 +11,7 @@ import java.nio.file.Path
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val REQUIRED_JAVA = 25
+private const val MINIMUM_JAVA = 25
 
 private data class ProjectFiles(
   val root: File,
@@ -23,9 +23,13 @@ private data class ProjectFiles(
 private fun usage() =
   "usage: xs-project evaluate [project-root]\n       xs-project sources0 <project-root> <output-file>"
 
-internal fun requireJava25() {
+internal fun isSupportedJavaFeature(actual: Int) = actual >= MINIMUM_JAVA
+
+internal fun requireSupportedJava() {
   val actual = Runtime.version().feature()
-  if (actual != REQUIRED_JAVA) throw ProjectConfigurationException("JRE 25 is required; found Java $actual")
+  if (!isSupportedJavaFeature(actual)) {
+    throw ProjectConfigurationException("JRE 25 or newer is required; found Java $actual")
+  }
 }
 
 private fun filesAt(root: File): ProjectFiles? {
@@ -116,7 +120,7 @@ internal fun evaluateWithKotlin(
   output: String = "plan",
   sourcesOutput: Path? = null,
 ): Int {
-  requireJava25()
+  requireSupportedJava()
   val files = discover(input)
   files.project?.let { project -> return runKotlin(project, files.root, output, null, sourcesOutput) }
   val stateDirectory = Files.createTempDirectory("xs-project-state-")

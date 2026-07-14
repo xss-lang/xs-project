@@ -122,9 +122,12 @@ class ProjectDslTest {
   }
 
   @Test
-  fun testRuntimeUsesJava25() {
-    requireJava25()
-    assertEquals(25, Runtime.version().feature())
+  fun acceptsJava25AndNewer() {
+    assertTrue(!isSupportedJavaFeature(24))
+    assertTrue(isSupportedJavaFeature(25))
+    assertTrue(isSupportedJavaFeature(26))
+    requireSupportedJava()
+    assertTrue(Runtime.version().feature() >= 25)
   }
 
   @Test

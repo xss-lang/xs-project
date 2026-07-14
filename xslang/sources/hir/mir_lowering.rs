@@ -350,6 +350,10 @@ impl HirToMirLowerer
                            right,
                            span, } =>
       {
+        if matches!(operator, BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr)
+        {
+          return self.lower_short_circuit_expression(*operator, left, right, *span, lowered);
+        }
         let local = self.declare_temp(expected_type, *span, lowered)?;
         self.lower_binary_into(local, *operator, left, right, *span, lowered);
         Some(local)
@@ -714,6 +718,9 @@ mod function_lowering;
 mod integer_literal;
 #[cfg(test)]
 mod match_tests;
+mod short_circuit;
+#[cfg(test)]
+mod short_circuit_tests;
 mod update;
 mod value_lowering;
 #[cfg(test)]

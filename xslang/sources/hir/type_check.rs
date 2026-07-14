@@ -67,6 +67,8 @@ pub enum BinaryOperator
   BitAnd,
   BitOr,
   BitXor,
+  LogicalAnd,
+  LogicalOr,
   ShiftLeft,
   ShiftRight,
   Equal,

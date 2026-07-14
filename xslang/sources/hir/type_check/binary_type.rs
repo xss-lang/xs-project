@@ -39,6 +39,10 @@ impl TypeChecker
     };
     match operator
     {
+      BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr if primitive == PrimitiveType::Bool =>
+      {
+        Some(Type::Primitive(PrimitiveType::Bool))
+      }
       operator if is_integer_value_operator(operator) && is_supported_integer(primitive) =>
       {
         Some(Type::Primitive(primitive))

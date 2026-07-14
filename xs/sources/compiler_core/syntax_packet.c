@@ -32,7 +32,8 @@ static_assert(XS_TOKEN_BANG == 26 && XS_TOKEN_MINUS == 41);
 static_assert(XS_TOKEN_PLUS_PLUS == 39 && XS_TOKEN_PLUS_ASSIGN == 40 && XS_TOKEN_MINUS_MINUS == 42);
 static_assert(XS_TOKEN_SHIFT_RIGHT == 34 && XS_TOKEN_SHIFT_LEFT == 37 && XS_TOKEN_SLASH == 46 &&
               XS_TOKEN_PERCENT == 48);
-static_assert(XS_TOKEN_AMPERSAND == 50 && XS_TOKEN_PIPE == 53 && XS_TOKEN_CARET == 56);
+static_assert(XS_TOKEN_AMPERSAND == 50 && XS_TOKEN_LOGICAL_AND == 51 && XS_TOKEN_PIPE == 53 &&
+              XS_TOKEN_LOGICAL_OR == 54 && XS_TOKEN_CARET == 56);
 
 struct XsCompilerCoreSyntaxStorage
 {

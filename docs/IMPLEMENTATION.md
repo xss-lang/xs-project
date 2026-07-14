@@ -93,7 +93,7 @@ The documented compilation order is preserved:
 - `xs check -proj <project.xsproj>` works. The `-proj` flag is exclusive to `.xsproj`; `xs-proj <project.xsproj>` only
   parses and validates the manifest.
 - Kotlin `xs.project.kts` or split `xs.settings.kts` + `xs.build.kts` projects are evaluated by `/usr/bin/xs-project` on
-  exactly JRE 25 through an external `kotlin` scripting command. Argument-free `xs` starts this resolver and
+  JRE 25 or newer through an external `kotlin` scripting command. Argument-free `xs` starts this resolver and
   retains all `.xs` compilation work itself.
 - Kotlin source includes expand project-relative glob patterns and produce a deterministic registry with the sole
   case-sensitive `main.xs` first.
@@ -612,7 +612,9 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   sessions. Context-typed literals, parameters, locals, direct calls, and returns preserve every fixed integer width;
   `main` remains `Long`. The broader expression slice includes `Long`/`Bool` mutable locals,
   unary `+`/`-`,
-  arithmetic, bitwise including `^`, shift, and top-level `if` expressions. Prefix/postfix increment and decrement retain
+  arithmetic, bitwise including `^`, shift, short-circuit `&&`/`||`, and top-level `if` expressions. Logical expressions
+  become MIR control-flow branches and XLIL `br_if` records; their right operand is not evaluated on the short path.
+  Supported `:=` initializers infer types from expressions as well as literals. Prefix/postfix increment and decrement retain
   their distinct result values in typed HIR and lower through MIR storage loads/stores. Compound `/=`, `%=`, `&=`, `|=`,
   and `^=` assignments also use the Rust compiler-core path. The resulting XLIL reuses the native LLVM builder.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured

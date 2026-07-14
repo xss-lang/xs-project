@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Project files and packages
 
-The modern X# project resolver is `/usr/bin/xs-project`. It requires exactly JRE 25 and an external `kotlin` command with
+The modern X# project resolver is `/usr/bin/xs-project`. It requires JRE 25 or newer and an external `kotlin` command with
 the Kotlin scripting runtime. The JRE and Kotlin runtime are not embedded. Project scripts are trusted build code, not
 sandboxed input, and execution is delegated to the real Kotlin command; xs-project has no Kotlin interpreter.
 
@@ -223,7 +223,7 @@ not used by compiler conformance/project build tests, and it will never be remov
 ## Distribution packages
 
 - `xs-compiler` installs `/usr/bin/xs` and does not require a JVM.
-- `xs-project` installs `/usr/bin/xs-project` and requires JRE 25 plus the `kotlin` scripting command.
+- `xs-project` installs `/usr/bin/xs-project` and requires JRE 25 or newer plus the `kotlin` scripting command.
 - `xs-proj` installs the JVM-free `/usr/bin/xs-proj` manifest parser/validator.
 - `xs-meta` is a metapackage depending on those packages and, when available, `xsfmt` and `xstidy`; it owns no compiler
   executable.

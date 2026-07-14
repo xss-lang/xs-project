@@ -27,7 +27,13 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     }
     EXPR_BINARY
       if matches!(value.token_kind,
-                  TOKEN_EQUAL | TOKEN_GREATER | TOKEN_GREATER_EQUAL | TOKEN_LESS | TOKEN_LESS_EQUAL) =>
+                  TOKEN_EQUAL |
+                  TOKEN_GREATER |
+                  TOKEN_GREATER_EQUAL |
+                  TOKEN_LESS |
+                  TOKEN_LESS_EQUAL |
+                  TOKEN_LOGICAL_AND |
+                  TOKEN_LOGICAL_OR) =>
     {
       Some(Type::Primitive(PrimitiveType::Bool))
     }

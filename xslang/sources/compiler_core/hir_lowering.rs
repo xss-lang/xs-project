@@ -78,8 +78,10 @@ const TOKEN_SLASH_ASSIGN: u32 = 47;
 const TOKEN_PERCENT: u32 = 48;
 const TOKEN_PERCENT_ASSIGN: u32 = 49;
 const TOKEN_AMPERSAND: u32 = 50;
+const TOKEN_LOGICAL_AND: u32 = 51;
 const TOKEN_AMPERSAND_ASSIGN: u32 = 52;
 const TOKEN_PIPE: u32 = 53;
+const TOKEN_LOGICAL_OR: u32 = 54;
 const TOKEN_PIPE_ASSIGN: u32 = 55;
 const TOKEN_CARET: u32 = 56;
 const TOKEN_CARET_ASSIGN: u32 = 57;
@@ -194,23 +196,6 @@ fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check:
   })
 }
 
-fn inferred_literal_type(value: &SyntaxNode) -> Option<Type>
-{
-  if value.kind != EXPR_LITERAL
-  {
-    return None;
-  }
-  Some(Type::Primitive(match value.token_kind
-       {
-         TOKEN_INTEGER => PrimitiveType::Int,
-         TOKEN_FLOAT => PrimitiveType::Float,
-         TOKEN_STRING => PrimitiveType::Str,
-         TOKEN_CHARACTER => PrimitiveType::Char,
-         _ if value.text == "true" || value.text == "false" => PrimitiveType::Bool,
-         _ => return None,
-       }))
-}
-
 fn lower_parameter(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Parameter, LoweringError>
 {
   let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
@@ -301,7 +286,9 @@ fn lower_expression(tree: &SyntaxTree,
         TOKEN_SLASH => BinaryOperator::Div,
         TOKEN_PERCENT => BinaryOperator::Rem,
         TOKEN_AMPERSAND => BinaryOperator::BitAnd,
+        TOKEN_LOGICAL_AND => BinaryOperator::LogicalAnd,
         TOKEN_PIPE => BinaryOperator::BitOr,
+        TOKEN_LOGICAL_OR => BinaryOperator::LogicalOr,
         TOKEN_CARET => BinaryOperator::BitXor,
         TOKEN_SHIFT_LEFT => BinaryOperator::ShiftLeft,
         TOKEN_SHIFT_RIGHT => BinaryOperator::ShiftRight,
@@ -312,17 +299,22 @@ fn lower_expression(tree: &SyntaxTree,
         TOKEN_GREATER_EQUAL => BinaryOperator::GreaterEqual,
         _ => return None,
       };
-      let operand_type = if matches!(operator,
-                                     BinaryOperator::Add |
-                                     BinaryOperator::Sub |
-                                     BinaryOperator::Mul |
-                                     BinaryOperator::Div |
-                                     BinaryOperator::Rem |
-                                     BinaryOperator::BitAnd |
-                                     BinaryOperator::BitOr |
-                                     BinaryOperator::BitXor |
-                                     BinaryOperator::ShiftLeft |
-                                     BinaryOperator::ShiftRight)
+      let bool_type = Type::Primitive(PrimitiveType::Bool);
+      let operand_type = if matches!(operator, BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr)
+      {
+        Some(&bool_type)
+      }
+      else if matches!(operator,
+                         BinaryOperator::Add |
+                         BinaryOperator::Sub |
+                         BinaryOperator::Mul |
+                         BinaryOperator::Div |
+                         BinaryOperator::Rem |
+                         BinaryOperator::BitAnd |
+                         BinaryOperator::BitOr |
+                         BinaryOperator::BitXor |
+                         BinaryOperator::ShiftLeft |
+                         BinaryOperator::ShiftRight)
       {
         expected_type
       }
@@ -504,7 +496,7 @@ fn lower_local(tree: &SyntaxTree,
                                     .find(|child| child.kind >= EXPR_IDENTIFIER);
   let checked_type = if declaration.flags & INFERRED_TYPE != 0
   {
-    inferred_literal_type(initializer_node?)?
+    expression_type(tree, initializer_node?, signatures, locals)?
   }
   else
   {

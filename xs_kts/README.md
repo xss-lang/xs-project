@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 `xs-project` is the Kotlin/JVM 25 resolver for programmable project files. It invokes the required external
 `kotlin` command and emits a deterministic versioned project plan or exact source registry for the X# command-line
 driver. It never reads or compiles `.xs` files. The compiler and
-JRE are not embedded: exactly JRE 25 and an executable `kotlin` scripting command are runtime requirements.
+JRE are not embedded: JRE 25 or newer and an executable `kotlin` scripting command are runtime requirements.
 
 Projects use one `xs.project.kts` file or the `xs.settings.kts` + `xs.build.kts` pair. Only
 `project(name, channel, version)` and at least one source include are required. Source includes accept concrete paths or
