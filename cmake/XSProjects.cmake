@@ -108,6 +108,7 @@ add_library(xs_lil
   xs/sources/xlil/model_integer.c
   xs/sources/xlil/model_integer_operation.c
   xs/sources/xlil/model_string.c
+  xs/sources/xlil/model_string_compare.c
   xs/sources/xlil/parser.c
   xs/sources/xlil/parser_scalar.c
   xs/sources/xlil/parser_integer_operation.c

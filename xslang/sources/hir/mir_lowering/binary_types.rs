@@ -84,7 +84,14 @@ impl HirToMirLowerer
       },
       Expression::Call { return_type, .. } => type_to_xlil(return_type),
       Expression::If { result_type, .. } | Expression::Match { result_type, .. } => type_to_xlil(result_type),
-      Expression::Literal { .. } | Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
+      Expression::Literal { literal, .. } => match literal
+      {
+        Literal::String(_) => Some(XlilType::STR),
+        Literal::Bool(_) => Some(XlilType::BOOL),
+        Literal::Char(_) => Some(XlilType::U16),
+        Literal::Integer(_) | Literal::Float(_) | Literal::None => None,
+      },
+      Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
 }

@@ -13,7 +13,7 @@
       "binaryDir": "${sourceDir}/build/clang-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/llvm-toolchain.cmake",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "XS_ENABLE_PROJECTS": "xs",
         "XS_ENABLE_RUNTIMES": ""
@@ -26,7 +26,7 @@
       "binaryDir": "${sourceDir}/build/clang-sanitize",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/llvm-toolchain.cmake",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "XS_ENABLE_PROJECTS": "xs",
         "XS_ENABLE_RUNTIMES": "",

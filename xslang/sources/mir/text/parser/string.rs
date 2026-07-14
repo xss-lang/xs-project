@@ -5,6 +5,7 @@
 
 use super::{Parser, span};
 use crate::mir::Statement;
+use crate::xlil::StrComparisonOperation;
 
 impl Parser<'_>
 {
@@ -31,5 +32,17 @@ impl Parser<'_>
     Statement::ConstStr { local,
                           units,
                           span: span() }
+  }
+
+  pub(super) fn str_comparison_statement(&mut self, instruction: &str) -> Statement
+  {
+    let operation = instruction.strip_suffix(".str")
+                               .and_then(StrComparisonOperation::parse_text_stem)
+                               .expect("guarded Str comparison must parse");
+    Statement::CompareStr { operation,
+                            result: self.binary_local(instruction, "result"),
+                            left: self.binary_local(instruction, "left"),
+                            right: self.binary_local(instruction, "right"),
+                            span: span() }
   }
 }

@@ -12,6 +12,10 @@ use crate::xlil::{
 };
 
 mod integer;
+mod storage;
+mod string;
+
+use storage::storage_locals;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
@@ -189,6 +193,7 @@ impl MirToXlilLowerer
                                    left,
                                    right,
                                    span,
+                                   "floating instruction",
                                    xlil_block,
                                    values,
                                    lowered,
@@ -207,12 +212,21 @@ impl MirToXlilLowerer
                                    left,
                                    right,
                                    span,
+                                   "floating comparison",
                                    xlil_block,
                                    values,
                                    lowered,
                                    |function, block, left, right| {
                                      function.compare_float(block, operation, value_type, left, right)
                                    });
+      }
+      if let mir::Statement::CompareStr { operation,
+                                          result,
+                                          left,
+                                          right,
+                                          span, } = *statement
+      {
+        self.lower_str_comparison(operation, result, left, right, span, xlil_block, values, lowered);
       }
       if let mir::Statement::StoreLocal { local,
                                           value,
@@ -620,6 +634,7 @@ impl MirToXlilLowerer
                            left: mir::LocalId,
                            right: mir::LocalId,
                            span: Span,
+                           instruction: &str,
                            xlil_block: BlockId,
                            values: &mut HashMap<mir::LocalId, ValueId>,
                            lowered: &mut Function,
@@ -629,7 +644,7 @@ impl MirToXlilLowerer
     else
     {
       self.report(DiagnosticCode::MissingLocalValue,
-                  "MIR floating instruction left operand has no lowered XLIL value",
+                  &format!("MIR {instruction} left operand has no lowered XLIL value"),
                   span);
       return;
     };
@@ -637,7 +652,7 @@ impl MirToXlilLowerer
     else
     {
       self.report(DiagnosticCode::MissingLocalValue,
-                  "MIR floating instruction right operand has no lowered XLIL value",
+                  &format!("MIR {instruction} right operand has no lowered XLIL value"),
                   span);
       return;
     };
@@ -645,7 +660,7 @@ impl MirToXlilLowerer
     else
     {
       self.report(DiagnosticCode::UnsupportedLocalType,
-                  "MIR floating instruction operands have incompatible XLIL types",
+                  &format!("MIR {instruction} operands have incompatible XLIL types"),
                   span);
       return;
     };
@@ -970,19 +985,6 @@ fn local_types(function: &mir::Function) -> HashMap<mir::LocalId, Option<Type>>
   function.locals
           .iter()
           .map(|local| (local.id, local.value_type))
-          .collect()
-}
-
-fn storage_locals(function: &mir::Function) -> std::collections::HashSet<mir::LocalId>
-{
-  function.blocks
-          .iter()
-          .flat_map(|block| &block.statements)
-          .filter_map(|statement| match statement
-          {
-            mir::Statement::StoreLocal { local, .. } | mir::Statement::LoadLocal { local, .. } => Some(*local),
-            _ => None,
-          })
           .collect()
 }
 

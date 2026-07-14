@@ -191,6 +191,16 @@ impl Verifier
         self.typed_value(function, left, value_type, &format!("XLIL {name} left operand"));
         self.typed_value(function, right, value_type, &format!("XLIL {name} right operand"));
       }
+      Instruction::CompareStr { operation,
+                                result,
+                                left,
+                                right, } =>
+      {
+        let name = format!("{}.str", operation.text_stem());
+        self.bool_value(function, result, &format!("XLIL {name} result"));
+        self.typed_value(function, left, Type::STR, &format!("XLIL {name} left operand"));
+        self.typed_value(function, right, Type::STR, &format!("XLIL {name} right operand"));
+      }
       Instruction::AddI64 { result,
                             left,
                             right, } =>

@@ -128,6 +128,8 @@ typedef enum
   XS_LIL_INSTRUCTION_GT_F64,
   XS_LIL_INSTRUCTION_GE_F64,
   XS_LIL_INSTRUCTION_CONST_STR,
+  XS_LIL_INSTRUCTION_EQ_STR,
+  XS_LIL_INSTRUCTION_NE_STR,
   XS_LIL_INSTRUCTION_CONST_U16,
   XS_LIL_INSTRUCTION_CONST_U8,
   XS_LIL_INSTRUCTION_CONST_I8,
@@ -177,6 +179,12 @@ typedef enum
   XS_LIL_FLOAT_GT,
   XS_LIL_FLOAT_GE,
 } XsLilFloatComparisonOperation;
+
+typedef enum
+{
+  XS_LIL_STR_EQ,
+  XS_LIL_STR_NE,
+} XsLilStrComparisonOperation;
 
 typedef enum
 {
@@ -241,6 +249,8 @@ XsLilStatus xs_lil_block_binary_float(XsLilBlock *block, XsLilFloatBinaryOperati
                                       XsLilValueId left, XsLilValueId right, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_compare_float(XsLilBlock *block, XsLilFloatComparisonOperation operation, XsLilType type,
                                        XsLilValueId left, XsLilValueId right, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_compare_str(XsLilBlock *block, XsLilStrComparisonOperation operation, XsLilValueId left,
+                                     XsLilValueId right, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,
                                  XsLilError *error);
 XsLilStatus xs_lil_block_sub_i64(XsLilBlock *block, XsLilValueId left, XsLilValueId right, XsLilValueId *result,

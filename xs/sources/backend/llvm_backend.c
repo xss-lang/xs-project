@@ -638,6 +638,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
   }
   if(kind == XS_LIL_INSTRUCTION_CONST_STR)
     return xs_llvm_lower_lil_const_str(unit->backend, unit, block, index, &values[result], error);
+  if(kind == XS_LIL_INSTRUCTION_EQ_STR || kind == XS_LIL_INSTRUCTION_NE_STR)
+    return xs_llvm_lower_lil_compare_str(unit, builder, block, index, values, value_count, error);
   if(kind == XS_LIL_INSTRUCTION_NOT_BOOL)
   {
     XsLilValueId operand = xs_lil_block_instruction_left(block, index);

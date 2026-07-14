@@ -52,7 +52,7 @@ impl TypeChecker
         Some(Type::Primitive(primitive))
       }
       BinaryOperator::Equal | BinaryOperator::NotEqual
-        if is_supported_integer(primitive) || is_supported_float(primitive) =>
+        if is_supported_integer(primitive) || is_supported_float(primitive) || primitive == PrimitiveType::Str =>
       {
         Some(Type::Primitive(PrimitiveType::Bool))
       }

@@ -195,6 +195,18 @@ static XsLilStatus verify_not_bool(const XsLilFunction *function, const XsLilIns
   return XS_LIL_OK;
 }
 
+static XsLilStatus verify_str_comparison(const XsLilFunction *function, const XsLilInstruction *instruction,
+                                         XsLilError *error)
+{
+  if((size_t)instruction->left >= function->value_count || (size_t)instruction->right >= function->value_count ||
+     (size_t)instruction->result >= function->value_count ||
+     function->values[instruction->left].type.kind != XS_LIL_TYPE_STR ||
+     function->values[instruction->right].type.kind != XS_LIL_TYPE_STR ||
+     function->values[instruction->result].type.kind != XS_LIL_TYPE_BOOL)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL Str comparison has invalid operand types");
+  return XS_LIL_OK;
+}
+
 static XsLilStatus verify_memory(const XsLilFunction *function, const XsLilInstruction *instruction, XsLilError *error)
 {
   if((size_t)instruction->slot >= function->slot_count)
@@ -273,6 +285,12 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(current->kind == XS_LIL_INSTRUCTION_NOT_BOOL)
         {
           status = verify_not_bool(function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_EQ_STR || current->kind == XS_LIL_INSTRUCTION_NE_STR)
+        {
+          status = verify_str_comparison(function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

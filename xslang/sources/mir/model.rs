@@ -125,6 +125,14 @@ pub enum Statement
     right: LocalId,
     span: Span,
   },
+  CompareStr
+  {
+    operation: crate::xlil::StrComparisonOperation,
+    result: LocalId,
+    left: LocalId,
+    right: LocalId,
+    span: Span,
+  },
   StoreLocal
   {
     local: LocalId, value: LocalId, span: Span
@@ -462,6 +470,11 @@ impl BorrowChecker
                                 result,
                                 span,
                                 .. } |
+      Statement::CompareStr { left,
+                              right,
+                              result,
+                              span,
+                              .. } |
       Statement::BinaryInteger { left,
                                  right,
                                  result,

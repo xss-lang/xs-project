@@ -71,6 +71,13 @@ pub enum Instruction
     left: ValueId,
     right: ValueId,
   },
+  CompareStr
+  {
+    operation: crate::xlil::StrComparisonOperation,
+    result: ValueId,
+    left: ValueId,
+    right: ValueId,
+  },
   AddI64
   {
     result: ValueId,

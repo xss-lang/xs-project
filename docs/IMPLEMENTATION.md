@@ -655,7 +655,7 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   `xs build --hir|--mir|--xlil -file <input>`. The commands are not fully implemented yet.
 - `xs/lil.h` contains target-independent core APIs for XLIL modules, verification, primitive types, text parsing/writing,
   read-only function/body inspection, function bodies, basic blocks, parameters, all fixed-width integer constants, exact-bit
-  `const.f32`/`const.f64`, `const.bool`,
+  `const.f32`/`const.f64`, `const.bool`, UTF-16 `eq.str`/`ne.str`,
   typed stack slots and `load`/`store`, i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison,
   `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
@@ -665,7 +665,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   to bind them to XLIL `.param` values. The bridge lowers MIR
   parameter signatures, typed MIR fixed-width integer constants, `const.f32`, `const.f64`, `const.bool`, i64 arithmetic/bitwise/shift/comparison local
   statements,
-  typed call statements whose arguments already have lowered XLIL values, unconditional `goto`, conditional `branch_if`
+  typed call statements whose arguments already have lowered XLIL values, UTF-16 `Str` equality/inequality,
+  unconditional `goto`, conditional `branch_if`
   with an already-lowered `bool` condition, and matching local return values to XLIL signatures, `const`, arithmetic,
   compare, `call`, `br`, `br_if`, `panic`, and `ret %rN` records. C MIR `panic` lowers to the XLIL terminator; LLVM then
   emits `llvm.trap` and `unreachable`.

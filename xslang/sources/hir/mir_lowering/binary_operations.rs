@@ -6,7 +6,7 @@
 use crate::hir::type_check::BinaryOperator;
 use crate::xlil::{
   FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation,
-  IntegerBinaryOperation,
+  IntegerBinaryOperation, StrComparisonOperation,
 };
 
 pub(super) const fn integer_operation(operator: BinaryOperator) -> Option<IntegerBinaryOperation>
@@ -30,6 +30,16 @@ pub(super) const fn integer_operation(operator: BinaryOperator) -> Option<Intege
     BinaryOperator::Greater => IntegerBinaryOperation::Greater,
     BinaryOperator::GreaterEqual => IntegerBinaryOperation::GreaterEqual,
     BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr => return None,
+  })
+}
+
+pub(super) const fn comparison_str_operation(operator: BinaryOperator) -> Option<StrComparisonOperation>
+{
+  Some(match operator
+  {
+    BinaryOperator::Equal => StrComparisonOperation::Equal,
+    BinaryOperator::NotEqual => StrComparisonOperation::NotEqual,
+    _ => return None,
   })
 }
 

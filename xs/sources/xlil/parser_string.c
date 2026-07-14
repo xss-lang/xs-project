@@ -6,6 +6,8 @@
 #include "model_internal.h"
 
 #include <errno.h>
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,6 +24,48 @@ static bool append_unit(uint16_t **units, size_t *length, size_t *capacity, uint
   }
   (*units)[(*length)++] = unit;
   return true;
+}
+
+XsLilStatus xs_lil_parse_str_comparison(XsLilBlock *block, XsLilType result_type, const char *operation,
+                                        size_t operation_length, XsLilValueId expected_result, bool *matched,
+                                        XsLilError *error)
+{
+  static const char equal_prefix[] = "eq.str ";
+  static const char not_equal_prefix[] = "ne.str ";
+  *matched = false;
+  XsLilStrComparisonOperation comparison = XS_LIL_STR_EQ;
+  size_t prefix_length = 0;
+  if(operation_length > sizeof(equal_prefix) - 1U && memcmp(operation, equal_prefix, sizeof(equal_prefix) - 1U) == 0)
+    prefix_length = sizeof(equal_prefix) - 1U;
+  else if(operation_length > sizeof(not_equal_prefix) - 1U &&
+          memcmp(operation, not_equal_prefix, sizeof(not_equal_prefix) - 1U) == 0)
+  {
+    comparison = XS_LIL_STR_NE;
+    prefix_length = sizeof(not_equal_prefix) - 1U;
+  }
+  else
+    return XS_LIL_OK;
+  *matched = true;
+  if(result_type.kind != XS_LIL_TYPE_BOOL || operation_length - prefix_length > (size_t)INT_MAX)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL Str comparison record is invalid");
+  size_t operand_length = operation_length - prefix_length;
+  char *operands = xs_lil_copy_span(operation + prefix_length, operand_length);
+  if(operands == nullptr)
+    return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while parsing XLIL Str comparison");
+  unsigned left = 0;
+  unsigned right = 0;
+  int consumed = 0;
+  int fields = sscanf(operands, "%%r%u, %%r%u%n", &left, &right, &consumed);
+  free(operands);
+  if(fields != 2 || consumed < 0 || (size_t)consumed != operand_length)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL Str comparison operands are invalid");
+  XsLilValueId actual = 0;
+  XsLilStatus status = xs_lil_block_compare_str(block, comparison, left, right, &actual, error);
+  if(status != XS_LIL_OK)
+    return status;
+  return actual == expected_result
+             ? XS_LIL_OK
+             : xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL value ids must be sequential");
 }
 
 XsLilStatus xs_lil_parse_const_str(XsLilBlock *block, XsLilType result_type, const char *operation,

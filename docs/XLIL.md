@@ -73,6 +73,8 @@ Format notes:
 - `%rN:str = const.str utf16le [0x004c, ...]` and its `utf16be` form create a borrowed static string view from
   explicit UTF-16 code units. The tag fixes the byte order used by the target data object; the numeric list always
   contains Unicode UTF-16 code-unit values. Untagged string constants are invalid.
+- `%rN:bool = eq.str %rA, %rB` and `ne.str` compare two `str` views by UTF-16 code-unit length and content. Pointer
+  identity is not observable through these instructions.
 - `%rN:i32 = const.i32 N` creates a signed 32-bit integer constant.
 - `%rN:f32 = const.f32 0xXXXXXXXX` and `%rN:f64 = const.f64 0xXXXXXXXXXXXXXXXX` create IEEE-754 constants from exact
   bit patterns. Fixed-width hexadecimal spelling preserves negative zero, infinities, and NaN payloads across text
@@ -159,7 +161,8 @@ function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this 
 optimized LLVM IR, an object file, and a native `.xse` executable for the supported local-target subset.
 
 The public [integer support header](../include/xs/int128.h) defines `XsUInt128` and `XsInt128` as explicit high/low
-64-bit words. XLIL uses those project-owned C23 types for u128/i128 constants; GNU `__int128` is neither required nor used.
+64-bit words. XLIL uses those project-owned C23 types for u128/i128 constants; compiler-specific native 128-bit
+extensions are neither required nor used.
 The public model exposes one typed integer-operation constructor and read-only operation/type accessors, so third-party
 XLIL producers do not need a separate C entry point for every width.
 

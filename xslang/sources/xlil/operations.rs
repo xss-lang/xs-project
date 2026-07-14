@@ -171,6 +171,37 @@ pub enum FloatComparisonOperation
   GreaterEqual,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StrComparisonOperation
+{
+  Equal,
+  NotEqual,
+}
+
+impl StrComparisonOperation
+{
+  #[must_use]
+  pub const fn text_stem(self) -> &'static str
+  {
+    match self
+    {
+      Self::Equal => "eq",
+      Self::NotEqual => "ne",
+    }
+  }
+
+  #[must_use]
+  pub fn parse_text_stem(name: &str) -> Option<Self>
+  {
+    match name
+    {
+      "eq" => Some(Self::Equal),
+      "ne" => Some(Self::NotEqual),
+      _ => None,
+    }
+  }
+}
+
 impl FloatBinaryOperation
 {
   #[must_use]
@@ -367,6 +398,31 @@ impl Function
                                       left,
                                       right }
         })
+  }
+
+  pub fn compare_str(&mut self,
+                     block: BlockId,
+                     operation: StrComparisonOperation,
+                     left: ValueId,
+                     right: ValueId)
+                     -> Option<ValueId>
+  {
+    self.block(block)?;
+    if !self.value(left).is_some_and(|value| value.value_type == Type::STR) ||
+       !self.value(right).is_some_and(|value| value.value_type == Type::STR)
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: Type::BOOL });
+    self.block_mut(block)?
+        .instructions
+        .push(Instruction::CompareStr { operation,
+                                        result,
+                                        left,
+                                        right });
+    Some(result)
   }
 
   fn add_float_operation(&mut self,

@@ -215,6 +215,23 @@ impl<'a> Verifier<'a>
         self.verify_float_local(left, value_type, &format!("{instruction} left operand"), span);
         self.verify_float_local(right, value_type, &format!("{instruction} right operand"), span);
       }
+      Statement::CompareStr { operation,
+                              result,
+                              left,
+                              right,
+                              span, } =>
+      {
+        let instruction = format!("{}.str", operation.text_stem());
+        self.verify_bool_local(result, &format!("{instruction} result local"), span);
+        self.verify_exact_local(left,
+                                crate::xlil::Type::STR,
+                                &format!("{instruction} left operand"),
+                                span);
+        self.verify_exact_local(right,
+                                crate::xlil::Type::STR,
+                                &format!("{instruction} right operand"),
+                                span);
+      }
       Statement::StoreLocal { local,
                               value,
                               span, } => self.verify_local_storage(local, value, "store.local", span),
@@ -464,6 +481,22 @@ impl<'a> Verifier<'a>
                              span),
       None => self.report(DiagnosticCode::MissingLocalType,
                           format!("{instruction} target local has no XLIL value type"),
+                          span),
+    }
+  }
+
+  fn verify_exact_local(&mut self, local: LocalId, expected: crate::xlil::Type, label: &str, span: Span)
+  {
+    self.verify_local(local, span);
+    match self.local_type(local)
+    {
+      Some(actual) if actual == expected =>
+      {}
+      Some(_) => self.report(DiagnosticCode::LocalTypeMismatch,
+                             format!("{label} has the wrong XLIL type"),
+                             span),
+      None => self.report(DiagnosticCode::MissingLocalType,
+                          format!("{label} has no XLIL value type"),
                           span),
     }
   }

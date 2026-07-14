@@ -491,6 +491,14 @@ impl Parser<'_>
         }
       }
     }
+    for operation in ["eq", "ne"]
+    {
+      let pattern = format!(" = {operation}.str ");
+      if let Some((result, operands)) = text.split_once(&pattern)
+      {
+        return self.str_comparison(function, result, operands, operation, line);
+      }
+    }
     if let Some((result, rest)) = text.split_once(" = const.bool ")
     {
       return self.const_bool(function, result, rest, line);

@@ -74,7 +74,7 @@ Borrow-checked and optimized MIR
 
 XLIL function body lowering currently covers explicit body parameters, every documented fixed-width integer constant,
 exact-bit f32/f64 constants, and
-boolean and explicit-endian UTF-16 string constants, fixed-width integer arithmetic/bitwise/shift/comparison instructions, f32/f64
+boolean and explicit-endian UTF-16 string constants, UTF-16 string equality/inequality, fixed-width integer arithmetic/bitwise/shift/comparison instructions, f32/f64
 arithmetic and ordered comparisons,
 direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
 typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated in the LLVM entry block and remain eligible
@@ -84,6 +84,9 @@ local initialization, reads, and simple mutable reassignment. `panic` emits an `
 locale-sensitive decimal conversion. Ordered floating comparisons lower to LLVM ordered predicates, so NaN makes each
 supported comparison false. Native Linux links include the platform math library because optimized floating remainder may
 become an `fmod`/`fmodf` runtime call.
+`eq.str`/`ne.str` compare the `{pointer, code-unit length}` views by length and target-endian UTF-16 storage content.
+The current hosted native ABI emits a bounded `memcmp` call after selecting the shorter byte length, then combines the
+content result with exact code-unit-length equality.
 
 Integer constants from 8 through 64 bits lower with `LLVMConstInt`. The project-owned two-word C23 representation carries
 u128/i128 constants into `LLVMConstIntOfArbitraryPrecision`; no compiler-specific C integer extension is involved.

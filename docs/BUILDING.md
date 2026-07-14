@@ -46,8 +46,14 @@ Preset details:
 
 - generator: Ninja
 - compiler: Clang
+- toolchain policy: `cmake/llvm-toolchain.cmake`
 - build directory: `build/clang-debug`
 - default project: `xs`
+
+The toolchain file selects and validates Clang, LLVM archive/object utilities, LLD, strict C23, and Ninja before project
+targets are configured. The root build keeps project definitions separate from this tool selection. Test registration is
+likewise split by direct XLIL, source values/control flow/calls, Kotlin projects, and library-level suites under
+`cmake/XSTests*.cmake`.
 
 The `xs` target builds `/usr/bin/xs` package payload code and the Rust `xslang` static library, then links its compiler-core
 session API into the C23 driver. The same CMake configuration builds the `xs-proj` parser/validator executable. Building

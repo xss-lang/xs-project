@@ -21,4 +21,6 @@ mod float_operator_tests;
 #[cfg(test)]
 mod operator_tests;
 #[cfg(test)]
+mod string_comparison_tests;
+#[cfg(test)]
 mod unary_tests;

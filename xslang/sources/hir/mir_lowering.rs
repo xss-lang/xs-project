@@ -17,7 +17,7 @@ use crate::xlil::{Type as XlilType, TypeKind};
 
 use binary_operations::{
   binary_float_operation, binary_i32_operation, binary_i64_operation, comparison_float_operation,
-  comparison_i64_operation, integer_operation,
+  comparison_i64_operation, comparison_str_operation, integer_operation,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -49,6 +49,7 @@ pub struct HirToMirLowerer
   storage_locals: HashSet<mir::LocalId>,
 }
 
+mod diagnostic;
 #[cfg(test)]
 mod float_tests;
 #[cfg(test)]
@@ -594,6 +595,17 @@ impl HirToMirLowerer
                                                  right,
                                                  span });
       }
+      (operator, XlilType::BOOL, XlilType::STR) if comparison_str_operation(operator).is_some() =>
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::CompareStr { operation: comparison_str_operation(operator).expect("guarded Str \
+                                                                                                     comparison"),
+                                               result: target,
+                                               left,
+                                               right,
+                                               span });
+      }
       _ => self.report(DiagnosticCode::UnsupportedExpression,
                        "HIR binary expression has no MIR instruction for this type combination",
                        span),
@@ -657,13 +669,6 @@ impl HirToMirLowerer
   fn current_is_terminated(&self, lowered: &mut mir::Function) -> bool
   {
     self.current_block_mut(lowered).terminator.is_some()
-  }
-
-  fn report(&mut self, code: DiagnosticCode, message: impl Into<String>, span: Span)
-  {
-    self.diagnostics.push(Diagnostic { code,
-                                       message: message.into(),
-                                       span });
   }
 }
 

@@ -544,6 +544,11 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         block, result_type, operation, operation_length, result, &integer_operation_matched, error);
     if(integer_operation_matched)
       return integer_operation_status;
+    bool str_comparison_matched = false;
+    XsLilStatus str_comparison_status = xs_lil_parse_str_comparison(block, result_type, operation, operation_length,
+                                                                    result, &str_comparison_matched, error);
+    if(str_comparison_matched)
+      return str_comparison_status;
     static const struct
     {
       const char *name;

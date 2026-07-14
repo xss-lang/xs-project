@@ -657,6 +657,36 @@ static void test_text_parser_round_trips_explicit_utf16_strings(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_text_parser_round_trips_str_comparisons(void)
+{
+  static const char text[] =
+      ".xlil version 0\n.xlil module Strings\n.func same : (str, str) -> bool\n.param %r0:str\n.param %r1:str\n"
+      "bb0.entry:\n  %r2:bool = eq.str %r0, %r1\n  %r3:bool = ne.str %r0, %r1\n  ret %r2\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("comparisons.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  if(module == nullptr)
+    return;
+  const XsLilBlock *block = xs_lil_function_block_at(xs_lil_module_function_at(module, 0), 0);
+  CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_EQ_STR);
+  CHECK(xs_lil_block_instruction_kind(block, 1) == XS_LIL_INSTRUCTION_NE_STR);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char buffer[512] = {0};
+    size_t read = fread(buffer, 1, sizeof(buffer) - 1U, stream);
+    buffer[read] = '\0';
+    CHECK(strcmp(buffer, text) == 0);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
+}
+
 static void test_text_parser_round_trips_u16_constant(void)
 {
   static const char text[] = ".xlil version 0\n.xlil module Character\n.func omega : () -> u16\nbb0.entry:\n"
@@ -775,6 +805,7 @@ int main(void)
   test_text_parser_round_trips_i32_constant();
   test_text_parser_round_trips_binary_i32_instructions();
   test_text_parser_round_trips_explicit_utf16_strings();
+  test_text_parser_round_trips_str_comparisons();
   test_text_parser_round_trips_u16_constant();
   test_public_integer_constant_api();
   test_integer_operation_api_and_text();

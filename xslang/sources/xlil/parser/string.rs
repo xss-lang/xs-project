@@ -4,10 +4,30 @@
  */
 
 use super::{DiagnosticCode, Parser};
-use crate::xlil::{Function, Instruction, Type, Value};
+use crate::xlil::{Function, Instruction, StrComparisonOperation, Type, Value};
 
 impl Parser<'_>
 {
+  pub(super) fn str_comparison(&mut self,
+                               function: &mut Function,
+                               result: &str,
+                               operands: &str,
+                               operation: &str,
+                               line: usize)
+                               -> Option<Instruction>
+  {
+    let result = self.value_id(result.strip_suffix(":bool")?, line)?;
+    let (left, right) = operands.split_once(", ")?;
+    let left = self.value_operand(left, line)?;
+    let right = self.value_operand(right, line)?;
+    function.values.push(Value { id: result,
+                                 value_type: Type::BOOL });
+    Some(Instruction::CompareStr { operation: StrComparisonOperation::parse_text_stem(operation)?,
+                                   result,
+                                   left,
+                                   right })
+  }
+
   pub(super) fn const_str(&mut self, function: &mut Function, text: &str, line: usize) -> Option<Instruction>
   {
     let (result, value) = text.split_once(" = const.str ")?;

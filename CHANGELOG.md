@@ -14,6 +14,8 @@ source-to-native executable pipeline.
 
 ### Added
 
+- `Str` `==` and `!=` now lower through typed HIR, XMIR `eq.str`/`ne.str`, XLIL, the public C23 model, and hosted LLVM
+  native emission. Equality compares UTF-16 code-unit length and content rather than backing-pointer identity.
 - Floating-point `!=` now crosses XHIR, XMIR, XLIL `ne.f32`/`ne.f64`, the public C23 XLIL model, and LLVM ordered
   not-equal comparison lowering. Contextual unary `+` and expression-inferred call locals also use the compiler-core
   path.
@@ -29,6 +31,8 @@ source-to-native executable pipeline.
 
 ### Changed
 
+- LLVM/Clang/LLD tool selection and validation now lives in `cmake/llvm-toolchain.cmake`. The formerly monolithic CTest
+  manifest is split into direct XLIL, source value/control/call, Kotlin, and library test modules.
 - Source-native body compilation now has one authoritative implementation: structural AST enters the Rust compiler core,
   then returns verified XLIL through the public C23 boundary for LLVM emission. The obsolete C source-body fallback was
   removed after the complete source-native fixture matrix passed with it disabled.

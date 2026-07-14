@@ -178,6 +178,10 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
       if(fputs("]\n", stream) == EOF)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not finish XLIL const.str instruction");
     }
+    if((instruction->kind == XS_LIL_INSTRUCTION_EQ_STR || instruction->kind == XS_LIL_INSTRUCTION_NE_STR) &&
+       fprintf(stream, "  %%r%u:bool = %s.str %%r%u, %%r%u\n", instruction->result,
+               instruction->kind == XS_LIL_INSTRUCTION_EQ_STR ? "eq" : "ne", instruction->left, instruction->right) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL Str comparison");
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_F32 &&
        fprintf(stream, "  %%r%u:f32 = const.f32 0x%08llx\n", instruction->result,
                (unsigned long long)instruction->immediate_float_bits) < 0)
