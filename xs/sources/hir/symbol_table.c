@@ -248,6 +248,9 @@ static bool member_kind_for_node(XsSyntaxKind syntax, XsHirMemberKind *kind)
   case XS_SYNTAX_CLASS_DESTRUCTOR:
     *kind = XS_HIR_MEMBER_DESTRUCTOR;
     return true;
+  case XS_SYNTAX_ENUM_VARIANT:
+    *kind = XS_HIR_MEMBER_VARIANT;
+    return true;
   case XS_SYNTAX_DECL_CLASS:
   case XS_SYNTAX_DECL_INTERFACE:
   case XS_SYNTAX_DECL_ENUM:
@@ -271,10 +274,12 @@ static const XsSyntaxNode *member_name_node(const XsSyntaxNode *node, XsHirMembe
   return nullptr;
 }
 
-static bool member_can_merge(const XsHirMemberSymbol *previous, XsHirMemberKind kind)
+static bool member_can_merge(const XsHirMemberSymbol *previous, XsHirMemberKind kind, const XsSyntaxNode *node)
 {
   return previous != nullptr && ((previous->kind == XS_HIR_MEMBER_METHOD && kind == XS_HIR_MEMBER_METHOD) ||
-                                 (previous->kind == XS_HIR_MEMBER_CONSTRUCTOR && kind == XS_HIR_MEMBER_CONSTRUCTOR));
+                                 (previous->kind == XS_HIR_MEMBER_CONSTRUCTOR && kind == XS_HIR_MEMBER_CONSTRUCTOR) ||
+                                 (previous->kind == XS_HIR_MEMBER_VARIANT && kind == XS_HIR_MEMBER_VARIANT &&
+                                  (node->flags & XS_SYNTAX_FLAG_ENUM_VARIANT_OVERLOAD) != 0));
 }
 
 static bool collect_member_declaration(const XsSyntaxNode *node, const XsHirSymbol *owner,
@@ -296,7 +301,7 @@ static bool collect_member_declaration(const XsSyntaxNode *node, const XsHirSymb
     return false;
   }
   const XsHirMemberSymbol *previous = find_member_forward(table, owner->qualified_name, name);
-  if(previous != nullptr && !member_can_merge(previous, kind))
+  if(previous != nullptr && !member_can_merge(previous, kind, node))
   {
     report_duplicate_member(diagnostics, name_node, previous);
     free(name);
@@ -486,7 +491,7 @@ const char *xs_hir_symbol_kind_name(XsHirSymbolKind kind)
 const char *xs_hir_member_kind_name(XsHirMemberKind kind)
 {
   static const char *const names[] = {
-      "field", "method", "constructor", "destructor", "nested type",
+      "field", "method", "constructor", "destructor", "nested type", "variant",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "member";
@@ -498,7 +503,8 @@ bool xs_hir_collect_member_symbols(const XsHirSymbol *owner, const XsMacroDeclar
 {
   if(owner == nullptr || owner->syntax == nullptr || table == nullptr || diagnostics == nullptr)
     return false;
-  if(owner->kind != XS_HIR_SYMBOL_CLASS && owner->kind != XS_HIR_SYMBOL_INTERFACE && owner->kind != XS_HIR_SYMBOL_DATA)
+  if(owner->kind != XS_HIR_SYMBOL_CLASS && owner->kind != XS_HIR_SYMBOL_INTERFACE &&
+     owner->kind != XS_HIR_SYMBOL_ENUM && owner->kind != XS_HIR_SYMBOL_DATA)
     return true;
   XsMacroExpandedDeclarationSet expanded = {0};
   if(!xs_macro_expand_child_declarations(owner->syntax, macro_declarations, diagnostics, &expanded))

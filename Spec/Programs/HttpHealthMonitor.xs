@@ -28,10 +28,10 @@ class ConsoleReporter : HealthReporter {
 
     fn report(result: HealthResult) -> Result<()> {
         state: Str = if (result.ok) {
-            "OK";
+            "OK"
         }
         else {
-            "FAIL";
+            "FAIL"
         };
         println!(
             "{} {} status={} preview=\"{}\"",
@@ -65,10 +65,10 @@ class HealthClient {
 
         body: Str = response.body();
         preview: Str = if (body.length() > 80) {
-            body.substring(0, 80);
+            body.substring(0, 80)
         }
         else {
-            body;
+            body
         };
 
         return Ok(HealthResult {

@@ -71,10 +71,10 @@ class TodoStore {
 
         for (item: TodoItem in self.items) {
             status: Str = if (item.done) {
-                "x";
+                "x"
             }
             else {
-                " ";
+                " "
             };
             println!("[{}] #{} {}", status, item.id, item.title);
         }
@@ -135,10 +135,10 @@ class TodoCodec {
 
     static fn format(item: TodoItem) -> Str {
         state: Str = if (item.done) {
-            "done";
+            "done"
         }
         else {
-            "open";
+            "open"
         };
         return item.id.to_string() + "|" + state + "|" + item.title;
     }

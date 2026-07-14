@@ -143,6 +143,26 @@ static void test_standard_generic_types(void)
   CHECK(!check_single_source("module App;\nfn BadError() -> Error<Int> { return Ok(1); }\n"));
 }
 
+static void test_imported_standard_library_types(void)
+{
+  const char *valid =
+      "module App;\n"
+      "imports collections, fs, process, http, net, thread, sync;\n"
+      "fn Use(values: std::collections::Vector<Int>, map: std::collections::HashMap<Str, Int>,\n"
+      "       file: std::fs::File, options: std::fs::OpenOptions, args: std::process::Args,\n"
+      "       client: std::http::Client, request: std::http::Request, response: std::http::Response<Str>,\n"
+      "       listener: std::net::TcpListener, stream: std::net::TcpStream,\n"
+      "       channel: std::thread::Channel<Int>, sender: std::thread::Sender<Int>,\n"
+      "       shared: std::sync::Arc<Int>, locked: std::sync::Mutex<Int>,\n"
+      "       atomic: std::sync::Atomic<Int>, cancellation: std::sync::CancellationToken,\n"
+      "       task: Task<Int>) {}\n";
+  CHECK(check_single_source(valid));
+  CHECK(!check_single_source("module App;\nfn Bad(value: std::collections::Vector<Int>) {}\n"));
+  CHECK(!check_single_source("module App;\nimports collections;\nfn Bad(value: std::collections::HashMap<Int>) {}\n"));
+  CHECK(!check_single_source("module App;\nimports http;\nfn Bad(value: std::http::Response) {}\n"));
+  CHECK(!check_single_source("module App;\nfn Bad(value: Task) {}\n"));
+}
+
 static void test_string_source_sugar(void)
 {
   const char *valid = "module App;\n"
@@ -498,6 +518,7 @@ int main(void)
   test_local_user_type();
   test_generic_type_arity();
   test_standard_generic_types();
+  test_imported_standard_library_types();
   test_string_source_sugar();
   test_result_payload_types_and_error_inheritance();
   test_else_type_placeholder();

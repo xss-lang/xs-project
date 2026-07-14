@@ -30,6 +30,7 @@ typedef enum
   XS_HIR_MEMBER_CONSTRUCTOR,
   XS_HIR_MEMBER_DESTRUCTOR,
   XS_HIR_MEMBER_NESTED_TYPE,
+  XS_HIR_MEMBER_VARIANT,
 } XsHirMemberKind;
 
 typedef struct

@@ -283,6 +283,27 @@ static bool add_file_symbols(const char *text, uint64_t file_id, XsSyntaxTree *t
   return xs_hir_collect_symbols(tree, symbols, diagnostics);
 }
 
+static bool check_single_source_names(const char *text)
+{
+  XsSyntaxTree tree;
+  XsHirSymbolTable symbols;
+  XsHirImportScope imports;
+  XsDiagnostics diagnostics;
+  xs_diagnostics_init(&diagnostics);
+  xs_hir_symbol_table_init(&symbols);
+  xs_hir_import_scope_init(&imports);
+  bool success = add_file_symbols(text, 30, &tree, &symbols, &diagnostics);
+  if(success)
+    success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
+  if(success)
+    success = xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics);
+  xs_hir_import_scope_free(&imports);
+  xs_hir_symbol_table_free(&symbols);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+  return success;
+}
+
 static void test_import_resolution(void)
 {
   const char *library = "module Math;\n"
@@ -418,6 +439,43 @@ static void test_name_use_resolution(void)
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
   xs_diagnostics_free(&diagnostics);
+}
+
+static void test_standard_library_name_resolution(void)
+{
+  const char *valid = "module App;\n"
+                      "imports fs, process, thread, net, stdio;\n"
+                      "fn Main() -> Result<()> {\n"
+                      "  content: Optional<Str> = Some(std::fs::read_to_str(\"input.txt\"));\n"
+                      "  std::fs::create_dir(\"out\");\n"
+                      "  std::process::run(\"tool\");\n"
+                      "  std::thread::yield();\n"
+                      "  std::net::listen(\"127.0.0.1:9000\");\n"
+                      "  std::stdout();\n"
+                      "  return Ok();\n"
+                      "}\n";
+  CHECK(check_single_source_names(valid));
+  CHECK(!check_single_source_names("module App;\nfn Main() { std::fs::read_to_str(\"input.txt\"); }\n"));
+  CHECK(!check_single_source_names("module App;\nimports fs;\nfn Main() { std::fs::invented(); }\n"));
+}
+
+static void test_associated_items_and_pattern_bindings(void)
+{
+  const char *valid = "module App;\n"
+                      "class Parser { static fn parse(value: Str) -> Int { return 1; } }\n"
+                      "enum data Command { Add: Str, Done: Int, }\n"
+                      "fn Main() {\n"
+                      "  value: Int = Parser::parse(\"7\");\n"
+                      "  add: Command = Command::Add(\"task\");\n"
+                      "  done: Command = Command::Done(value);\n"
+                      "  for (line: Str in lines) { line.length(); }\n"
+                      "  (sender, receiver): (Int, Int) = pair;\n"
+                      "  receiver.consume();\n"
+                      "}\n";
+  CHECK(check_single_source_names(valid));
+  CHECK(!check_single_source_names("module App;\nclass Parser { fn parse() {} }\nfn Main() { Parser::parse(); }\n"));
+  CHECK(
+      !check_single_source_names("module App;\nenum data Command { Add: Str, }\nfn Main() { Command::Missing(); }\n"));
 }
 
 static void test_name_use_errors(void)
@@ -715,6 +773,8 @@ int main(void)
   test_public_namespace_exports_explicit_public_symbols();
   test_import_errors();
   test_name_use_resolution();
+  test_standard_library_name_resolution();
+  test_associated_items_and_pattern_bindings();
   test_name_use_errors();
   test_qualified_external_name_requires_import();
   test_expanded_macro_name_use_errors();

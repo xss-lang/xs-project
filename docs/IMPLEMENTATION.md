@@ -177,8 +177,12 @@ The documented compilation order is preserved:
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,
   typed for-each patterns, tuple-pattern bindings, asynchronous function expressions, and unconditional `loop` statements
-  have dedicated structural nodes. The `Spec/Programs` syntax suite parses every complete-language example before later
-  symbol and standard-library checks run.
+  have dedicated structural nodes. Every complete-language example under `Spec/Programs` is covered by both structural
+  parsing and semantic `xs check` tests.
+- HIR standard-library lookup has one registry for automatic types and constructors plus import-gated modules. It checks
+  `Optional`, `Result`, `Error`, `Task`, common standard-library types/functions, user static associated functions,
+  enum-data variants, and local names introduced by tuple or for-each patterns. This is semantic availability checking;
+  native runtime implementations and nominal object layout are still incomplete.
 - Lifetime spellings in reference types follow X# forms based on Rust lifetimes (`&'a T`, `&'a mut T`, `&'static T`,
   `&'else T`) and are carried into the AST as `XS_SYNTAX_LIFETIME` nodes. X# uses `else` where Rust examples often use
   `_`; lifetime elision and validation are left to the borrow-checker stage.

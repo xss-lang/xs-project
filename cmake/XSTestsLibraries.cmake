@@ -39,8 +39,12 @@ file(GLOB XS_SPEC_PROGRAM_SOURCES CONFIGURE_DEPENDS RELATIVE "${CMAKE_SOURCE_DIR
 set(XS_SPEC_PROGRAM_FIXTURES)
 foreach(spec_program IN LISTS XS_SPEC_PROGRAM_SOURCES)
   get_filename_component(spec_program_name "${spec_program}" NAME)
+  get_filename_component(spec_program_stem "${spec_program}" NAME_WE)
   configure_file("${spec_program}" "${XS_SPEC_PROGRAM_FIXTURE_DIR}/${spec_program_name}" COPYONLY)
   list(APPEND XS_SPEC_PROGRAM_FIXTURES "tests/fixtures/spec_programs/${spec_program_name}")
+  add_test(NAME spec_program_check_${spec_program_stem}
+           COMMAND xs check -file "${XS_SPEC_PROGRAM_FIXTURE_DIR}/${spec_program_name}")
+  set_tests_properties(spec_program_check_${spec_program_stem} PROPERTIES TIMEOUT 5)
 endforeach()
 xs_add_c_test(spec_program_syntax tests/spec_program_syntax_tests.c xs_compiler ${XS_SPEC_PROGRAM_FIXTURES})
 add_executable(xs_compiler_core_bridge_tests tests/compiler_core_bridge_tests.c)

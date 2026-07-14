@@ -14,6 +14,13 @@ source-to-native executable pipeline.
 
 ### Added
 
+- HIR now resolves automatic `Optional`, `Result`, `Error`, and `Task` types together with import-gated standard-library
+  types and functions through one standard-library registry. Associated enum-data variants, static user functions,
+  `Task<Result<...>>` propagation contexts, and destructuring/for-each pattern bindings participate in name checking.
+- Every complete program under `Spec/Programs` now has an individual semantic `xs check` regression test in addition to
+  the recursive structural-syntax suite.
+- `xsfmt` gained a small, isolated TOML configuration model for width, indentation, tabs, and newline policy. Formatting
+  X# source remains a later milestone.
 - The structural frontend now retains generic type-qualified associated expressions, typed object literals, typed
   patterns and tuple-pattern bindings, async function expressions, and unconditional `loop` statements. `loop` also
   crosses the compiler-core, MIR, XLIL, LLVM, and native `.xse` path for the supported body subset.

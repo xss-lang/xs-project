@@ -11,5 +11,9 @@ publish = false
 name = "xsfmt"
 path = "sources/main.rs"
 
+[lib]
+path = "sources/lib.rs"
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+toml = "1.1.2"

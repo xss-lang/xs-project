@@ -86,10 +86,10 @@ fn load_sales(path: Str) -> Result<std::collections::Vector<Sale>, Error> {
 
 fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     path: Str = if (args.length() > 1) {
-        args[1];
+        args[1]
     }
     else {
-        "sales.csv";
+        "sales.csv"
     };
     analytics: Analytics = new Analytics();
 

@@ -4,6 +4,7 @@
  */
 
 #include "xs/hir/type_resolution.h"
+#include "standard_library.h"
 #include "type_resolution_internal.h"
 #include "xs/hir/type_info.h"
 #include <stdio.h>
@@ -11,38 +12,10 @@
 #include <string.h>
 
 typedef struct GenericScope GenericScope;
-typedef struct StandardTypeInfo StandardTypeInfo;
 struct GenericScope
 {
   const GenericScope *parent;
   const XsSyntaxNode *declaration;
-};
-
-struct StandardTypeInfo
-{
-  const char *name;
-  size_t min_arity;
-  size_t max_arity;
-};
-
-static const StandardTypeInfo standard_types[] = {
-    {.name = "String", .min_arity = 0, .max_arity = 0},
-    {.name = "std.optional.Optional", .min_arity = 1, .max_arity = 1},
-    {.name = "std.result.Result", .min_arity = 1, .max_arity = 2},
-    {.name = "std.result.Error", .min_arity = 0, .max_arity = 0},
-    {.name = "std.cffi.CStr", .min_arity = 0, .max_arity = 0},
-    {.name = "std.cffi.CString", .min_arity = 0, .max_arity = 0},
-    {.name = "std.cffi.File", .min_arity = 0, .max_arity = 0},
-    {.name = "std.cffi.VarArgs", .min_arity = 0, .max_arity = 0},
-    {.name = "std.cffi.RawPtr", .min_arity = 1, .max_arity = 1},
-    {.name = "std.cffi.NonNull", .min_arity = 1, .max_arity = 1},
-    {.name = "std.cffi.Slice", .min_arity = 1, .max_arity = 1},
-    {.name = "std.cffi.Handle", .min_arity = 1, .max_arity = 1},
-    {.name = "std.cffi.Owned", .min_arity = 1, .max_arity = 1},
-    {.name = "std.cffi.Borrowed", .min_arity = 1, .max_arity = 1},
-    {.name = "std.cffi.Out", .min_arity = 1, .max_arity = 1},
-    {.name = "std.cffi.DynamicLibrary", .min_arity = 0, .max_arity = 0},
-    {.name = "std.cffi.Symbol", .min_arity = 1, .max_arity = 1},
 };
 
 static const XsSyntaxNode *first_child_kind(const XsSyntaxNode *node, XsSyntaxKind kind)
@@ -159,41 +132,14 @@ static char *path_to_string(const XsSyntaxNode *path)
   return result;
 }
 
-static const StandardTypeInfo *find_standard_type(const char *name)
-{
-  if(strcmp(name, "Optional") == 0)
-    name = "std.optional.Optional";
-  if(strcmp(name, "Result") == 0)
-    name = "std.result.Result";
-  if(strcmp(name, "Error") == 0)
-    name = "std.result.Error";
-  for(size_t i = 0; i < sizeof(standard_types) / sizeof(standard_types[0]); ++i)
-  {
-    if(strcmp(standard_types[i].name, name) == 0)
-      return &standard_types[i];
-  }
-  return nullptr;
-}
-
-static const StandardTypeInfo *find_standard_type_from_path(const XsSyntaxNode *path)
+static const XsHirStandardTypeInfo *find_standard_type_from_path(const XsSyntaxNode *path)
 {
   char *name = path_to_string(path);
   if(name == nullptr)
     return nullptr;
-  const StandardTypeInfo *type = find_standard_type(name);
+  const XsHirStandardTypeInfo *type = xs_hir_standard_type_find(name);
   free(name);
   return type;
-}
-
-static bool standard_type_is_from_module(const char *name, const char *module_name)
-{
-  size_t length = strlen(module_name);
-  return strncmp(name, module_name, length) == 0 && name[length] == '.';
-}
-
-static bool single_segment_standard_named_type(XsText name)
-{
-  return text_matches_cstr(name, "Optional") || text_matches_cstr(name, "Result");
 }
 
 static bool type_placeholder_name(XsText name)
@@ -318,14 +264,14 @@ static bool report_generic_arity_range(XsDiagnostics *diagnostics, const XsSynta
   return xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, node_span(type), message);
 }
 
-static bool standard_type_arity_ok(const StandardTypeInfo *type, size_t actual)
+static bool standard_type_arity_ok(const XsHirStandardTypeInfo *type, size_t actual)
 {
   return type != nullptr && actual >= type->min_arity && actual <= type->max_arity;
 }
 
-static bool standard_type_is_result(const StandardTypeInfo *type)
+static bool standard_type_is_result(const XsHirStandardTypeInfo *type)
 {
-  return type != nullptr && strcmp(type->name, "std.result.Result") == 0;
+  return type != nullptr && strcmp(type->canonical_name, "std.result.Result") == 0;
 }
 
 static bool standard_enum_data_family_base(const XsSyntaxNode *specifier)
@@ -335,9 +281,9 @@ static bool standard_enum_data_family_base(const XsSyntaxNode *specifier)
   const XsSyntaxNode *type = specifier->children[0];
   if(type->kind != XS_SYNTAX_TYPE_NAMED)
     return false;
-  const StandardTypeInfo *standard = find_standard_type_from_path(first_child_kind(type, XS_SYNTAX_PATH));
+  const XsHirStandardTypeInfo *standard = find_standard_type_from_path(first_child_kind(type, XS_SYNTAX_PATH));
   return standard != nullptr &&
-         (strcmp(standard->name, "std.optional.Optional") == 0 || standard_type_is_result(standard));
+         (strcmp(standard->canonical_name, "std.optional.Optional") == 0 || standard_type_is_result(standard));
 }
 
 static bool report_incomplete_result_type(XsDiagnostics *diagnostics, const XsSyntaxNode *type)
@@ -414,23 +360,14 @@ static bool resolve_named_type(const XsSyntaxNode *type, const char *namespace_n
      (primitive_type_name(first->text) || generic_scope_contains(generics, first->text) ||
       type_placeholder_name(first->text)))
     return true;
-  if(path_segment_count(path) == 1 && single_segment_standard_named_type(first->text))
-  {
-    if(!check_arity)
-      return true;
-    const StandardTypeInfo *standard = find_standard_type_from_path(path);
-    if(standard == nullptr)
-      return false;
-    return report_generic_arity_range(diagnostics, type, standard->name, standard->min_arity, standard->max_arity, 0);
-  }
   char *name = path_to_string(path);
   if(name == nullptr)
     return false;
-  const StandardTypeInfo *standard = find_standard_type(name);
+  const XsHirStandardTypeInfo *standard = xs_hir_standard_type_find(name);
   if(standard != nullptr)
   {
     bool success = true;
-    if(standard_type_is_from_module(name, "std.cffi") && !xs_hir_import_scope_has_module(imports, "cffi"))
+    if(xs_hir_standard_type_lookup(standard, imports) == XS_HIR_STANDARD_MISSING_IMPORT)
       success = report_unimported_type(diagnostics, type, name) && success;
     if(check_arity && standard->max_arity != 0)
       success =
@@ -472,7 +409,7 @@ static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *name
   bool success = resolve_named_type(base, namespace_name, generics, symbols, imports, diagnostics, current_file_id,
                                     false, &symbol);
   const XsSyntaxNode *base_path = first_child_kind(base, XS_SYNTAX_PATH);
-  const StandardTypeInfo *standard = find_standard_type_from_path(base_path);
+  const XsHirStandardTypeInfo *standard = find_standard_type_from_path(base_path);
   if(standard != nullptr)
   {
     char *name = path_to_string(base_path);

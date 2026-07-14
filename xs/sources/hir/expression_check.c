@@ -107,13 +107,6 @@ static bool path_matches_qualified(const XsSyntaxNode *path, const char *first, 
          text_matches_cstr(path->children[2]->text, third);
 }
 
-static bool path_matches_two(const XsSyntaxNode *path, const char *first, const char *second)
-{
-  if(path == nullptr || path->kind != XS_SYNTAX_PATH || path->child_count != 2)
-    return false;
-  return text_matches_cstr(path->children[0]->text, first) && text_matches_cstr(path->children[1]->text, second);
-}
-
 static bool path_matches_single(const XsSyntaxNode *path, const char *name)
 {
   return path != nullptr && path->kind == XS_SYNTAX_PATH && path->child_count == 1 &&
@@ -132,22 +125,6 @@ static bool type_is_optional(const XsSyntaxNode *type)
     return false;
   if(type->kind == XS_SYNTAX_TYPE_GENERIC && type->child_count >= 1)
     return named_type_is_optional_base(type->children[0]);
-  return false;
-}
-
-static bool named_type_is_result_base(const XsSyntaxNode *type)
-{
-  const XsSyntaxNode *path = type_named_path(type);
-  return path_matches_single(path, "Result") || path_matches_two(path, "Result", "Result") ||
-         path_matches_qualified(path, "std", "result", "Result");
-}
-
-static bool type_is_result(const XsSyntaxNode *type)
-{
-  if(type == nullptr)
-    return false;
-  if(type->kind == XS_SYNTAX_TYPE_GENERIC && type->child_count >= 1)
-    return named_type_is_result_base(type->children[0]);
   return false;
 }
 
@@ -762,11 +739,11 @@ static bool check_assignment(const XsSyntaxNode *node, const CheckContext *conte
 
 static bool check_result_propagation(const XsSyntaxNode *node, const CheckContext *context, XsDiagnostics *diagnostics)
 {
-  if(context != nullptr && type_is_result(context->return_type_node))
+  if(context != nullptr && xs_hir_type_returns_result(context->return_type_node))
   {
     const XsSyntaxNode *operand = node->child_count == 0 ? nullptr : node->children[0];
     const XsSyntaxNode *operand_return = direct_call_return_type(operand, context);
-    if(operand_return != nullptr && !type_is_result(operand_return))
+    if(operand_return != nullptr && !xs_hir_type_returns_result(operand_return))
       return report_result_operand_error(diagnostics, operand);
     return true;
   }
@@ -971,7 +948,8 @@ static bool check_node(const XsSyntaxNode *node, const XsMacroDeclarationExpansi
     success = check_result_propagation(node, &context, diagnostics) && success;
   if(node->kind == XS_SYNTAX_EXPR_CALL)
     success =
-        xs_hir_check_result_constructor_call(node, type_is_result(context.return_type_node), diagnostics) && success;
+        xs_hir_check_result_constructor_call(node, xs_hir_type_returns_result(context.return_type_node), diagnostics) &&
+        success;
   if(node->kind == XS_SYNTAX_STMT_RETURN)
     success = check_return_statement(node, &context, diagnostics) && success;
   if(member_access_is_active_property(node, &context))

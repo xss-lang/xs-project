@@ -78,10 +78,10 @@ class Pipeline {
 
 fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
     input: Str = if (args.length() > 1) {
-        args[1];
+        args[1]
     }
     else {
-        "  hello x#  ";
+        "  hello x#  "
     };
     pipeline: Pipeline = new Pipeline();
 

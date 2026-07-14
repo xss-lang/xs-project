@@ -59,10 +59,10 @@ class SiteReport {
 
 fn main(args: std::process::Args) -> Result<Int, Error> {
     root: Str = if (args.length() == 2) {
-        args[1];
+        args[1]
     }
     else {
-        ".";
+        "."
     };
 
     report: SiteReport = new SiteReport();

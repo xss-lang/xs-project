@@ -5,10 +5,29 @@
 name = "xslang"
 version = "0.1.6"
 edition = "2024"
+authors = ["Leitwolf <xs-lang.chess031@slmails.com>"]
+description = "Target-independent semantic analysis and IR core for the X# compiler"
+license = "Apache-2.0"
+repository = "https://github.com/xss-lang/xs-project"
+homepage = "https://github.com/xss-lang/xs-project"
+readme = "../README.md"
+keywords = ["compiler", "programming-language", "intermediate-representation"]
+categories = ["compilers"]
 publish = false
 
 [lib]
+name = "xslang"
 path = "sources/lib.rs"
 crate-type = ["rlib", "staticlib"]
+bench = false
 
 [dependencies]
+# Dependencies may be added when they provide a concrete compiler-core benefit.
+# The current HIR/MIR/XLIL and C23 FFI boundary use only the Rust standard library.
+
+[package.metadata.xs]
+component = "compiler-core"
+syntax-abi-version = 0
+xhir-version = 0
+xmir-version = 0
+xlil-version = 0

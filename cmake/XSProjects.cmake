@@ -77,6 +77,7 @@ add_library(xs_compiler
   xs/sources/hir/expression_check_api.c
   xs/sources/hir/expression_check_string.c
   xs/sources/hir/result_constructor.c
+  xs/sources/hir/standard_library.c
   xs/sources/hir/module_graph.c
   xs/sources/hir/module_model.c
   xs/sources/hir/module_registry.c

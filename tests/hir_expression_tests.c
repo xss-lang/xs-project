@@ -245,6 +245,9 @@ static void test_result_propagation_requires_result_return(void)
                       "  return Ok(1);\n"
                       "}\n";
   CHECK(check_single_source_expressions(valid));
+  CHECK(check_single_source_expressions(
+      "module App;\nasync fn Main() -> Task<Result<Int, Error>> { Work()@; return Ok(1); }\n"));
+  CHECK(!check_single_source_expressions("module App;\nasync fn Main() -> Task<Int> { Work()@; return Ok(1); }\n"));
   CHECK(check_single_source_expressions("module App;\nfn Main() -> Result<Int, Error> { DoWork()@; return Ok(1); }\n"));
   CHECK(!check_single_source_expressions("module App;\nfn Count() -> Int { return 1; }\n"
                                          "fn Main() -> Result<Int, Error> { Count()@; return "

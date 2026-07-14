@@ -5,6 +5,7 @@
 
 #include "xs/hir/symbol_table.h"
 
+#include "standard_library.h"
 #include "syntax_helpers.h"
 
 #include <stdio.h>
@@ -17,12 +18,35 @@ static bool text_matches_cstr(XsText text, const char *name)
   return text.length == length && memcmp(text.data, name, length) == 0;
 }
 
+static bool pattern_declares_name(const XsSyntaxNode *pattern, const char *name)
+{
+  if(pattern == nullptr)
+    return false;
+  if(pattern->kind == XS_SYNTAX_PATTERN_IDENTIFIER)
+  {
+    const XsSyntaxNode *identifier = xs_hir_first_child_kind(pattern, XS_SYNTAX_IDENTIFIER);
+    return identifier != nullptr && text_matches_cstr(identifier->text, name);
+  }
+  for(size_t i = 0; i < pattern->child_count; ++i)
+  {
+    XsSyntaxKind kind = pattern->children[i]->kind;
+    if((kind == XS_SYNTAX_PATTERN_IDENTIFIER || kind == XS_SYNTAX_PATTERN_TUPLE ||
+        kind == XS_SYNTAX_PATTERN_ENUM_VARIANT || kind == XS_SYNTAX_PATTERN_TYPED) &&
+       pattern_declares_name(pattern->children[i], name))
+      return true;
+  }
+  return false;
+}
+
 static bool local_name_declared(const XsSyntaxNode *node, const char *name)
 {
   if(node == nullptr)
     return false;
   if((node->kind == XS_SYNTAX_PARAMETER || node->kind == XS_SYNTAX_DECL_VARIABLE) && node->child_count != 0 &&
      node->children[0]->kind == XS_SYNTAX_IDENTIFIER && text_matches_cstr(node->children[0]->text, name))
+    return true;
+  if((node->kind == XS_SYNTAX_STMT_FOR_EACH || node->kind == XS_SYNTAX_DECL_PATTERN_VARIABLE) &&
+     node->child_count != 0 && pattern_declares_name(node->children[0], name))
     return true;
   for(size_t i = 0; i < node->child_count; ++i)
   {
@@ -212,9 +236,84 @@ static bool validate_method_call_target(const XsSyntaxNode *call, const XsSyntax
   return report_missing_method(diagnostics, method_name, receiver_type);
 }
 
+static bool associated_owner_kind(XsHirSymbolKind kind)
+{
+  return kind == XS_HIR_SYMBOL_CLASS || kind == XS_HIR_SYMBOL_INTERFACE || kind == XS_HIR_SYMBOL_ENUM ||
+         kind == XS_HIR_SYMBOL_DATA;
+}
+
+static bool member_visible_from(const XsHirMemberSymbol *member, const XsHirSymbol *owner, const char *namespace_name,
+                                uint64_t current_file_id)
+{
+  switch(member->visibility)
+  {
+  case XS_SYNTAX_VISIBILITY_PUBLIC:
+    return true;
+  case XS_SYNTAX_VISIBILITY_INTERNAL:
+    return same_root_module(owner->namespace_name, namespace_name);
+  case XS_SYNTAX_VISIBILITY_PRIVATE:
+  case XS_SYNTAX_VISIBILITY_DEFAULT:
+    return strcmp(owner->namespace_name, namespace_name) == 0 && member->span.file_id == current_file_id;
+  case XS_SYNTAX_VISIBILITY_PROTECTED:
+    return false;
+  }
+  return false;
+}
+
+static bool validate_associated_call(const char *path, const char *namespace_name, uint64_t current_file_id,
+                                     const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
+                                     const XsHirMemberSymbolTable *members, const XsSyntaxNode *target,
+                                     XsDiagnostics *diagnostics, bool *matched)
+{
+  *matched = false;
+  char *owner_name = xs_hir_copy_cstr(path);
+  if(owner_name == nullptr)
+    return false;
+  char *separator = strrchr(owner_name, '.');
+  if(separator == nullptr || separator == owner_name || separator[1] == '\0')
+  {
+    free(owner_name);
+    return true;
+  }
+  *separator = '\0';
+  const char *member_name = separator + 1;
+  const XsHirSymbol *owner = resolve_name_use(owner_name, namespace_name, project_symbols, imports);
+  if(owner == nullptr || !associated_owner_kind(owner->kind))
+  {
+    free(owner_name);
+    return true;
+  }
+  const XsHirMemberSymbol *member = xs_hir_member_symbol_table_find(members, owner->qualified_name, member_name);
+  free(owner_name);
+  if(member == nullptr)
+    return true;
+  *matched = true;
+  if(!symbol_visible_from(owner, namespace_name, current_file_id) ||
+     !member_visible_from(member, owner, namespace_name, current_file_id))
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(target),
+                       "associated item is not visible from the current namespace");
+    return false;
+  }
+  if(!symbol_module_available(owner, namespace_name, imports))
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(target),
+                       "module for associated item is not imported");
+    return false;
+  }
+  if(member->kind == XS_HIR_MEMBER_VARIANT)
+    return true;
+  if(member->kind == XS_HIR_MEMBER_METHOD && (member->syntax->flags & XS_SYNTAX_FLAG_STATIC) != 0)
+    return true;
+  xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(target),
+                     "type-qualified call requires a static method or enum data variant");
+  return false;
+}
+
 static bool validate_call_target(const XsSyntaxNode *target, const XsSyntaxNode *function, const char *namespace_name,
                                  uint64_t current_file_id, const XsHirSymbolTable *project_symbols,
-                                 const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+                                 const XsHirImportScope *imports, const XsHirMemberSymbolTable *members,
+                                 XsDiagnostics *diagnostics)
 {
   char *path = expression_path(target);
   if(path == nullptr)
@@ -223,6 +322,28 @@ static bool validate_call_target(const XsSyntaxNode *target, const XsSyntaxNode 
   {
     free(path);
     return true;
+  }
+  XsHirStandardLookup standard = xs_hir_standard_call_lookup(path, imports);
+  if(standard == XS_HIR_STANDARD_AVAILABLE)
+  {
+    free(path);
+    return true;
+  }
+  if(standard == XS_HIR_STANDARD_MISSING_IMPORT)
+  {
+    char message[512];
+    snprintf(message, sizeof(message), "module for standard name '%s' is not imported", path);
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(target), message);
+    free(path);
+    return false;
+  }
+  bool associated = false;
+  bool associated_success = validate_associated_call(path, namespace_name, current_file_id, project_symbols, imports,
+                                                     members, target, diagnostics, &associated);
+  if(associated)
+  {
+    free(path);
+    return associated_success;
   }
   const XsHirSymbol *symbol = resolve_name_use(path, namespace_name, project_symbols, imports);
   if(symbol == nullptr)
@@ -290,15 +411,15 @@ static bool validate_name_uses_in_node(const XsSyntaxNode *node, const XsSyntaxN
   bool success = true;
   if(node->kind == XS_SYNTAX_EXPR_CALL && node->child_count != 0)
     success = validate_call_target(node->children[0], function, namespace_name, current_file_id, project_symbols,
-                                   imports, diagnostics);
+                                   imports, members, diagnostics);
   else if(node->kind == XS_SYNTAX_EXPR_METHOD_CALL)
   {
     success =
         validate_method_call_target(node, function, namespace_name, project_symbols, imports, members, diagnostics) &&
         success;
-    success =
-        validate_call_target(node, function, namespace_name, current_file_id, project_symbols, imports, diagnostics) &&
-        success;
+    success = validate_call_target(node, function, namespace_name, current_file_id, project_symbols, imports, members,
+                                   diagnostics) &&
+              success;
   }
   if(macro_statements != nullptr && has_statement_macro_child(node))
   {
