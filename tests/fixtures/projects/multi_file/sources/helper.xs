@@ -2,5 +2,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
 fn add(left: Long, right: Long) -> Long {
-    return left + right;
+  return left + right;
 }

@@ -10,10 +10,6 @@ function(xs_add_c_test test_name source_file library_name)
   set_tests_properties("${test_name}" PROPERTIES TIMEOUT 5)
 endfunction()
 
-if(XS_BUILD_PROJECT_XS OR XS_BUILD_PROJECT_XSPROJ)
-  xs_add_c_test(project tests/project_tests.c xsproj)
-endif()
-
 if(NOT XS_BUILD_PROJECT_XS)
   return()
 endif()
@@ -21,17 +17,25 @@ endif()
 add_test(NAME cli_version COMMAND xs --version)
 string(REPLACE "." "\\." XS_PROJECT_VERSION_REGEX "${PROJECT_VERSION}")
 set_tests_properties(cli_version PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "xs ${XS_PROJECT_VERSION_REGEX}")
-add_test(NAME legacy_cli_version COMMAND xs_proj --version)
-set_tests_properties(legacy_cli_version PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "xs-proj ${XS_PROJECT_VERSION_REGEX}")
 
 xs_add_c_test(lexer tests/lexer_tests.c xs_compiler)
 xs_add_c_test(parser tests/parser_tests.c xs_compiler)
 xs_add_c_test(diagnostic tests/diagnostic_tests.c xs_compiler)
 
-add_test(NAME example_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
-set_tests_properties(example_project PROPERTIES TIMEOUT 5)
-add_test(NAME macro_project COMMAND xs check -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/macro_project/MacroApp.xsproj)
-set_tests_properties(macro_project PROPERTIES TIMEOUT 5)
+find_program(XS_GRADLE_EXECUTABLE NAMES gradle REQUIRED)
+set(XS_PROJECT_TEST_DRIVER
+    "${CMAKE_SOURCE_DIR}/xs_kts/build/install/xs-project/bin/xs-project")
+add_test(NAME kotlin_project_resolver_build COMMAND "${XS_GRADLE_EXECUTABLE}" --no-daemon
+  -p "${CMAKE_SOURCE_DIR}/xs_kts" installDist)
+set_tests_properties(kotlin_project_resolver_build PROPERTIES TIMEOUT 180
+  FIXTURES_SETUP kotlin_project_resolver ENVIRONMENT "GRADLE_OPTS=-Xmx512m")
+
+add_test(NAME example_source COMMAND xs check -file
+  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
+set_tests_properties(example_source PROPERTIES TIMEOUT 5)
+add_test(NAME macro_source COMMAND xs check -file
+  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/macro_project/source/Main.xs)
+set_tests_properties(macro_source PROPERTIES TIMEOUT 5)
 add_test(NAME compiler_check_file COMMAND xs check -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
 set_tests_properties(compiler_check_file PROPERTIES TIMEOUT 5)
@@ -46,15 +50,8 @@ set_tests_properties(compiler_rejects_invalid_warning PROPERTIES TIMEOUT 5 WILL_
 add_test(NAME compiler_rejects_misspelled_werror COMMAND xs check -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs --werrror true)
 set_tests_properties(compiler_rejects_misspelled_werror PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
-add_test(NAME legacy_project_parse COMMAND xs_proj
-  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
-set_tests_properties(legacy_project_parse PROPERTIES TIMEOUT 5)
-add_test(NAME legacy_project_parser_rejects_commands COMMAND xs_proj build)
-set_tests_properties(legacy_project_parser_rejects_commands PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
 foreach(output hir mir xlil)
-  add_test(NAME build_output_${output} COMMAND xs build --output ${output} -proj ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
-  set_tests_properties(build_output_${output} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
   add_test(NAME build_file_output_${output} COMMAND xs build --output ${output} -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
   set_tests_properties(build_file_output_${output} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
   add_test(NAME build_file_short_${output} COMMAND xs build --${output} -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
@@ -221,19 +218,6 @@ endforeach()
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject")
-configure_file(tests/fixtures/source/MainReturn0.xs
-               "${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.xs" COPYONLY)
-add_executable(xs_project_resolver_stub tests/project_resolver_stub.c)
-add_test(NAME kotlin_project_native_build COMMAND xs build)
-set_tests_properties(kotlin_project_native_build PROPERTIES TIMEOUT 5
-  ENVIRONMENT "XS_PROJECT_DRIVER=$<TARGET_FILE:xs_project_resolver_stub>;XS_TEST_PROJECT_SOURCE=${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.xs"
-  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
-add_test(NAME kotlin_project_native_artifacts COMMAND xs_xse_artifact_tests
-  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.ll
-  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.o
-  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/KotlinProject/main.xse 0)
-set_tests_properties(kotlin_project_native_artifacts PROPERTIES DEPENDS kotlin_project_native_build TIMEOUT 5)
 foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainCharFlow MainIntegerWidths MainIntegerOperators MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
@@ -252,25 +236,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                  COPYONLY)
 endforeach()
 set(XS_PROJECT_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/projects")
-file(MAKE_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source")
-configure_file(tests/fixtures/projects/NativeMain.xsproj "${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj"
-               COPYONLY)
-configure_file(tests/fixtures/projects/MultiFileNative.xsproj
-               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/MultiFileNative.xsproj" COPYONLY)
-configure_file(tests/fixtures/projects/IntegerWidths.xsproj "${XS_PROJECT_NATIVE_FIXTURE_DIR}/IntegerWidths.xsproj"
-               COPYONLY)
-configure_file(tests/fixtures/projects/IntegerOperators.xsproj "${XS_PROJECT_NATIVE_FIXTURE_DIR}/IntegerOperators.xsproj"
-               COPYONLY)
-configure_file(tests/fixtures/projects/source/NativeMain.xs "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xs"
-               COPYONLY)
-configure_file(tests/fixtures/projects/source/MultiFileMain.xs
-               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.xs" COPYONLY)
-configure_file(tests/fixtures/projects/source/MultiFileHelper.xs
-               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileHelper.xs" COPYONLY)
-configure_file(tests/fixtures/source/MainIntegerWidths.xs
-               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerWidths.xs" COPYONLY)
-configure_file(tests/fixtures/source/MainIntegerOperators.xs
-               "${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerOperators.xs" COPYONLY)
+file(COPY tests/fixtures/projects/ DESTINATION "${XS_PROJECT_NATIVE_FIXTURE_DIR}")
 
 add_test(NAME source_native_return0_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.xs)
 set_tests_properties(source_native_return0_build PROPERTIES TIMEOUT 5
@@ -784,44 +750,64 @@ add_test(NAME source_native_bool_parameter_call_artifacts COMMAND xs_xse_artifac
                                                             "call i32 @Choose")
 set_tests_properties(source_native_bool_parameter_call_artifacts PROPERTIES
                      DEPENDS source_native_bool_parameter_call_build TIMEOUT 5)
-add_test(NAME project_native_build COMMAND xs build -proj ${XS_PROJECT_NATIVE_FIXTURE_DIR}/NativeMain.xsproj)
-set_tests_properties(project_native_build PROPERTIES TIMEOUT 5
-                    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
-add_test(NAME project_native_artifacts COMMAND xs_xse_artifact_tests ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.ll
-                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.o
-                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/NativeMain.xse 7)
-set_tests_properties(project_native_artifacts PROPERTIES DEPENDS project_native_build TIMEOUT 5)
-add_test(NAME project_multi_file_native_build COMMAND xs build -proj
-                                                      ${XS_PROJECT_NATIVE_FIXTURE_DIR}/MultiFileNative.xsproj)
-set_tests_properties(project_multi_file_native_build PROPERTIES TIMEOUT 5
-                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
-add_test(NAME project_multi_file_native_artifacts COMMAND xs_xse_artifact_tests
-                                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.ll
-                                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.o
-                                                           ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MultiFileMain.xse 7
-                                                           "call i32 @add")
-set_tests_properties(project_multi_file_native_artifacts PROPERTIES DEPENDS project_multi_file_native_build TIMEOUT 5)
-add_test(NAME project_integer_widths_build COMMAND xs build -proj
-                                                   ${XS_PROJECT_NATIVE_FIXTURE_DIR}/IntegerWidths.xsproj)
-set_tests_properties(project_integer_widths_build PROPERTIES TIMEOUT 5
-                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
-add_test(NAME project_integer_widths_artifacts COMMAND xs_xse_artifact_tests
-                                                       ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerWidths.ll
-                                                       ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerWidths.o
-                                                       ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerWidths.xse 0
-                                                       "define i128 @integer_min" "ret i128 -1")
-set_tests_properties(project_integer_widths_artifacts PROPERTIES DEPENDS project_integer_widths_build TIMEOUT 5)
-add_test(NAME project_integer_operators_build COMMAND xs build -proj
-                                                    ${XS_PROJECT_NATIVE_FIXTURE_DIR}/IntegerOperators.xsproj)
-set_tests_properties(project_integer_operators_build PROPERTIES TIMEOUT 5
-                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
-add_test(NAME project_integer_operators_artifacts COMMAND xs_xse_artifact_tests
-                                                        ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerOperators.ll
-                                                        ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerOperators.o
-                                                        ${XS_PROJECT_NATIVE_FIXTURE_DIR}/source/MainIntegerOperators.xse 0
-                                                        "sdiv i8" "udiv i64" "icmp ult i128" "icmp slt i128")
-set_tests_properties(project_integer_operators_artifacts PROPERTIES
-                     DEPENDS project_integer_operators_build TIMEOUT 5)
+add_test(NAME kotlin_project_call_build COMMAND xs build)
+set_tests_properties(kotlin_project_call_build PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver FIXTURES_SETUP kotlin_project_call_native
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME kotlin_project_call_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/sources/main.ll
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/sources/main.o
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/sources/main.xse 7)
+set_tests_properties(kotlin_project_call_artifacts PROPERTIES TIMEOUT 5
+  FIXTURES_REQUIRED kotlin_project_call_native)
+add_test(NAME kotlin_project_multi_file_native_build COMMAND xs build)
+set_tests_properties(kotlin_project_multi_file_native_build PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver FIXTURES_SETUP kotlin_project_multi_file_native
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME kotlin_project_multi_file_native_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file/sources/main.ll
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file/sources/main.o
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file/sources/main.xse 7
+  "call i32 @add")
+set_tests_properties(kotlin_project_multi_file_native_artifacts PROPERTIES
+  TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_multi_file_native)
+add_test(NAME kotlin_project_integer_widths_build COMMAND xs build)
+set_tests_properties(kotlin_project_integer_widths_build PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_widths"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver FIXTURES_SETUP kotlin_project_integer_widths
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME kotlin_project_integer_widths_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_widths/sources/main.ll
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_widths/sources/main.o
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_widths/sources/main.xse 0
+  "define i128 @integer_min" "ret i128 -1")
+set_tests_properties(kotlin_project_integer_widths_artifacts PROPERTIES
+  TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_integer_widths)
+add_test(NAME kotlin_project_integer_operators_build COMMAND xs build)
+set_tests_properties(kotlin_project_integer_operators_build PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_operators"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver FIXTURES_SETUP kotlin_project_integer_operators
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME kotlin_project_integer_operators_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_operators/sources/main.ll
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_operators/sources/main.o
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_operators/sources/main.xse 0
+  "sdiv i8" "udiv i64" "icmp ult i128" "icmp slt i128")
+set_tests_properties(kotlin_project_integer_operators_artifacts PROPERTIES
+  TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_integer_operators)
+set_tests_properties(
+  kotlin_project_resolver_build
+  kotlin_project_call_build kotlin_project_call_artifacts
+  kotlin_project_multi_file_native_build kotlin_project_multi_file_native_artifacts
+  kotlin_project_integer_widths_build kotlin_project_integer_widths_artifacts
+  kotlin_project_integer_operators_build kotlin_project_integer_operators_artifacts
+  PROPERTIES LABELS jvm)
 foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteMain OutOfRangeUIntegerMain
                        ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain NonLongReturnCallMain RecursiveCallMain

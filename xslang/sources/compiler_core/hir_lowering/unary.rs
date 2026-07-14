@@ -13,6 +13,32 @@ pub(super) fn lower_unary_expression(tree: &SyntaxTree,
                                      source_span: Span)
                                      -> Option<Expression>
 {
+  if matches!(value.token_kind, TOKEN_PLUS_PLUS | TOKEN_MINUS_MINUS)
+  {
+    let target = tree.nodes.get(value.children[0])?;
+    if target.kind != EXPR_IDENTIFIER
+    {
+      return None;
+    }
+    return Some(Expression::Update { target: path_text(tree, target),
+                                     operator: if value.token_kind == TOKEN_PLUS_PLUS
+                                     {
+                                       UpdateOperator::Increment
+                                     }
+                                     else
+                                     {
+                                       UpdateOperator::Decrement
+                                     },
+                                     position: if value.flags & PREFIX_UPDATE != 0
+                                     {
+                                       UpdatePosition::Prefix
+                                     }
+                                     else
+                                     {
+                                       UpdatePosition::Postfix
+                                     },
+                                     span: source_span });
+  }
   let operator = match value.token_kind
   {
     TOKEN_BANG => UnaryOperator::LogicalNot,

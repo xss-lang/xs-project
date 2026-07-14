@@ -5,11 +5,55 @@
 
 use super::{function_to_xhir, parse_xhir_function};
 use crate::hir::type_check::Local;
-use crate::hir::{Block, Expression, Function, Literal, PrimitiveType, Span, Statement, Type};
+use crate::hir::{
+  Block, Expression, Function, Literal, PrimitiveType, Span, Statement, Type, UpdateOperator, UpdatePosition,
+};
 
 fn span() -> Span
 {
   Span::new(1, 0, 1)
+}
+
+#[test]
+fn roundtrips_prefix_and_postfix_update_values()
+{
+  let local = Local { name: "value".to_string(),
+                      ty: Type::Primitive(PrimitiveType::Long),
+                      mutable: true,
+                      span: span() };
+  let function = Function { name: "updates".to_string(),
+                            return_type: Some(Type::Primitive(PrimitiveType::Long)),
+                            locals: vec![local.clone()],
+                            body: vec![Statement::Let { local,
+                                                        initializer: Some(integer("1")) },
+                                       Statement::Expr(Expression::Update { target: "value".to_string(),
+                                                                            operator: UpdateOperator::Increment,
+                                                                            position: UpdatePosition::Postfix,
+                                                                            span: span() }),
+                                       Statement::Return { value: Some(Expression::Update { target:
+                                                                                              "value".to_string(),
+                                                                                            operator:
+                                                                                              UpdateOperator::Decrement,
+                                                                                            position:
+                                                                                              UpdatePosition::Prefix,
+                                                                                            span: span() }),
+                                                           span: span() }] };
+
+  let text = function_to_xhir(&function);
+  let parsed = parse_xhir_function(&text).expect("update XHIR should parse");
+
+  assert!(text.contains("update postfix increment value"));
+  assert!(text.contains("update prefix decrement value"));
+  assert!(matches!(&parsed.body[1],
+                   Statement::Expr(Expression::Update { operator: UpdateOperator::Increment,
+                                                        position: UpdatePosition::Postfix,
+                                                        .. })));
+  assert!(matches!(&parsed.body[2], Statement::Return { value:
+                                                          Some(Expression::Update { operator:
+                                                                                      UpdateOperator::Decrement,
+                                                                                    position: UpdatePosition::Prefix,
+                                                                                    .. }),
+                                                        .. }));
 }
 
 fn integer(value: &str) -> Expression

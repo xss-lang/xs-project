@@ -14,6 +14,11 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Prefix and postfix integer updates now preserve their different expression results through typed HIR, MIR local
+  storage, XLIL, LLVM, and native `.xse` output. The remaining arithmetic/bitwise compound assignments also use the Rust
+  compiler-core route instead of the temporary C source bridge.
+- Native project tests now evaluate real `xs.project.kts` files with the external Kotlin 2.4.0 runner and JRE 25, including
+  multi-file and fixed-width integer projects.
 - Rust compiler-core sessions can merge multiple expanded structural-AST source trees into one program-wide declaration,
   typed HIR, MIR, XLIL, and LLVM module. Same-module helper calls across project files now produce native `.xse` output.
 - Kotlin `sources` includes now expand `*`, `**`, and `?` globs, apply excludes, require exactly one resolved `main.xs`,
@@ -34,8 +39,9 @@ source-to-native executable pipeline.
 
 ### Changed
 
-- The XSPROJ format and public C23 model are feature-frozen. Dependency records were removed; programmable dependencies
-  and conditional configuration belong to the Kotlin project DSL.
+- The XSPROJ format and public C23 model are permanent legacy compatibility. They are feature-frozen, receive no new
+  features, are excluded from compiler conformance/project tests, and will never be removed. Dependency records were
+  removed; programmable dependencies and conditional configuration belong to the Kotlin project DSL.
 - Kotlin project host matching treats BSD systems as members of both the BSD and UNIX families.
 - The compiler flag is spelled `--werror`; the former misspelling is rejected. ReactOS is a distinct internal host OS,
   has no public OS constant, and satisfies `FAMILY == WINDOWS` without satisfying `OS == WINDOWS`.

@@ -9,7 +9,10 @@ use crate::hir::{
   MatchArm, MatchPattern,
   async_check::Span,
   declarations,
-  type_check::{BinaryOperator, Block, Expression, Literal, PrimitiveType, Statement, Type, UnaryOperator},
+  type_check::{
+    BinaryOperator, Block, Expression, Literal, PrimitiveType, Statement, Type, UnaryOperator, UpdateOperator,
+    UpdatePosition,
+  },
 };
 
 use super::{SyntaxNode, SyntaxTree};
@@ -71,10 +74,15 @@ const TOKEN_MINUS_ASSIGN: u32 = 43;
 const TOKEN_STAR: u32 = 44;
 const TOKEN_STAR_ASSIGN: u32 = 45;
 const TOKEN_SLASH: u32 = 46;
+const TOKEN_SLASH_ASSIGN: u32 = 47;
 const TOKEN_PERCENT: u32 = 48;
+const TOKEN_PERCENT_ASSIGN: u32 = 49;
 const TOKEN_AMPERSAND: u32 = 50;
+const TOKEN_AMPERSAND_ASSIGN: u32 = 52;
 const TOKEN_PIPE: u32 = 53;
+const TOKEN_PIPE_ASSIGN: u32 = 55;
 const TOKEN_CARET: u32 = 56;
+const TOKEN_CARET_ASSIGN: u32 = 57;
 const TOKEN_SHIFT_RIGHT: u32 = 34;
 const TOKEN_SHIFT_LEFT: u32 = 37;
 const TOKEN_ASSIGN: u32 = 24;
@@ -85,6 +93,7 @@ const RETURN_TYPE: u32 = 1 << 11;
 const INFERRED_TYPE: u32 = 1 << 12;
 const DISCARDED: u32 = 1 << 21;
 const POST_TEST_LOOP: u32 = 1 << 25;
+const PREFIX_UPDATE: u32 = 1 << 26;
 const FOR_INITIALIZER: u32 = 1 << 27;
 const FOR_CONDITION: u32 = 1 << 28;
 const FOR_UPDATE: u32 = 1 << 29;
@@ -352,13 +361,25 @@ fn lower_expression(tree: &SyntaxTree,
       let assigned = match value.token_kind
       {
         TOKEN_ASSIGN => assigned,
-        TOKEN_PLUS_ASSIGN | TOKEN_MINUS_ASSIGN | TOKEN_STAR_ASSIGN =>
+        TOKEN_PLUS_ASSIGN |
+        TOKEN_MINUS_ASSIGN |
+        TOKEN_STAR_ASSIGN |
+        TOKEN_SLASH_ASSIGN |
+        TOKEN_PERCENT_ASSIGN |
+        TOKEN_AMPERSAND_ASSIGN |
+        TOKEN_PIPE_ASSIGN |
+        TOKEN_CARET_ASSIGN =>
         {
           let operator = match value.token_kind
           {
             TOKEN_PLUS_ASSIGN => BinaryOperator::Add,
             TOKEN_MINUS_ASSIGN => BinaryOperator::Sub,
             TOKEN_STAR_ASSIGN => BinaryOperator::Mul,
+            TOKEN_SLASH_ASSIGN => BinaryOperator::Div,
+            TOKEN_PERCENT_ASSIGN => BinaryOperator::Rem,
+            TOKEN_AMPERSAND_ASSIGN => BinaryOperator::BitAnd,
+            TOKEN_PIPE_ASSIGN => BinaryOperator::BitOr,
+            TOKEN_CARET_ASSIGN => BinaryOperator::BitXor,
             _ => return None,
           };
           Expression::Binary { operator,
@@ -459,39 +480,6 @@ fn lower_discarded_expression(tree: &SyntaxTree,
                               expected_type: Option<&Type>)
                               -> Option<Expression>
 {
-  if value.kind == EXPR_UNARY &&
-     matches!(value.token_kind, TOKEN_PLUS_PLUS | TOKEN_MINUS_MINUS) &&
-     value.children.len() == 1
-  {
-    let target = tree.nodes.get(value.children[0])?;
-    if target.kind != EXPR_IDENTIFIER ||
-       locals.get(&path_text(tree, target)) != Some(&Type::Primitive(PrimitiveType::Long))
-    {
-      return None;
-    }
-    let target = path_text(tree, target);
-    let source_span = span(value)?;
-    let operator = if value.token_kind == TOKEN_PLUS_PLUS
-    {
-      BinaryOperator::Add
-    }
-    else
-    {
-      BinaryOperator::Sub
-    };
-    return Some(Expression::Assign {
-      target: target.clone(),
-      value: Box::new(Expression::Binary {
-        operator,
-        left: Box::new(Expression::Local { name: target,
-                                           span: source_span }),
-        right: Box::new(Expression::Literal { literal: Literal::Integer("1".to_string()),
-                                              span: source_span }),
-        span: source_span,
-      }),
-      span: source_span,
-    });
-  }
   lower_expression(tree, value, signatures, locals, expected_type)
 }
 

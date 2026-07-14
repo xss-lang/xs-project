@@ -14,6 +14,7 @@ impl TypeChecker
       Expression::Literal { literal, .. } => literal_default_type(literal),
       Expression::Local { name, .. } => self.find_local(name).map(|local| local.ty.clone()),
       Expression::Assign { value, .. } => self.expression_type(value),
+      Expression::Update { target, .. } => self.find_local(target).map(|local| local.ty.clone()),
       Expression::Binary { operator,
                            left,
                            right,

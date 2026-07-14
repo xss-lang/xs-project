@@ -22,6 +22,7 @@ toolchain.
   - `llvm-strip`
 - `ld.lld`
 - `rustup` and `cargo`; the pinned `xslang/rust-toolchain.toml` toolchain must be installed
+- JRE 25, Gradle 9.6.1 or newer, and the Kotlin 2.4.0 `kotlin` script runner for the `jvm` project-test label
 
 Useful helper tools:
 
@@ -63,12 +64,20 @@ support; neither is embedded. The compiler command itself remains JVM-free.
 
 ## OOM-safe workflow
 
-Parser/project tests have previously triggered OOM conditions. Use a 2GB virtual memory limit for longer build/test runs:
+Parser/compiler tests have previously triggered OOM conditions. Use a 2GB virtual memory limit for native tests, excluding
+the JVM-labelled Kotlin project integration tests:
 
 ```text
 ulimit -v 2097152
 cmake --build --preset clang-debug
-ctest --preset clang-debug --output-on-failure
+ctest --preset clang-debug --output-on-failure -LE jvm
+```
+
+Then run the real `xs.project.kts` integration tests outside that virtual-address-space limit. A JVM reserves more virtual
+address space than its live heap, so applying `ulimit -v 2097152` to this step is not valid:
+
+```text
+ctest --preset clang-debug --output-on-failure -L jvm
 ```
 
 Tests are expected to run quickly. If a test suddenly consumes a lot of memory, treat it as a possible infinite loop, parser

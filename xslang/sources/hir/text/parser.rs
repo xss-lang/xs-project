@@ -7,6 +7,7 @@ use crate::hir::async_check::Span;
 use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
 use crate::hir::type_check::{
   BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, UnaryOperator,
+  UpdateOperator, UpdatePosition,
 };
 use crate::hir::{MatchArm, MatchPattern};
 
@@ -481,6 +482,40 @@ impl Parser<'_>
                                                        span: span() });
       return Some(Expression::Assign { target: target.to_string(),
                                        value: Box::new(value),
+                                       span: span() });
+    }
+    if let Some(update) = rest.strip_prefix("update ")
+    {
+      self.index += 1;
+      let fields = update.split_whitespace().collect::<Vec<_>>();
+      if fields.len() != 3
+      {
+        self.report("invalid update expression".to_string());
+        return None;
+      }
+      let position = match fields[0]
+      {
+        "prefix" => UpdatePosition::Prefix,
+        "postfix" => UpdatePosition::Postfix,
+        value =>
+        {
+          self.report(format!("unknown update position '{value}'"));
+          return None;
+        }
+      };
+      let operator = match fields[1]
+      {
+        "increment" => UpdateOperator::Increment,
+        "decrement" => UpdateOperator::Decrement,
+        value =>
+        {
+          self.report(format!("unknown update operator '{value}'"));
+          return None;
+        }
+      };
+      return Some(Expression::Update { target: fields[2].to_string(),
+                                       operator,
+                                       position,
                                        span: span() });
     }
     if let Some(signature) = rest.strip_prefix("call ")

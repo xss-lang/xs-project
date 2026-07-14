@@ -85,7 +85,8 @@ The documented compilation order is preserved:
   line boundaries.
 - The `.xsproj` parser is not just an internal compiler detail. A public C23 API surface under `#include <xs/project.h>` lets
   third-party tools read `.xsproj` files in a JSON-like model.
-- XSPROJ is feature-frozen and no longer carries dependency records. Its application/source/target model remains public.
+- XSPROJ is permanent legacy compatibility: it is feature-frozen, receives no new features, is excluded from compiler
+  conformance/project tests, and will never be removed. Its application/source/target model remains public and buildable.
 - Required fields, duplicate fields, unknown fields, and `appRelease` values are validated.
 - When `entry: None`, the documented first additional source selection rule is applied.
 - Project-relative paths are resolved from the directory containing the `.xsproj` file.
@@ -133,8 +134,9 @@ The documented compilation order is preserved:
   also lowers statement-level `if`/`else if` blocks with one or more assignments in each branch and a merge before the
   final return.
   `Long` local assignments include `=`, arithmetic, and bitwise compound assignment forms already represented by the
-  structural parser. Prefix increment/decrement returns the updated local value; postfix increment/decrement returns its
-  prior value. Both perform one checked mutable-local store. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
+  structural parser. The Rust compiler core carries these forms through typed HIR and MIR. Prefix increment/decrement
+  returns the updated local value; postfix increment/decrement returns its prior value. Both perform one checked
+  mutable-local store. These supported conditional assignment blocks may nest. A `while` with a supported Bool condition and
   assignment-only body lowers to a MIR loop header, body, and exit. Supported conditional and loop blocks also accept
   `Long`/`Bool` local declarations with lexical lifetime in the source-native context. `do { ... } while (condition);`
   is post-test syntax sugar: its body executes once before the first condition test and it uses the existing loop CFG
@@ -604,12 +606,13 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   `add.i32`, `sub.i32`, `mul.i32`, `div.i32`, `rem.i32`, `and.i32`, `or.i32`, `shl.i32`, `shr.i32`, `eq.i32`,
   `ne.i32`, `lt.i32`, `le.i32`, `gt.i32`, `ge.i32`, `not.bool`, signed i64 arithmetic/bitwise/shift/comparison
   instructions, typed `.slot`/`load`/`store`, `call`, `br`, `br_if`, `panic`, `ret`, and `ret %rN`.
-- `xs build -file <input.xs>`, argument-free `xs build`, and `xs build -proj <input.xsproj>` use the same native path for supported compiler-core
+- `xs build -file <input.xs>`, argument-free `xs build`, and legacy `xs build -proj <input.xsproj>` use the same native path for supported compiler-core
   sessions. Context-typed literals, parameters, locals, direct calls, and returns preserve every fixed integer width;
   `main` remains `Long`. The broader expression slice includes `Long`/`Bool` mutable locals,
   unary `+`/`-`,
-  arithmetic, bitwise including `^`, shift, and top-level `if` expressions. This source bridge creates a temporary C MIR
-  function, lowers it to XLIL, and then reuses the XLIL native builder.
+  arithmetic, bitwise including `^`, shift, and top-level `if` expressions. Prefix/postfix increment and decrement retain
+  their distinct result values in typed HIR and lower through MIR storage loads/stores. Compound `/=`, `%=`, `&=`, `|=`,
+  and `^=` assignments also use the Rust compiler-core path. The resulting XLIL reuses the native LLVM builder.
 - Direct executable linking uses the configured Clang driver with LLD for the native Linux ELF target. A configured
   cross-target still receives LLVM IR and object artifacts, then stops before executable linking; runtime and external
   library linking remain unconfigured.
@@ -709,5 +712,6 @@ ctest --preset clang-debug
 To check the example project:
 
 ```text
-./build/clang-debug/xs check -proj tests/fixtures/example_project/MyApp.xsproj
+cd tests/fixtures/projects/native_call
+../../../../build/clang-debug/xs check
 ```

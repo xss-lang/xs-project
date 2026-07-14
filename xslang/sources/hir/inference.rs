@@ -100,6 +100,10 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                                             .find(|local| local.name == *name)
                                             .map(|local| local.ty.clone()),
     Expression::Assign { value, .. } => infer_expression_type(value, locals),
+    Expression::Update { target, .. } => locals.iter()
+                                               .rev()
+                                               .find(|local| local.name == *target)
+                                               .map(|local| local.ty.clone()),
     Expression::Binary { operator,
                          left,
                          right,

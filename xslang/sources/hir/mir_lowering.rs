@@ -9,7 +9,8 @@ use super::async_check::Span;
 use super::match_model::{MatchArm, MatchPattern};
 use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type, UnaryOperator,
+  BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type, UnaryOperator, UpdateOperator,
+  UpdatePosition,
 };
 use crate::mir;
 use crate::xlil::{Type as XlilType, TypeKind};
@@ -210,6 +211,16 @@ impl HirToMirLowerer
         };
         self.lower_assignment(id, value, lowered);
       }
+      Statement::Expr(expression @ Expression::Update { .. }) =>
+      {
+        let Some(value_type) = self.expression_value_type(expression, lowered)
+        else
+        {
+          self.unsupported_expression(expression);
+          return;
+        };
+        let _ = self.lower_update_expression(expression, value_type, lowered);
+      }
       Statement::Expr(expression) => self.unsupported_expression(expression),
       Statement::Return { value,
                           span, } => self.lower_return(value.as_ref(), *span, lowered),
@@ -358,6 +369,7 @@ impl HirToMirLowerer
         self.unsupported_expression(expression);
         None
       }
+      Expression::Update { .. } => self.lower_update_expression(expression, expected_type, lowered),
       Expression::ResultPropagation { .. } =>
       {
         self.unsupported_expression(expression);
@@ -680,6 +692,7 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Literal { span, .. } |
     Expression::Local { span, .. } |
     Expression::Assign { span, .. } |
+    Expression::Update { span, .. } |
     Expression::Binary { span, .. } |
     Expression::Unary { span, .. } |
     Expression::ResultPropagation { span, .. } => *span,
@@ -700,6 +713,7 @@ mod function_lowering;
 mod integer_literal;
 #[cfg(test)]
 mod match_tests;
+mod update;
 mod value_lowering;
 #[cfg(test)]
 mod value_tests;

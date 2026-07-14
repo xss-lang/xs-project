@@ -20,16 +20,36 @@ jobs:
         run: cmake --version
       - name: Install Rust nightly
         run: rustup toolchain install nightly-2026-07-10 --profile default
+      - name: Install JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.1"
+      - name: Install Kotlin 2.4.0 script runner
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/JetBrains/kotlin/releases/download/v2.4.0/kotlin-compiler-2.4.0.zip \
+            --output "$RUNNER_TEMP/kotlin-compiler.zip"
+          unzip -q "$RUNNER_TEMP/kotlin-compiler.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/kotlinc/bin" >> "$GITHUB_PATH"
       - name: Install native toolchain
         run: sudo apt-get update && sudo apt-get install --yes clang lld llvm llvm-dev ninja-build
       - name: Configure C23 debug build
         run: cmake --preset clang-debug
       - name: Test C23 debug build
-        run: ulimit -v 2097152; cmake --build --preset clang-debug && ctest --preset clang-debug --output-on-failure
+        run: ulimit -v 2097152; cmake --build --preset clang-debug && ctest --preset clang-debug --output-on-failure -LE jvm
+      - name: Test Kotlin project builds
+        run: ctest --preset clang-debug --output-on-failure -L jvm
       - name: Configure sanitizer build
         run: cmake --preset clang-sanitize
       - name: Test sanitizer build
-        run: cmake --build --preset clang-sanitize && ctest --preset clang-sanitize --output-on-failure
+        run: cmake --build --preset clang-sanitize && ctest --preset clang-sanitize --output-on-failure -LE jvm
+      - name: Test Kotlin projects with sanitizer compiler
+        run: ctest --preset clang-sanitize --output-on-failure -L jvm
       - name: Check Rust formatting
         run: cargo +nightly-2026-07-10 fmt --manifest-path xslang/Cargo.toml --check
       - name: Test Rust compiler core

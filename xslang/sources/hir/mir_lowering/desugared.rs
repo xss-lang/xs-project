@@ -26,6 +26,13 @@ impl HirToMirLowerer
                                               value: Box::new(value),
                                               span: *span })
       }
+      DesugaredExpression::Update { target,
+                                    operator,
+                                    position,
+                                    span, } => Some(Expression::Update { target: target.clone(),
+                                                                         operator: *operator,
+                                                                         position: *position,
+                                                                         span: *span }),
       DesugaredExpression::Binary { operator,
                                     left,
                                     right,

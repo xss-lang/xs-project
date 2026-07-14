@@ -45,11 +45,12 @@ impl HirToMirLowerer
     }
   }
 
-  fn expression_value_type(&self, expression: &Expression, lowered: &mir::Function) -> Option<XlilType>
+  pub(super) fn expression_value_type(&self, expression: &Expression, lowered: &mir::Function) -> Option<XlilType>
   {
     match expression
     {
       Expression::Local { name, .. } => self.local_value_type(*self.locals.get(name)?, lowered),
+      Expression::Update { target, .. } => self.local_value_type(*self.locals.get(target)?, lowered),
       Expression::Binary { operator,
                            left,
                            right,

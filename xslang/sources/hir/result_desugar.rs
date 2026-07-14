@@ -7,7 +7,7 @@ use super::async_check::Span;
 use super::match_model::MatchPattern;
 use super::type_check::{
   BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, UnaryOperator,
-  literal_matches_type, result_type_parts,
+  UpdateOperator, UpdatePosition, literal_matches_type, result_type_parts,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -41,6 +41,13 @@ pub enum DesugaredExpression
   {
     target: String,
     value: Box<DesugaredExpression>,
+    span: Span,
+  },
+  Update
+  {
+    target: String,
+    operator: UpdateOperator,
+    position: UpdatePosition,
     span: Span,
   },
   Binary
@@ -299,6 +306,13 @@ impl ResultDesugar
                            span, } => DesugaredExpression::Assign { target: target.clone(),
                                                                     value: Box::new(self.desugar_expression(value)),
                                                                     span: *span },
+      Expression::Update { target,
+                           operator,
+                           position,
+                           span, } => DesugaredExpression::Update { target: target.clone(),
+                                                                    operator: *operator,
+                                                                    position: *position,
+                                                                    span: *span },
       Expression::Binary { operator,
                            left,
                            right,
@@ -446,6 +460,18 @@ impl ResultDesugar
                                                                                           None
                                                                                         }),
       Expression::Assign { value, .. } => self.expression_type(value),
+      Expression::Update { target,
+                           span,
+                           .. } => self.find_local(target).map(|local| local.ty.clone()).or_else(|| {
+                                                                                          self.diagnostics
+                                                                  .push(Diagnostic { code:
+                                                                                       DiagnosticCode::UnknownLocal,
+                                                                                     message:
+                                                                                       format!("unknown local \
+                                                                                                '{target}'"),
+                                                                                     span: *span });
+                                                                                          None
+                                                                                        }),
       Expression::Binary { operator,
                            left,
                            right,

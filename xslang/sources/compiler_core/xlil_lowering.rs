@@ -61,7 +61,7 @@ fn expression_calls(expression: &Expression, name: &str) -> bool
     Expression::Match { selector,
                         arms,
                         .. } => expression_calls(selector, name) || arms.iter().any(|arm| block_calls(&arm.body, name)),
-    Expression::Literal { .. } | Expression::Local { .. } => false,
+    Expression::Literal { .. } | Expression::Local { .. } | Expression::Update { .. } => false,
   }
 }
 

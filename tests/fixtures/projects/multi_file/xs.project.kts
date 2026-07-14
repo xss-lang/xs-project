@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-fn Add(left: Long, right: Long) -> Long {
-    return left + right;
-}
+project("MultiFileNative", "BETA", "0.1.6")
 
-fn main() -> Long {
-    return Add(2, 5);
+sources {
+  include("sources/main.xs")
+  include("sources/helper.xs")
 }

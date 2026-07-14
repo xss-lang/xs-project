@@ -97,7 +97,7 @@ impl TypeChecker
   }
 }
 
-const fn is_supported_integer(primitive: PrimitiveType) -> bool
+pub(super) const fn is_supported_integer(primitive: PrimitiveType) -> bool
 {
   matches!(primitive,
            PrimitiveType::Byte |

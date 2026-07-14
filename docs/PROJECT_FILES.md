@@ -217,7 +217,8 @@ Kotlin command, while `XS_PROJECT_DRIVER` may select the resolver executable use
 The C23 `.xsproj` parser API and `/usr/bin/xs-proj` parser/validator remain available, but the format is
 feature-frozen. Dependency declarations are no longer part of XSPROJ. New programmable configuration and dependency
 features are exclusive to the Kotlin project system. Legacy builds use `xs build -proj App.xsproj`; the `-proj` flag is
-never used for Kotlin project files.
+never used for Kotlin project files. XSPROJ is permanent legacy compatibility: it will not receive new features, it is
+not used by compiler conformance/project build tests, and it will never be removed.
 
 ## Distribution packages
 
