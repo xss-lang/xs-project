@@ -25,7 +25,7 @@ xs build --output xlil -file Main.xs
 xs build --hir -file Main.xs
 xs build --mir -file Main.xs
 xs build --xlil -file Main.xs
-xs build --warning all --werrror true --verbose true
+xs build --warning all --werror true --verbose true
 xs --version
 ```
 
@@ -42,23 +42,23 @@ project build, `-proj`, or `-file`:
 - `--warning all|medium|low|none` selects warning volume. A warning declares the minimum volume at which it is active;
   `all` enables every warning, `medium` is the default, `low` keeps only the most important warnings, and `none` disables
   warnings.
-- `--werrror true|false` controls whether enabled warnings fail the compilation.
+- `--werror true|false` controls whether enabled warnings fail the compilation.
 - `--verbose true|false` controls compiler progress output. When enabled, `xs` prints the effective policy and the
   ordered source registry entering the frontend.
 
-The default policy is `warning=medium`, `werrror=false`, and `verbose=true`. An explicit KTS `compiler {}` value is used
+The default policy is `warning=medium`, `werror=false`, and `verbose=true`. An explicit KTS `compiler {}` value is used
 for that project, and a command-line value has final precedence for the current invocation.
 
 For Kotlin projects these values override the evaluated `compiler {}` block without modifying either KTS file:
 
 ```text
-xs build --warning low --werrror false --verbose true
+xs build --warning low --werror false --verbose true
 ```
 
 XSPROJ has no persistent compiler-policy section. A legacy build uses the same options only as one-shot values:
 
 ```text
-xs build -proj MyApp.xsproj --warning all --werrror true
+xs build -proj MyApp.xsproj --warning all --werror true
 ```
 
 The compiler usage is:
@@ -66,7 +66,7 @@ The compiler usage is:
 ```text
 usage: xs build -file <Main.xs>
 usage: xs <check|build|run>
-       [--warning all|medium|low|none] [--werrror true|false] [--verbose true|false]
+       [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]
 usage: xs <check|build|run> -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -file <input>
 usage: xs build [--hir|--mir|--xlil] -file <input>

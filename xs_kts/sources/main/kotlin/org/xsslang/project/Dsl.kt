@@ -34,15 +34,6 @@ class DependenciesScope internal constructor() {
 }
 
 @XsProjectDsl
-class TargetsScope internal constructor() {
-  internal val values = mutableListOf<String>()
-
-  fun target(triple: String) {
-    values += requireText(triple, "target triple")
-  }
-}
-
-@XsProjectDsl
 class TestScope internal constructor() {
   internal val includes = mutableListOf<String>()
   internal var framework: String? = null
@@ -83,10 +74,9 @@ class ProjectContext internal constructor(
   state: ProjectState? = null,
 ) {
   private var identity: ProjectIdentity? = state?.identity
-  private val variables = (state?.variables ?: mapOf("XS_BACKEND" to "LLVM")).toMutableMap()
+  private val variables = (state?.variables ?: mapOf("XS_BACKEND" to listOf("LLVM"))).toMutableMap()
   private val authors = state?.authors?.toMutableList() ?: mutableListOf()
   private val modules = state?.modules?.toMutableList() ?: mutableListOf()
-  private val targets = state?.targets?.toMutableList() ?: mutableListOf()
   private val sourceIncludes = state?.sourceIncludes?.toMutableList() ?: mutableListOf()
   private val sourceExcludes = state?.sourceExcludes?.toMutableList() ?: mutableListOf()
   private val testIncludes = state?.testIncludes?.toMutableList() ?: mutableListOf()
@@ -109,9 +99,24 @@ class ProjectContext internal constructor(
 
   fun set(
     name: String,
-    value: String,
+    vararg values: String,
   ) {
-    variables[requireText(name, "variable name")] = value
+    if (values.isEmpty()) throw ProjectConfigurationException("set(...) requires at least one value")
+    variables[requireText(name, "variable name")] = values.map { value -> requireText(value, "variable value") }
+  }
+
+  fun get(name: String): String {
+    val key = requireText(name, "variable name")
+    val project = identity
+    if (key == "PROJECT" && project != null) return "${project.name}, ${project.channel}, ${project.version}"
+    return getAll(key).joinToString(", ")
+  }
+
+  fun getAll(name: String): List<String> {
+    val key = requireText(name, "variable name")
+    val project = identity
+    if (key == "PROJECT" && project != null) return listOf("${project.name}, ${project.channel}, ${project.version}")
+    return variables[key]?.toList() ?: throw ProjectConfigurationException("unknown project variable '$key'")
   }
 
   fun authors(vararg entries: Array<String>) {
@@ -123,10 +128,6 @@ class ProjectContext internal constructor(
 
   fun dependencies(block: DependenciesScope.() -> Unit) {
     modules += DependenciesScope().apply(block).modules
-  }
-
-  fun targets(block: TargetsScope.() -> Unit) {
-    targets += TargetsScope().apply(block).values
   }
 
   fun sources(block: SourcesScope.() -> Unit) {
@@ -151,7 +152,6 @@ class ProjectContext internal constructor(
       variables.toMap(),
       authors.toList(),
       modules.toList(),
-      targets.toList(),
       sourceIncludes.toList(),
       sourceExcludes.toList(),
       testIncludes.toList(),
@@ -183,7 +183,6 @@ class ProjectContext internal constructor(
       variables.toSortedMap(),
       authors.toList(),
       modules.distinct(),
-      targets.distinct(),
       sourceIncludes.distinct(),
       sourceExcludes.distinct(),
       testIncludes.distinct(),
@@ -216,14 +215,16 @@ object ProjectRuntime {
 
   fun set(
     name: String,
-    value: String,
-  ) = context.set(name, value)
+    vararg values: String,
+  ) = context.set(name, *values)
+
+  fun get(name: String) = context.get(name)
+
+  fun getAll(name: String) = context.getAll(name)
 
   fun authors(vararg entries: Array<String>) = context.authors(*entries)
 
   fun dependencies(block: DependenciesScope.() -> Unit) = context.dependencies(block)
-
-  fun targets(block: TargetsScope.() -> Unit) = context.targets(block)
 
   fun sources(block: SourcesScope.() -> Unit) = context.sources(block)
 
@@ -243,7 +244,7 @@ val FAMILY get() = ProjectRuntime.host.family
 val ARCH get() = ProjectRuntime.host.architecture
 val LINUX get() = OperatingSystem.LINUX
 val MACOS get() = OperatingSystem.MACOS
-val WINDOWS get() = OperatingSystem.WINDOWS
+val WINDOWS: Any get() = OperatingSystem.WINDOWS
 val FREEBSD get() = OperatingSystem.FREEBSD
 val OPENBSD get() = OperatingSystem.OPENBSD
 val NETBSD get() = OperatingSystem.NETBSD
@@ -266,14 +267,16 @@ fun project(
 
 fun set(
   name: String,
-  value: String,
-) = ProjectRuntime.set(name, value)
+  vararg values: String,
+) = ProjectRuntime.set(name, *values)
+
+fun get(name: String) = ProjectRuntime.get(name)
+
+fun getAll(name: String) = ProjectRuntime.getAll(name)
 
 fun authors(vararg entries: Array<String>) = ProjectRuntime.authors(*entries)
 
 fun dependencies(block: DependenciesScope.() -> Unit) = ProjectRuntime.dependencies(block)
-
-fun targets(block: TargetsScope.() -> Unit) = ProjectRuntime.targets(block)
 
 fun sources(block: SourcesScope.() -> Unit) = ProjectRuntime.sources(block)
 

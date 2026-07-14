@@ -7,13 +7,33 @@ package org.xsslang.project
 
 import java.io.Serializable
 
-enum class OperatingSystem { LINUX, MACOS, WINDOWS, FREEBSD, OPENBSD, NETBSD, UNKNOWN }
+class OperatingSystem private constructor(
+  val name: String,
+) {
+  override fun toString() = name
+
+  companion object {
+    val LINUX = OperatingSystem("LINUX")
+    val MACOS = OperatingSystem("MACOS")
+    val WINDOWS = OperatingSystem("WINDOWS")
+    val FREEBSD = OperatingSystem("FREEBSD")
+    val OPENBSD = OperatingSystem("OPENBSD")
+    val NETBSD = OperatingSystem("NETBSD")
+    val UNKNOWN = OperatingSystem("UNKNOWN")
+    internal val REACTOS_HOST = OperatingSystem("REACTOS")
+  }
+}
 
 class OperatingSystemFamily private constructor(
   private val membership: Int,
   private val displayName: String,
 ) {
-  override fun equals(other: Any?) = other is OperatingSystemFamily && membership and other.membership != 0
+  override fun equals(other: Any?) =
+    when {
+      other is OperatingSystemFamily -> membership and other.membership != 0
+      other === OperatingSystem.WINDOWS -> membership and 0b0100 != 0
+      else -> false
+    }
 
   override fun hashCode() = 0
 
@@ -30,8 +50,8 @@ class OperatingSystemFamily private constructor(
         OperatingSystem.FREEBSD, OperatingSystem.OPENBSD, OperatingSystem.NETBSD ->
           OperatingSystemFamily(0b0011, "BSD")
         OperatingSystem.LINUX, OperatingSystem.MACOS -> UNIX
-        OperatingSystem.WINDOWS -> WINDOWS
-        OperatingSystem.UNKNOWN -> UNKNOWN
+        OperatingSystem.WINDOWS, OperatingSystem.REACTOS_HOST -> WINDOWS
+        else -> UNKNOWN
       }
   }
 }
@@ -65,10 +85,9 @@ data class CompilerSettings(
 
 data class ProjectState(
   val identity: ProjectIdentity?,
-  val variables: Map<String, String>,
+  val variables: Map<String, List<String>>,
   val authors: List<Author>,
   val modules: List<String>,
-  val targets: List<String>,
   val sourceIncludes: List<String>,
   val sourceExcludes: List<String>,
   val testIncludes: List<String>,
@@ -78,10 +97,9 @@ data class ProjectState(
 
 data class ProjectPlan(
   val identity: ProjectIdentity,
-  val variables: Map<String, String>,
+  val variables: Map<String, List<String>>,
   val authors: List<Author>,
   val modules: List<String>,
-  val targets: List<String>,
   val sourceIncludes: List<String>,
   val sourceExcludes: List<String>,
   val testIncludes: List<String>,
@@ -97,19 +115,23 @@ class ProjectAbort(
   message: String,
 ) : RuntimeException(message)
 
+internal fun operatingSystemFromName(name: String): OperatingSystem {
+  val osName = name.lowercase()
+  return when {
+    osName.contains("linux") -> OperatingSystem.LINUX
+    osName.contains("mac") || osName.contains("darwin") -> OperatingSystem.MACOS
+    osName.contains("reactos") -> OperatingSystem.REACTOS_HOST
+    osName.contains("windows") -> OperatingSystem.WINDOWS
+    osName.contains("freebsd") -> OperatingSystem.FREEBSD
+    osName.contains("openbsd") -> OperatingSystem.OPENBSD
+    osName.contains("netbsd") -> OperatingSystem.NETBSD
+    else -> OperatingSystem.UNKNOWN
+  }
+}
+
 internal fun detectHost(): Host {
-  val osName = System.getProperty("os.name", "").lowercase()
   val architectureName = System.getProperty("os.arch", "").lowercase()
-  val os =
-    when {
-      osName.contains("linux") -> OperatingSystem.LINUX
-      osName.contains("mac") || osName.contains("darwin") -> OperatingSystem.MACOS
-      osName.contains("windows") -> OperatingSystem.WINDOWS
-      osName.contains("freebsd") -> OperatingSystem.FREEBSD
-      osName.contains("openbsd") -> OperatingSystem.OPENBSD
-      osName.contains("netbsd") -> OperatingSystem.NETBSD
-      else -> OperatingSystem.UNKNOWN
-    }
+  val os = operatingSystemFromName(System.getProperty("os.name", ""))
   val family = OperatingSystemFamily.forOperatingSystem(os)
   val architecture =
     when (architectureName) {

@@ -16,6 +16,20 @@ project("Example", "BETA", "0.1.0")
 
 set("XS_VERSION", "0.1.6")
 set("XS_BACKEND", "LLVM")
+set(
+  "TARGET",
+  "x86_64-unknown-linux-gnu",
+  "x86_64-unknown-linux-musl",
+  "aarch64-unknown-linux-gnu",
+  "armv7h-unknown-linux-gnueabihf",
+  "riscv64gc-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+  "aarch64-pc-windows-msvc",
+  "x86_64-unknown-freebsd",
+  "aarch64-unknown-freebsd",
+)
 
 if (cfg(OS == LINUX) && cfg(ARCH == X86_64)) {
   set("NATIVE_TARGET", "x86_64-unknown-linux-gnu")
@@ -33,12 +47,6 @@ authors(
 dependencies {
   addModule("https://github.com/xss-lang/externalModules/::JSON::0.1.0")
   addModule("https://github.com/xss-lang/externalModules/::XML::0.1.0")
-}
-
-targets {
-  target("x86_64-unknown-linux-gnu")
-  target("aarch64-unknown-linux-gnu")
-  target("x86_64-pc-windows-msvc")
 }
 
 sources {
@@ -69,17 +77,30 @@ contain exactly one case-sensitive `main.xs`; it is always the entry file. A pat
 
 The DSL also provides:
 
-- `set(name, value)` for versioned/compiler and user build variables;
+- `set(name, value, ...)` for one or more versioned/compiler and user build values;
+- `get(name)` to read a previously defined variable, with an error for an unknown name. Read-only project identity is
+  available as `PROJECT`; ordinary variables include values such as `XS_VERSION`, `XS_BACKEND`, and `TARGET` when the
+  script defines them;
+- `getAll(name)` to read every value without joining a multi-value setting;
 - `authors(...)` for project authors;
 - `dependencies { addModule(...) }` for external module coordinates;
-- `targets { target(...) }` for requested target triples;
 - `test { include(...); framework(...) }` for test discovery metadata;
 - `compiler { warnings(...); werror(...); verbose(...) }` for diagnostic policy;
 - `cfg(...)`, `OS`, `FAMILY`, and `ARCH` for ordinary Kotlin conditional configuration;
 - `panic(...)` to reject the project configuration.
 
+`PROJECT` is formatted as one stable identity string:
+
+```kotlin
+println(get("PROJECT"))
+```
+
+```text
+Example, BETA, 0.1.0
+```
+
 The compiler policy is transferred with the resolved source registry to the JVM-free `xs` process. Command-line
-`--warning`, `--werrror`, and `--verbose` values are one-shot overrides applied after KTS evaluation; they never rewrite
+`--warning`, `--werror`, and `--verbose` values are one-shot overrides applied after KTS evaluation; they never rewrite
 the project script. The defaults are `warnings("medium")`, `werror(false)`, and `verbose(true)`. XSPROJ intentionally has
 no persistent equivalent.
 
@@ -123,7 +144,9 @@ sources {
 
 ## Split project scripts
 
-The settings file owns project identity and repository-wide metadata:
+There is no section-to-file ownership rule. `xs.settings.kts` is evaluated first, then `xs.build.kts` receives and may
+extend the complete accumulated state. Either file may call any DSL function. The following is only one possible
+arrangement, with identity and shared metadata in the first file:
 
 ```kotlin
 // xs.settings.kts
@@ -136,7 +159,7 @@ dependencies {
 }
 ```
 
-The build file owns source selection and compiler policy:
+The second file then adds sources and compiler policy:
 
 ```kotlin
 // xs.build.kts
@@ -145,10 +168,20 @@ sources {
   exclude("sources/tests/**")
 }
 
-targets {
-  target("x86_64-unknown-linux-gnu")
-  target("aarch64-unknown-linux-gnu")
-}
+set(
+  "TARGET",
+  "x86_64-unknown-linux-gnu",
+  "x86_64-unknown-linux-musl",
+  "aarch64-unknown-linux-gnu",
+  "armv7h-unknown-linux-gnueabihf",
+  "riscv64gc-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+  "aarch64-pc-windows-msvc",
+  "x86_64-unknown-freebsd",
+  "aarch64-unknown-freebsd",
+)
 
 test {
   include("tests/**/*.xs")
@@ -162,14 +195,16 @@ compiler {
 }
 ```
 
-The split form is stateful: `xs.settings.kts` is evaluated first, its validated project state is transferred by
-`xs-project`, and `xs.build.kts` extends that state. Normal Kotlin expressions, local values, string interpolation,
-collections, loops, and conditionals remain available because these are real Kotlin scripts rather than a simulated
-Kotlin parser.
+The split form is stateful. Across the final accumulated state, `project(...)` must be called exactly once and at least
+one source include must exist; neither requirement is tied to a particular file. Normal Kotlin expressions, local
+values, string interpolation, collections, loops, and conditionals remain available because these are real Kotlin
+scripts rather than a simulated Kotlin parser.
 
 BSD hosts are members of both the `BSD` and `UNIX` families. Consequently, `cfg(FAMILY == BSD)` and
 `cfg(FAMILY == UNIX)` are both true on FreeBSD, OpenBSD, and NetBSD. Linux and macOS satisfy only `FAMILY == UNIX`;
 they do not satisfy `FAMILY == BSD`.
+Windows and ReactOS satisfy `FAMILY == WINDOWS`. ReactOS intentionally has no public `OS == REACTOS` DSL value and does
+not satisfy `OS == WINDOWS`; family checks are the portable way to select both hosts.
 
 Argument-free `xs build`, `xs check`, and `xs run` search the current directory and its parents through `xs-project`.
 The resolver evaluates Kotlin, expands source metadata, and returns an exact source registry; it never parses or compiles

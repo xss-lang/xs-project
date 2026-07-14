@@ -37,12 +37,15 @@ add_test(NAME compiler_check_file COMMAND xs check -file
 set_tests_properties(compiler_check_file PROPERTIES TIMEOUT 5)
 add_test(NAME compiler_check_file_verbose COMMAND xs check -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs
-  --warning all --werrror true --verbose true)
+  --warning all --werror true --verbose true)
 set_tests_properties(compiler_check_file_verbose PROPERTIES TIMEOUT 5
-  PASS_REGULAR_EXPRESSION "verbose: command=check.*warning=all.*werrror=true")
+  PASS_REGULAR_EXPRESSION "verbose: command=check.*warning=all.*werror=true")
 add_test(NAME compiler_rejects_invalid_warning COMMAND xs check -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs --warning invalid)
 set_tests_properties(compiler_rejects_invalid_warning PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+add_test(NAME compiler_rejects_misspelled_werror COMMAND xs check -file
+  ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs --werrror true)
+set_tests_properties(compiler_rejects_misspelled_werror PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 add_test(NAME legacy_project_parse COMMAND xs_proj
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/MyApp.xsproj)
 set_tests_properties(legacy_project_parse PROPERTIES TIMEOUT 5)

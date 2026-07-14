@@ -93,8 +93,8 @@ static bool parse_settings(char *data, size_t record_count, size_t *source_offse
   if(record_count < 5U)
     return false;
   char *warning = data + strlen(data) + 1U;
-  char *werrror = warning + strlen(warning) + 1U;
-  char *verbose = werrror + strlen(werrror) + 1U;
+  char *werror = warning + strlen(warning) + 1U;
+  char *verbose = werror + strlen(werror) + 1U;
   bool parsed_warning = false;
   for(XsWarningLevel level = XS_WARNING_NONE; level <= XS_WARNING_ALL; ++level)
   {
@@ -105,7 +105,7 @@ static bool parse_settings(char *data, size_t record_count, size_t *source_offse
       break;
     }
   }
-  if(!parsed_warning || !parse_bool_record(werrror, &settings->warnings_as_errors) ||
+  if(!parsed_warning || !parse_bool_record(werror, &settings->warnings_as_errors) ||
      !parse_bool_record(verbose, &settings->verbose))
     return false;
   *source_offset = 4U;

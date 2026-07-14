@@ -13,9 +13,12 @@ JRE are not embedded: exactly JRE 25 and an executable `kotlin` scripting comman
 Projects use one `xs.project.kts` file or the `xs.settings.kts` + `xs.build.kts` pair. Only
 `project(name, channel, version)` and at least one source include are required. Source includes accept concrete paths or
 `*`, `**`, and `?` glob patterns; excludes are applied afterward. The resolved registry must contain exactly one
-case-sensitive `main.xs`, which is placed first as the entry. Optional sections cover authors, external modules, targets,
-tests, compiler diagnostics, variables, and host-dependent `cfg(...)` branches. See `xs.project.kts` for the complete
+case-sensitive `main.xs`, which is placed first as the entry. Optional sections cover authors, external modules,
+multi-value settings such as `TARGET`, tests, compiler diagnostics, variables, and host-dependent `cfg(...)` branches. See `xs.project.kts` for the complete
 working DSL example.
+
+In split mode, `xs.settings.kts` is evaluated before `xs.build.kts`, but sections are not assigned to either filename.
+Both scripts may use the full DSL; the second script extends the state produced by the first.
 
 The canonical recursive source form is:
 

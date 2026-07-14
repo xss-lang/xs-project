@@ -48,7 +48,7 @@ static void print_verbose_settings(const XsCliOptions *options, const XsCompiler
 {
   if(!settings->verbose)
     return;
-  fprintf(stderr, "xs: verbose: command=%s input=%s warning=%s werrror=%s\n", options->command, input,
+  fprintf(stderr, "xs: verbose: command=%s input=%s warning=%s werror=%s\n", options->command, input,
           xs_cli_warning_level_name(settings->warning_level), settings->warnings_as_errors ? "true" : "false");
 }
 

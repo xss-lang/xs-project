@@ -22,10 +22,62 @@ class ProjectDslTest {
   }
 
   @Test
+  fun splitFilesShareStateWithoutSectionOwnership() {
+    val settings =
+      ProjectContext().apply {
+        sources { include("sources/main.xs") }
+        compiler { warnings("low") }
+      }
+    val build =
+      ProjectContext(state = settings.snapshot()).apply {
+        project("Split", "BETA", "0.1.0")
+        authors(arrayOf("Leitwolf", "leitwolf@example.me"))
+      }
+    val plan = build.build()
+    assertEquals("Split", plan.identity.name)
+    assertEquals(listOf("sources/main.xs"), plan.sourceIncludes)
+    assertEquals(WarningLevel.LOW, plan.compiler.warningLevel)
+  }
+
+  @Test
   fun buildsConditionalProjectPlan() {
     val context = ProjectContext(Host(OperatingSystem.LINUX, OperatingSystemFamily.UNIX, Architecture.X86_64))
     context.project("Demo", "BETA", "0.1.0")
-    if (context.host.os == OperatingSystem.LINUX) context.set("PLATFORM", "linux")
+    if (context.host.os == OperatingSystem.LINUX) context.set("MODE", "native")
+    context.set(
+      "TARGET",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "armv7h-unknown-linux-gnueabihf",
+      "riscv64gc-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc",
+      "x86_64-unknown-freebsd",
+      "aarch64-unknown-freebsd",
+    )
+    assertEquals("native", context.get("MODE"))
+    assertEquals(
+      listOf(
+        "x86_64-unknown-linux-gnu",
+        "x86_64-unknown-linux-musl",
+        "aarch64-unknown-linux-gnu",
+        "armv7h-unknown-linux-gnueabihf",
+        "riscv64gc-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-freebsd",
+        "aarch64-unknown-freebsd",
+      ),
+      context.getAll("TARGET"),
+    )
+    assertEquals("Demo, BETA, 0.1.0", context.get("PROJECT"))
+    assertEquals("LLVM", context.get("XS_BACKEND"))
+    assertFailsWith<ProjectConfigurationException> { context.get("MISSING") }
     context.authors(arrayOf("Leitwolf", "leitwolf@example.me"))
     context.sources {
       include("sources/main.xs")
@@ -38,8 +90,8 @@ class ProjectDslTest {
       verbose(true)
     }
     val plan = context.build()
-    assertEquals("linux", plan.variables["PLATFORM"])
-    assertEquals("LLVM", plan.variables["XS_BACKEND"])
+    assertEquals(listOf("native"), plan.variables["MODE"])
+    assertEquals(listOf("LLVM"), plan.variables["XS_BACKEND"])
     assertEquals(WarningLevel.ALL, plan.compiler.warningLevel)
     assertTrue(PlanWriter.write(plan).startsWith("{\"format\":\"xs-project-plan\",\"version\":0"))
   }
@@ -95,6 +147,17 @@ class ProjectDslTest {
     assertTrue(macos == OperatingSystemFamily.UNIX)
     assertTrue(linux != OperatingSystemFamily.BSD)
     assertTrue(macos != OperatingSystemFamily.BSD)
+  }
+
+  @Test
+  fun reactOsIsNotWindowsButBelongsToTheWindowsFamily() {
+    val os = operatingSystemFromName("ReactOS")
+    val family = OperatingSystemFamily.forOperatingSystem(os)
+    assertTrue(os != OperatingSystem.WINDOWS)
+    assertTrue(family == OperatingSystemFamily.WINDOWS)
+    assertTrue(family == OperatingSystem.WINDOWS)
+    assertTrue(family != OperatingSystemFamily.UNIX)
+    assertTrue(family != OperatingSystemFamily.BSD)
   }
 
   @Test

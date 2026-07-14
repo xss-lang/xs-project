@@ -60,7 +60,7 @@ void xs_cli_apply_compiler_overrides(const XsCliOptions *options, XsCompilerSett
 {
   if(options->warning_override)
     settings->warning_level = options->compiler.warning_level;
-  if(options->werrror_override)
+  if(options->werror_override)
     settings->warnings_as_errors = options->compiler.warnings_as_errors;
   if(options->verbose_override)
     settings->verbose = options->compiler.verbose;
@@ -157,11 +157,11 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
         return false;
       options->warning_override = true;
     }
-    else if(strcmp(argv[i], "--werrror") == 0)
+    else if(strcmp(argv[i], "--werror") == 0)
     {
-      if(++i >= argc || options->werrror_override || !parse_bool(argv[i], &options->compiler.warnings_as_errors))
+      if(++i >= argc || options->werror_override || !parse_bool(argv[i], &options->compiler.warnings_as_errors))
         return false;
-      options->werrror_override = true;
+      options->werror_override = true;
     }
     else if(strcmp(argv[i], "--verbose") == 0)
     {
@@ -189,7 +189,7 @@ void xs_cli_print_usage(FILE *stream)
 {
   fprintf(stream, "usage: xs --version\n");
   fprintf(stream, "usage: xs <check|build|run>\n");
-  fprintf(stream, "       [--warning all|medium|low|none] [--werrror true|false] [--verbose true|false]\n");
+  fprintf(stream, "       [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]\n");
   fprintf(stream, "usage: xs <check|run> -proj <project.xsproj>\n");
   fprintf(stream, "usage: xs build -file <Main.xs>\n");
   fprintf(stream, "usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>\n");

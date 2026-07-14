@@ -33,7 +33,7 @@ typedef struct
   XsBuildOutput output;
   XsCompilerSettings compiler;
   bool warning_override;
-  bool werrror_override;
+  bool werror_override;
   bool verbose_override;
 } XsCliOptions;
 

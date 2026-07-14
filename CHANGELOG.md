@@ -18,10 +18,13 @@ source-to-native executable pipeline.
   typed HIR, MIR, XLIL, and LLVM module. Same-module helper calls across project files now produce native `.xse` output.
 - Kotlin `sources` includes now expand `*`, `**`, and `?` globs, apply excludes, require exactly one resolved `main.xs`,
   and emit a deterministic main-first source registry.
-- `--warning all|medium|low|none`, `--werrror true|false`, and `--verbose true|false` provide one-shot compiler-policy
+- `--warning all|medium|low|none`, `--werror true|false`, and `--verbose true|false` provide one-shot compiler-policy
   overrides for KTS, legacy XSPROJ, and direct source invocations. The KTS resolver now transfers its evaluated
   `compiler {}` policy with the source registry. Defaults are medium warnings, warnings-as-errors disabled, and verbose
   progress enabled.
+- The Kotlin project DSL exposes strict `get(name)` and lossless `getAll(name)` lookup. `set(name, value, ...)` supports
+  multi-value settings, replacing the former `targets { target(...) }` section; the complete example prints project,
+  compiler, backend, and `TARGET` values through ordinary Kotlin `println` calls.
 - The Kotlin/JVM 25 `xs-project` resolver evaluates combined `xs.project.kts` files or split `xs.settings.kts` and
   `xs.build.kts` files through the required external `kotlin` script runner. Explicit source registries require one
   case-sensitive `main.xs` entry and are compiled by the JVM-free `/usr/bin/xs` process.
@@ -34,6 +37,10 @@ source-to-native executable pipeline.
 - The XSPROJ format and public C23 model are feature-frozen. Dependency records were removed; programmable dependencies
   and conditional configuration belong to the Kotlin project DSL.
 - Kotlin project host matching treats BSD systems as members of both the BSD and UNIX families.
+- The compiler flag is spelled `--werror`; the former misspelling is rejected. ReactOS is a distinct internal host OS,
+  has no public OS constant, and satisfies `FAMILY == WINDOWS` without satisfying `OS == WINDOWS`.
+- Split Kotlin project files have no section ownership rule. `xs.settings.kts` is evaluated first and `xs.build.kts`
+  extends its complete state; either file may call any DSL function.
 
 ## 0.1.6 - 2026-07-13
 

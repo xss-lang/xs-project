@@ -24,7 +24,6 @@ object PlanWriter {
       }
       append(']')
       arrayField("modules", plan.modules)
-      arrayField("targets", plan.targets)
       arrayField("sourceIncludes", plan.sourceIncludes)
       arrayField("sourceExcludes", plan.sourceExcludes)
       arrayField("testIncludes", plan.testIncludes)
@@ -57,12 +56,22 @@ object PlanWriter {
 
   private fun StringBuilder.mapField(
     name: String,
-    values: Map<String, String>,
+    values: Map<String, List<String>>,
   ) {
     append(",\"").append(name).append("\":{")
     values.entries.forEachIndexed { index, entry ->
       if (index > 0) append(',')
-      quoted(entry.key).append(':').quoted(entry.value)
+      quoted(entry.key).append(':')
+      if (entry.value.size == 1) {
+        quoted(entry.value.single())
+      } else {
+        append('[')
+        entry.value.forEachIndexed { valueIndex, value ->
+          if (valueIndex > 0) append(',')
+          quoted(value)
+        }
+        append(']')
+      }
     }
     append('}')
   }
