@@ -1,0 +1,626 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+use std::{slice, str};
+
+use super::{hir_lowering, xlil_lowering};
+
+pub const SYNTAX_ABI_VERSION: u32 = 0;
+pub const NO_NODE: u64 = u64::MAX;
+
+#[repr(u32)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FfiStatus
+{
+  Ok = 0,
+  NullArgument = 1,
+  InvalidPacket = 2,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RawSyntaxNode
+{
+  pub kind: u32,
+  pub token_kind: u32,
+  pub visibility: u32,
+  pub flags: u32,
+  pub parent_index: u64,
+  pub first_child: u64,
+  pub child_count: u64,
+  pub text_offset: u64,
+  pub text_length: u64,
+  pub file_id: u64,
+  pub start_offset: u64,
+  pub end_offset: u64,
+  pub start_line: u64,
+  pub start_column: u64,
+  pub end_line: u64,
+  pub end_column: u64,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RawSyntaxPacket
+{
+  pub abi_version: u32,
+  pub reserved: u32,
+  pub root_index: u64,
+  pub nodes: *const RawSyntaxNode,
+  pub node_count: u64,
+  pub child_indices: *const u64,
+  pub child_index_count: u64,
+  pub text_bytes: *const u8,
+  pub text_byte_count: u64,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PacketError
+{
+  UnsupportedVersion,
+  NonZeroReserved,
+  CountExceedsAddressSpace,
+  NullTable,
+  EmptyNodes,
+  InvalidRoot,
+  InvalidParent,
+  InvalidChildRange,
+  InvalidChildIndex,
+  InvalidChildParent,
+  InvalidTextRange,
+  InvalidUtf8,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct SyntaxPacketView<'a>
+{
+  nodes: &'a [RawSyntaxNode],
+  child_indices: &'a [u64],
+  text_bytes: &'a [u8],
+  root_index: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SourceSpan
+{
+  pub file_id: u64,
+  pub start_offset: u64,
+  pub end_offset: u64,
+  pub start_line: u64,
+  pub start_column: u64,
+  pub end_line: u64,
+  pub end_column: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SyntaxNode
+{
+  pub kind: u32,
+  pub token_kind: u32,
+  pub visibility: u32,
+  pub flags: u32,
+  pub parent: Option<usize>,
+  pub children: Vec<usize>,
+  pub text: String,
+  pub span: SourceSpan,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SyntaxTree
+{
+  pub root: usize,
+  pub nodes: Vec<SyntaxNode>,
+}
+
+pub struct CompilerCoreSession
+{
+  syntax: Vec<SyntaxTree>,
+  declarations: crate::hir::declarations::Module,
+  mir_functions: Vec<crate::mir::Function>,
+  xlil_text: Option<Vec<u8>>,
+}
+
+fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_lowering::LoweringError>
+{
+  let declarations = hir_lowering::lower_program(&syntax)?;
+  let mir_functions: Vec<crate::mir::Function> =
+    declarations.functions
+                .iter()
+                .filter_map(|declaration| {
+                  let function = declaration.as_type_checked_input()?;
+                  if !crate::hir::type_check::TypeChecker::new().check_function(&function)
+                                                                .is_empty()
+                  {
+                    return None;
+                  }
+                  let mir = crate::hir::mir_lowering::HirToMirLowerer::new()
+                                      .lower_function_with_parameters(&function, declaration.parameters.len())
+                                      .ok()?;
+                  if !crate::mir::BorrowChecker::new().check_function(&mir).is_empty()
+                  {
+                    return None;
+                  }
+                  crate::mir::optimizer::optimize_verified_function(mir).ok()
+                                                                        .map(|optimized| optimized.function)
+                })
+                .collect();
+  let xlil_text = xlil_lowering::lower_module(&declarations, &mir_functions)
+    .map(|module| crate::xlil::writer::module_to_string(&module).into_bytes());
+  Ok(CompilerCoreSession { syntax,
+                           declarations,
+                           mir_functions,
+                           xlil_text })
+}
+
+fn table_length(value: u64) -> Result<usize, PacketError>
+{
+  usize::try_from(value).map_err(|_| PacketError::CountExceedsAddressSpace)
+}
+
+unsafe fn raw_table<'a, T>(pointer: *const T, length: usize) -> Result<&'a [T], PacketError>
+{
+  if length == 0
+  {
+    return Ok(&[]);
+  }
+  if pointer.is_null()
+  {
+    return Err(PacketError::NullTable);
+  }
+  // SAFETY: The caller of `from_raw` guarantees that non-null packet tables
+  // reference `length` initialized elements for the returned view lifetime.
+  Ok(unsafe { slice::from_raw_parts(pointer, length) })
+}
+
+impl<'a> SyntaxPacketView<'a>
+{
+  /// Creates and structurally validates a borrowed view over the C23 frontend packet.
+  ///
+  /// # Safety
+  ///
+  /// Every non-null table pointer in `packet` must reference its declared number of
+  /// initialized elements and remain alive and immutable for `'a`.
+  pub unsafe fn from_raw(packet: &'a RawSyntaxPacket) -> Result<Self, PacketError>
+  {
+    if packet.abi_version != SYNTAX_ABI_VERSION
+    {
+      return Err(PacketError::UnsupportedVersion);
+    }
+    if packet.reserved != 0
+    {
+      return Err(PacketError::NonZeroReserved);
+    }
+    let node_count = table_length(packet.node_count)?;
+    let child_count = table_length(packet.child_index_count)?;
+    let text_count = table_length(packet.text_byte_count)?;
+    // SAFETY: Forwarded from this function's table lifetime contract.
+    let nodes = unsafe { raw_table(packet.nodes, node_count)? };
+    // SAFETY: Forwarded from this function's table lifetime contract.
+    let child_indices = unsafe { raw_table(packet.child_indices, child_count)? };
+    // SAFETY: Forwarded from this function's table lifetime contract.
+    let text_bytes = unsafe { raw_table(packet.text_bytes, text_count)? };
+    if nodes.is_empty()
+    {
+      return Err(PacketError::EmptyNodes);
+    }
+    let root_index = table_length(packet.root_index)?;
+    if root_index >= nodes.len() || nodes[root_index].parent_index != NO_NODE
+    {
+      return Err(PacketError::InvalidRoot);
+    }
+    let view = Self { nodes,
+                      child_indices,
+                      text_bytes,
+                      root_index };
+    view.validate()?;
+    Ok(view)
+  }
+
+  fn validate(&self) -> Result<(), PacketError>
+  {
+    for (node_index, node) in self.nodes.iter().enumerate()
+    {
+      if node_index != self.root_index
+      {
+        let parent = table_length(node.parent_index)?;
+        if parent >= self.nodes.len() || parent == node_index
+        {
+          return Err(PacketError::InvalidParent);
+        }
+      }
+      let child_start = table_length(node.first_child)?;
+      let child_count = table_length(node.child_count)?;
+      let child_end = child_start.checked_add(child_count)
+                                 .ok_or(PacketError::InvalidChildRange)?;
+      if child_end > self.child_indices.len()
+      {
+        return Err(PacketError::InvalidChildRange);
+      }
+      for child in &self.child_indices[child_start..child_end]
+      {
+        let child_index = table_length(*child)?;
+        if child_index >= self.nodes.len()
+        {
+          return Err(PacketError::InvalidChildIndex);
+        }
+        if self.nodes[child_index].parent_index != node_index as u64
+        {
+          return Err(PacketError::InvalidChildParent);
+        }
+      }
+      self.node_text(node_index)?;
+    }
+    Ok(())
+  }
+
+  #[must_use]
+  pub const fn nodes(&self) -> &'a [RawSyntaxNode]
+  {
+    self.nodes
+  }
+
+  #[must_use]
+  pub const fn root_index(&self) -> usize
+  {
+    self.root_index
+  }
+
+  pub fn children(&self, node_index: usize) -> Result<&'a [u64], PacketError>
+  {
+    let node = self.nodes.get(node_index).ok_or(PacketError::InvalidChildIndex)?;
+    let start = table_length(node.first_child)?;
+    let count = table_length(node.child_count)?;
+    let end = start.checked_add(count).ok_or(PacketError::InvalidChildRange)?;
+    self.child_indices.get(start..end).ok_or(PacketError::InvalidChildRange)
+  }
+
+  pub fn node_text(&self, node_index: usize) -> Result<&'a str, PacketError>
+  {
+    let node = self.nodes.get(node_index).ok_or(PacketError::InvalidTextRange)?;
+    let start = table_length(node.text_offset)?;
+    let count = table_length(node.text_length)?;
+    let end = start.checked_add(count).ok_or(PacketError::InvalidTextRange)?;
+    let bytes = self.text_bytes.get(start..end).ok_or(PacketError::InvalidTextRange)?;
+    str::from_utf8(bytes).map_err(|_| PacketError::InvalidUtf8)
+  }
+
+  pub fn to_owned_tree(&self) -> Result<SyntaxTree, PacketError>
+  {
+    let mut nodes = Vec::with_capacity(self.nodes.len());
+    for (index, raw) in self.nodes.iter().enumerate()
+    {
+      let parent = if raw.parent_index == NO_NODE
+      {
+        None
+      }
+      else
+      {
+        Some(table_length(raw.parent_index)?)
+      };
+      let children = self.children(index)?
+                         .iter()
+                         .map(|value| table_length(*value))
+                         .collect::<Result<_, _>>()?;
+      nodes.push(SyntaxNode { kind: raw.kind,
+                              token_kind: raw.token_kind,
+                              visibility: raw.visibility,
+                              flags: raw.flags,
+                              parent,
+                              children,
+                              text: self.node_text(index)?.to_owned(),
+                              span: SourceSpan { file_id: raw.file_id,
+                                                 start_offset: raw.start_offset,
+                                                 end_offset: raw.end_offset,
+                                                 start_line: raw.start_line,
+                                                 start_column: raw.start_column,
+                                                 end_line: raw.end_line,
+                                                 end_column: raw.end_column } });
+    }
+    Ok(SyntaxTree { root: self.root_index,
+                    nodes })
+  }
+}
+
+/// Creates a compiler-core session from a C23 frontend syntax packet.
+///
+/// This is the narrow compiler-core FFI ownership boundary. A successful call
+/// writes a session which owns its syntax tree and must later be released with
+/// [`xslang_compiler_core_session_free`].
+///
+/// # Safety
+///
+/// `packet` must point to a live [`RawSyntaxPacket`] whose tables satisfy the
+/// contract of [`SyntaxPacketView::from_raw`]. `session` must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawSyntaxPacket,
+                                                             session: *mut *mut CompilerCoreSession)
+                                                             -> FfiStatus
+{
+  let Some(session) = (unsafe { session.as_mut() })
+  else
+  {
+    return FfiStatus::NullArgument;
+  };
+  *session = std::ptr::null_mut();
+  let Some(packet) = (unsafe { packet.as_ref() })
+  else
+  {
+    return FfiStatus::NullArgument;
+  };
+  // SAFETY: The function's caller contract covers every packet table.
+  let Ok(view) = (unsafe { SyntaxPacketView::from_raw(packet) })
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  let Ok(syntax) = view.to_owned_tree()
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  let Ok(built) = build_session(vec![syntax])
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  *session = Box::into_raw(Box::new(built));
+  FfiStatus::Ok
+}
+
+/// Merges existing per-file sessions into one program-wide compiler-core session.
+///
+/// The merged session re-runs declaration/body lowering with signatures from every
+/// input tree, enabling direct calls across source-file boundaries.
+///
+/// # Safety
+///
+/// `sessions` must reference `session_count` live session pointers and `merged`
+/// must be writable. Input sessions remain owned by the caller.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_merge(sessions: *const *const CompilerCoreSession,
+                                                            session_count: u64,
+                                                            merged: *mut *mut CompilerCoreSession)
+                                                            -> FfiStatus
+{
+  let Some(merged) = (unsafe { merged.as_mut() })
+  else
+  {
+    return FfiStatus::NullArgument;
+  };
+  *merged = std::ptr::null_mut();
+  let Ok(count) = table_length(session_count)
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  if count == 0 || sessions.is_null()
+  {
+    return FfiStatus::NullArgument;
+  }
+  // SAFETY: The caller guarantees a live table with `count` session pointers.
+  let sessions = unsafe { slice::from_raw_parts(sessions, count) };
+  let mut syntax = Vec::new();
+  for session in sessions
+  {
+    let Some(session) = (unsafe { session.as_ref() })
+    else
+    {
+      return FfiStatus::NullArgument;
+    };
+    syntax.extend(session.syntax.iter().cloned());
+  }
+  let Ok(built) = build_session(syntax)
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  *merged = Box::into_raw(Box::new(built));
+  FfiStatus::Ok
+}
+
+/// Returns the imported syntax-node count, or zero for a null session.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live session returned by
+/// [`xslang_compiler_core_session_create`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_syntax_node_count(session: *const CompilerCoreSession) -> u64
+{
+  // SAFETY: The pointer is only borrowed when it is non-null.
+  unsafe { session.as_ref() }.map_or(0, |value| value.syntax.iter().map(|tree| tree.nodes.len() as u64).sum())
+}
+
+/// Returns the number of top-level function declarations imported into HIR.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live compiler-core session.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_function_count(session: *const CompilerCoreSession) -> u64
+{
+  // SAFETY: The pointer is only borrowed when it is non-null.
+  unsafe { session.as_ref() }.map_or(0, |value| value.declarations.functions.len() as u64)
+}
+
+/// Returns the number of function bodies currently lowered through Rust MIR.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live compiler-core session.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_mir_function_count(session: *const CompilerCoreSession) -> u64
+{
+  // SAFETY: The pointer is only borrowed when it is non-null.
+  unsafe { session.as_ref() }.map_or(0, |value| value.mir_functions.len() as u64)
+}
+
+/// Returns borrowed XLIL v0 text when every source body reached verified XLIL.
+///
+/// The returned bytes remain valid until the session is released. On failure or
+/// a null session this returns null and writes zero to `length` when non-null.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live compiler-core session. `length`
+/// must be null or writable for one `u64`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_xlil_text(session: *const CompilerCoreSession,
+                                                                length: *mut u64)
+                                                                -> *const u8
+{
+  if !length.is_null()
+  {
+    // SAFETY: The caller contract requires a writable length pointer.
+    unsafe { *length = 0 };
+  }
+  let Some(text) = (unsafe { session.as_ref() }).and_then(|value| value.xlil_text.as_ref())
+  else
+  {
+    return std::ptr::null();
+  };
+  if !length.is_null()
+  {
+    // SAFETY: The caller contract requires a writable length pointer.
+    unsafe { *length = text.len() as u64 };
+  }
+  text.as_ptr()
+}
+
+/// Releases a compiler-core session. Null is accepted.
+///
+/// # Safety
+///
+/// `session` must be null or a pointer returned exactly once by
+/// [`xslang_compiler_core_session_create`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_free(session: *mut CompilerCoreSession)
+{
+  if !session.is_null()
+  {
+    // SAFETY: Guaranteed by the function's ownership contract.
+    drop(unsafe { Box::from_raw(session) });
+  }
+}
+
+#[cfg(test)]
+mod tests
+{
+  use super::*;
+
+  fn node(parent_index: u64, first_child: u64, child_count: u64, text_offset: u64, text_length: u64) -> RawSyntaxNode
+  {
+    RawSyntaxNode { kind: 0,
+                    token_kind: 0,
+                    visibility: 0,
+                    flags: 0,
+                    parent_index,
+                    first_child,
+                    child_count,
+                    text_offset,
+                    text_length,
+                    file_id: 7,
+                    start_offset: 0,
+                    end_offset: 4,
+                    start_line: 1,
+                    start_column: 1,
+                    end_line: 1,
+                    end_column: 5 }
+  }
+
+  #[test]
+  fn validates_and_reads_flat_syntax_packet()
+  {
+    let nodes = [node(NO_NODE, 0, 1, 0, 4), node(0, 1, 0, 4, 4)];
+    let children = [1];
+    let text = b"filemain";
+    let packet = RawSyntaxPacket { abi_version: SYNTAX_ABI_VERSION,
+                                   reserved: 0,
+                                   root_index: 0,
+                                   nodes: nodes.as_ptr(),
+                                   node_count: nodes.len() as u64,
+                                   child_indices: children.as_ptr(),
+                                   child_index_count: children.len() as u64,
+                                   text_bytes: text.as_ptr(),
+                                   text_byte_count: text.len() as u64 };
+    // SAFETY: All packet tables borrow live local arrays with matching lengths.
+    let view = unsafe { SyntaxPacketView::from_raw(&packet) }.expect("valid syntax packet");
+    assert_eq!(view.root_index(), 0);
+    assert_eq!(view.children(0), Ok(&children[..]));
+    assert_eq!(view.node_text(1), Ok("main"));
+    let owned = view.to_owned_tree().expect("owned syntax tree");
+    assert_eq!(owned.root, 0);
+    assert_eq!(owned.nodes[0].children, vec![1]);
+    assert_eq!(owned.nodes[1].parent, Some(0));
+    assert_eq!(owned.nodes[1].text, "main");
+  }
+
+  #[test]
+  fn raw_layout_matches_c23_abi()
+  {
+    assert_eq!(std::mem::size_of::<RawSyntaxNode>(), 112);
+    assert_eq!(std::mem::offset_of!(RawSyntaxNode, parent_index), 16);
+    assert_eq!(std::mem::offset_of!(RawSyntaxNode, end_column), 104);
+    assert_eq!(std::mem::size_of::<RawSyntaxPacket>(), 64);
+    assert_eq!(std::mem::offset_of!(RawSyntaxPacket, nodes), 16);
+    assert_eq!(std::mem::offset_of!(RawSyntaxPacket, text_byte_count), 56);
+  }
+
+  #[test]
+  fn rejects_wrong_version_and_child_parent()
+  {
+    let nodes = [node(NO_NODE, 0, 1, 0, 0), node(NO_NODE, 1, 0, 0, 0)];
+    let children = [1];
+    let packet = RawSyntaxPacket { abi_version: SYNTAX_ABI_VERSION + 1,
+                                   reserved: 0,
+                                   root_index: 0,
+                                   nodes: nodes.as_ptr(),
+                                   node_count: 2,
+                                   child_indices: children.as_ptr(),
+                                   child_index_count: 1,
+                                   text_bytes: std::ptr::null(),
+                                   text_byte_count: 0 };
+    // SAFETY: All non-empty packet tables borrow live local arrays.
+    assert_eq!(unsafe { SyntaxPacketView::from_raw(&packet) }.unwrap_err(),
+               PacketError::UnsupportedVersion);
+    let packet = RawSyntaxPacket { abi_version: SYNTAX_ABI_VERSION,
+                                   ..packet };
+    // SAFETY: All non-empty packet tables borrow live local arrays.
+    assert_eq!(unsafe { SyntaxPacketView::from_raw(&packet) }.unwrap_err(),
+               PacketError::InvalidChildParent);
+  }
+
+  #[test]
+  fn ffi_session_owns_valid_packet_and_rejects_invalid_input()
+  {
+    let nodes = [node(NO_NODE, 0, 0, 0, 4)];
+    let text = b"file";
+    let packet = RawSyntaxPacket { abi_version: SYNTAX_ABI_VERSION,
+                                   reserved: 0,
+                                   root_index: 0,
+                                   nodes: nodes.as_ptr(),
+                                   node_count: 1,
+                                   child_indices: std::ptr::null(),
+                                   child_index_count: 0,
+                                   text_bytes: text.as_ptr(),
+                                   text_byte_count: text.len() as u64 };
+    let mut session = std::ptr::null_mut();
+    // SAFETY: Packet tables borrow live local arrays and the output is writable.
+    assert_eq!(unsafe { xslang_compiler_core_session_create(&packet, &raw mut session) },
+               FfiStatus::Ok);
+    // SAFETY: The returned session remains live.
+    assert_eq!(unsafe { xslang_compiler_core_session_syntax_node_count(session) }, 1);
+    // SAFETY: The session came from the matching constructor and is freed once.
+    unsafe { xslang_compiler_core_session_free(session) };
+    // SAFETY: Null input is rejected before dereferencing.
+    assert_eq!(unsafe { xslang_compiler_core_session_create(std::ptr::null(), &raw mut session) },
+               FfiStatus::NullArgument);
+    let invalid = RawSyntaxPacket { abi_version: SYNTAX_ABI_VERSION + 1,
+                                    ..packet };
+    // SAFETY: Packet tables remain live; the version is intentionally invalid.
+    assert_eq!(unsafe { xslang_compiler_core_session_create(&invalid, &raw mut session) },
+               FfiStatus::InvalidPacket);
+  }
+}
