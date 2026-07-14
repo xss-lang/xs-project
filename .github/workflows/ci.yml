@@ -11,7 +11,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install CMake
         run: python3 -m pip install --user "cmake>=3.31,<5"
       - name: Add user tools to PATH
@@ -21,12 +21,12 @@ jobs:
       - name: Install Rust nightly
         run: rustup toolchain install nightly-2026-07-10 --profile default
       - name: Install JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
       - name: Install Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.6.1"
       - name: Install Kotlin 2.4.0 script runner
