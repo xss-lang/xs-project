@@ -144,6 +144,8 @@ typedef enum
   XS_LIL_INSTRUCTION_BINARY_INTEGER,
   XS_LIL_INSTRUCTION_AGGREGATE,
   XS_LIL_INSTRUCTION_EXTRACT,
+  XS_LIL_INSTRUCTION_ARRAY_GET,
+  XS_LIL_INSTRUCTION_ARRAY_SET,
 } XsLilInstructionKind;
 
 typedef enum
@@ -346,6 +348,10 @@ XsLilStatus xs_lil_block_add_array(XsLilBlock *block, XsLilType type, const XsLi
                                    size_t element_count, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_extract(XsLilBlock *block, XsLilValueId aggregate, uint32_t field, XsLilType field_type,
                                      XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_array_get(XsLilBlock *block, XsLilValueId array, XsLilValueId index,
+                                       XsLilType element_type, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_array_set(XsLilBlock *block, XsLilValueId array, XsLilValueId index,
+                                       XsLilValueId value, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_load(XsLilBlock *block, XsLilSlotId slot, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_store(XsLilBlock *block, XsLilSlotId slot, XsLilValueId value, XsLilError *error);
 XsLilStatus xs_lil_block_set_return(XsLilBlock *block, XsLilError *error);

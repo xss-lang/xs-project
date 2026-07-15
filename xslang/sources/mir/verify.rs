@@ -248,6 +248,25 @@ impl<'a> Verifier<'a>
                            field_type,
                            span,
                            .. } => self.verify_extract(result, aggregate, field_type, span),
+      Statement::ArrayGet { result,
+                            array,
+                            index,
+                            array_type,
+                            element_type,
+                            span, } =>
+      {
+        self.verify_array_access(result, array, index, (array_type, element_type), None, span)
+      }
+      Statement::ArraySet { result,
+                            array,
+                            index,
+                            value,
+                            array_type,
+                            element_type,
+                            span, } =>
+      {
+        self.verify_array_access(result, array, index, (array_type, element_type), Some(value), span)
+      }
       Statement::AddI64 { result,
                           left,
                           right,
@@ -374,6 +393,34 @@ impl<'a> Verifier<'a>
                   span);
     }
     self.verify_exact_local(result, field_type, "extract result local", span);
+  }
+
+  fn verify_array_access(&mut self,
+                         result: LocalId,
+                         array: LocalId,
+                         index: LocalId,
+                         types: (crate::xlil::Type, crate::xlil::Type),
+                         value: Option<LocalId>,
+                         span: Span)
+  {
+    let (array_type, element_type) = types;
+    if array_type.kind != crate::xlil::TypeKind::Array
+    {
+      self.report(DiagnosticCode::LocalTypeMismatch,
+                  "array access requires an array registry type".to_string(),
+                  span);
+    }
+    self.verify_exact_local(array, array_type, "array access source", span);
+    self.verify_exact_local(index, crate::xlil::Type::I64, "array access index", span);
+    if let Some(value) = value
+    {
+      self.verify_exact_local(value, element_type, "array.set value", span);
+      self.verify_exact_local(result, array_type, "array.set result", span);
+    }
+    else
+    {
+      self.verify_exact_local(result, element_type, "array.get result", span);
+    }
   }
 
   fn verify_terminator(&mut self, terminator: &Terminator, span: Span)

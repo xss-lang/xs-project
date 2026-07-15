@@ -52,6 +52,7 @@ fn type_from_text(text: &str) -> Option<Type>
   text.strip_prefix("%t")
       .and_then(|id| id.parse().ok())
       .map(Type::aggregate)
+      .or_else(|| text.strip_prefix("%a").and_then(|id| id.parse().ok()).map(Type::array))
       .or_else(|| type_from_name(text))
 }
 
@@ -299,6 +300,8 @@ impl Parser<'_>
         "load.local" => block.statements.push(self.load_local_statement()),
         "aggregate" => block.statements.push(aggregate::statement(self)),
         "extract" => block.statements.push(aggregate::extract_statement(self)),
+        "array.get" => block.statements.push(aggregate::array_get_statement(self)),
+        "array.set" => block.statements.push(aggregate::array_set_statement(self)),
         "add.i64" => block.statements.push(self.add_i64_statement()),
         "sub.i64" => block.statements.push(self.sub_i64_statement()),
         "mul.i64" => block.statements.push(self.mul_i64_statement()),

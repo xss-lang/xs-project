@@ -44,6 +44,10 @@ lowered by inventing LLVM-only semantics.
 `Str` is an immutable borrowed UTF-16 view with an implicit static lifetime. LLVM represents the view as a pointer plus
 the target's pointer-sized integer count of UTF-16 code units. XLIL `const.str` carries an explicit `utf16le` or
 `utf16be` tag; lowering emits an immutable private byte array in that byte order and does not append a null terminator.
+
+Fixed-array constant indices lower to LLVM aggregate extraction. Calculated `Int` (`i64`) indices lower through temporary
+array storage and `getelementptr`; generated control flow checks both index bounds and traps on an invalid index before any
+element load or store.
 Native objects use position-independent relocation so the view can safely refer to that static data from a PIE `.xse`.
 
 `Optional<Str>` is the canonical boxed, owned optional-string type. Its allocator, ownership, discriminant, and runtime

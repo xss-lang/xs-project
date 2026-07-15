@@ -114,6 +114,9 @@ Format notes:
   must have the registered element type.
 - `%rN:type = extract.array %rA, I` reads the zero-based constant index `I` from a fixed-array register. The index must
   be in bounds and the result type must equal the array element type.
+- `%rN:type = array.get %rA, %rI` reads an element with an `i64` runtime index. `%rA` must use a registered array layout.
+- `%rN:%aA = array.set %rA, %rI, %rV` creates an updated array value with one element replaced. The runtime index is `i64`,
+  `%rV` must match the registered element type, and `%rN` preserves the source array type.
 - `call <symbol>(%rA, %rB)` calls a void function and discards the result.
 - `store %rN, %sA` writes a typed register value to a matching stack slot.
 - `%rN:type = load %sA` reads a matching stack slot into a new typed register value.

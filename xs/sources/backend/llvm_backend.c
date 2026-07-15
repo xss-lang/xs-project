@@ -688,7 +688,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     free(arguments);
     return status;
   }
-  if(kind == XS_LIL_INSTRUCTION_AGGREGATE || kind == XS_LIL_INSTRUCTION_EXTRACT)
+  if(kind == XS_LIL_INSTRUCTION_AGGREGATE || kind == XS_LIL_INSTRUCTION_EXTRACT ||
+     kind == XS_LIL_INSTRUCTION_ARRAY_GET || kind == XS_LIL_INSTRUCTION_ARRAY_SET)
     return xs_llvm_lower_aggregate_instruction(unit, builder, function, block, index, values, value_count, error);
   if(kind == XS_LIL_INSTRUCTION_LOAD)
   {

@@ -6,7 +6,7 @@
 use std::fmt::Write;
 
 use crate::mir::{BasicBlock, Function, LocalId, Parameter, Statement, Terminator};
-use crate::xlil::type_text;
+use crate::xlil::{Type, type_text};
 
 #[must_use]
 pub fn function_to_xmir(function: &Function) -> String
@@ -266,6 +266,28 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "        field {field}");
       let _ = writeln!(output, "        type {}", type_text(*field_type));
     }
+    Statement::ArrayGet { result,
+                          array,
+                          index,
+                          array_type,
+                          element_type,
+                          .. } =>
+    {
+      let _ = writeln!(output, "      statement array.get");
+      write_array_access(output, *result, *array, *index, *array_type, *element_type);
+    }
+    Statement::ArraySet { result,
+                          array,
+                          index,
+                          value,
+                          array_type,
+                          element_type,
+                          .. } =>
+    {
+      let _ = writeln!(output, "      statement array.set");
+      write_array_access(output, *result, *array, *index, *array_type, *element_type);
+      let _ = writeln!(output, "        value local {}", value.0);
+    }
     Statement::AddI64 { result,
                         left,
                         right,
@@ -362,6 +384,20 @@ fn write_binary(output: &mut String, name: &str, result: LocalId, left: LocalId,
   let _ = writeln!(output, "        result local {}", result.0);
   let _ = writeln!(output, "        left local {}", left.0);
   let _ = writeln!(output, "        right local {}", right.0);
+}
+
+fn write_array_access(output: &mut String,
+                      result: LocalId,
+                      array: LocalId,
+                      index: LocalId,
+                      array_type: Type,
+                      element_type: Type)
+{
+  let _ = writeln!(output, "        result local {}", result.0);
+  let _ = writeln!(output, "        array local {}", array.0);
+  let _ = writeln!(output, "        index local {}", index.0);
+  let _ = writeln!(output, "        array_type {}", type_text(array_type));
+  let _ = writeln!(output, "        element_type {}", type_text(element_type));
 }
 
 fn write_call_result(output: &mut String, result: Option<LocalId>)

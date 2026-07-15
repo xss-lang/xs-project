@@ -101,4 +101,41 @@ impl Verifier
     };
     self.typed_value(function, result, extracted, "XLIL extract result");
   }
+
+  pub(super) fn array_access(&mut self,
+                             function: &Function,
+                             module: &Module,
+                             result: ValueId,
+                             array: ValueId,
+                             index: ValueId,
+                             value: Option<ValueId>)
+  {
+    let Some(array_type) = value_type(function, array)
+    else
+    {
+      self.report(DiagnosticCode::InstructionResultUnknown,
+                  "XLIL array access source must reference a declared value");
+      return;
+    };
+    let Some(layout) = module.array_type(array_type)
+    else
+    {
+      self.report(DiagnosticCode::InvalidArrayType,
+                  "XLIL array access source must use a known array registry type");
+      return;
+    };
+    if value_type(function, index) != Some(Type::I64)
+    {
+      self.report(DiagnosticCode::InvalidArrayType, "XLIL array index must have type i64");
+    }
+    if let Some(value) = value
+    {
+      self.typed_value(function, value, layout.element_type, "XLIL array.set value");
+      self.typed_value(function, result, array_type, "XLIL array.set result");
+    }
+    else
+    {
+      self.typed_value(function, result, layout.element_type, "XLIL array.get result");
+    }
+  }
 }

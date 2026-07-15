@@ -49,11 +49,6 @@ impl HirToMirLowerer
                   span);
       return;
     }
-    let Some(index) = literal_index(index, length, span, self)
-    else
-    {
-      return;
-    };
     let loaded = match self.declare_temp(array_type, span, lowered)
     {
       Some(value) => value,
@@ -64,6 +59,45 @@ impl HirToMirLowerer
         .push(mir::Statement::LoadLocal { result: loaded,
                                           local,
                                           span });
+    if !matches!(index, Expression::Literal { literal: Literal::Integer(_),
+                                              .. })
+    {
+      let Some(index) = self.lower_expression_to_local(index, XlilType::I64, lowered)
+      else
+      {
+        return;
+      };
+      let Some(value) = self.lower_expression_to_local(value, lowered_element_type, lowered)
+      else
+      {
+        return;
+      };
+      let Some(updated) = self.declare_temp(array_type, span, lowered)
+      else
+      {
+        return;
+      };
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::ArraySet { result: updated,
+                                           array: loaded,
+                                           index,
+                                           value,
+                                           array_type,
+                                           element_type: lowered_element_type,
+                                           span });
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::StoreLocal { local,
+                                             value: updated,
+                                             span });
+      return;
+    }
+    let Some(index) = literal_index(index, length, span, self)
+    else
+    {
+      return;
+    };
     let mut fields = Vec::with_capacity(usize::try_from(length).unwrap_or(0));
     for field in 0..length
     {
@@ -187,16 +221,32 @@ impl HirToMirLowerer
                   *span);
       return None;
     }
-    let index = literal_index(index, length, *span, self)?;
     let array = self.lower_expression_to_local(collection, collection_type, lowered)?;
     let result = self.declare_temp(element_type, *span, lowered)?;
-    self.current_block_mut(lowered)
-        .statements
-        .push(mir::Statement::Extract { result,
-                                        aggregate: array,
-                                        field: index,
-                                        field_type: element_type,
-                                        span: *span });
+    if matches!(index.as_ref(), Expression::Literal { literal: Literal::Integer(_),
+                                                      .. })
+    {
+      let index = literal_index(index, length, *span, self)?;
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::Extract { result,
+                                          aggregate: array,
+                                          field: index,
+                                          field_type: element_type,
+                                          span: *span });
+    }
+    else
+    {
+      let index = self.lower_expression_to_local(index, XlilType::I64, lowered)?;
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::ArrayGet { result,
+                                           array,
+                                           index,
+                                           array_type: collection_type,
+                                           element_type,
+                                           span: *span });
+    }
     Some(result)
   }
 }

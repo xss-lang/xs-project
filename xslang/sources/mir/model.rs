@@ -10,8 +10,10 @@ use crate::xlil::{
   FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Type,
 };
 
+mod diagnostic;
 mod integer;
 
+pub use diagnostic::{Diagnostic, DiagnosticCode};
 pub use integer::IntegerConstant;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -157,6 +159,25 @@ pub enum Statement
     aggregate: LocalId,
     field: u32,
     field_type: Type,
+    span: Span,
+  },
+  ArrayGet
+  {
+    result: LocalId,
+    array: LocalId,
+    index: LocalId,
+    array_type: Type,
+    element_type: Type,
+    span: Span,
+  },
+  ArraySet
+  {
+    result: LocalId,
+    array: LocalId,
+    index: LocalId,
+    value: LocalId,
+    array_type: Type,
+    element_type: Type,
     span: Span,
   },
   AddI64
@@ -319,25 +340,6 @@ pub struct Function
   pub return_type: Type,
   pub locals: Vec<Local>,
   pub blocks: Vec<BasicBlock>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DiagnosticCode
-{
-  MissingTerminator,
-  UnknownLocal,
-  UseAfterMove,
-  MoveWhileBorrowed,
-  MutableBorrowConflict,
-  ImmutableLocalMutableBorrow,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Diagnostic
-{
-  pub code: DiagnosticCode,
-  pub message: String,
-  pub span: Span,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -581,6 +583,28 @@ impl BorrowChecker
                            .. } =>
       {
         self.require_live(aggregate, span);
+        let _ = self.state(result, span);
+      }
+      Statement::ArrayGet { result,
+                            array,
+                            index,
+                            span,
+                            .. } =>
+      {
+        self.require_live(array, span);
+        self.require_live(index, span);
+        let _ = self.state(result, span);
+      }
+      Statement::ArraySet { result,
+                            array,
+                            index,
+                            value,
+                            span,
+                            .. } =>
+      {
+        self.require_live(array, span);
+        self.require_live(index, span);
+        self.require_live(value, span);
         let _ = self.state(result, span);
       }
       Statement::Move { local,

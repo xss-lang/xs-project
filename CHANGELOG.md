@@ -26,6 +26,8 @@ source-to-native executable pipeline.
 
 - `[T] = [...]` denotes an array and `[T] = {...}` denotes a built-in set. A `[T]` declaration without an initializer is
   an array. The literal delimiter supplies the distinction when an initializer is present.
+- Fixed arrays now support calculated `Int` indices for reads and writes through MIR `array.get`/`array.set`, XLIL v0 text,
+  the public C23 XLIL model, and bounds-checked LLVM lowering. Native `.xse` fixtures cover both operations.
 
 ## 0.1.7 - 2026-07-15
 

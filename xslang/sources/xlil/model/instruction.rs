@@ -194,6 +194,19 @@ pub enum Instruction
     aggregate: ValueId,
     field: u32,
   },
+  ArrayGet
+  {
+    result: ValueId,
+    array: ValueId,
+    index: ValueId,
+  },
+  ArraySet
+  {
+    result: ValueId,
+    array: ValueId,
+    index: ValueId,
+    value: ValueId,
+  },
   Load
   {
     result: ValueId, slot: SlotId

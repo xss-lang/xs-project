@@ -912,7 +912,8 @@ size_t xs_lil_block_instruction_argument_count(const XsLilBlock *block, size_t i
 {
   if(block == nullptr || index >= block->instruction_count ||
      (block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL &&
-      block->instructions[index].kind != XS_LIL_INSTRUCTION_AGGREGATE))
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_AGGREGATE &&
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_ARRAY_SET))
     return 0;
   return block->instructions[index].argument_count;
 }
@@ -921,7 +922,8 @@ XsLilValueId xs_lil_block_instruction_argument(const XsLilBlock *block, size_t i
 {
   if(block == nullptr || index >= block->instruction_count || argument >= block->instructions[index].argument_count ||
      (block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL &&
-      block->instructions[index].kind != XS_LIL_INSTRUCTION_AGGREGATE))
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_AGGREGATE &&
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_ARRAY_SET))
     return UINT32_MAX;
   return block->instructions[index].arguments[argument];
 }

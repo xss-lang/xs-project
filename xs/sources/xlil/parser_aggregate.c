@@ -152,6 +152,39 @@ XsLilStatus xs_lil_parse_aggregate_instruction(XsLilBlock *block, XsLilType resu
                                                XsLilError *error)
 {
   const char *end = operation + operation_length;
+  bool array_get = operation_length >= 10 && strncmp(operation, "array.get ", 10) == 0;
+  bool array_set = operation_length >= 10 && strncmp(operation, "array.set ", 10) == 0;
+  if(array_get || array_set)
+  {
+    *matched = true;
+    const char *cursor = operation + 10;
+    XsLilValueId array = UINT32_MAX;
+    XsLilValueId index = UINT32_MAX;
+    XsLilValueId replacement = UINT32_MAX;
+    if(!parse_value(&cursor, end, &array) || end - cursor < 3 || cursor[0] != ',' || cursor[1] != ' ')
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL dynamic array source is invalid");
+    cursor += 2;
+    if(!parse_value(&cursor, end, &index))
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL dynamic array index is invalid");
+    if(array_set)
+    {
+      if(end - cursor < 3 || cursor[0] != ',' || cursor[1] != ' ')
+        return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array.set value is missing");
+      cursor += 2;
+      if(!parse_value(&cursor, end, &replacement))
+        return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array.set value is invalid");
+    }
+    if(cursor != end)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL dynamic array operands are malformed");
+    XsLilValueId result = UINT32_MAX;
+    XsLilStatus status = array_get ? xs_lil_block_add_array_get(block, array, index, result_type, &result, error)
+                                   : xs_lil_block_add_array_set(block, array, index, replacement, &result, error);
+    if(status != XS_LIL_OK)
+      return status;
+    return result == expected_result
+               ? XS_LIL_OK
+               : xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL value ids must be sequential");
+  }
   if(operation_length >= 10 && strncmp(operation, "aggregate ", 10) == 0)
   {
     *matched = true;

@@ -80,4 +80,58 @@ impl Parser<'_>
                                 aggregate,
                                 field })
   }
+
+  pub(super) fn array_get_instruction(&mut self,
+                                      function: &mut Function,
+                                      result: &str,
+                                      operands: &str,
+                                      line: usize)
+                                      -> Option<Instruction>
+  {
+    let (result, result_type) = self.result_value(function, result, line)?;
+    if result_type == crate::xlil::Type::VOID
+    {
+      return None;
+    }
+    let (array, index) = operands.split_once(", ")?;
+    Some(Instruction::ArrayGet { result,
+                                 array: self.value_operand(array, line)?,
+                                 index: self.value_operand(index, line)? })
+  }
+
+  pub(super) fn array_set_instruction(&mut self,
+                                      function: &mut Function,
+                                      result: &str,
+                                      operands: &str,
+                                      line: usize)
+                                      -> Option<Instruction>
+  {
+    let (result, result_type) = self.result_value(function, result, line)?;
+    let mut operands = operands.split(", ");
+    let array = self.value_operand(operands.next()?, line)?;
+    let index = self.value_operand(operands.next()?, line)?;
+    let value = self.value_operand(operands.next()?, line)?;
+    if operands.next().is_some() || result_type.kind != TypeKind::Array
+    {
+      return None;
+    }
+    Some(Instruction::ArraySet { result,
+                                 array,
+                                 index,
+                                 value })
+  }
+
+  fn result_value(&mut self,
+                  function: &mut Function,
+                  result: &str,
+                  line: usize)
+                  -> Option<(crate::xlil::ValueId, crate::xlil::Type)>
+  {
+    let (result, result_type) = result.split_once(':')?;
+    let result = self.value_id(result, line)?;
+    let result_type = self.type_name(result_type, line)?;
+    function.values.push(Value { id: result,
+                                 value_type: result_type });
+    Some((result, result_type))
+  }
 }

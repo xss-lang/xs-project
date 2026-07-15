@@ -60,3 +60,45 @@ fn roundtrips_aggregate_and_extract_statements()
   assert!(text.contains("statement extract"));
   assert_eq!(parsed, function);
 }
+
+#[test]
+fn roundtrips_dynamic_array_access_statements()
+{
+  let array_type = Type::array(0);
+  let typed_local = |id, value_type| Local { id: LocalId(id),
+                                             name: format!("$tmp{id}"),
+                                             value_type: Some(value_type),
+                                             mutable: false,
+                                             span: span() };
+  let function =
+    Function { name: "array_access".to_string(),
+               parameters: Vec::new(),
+               return_type: Type::I32,
+               locals: vec![typed_local(0, array_type),
+                            typed_local(1, Type::I64),
+                            typed_local(2, Type::I32),
+                            typed_local(3, array_type),
+                            typed_local(4, Type::I32)],
+               blocks: vec![BasicBlock { id: BlockId(0),
+                                         statements: vec![Statement::ArraySet { result: LocalId(3),
+                                                                                array: LocalId(0),
+                                                                                index: LocalId(1),
+                                                                                value: LocalId(2),
+                                                                                array_type,
+                                                                                element_type: Type::I32,
+                                                                                span: span() },
+                                                          Statement::ArrayGet { result: LocalId(4),
+                                                                                array: LocalId(3),
+                                                                                index: LocalId(1),
+                                                                                array_type,
+                                                                                element_type: Type::I32,
+                                                                                span: span() }],
+                                         terminator: Some(Terminator::Return(Some(LocalId(4)))),
+                                         span: span() }] };
+
+  let text = function_to_xmir(&function);
+  assert!(text.contains("statement array.set"));
+  assert!(text.contains("statement array.get"));
+  assert_eq!(parse_xmir_function(&text).expect("dynamic array XMIR should parse"),
+             function);
+}

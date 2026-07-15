@@ -13,6 +13,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainLoop
                        MainBlockLocals MainFixedArray MainArrayMissingDefaults
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
+                       MainDynamicArrayIndex MainDynamicArrayMutation
                        CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
@@ -27,6 +28,10 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
 endforeach()
 
 function(xs_add_source_native_array_test fixture expected_exit expected_length)
+  set(instruction_pattern "extractvalue")
+  if(ARGC GREATER 3)
+    set(instruction_pattern "${ARGV3}")
+  endif()
   string(TOLOWER "${fixture}" test_suffix)
   add_test(NAME source_native_${test_suffix}_build COMMAND xs build -file
                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xs)
@@ -36,7 +41,7 @@ function(xs_add_source_native_array_test fixture expected_exit expected_length)
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.ll
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.o
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xse
-                                                            ${expected_exit} "[${expected_length} x i32]" "extractvalue")
+                                                            ${expected_exit} "[${expected_length} x i32]" "${instruction_pattern}")
   set_tests_properties(source_native_${test_suffix}_artifacts PROPERTIES
                        DEPENDS source_native_${test_suffix}_build TIMEOUT 5)
 endfunction()
@@ -46,6 +51,8 @@ xs_add_source_native_array_test(MainArrayExcessDiscard 7 2)
 xs_add_source_native_array_test(MainInferredSizeArray 7 3)
 xs_add_source_native_array_test(MainArrayMutation 7 3)
 xs_add_source_native_array_test(MainDefaultFixedArray 0 3)
+xs_add_source_native_array_test(MainDynamicArrayIndex 7 3 "getelementptr")
+xs_add_source_native_array_test(MainDynamicArrayMutation 7 3 "llvm.trap")
 
 add_test(NAME compiler_check_builtin_set COMMAND xs check -file
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/CollectionSetCheck.xs)

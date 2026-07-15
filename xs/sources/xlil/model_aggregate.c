@@ -162,3 +162,56 @@ XsLilStatus xs_lil_block_add_extract(XsLilBlock *block, XsLilValueId aggregate, 
     *result = value;
   return status;
 }
+
+XsLilStatus xs_lil_block_add_array_get(XsLilBlock *block, XsLilValueId array, XsLilValueId index,
+                                       XsLilType element_type, XsLilValueId *result, XsLilError *error)
+{
+  if(block == nullptr || block->owner == nullptr || result == nullptr || array >= block->owner->value_count ||
+     index >= block->owner->value_count || block->owner->values[array].type.kind != XS_LIL_TYPE_ARRAY ||
+     block->owner->values[index].type.kind != XS_LIL_TYPE_I64 || element_type.kind == XS_LIL_TYPE_VOID)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array.get instruction arguments are invalid");
+  XsLilValueId value = UINT32_MAX;
+  XsLilStatus status = xs_lil_add_value(block->owner, element_type, &value, error);
+  if(status == XS_LIL_OK)
+    status = xs_lil_append_instruction(block,
+                                       (XsLilInstruction){.kind = XS_LIL_INSTRUCTION_ARRAY_GET,
+                                                          .result = value,
+                                                          .left = array,
+                                                          .right = index},
+                                       error);
+  if(status == XS_LIL_OK)
+    *result = value;
+  return status;
+}
+
+XsLilStatus xs_lil_block_add_array_set(XsLilBlock *block, XsLilValueId array, XsLilValueId index,
+                                       XsLilValueId replacement, XsLilValueId *result, XsLilError *error)
+{
+  if(block == nullptr || block->owner == nullptr || result == nullptr || array >= block->owner->value_count ||
+     index >= block->owner->value_count || replacement >= block->owner->value_count ||
+     block->owner->values[array].type.kind != XS_LIL_TYPE_ARRAY ||
+     block->owner->values[index].type.kind != XS_LIL_TYPE_I64)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array.set instruction arguments are invalid");
+  XsLilValueId *arguments = malloc(sizeof(*arguments));
+  if(arguments == nullptr)
+    return xs_lil_set_error(error, XS_LIL_ALLOCATION_FAILED, "out of memory while adding XLIL array.set");
+  arguments[0] = replacement;
+  XsLilValueId value = UINT32_MAX;
+  XsLilStatus status = xs_lil_add_value(block->owner, block->owner->values[array].type, &value, error);
+  if(status == XS_LIL_OK)
+    status = xs_lil_append_instruction(block,
+                                       (XsLilInstruction){.kind = XS_LIL_INSTRUCTION_ARRAY_SET,
+                                                          .result = value,
+                                                          .left = array,
+                                                          .right = index,
+                                                          .arguments = arguments,
+                                                          .argument_count = 1},
+                                       error);
+  if(status == XS_LIL_OK)
+  {
+    *result = value;
+  }
+  else
+    free(arguments);
+  return status;
+}

@@ -442,6 +442,14 @@ impl Parser<'_>
     {
       return self.extract_instruction(function, result, source, line);
     }
+    if let Some((result, operands)) = text.split_once(" = array.get ")
+    {
+      return self.array_get_instruction(function, result, operands, line);
+    }
+    if let Some((result, operands)) = text.split_once(" = array.set ")
+    {
+      return self.array_set_instruction(function, result, operands, line);
+    }
     if let Some((result, call)) = text.split_once(" = call ")
     {
       return self.value_call(function, result, call, line);

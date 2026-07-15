@@ -384,6 +384,16 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
                  instruction->left, (long long)instruction->immediate_i64) < 0)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL extract instruction");
     }
+    if(instruction->kind == XS_LIL_INSTRUCTION_ARRAY_GET || instruction->kind == XS_LIL_INSTRUCTION_ARRAY_SET)
+    {
+      if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||
+         write_type(stream, error, block->owner->values[instruction->result].type) != XS_LIL_OK ||
+         (instruction->kind == XS_LIL_INSTRUCTION_ARRAY_GET
+              ? fprintf(stream, " = array.get %%r%u, %%r%u\n", instruction->left, instruction->right)
+              : fprintf(stream, " = array.set %%r%u, %%r%u, %%r%u\n", instruction->left, instruction->right,
+                        instruction->arguments[0])) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL dynamic array instruction");
+    }
     if(instruction->kind == XS_LIL_INSTRUCTION_LOAD)
     {
       if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||

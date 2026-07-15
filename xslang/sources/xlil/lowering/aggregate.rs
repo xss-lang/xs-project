@@ -73,6 +73,60 @@ impl MirToXlilLowerer
         };
         values.insert(*result, value);
       }
+      mir::Statement::ArrayGet { result,
+                                 array,
+                                 index,
+                                 element_type,
+                                 span,
+                                 .. } =>
+      {
+        let Some((array, index)) = values.get(array).copied().zip(values.get(index).copied())
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR array.get operand has not been lowered",
+                      *span);
+          return;
+        };
+        let Some(value) = function.add_array_get(block, array, index, *element_type)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR array.get could not lower to XLIL",
+                      *span);
+          return;
+        };
+        values.insert(*result, value);
+      }
+      mir::Statement::ArraySet { result,
+                                 array,
+                                 index,
+                                 value,
+                                 span,
+                                 .. } =>
+      {
+        let Some((array, index, value)) = values.get(array)
+                                                .copied()
+                                                .zip(values.get(index).copied())
+                                                .zip(values.get(value).copied())
+                                                .map(|((array, index), value)| (array, index, value))
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR array.set operand has not been lowered",
+                      *span);
+          return;
+        };
+        let Some(value) = function.add_array_set(block, array, index, value)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR array.set could not lower to XLIL",
+                      *span);
+          return;
+        };
+        values.insert(*result, value);
+      }
       _ =>
       {}
     }

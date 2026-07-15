@@ -275,6 +275,29 @@ static XsLilStatus verify_extract(const XsLilModule *module, const XsLilFunction
   return XS_LIL_OK;
 }
 
+static XsLilStatus verify_array_access(const XsLilModule *module, const XsLilFunction *function,
+                                       const XsLilInstruction *instruction, XsLilError *error)
+{
+  if(instruction->left >= function->value_count || instruction->right >= function->value_count ||
+     instruction->result >= function->value_count)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL dynamic array instruction references an unknown value");
+  XsLilType array = function->values[instruction->left].type;
+  if(array.kind != XS_LIL_TYPE_ARRAY || !valid_type(module, array) ||
+     function->values[instruction->right].type.kind != XS_LIL_TYPE_I64)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL dynamic array source or index type is invalid");
+  XsLilType element = module->array_types[array.registry_id].element_type;
+  if(instruction->kind == XS_LIL_INSTRUCTION_ARRAY_GET)
+    return xs_lil_type_equal(function->values[instruction->result].type, element)
+               ? XS_LIL_OK
+               : xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array.get result type is invalid");
+  if(instruction->argument_count != 1 || instruction->arguments == nullptr ||
+     instruction->arguments[0] >= function->value_count ||
+     !xs_lil_type_equal(function->values[instruction->arguments[0]].type, element) ||
+     !xs_lil_type_equal(function->values[instruction->result].type, array))
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array.set value or result type is invalid");
+  return XS_LIL_OK;
+}
+
 XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
 {
   xs_lil_clear_error(error);
@@ -325,6 +348,12 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(current->kind == XS_LIL_INSTRUCTION_EXTRACT)
         {
           status = verify_extract(module, function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_ARRAY_GET || current->kind == XS_LIL_INSTRUCTION_ARRAY_SET)
+        {
+          status = verify_array_access(module, function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

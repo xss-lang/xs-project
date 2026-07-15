@@ -48,6 +48,39 @@ pub(super) fn extract_statement(parser: &mut Parser<'_>) -> Statement
                        span: span() }
 }
 
+pub(super) fn array_get_statement(parser: &mut Parser<'_>) -> Statement
+{
+  let (result, array, index, array_type, element_type) = array_access(parser);
+  Statement::ArrayGet { result,
+                        array,
+                        index,
+                        array_type,
+                        element_type,
+                        span: span() }
+}
+
+pub(super) fn array_set_statement(parser: &mut Parser<'_>) -> Statement
+{
+  let (result, array, index, array_type, element_type) = array_access(parser);
+  let value = required_local(parser, "value local ", "array.set value");
+  Statement::ArraySet { result,
+                        array,
+                        index,
+                        value,
+                        array_type,
+                        element_type,
+                        span: span() }
+}
+
+fn array_access(parser: &mut Parser<'_>) -> (LocalId, LocalId, LocalId, Type, Type)
+{
+  (required_local(parser, "result local ", "array access result"),
+   required_local(parser, "array local ", "array access source"),
+   required_local(parser, "index local ", "array access index"),
+   required_type(parser, "array_type ", "array access array type"),
+   required_type(parser, "element_type ", "array access element type"))
+}
+
 fn required_local(parser: &mut Parser<'_>, prefix: &str, label: &str) -> LocalId
 {
   let Some(line) = parser.current()
