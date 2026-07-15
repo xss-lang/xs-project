@@ -1,0 +1,184 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+use super::*;
+
+pub(super) fn lower_nominal_type(tree: &SyntaxTree,
+                                 value: &SyntaxNode)
+                                 -> Result<declarations::NominalType, LoweringError>
+{
+  let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
+  let fields = value.children
+                    .iter()
+                    .filter_map(|index| tree.nodes.get(*index))
+                    .filter(|child| matches!(child.kind, CLASS_FIELD | DATA_FIELD))
+                    .map(|field| {
+                      let name = first_child_kind(tree, field, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
+                      let ty = field.children
+                                    .iter()
+                                    .filter_map(|index| tree.nodes.get(*index))
+                                    .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))
+                                    .ok_or(LoweringError::MissingParameterType)?;
+                      Ok(declarations::Field { name: name.text.clone(),
+                                               ty: lower_type(tree, ty),
+                                               mutable: field.flags & (IMMUTABLE | CONSTANT | STATIC_CONSTANT) == 0,
+                                               span: field.span.clone() })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+  Ok(declarations::NominalType { name: name.text.clone(),
+                                 kind: if value.kind == DECL_CLASS
+                                 {
+                                   declarations::NominalKind::Class
+                                 }
+                                 else
+                                 {
+                                   declarations::NominalKind::Data
+                                 },
+                                 fields,
+                                 span: value.span.clone() })
+}
+
+fn path_segments(tree: &SyntaxTree, value: &SyntaxNode) -> Option<(String, Vec<String>)>
+{
+  if value.kind == EXPR_IDENTIFIER
+  {
+    return Some((path_text(tree, value), Vec::new()));
+  }
+  if value.kind != EXPR_MEMBER_ACCESS || value.children.len() != 2
+  {
+    return None;
+  }
+  let (root, mut fields) = path_segments(tree, tree.nodes.get(value.children[0])?)?;
+  fields.push(path_text(tree, tree.nodes.get(value.children[1])?));
+  Some((root, fields))
+}
+
+fn field_path(tree: &SyntaxTree,
+              value: &SyntaxNode,
+              context: &LoweringContext,
+              locals: &HashMap<String, Type>)
+              -> Option<crate::hir::type_check::FieldPath>
+{
+  let (root, fields) = path_segments(tree, value)?;
+  let mut current_type = locals.get(&root)?.clone();
+  let mut mutable = false;
+  for field_name in &fields
+  {
+    let Type::Named(type_name) = current_type
+    else
+    {
+      return None;
+    };
+    let definition = context.nominal_types.get(&type_name)?;
+    let field = definition.fields.iter().find(|field| field.name == *field_name)?;
+    current_type = declarations::type_ref_to_checked(&field.ty)?;
+    mutable = field.mutable;
+  }
+  Some(crate::hir::type_check::FieldPath { root,
+                                           fields,
+                                           ty: current_type,
+                                           mutable,
+                                           span: span(value)? })
+}
+
+pub(super) fn lower_field_expression(tree: &SyntaxTree,
+                                     value: &SyntaxNode,
+                                     context: &LoweringContext,
+                                     locals: &HashMap<String, Type>)
+                                     -> Option<Expression>
+{
+  Some(Expression::Field { path: field_path(tree, value, context, locals)? })
+}
+
+pub(super) fn lower_field_assignment(tree: &SyntaxTree,
+                                     value: &SyntaxNode,
+                                     context: &LoweringContext,
+                                     locals: &HashMap<String, Type>,
+                                     source_span: Span)
+                                     -> Option<Expression>
+{
+  let target = field_path(tree, tree.nodes.get(value.children[0])?, context, locals)?;
+  let assigned = lower_expression(tree,
+                                  tree.nodes.get(value.children[2])?,
+                                  context,
+                                  locals,
+                                  Some(&target.ty))?;
+  let assigned = if value.token_kind == TOKEN_ASSIGN
+  {
+    assigned
+  }
+  else
+  {
+    let operator = match value.token_kind
+    {
+      TOKEN_PLUS_ASSIGN => BinaryOperator::Add,
+      TOKEN_MINUS_ASSIGN => BinaryOperator::Sub,
+      TOKEN_STAR_ASSIGN => BinaryOperator::Mul,
+      TOKEN_SLASH_ASSIGN => BinaryOperator::Div,
+      TOKEN_PERCENT_ASSIGN => BinaryOperator::Rem,
+      TOKEN_AMPERSAND_ASSIGN => BinaryOperator::BitAnd,
+      TOKEN_PIPE_ASSIGN => BinaryOperator::BitOr,
+      TOKEN_CARET_ASSIGN => BinaryOperator::BitXor,
+      _ => return None,
+    };
+    Expression::Binary { operator,
+                         left: Box::new(Expression::Field { path: target.clone() }),
+                         right: Box::new(assigned),
+                         span: source_span }
+  };
+  Some(Expression::AssignField { target,
+                                 value: Box::new(assigned),
+                                 span: source_span })
+}
+
+pub(super) fn lower_object_expression(tree: &SyntaxTree,
+                                      value: &SyntaxNode,
+                                      context: &LoweringContext,
+                                      locals: &HashMap<String, Type>,
+                                      expected_type: Option<&Type>,
+                                      source_span: Span)
+                                      -> Option<Expression>
+{
+  let (nominal_type, first_field) = if value.kind == EXPR_TYPED_OBJECT_LITERAL
+  {
+    (path_text(tree, tree.nodes.get(*value.children.first()?)?), 1)
+  }
+  else
+  {
+    let Type::Named(name) = expected_type?
+    else
+    {
+      return None;
+    };
+    (name.clone(), 0)
+  };
+  let definition = context.nominal_types.get(&nominal_type)?;
+  let fields =
+    value.children[first_field..].iter()
+                                 .map(|index| {
+                                   let field = tree.nodes.get(*index)?;
+                                   if field.kind != OBJECT_FIELD
+                                   {
+                                     return None;
+                                   }
+                                   let name = tree.nodes.get(*field.children.first()?)?;
+                                   let definition =
+                                     definition.fields.iter().find(|candidate| candidate.name == name.text)?;
+                                   let expected = declarations::type_ref_to_checked(&definition.ty)?;
+                                   let expression = tree.nodes.get(*field.children.get(1)?)?;
+                                   Some(crate::hir::type_check::ObjectField { name: name.text.clone(),
+                                                                              value:
+                                                                                lower_expression(tree,
+                                                                                                 expression,
+                                                                                                 context,
+                                                                                                 locals,
+                                                                                                 Some(&expected))?,
+                                                                              span: span(field)? })
+                                 })
+                                 .collect::<Option<Vec<_>>>()?;
+  Some(Expression::Object { nominal_type,
+                            fields,
+                            span: source_span })
+}

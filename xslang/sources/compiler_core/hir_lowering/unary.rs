@@ -7,7 +7,7 @@ use super::*;
 
 pub(super) fn lower_unary_expression(tree: &SyntaxTree,
                                      value: &SyntaxNode,
-                                     signatures: &HashMap<String, CallSignature>,
+                                     context: &LoweringContext,
                                      locals: &HashMap<String, Type>,
                                      expected_type: Option<&Type>,
                                      source_span: Span)
@@ -55,11 +55,7 @@ pub(super) fn lower_unary_expression(tree: &SyntaxTree,
   {
     expected_type
   };
-  let operand = lower_expression(tree,
-                                 tree.nodes.get(value.children[0])?,
-                                 signatures,
-                                 locals,
-                                 operand_type)?;
+  let operand = lower_expression(tree, tree.nodes.get(value.children[0])?, context, locals, operand_type)?;
   Some(Expression::Unary { operator,
                            operand: Box::new(operand),
                            span: source_span })

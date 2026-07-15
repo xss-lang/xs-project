@@ -47,6 +47,8 @@ pub struct HirToMirLowerer
   current_block: mir::BlockId,
   loop_targets: Vec<(mir::BlockId, mir::BlockId)>,
   storage_locals: HashSet<mir::LocalId>,
+  nominal_types: HashMap<String, crate::hir::declarations::NominalType>,
+  field_locals: HashMap<String, mir::LocalId>,
 }
 
 mod diagnostic;
@@ -58,6 +60,7 @@ mod for_tests;
 mod integer_operator_tests;
 #[cfg(test)]
 mod integer_width_tests;
+mod nominal;
 #[cfg(test)]
 mod operator_tests;
 mod unary;
@@ -70,6 +73,13 @@ impl HirToMirLowerer
   pub fn new() -> Self
   {
     Self::default()
+  }
+
+  #[must_use]
+  pub fn with_nominal_types(mut self, types: &[crate::hir::declarations::NominalType]) -> Self
+  {
+    self.nominal_types = types.iter().map(|ty| (ty.name.clone(), ty.clone())).collect();
+    self
   }
 
   pub fn lower_function(self, function: &Function) -> Result<mir::Function, Vec<Diagnostic>>
@@ -98,93 +108,6 @@ impl HirToMirLowerer
     self.lower_function(&surface)
   }
 
-  fn surface_statement_from_desugared(&mut self, statement: &DesugaredStatement) -> Option<Statement>
-  {
-    match statement
-    {
-      DesugaredStatement::Let { local,
-                                initializer, } =>
-      {
-        let initializer = initializer.as_ref()
-                                     .and_then(|expression| self.surface_expression_from_desugared(expression));
-        Some(Statement::Let { local: local.clone(),
-                              initializer })
-      }
-      DesugaredStatement::Expr(expression) => self.surface_expression_from_desugared(expression).map(Statement::Expr),
-      DesugaredStatement::Return { value,
-                                   span, } =>
-      {
-        let value = value.as_ref()
-                         .and_then(|expression| self.surface_expression_from_desugared(expression));
-        Some(Statement::Return { value,
-                                 span: *span })
-      }
-      DesugaredStatement::If { condition,
-                               then_block,
-                               else_block,
-                               span, } =>
-      {
-        Some(Statement::If { condition: self.surface_expression_from_desugared(condition)?,
-                             then_block: self.surface_block_from_desugared(then_block)?,
-                             else_block: else_block.as_ref()
-                                                   .and_then(|block| self.surface_block_from_desugared(block)),
-                             span: *span })
-      }
-      DesugaredStatement::While { condition,
-                                  body,
-                                  span, } =>
-      {
-        Some(Statement::While { condition: self.surface_expression_from_desugared(condition)?,
-                                body: self.surface_block_from_desugared(body)?,
-                                span: *span })
-      }
-      DesugaredStatement::For { initializer,
-                                condition,
-                                update,
-                                body,
-                                span, } =>
-      {
-        Some(Statement::For { initializer: match initializer
-                              {
-                                Some(statement) => Some(Box::new(self.surface_statement_from_desugared(statement)?)),
-                                None => None,
-                              },
-                              condition: match condition
-                              {
-                                Some(expression) => Some(self.surface_expression_from_desugared(expression)?),
-                                None => None,
-                              },
-                              update: match update
-                              {
-                                Some(expression) => Some(self.surface_expression_from_desugared(expression)?),
-                                None => None,
-                              },
-                              body: self.surface_block_from_desugared(body)?,
-                              span: *span })
-      }
-      DesugaredStatement::Match { selector,
-                                  selector_type,
-                                  arms,
-                                  span, } =>
-      {
-        let arms = arms.iter()
-                       .map(|arm| {
-                         Some(MatchArm { pattern: arm.pattern.clone(),
-                                         body: self.surface_block_from_desugared(&arm.body)?,
-                                         span: arm.span })
-                       })
-                       .collect::<Option<Vec<_>>>()?;
-        Some(Statement::Match { selector: self.surface_expression_from_desugared(selector)?,
-                                selector_type: selector_type.clone(),
-                                arms,
-                                span: *span })
-      }
-      DesugaredStatement::Break { span } => Some(Statement::Break { span: *span }),
-      DesugaredStatement::Continue { span } => Some(Statement::Continue { span: *span }),
-      DesugaredStatement::Panic { span } => Some(Statement::Panic { span: *span }),
-    }
-  }
-
   fn lower_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
   {
     match statement
@@ -192,6 +115,11 @@ impl HirToMirLowerer
       Statement::Let { local,
                        initializer, } =>
       {
+        if matches!(local.ty, Type::Named(_))
+        {
+          self.lower_nominal_binding(local, initializer.as_ref(), lowered);
+          return;
+        }
         let id = self.declare_local(local.name.clone(), &local.ty, local.mutable, local.span, lowered);
         if let Some(initializer) = initializer
         {
@@ -212,6 +140,9 @@ impl HirToMirLowerer
         };
         self.lower_assignment(id, value, lowered);
       }
+      Statement::Expr(Expression::AssignField { target,
+                                                value,
+                                                .. }) => self.lower_field_assignment(target, value, lowered),
       Statement::Expr(expression @ Expression::Update { .. }) =>
       {
         let Some(value_type) = self.expression_value_type(expression, lowered)
@@ -339,6 +270,12 @@ impl HirToMirLowerer
           Some(local)
         }
       }
+      Expression::Field { path } => self.lower_field_load(path, expected_type, lowered),
+      Expression::Object { .. } =>
+      {
+        self.unsupported_expression(expression);
+        None
+      }
       Expression::Literal { literal,
                             span, } =>
       {
@@ -370,7 +307,7 @@ impl HirToMirLowerer
         self.lower_unary_into(local, *operator, operand, *span, lowered);
         Some(local)
       }
-      Expression::Assign { .. } =>
+      Expression::Assign { .. } | Expression::AssignField { .. } =>
       {
         self.unsupported_expression(expression);
         None
@@ -701,11 +638,14 @@ const fn expression_span(expression: &Expression) -> Span
   {
     Expression::Literal { span, .. } |
     Expression::Local { span, .. } |
+    Expression::Object { span, .. } |
     Expression::Assign { span, .. } |
+    Expression::AssignField { span, .. } |
     Expression::Update { span, .. } |
     Expression::Binary { span, .. } |
     Expression::Unary { span, .. } |
     Expression::ResultPropagation { span, .. } => *span,
+    Expression::Field { path } => path.span,
     Expression::Call { span, .. } | Expression::If { span, .. } | Expression::Match { span, .. } => *span,
   }
 }

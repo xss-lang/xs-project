@@ -26,6 +26,7 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
 {
   let mut program_name: Option<Option<String>> = None;
   let mut functions = Vec::new();
+  let mut nominal_types = Vec::new();
   let mut locations = Vec::new();
   for (tree_index, tree) in trees.iter().enumerate()
   {
@@ -48,7 +49,17 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
     }
     for node_index in root.children.iter().copied()
     {
-      let Some(function_node) = tree.nodes.get(node_index).filter(|child| child.kind == DECL_FUNCTION)
+      let Some(declaration) = tree.nodes.get(node_index)
+      else
+      {
+        continue;
+      };
+      if matches!(declaration.kind, DECL_CLASS | DECL_DATA)
+      {
+        nominal_types.push(nominal::lower_nominal_type(tree, declaration)?);
+        continue;
+      }
+      let Some(function_node) = (declaration.kind == DECL_FUNCTION).then_some(declaration)
       else
       {
         continue;
@@ -60,18 +71,20 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
       functions.push(function);
     }
   }
-  let signatures = functions.iter()
-                            .filter_map(|function| {
-                              let parameters = function.parameters
-                                                       .iter()
-                                                       .map(|parameter| checked_type(&parameter.ty))
-                                                       .collect::<Option<Vec<_>>>()?;
-                              let return_type = checked_type(&function.return_type)?;
-                              Some((function.name.clone(),
-                                    CallSignature { parameters,
-                                                    return_type }))
-                            })
-                            .collect::<HashMap<_, _>>();
+  let context =
+    LoweringContext { calls: functions.iter()
+                                      .filter_map(|function| {
+                                        let parameters = function.parameters
+                                                                 .iter()
+                                                                 .map(|parameter| checked_type(&parameter.ty))
+                                                                 .collect::<Option<Vec<_>>>()?;
+                                        let return_type = checked_type(&function.return_type)?;
+                                        Some((function.name.clone(),
+                                              CallSignature { parameters,
+                                                              return_type }))
+                                      })
+                                      .collect(),
+                      nominal_types: nominal_types.iter().cloned().map(|ty| (ty.name.clone(), ty)).collect() };
   for location in locations
   {
     let tree = &trees[location.tree];
@@ -79,8 +92,9 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
     let function = &mut functions[location.function];
     let parameters = function.parameters.clone();
     let return_type = checked_type(&function.return_type);
-    function.body = lower_body(tree, syntax, &signatures, &parameters, return_type.as_ref());
+    function.body = lower_body(tree, syntax, &context, &parameters, return_type.as_ref());
   }
   Ok(declarations::Module { name: program_name.unwrap_or(None),
+                            nominal_types,
                             functions })
 }

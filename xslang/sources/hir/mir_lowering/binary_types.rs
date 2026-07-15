@@ -51,6 +51,8 @@ impl HirToMirLowerer
     match expression
     {
       Expression::Local { name, .. } => self.local_value_type(*self.locals.get(name)?, lowered),
+      Expression::Field { path } => type_to_xlil(&path.ty),
+      Expression::Object { .. } => None,
       Expression::Update { target, .. } => self.local_value_type(*self.locals.get(target)?, lowered),
       Expression::Binary { operator,
                            left,
@@ -91,7 +93,7 @@ impl HirToMirLowerer
         Literal::Char(_) => Some(XlilType::U16),
         Literal::Integer(_) | Literal::Float(_) | Literal::None => None,
       },
-      Expression::Assign { .. } | Expression::ResultPropagation { .. } => None,
+      Expression::Assign { .. } | Expression::AssignField { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
 }

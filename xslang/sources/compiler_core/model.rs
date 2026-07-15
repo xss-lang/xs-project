@@ -120,38 +120,70 @@ pub struct CompilerCoreSession
   declarations: crate::hir::declarations::Module,
   mir_functions: Vec<crate::mir::Function>,
   xlil_text: Option<Vec<u8>>,
+  diagnostics: Vec<String>,
 }
 
 fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_lowering::LoweringError>
 {
   let declarations = hir_lowering::lower_program(&syntax)?;
-  let mir_functions: Vec<crate::mir::Function> =
-    declarations.functions
-                .iter()
-                .filter_map(|declaration| {
-                  let function = declaration.as_type_checked_input()?;
-                  if !crate::hir::type_check::TypeChecker::new().check_function(&function)
-                                                                .is_empty()
-                  {
-                    return None;
-                  }
-                  let mir = crate::hir::mir_lowering::HirToMirLowerer::new()
-                                      .lower_function_with_parameters(&function, declaration.parameters.len())
-                                      .ok()?;
-                  if !crate::mir::BorrowChecker::new().check_function(&mir).is_empty()
-                  {
-                    return None;
-                  }
-                  crate::mir::optimizer::optimize_verified_function(mir).ok()
-                                                                        .map(|optimized| optimized.function)
-                })
-                .collect();
-  let xlil_text = xlil_lowering::lower_module(&declarations, &mir_functions)
-    .map(|module| crate::xlil::writer::module_to_string(&module).into_bytes());
+  let mut mir_functions = Vec::new();
+  let mut diagnostics = Vec::new();
+  for declaration in declarations.functions.iter().filter(|function| function.body_present)
+  {
+    let Some(function) = declaration.as_type_checked_input()
+    else
+    {
+      diagnostics.push(format!("function '{}' could not be represented as typed HIR", declaration.name));
+      continue;
+    };
+    let type_diagnostics = crate::hir::type_check::TypeChecker::new().with_nominal_types(&declarations.nominal_types)
+                                                                     .check_function(&function);
+    if !type_diagnostics.is_empty()
+    {
+      diagnostics.push(format!("function '{}' failed type checking: {type_diagnostics:?}",
+                               declaration.name));
+      continue;
+    }
+    let mir =
+      match crate::hir::mir_lowering::HirToMirLowerer::new().with_nominal_types(&declarations.nominal_types)
+                                                            .lower_function_with_parameters(&function,
+                                                                                            declaration.parameters
+                                                                                                       .len())
+      {
+        Ok(mir) => mir,
+        Err(errors) =>
+        {
+          diagnostics.push(format!("function '{}' failed MIR lowering: {errors:?}", declaration.name));
+          continue;
+        }
+      };
+    let borrow_diagnostics = crate::mir::BorrowChecker::new().check_function(&mir);
+    if !borrow_diagnostics.is_empty()
+    {
+      diagnostics.push(format!("function '{}' failed borrow checking: {borrow_diagnostics:?}",
+                               declaration.name));
+      continue;
+    }
+    match crate::mir::optimizer::optimize_verified_function(mir)
+    {
+      Ok(optimized) => mir_functions.push(optimized.function),
+      Err(errors) => diagnostics.push(format!("function '{}' failed MIR optimization: {errors:?}", declaration.name)),
+    }
+  }
+  let xlil_text = if diagnostics.is_empty()
+  {
+    xlil_lowering::lower_module(&declarations, &mir_functions)
+      .map(|module| crate::xlil::writer::module_to_string(&module).into_bytes())
+  }
+  else
+  {
+    None
+  };
   Ok(CompilerCoreSession { syntax,
                            declarations,
                            mir_functions,
-                           xlil_text })
+                           xlil_text,
+                           diagnostics })
 }
 
 fn table_length(value: u64) -> Result<usize, PacketError>
@@ -455,6 +487,54 @@ pub unsafe extern "C" fn xslang_compiler_core_session_mir_function_count(session
 {
   // SAFETY: The pointer is only borrowed when it is non-null.
   unsafe { session.as_ref() }.map_or(0, |value| value.mir_functions.len() as u64)
+}
+
+/// Returns the number of compiler-core stage diagnostics retained by a session.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live compiler-core session.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_diagnostic_count(session: *const CompilerCoreSession) -> u64
+{
+  // SAFETY: The pointer is only borrowed when it is non-null.
+  unsafe { session.as_ref() }.map_or(0, |value| value.diagnostics.len() as u64)
+}
+
+/// Returns one borrowed UTF-8 diagnostic message.
+///
+/// The bytes remain valid until the session is released. An invalid index or
+/// null session returns null and writes zero to `length` when non-null.
+///
+/// # Safety
+///
+/// `session` must be null or point to a live compiler-core session. `length`
+/// must be null or writable for one `u64`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_diagnostic_text(session: *const CompilerCoreSession,
+                                                                      index: u64,
+                                                                      length: *mut u64)
+                                                                      -> *const u8
+{
+  if !length.is_null()
+  {
+    // SAFETY: The caller contract requires a writable length pointer.
+    unsafe { *length = 0 };
+  }
+  let Some(text) = (unsafe { session.as_ref() }).and_then(|value| {
+                                                  usize::try_from(index).ok()
+                                                                        .and_then(|index| value.diagnostics.get(index))
+                                                })
+  else
+  {
+    return std::ptr::null();
+  };
+  if !length.is_null()
+  {
+    // SAFETY: The caller contract requires a writable length pointer.
+    unsafe { *length = text.len() as u64 };
+  }
+  text.as_ptr()
 }
 
 /// Returns borrowed XLIL v0 text when every source body reached verified XLIL.

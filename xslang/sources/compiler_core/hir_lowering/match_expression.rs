@@ -7,17 +7,17 @@ use super::*;
 
 pub(super) fn lower_match_expression(tree: &SyntaxTree,
                                      expression: &SyntaxNode,
-                                     signatures: &HashMap<String, CallSignature>,
+                                     context: &LoweringContext,
                                      locals: &HashMap<String, Type>,
                                      result_type: Type)
                                      -> Option<Expression>
 {
   let selector_node = tree.nodes.get(*expression.children.first()?)?;
-  let selector_type = expression_type(tree, selector_node, signatures, locals)?;
-  let selector = lower_expression(tree, selector_node, signatures, locals, Some(&selector_type))?;
+  let selector_type = expression_type(tree, selector_node, context, locals)?;
+  let selector = lower_expression(tree, selector_node, context, locals, Some(&selector_type))?;
   let arms =
     expression.children[1..].iter()
-                            .map(|index| lower_arm(tree, *index, signatures, locals, &selector_type, &result_type))
+                            .map(|index| lower_arm(tree, *index, context, locals, &selector_type, &result_type))
                             .collect::<Option<Vec<_>>>()?;
   Some(Expression::Match { selector: Box::new(selector),
                            selector_type: Box::new(selector_type),
@@ -28,7 +28,7 @@ pub(super) fn lower_match_expression(tree: &SyntaxTree,
 
 fn lower_arm(tree: &SyntaxTree,
              index: usize,
-             signatures: &HashMap<String, CallSignature>,
+             context: &LoweringContext,
              locals: &HashMap<String, Type>,
              selector_type: &Type,
              result_type: &Type)
@@ -48,7 +48,7 @@ fn lower_arm(tree: &SyntaxTree,
   {
     let literal_node = tree.nodes.get(*pattern_node.children.first()?)?;
     let Expression::Literal { literal, .. } =
-      lower_expression(tree, literal_node, signatures, locals, Some(selector_type))?
+      lower_expression(tree, literal_node, context, locals, Some(selector_type))?
     else
     {
       return None;
@@ -62,7 +62,7 @@ fn lower_arm(tree: &SyntaxTree,
   let mut arm_locals = locals.clone();
   let body = lower_hir_block(tree,
                              tree.nodes.get(arm.children[1])?,
-                             signatures,
+                             context,
                              &mut arm_locals,
                              None,
                              Some(result_type))?;

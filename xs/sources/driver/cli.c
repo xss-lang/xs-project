@@ -457,8 +457,9 @@ static bool check_single_source_file(const char *path, bool build_native, const 
     else
     {
       XsSpan span = {.start = unit.tree.root->span.start_offset, .end = unit.tree.root->span.end_offset};
-      (void)xs_diagnostics_add(&unit.diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                               "Rust compiler core does not yet support this source body for native emission");
+      if(!xs_driver_append_compiler_core_diagnostics(unit.compiler_core, &unit.diagnostics, span))
+        (void)xs_diagnostics_add(&unit.diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                                 "Rust compiler core does not yet support this source body for native emission");
       success = false;
     }
   }
@@ -585,8 +586,9 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
     else if(success)
     {
       XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
-      (void)xs_diagnostics_add(&units[0].diagnostics, XS_DIAGNOSTIC_ERROR, span,
-                               "Rust compiler core does not yet support this project body for native emission");
+      if(!xs_driver_append_compiler_core_diagnostics(native_session, &units[0].diagnostics, span))
+        (void)xs_diagnostics_add(&units[0].diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                                 "Rust compiler core does not yet support this project body for native emission");
       success = false;
     }
     xslang_compiler_core_session_free(merged);

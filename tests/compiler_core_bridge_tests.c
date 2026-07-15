@@ -170,14 +170,45 @@ static void test_invalid_packet_inputs(void)
   uint64_t xlil_length = 7;
   CHECK(xslang_compiler_core_session_xlil_text(nullptr, &xlil_length) == nullptr);
   CHECK(xlil_length == 0);
+  CHECK(xslang_compiler_core_session_diagnostic_count(nullptr) == 0);
+  CHECK(xslang_compiler_core_session_diagnostic_text(nullptr, 0, &xlil_length) == nullptr);
+  CHECK(xlil_length == 0);
   XsCompilerCoreSyntaxPacket invalid = {.abi_version = XS_COMPILER_CORE_SYNTAX_ABI_VERSION + 1U};
   CHECK(xslang_compiler_core_session_create(&invalid, &session) == XS_COMPILER_CORE_FFI_INVALID_PACKET);
   xs_compiler_core_syntax_packet_free(nullptr);
 }
 
+static void test_nominal_data_packet(void)
+{
+  const char *text =
+      "data Point { x: Long; y: Long; }\n"
+      "fn main() -> Long { point: Point = Point { x: 2, y: 3 }; point.x += 4; return point.x + point.y; }\n";
+  XsSource source = {.path = "Nominal.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsCompilerCoreSyntaxStorage *storage = nullptr;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 91, &diagnostics, &tree));
+  CHECK(xs_compiler_core_syntax_packet_create(&tree, &storage) == XS_COMPILER_CORE_OK);
+  const XsCompilerCoreSyntaxPacket *packet = xs_compiler_core_syntax_packet(storage);
+  XsCompilerCoreSession *session = nullptr;
+  CHECK(packet != nullptr && xslang_compiler_core_session_create(packet, &session) == XS_COMPILER_CORE_FFI_OK);
+  CHECK(session != nullptr && xslang_compiler_core_session_function_count(session) == 1);
+  CHECK(session != nullptr && xslang_compiler_core_session_mir_function_count(session) == 1);
+  CHECK(session != nullptr && xslang_compiler_core_session_diagnostic_count(session) == 0);
+  uint64_t xlil_length = 0;
+  const uint8_t *xlil = xslang_compiler_core_session_xlil_text(session, &xlil_length);
+  CHECK(xlil != nullptr && text_contains(xlil, xlil_length, ".func main"));
+  xslang_compiler_core_session_free(session);
+  xs_compiler_core_syntax_packet_free(storage);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_materialized_syntax_packet();
+  test_nominal_data_packet();
   test_invalid_packet_inputs();
   return failures == 0 ? 0 : 1;
 }

@@ -19,6 +19,7 @@ use super::{SyntaxNode, SyntaxTree};
 
 mod expression_type;
 mod match_expression;
+mod nominal;
 mod program;
 mod unary;
 
@@ -27,7 +28,11 @@ use expression_type::expression_type;
 const FILE: u32 = 0;
 const DECL_MODULE: u32 = 1;
 const DECL_FUNCTION: u32 = 4;
+const DECL_CLASS: u32 = 5;
+const DECL_DATA: u32 = 8;
 const DECL_VARIABLE: u32 = 9;
+const CLASS_FIELD: u32 = 15;
+const DATA_FIELD: u32 = 20;
 const PARAMETER: u32 = 21;
 const IDENTIFIER: u32 = 24;
 const PATH: u32 = 25;
@@ -51,11 +56,15 @@ const EXPR_BINARY: u32 = 58;
 const EXPR_UNARY: u32 = 59;
 const EXPR_ASSIGNMENT: u32 = 60;
 const EXPR_CALL: u32 = 61;
+const EXPR_MEMBER_ACCESS: u32 = 63;
+const EXPR_OBJECT_LITERAL: u32 = 77;
+const OBJECT_FIELD: u32 = 78;
 const EXPR_IF: u32 = 81;
 const EXPR_MATCH: u32 = 82;
 const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
 const STMT_LOOP: u32 = 105;
+const EXPR_TYPED_OBJECT_LITERAL: u32 = 102;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_FLOAT: u32 = 4;
 const TOKEN_STRING: u32 = 5;
@@ -126,6 +135,10 @@ fn first_child_kind<'a>(tree: &'a SyntaxTree, parent: &'a SyntaxNode, kind: u32)
 
 fn path_text(tree: &SyntaxTree, value: &SyntaxNode) -> String
 {
+  if value.kind == IDENTIFIER
+  {
+    return value.text.clone();
+  }
   let path = if value.kind == PATH
   {
     value
@@ -225,9 +238,15 @@ struct CallSignature
   return_type: crate::hir::type_check::Type,
 }
 
+struct LoweringContext
+{
+  calls: HashMap<String, CallSignature>,
+  nominal_types: HashMap<String, declarations::NominalType>,
+}
+
 fn lower_expression(tree: &SyntaxTree,
                     value: &SyntaxNode,
-                    signatures: &HashMap<String, CallSignature>,
+                    context: &LoweringContext,
                     locals: &HashMap<String, Type>,
                     expected_type: Option<&Type>)
                     -> Option<Expression>
@@ -274,9 +293,14 @@ fn lower_expression(tree: &SyntaxTree,
     }
     EXPR_IDENTIFIER => Some(Expression::Local { name: path_text(tree, value),
                                                 span: source_span }),
+    EXPR_MEMBER_ACCESS => nominal::lower_field_expression(tree, value, context, locals),
+    EXPR_OBJECT_LITERAL | EXPR_TYPED_OBJECT_LITERAL =>
+    {
+      nominal::lower_object_expression(tree, value, context, locals, expected_type, source_span)
+    }
     EXPR_UNARY if value.children.len() == 1 =>
     {
-      unary::lower_unary_expression(tree, value, signatures, locals, expected_type, source_span)
+      unary::lower_unary_expression(tree, value, context, locals, expected_type, source_span)
     }
     EXPR_BINARY if value.children.len() == 3 =>
     {
@@ -325,16 +349,8 @@ fn lower_expression(tree: &SyntaxTree,
       {
         None
       };
-      let left = lower_expression(tree,
-                                  tree.nodes.get(value.children[0])?,
-                                  signatures,
-                                  locals,
-                                  operand_type)?;
-      let right = lower_expression(tree,
-                                   tree.nodes.get(value.children[2])?,
-                                   signatures,
-                                   locals,
-                                   operand_type)?;
+      let left = lower_expression(tree, tree.nodes.get(value.children[0])?, context, locals, operand_type)?;
+      let right = lower_expression(tree, tree.nodes.get(value.children[2])?, context, locals, operand_type)?;
       Some(Expression::Binary { operator,
                                 left: Box::new(left),
                                 right: Box::new(right),
@@ -343,6 +359,10 @@ fn lower_expression(tree: &SyntaxTree,
     EXPR_ASSIGNMENT if value.children.len() == 3 =>
     {
       let target = tree.nodes.get(value.children[0])?;
+      if target.kind == EXPR_MEMBER_ACCESS
+      {
+        return nominal::lower_field_assignment(tree, value, context, locals, source_span);
+      }
       if target.kind != EXPR_IDENTIFIER
       {
         return None;
@@ -350,7 +370,7 @@ fn lower_expression(tree: &SyntaxTree,
       let target = path_text(tree, target);
       let assigned = lower_expression(tree,
                                       tree.nodes.get(value.children[2])?,
-                                      signatures,
+                                      context,
                                       locals,
                                       locals.get(&target))?;
       let assigned = match value.token_kind
@@ -401,7 +421,7 @@ fn lower_expression(tree: &SyntaxTree,
       {
         let argument = lower_expression(tree,
                                         tree.nodes.get(value.children[1])?,
-                                        signatures,
+                                        context,
                                         locals,
                                         Some(&Type::Primitive(PrimitiveType::Str)))?;
         return Some(Expression::Call { function,
@@ -410,7 +430,7 @@ fn lower_expression(tree: &SyntaxTree,
                                        return_type: Box::new(Type::Named("Optional<Str>".to_string())),
                                        span: source_span });
       }
-      let signature = signatures.get(&function)?;
+      let signature = context.calls.get(&function)?;
       if value.children.len() - 1 != signature.parameters.len()
       {
         return None;
@@ -419,7 +439,7 @@ fn lower_expression(tree: &SyntaxTree,
         value.children[1..].iter()
                            .zip(&signature.parameters)
                            .map(|(index, parameter)| {
-                             lower_expression(tree, tree.nodes.get(*index)?, signatures, locals, Some(parameter))
+                             lower_expression(tree, tree.nodes.get(*index)?, context, locals, Some(parameter))
                            })
                            .collect::<Option<Vec<_>>>()?;
       Some(Expression::Call { function,
@@ -433,20 +453,20 @@ fn lower_expression(tree: &SyntaxTree,
       let result_type = expected_type?.clone();
       let condition = lower_expression(tree,
                                        tree.nodes.get(value.children[0])?,
-                                       signatures,
+                                       context,
                                        locals,
                                        Some(&Type::Primitive(PrimitiveType::Bool)))?;
       let mut then_locals = locals.clone();
       let then_block = lower_hir_block(tree,
                                        tree.nodes.get(value.children[1])?,
-                                       signatures,
+                                       context,
                                        &mut then_locals,
                                        None,
                                        Some(&result_type))?;
       let mut else_locals = locals.clone();
       let else_block = lower_hir_block(tree,
                                        tree.nodes.get(value.children[2])?,
-                                       signatures,
+                                       context,
                                        &mut else_locals,
                                        None,
                                        Some(&result_type))?;
@@ -462,7 +482,7 @@ fn lower_expression(tree: &SyntaxTree,
     }
     EXPR_MATCH if value.children.len() >= 2 =>
     {
-      match_expression::lower_match_expression(tree, value, signatures, locals, expected_type?.clone())
+      match_expression::lower_match_expression(tree, value, context, locals, expected_type?.clone())
     }
     _ => None,
   }
@@ -470,17 +490,17 @@ fn lower_expression(tree: &SyntaxTree,
 
 fn lower_discarded_expression(tree: &SyntaxTree,
                               value: &SyntaxNode,
-                              signatures: &HashMap<String, CallSignature>,
+                              context: &LoweringContext,
                               locals: &HashMap<String, Type>,
                               expected_type: Option<&Type>)
                               -> Option<Expression>
 {
-  lower_expression(tree, value, signatures, locals, expected_type)
+  lower_expression(tree, value, context, locals, expected_type)
 }
 
 fn lower_local(tree: &SyntaxTree,
                statement: &SyntaxNode,
-               signatures: &HashMap<String, CallSignature>,
+               context: &LoweringContext,
                locals: &mut HashMap<String, Type>)
                -> Option<Statement>
 {
@@ -499,7 +519,7 @@ fn lower_local(tree: &SyntaxTree,
                                     .find(|child| child.kind >= EXPR_IDENTIFIER);
   let checked_type = if declaration.flags & INFERRED_TYPE != 0
   {
-    expression_type(tree, initializer_node?, signatures, locals)?
+    expression_type(tree, initializer_node?, context, locals)?
   }
   else
   {
@@ -511,7 +531,7 @@ fn lower_local(tree: &SyntaxTree,
   };
   let initializer = match initializer_node
   {
-    Some(value) => Some(lower_expression(tree, value, signatures, locals, Some(&checked_type))?),
+    Some(value) => Some(lower_expression(tree, value, context, locals, Some(&checked_type))?),
     None => None,
   };
   locals.insert(name.text.clone(), checked_type.clone());
@@ -528,7 +548,7 @@ fn lower_local(tree: &SyntaxTree,
 
 fn lower_statement_node(tree: &SyntaxTree,
                         statement: &SyntaxNode,
-                        signatures: &HashMap<String, CallSignature>,
+                        context: &LoweringContext,
                         locals: &mut HashMap<String, Type>,
                         return_type: Option<&Type>)
                         -> Option<Statement>
@@ -539,7 +559,7 @@ fn lower_statement_node(tree: &SyntaxTree,
     {
       let value = match statement.children.first().and_then(|index| tree.nodes.get(*index))
       {
-        Some(value) => Some(lower_expression(tree, value, signatures, locals, return_type)?),
+        Some(value) => Some(lower_expression(tree, value, context, locals, return_type)?),
         None => None,
       };
       Some(Statement::Return { value,
@@ -560,14 +580,14 @@ fn lower_statement_node(tree: &SyntaxTree,
       {
         None
       };
-      lower_discarded_expression(tree, expression, signatures, locals, expected).map(Statement::Expr)
+      lower_discarded_expression(tree, expression, context, locals, expected).map(Statement::Expr)
     }
-    STMT_VARIABLE => lower_local(tree, statement, signatures, locals),
-    STMT_IF => lower_if_statement(tree, statement, signatures, locals, return_type),
-    STMT_FOR => lower_for_statement(tree, statement, signatures, locals, return_type),
-    STMT_WHILE => lower_while_statement(tree, statement, signatures, locals, return_type),
-    STMT_LOOP => lower_loop_statement(tree, statement, signatures, locals, return_type),
-    STMT_MATCH => lower_match_statement(tree, statement, signatures, locals, return_type),
+    STMT_VARIABLE => lower_local(tree, statement, context, locals),
+    STMT_IF => lower_if_statement(tree, statement, context, locals, return_type),
+    STMT_FOR => lower_for_statement(tree, statement, context, locals, return_type),
+    STMT_WHILE => lower_while_statement(tree, statement, context, locals, return_type),
+    STMT_LOOP => lower_loop_statement(tree, statement, context, locals, return_type),
+    STMT_MATCH => lower_match_statement(tree, statement, context, locals, return_type),
     STMT_BREAK => Some(Statement::Break { span: span(statement)? }),
     STMT_CONTINUE => Some(Statement::Continue { span: span(statement)? }),
     _ => None,
@@ -576,7 +596,7 @@ fn lower_statement_node(tree: &SyntaxTree,
 
 fn lower_hir_block(tree: &SyntaxTree,
                    block: &SyntaxNode,
-                   signatures: &HashMap<String, CallSignature>,
+                   context: &LoweringContext,
                    locals: &mut HashMap<String, Type>,
                    return_type: Option<&Type>,
                    tail_type: Option<&Type>)
@@ -594,11 +614,11 @@ fn lower_hir_block(tree: &SyntaxTree,
     if position + 1 == block.children.len() && statement.kind == STMT_EXPRESSION && statement.flags & DISCARDED == 0
     {
       let expression = tree.nodes.get(*statement.children.first()?)?;
-      tail = Some(Box::new(lower_expression(tree, expression, signatures, locals, tail_type)?));
+      tail = Some(Box::new(lower_expression(tree, expression, context, locals, tail_type)?));
     }
     else
     {
-      statements.push(lower_statement_node(tree, statement, signatures, locals, return_type)?);
+      statements.push(lower_statement_node(tree, statement, context, locals, return_type)?);
     }
   }
   Some(Block { statements,
@@ -608,7 +628,7 @@ fn lower_hir_block(tree: &SyntaxTree,
 
 fn lower_if_branch(tree: &SyntaxTree,
                    branch: &SyntaxNode,
-                   signatures: &HashMap<String, CallSignature>,
+                   context: &LoweringContext,
                    locals: &HashMap<String, Type>,
                    return_type: Option<&Type>,
                    else_block: Option<Block>)
@@ -616,13 +636,13 @@ fn lower_if_branch(tree: &SyntaxTree,
 {
   let condition = lower_expression(tree,
                                    tree.nodes.get(*branch.children.first()?)?,
-                                   signatures,
+                                   context,
                                    locals,
                                    Some(&Type::Primitive(PrimitiveType::Bool)))?;
   let mut branch_locals = locals.clone();
   let then_block = lower_hir_block(tree,
                                    tree.nodes.get(*branch.children.get(1)?)?,
-                                   signatures,
+                                   context,
                                    &mut branch_locals,
                                    return_type,
                                    None)?;
@@ -637,20 +657,20 @@ fn lower_if_branch(tree: &SyntaxTree,
 
 fn lower_if_statement(tree: &SyntaxTree,
                       statement: &SyntaxNode,
-                      signatures: &HashMap<String, CallSignature>,
+                      context: &LoweringContext,
                       locals: &HashMap<String, Type>,
                       return_type: Option<&Type>)
                       -> Option<Statement>
 {
   let condition = lower_expression(tree,
                                    tree.nodes.get(*statement.children.first()?)?,
-                                   signatures,
+                                   context,
                                    locals,
                                    Some(&Type::Primitive(PrimitiveType::Bool)))?;
   let mut then_locals = locals.clone();
   let then_block = lower_hir_block(tree,
                                    tree.nodes.get(*statement.children.get(1)?)?,
-                                   signatures,
+                                   context,
                                    &mut then_locals,
                                    return_type,
                                    None)?;
@@ -661,7 +681,7 @@ fn lower_if_statement(tree: &SyntaxTree,
     Some(block) =>
     {
       let mut branch_locals = locals.clone();
-      Some(lower_hir_block(tree, block, signatures, &mut branch_locals, return_type, None)?)
+      Some(lower_hir_block(tree, block, context, &mut branch_locals, return_type, None)?)
     }
     None => None,
   };
@@ -670,7 +690,7 @@ fn lower_if_statement(tree: &SyntaxTree,
                                        .filter(|node| node.kind == STMT_ELSE_IF)
                                        .rev()
   {
-    else_block = Some(lower_if_branch(tree, branch, signatures, locals, return_type, else_block)?);
+    else_block = Some(lower_if_branch(tree, branch, context, locals, return_type, else_block)?);
   }
   Some(Statement::If { condition,
                        then_block,
@@ -680,20 +700,20 @@ fn lower_if_statement(tree: &SyntaxTree,
 
 fn lower_while_statement(tree: &SyntaxTree,
                          statement: &SyntaxNode,
-                         signatures: &HashMap<String, CallSignature>,
+                         context: &LoweringContext,
                          locals: &HashMap<String, Type>,
                          return_type: Option<&Type>)
                          -> Option<Statement>
 {
   let condition = lower_expression(tree,
                                    tree.nodes.get(*statement.children.first()?)?,
-                                   signatures,
+                                   context,
                                    locals,
                                    Some(&Type::Primitive(PrimitiveType::Bool)))?;
   let mut body_locals = locals.clone();
   let mut body = lower_hir_block(tree,
                                  tree.nodes.get(*statement.children.get(1)?)?,
-                                 signatures,
+                                 context,
                                  &mut body_locals,
                                  return_type,
                                  None)?;
@@ -723,7 +743,7 @@ fn lower_while_statement(tree: &SyntaxTree,
 
 fn lower_loop_statement(tree: &SyntaxTree,
                         statement: &SyntaxNode,
-                        signatures: &HashMap<String, CallSignature>,
+                        context: &LoweringContext,
                         locals: &HashMap<String, Type>,
                         return_type: Option<&Type>)
                         -> Option<Statement>
@@ -731,7 +751,7 @@ fn lower_loop_statement(tree: &SyntaxTree,
   let mut body_locals = locals.clone();
   let body = lower_hir_block(tree,
                              tree.nodes.get(*statement.children.first()?)?,
-                             signatures,
+                             context,
                              &mut body_locals,
                              return_type,
                              None)?;
@@ -743,7 +763,7 @@ fn lower_loop_statement(tree: &SyntaxTree,
 
 fn lower_for_statement(tree: &SyntaxTree,
                        statement: &SyntaxNode,
-                       signatures: &HashMap<String, CallSignature>,
+                       context: &LoweringContext,
                        locals: &HashMap<String, Type>,
                        return_type: Option<&Type>)
                        -> Option<Statement>
@@ -761,11 +781,11 @@ fn lower_for_statement(tree: &SyntaxTree,
     cursor += 1;
     let lowered = if node.kind == DECL_VARIABLE
     {
-      lower_local(tree, node, signatures, &mut for_locals)?
+      lower_local(tree, node, context, &mut for_locals)?
     }
     else
     {
-      Statement::Expr(lower_discarded_expression(tree, node, signatures, &for_locals, None)?)
+      Statement::Expr(lower_discarded_expression(tree, node, context, &for_locals, None)?)
     };
     Some(Box::new(lowered))
   }
@@ -779,7 +799,7 @@ fn lower_for_statement(tree: &SyntaxTree,
     cursor += 1;
     Some(lower_expression(tree,
                           node,
-                          signatures,
+                          context,
                           &for_locals,
                           Some(&Type::Primitive(PrimitiveType::Bool)))?)
   }
@@ -791,7 +811,7 @@ fn lower_for_statement(tree: &SyntaxTree,
   {
     let node = tree.nodes.get(*statement.children.get(cursor)?)?;
     cursor += 1;
-    Some(lower_discarded_expression(tree, node, signatures, &for_locals, None)?)
+    Some(lower_discarded_expression(tree, node, context, &for_locals, None)?)
   }
   else
   {
@@ -802,7 +822,7 @@ fn lower_for_statement(tree: &SyntaxTree,
     return None;
   }
   let mut body_locals = for_locals;
-  let body = lower_hir_block(tree, body_node, signatures, &mut body_locals, return_type, None)?;
+  let body = lower_hir_block(tree, body_node, context, &mut body_locals, return_type, None)?;
   Some(Statement::For { initializer,
                         condition,
                         update,
@@ -812,54 +832,53 @@ fn lower_for_statement(tree: &SyntaxTree,
 
 fn lower_match_statement(tree: &SyntaxTree,
                          statement: &SyntaxNode,
-                         signatures: &HashMap<String, CallSignature>,
+                         context: &LoweringContext,
                          locals: &HashMap<String, Type>,
                          return_type: Option<&Type>)
                          -> Option<Statement>
 {
   let selector_node = tree.nodes.get(*statement.children.first()?)?;
-  let selector_type = expression_type(tree, selector_node, signatures, locals)?;
-  let selector = lower_expression(tree, selector_node, signatures, locals, Some(&selector_type))?;
-  let arms =
-    statement.children[1..].iter()
-                           .map(|index| {
-                             let arm = tree.nodes.get(*index)?;
-                             if arm.kind != MATCH_ARM || arm.children.len() != 2
-                             {
-                               return None;
-                             }
-                             let pattern_node = tree.nodes.get(arm.children[0])?;
-                             let pattern = if pattern_node.kind == PATTERN_ELSE
-                             {
-                               MatchPattern::Else
-                             }
-                             else if pattern_node.kind == PATTERN_LITERAL
-                             {
-                               let literal_node = tree.nodes.get(*pattern_node.children.first()?)?;
-                               let Expression::Literal { literal, .. } =
-                                 lower_expression(tree, literal_node, signatures, locals, Some(&selector_type))?
-                               else
-                               {
-                                 return None;
-                               };
-                               MatchPattern::Literal(literal)
-                             }
-                             else
-                             {
-                               return None;
-                             };
-                             let mut arm_locals = locals.clone();
-                             let body = lower_hir_block(tree,
-                                                        tree.nodes.get(arm.children[1])?,
-                                                        signatures,
-                                                        &mut arm_locals,
-                                                        return_type,
-                                                        None)?;
-                             Some(MatchArm { pattern,
-                                             body,
-                                             span: span(arm)? })
-                           })
-                           .collect::<Option<Vec<_>>>()?;
+  let selector_type = expression_type(tree, selector_node, context, locals)?;
+  let selector = lower_expression(tree, selector_node, context, locals, Some(&selector_type))?;
+  let arms = statement.children[1..].iter()
+                                    .map(|index| {
+                                      let arm = tree.nodes.get(*index)?;
+                                      if arm.kind != MATCH_ARM || arm.children.len() != 2
+                                      {
+                                        return None;
+                                      }
+                                      let pattern_node = tree.nodes.get(arm.children[0])?;
+                                      let pattern = if pattern_node.kind == PATTERN_ELSE
+                                      {
+                                        MatchPattern::Else
+                                      }
+                                      else if pattern_node.kind == PATTERN_LITERAL
+                                      {
+                                        let literal_node = tree.nodes.get(*pattern_node.children.first()?)?;
+                                        let Expression::Literal { literal, .. } =
+                                          lower_expression(tree, literal_node, context, locals, Some(&selector_type))?
+                                        else
+                                        {
+                                          return None;
+                                        };
+                                        MatchPattern::Literal(literal)
+                                      }
+                                      else
+                                      {
+                                        return None;
+                                      };
+                                      let mut arm_locals = locals.clone();
+                                      let body = lower_hir_block(tree,
+                                                                 tree.nodes.get(arm.children[1])?,
+                                                                 context,
+                                                                 &mut arm_locals,
+                                                                 return_type,
+                                                                 None)?;
+                                      Some(MatchArm { pattern,
+                                                      body,
+                                                      span: span(arm)? })
+                                    })
+                                    .collect::<Option<Vec<_>>>()?;
   Some(Statement::Match { selector,
                           selector_type,
                           arms,
@@ -868,7 +887,7 @@ fn lower_match_statement(tree: &SyntaxTree,
 
 fn lower_body(tree: &SyntaxTree,
               function: &SyntaxNode,
-              signatures: &HashMap<String, CallSignature>,
+              context: &LoweringContext,
               parameters: &[declarations::Parameter],
               return_type: Option<&Type>)
               -> Option<Vec<Statement>>
@@ -877,7 +896,7 @@ fn lower_body(tree: &SyntaxTree,
                              .filter_map(|parameter| checked_type(&parameter.ty).map(|ty| (parameter.name.clone(), ty)))
                              .collect::<HashMap<_, _>>();
   let block = first_child_kind(tree, function, STMT_BLOCK)?;
-  let block = lower_hir_block(tree, block, signatures, &mut locals, return_type, return_type)?;
+  let block = lower_hir_block(tree, block, context, &mut locals, return_type, return_type)?;
   let mut body = block.statements;
   if let Some(tail) = block.tail
   {

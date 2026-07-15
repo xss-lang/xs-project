@@ -38,6 +38,8 @@ source-to-native executable pipeline.
 - Prefix and postfix integer updates now preserve their different expression results through typed HIR, MIR local
   storage, XLIL, LLVM, and native `.xse` output. The remaining arithmetic/bitwise compound assignments also use the Rust
   compiler-core route instead of the temporary C source bridge.
+- Primitive fields of locally initialized `data` values now cross the structural AST, typed HIR, MIR storage, XLIL, and
+  LLVM pipeline. Object literals, field reads, and field assignments are covered by native `.xse` regression tests.
 
 ### Changed
 
@@ -50,6 +52,8 @@ source-to-native executable pipeline.
   multi-file and fixed-width integer projects.
 - Rust compiler-core sessions can merge multiple expanded structural-AST source trees into one program-wide declaration,
   typed HIR, MIR, XLIL, and LLVM module. Same-module helper calls across project files now produce native `.xse` output.
+- Compiler-core sessions retain type-check, MIR-lowering, borrow-check, and optimization diagnostics instead of silently
+  dropping failed function bodies. The C23 driver exposes those messages when native emission cannot proceed.
 - Kotlin `sources` includes now expand `*`, `**`, and `?` globs, apply excludes, require exactly one resolved `main.xs`,
   and emit a deterministic main-first source registry.
 - `--warning all|medium|low|none`, `--werror true|false`, and `--verbose true|false` provide one-shot compiler-policy

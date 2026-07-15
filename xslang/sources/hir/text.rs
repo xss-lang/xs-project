@@ -25,6 +25,8 @@ mod conditional_tests;
 mod for_tests;
 #[cfg(test)]
 mod match_tests;
+#[cfg(test)]
+mod nominal_tests;
 mod statement_writer;
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
@@ -287,6 +289,10 @@ fn type_diagnostic_code_name(code: &TypeDiagnosticCode) -> &'static str
     TypeDiagnosticCode::ContinueOutsideLoop => "continue_outside_loop",
     TypeDiagnosticCode::MatchRequiresFinalElse => "match_requires_final_else",
     TypeDiagnosticCode::DuplicateMatchPattern => "duplicate_match_pattern",
+    TypeDiagnosticCode::UnknownNominalType => "unknown_nominal_type",
+    TypeDiagnosticCode::UnknownField => "unknown_field",
+    TypeDiagnosticCode::MissingField => "missing_field",
+    TypeDiagnosticCode::DuplicateField => "duplicate_field",
   }
 }
 
@@ -311,6 +317,10 @@ fn parse_type_diagnostic_code(name: &str,
     "continue_outside_loop" => Some(TypeDiagnosticCode::ContinueOutsideLoop),
     "match_requires_final_else" => Some(TypeDiagnosticCode::MatchRequiresFinalElse),
     "duplicate_match_pattern" => Some(TypeDiagnosticCode::DuplicateMatchPattern),
+    "unknown_nominal_type" => Some(TypeDiagnosticCode::UnknownNominalType),
+    "unknown_field" => Some(TypeDiagnosticCode::UnknownField),
+    "missing_field" => Some(TypeDiagnosticCode::MissingField),
+    "duplicate_field" => Some(TypeDiagnosticCode::DuplicateField),
     _ =>
     {
       diagnostics.push(XhirParseDiagnostic { line,
@@ -386,11 +396,56 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
     {
       let _ = writeln!(output, "{pad}local {name}");
     }
+    Expression::Field { path } =>
+    {
+      let mutability = if path.mutable
+      {
+        "mutable"
+      }
+      else
+      {
+        "immutable"
+      };
+      let _ = writeln!(output,
+                       "{pad}field {mutability} {} : {}",
+                       field_path_name(path),
+                       type_name(&path.ty));
+    }
+    Expression::Object { nominal_type,
+                         fields,
+                         .. } =>
+    {
+      let _ = writeln!(output, "{pad}object {nominal_type}");
+      for field in fields
+      {
+        let _ = writeln!(output, "{pad}  field {}", field.name);
+        write_expression(output, &field.value, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
     Expression::Assign { target,
                          value,
                          .. } =>
     {
       let _ = writeln!(output, "{pad}assign {target}");
+      write_expression(output, value, indent + 1);
+    }
+    Expression::AssignField { target,
+                              value,
+                              .. } =>
+    {
+      let mutability = if target.mutable
+      {
+        "mutable"
+      }
+      else
+      {
+        "immutable"
+      };
+      let _ = writeln!(output,
+                       "{pad}assign_field {mutability} {} : {}",
+                       field_path_name(target),
+                       type_name(&target.ty));
       write_expression(output, value, indent + 1);
     }
     Expression::Update { target,
@@ -503,11 +558,56 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
     {
       let _ = writeln!(output, "{pad}local {name}");
     }
+    DesugaredExpression::Field { path } =>
+    {
+      let mutability = if path.mutable
+      {
+        "mutable"
+      }
+      else
+      {
+        "immutable"
+      };
+      let _ = writeln!(output,
+                       "{pad}field {mutability} {} : {}",
+                       field_path_name(path),
+                       type_name(&path.ty));
+    }
+    DesugaredExpression::Object { nominal_type,
+                                  fields,
+                                  .. } =>
+    {
+      let _ = writeln!(output, "{pad}object {nominal_type}");
+      for field in fields
+      {
+        let _ = writeln!(output, "{pad}  field {}", field.name);
+        write_desugared_expression(output, &field.value, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
     DesugaredExpression::Assign { target,
                                   value,
                                   .. } =>
     {
       let _ = writeln!(output, "{pad}assign {target}");
+      write_desugared_expression(output, value, indent + 1);
+    }
+    DesugaredExpression::AssignField { target,
+                                       value,
+                                       .. } =>
+    {
+      let mutability = if target.mutable
+      {
+        "mutable"
+      }
+      else
+      {
+        "immutable"
+      };
+      let _ = writeln!(output,
+                       "{pad}assign_field {mutability} {} : {}",
+                       field_path_name(target),
+                       type_name(&target.ty));
       write_desugared_expression(output, value, indent + 1);
     }
     DesugaredExpression::Update { target,
@@ -722,6 +822,13 @@ fn type_name(ty: &Type) -> String
     Type::Primitive(primitive) => primitive_type_name(*primitive).to_string(),
     Type::Named(name) => name.clone(),
   }
+}
+
+fn field_path_name(path: &crate::hir::type_check::FieldPath) -> String
+{
+  std::iter::once(path.root.as_str()).chain(path.fields.iter().map(String::as_str))
+                                     .collect::<Vec<_>>()
+                                     .join(".")
 }
 
 const fn primitive_type_name(primitive: PrimitiveType) -> &'static str

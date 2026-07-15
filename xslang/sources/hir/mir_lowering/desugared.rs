@@ -7,6 +7,93 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn surface_statement_from_desugared(&mut self, statement: &DesugaredStatement) -> Option<Statement>
+  {
+    match statement
+    {
+      DesugaredStatement::Let { local,
+                                initializer, } =>
+      {
+        let initializer = initializer.as_ref()
+                                     .and_then(|expression| self.surface_expression_from_desugared(expression));
+        Some(Statement::Let { local: local.clone(),
+                              initializer })
+      }
+      DesugaredStatement::Expr(expression) => self.surface_expression_from_desugared(expression).map(Statement::Expr),
+      DesugaredStatement::Return { value,
+                                   span, } =>
+      {
+        let value = value.as_ref()
+                         .and_then(|expression| self.surface_expression_from_desugared(expression));
+        Some(Statement::Return { value,
+                                 span: *span })
+      }
+      DesugaredStatement::If { condition,
+                               then_block,
+                               else_block,
+                               span, } =>
+      {
+        Some(Statement::If { condition: self.surface_expression_from_desugared(condition)?,
+                             then_block: self.surface_block_from_desugared(then_block)?,
+                             else_block: else_block.as_ref()
+                                                   .and_then(|block| self.surface_block_from_desugared(block)),
+                             span: *span })
+      }
+      DesugaredStatement::While { condition,
+                                  body,
+                                  span, } =>
+      {
+        Some(Statement::While { condition: self.surface_expression_from_desugared(condition)?,
+                                body: self.surface_block_from_desugared(body)?,
+                                span: *span })
+      }
+      DesugaredStatement::For { initializer,
+                                condition,
+                                update,
+                                body,
+                                span, } =>
+      {
+        Some(Statement::For { initializer: match initializer
+                              {
+                                Some(statement) => Some(Box::new(self.surface_statement_from_desugared(statement)?)),
+                                None => None,
+                              },
+                              condition: match condition
+                              {
+                                Some(expression) => Some(self.surface_expression_from_desugared(expression)?),
+                                None => None,
+                              },
+                              update: match update
+                              {
+                                Some(expression) => Some(self.surface_expression_from_desugared(expression)?),
+                                None => None,
+                              },
+                              body: self.surface_block_from_desugared(body)?,
+                              span: *span })
+      }
+      DesugaredStatement::Match { selector,
+                                  selector_type,
+                                  arms,
+                                  span, } =>
+      {
+        let arms = arms.iter()
+                       .map(|arm| {
+                         Some(MatchArm { pattern: arm.pattern.clone(),
+                                         body: self.surface_block_from_desugared(&arm.body)?,
+                                         span: arm.span })
+                       })
+                       .collect::<Option<Vec<_>>>()?;
+        Some(Statement::Match { selector: self.surface_expression_from_desugared(selector)?,
+                                selector_type: selector_type.clone(),
+                                arms,
+                                span: *span })
+      }
+      DesugaredStatement::Break { span } => Some(Statement::Break { span: *span }),
+      DesugaredStatement::Continue { span } => Some(Statement::Continue { span: *span }),
+      DesugaredStatement::Panic { span } => Some(Statement::Panic { span: *span }),
+    }
+  }
+
   pub(super) fn surface_expression_from_desugared(&mut self, expression: &DesugaredExpression) -> Option<Expression>
   {
     match expression
@@ -17,6 +104,23 @@ impl HirToMirLowerer
       DesugaredExpression::Local { name,
                                    span, } => Some(Expression::Local { name: name.clone(),
                                                                        span: *span }),
+      DesugaredExpression::Field { path } => Some(Expression::Field { path: path.clone() }),
+      DesugaredExpression::Object { nominal_type,
+                                    fields,
+                                    span, } =>
+      {
+        Some(Expression::Object { nominal_type: nominal_type.clone(),
+                                  fields: fields.iter()
+                                                .map(|field| {
+                                                  Some(crate::hir::type_check::ObjectField {
+                                                    name: field.name.clone(),
+                                                    value: self.surface_expression_from_desugared(&field.value)?,
+                                                    span: field.span,
+                                                  })
+                                                })
+                                                .collect::<Option<Vec<_>>>()?,
+                                  span: *span })
+      }
       DesugaredExpression::Assign { target,
                                     value,
                                     span, } =>
@@ -25,6 +129,15 @@ impl HirToMirLowerer
             .map(|value| Expression::Assign { target: target.clone(),
                                               value: Box::new(value),
                                               span: *span })
+      }
+      DesugaredExpression::AssignField { target,
+                                         value,
+                                         span, } =>
+      {
+        self.surface_expression_from_desugared(value)
+            .map(|value| Expression::AssignField { target: target.clone(),
+                                                   value: Box::new(value),
+                                                   span: *span })
       }
       DesugaredExpression::Update { target,
                                     operator,

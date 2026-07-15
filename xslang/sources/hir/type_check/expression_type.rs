@@ -13,7 +13,10 @@ impl TypeChecker
     {
       Expression::Literal { literal, .. } => literal_default_type(literal),
       Expression::Local { name, .. } => self.find_local(name).map(|local| local.ty.clone()),
+      Expression::Field { path } => Some(path.ty.clone()),
+      Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
       Expression::Assign { value, .. } => self.expression_type(value),
+      Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target, .. } => self.find_local(target).map(|local| local.ty.clone()),
       Expression::Binary { operator,
                            left,

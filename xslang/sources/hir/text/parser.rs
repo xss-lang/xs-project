@@ -6,14 +6,15 @@
 use crate::hir::async_check::Span;
 use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
 use crate::hir::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, UnaryOperator,
-  UpdateOperator, UpdatePosition,
+  BinaryOperator, Block, Expression, FieldPath, Function, Literal, Local, ObjectField, PrimitiveType, Statement, Type,
+  UnaryOperator, UpdateOperator, UpdatePosition,
 };
 use crate::hir::{MatchArm, MatchPattern};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
 mod match_expression;
+mod nominal;
 mod type_parser;
 mod unary;
 
@@ -474,6 +475,14 @@ impl Parser<'_>
       return Some(Expression::Local { name: name.to_string(),
                                       span: span() });
     }
+    if let Some(record) = rest.strip_prefix("field ")
+    {
+      return self.field_expression(record);
+    }
+    if let Some(nominal_type) = rest.strip_prefix("object ")
+    {
+      return self.object_expression(nominal_type);
+    }
     if let Some(target) = rest.strip_prefix("assign ")
     {
       self.index += 1;
@@ -483,6 +492,10 @@ impl Parser<'_>
       return Some(Expression::Assign { target: target.to_string(),
                                        value: Box::new(value),
                                        span: span() });
+    }
+    if let Some(record) = rest.strip_prefix("assign_field ")
+    {
+      return self.assign_field_expression(record);
     }
     if let Some(update) = rest.strip_prefix("update ")
     {

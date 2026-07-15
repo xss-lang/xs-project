@@ -46,6 +46,24 @@ pub struct Local
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FieldPath
+{
+  pub root: String,
+  pub fields: Vec<String>,
+  pub ty: Type,
+  pub mutable: bool,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ObjectField
+{
+  pub name: String,
+  pub value: Expression,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Literal
 {
   Bool(bool),
@@ -112,9 +130,25 @@ pub enum Expression
   {
     name: String, span: Span
   },
+  Field
+  {
+    path: FieldPath
+  },
+  Object
+  {
+    nominal_type: String,
+    fields: Vec<ObjectField>,
+    span: Span,
+  },
   Assign
   {
     target: String,
+    value: Box<Expression>,
+    span: Span,
+  },
+  AssignField
+  {
+    target: FieldPath,
     value: Box<Expression>,
     span: Span,
   },
@@ -258,6 +292,10 @@ pub enum DiagnosticCode
   ContinueOutsideLoop,
   MatchRequiresFinalElse,
   DuplicateMatchPattern,
+  UnknownNominalType,
+  UnknownField,
+  MissingField,
+  DuplicateField,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -276,6 +314,7 @@ pub struct TypeChecker
   return_type: Option<Type>,
   scope_starts: Vec<usize>,
   loop_depth: usize,
+  nominal_types: std::collections::HashMap<String, crate::hir::declarations::NominalType>,
 }
 
 impl TypeChecker
@@ -284,6 +323,13 @@ impl TypeChecker
   pub fn new() -> Self
   {
     Self::default()
+  }
+
+  #[must_use]
+  pub fn with_nominal_types(mut self, types: &[crate::hir::declarations::NominalType]) -> Self
+  {
+    self.nominal_types = types.iter().map(|ty| (ty.name.clone(), ty.clone())).collect();
+    self
   }
 
   #[must_use]
@@ -424,6 +470,19 @@ impl TypeChecker
         }
         self.check_expression_against_type(value, &local.ty);
       }
+      Expression::AssignField { target,
+                                value,
+                                span, } =>
+      {
+        if !target.mutable
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::ImmutableAssignment,
+                                 message: "cannot assign to an immutable field".to_string(),
+                                 span: *span });
+        }
+        self.check_expression_against_type(value, &target.ty);
+      }
       Expression::Update { target,
                            span,
                            .. } =>
@@ -527,6 +586,13 @@ impl TypeChecker
                                              span: *span });
         }
       }
+      Expression::Field { path } =>
+      {
+        self.check_field_path(path);
+      }
+      Expression::Object { nominal_type,
+                           fields,
+                           span, } => self.check_object(nominal_type, fields, *span),
       Expression::Literal { .. } =>
       {}
     }
@@ -591,7 +657,18 @@ impl TypeChecker
                                  span: *span });
         }
       }
-      Expression::Assign { span, .. } | Expression::Update { span, .. } =>
+      Expression::Field { path } =>
+      {
+        self.check_expression(expression);
+        if path.ty != *ty
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "field expression is not assignable to the target type".to_string(),
+                                 span: path.span });
+        }
+      }
+      Expression::Assign { span, .. } | Expression::AssignField { span, .. } | Expression::Update { span, .. } =>
       {
         self.check_expression(expression);
         if self.expression_type(expression).as_ref() != Some(ty)
@@ -650,6 +727,17 @@ impl TypeChecker
               .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
                                  message:
                                    "match expression result is not assignable to the target type".to_string(),
+                                 span: *span });
+        }
+      }
+      Expression::Object { span, .. } =>
+      {
+        self.check_expression(expression);
+        if self.expression_type(expression).as_ref() != Some(ty)
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                                 message: "object literal is not assignable to the target type".to_string(),
                                  span: *span });
         }
       }
@@ -751,12 +839,106 @@ impl TypeChecker
   {
     self.locals.iter().rev().find(|local| local.name == name)
   }
+
+  fn check_object(&mut self, nominal_type: &str, fields: &[ObjectField], span: Span)
+  {
+    let Some(definition) = self.nominal_types.get(nominal_type).cloned()
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::UnknownNominalType,
+                             message: format!("unknown nominal type '{nominal_type}'"),
+                             span });
+      return;
+    };
+    let mut seen = std::collections::HashSet::new();
+    for field in fields
+    {
+      if !seen.insert(field.name.as_str())
+      {
+        self.diagnostics.push(Diagnostic { code: DiagnosticCode::DuplicateField,
+                                           message: format!("field '{}' is initialized more than once", field.name),
+                                           span: field.span });
+        continue;
+      }
+      let Some(expected) = definition.fields.iter().find(|candidate| candidate.name == field.name)
+      else
+      {
+        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
+                                           message: format!("type '{nominal_type}' has no field '{}'", field.name),
+                                           span: field.span });
+        continue;
+      };
+      if let Some(expected) = super::declarations::type_ref_to_checked(&expected.ty)
+      {
+        self.check_expression_against_type(&field.value, &expected);
+      }
+    }
+    for field in &definition.fields
+    {
+      if !seen.contains(field.name.as_str())
+      {
+        self.diagnostics.push(Diagnostic { code: DiagnosticCode::MissingField,
+                                           message: format!("object literal is missing field '{}'", field.name),
+                                           span });
+      }
+    }
+  }
+
+  fn check_field_path(&mut self, path: &FieldPath)
+  {
+    let Some(mut current_type) = self.find_local(&path.root).map(|local| local.ty.clone())
+    else
+    {
+      self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownLocal,
+                                         message: format!("unknown local '{}'", path.root),
+                                         span: path.span });
+      return;
+    };
+    for field_name in &path.fields
+    {
+      let Type::Named(type_name) = current_type
+      else
+      {
+        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
+                                           message: format!("type has no field '{field_name}'"),
+                                           span: path.span });
+        return;
+      };
+      let Some(field) =
+        self.nominal_types
+            .get(&type_name)
+            .and_then(|definition| definition.fields.iter().find(|field| field.name == *field_name))
+      else
+      {
+        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
+                                           message: format!("type '{type_name}' has no field '{field_name}'"),
+                                           span: path.span });
+        return;
+      };
+      let Some(field_type) = super::declarations::type_ref_to_checked(&field.ty)
+      else
+      {
+        return;
+      };
+      current_type = field_type;
+    }
+    if current_type != path.ty
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                             message: "field path type does not match its nominal declaration".to_string(),
+                             span: path.span });
+    }
+  }
 }
 
 mod binary_type;
 mod expression_type;
 mod for_check;
 mod match_check;
+#[cfg(test)]
+mod nominal_tests;
 mod result_type;
 mod type_semantics;
 mod unary_type;

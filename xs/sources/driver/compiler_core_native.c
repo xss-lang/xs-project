@@ -10,11 +10,36 @@
 #include "xs/lil.h"
 
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 bool xs_driver_compiler_core_native_available(const XsCompilerCoreSession *session)
 {
   uint64_t length = 0;
   return xslang_compiler_core_session_xlil_text(session, &length) != nullptr && length != 0;
+}
+
+bool xs_driver_append_compiler_core_diagnostics(const XsCompilerCoreSession *session, XsDiagnostics *diagnostics,
+                                                XsSpan span)
+{
+  bool added = false;
+  uint64_t count = xslang_compiler_core_session_diagnostic_count(session);
+  for(uint64_t index = 0; index < count; ++index)
+  {
+    uint64_t raw_length = 0;
+    const uint8_t *text = xslang_compiler_core_session_diagnostic_text(session, index, &raw_length);
+    if(text == nullptr || raw_length > SIZE_MAX - 1)
+      continue;
+    size_t length = (size_t)raw_length;
+    char *message = malloc(length + 1);
+    if(message == nullptr)
+      continue;
+    memcpy(message, text, length);
+    message[length] = '\0';
+    added = xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span, message) || added;
+    free(message);
+  }
+  return added;
 }
 
 bool xs_driver_build_compiler_core_native(const char *input_path, const XsCompilerCoreSession *session,

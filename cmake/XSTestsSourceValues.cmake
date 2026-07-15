@@ -3,7 +3,7 @@
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -172,3 +172,14 @@ add_test(NAME source_native_integer_operators_artifacts COMMAND xs_xse_artifact_
                                                         "lshr i128" "icmp slt i128" "ashr i128")
 set_tests_properties(source_native_integer_operators_artifacts PROPERTIES
                      DEPENDS source_native_integer_operators_build TIMEOUT 5)
+
+add_test(NAME source_native_data_fields_build COMMAND xs build -file
+                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataFields.xs)
+set_tests_properties(source_native_data_fields_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_data_fields_artifacts COMMAND xs_xse_artifact_tests
+                                                       ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataFields.ll
+                                                       ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataFields.o
+                                                       ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataFields.xse 9
+                                                       "alloca i32" "store i32 2" "store i32 3" "add i32")
+set_tests_properties(source_native_data_fields_artifacts PROPERTIES DEPENDS source_native_data_fields_build TIMEOUT 5)

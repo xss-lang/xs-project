@@ -6,8 +6,8 @@
 use super::async_check::Span;
 use super::match_model::MatchPattern;
 use super::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, Local, PrimitiveType, Statement, Type, UnaryOperator,
-  UpdateOperator, UpdatePosition, literal_matches_type, result_type_parts,
+  BinaryOperator, Block, Expression, FieldPath, Function, Literal, Local, PrimitiveType, Statement, Type,
+  UnaryOperator, UpdateOperator, UpdatePosition, literal_matches_type, result_type_parts,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -37,9 +37,25 @@ pub enum DesugaredExpression
   {
     name: String, span: Span
   },
+  Field
+  {
+    path: FieldPath
+  },
+  Object
+  {
+    nominal_type: String,
+    fields: Vec<DesugaredObjectField>,
+    span: Span,
+  },
   Assign
   {
     target: String,
+    value: Box<DesugaredExpression>,
+    span: Span,
+  },
+  AssignField
+  {
+    target: FieldPath,
     value: Box<DesugaredExpression>,
     span: Span,
   },
@@ -96,6 +112,14 @@ pub enum DesugaredExpression
     error_type: Type,
     span: Span,
   },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DesugaredObjectField
+{
+  pub name: String,
+  pub value: DesugaredExpression,
+  pub span: Span,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -301,11 +325,33 @@ impl ResultDesugar
       Expression::Local { name,
                           span, } => DesugaredExpression::Local { name: name.clone(),
                                                                   span: *span },
+      Expression::Field { path } => DesugaredExpression::Field { path: path.clone() },
+      Expression::Object { nominal_type,
+                           fields,
+                           span, } =>
+      {
+        DesugaredExpression::Object { nominal_type: nominal_type.clone(),
+                                      fields: fields.iter()
+                                                    .map(|field| {
+                                                      DesugaredObjectField { name: field.name.clone(),
+                                                                             value:
+                                                                               self.desugar_expression(&field.value),
+                                                                             span: field.span }
+                                                    })
+                                                    .collect(),
+                                      span: *span }
+      }
       Expression::Assign { target,
                            value,
                            span, } => DesugaredExpression::Assign { target: target.clone(),
                                                                     value: Box::new(self.desugar_expression(value)),
                                                                     span: *span },
+      Expression::AssignField { target,
+                                value,
+                                span, } => DesugaredExpression::AssignField { target: target.clone(),
+                                                                              value:
+                                                                                Box::new(self.desugar_expression(value)),
+                                                                              span: *span },
       Expression::Update { target,
                            operator,
                            position,
@@ -459,7 +505,10 @@ impl ResultDesugar
                                                                                     span: *span });
                                                                                           None
                                                                                         }),
+      Expression::Field { path } => Some(path.ty.clone()),
+      Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
       Expression::Assign { value, .. } => self.expression_type(value),
+      Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target,
                            span,
                            .. } => self.find_local(target).map(|local| local.ty.clone()).or_else(|| {

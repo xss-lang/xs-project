@@ -10,6 +10,8 @@
 #include "xs/diagnostic.h"
 
 bool xs_driver_compiler_core_native_available(const XsCompilerCoreSession *session);
+bool xs_driver_append_compiler_core_diagnostics(const XsCompilerCoreSession *session, XsDiagnostics *diagnostics,
+                                                XsSpan span);
 bool xs_driver_build_compiler_core_native(const char *input_path, const XsCompilerCoreSession *session,
                                           XsDiagnostics *diagnostics, XsSpan span);
 

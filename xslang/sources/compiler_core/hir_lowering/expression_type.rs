@@ -7,7 +7,7 @@ use super::*;
 
 pub(super) fn expression_type(tree: &SyntaxTree,
                               value: &SyntaxNode,
-                              signatures: &HashMap<String, CallSignature>,
+                              context: &LoweringContext,
                               locals: &HashMap<String, Type>)
                               -> Option<Type>
 {
@@ -22,8 +22,9 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     EXPR_CALL =>
     {
       let callee = tree.nodes.get(*value.children.first()?)?;
-      signatures.get(&path_text(tree, callee))
-                .map(|signature| signature.return_type.clone())
+      context.calls
+             .get(&path_text(tree, callee))
+             .map(|signature| signature.return_type.clone())
     }
     EXPR_BINARY
       if matches!(value.token_kind,
@@ -41,16 +42,16 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     EXPR_BINARY => value.children
                         .first()
                         .and_then(|index| tree.nodes.get(*index))
-                        .and_then(|operand| expression_type(tree, operand, signatures, locals))
+                        .and_then(|operand| expression_type(tree, operand, context, locals))
                         .or_else(|| {
                           value.children
                                .last()
                                .and_then(|index| tree.nodes.get(*index))
-                               .and_then(|operand| expression_type(tree, operand, signatures, locals))
+                               .and_then(|operand| expression_type(tree, operand, context, locals))
                         })
                         .or(Some(Type::Primitive(PrimitiveType::Int))),
     EXPR_UNARY if value.token_kind == TOKEN_BANG => Some(Type::Primitive(PrimitiveType::Bool)),
-    EXPR_UNARY => expression_type(tree, tree.nodes.get(*value.children.first()?)?, signatures, locals),
+    EXPR_UNARY => expression_type(tree, tree.nodes.get(*value.children.first()?)?, context, locals),
     _ => None,
   }
 }

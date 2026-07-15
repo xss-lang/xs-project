@@ -99,7 +99,10 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                                             .rev()
                                             .find(|local| local.name == *name)
                                             .map(|local| local.ty.clone()),
+    Expression::Field { path } => Some(path.ty.clone()),
+    Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
     Expression::Assign { value, .. } => infer_expression_type(value, locals),
+    Expression::AssignField { value, .. } => infer_expression_type(value, locals),
     Expression::Update { target, .. } => locals.iter()
                                                .rev()
                                                .find(|local| local.name == *target)
