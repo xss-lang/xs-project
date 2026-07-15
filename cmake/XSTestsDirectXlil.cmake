@@ -3,7 +3,7 @@
 
 set(XS_DIRECT_XLIL_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/intermediate")
 file(MAKE_DIRECTORY "${XS_DIRECT_XLIL_FIXTURE_DIR}")
-foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit StackSlotExit FloatConstants FloatOperators StringLiteral StringFlow StringCompare CharFlow IntegerWidths IntegerOperators MissingMain ExternMain
+foreach(entry_fixture Supported BranchExit CallExit CompareExit CompareNotExit BitwiseExit StackSlotExit FloatConstants FloatOperators StringLiteral StringFlow StringCompare CharFlow IntegerWidths IntegerOperators AggregateNative MissingMain ExternMain
                       ParameterizedMain VoidMain I64Main DuplicateMain)
   configure_file(tests/fixtures/intermediate/${entry_fixture}.xlil
                  "${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil" COPYONLY)
@@ -159,9 +159,19 @@ add_test(NAME direct_xlil_integer_operators_artifacts COMMAND xs_xse_artifact_te
                                                        "lshr i128" "icmp slt i128" "ashr i128")
 set_tests_properties(direct_xlil_integer_operators_artifacts PROPERTIES
                      DEPENDS direct_xlil_integer_operators_build TIMEOUT 5)
+add_test(NAME direct_xlil_aggregate_native_build COMMAND xs build --xlil -file
+                                                ${XS_DIRECT_XLIL_FIXTURE_DIR}/AggregateNative.xlil)
+set_tests_properties(direct_xlil_aggregate_native_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME direct_xlil_aggregate_native_artifacts COMMAND xs_xse_artifact_tests
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/AggregateNative.ll
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/AggregateNative.o
+                                                      ${XS_DIRECT_XLIL_FIXTURE_DIR}/AggregateNative.xse 7
+                                                      "%Point = type { i32, i32 }" "insertvalue" "extractvalue")
+set_tests_properties(direct_xlil_aggregate_native_artifacts PROPERTIES
+                     DEPENDS direct_xlil_aggregate_native_build TIMEOUT 5)
 foreach(entry_fixture MissingMain ExternMain ParameterizedMain VoidMain I64Main DuplicateMain)
   add_test(NAME direct_xlil_invalid_${entry_fixture} COMMAND xs build --xlil -file ${XS_DIRECT_XLIL_FIXTURE_DIR}/${entry_fixture}.xlil)
   set_tests_properties(direct_xlil_invalid_${entry_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 endforeach()
-
 

@@ -76,7 +76,7 @@ XLIL function body lowering currently covers explicit body parameters, every doc
 exact-bit f32/f64 constants, and
 boolean and explicit-endian UTF-16 string constants, UTF-16 string equality/inequality, fixed-width integer arithmetic/bitwise/shift/comparison instructions, f32/f64
 arithmetic and ordered comparisons,
-direct calls, unconditional `br`, conditional `br_if`, `panic`, `ret`,
+direct calls, nominal aggregate construction/extraction, unconditional `br`, conditional `br_if`, `panic`, `ret`,
 typed stack slots with `load`/`store`, and `ret %rN`. Stack slots are allocated in the LLVM entry block and remain eligible
 for normal LLVM promotion and scalar optimization. The current source-native bridge uses this path for `Long` and `Bool`
 local initialization, reads, and simple mutable reassignment. `panic` emits an `llvm.trap` call followed by LLVM
@@ -106,3 +106,7 @@ the configured Clang driver with LLD for a native-host direct XLIL `.xse` execut
 no CLI optimization flag is exposed yet. It rejects unsupported body forms instead of inventing semantics. This prevents AST
 or unfinished HIR behavior from being lowered directly to LLVM IR. Cross-target direct builds stop after object emission, and
 runtime or external library resolution is not configured yet.
+
+XLIL aggregate registry entries lower to named LLVM structure types. The backend creates all opaque named types before
+setting their field bodies, then lowers `aggregate` and `extract` records with LLVM `insertvalue` and `extractvalue`.
+This supports aggregate signatures and direct XLIL native builds without coupling HIR or MIR models to LLVM APIs.

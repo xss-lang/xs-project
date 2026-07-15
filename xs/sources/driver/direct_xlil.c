@@ -191,6 +191,11 @@ bool xs_driver_build_lil_module_native(const char *input_path, const XsLilModule
   size_t declared = 0;
   if(success)
   {
+    stage = "register XLIL aggregate types";
+    success = xs_llvm_register_lil_types(unit, module, &error) == XS_BACKEND_OK;
+  }
+  if(success)
+  {
     stage = "lower XLIL declarations to LLVM";
     success = declare_module_functions(unit, module, &declared, &error);
   }

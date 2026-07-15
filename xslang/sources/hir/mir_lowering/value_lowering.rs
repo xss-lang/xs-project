@@ -23,7 +23,7 @@ impl HirToMirLowerer
       {
         self.lower_integer_literal_into(target, value, value_type, span, lowered);
       }
-      (Literal::Bool(value), Some(XlilType { kind: TypeKind::Bool })) =>
+      (Literal::Bool(value), Some(XlilType { kind: TypeKind::Bool, .. })) =>
       {
         self.current_block_mut(lowered)
             .statements
@@ -31,7 +31,7 @@ impl HirToMirLowerer
                                               value: *value,
                                               span });
       }
-      (Literal::Float(value), Some(XlilType { kind: TypeKind::F32 })) =>
+      (Literal::Float(value), Some(XlilType { kind: TypeKind::F32, .. })) =>
       {
         let Ok(value) = value.replace('\'', "").parse::<f32>()
         else
@@ -54,7 +54,7 @@ impl HirToMirLowerer
                                              bits: value.to_bits(),
                                              span });
       }
-      (Literal::Float(value), Some(XlilType { kind: TypeKind::F64 })) =>
+      (Literal::Float(value), Some(XlilType { kind: TypeKind::F64, .. })) =>
       {
         let Ok(value) = value.replace('\'', "").parse::<f64>()
         else
@@ -77,7 +77,7 @@ impl HirToMirLowerer
                                              bits: value.to_bits(),
                                              span });
       }
-      (Literal::String(value), Some(XlilType { kind: TypeKind::Str })) =>
+      (Literal::String(value), Some(XlilType { kind: TypeKind::Str, .. })) =>
       {
         self.current_block_mut(lowered)
             .statements
@@ -85,7 +85,7 @@ impl HirToMirLowerer
                                              units: value.encode_utf16().collect(),
                                              span });
       }
-      (Literal::Char(value), Some(XlilType { kind: TypeKind::U16 })) =>
+      (Literal::Char(value), Some(XlilType { kind: TypeKind::U16, .. })) =>
       {
         self.current_block_mut(lowered)
             .statements

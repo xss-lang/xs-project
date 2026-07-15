@@ -7,6 +7,13 @@
 
 #include <stdio.h>
 
+static XsLilStatus write_type(FILE *stream, XsLilError *error, XsLilType type)
+{
+  int written = type.kind == XS_LIL_TYPE_AGGREGATE ? fprintf(stream, "%%t%u", type.registry_id)
+                                                   : fprintf(stream, "%s", xs_lil_type_name(type));
+  return written < 0 ? xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL type") : XS_LIL_OK;
+}
+
 static XsLilStatus write_signature(FILE *stream, XsLilError *error, const XsLilFunction *function)
 {
   if(fprintf(stream, "%s : (", function->name) < 0)
@@ -15,10 +22,11 @@ static XsLilStatus write_signature(FILE *stream, XsLilError *error, const XsLilF
   {
     if(parameter != 0 && xs_lil_write_checked(stream, error, ", ") != XS_LIL_OK)
       return error == nullptr ? XS_LIL_IO_ERROR : error->status;
-    if(xs_lil_write_checked(stream, error, xs_lil_type_name(function->parameters[parameter])) != XS_LIL_OK)
+    if(write_type(stream, error, function->parameters[parameter]) != XS_LIL_OK)
       return error == nullptr ? XS_LIL_IO_ERROR : error->status;
   }
-  if(fprintf(stream, ") -> %s", xs_lil_type_name(function->return_type)) < 0)
+  if(xs_lil_write_checked(stream, error, ") -> ") != XS_LIL_OK ||
+     write_type(stream, error, function->return_type) != XS_LIL_OK)
     return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL function signature");
   if(xs_lil_write_checked(stream, error, "\n") != XS_LIL_OK)
     return error == nullptr ? XS_LIL_IO_ERROR : error->status;
@@ -328,10 +336,13 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL not.bool instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_CALL)
     {
-      if(instruction->result != UINT32_MAX &&
-         fprintf(stream, "  %%r%u:%s = ", instruction->result,
-                 xs_lil_type_name(block->owner->values[instruction->result].type)) < 0)
-        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL call result");
+      if(instruction->result != UINT32_MAX)
+      {
+        if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||
+           write_type(stream, error, block->owner->values[instruction->result].type) != XS_LIL_OK ||
+           xs_lil_write_checked(stream, error, " = ") != XS_LIL_OK)
+          return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL call result");
+      }
       if(fprintf(stream, "%scall %s(", instruction->result == UINT32_MAX ? "  " : "", instruction->callee) < 0)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL call instruction");
       for(size_t argument = 0; argument < instruction->argument_count; ++argument)
@@ -343,10 +354,35 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
       if(xs_lil_write_checked(stream, error, ")\n") != XS_LIL_OK)
         return error == nullptr ? XS_LIL_IO_ERROR : error->status;
     }
-    if(instruction->kind == XS_LIL_INSTRUCTION_LOAD &&
-       fprintf(stream, "  %%r%u:%s = load %%s%u\n", instruction->result,
-               xs_lil_type_name(block->owner->values[instruction->result].type), instruction->slot) < 0)
-      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL load instruction");
+    if(instruction->kind == XS_LIL_INSTRUCTION_AGGREGATE)
+    {
+      if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||
+         write_type(stream, error, instruction->integer_type) != XS_LIL_OK ||
+         xs_lil_write_checked(stream, error, " = aggregate ") != XS_LIL_OK)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL aggregate instruction");
+      for(size_t field = 0; field < instruction->argument_count; ++field)
+      {
+        if((field != 0 && xs_lil_write_checked(stream, error, ", ") != XS_LIL_OK) ||
+           fprintf(stream, "%%r%u", instruction->arguments[field]) < 0)
+          return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL aggregate field");
+      }
+      if(xs_lil_write_checked(stream, error, "\n") != XS_LIL_OK)
+        return error == nullptr ? XS_LIL_IO_ERROR : error->status;
+    }
+    if(instruction->kind == XS_LIL_INSTRUCTION_EXTRACT)
+    {
+      if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||
+         write_type(stream, error, block->owner->values[instruction->result].type) != XS_LIL_OK ||
+         fprintf(stream, " = extract %%r%u, %lld\n", instruction->left, (long long)instruction->immediate_i64) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL extract instruction");
+    }
+    if(instruction->kind == XS_LIL_INSTRUCTION_LOAD)
+    {
+      if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||
+         write_type(stream, error, block->owner->values[instruction->result].type) != XS_LIL_OK ||
+         fprintf(stream, " = load %%s%u\n", instruction->slot) < 0)
+        return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL load instruction");
+    }
     if(instruction->kind == XS_LIL_INSTRUCTION_STORE &&
        fprintf(stream, "  store %%r%u, %%s%u\n", instruction->left, instruction->slot) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL store instruction");
@@ -396,6 +432,20 @@ XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, Xs
     return error == nullptr ? XS_LIL_IO_ERROR : error->status;
   if(fprintf(stream, ".xlil module %s\n", module->name) < 0)
     return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL module header");
+  for(size_t type = 0; type < module->aggregate_type_count; ++type)
+  {
+    const XsLilAggregateType *aggregate = &module->aggregate_types[type];
+    if(fprintf(stream, ".type %%t%zu %s : (", type, aggregate->name) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL aggregate type");
+    for(size_t field = 0; field < aggregate->field_count; ++field)
+    {
+      if((field != 0 && xs_lil_write_checked(stream, error, ", ") != XS_LIL_OK) ||
+         write_type(stream, error, aggregate->fields[field]) != XS_LIL_OK)
+        return error == nullptr ? XS_LIL_IO_ERROR : error->status;
+    }
+    if(xs_lil_write_checked(stream, error, ")\n") != XS_LIL_OK)
+      return error == nullptr ? XS_LIL_IO_ERROR : error->status;
+  }
   for(size_t i = 0; i < module->function_count; ++i)
   {
     const XsLilFunction *function = &module->functions[i];
@@ -407,12 +457,16 @@ XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, Xs
       continue;
     for(size_t parameter = 0; parameter < function->parameter_count; ++parameter)
     {
-      if(fprintf(stream, ".param %%r%zu:%s\n", parameter, xs_lil_type_name(function->parameters[parameter])) < 0)
+      if(fprintf(stream, ".param %%r%zu:", parameter) < 0 ||
+         write_type(stream, error, function->parameters[parameter]) != XS_LIL_OK ||
+         xs_lil_write_checked(stream, error, "\n") != XS_LIL_OK)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL function parameter");
     }
     for(size_t slot = 0; slot < function->slot_count; ++slot)
     {
-      if(fprintf(stream, ".slot %%s%zu:%s\n", slot, xs_lil_type_name(function->slots[slot].type)) < 0)
+      if(fprintf(stream, ".slot %%s%zu:", slot) < 0 ||
+         write_type(stream, error, function->slots[slot].type) != XS_LIL_OK ||
+         xs_lil_write_checked(stream, error, "\n") != XS_LIL_OK)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL stack slot");
     }
     for(size_t block = 0; block < function->block_count; ++block)

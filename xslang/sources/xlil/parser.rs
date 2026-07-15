@@ -4,12 +4,14 @@
  */
 
 use crate::xlil::{
-  Block, BlockId, Function, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Instruction, Module,
-  SUPPORTED_XLIL_VERSION, Slot, SlotId, Terminator, Type, Value, ValueId, is_supported_xlil_version, type_from_name,
-  type_name,
+  Block, BlockId, Function, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Instruction, Module, Slot,
+  SlotId, Terminator, Type, Value, ValueId, type_from_name, type_name,
 };
 
+mod aggregate;
+mod aggregate_instruction;
 mod float;
+mod header;
 mod i64;
 mod integer_operation;
 mod scalar;
@@ -44,6 +46,7 @@ pub fn parse_module(text: &str) -> Result<Module, Vec<Diagnostic>>
 {
   let mut parser = Parser { lines: text.lines().collect(),
                             cursor: 0,
+                            aggregate_type_count: 0,
                             diagnostics: vec![] };
   let module = parser.module();
   if parser.diagnostics.is_empty()
@@ -60,6 +63,7 @@ struct Parser<'text>
 {
   lines: Vec<&'text str>,
   cursor: usize,
+  aggregate_type_count: u32,
   diagnostics: Vec<Diagnostic>,
 }
 
@@ -91,6 +95,14 @@ impl Parser<'_>
         self.cursor += 1;
         continue;
       }
+      if self.current_line().is_some_and(|line| line.starts_with(".type "))
+      {
+        if !self.aggregate_type(&mut module)
+        {
+          break;
+        }
+        continue;
+      }
       let Some(function) = self.function()
       else
       {
@@ -99,42 +111,6 @@ impl Parser<'_>
       module.add_function(function);
     }
     Some(module)
-  }
-
-  fn version_header(&mut self) -> bool
-  {
-    let Some(version) = self.next_line()
-    else
-    {
-      self.report(DiagnosticCode::EmptyInput, 1, "XLIL input is empty");
-      return false;
-    };
-    let Some(version) = version.strip_prefix(".xlil version ")
-    else
-    {
-      self.report(DiagnosticCode::InvalidVersionHeader,
-                  1,
-                  "XLIL version header is invalid");
-      return false;
-    };
-    match version.parse::<u32>()
-    {
-      Ok(version) if is_supported_xlil_version(version) => true,
-      Ok(version) =>
-      {
-        self.report(DiagnosticCode::InvalidVersionHeader,
-                    1,
-                    &format!("XLIL version {version} is not supported; supported version is {SUPPORTED_XLIL_VERSION}"));
-        false
-      }
-      Err(_) =>
-      {
-        self.report(DiagnosticCode::InvalidVersionHeader,
-                    1,
-                    "XLIL version number is invalid");
-        false
-      }
-    }
   }
 
   fn function(&mut self) -> Option<Function>
@@ -206,7 +182,11 @@ impl Parser<'_>
 
   fn type_name(&mut self, name: &str, line: usize) -> Option<Type>
   {
-    let parsed = type_from_name(name);
+    let parsed = name.strip_prefix("%t")
+                     .and_then(|id| id.parse::<u32>().ok())
+                     .filter(|id| *id < self.aggregate_type_count)
+                     .map(Type::aggregate)
+                     .or_else(|| type_from_name(name));
     if parsed.is_none()
     {
       self.report(DiagnosticCode::InvalidType, line, "XLIL type name is unknown");
@@ -428,6 +408,14 @@ impl Parser<'_>
 
   fn instruction(&mut self, function: &mut Function, text: &str, line: usize) -> Option<Instruction>
   {
+    if let Some((result, fields)) = text.split_once(" = aggregate ")
+    {
+      return self.aggregate_instruction(function, result, fields, line);
+    }
+    if let Some((result, source)) = text.split_once(" = extract ")
+    {
+      return self.extract_instruction(function, result, source, line);
+    }
     if let Some((result, call)) = text.split_once(" = call ")
     {
       return self.value_call(function, result, call, line);

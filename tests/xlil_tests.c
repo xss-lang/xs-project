@@ -62,6 +62,42 @@ static void test_module_and_text_writer(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_aggregate_type_registry_round_trip(void)
+{
+  const char *text = ".xlil version 0\n.xlil module Geometry\n.type %t0 Point : (i32, i32)\n"
+                     ".type %t1 Line : (%t0, %t0)\n.extern midpoint : (%t1) -> %t0\n"
+                     ".func point_x : (i32, i32) -> i32\n.param %r0:i32\n.param %r1:i32\n"
+                     "bb0.entry:\n  %r2:%t0 = aggregate %r0, %r1\n  %r3:i32 = extract %r2, 0\n  ret %r3\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("geometry.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  if(module == nullptr)
+    return;
+  CHECK(xs_lil_module_aggregate_type_count(module) == 2);
+  CHECK(strcmp(xs_lil_module_aggregate_type_name(module, 0), "Point") == 0);
+  CHECK(xs_lil_module_aggregate_field_count(module, 1) == 2);
+  CHECK(xs_lil_type_equal(xs_lil_module_aggregate_field_type(module, 1, 0), xs_lil_aggregate_type(0)));
+  CHECK(xs_lil_type_equal(xs_lil_function_return_type(xs_lil_module_function_at(module, 0)), xs_lil_aggregate_type(0)));
+  const XsLilBlock *block = xs_lil_function_block_at(xs_lil_module_function_at(module, 1), 0);
+  CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_AGGREGATE);
+  CHECK(xs_lil_block_instruction_kind(block, 1) == XS_LIL_INSTRUCTION_EXTRACT);
+  CHECK(xs_lil_block_instruction_argument_count(block, 0) == 2);
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char output[512] = {0};
+    size_t read = fread(output, 1, sizeof(output) - 1, stream);
+    output[read] = '\0';
+    CHECK(strcmp(output, text) == 0);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
+}
+
 static void test_function_body_text_writer(void)
 {
   XsLilError error = {0};
@@ -786,6 +822,7 @@ static void test_integer_operation_api_and_text(void)
 int main(void)
 {
   test_module_and_text_writer();
+  test_aggregate_type_registry_round_trip();
   test_function_body_text_writer();
   test_function_body_rejects_missing_return_value();
   test_floating_constant_bits();

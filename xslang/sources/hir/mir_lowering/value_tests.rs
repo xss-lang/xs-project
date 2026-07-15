@@ -19,16 +19,12 @@ fn primitive(value: PrimitiveType) -> Type
 #[test]
 fn maps_hir_primitives_to_xlil_value_types()
 {
-  assert_eq!(primitive_to_xlil(PrimitiveType::Bool),
-             Some(XlilType { kind: TypeKind::Bool }));
+  assert_eq!(primitive_to_xlil(PrimitiveType::Bool), Some(XlilType::BOOL));
   assert_eq!(primitive_to_xlil(PrimitiveType::Long), Some(XlilType::I32));
   assert_eq!(primitive_to_xlil(PrimitiveType::Int), Some(XlilType::I64));
-  assert_eq!(primitive_to_xlil(PrimitiveType::Integer),
-             Some(XlilType { kind: TypeKind::I128 }));
-  assert_eq!(primitive_to_xlil(PrimitiveType::SFloat),
-             Some(XlilType { kind: TypeKind::F32 }));
-  assert_eq!(primitive_to_xlil(PrimitiveType::Float),
-             Some(XlilType { kind: TypeKind::F64 }));
+  assert_eq!(primitive_to_xlil(PrimitiveType::Integer), Some(XlilType::I128));
+  assert_eq!(primitive_to_xlil(PrimitiveType::SFloat), Some(XlilType::F32));
+  assert_eq!(primitive_to_xlil(PrimitiveType::Float), Some(XlilType::F64));
   assert_eq!(primitive_to_xlil(PrimitiveType::Str), Some(XlilType::STR));
 }
 

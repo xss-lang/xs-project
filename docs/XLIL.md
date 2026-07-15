@@ -44,6 +44,7 @@ Current text records intentionally look closer to assembly than to C-like declar
 ```text
 .xlil version 0
 .xlil module App
+.type %t0 Pair : (i32, i32)
 .extern Next : (i64) -> i64
 .func Answer : () -> i64
 bb0.entry:
@@ -57,6 +58,8 @@ Format notes:
 
 - `.xlil version 0` starts a registry file and declares the XLIL text grammar version that `xs build` should parse.
 - `.xlil module <name>` declares the module name after the version header.
+- `.type %tN <name> : (<fields>)` adds a sequential nominal aggregate layout to the module type registry. Aggregate
+  fields may reference primitive types or previously declared `%tN` types.
 - `.extern <symbol> : (<params>) -> <return>` declares an external function.
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
 - `.param %rN:type` maps a signature parameter to a body register. Records occur before the first basic block, in
@@ -100,6 +103,10 @@ Format notes:
 - `%rN:bool = lt.i64 %rA, %rB`, `le.i64`, `gt.i64`, and `ge.i64` perform signed `i64` comparisons.
 - `%rN:bool = not.bool %rA` negates a boolean SSA value.
 - `%rN:type = call <symbol>(%rA, %rB)` calls another function and stores a typed result.
+- `%rN:%tA = aggregate %rB, %rC` builds a registry-defined aggregate value. Field count and register types must match
+  the `%tA` layout exactly.
+- `%rN:type = extract %rA, F` extracts zero-based field `F` from an aggregate register. Its result type must match the
+  registered field type.
 - `call <symbol>(%rA, %rB)` calls a void function and discards the result.
 - `store %rN, %sA` writes a typed register value to a matching stack slot.
 - `%rN:type = load %sA` reads a matching stack slot into a new typed register value.
@@ -157,7 +164,8 @@ The API is intended to let:
 - every XLIL-producing compiler reuse the same backend infrastructure.
 
 The C23 API currently includes module construction, verification, text writing, v0 text parsing, and read-only
-function/body inspection. Direct `xs build --xlil -file <input.xlil>` uses this parser API before emitting verified and
+function/body inspection, aggregate type registries, aggregate construction, and field extraction. Direct
+`xs build --xlil -file <input.xlil>` uses this parser API before emitting verified and
 optimized LLVM IR, an object file, and a native `.xse` executable for the supported local-target subset.
 
 The public [integer support header](../include/xs/int128.h) defines `XsUInt128` and `XsInt128` as explicit high/low

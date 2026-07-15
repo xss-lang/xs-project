@@ -17,6 +17,7 @@ typedef struct
   size_t length;
   size_t cursor;
   size_t line;
+  XsLilModule *module;
 } Parser;
 
 typedef struct
@@ -65,37 +66,18 @@ static bool span_equals(const char *text, size_t length, const char *expected)
   return strlen(expected) == length && strncmp(text, expected, length) == 0;
 }
 
-static bool parse_type(const char *start, size_t length, XsLilType *type)
+static bool parse_type(const XsLilModule *module, const char *start, size_t length, XsLilType *type)
 {
-  static const struct
-  {
-    const char *name;
-    XsLilTypeKind kind;
-  } types[] = {
-      {"void", XS_LIL_TYPE_VOID}, {"bool", XS_LIL_TYPE_BOOL}, {"u8", XS_LIL_TYPE_U8},     {"i8", XS_LIL_TYPE_I8},
-      {"u16", XS_LIL_TYPE_U16},   {"i16", XS_LIL_TYPE_I16},   {"u32", XS_LIL_TYPE_U32},   {"i32", XS_LIL_TYPE_I32},
-      {"u64", XS_LIL_TYPE_U64},   {"i64", XS_LIL_TYPE_I64},   {"u128", XS_LIL_TYPE_U128}, {"i128", XS_LIL_TYPE_I128},
-      {"f16", XS_LIL_TYPE_F16},   {"f32", XS_LIL_TYPE_F32},   {"f64", XS_LIL_TYPE_F64},   {"f128", XS_LIL_TYPE_F128},
-      {"str", XS_LIL_TYPE_STR},
-  };
-  for(size_t i = 0; i < sizeof(types) / sizeof(types[0]); ++i)
-  {
-    if(span_equals(start, length, types[i].name))
-    {
-      *type = (XsLilType){.kind = types[i].kind};
-      return true;
-    }
-  }
-  return false;
+  return xs_lil_parse_type_name(module, start, length, type);
 }
 
-static bool parse_type_cursor(const char **cursor, const char *end, XsLilType *type)
+static bool parse_type_cursor(const XsLilModule *module, const char **cursor, const char *end, XsLilType *type)
 {
   const char *start = skip_space(*cursor, end);
   const char *type_end = start;
   while(type_end < end && *type_end != ' ' && *type_end != '\t' && *type_end != ',' && *type_end != ')')
     ++type_end;
-  if(type_end == start || !parse_type(start, (size_t)(type_end - start), type))
+  if(type_end == start || !parse_type(module, start, (size_t)(type_end - start), type))
     return false;
   *cursor = skip_space(type_end, end);
   return true;
@@ -111,8 +93,8 @@ static bool append_type(XsLilType **items, size_t *count, XsLilType type)
   return true;
 }
 
-static bool parse_signature(const char *line, size_t length, const char *prefix, char **name, XsLilType *return_type,
-                            XsLilType **parameters, size_t *parameter_count)
+static bool parse_signature(const XsLilModule *module, const char *line, size_t length, const char *prefix, char **name,
+                            XsLilType *return_type, XsLilType **parameters, size_t *parameter_count)
 {
   const char *end = line + length;
   const char *cursor = line + strlen(prefix);
@@ -136,7 +118,7 @@ static bool parse_signature(const char *line, size_t length, const char *prefix,
   while(cursor < end && *cursor != ')')
   {
     XsLilType parameter = {0};
-    if(!parse_type_cursor(&cursor, end, &parameter) || parameter.kind == XS_LIL_TYPE_VOID)
+    if(!parse_type_cursor(module, &cursor, end, &parameter) || parameter.kind == XS_LIL_TYPE_VOID)
       return false;
     if(!append_type(parameters, parameter_count, parameter))
       return false;
@@ -151,7 +133,7 @@ static bool parse_signature(const char *line, size_t length, const char *prefix,
   if((size_t)(end - cursor) < 2U || cursor[0] != '-' || cursor[1] != '>')
     return false;
   cursor = skip_space(cursor + 2, end);
-  if(!parse_type_cursor(&cursor, end, return_type))
+  if(!parse_type_cursor(module, &cursor, end, return_type))
     return false;
   return skip_space(cursor, end) == end;
 }
@@ -481,7 +463,7 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
     ++type_end;
   XsLilType result_type = {0};
   const char *equals = skip_space(type_end, line + length);
-  if(type_end > type_start && parse_type(type_start, (size_t)(type_end - type_start), &result_type) &&
+  if(type_end > type_start && parse_type(parser->module, type_start, (size_t)(type_end - type_start), &result_type) &&
      equals < line + length && *equals == '=')
   {
     const char *operation = skip_space(equals + 1, line + length);
@@ -490,6 +472,11 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
         block, result_type, operation, (size_t)(line + length - operation), result, &matched_string, error);
     if(matched_string)
       return string_status;
+    bool matched_aggregate = false;
+    XsLilStatus aggregate_status = xs_lil_parse_aggregate_instruction(
+        block, result_type, operation, (size_t)(line + length - operation), result, &matched_aggregate, error);
+    if(matched_aggregate)
+      return aggregate_status;
     bool matched_u16 = false;
     XsLilStatus u16_status = xs_lil_parse_const_u16(block, result_type, operation, (size_t)(line + length - operation),
                                                     result, &matched_u16, error);
@@ -796,8 +783,9 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
       uint32_t value = 0;
       XsLilType type = {0};
       if(colon == trimmed + trimmed_length || !parse_u32_after_prefix(record, (size_t)(colon - record), "%r", &value) ||
-         value != parameter || !parse_type(colon + 1, (size_t)(trimmed + trimmed_length - (colon + 1)), &type) ||
-         type.kind != function->parameters[parameter].kind)
+         value != parameter ||
+         !parse_type(parser->module, colon + 1, (size_t)(trimmed + trimmed_length - (colon + 1)), &type) ||
+         !xs_lil_type_equal(type, function->parameters[parameter]))
         return parse_error(parser, error, "XLIL parameter record does not match function signature");
       ++parameter;
       continue;
@@ -814,7 +802,7 @@ static XsLilStatus parse_function_body(Parser *parser, XsLilFunction *function, 
       XsLilType type = {0};
       if(colon == trimmed + trimmed_length ||
          !parse_u32_after_prefix(record, (size_t)(colon - record), "%s", &expected) ||
-         !parse_type(colon + 1, (size_t)(trimmed + trimmed_length - (colon + 1)), &type))
+         !parse_type(parser->module, colon + 1, (size_t)(trimmed + trimmed_length - (colon + 1)), &type))
         return parse_error(parser, error, "XLIL stack slot record is invalid");
       XsLilSlotId actual = UINT32_MAX;
       XsLilStatus status = xs_lil_function_add_slot(function, type, &actual, error);
@@ -933,12 +921,23 @@ XsLilStatus xs_lil_module_parse_text(const char *path, const char *text, size_t 
   free(module_name);
   if(status != XS_LIL_OK)
     return status;
+  parser.module = result;
   while(next_line(&parser, &line, &line_length))
   {
     const char *trimmed = skip_space(line, line + line_length);
     size_t trimmed_length = (size_t)(line + line_length - trimmed);
     if(trimmed_length == 0)
       continue;
+    if(trimmed_length > 6 && strncmp(trimmed, ".type ", 6) == 0)
+    {
+      status = xs_lil_parse_aggregate_record(result, trimmed, trimmed_length, error);
+      if(status != XS_LIL_OK)
+      {
+        xs_lil_module_destroy(result);
+        return status;
+      }
+      continue;
+    }
     const char *prefix = nullptr;
     bool is_definition = false;
     if(trimmed_length > 8 && strncmp(trimmed, ".extern ", 8) == 0)
@@ -958,7 +957,7 @@ XsLilStatus xs_lil_module_parse_text(const char *path, const char *text, size_t 
     XsLilType *parameters = nullptr;
     size_t parameter_count = 0;
     bool signature_ok =
-        parse_signature(trimmed, trimmed_length, prefix, &name, &return_type, &parameters, &parameter_count);
+        parse_signature(result, trimmed, trimmed_length, prefix, &name, &return_type, &parameters, &parameter_count);
     if(!signature_ok)
     {
       free(name);

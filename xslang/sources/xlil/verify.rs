@@ -5,12 +5,14 @@
 
 use std::collections::HashSet;
 
-use crate::xlil::{Function, Instruction, Module, SlotId, Terminator, Type, ValueId, type_name};
+use crate::xlil::{Function, Instruction, Module, SlotId, Terminator, Type, TypeKind, ValueId, type_name};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
 {
   EmptyModuleName,
+  InvalidAggregateType,
+  DuplicateAggregateName,
   EmptyFunctionName,
   DuplicateFunctionName,
   DeclarationHasBody,
@@ -63,6 +65,28 @@ impl Verifier
       self.report(DiagnosticCode::EmptyModuleName, "XLIL module name must not be empty");
     }
     let mut names = HashSet::new();
+    let mut aggregate_names = HashSet::new();
+    for (index, aggregate) in module.aggregate_types.iter().enumerate()
+    {
+      if aggregate.id as usize != index || aggregate.name.is_empty()
+      {
+        self.report(DiagnosticCode::InvalidAggregateType,
+                    "XLIL aggregate type ids must be sequential and names must not be empty");
+      }
+      if !aggregate_names.insert(aggregate.name.as_str())
+      {
+        self.report(DiagnosticCode::DuplicateAggregateName,
+                    "XLIL aggregate type names must be unique");
+      }
+      for field in &aggregate.fields
+      {
+        if *field == Type::VOID || !Self::valid_type(module, *field)
+        {
+          self.report(DiagnosticCode::InvalidAggregateType,
+                      "XLIL aggregate fields must reference known non-void types");
+        }
+      }
+    }
     for function in &module.functions
     {
       if !names.insert(function.name.as_str())
@@ -70,11 +94,33 @@ impl Verifier
         self.report(DiagnosticCode::DuplicateFunctionName,
                     "XLIL function names must be unique");
       }
-      self.function(function, &module.functions);
+      if !Self::valid_type(module, function.return_type) ||
+         function.parameters
+                 .iter()
+                 .any(|value_type| !Self::valid_type(module, *value_type)) ||
+         function.values
+                 .iter()
+                 .any(|value| !Self::valid_type(module, value.value_type)) ||
+         function.slots
+                 .iter()
+                 .any(|slot| !Self::valid_type(module, slot.value_type))
+      {
+        self.report(DiagnosticCode::InvalidAggregateType,
+                    "XLIL function types must reference the module type registry");
+      }
+      self.function(function, module);
     }
   }
 
-  fn function(&mut self, function: &Function, functions: &[Function])
+  fn valid_type(module: &Module, value_type: Type) -> bool
+  {
+    value_type.kind != TypeKind::Aggregate ||
+    module.aggregate_types
+          .get(value_type.registry_id as usize)
+          .is_some_and(|entry| entry.id == value_type.registry_id)
+  }
+
+  fn function(&mut self, function: &Function, module: &Module)
   {
     if function.name.is_empty()
     {
@@ -114,13 +160,13 @@ impl Verifier
       }
       for instruction in &block.instructions
       {
-        self.instruction(function, instruction, functions);
+        self.instruction(function, instruction, module);
       }
       self.terminator(function, block.terminator.as_ref(), &blocks);
     }
   }
 
-  fn instruction(&mut self, function: &Function, instruction: &Instruction, functions: &[Function])
+  fn instruction(&mut self, function: &Function, instruction: &Instruction, module: &Module)
   {
     match *instruction
     {
@@ -321,7 +367,7 @@ impl Verifier
                           return_type,
                           .. } =>
       {
-        let Some(callee) = functions.iter().find(|candidate| candidate.name == *callee_name)
+        let Some(callee) = module.functions.iter().find(|candidate| candidate.name == *callee_name)
         else
         {
           self.report(DiagnosticCode::CallTargetUnknown,
@@ -374,6 +420,54 @@ impl Verifier
                         "XLIL call argument must reference a declared value");
           }
         }
+      }
+      Instruction::Aggregate { result,
+                               value_type: aggregate_type,
+                               ref fields, } =>
+      {
+        self.typed_value(function, result, aggregate_type, "XLIL aggregate result");
+        let Some(layout) = module.aggregate_type(aggregate_type)
+        else
+        {
+          self.report(DiagnosticCode::InvalidAggregateType,
+                      "XLIL aggregate instruction must reference a known aggregate type");
+          return;
+        };
+        if fields.len() != layout.fields.len()
+        {
+          self.report(DiagnosticCode::InvalidAggregateType,
+                      "XLIL aggregate field count must match its registry layout");
+        }
+        for (field, expected) in fields.iter().zip(&layout.fields)
+        {
+          if value_type(function, *field) != Some(*expected)
+          {
+            self.report(DiagnosticCode::InvalidAggregateType,
+                        "XLIL aggregate field value type must match its registry layout");
+          }
+        }
+      }
+      Instruction::Extract { result,
+                             aggregate,
+                             field, } =>
+      {
+        let Some(aggregate_type) = value_type(function, aggregate)
+        else
+        {
+          self.report(DiagnosticCode::InstructionResultUnknown,
+                      "XLIL extract source must reference a declared value");
+          return;
+        };
+        let Some(field_type) = module.aggregate_type(aggregate_type)
+                                     .and_then(|layout| layout.fields.get(field as usize))
+                                     .copied()
+        else
+        {
+          self.report(DiagnosticCode::InvalidAggregateType,
+                      "XLIL extract field must exist in the aggregate registry layout");
+          return;
+        };
+        self.typed_value(function, result, field_type, "XLIL extract result");
       }
       Instruction::Load { result,
                           slot, } => self.memory(function, slot, result, "XLIL load"),

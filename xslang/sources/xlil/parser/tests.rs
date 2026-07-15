@@ -4,6 +4,63 @@
  */
 
 use super::*;
+
+#[test]
+fn parses_aggregate_type_registry()
+{
+  let text = ".xlil version 0\n.xlil module Geometry\n.type %t0 Point : (i32, i32)\n.type %t1 Line : (%t0, \
+              %t0)\n.extern midpoint : (%t1) -> %t0\n";
+  let module = parse_module(text).expect("aggregate registry should parse");
+
+  assert_eq!(module.aggregate_types.len(), 2);
+  assert_eq!(module.aggregate_types[0].name, "Point");
+  assert_eq!(module.aggregate_types[1].fields, vec![Type::aggregate(0),
+                                                    Type::aggregate(0)]);
+  assert_eq!(module.functions[0].return_type, Type::aggregate(0));
+  assert_eq!(crate::xlil::writer::module_to_string(&module), text);
+}
+
+#[test]
+fn rejects_forward_aggregate_field_reference()
+{
+  let text = ".xlil version 0\n.xlil module Geometry\n.type %t0 Line : (%t1, %t1)\n.type %t1 Point : (i32, i32)\n";
+
+  assert!(parse_module(text).is_err());
+}
+
+#[test]
+fn verifier_rejects_unknown_aggregate_signature_type()
+{
+  let mut module = Module::new("Broken");
+  module.add_function(Function::declaration("missing", Type::aggregate(7), vec![]));
+
+  assert!(crate::xlil::verify::verify_module(&module).iter().any(|diagnostic| {
+                                                              diagnostic.code ==
+                                                              crate::xlil::verify::DiagnosticCode::InvalidAggregateType
+                                                            }));
+}
+
+#[test]
+fn roundtrips_aggregate_and_extract_registers()
+{
+  let text = ".xlil version 0\n.xlil module Geometry\n.type %t0 Point : (i32, i32)\n.func point_x : (i32, i32) -> \
+              i32\n.param %r0:i32\n.param %r1:i32\nbb0.entry:\n  %r2:%t0 = aggregate %r0, %r1\n  %r3:i32 = extract \
+              %r2, 0\n  ret %r3\n.end\n";
+  let module = parse_module(text).expect("aggregate instructions should parse");
+
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(crate::xlil::writer::module_to_string(&module), text);
+}
+
+#[test]
+fn verifier_rejects_aggregate_field_type_mismatch()
+{
+  let text = ".xlil version 0\n.xlil module Geometry\n.type %t0 Point : (i32, i32)\n.func bad : (i64, i32) -> \
+              %t0\n.param %r0:i64\n.param %r1:i32\nbb0.entry:\n  %r2:%t0 = aggregate %r0, %r1\n  ret %r2\n.end\n";
+  let module = parse_module(text).expect("structurally valid aggregate should parse");
+
+  assert!(!crate::xlil::verify::verify_module(&module).is_empty());
+}
 use crate::xlil::writer::module_to_string;
 
 #[test]

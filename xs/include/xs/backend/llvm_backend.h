@@ -91,6 +91,7 @@ LLVMModuleRef xs_llvm_codegen_unit_module(const XsLlvmCodegenUnit *unit);
 XsBackendStatus xs_llvm_primitive_type(XsLlvmBackend *backend, XsPrimitiveType primitive, LLVMTypeRef *type,
                                        XsBackendError *error);
 XsBackendStatus xs_llvm_lil_type(XsLlvmBackend *backend, XsLilType type, LLVMTypeRef *llvm_type, XsBackendError *error);
+XsBackendStatus xs_llvm_register_lil_types(XsLlvmCodegenUnit *unit, const XsLilModule *module, XsBackendError *error);
 XsBackendStatus xs_llvm_declare_function(XsLlvmCodegenUnit *unit, const XsFunctionSignature *signature,
                                          LLVMValueRef *function, XsBackendError *error);
 XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char *name, XsLilType return_type,

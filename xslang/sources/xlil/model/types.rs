@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TypeKind
 {
   Void,
@@ -23,31 +23,46 @@ pub enum TypeKind
   F64,
   F128,
   Str,
+  Aggregate,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Type
 {
   pub kind: TypeKind,
+  pub registry_id: u32,
 }
 
 impl Type
 {
-  pub const VOID: Self = Self { kind: TypeKind::Void };
-  pub const BOOL: Self = Self { kind: TypeKind::Bool };
-  pub const U8: Self = Self { kind: TypeKind::U8 };
-  pub const I8: Self = Self { kind: TypeKind::I8 };
-  pub const U16: Self = Self { kind: TypeKind::U16 };
-  pub const I16: Self = Self { kind: TypeKind::I16 };
-  pub const U32: Self = Self { kind: TypeKind::U32 };
-  pub const I32: Self = Self { kind: TypeKind::I32 };
-  pub const U64: Self = Self { kind: TypeKind::U64 };
-  pub const I64: Self = Self { kind: TypeKind::I64 };
-  pub const U128: Self = Self { kind: TypeKind::U128 };
-  pub const I128: Self = Self { kind: TypeKind::I128 };
-  pub const F32: Self = Self { kind: TypeKind::F32 };
-  pub const F64: Self = Self { kind: TypeKind::F64 };
-  pub const STR: Self = Self { kind: TypeKind::Str };
+  const fn primitive(kind: TypeKind) -> Self
+  {
+    Self { kind,
+           registry_id: 0 }
+  }
+
+  pub const VOID: Self = Self::primitive(TypeKind::Void);
+  pub const BOOL: Self = Self::primitive(TypeKind::Bool);
+  pub const U8: Self = Self::primitive(TypeKind::U8);
+  pub const I8: Self = Self::primitive(TypeKind::I8);
+  pub const U16: Self = Self::primitive(TypeKind::U16);
+  pub const I16: Self = Self::primitive(TypeKind::I16);
+  pub const U32: Self = Self::primitive(TypeKind::U32);
+  pub const I32: Self = Self::primitive(TypeKind::I32);
+  pub const U64: Self = Self::primitive(TypeKind::U64);
+  pub const I64: Self = Self::primitive(TypeKind::I64);
+  pub const U128: Self = Self::primitive(TypeKind::U128);
+  pub const I128: Self = Self::primitive(TypeKind::I128);
+  pub const F32: Self = Self::primitive(TypeKind::F32);
+  pub const F64: Self = Self::primitive(TypeKind::F64);
+  pub const STR: Self = Self::primitive(TypeKind::Str);
+
+  #[must_use]
+  pub const fn aggregate(registry_id: u32) -> Self
+  {
+    Self { kind: TypeKind::Aggregate,
+           registry_id }
+  }
 
   #[must_use]
   pub const fn integer_width(self) -> Option<u32>

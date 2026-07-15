@@ -635,7 +635,8 @@ pub const fn primitive_to_xlil(primitive: PrimitiveType) -> Option<XlilType>
     PrimitiveType::Float => TypeKind::F64,
     PrimitiveType::Str => TypeKind::Str,
   };
-  Some(XlilType { kind })
+  Some(XlilType { kind,
+                  registry_id: 0 })
 }
 
 const fn expression_span(expression: &Expression) -> Span

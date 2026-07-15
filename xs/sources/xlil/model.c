@@ -99,6 +99,12 @@ void xs_lil_module_destroy(XsLilModule *module)
     return;
   for(size_t i = 0; i < module->function_count; ++i)
     function_free(&module->functions[i]);
+  for(size_t i = 0; i < module->aggregate_type_count; ++i)
+  {
+    free(module->aggregate_types[i].fields);
+    free(module->aggregate_types[i].name);
+  }
+  free(module->aggregate_types);
   free(module->functions);
   free(module->name);
   free(module);
@@ -782,7 +788,7 @@ static XsLilStatus set_terminator(XsLilBlock *block, XsLilTerminator terminator,
   {
     if((size_t)terminator.value >= block->owner->value_count)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL return references an unknown value");
-    if(block->owner->values[terminator.value].type.kind != block->owner->return_type.kind)
+    if(!xs_lil_type_equal(block->owner->values[terminator.value].type, block->owner->return_type))
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
                               "XLIL return value type does not match function return type");
   }
@@ -904,7 +910,8 @@ const char *xs_lil_block_instruction_callee(const XsLilBlock *block, size_t inde
 size_t xs_lil_block_instruction_argument_count(const XsLilBlock *block, size_t index)
 {
   if(block == nullptr || index >= block->instruction_count ||
-     block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL)
+     (block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL &&
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_AGGREGATE))
     return 0;
   return block->instructions[index].argument_count;
 }
@@ -912,7 +919,8 @@ size_t xs_lil_block_instruction_argument_count(const XsLilBlock *block, size_t i
 XsLilValueId xs_lil_block_instruction_argument(const XsLilBlock *block, size_t index, size_t argument)
 {
   if(block == nullptr || index >= block->instruction_count || argument >= block->instructions[index].argument_count ||
-     block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL)
+     (block->instructions[index].kind != XS_LIL_INSTRUCTION_CALL &&
+      block->instructions[index].kind != XS_LIL_INSTRUCTION_AGGREGATE))
     return UINT32_MAX;
   return block->instructions[index].arguments[argument];
 }
@@ -970,7 +978,7 @@ const char *xs_lil_type_name(XsLilType type)
 {
   static const char *const names[] = {
       "void", "bool", "u8",   "i8",  "u16", "i16", "u32",  "i32", "u64",
-      "i64",  "u128", "i128", "f16", "f32", "f64", "f128", "str",
+      "i64",  "u128", "i128", "f16", "f32", "f64", "f128", "str", "aggregate",
   };
   if((size_t)type.kind >= sizeof(names) / sizeof(names[0]))
     return "unknown";

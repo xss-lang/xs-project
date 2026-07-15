@@ -105,12 +105,14 @@ add_library(xs_lil
   xs/sources/int128.c
   xs/sources/xlil/memory.c
   xs/sources/xlil/model.c
+  xs/sources/xlil/model_aggregate.c
   xs/sources/xlil/model_float.c
   xs/sources/xlil/model_integer.c
   xs/sources/xlil/model_integer_operation.c
   xs/sources/xlil/model_string.c
   xs/sources/xlil/model_string_compare.c
   xs/sources/xlil/parser.c
+  xs/sources/xlil/parser_aggregate.c
   xs/sources/xlil/parser_scalar.c
   xs/sources/xlil/parser_integer_operation.c
   xs/sources/xlil/parser_string.c
@@ -137,6 +139,7 @@ target_link_libraries(xs PRIVATE xs_compiler)
 add_library(xs_backend_llvm
   xs/sources/backend/linker.c
   xs/sources/backend/llvm_backend.c
+  xs/sources/backend/llvm_aggregate.c
   xs/sources/backend/llvm_integer.c
   xs/sources/backend/llvm_string.c
 )

@@ -402,6 +402,38 @@ impl Function
     Some(result)
   }
 
+  pub fn add_aggregate(&mut self, block: BlockId, value_type: Type, fields: Vec<ValueId>) -> Option<ValueId>
+  {
+    if value_type.kind != TypeKind::Aggregate || fields.iter().any(|field| self.value(*field).is_none())
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type });
+    self.block_mut(block)?
+        .instructions
+        .push(Instruction::Aggregate { result,
+                                       value_type,
+                                       fields });
+    Some(result)
+  }
+
+  pub fn add_extract(&mut self, block: BlockId, aggregate: ValueId, field: u32, field_type: Type) -> Option<ValueId>
+  {
+    if field_type == Type::VOID || self.value(aggregate)?.value_type.kind != TypeKind::Aggregate
+    {
+      return None;
+    }
+    let result = ValueId(self.values.len() as u32);
+    self.values.push(Value { id: result,
+                             value_type: field_type });
+    self.block_mut(block)?.instructions.push(Instruction::Extract { result,
+                                                                    aggregate,
+                                                                    field });
+    Some(result)
+  }
+
   pub fn add_slot(&mut self, value_type: Type) -> Option<SlotId>
   {
     if value_type == Type::VOID
@@ -608,7 +640,16 @@ fn i32_instruction(op: I32Op, result: ValueId, left: ValueId, right: ValueId) ->
 pub struct Module
 {
   pub name: String,
+  pub aggregate_types: Vec<AggregateType>,
   pub functions: Vec<Function>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AggregateType
+{
+  pub id: u32,
+  pub name: String,
+  pub fields: Vec<Type>,
 }
 
 impl Module
@@ -617,7 +658,29 @@ impl Module
   pub fn new(name: impl Into<String>) -> Self
   {
     Self { name: name.into(),
+           aggregate_types: vec![],
            functions: vec![] }
+  }
+
+  pub fn add_aggregate_type(&mut self, name: impl Into<String>, fields: Vec<Type>) -> Option<Type>
+  {
+    let name = name.into();
+    if name.is_empty() || self.aggregate_types.iter().any(|entry| entry.name == name)
+    {
+      return None;
+    }
+    let id = u32::try_from(self.aggregate_types.len()).ok()?;
+    self.aggregate_types.push(AggregateType { id,
+                                              name,
+                                              fields });
+    Some(Type::aggregate(id))
+  }
+
+  #[must_use]
+  pub fn aggregate_type(&self, value_type: Type) -> Option<&AggregateType>
+  {
+    (value_type.kind == TypeKind::Aggregate).then_some(())?;
+    self.aggregate_types.get(value_type.registry_id as usize)
   }
 
   pub fn add_function(&mut self, function: Function)

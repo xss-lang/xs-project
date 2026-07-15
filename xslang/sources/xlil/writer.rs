@@ -5,12 +5,27 @@
 
 use std::fmt::{self, Write};
 
-use crate::xlil::{Block, Function, Instruction, Module, SUPPORTED_XLIL_VERSION, Terminator, ValueId, type_name};
+use crate::xlil::{
+  Block, Function, Instruction, Module, SUPPORTED_XLIL_VERSION, Terminator, ValueId, type_name, type_text,
+};
 
 pub fn write_module(module: &Module, output: &mut impl Write) -> fmt::Result
 {
   writeln!(output, ".xlil version {SUPPORTED_XLIL_VERSION}")?;
   writeln!(output, ".xlil module {}", module.name)?;
+  for aggregate in &module.aggregate_types
+  {
+    write!(output, ".type %t{} {} : (", aggregate.id, aggregate.name)?;
+    for (index, field) in aggregate.fields.iter().enumerate()
+    {
+      if index != 0
+      {
+        write!(output, ", ")?;
+      }
+      write!(output, "{}", type_text(*field))?;
+    }
+    writeln!(output, ")")?;
+  }
   for function in &module.functions
   {
     write_function(function, output)?;
@@ -43,11 +58,11 @@ fn write_function(function: &Function, output: &mut impl Write) -> fmt::Result
   }
   for (index, parameter) in function.parameters.iter().enumerate()
   {
-    writeln!(output, ".param %r{}:{}", index, type_name(*parameter))?;
+    writeln!(output, ".param %r{}:{}", index, type_text(*parameter))?;
   }
   for slot in &function.slots
   {
-    writeln!(output, ".slot %s{}:{}", slot.id.0, type_name(slot.value_type))?;
+    writeln!(output, ".slot %s{}:{}", slot.id.0, type_text(slot.value_type))?;
   }
   for block in &function.blocks
   {
@@ -65,9 +80,9 @@ fn write_signature(function: &Function, output: &mut impl Write) -> fmt::Result
     {
       write!(output, ", ")?;
     }
-    write!(output, "{}", type_name(*parameter))?;
+    write!(output, "{}", type_text(*parameter))?;
   }
-  writeln!(output, ") -> {}", type_name(function.return_type))
+  writeln!(output, ") -> {}", type_text(function.return_type))
 }
 
 fn write_block(function: &Function, block: &Block, output: &mut impl Write) -> fmt::Result
@@ -244,7 +259,7 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
     {
       if let Some(result) = result
       {
-        write!(output, "  %r{}:{} = ", result.0, type_name(return_type))?;
+        write!(output, "  %r{}:{} = ", result.0, type_text(return_type))?;
       }
       else
       {
@@ -261,11 +276,34 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
       }
       writeln!(output, ")")
     }
+    Instruction::Aggregate { result,
+                             value_type,
+                             ref fields, } =>
+    {
+      write!(output, "  %r{}:{} = aggregate ", result.0, type_text(value_type))?;
+      for (index, field) in fields.iter().enumerate()
+      {
+        if index != 0
+        {
+          write!(output, ", ")?;
+        }
+        write!(output, "%r{}", field.0)?;
+      }
+      writeln!(output)
+    }
+    Instruction::Extract { result,
+                           aggregate,
+                           field, } => writeln!(output,
+                                                "  %r{}:{} = extract %r{}, {}",
+                                                result.0,
+                                                type_text(function.values[result.0 as usize].value_type),
+                                                aggregate.0,
+                                                field),
     Instruction::Load { result,
                         slot, } => writeln!(output,
                                             "  %r{}:{} = load %s{}",
                                             result.0,
-                                            type_name(function.values[result.0 as usize].value_type),
+                                            type_text(function.values[result.0 as usize].value_type),
                                             slot.0),
     Instruction::Store { slot,
                          value, } => writeln!(output, "  store %r{}, %s{}", value.0, slot.0),

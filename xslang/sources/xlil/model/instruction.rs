@@ -182,6 +182,18 @@ pub enum Instruction
     arguments: Vec<ValueId>,
     return_type: Type,
   },
+  Aggregate
+  {
+    result: ValueId,
+    value_type: Type,
+    fields: Vec<ValueId>,
+  },
+  Extract
+  {
+    result: ValueId,
+    aggregate: ValueId,
+    field: u32,
+  },
   Load
   {
     result: ValueId, slot: SlotId

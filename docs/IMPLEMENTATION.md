@@ -673,9 +673,10 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   read-only function/body inspection, function bodies, basic blocks, parameters, all fixed-width integer constants, exact-bit
   `const.f32`/`const.f64`, `const.bool`, UTF-16 `eq.str`/`ne.str`,
   typed stack slots and `load`/`store`, i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison,
-  `call`, `br`, `br_if`, and `return`.
+  aggregate type registries, `aggregate`, `extract`, `call`, `br`, `br_if`, and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
-  `.slot %sN:type`, `bbN.label:`, typed SSA instructions, `store %rN, %sA`, `%rN:type = load %sA`, `br bbN`,
+  `.type %tN Name : (...)`, `.slot %sN:type`, `bbN.label:`, typed SSA instructions, aggregate construction/extraction,
+  `store %rN, %sA`, `%rN:type = load %sA`, `br bbN`,
   `br_if %rN, bbA, bbB`, `panic`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge
   to bind them to XLIL `.param` values. The bridge lowers MIR

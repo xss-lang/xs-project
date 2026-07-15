@@ -30,6 +30,13 @@ typedef struct
 
 typedef struct
 {
+  char *name;
+  XsLilType *fields;
+  size_t field_count;
+} XsLilAggregateType;
+
+typedef struct
+{
   XsLilInstructionKind kind;
   XsLilValueId result;
   int64_t immediate_i64;
@@ -81,6 +88,9 @@ struct XsLilFunction
 struct XsLilModule
 {
   char *name;
+  XsLilAggregateType *aggregate_types;
+  size_t aggregate_type_count;
+  size_t aggregate_type_capacity;
   XsLilFunction *functions;
   size_t function_count;
   size_t function_capacity;
@@ -110,6 +120,11 @@ XsLilStatus xs_lil_parse_integer_operation(XsLilBlock *block, XsLilType result_t
                                            XsLilError *error);
 const char *xs_lil_integer_operation_name(XsLilIntegerBinaryOperation operation);
 bool xs_lil_integer_operation_is_comparison(XsLilIntegerBinaryOperation operation);
+bool xs_lil_parse_type_name(const XsLilModule *module, const char *text, size_t length, XsLilType *type);
+XsLilStatus xs_lil_parse_aggregate_record(XsLilModule *module, const char *text, size_t length, XsLilError *error);
+XsLilStatus xs_lil_parse_aggregate_instruction(XsLilBlock *block, XsLilType result_type, const char *operation,
+                                               size_t operation_length, XsLilValueId expected_result, bool *matched,
+                                               XsLilError *error);
 XsLilStatus xs_lil_add_const_integer_bits(XsLilBlock *block, XsLilType type, XsUInt128 bits, XsLilValueId *result,
                                           XsLilError *error);
 

@@ -71,11 +71,10 @@ XsLilStatus xs_lil_block_add_store(XsLilBlock *block, XsLilSlotId slot, XsLilVal
   if(block == nullptr || block->owner == nullptr || (size_t)slot >= block->owner->slot_count ||
      (size_t)value >= block->owner->value_count)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL store references an unknown value or stack slot");
-  if(block->owner->slots[slot].type.kind != block->owner->values[value].type.kind)
+  if(!xs_lil_type_equal(block->owner->slots[slot].type, block->owner->values[value].type))
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL store value type does not match stack slot type");
-  return xs_lil_append_instruction(block,
-                                   (XsLilInstruction){.kind = XS_LIL_INSTRUCTION_STORE, .left = value, .slot = slot},
-                                   error);
+  return xs_lil_append_instruction(
+      block, (XsLilInstruction){.kind = XS_LIL_INSTRUCTION_STORE, .left = value, .slot = slot}, error);
 }
 
 XsLilSlotId xs_lil_block_instruction_slot(const XsLilBlock *block, size_t index)

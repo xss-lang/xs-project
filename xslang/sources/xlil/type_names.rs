@@ -27,6 +27,7 @@ pub const fn type_name(value_type: Type) -> &'static str
     TypeKind::F64 => "f64",
     TypeKind::F128 => "f128",
     TypeKind::Str => "str",
+    TypeKind::Aggregate => "aggregate",
   }
 }
 
@@ -54,5 +55,19 @@ pub fn type_from_name(name: &str) -> Option<Type>
     "str" => TypeKind::Str,
     _ => return None,
   };
-  Some(Type { kind })
+  Some(Type { kind,
+              registry_id: 0 })
+}
+
+#[must_use]
+pub fn type_text(value_type: Type) -> String
+{
+  if value_type.kind == TypeKind::Aggregate
+  {
+    format!("%t{}", value_type.registry_id)
+  }
+  else
+  {
+    type_name(value_type).to_string()
+  }
 }

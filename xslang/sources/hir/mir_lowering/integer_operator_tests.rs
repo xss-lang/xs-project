@@ -79,6 +79,7 @@ fn lowers_operations_for_every_non_legacy_integer_width()
     let xlil = crate::xlil::lowering::MirToXlilLowerer::new().lower_function(&mir)
                                                              .expect("integer MIR should lower to XLIL");
     let module = crate::xlil::Module { name: "test".to_string(),
+                                       aggregate_types: vec![],
                                        functions: vec![xlil.clone()] };
     assert!(crate::xlil::verify::verify_module(&module).is_empty());
     let reparsed =

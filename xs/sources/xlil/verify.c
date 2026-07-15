@@ -33,7 +33,7 @@ static XsLilStatus verify_parameters(const XsLilFunction *function, XsLilError *
   for(size_t parameter = 0; parameter < function->parameter_count; ++parameter)
   {
     if(function->parameters[parameter].kind == XS_LIL_TYPE_VOID ||
-       function->values[parameter].type.kind != function->parameters[parameter].kind)
+       !xs_lil_type_equal(function->values[parameter].type, function->parameters[parameter]))
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL function parameter type is invalid");
   }
   return XS_LIL_OK;
@@ -53,7 +53,8 @@ static XsLilStatus verify_call(const XsLilModule *module, const XsLilFunction *f
   for(size_t argument = 0; argument < instruction->argument_count; ++argument)
   {
     XsLilValueId value = instruction->arguments[argument];
-    if((size_t)value >= function->value_count || function->values[value].type.kind != callee->parameters[argument].kind)
+    if((size_t)value >= function->value_count ||
+       !xs_lil_type_equal(function->values[value].type, callee->parameters[argument]))
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
                               "XLIL call argument type does not match target signature");
   }
@@ -64,7 +65,7 @@ static XsLilStatus verify_call(const XsLilModule *module, const XsLilFunction *f
     return XS_LIL_OK;
   }
   if((size_t)instruction->result >= function->value_count ||
-     function->values[instruction->result].type.kind != callee->return_type.kind)
+     !xs_lil_type_equal(function->values[instruction->result].type, callee->return_type))
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL call result type does not match target signature");
   return XS_LIL_OK;
 }
@@ -211,11 +212,49 @@ static XsLilStatus verify_memory(const XsLilFunction *function, const XsLilInstr
 {
   if((size_t)instruction->slot >= function->slot_count)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL memory instruction references an unknown stack slot");
-  XsLilTypeKind slot_type = function->slots[instruction->slot].type.kind;
+  XsLilType slot_type = function->slots[instruction->slot].type;
   XsLilValueId value = instruction->kind == XS_LIL_INSTRUCTION_LOAD ? instruction->result : instruction->left;
-  if((size_t)value >= function->value_count || function->values[value].type.kind != slot_type)
+  if((size_t)value >= function->value_count || !xs_lil_type_equal(function->values[value].type, slot_type))
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
                             "XLIL memory instruction value type does not match stack slot type");
+  return XS_LIL_OK;
+}
+
+static bool valid_type(const XsLilModule *module, XsLilType type)
+{
+  return type.kind != XS_LIL_TYPE_AGGREGATE || type.registry_id < module->aggregate_type_count;
+}
+
+static XsLilStatus verify_aggregate(const XsLilModule *module, const XsLilFunction *function,
+                                    const XsLilInstruction *instruction, XsLilError *error)
+{
+  if((size_t)instruction->result >= function->value_count || instruction->integer_type.kind != XS_LIL_TYPE_AGGREGATE ||
+     !valid_type(module, instruction->integer_type) ||
+     !xs_lil_type_equal(function->values[instruction->result].type, instruction->integer_type))
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate result type is invalid");
+  const XsLilAggregateType *layout = &module->aggregate_types[instruction->integer_type.registry_id];
+  if(instruction->argument_count != layout->field_count)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate field count does not match its layout");
+  for(size_t field = 0; field < layout->field_count; ++field)
+    if(instruction->arguments[field] >= function->value_count ||
+       !xs_lil_type_equal(function->values[instruction->arguments[field]].type, layout->fields[field]))
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate field type does not match its layout");
+  return XS_LIL_OK;
+}
+
+static XsLilStatus verify_extract(const XsLilModule *module, const XsLilFunction *function,
+                                  const XsLilInstruction *instruction, XsLilError *error)
+{
+  if(instruction->left >= function->value_count || instruction->result >= function->value_count)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract references an unknown value");
+  XsLilType aggregate = function->values[instruction->left].type;
+  if(!valid_type(module, aggregate) || aggregate.kind != XS_LIL_TYPE_AGGREGATE || instruction->immediate_i64 < 0)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract source type or field is invalid");
+  const XsLilAggregateType *layout = &module->aggregate_types[aggregate.registry_id];
+  size_t field = (size_t)instruction->immediate_i64;
+  if(field >= layout->field_count ||
+     !xs_lil_type_equal(function->values[instruction->result].type, layout->fields[field]))
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract result type does not match its field");
   return XS_LIL_OK;
 }
 
@@ -227,6 +266,11 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
   for(size_t index = 0; index < module->function_count; ++index)
   {
     const XsLilFunction *function = &module->functions[index];
+    if(!valid_type(module, function->return_type))
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL function return type is not in the registry");
+    for(size_t parameter = 0; parameter < function->parameter_count; ++parameter)
+      if(!valid_type(module, function->parameters[parameter]))
+        return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL function parameter type is not in the registry");
     XsLilStatus status = verify_parameters(function, error);
     if(status != XS_LIL_OK)
       return status;
@@ -248,6 +292,18 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(current->kind == XS_LIL_INSTRUCTION_CALL)
         {
           status = verify_call(module, function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_AGGREGATE)
+        {
+          status = verify_aggregate(module, function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_EXTRACT)
+        {
+          status = verify_extract(module, function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

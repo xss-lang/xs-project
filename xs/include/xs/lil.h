@@ -45,11 +45,13 @@ typedef enum
   XS_LIL_TYPE_F64,
   XS_LIL_TYPE_F128,
   XS_LIL_TYPE_STR,
+  XS_LIL_TYPE_AGGREGATE,
 } XsLilTypeKind;
 
 typedef struct
 {
   XsLilTypeKind kind;
+  uint32_t registry_id;
 } XsLilType;
 
 typedef uint32_t XsLilValueId;
@@ -139,6 +141,8 @@ typedef enum
   XS_LIL_INSTRUCTION_CONST_U128,
   XS_LIL_INSTRUCTION_CONST_I128,
   XS_LIL_INSTRUCTION_BINARY_INTEGER,
+  XS_LIL_INSTRUCTION_AGGREGATE,
+  XS_LIL_INSTRUCTION_EXTRACT,
 } XsLilInstructionKind;
 
 typedef enum
@@ -205,6 +209,14 @@ XsLilStatus xs_lil_module_parse_text(const char *path, const char *text, size_t 
 XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error);
 void xs_lil_module_destroy(XsLilModule *module);
 const char *xs_lil_module_name(const XsLilModule *module);
+XsLilType xs_lil_aggregate_type(uint32_t registry_id);
+bool xs_lil_type_equal(XsLilType left, XsLilType right);
+XsLilStatus xs_lil_module_add_aggregate_type(XsLilModule *module, const char *name, const XsLilType *fields,
+                                             size_t field_count, XsLilType *type, XsLilError *error);
+size_t xs_lil_module_aggregate_type_count(const XsLilModule *module);
+const char *xs_lil_module_aggregate_type_name(const XsLilModule *module, uint32_t registry_id);
+size_t xs_lil_module_aggregate_field_count(const XsLilModule *module, uint32_t registry_id);
+XsLilType xs_lil_module_aggregate_field_type(const XsLilModule *module, uint32_t registry_id, size_t field);
 
 XsLilStatus xs_lil_module_add_function(XsLilModule *module, const char *name, XsLilType return_type,
                                        const XsLilType *parameters, size_t parameter_count, XsLilError *error);
@@ -321,6 +333,10 @@ XsLilStatus xs_lil_block_add_call(XsLilBlock *block, const char *callee, XsLilTy
                                   XsLilError *error);
 XsLilStatus xs_lil_block_add_void_call(XsLilBlock *block, const char *callee, const XsLilValueId *arguments,
                                        size_t argument_count, XsLilError *error);
+XsLilStatus xs_lil_block_add_aggregate(XsLilBlock *block, XsLilType type, const XsLilValueId *fields,
+                                       size_t field_count, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_extract(XsLilBlock *block, XsLilValueId aggregate, uint32_t field, XsLilType field_type,
+                                     XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_load(XsLilBlock *block, XsLilSlotId slot, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_store(XsLilBlock *block, XsLilSlotId slot, XsLilValueId value, XsLilError *error);
 XsLilStatus xs_lil_block_set_return(XsLilBlock *block, XsLilError *error);

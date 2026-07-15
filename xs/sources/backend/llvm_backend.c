@@ -6,6 +6,7 @@
 #include "xs/backend/llvm_backend.h"
 
 #include "llvm_integer.h"
+#include "llvm_internal.h"
 #include "llvm_string.h"
 
 #include <llvm-c/Analysis.h>
@@ -16,23 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-struct XsLlvmBackend
-{
-  LLVMContextRef context;
-  LLVMTargetMachineRef target_machine;
-  LLVMTargetDataRef target_data;
-  char *target_triple;
-  char *data_layout;
-  XsLlvmOptimizationLevel optimization;
-  bool verify_modules;
-};
-
-struct XsLlvmCodegenUnit
-{
-  XsLlvmBackend *backend;
-  LLVMModuleRef module;
-};
 
 static void clear_error(XsBackendError *error)
 {
@@ -213,6 +197,7 @@ void xs_llvm_codegen_unit_destroy(XsLlvmCodegenUnit *unit)
     return;
   if(unit->module != nullptr)
     LLVMDisposeModule(unit->module);
+  free(unit->lil_types);
   free(unit);
 }
 
@@ -326,6 +311,8 @@ XsBackendStatus xs_llvm_lil_type(XsLlvmBackend *backend, XsLilType type, LLVMTyp
     *llvm_type = LLVMStructTypeInContext(backend->context, fields, 2, false);
     break;
   }
+  case XS_LIL_TYPE_AGGREGATE:
+    return set_error(error, XS_BACKEND_DEFERRED, "aggregate XLIL types require a codegen-unit type registry");
   default:
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "unknown XLIL type");
   }
@@ -396,7 +383,7 @@ XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char
   if(unit == nullptr || name == nullptr || function == nullptr || (parameter_count != 0 && parameter_types == nullptr))
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "valid codegen unit and XLIL function signature are required");
   LLVMTypeRef lowered_return_type = nullptr;
-  XsBackendStatus status = xs_llvm_lil_type(unit->backend, return_type, &lowered_return_type, error);
+  XsBackendStatus status = xs_llvm_codegen_lil_type(unit, return_type, &lowered_return_type, error);
   if(status != XS_BACKEND_OK)
     return status;
   LLVMTypeRef *lowered_parameters = nullptr;
@@ -408,7 +395,7 @@ XsBackendStatus xs_llvm_declare_lil_function(XsLlvmCodegenUnit *unit, const char
   }
   for(size_t i = 0; i < parameter_count; ++i)
   {
-    status = xs_llvm_lil_type(unit->backend, parameter_types[i], &lowered_parameters[i], error);
+    status = xs_llvm_codegen_lil_type(unit, parameter_types[i], &lowered_parameters[i], error);
     if(status != XS_BACKEND_OK)
     {
       free(lowered_parameters);
@@ -699,13 +686,14 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     free(arguments);
     return status;
   }
+  if(kind == XS_LIL_INSTRUCTION_AGGREGATE || kind == XS_LIL_INSTRUCTION_EXTRACT)
+    return xs_llvm_lower_aggregate_instruction(unit, builder, function, block, index, values, value_count, error);
   if(kind == XS_LIL_INSTRUCTION_LOAD)
   {
     XsLilSlotId slot = xs_lil_block_instruction_slot(block, index);
     if((size_t)slot >= slot_count || slots[slot] == nullptr)
       return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL load references an unavailable stack slot");
-    XsBackendStatus status =
-        xs_llvm_lil_type(unit->backend, xs_lil_function_value_type(function, result), &type, error);
+    XsBackendStatus status = xs_llvm_codegen_lil_type(unit, xs_lil_function_value_type(function, result), &type, error);
     if(status != XS_BACKEND_OK)
       return status;
     values[result] = LLVMBuildLoad2(builder, type, slots[slot], "load");
@@ -859,7 +847,7 @@ XsBackendStatus xs_llvm_lower_lil_function_body(XsLlvmCodegenUnit *unit, const X
     {
       LLVMTypeRef slot_type = nullptr;
       status =
-          xs_llvm_lil_type(unit->backend, xs_lil_function_slot_type(function, (XsLilSlotId)slot), &slot_type, error);
+          xs_llvm_codegen_lil_type(unit, xs_lil_function_slot_type(function, (XsLilSlotId)slot), &slot_type, error);
       if(status != XS_BACKEND_OK)
         goto cleanup;
       slots[slot] = LLVMBuildAlloca(builder, slot_type, "slot");
