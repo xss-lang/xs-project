@@ -48,6 +48,7 @@ pub struct HirToMirLowerer
   loop_targets: Vec<(mir::BlockId, mir::BlockId)>,
   storage_locals: HashSet<mir::LocalId>,
   nominal_types: HashMap<String, crate::hir::declarations::NominalType>,
+  nominal_locals: HashMap<String, String>,
   field_locals: HashMap<String, mir::LocalId>,
 }
 
@@ -130,6 +131,11 @@ impl HirToMirLowerer
                                            value,
                                            span, }) =>
       {
+        if let Some(type_name) = self.nominal_locals.get(target).cloned()
+        {
+          self.lower_nominal_root_assignment(target, &type_name, value, *span, lowered);
+          return;
+        }
         let Some(id) = self.locals.get(target).copied()
         else
         {

@@ -414,10 +414,12 @@ XLIL call models. Unit-returning calls carry an explicit HIR unit result and bec
 call used as a semicolon-terminated expression is still evaluated, but its typed result is discarded. Overload selection,
 generic calls, methods, imported targets, and function values remain later compiler-core work.
 Top-level `data` and `class` declarations now enter the Rust declaration registry with nominal identity and typed fields.
-For the first executable aggregate slice, a locally initialized `data` object with primitive fields is scalarized into
-target-independent MIR storage places. Field reads and assignments then lower through XLIL stack slots to LLVM. This is
-deliberately not the final aggregate ABI: nested aggregate fields, nominal parameters and return values, constructors,
-escaping objects, and class allocation remain deferred until their layout and ownership paths are implemented.
+For the first executable aggregate slice, locally initialized `data` objects are recursively scalarized into
+target-independent MIR storage places. Field reads, leaf assignments, nested aggregate replacement, and whole local copies
+then lower through XLIL stack slots to LLVM. Non-recursive `data` parameters are flattened in declaration order to their
+primitive leaves at the MIR/XLIL function boundary; calls accept either initialized places or object literals. Recursive
+by-value parameters require a future indirect ABI and are rejected explicitly. This is deliberately not the final aggregate
+ABI: nominal return values, constructors, escaping objects, class allocation, and stable cross-module layout remain deferred.
 The imported HIR body model now has explicit lexical blocks and distinguishes statement `if` from value-producing `if`.
 Both forms require a `Bool` condition during Rust type checking. Statement branches lower to MIR basic blocks with an
 explicit merge when control can continue. A directly returned `if` expression may lower each required value branch to its

@@ -25,6 +25,11 @@ impl HirToMirLowerer
     {
       if index < parameter_count
       {
+        if matches!(local.ty, Type::Named(_))
+        {
+          self.lower_nominal_parameter(local, &mut lowered);
+          continue;
+        }
         let id = mir::LocalId(self.next_local);
         self.next_local += 1;
         if let Some(value_type) = self.lower_value_type(&local.ty, local.span)

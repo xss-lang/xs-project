@@ -40,6 +40,9 @@ source-to-native executable pipeline.
   compiler-core route instead of the temporary C source bridge.
 - Primitive fields of locally initialized `data` values now cross the structural AST, typed HIR, MIR storage, XLIL, and
   LLVM pipeline. Object literals, field reads, and field assignments are covered by native `.xse` regression tests.
+- Nested `data` values now scalarize recursively for local storage, whole-value copies, nested-field replacement, and
+  same-module calls. Non-recursive `data` parameters use declaration-order primitive leaf parameters in the current native
+  ABI; direct object literals and initialized local places can both supply those calls.
 
 ### Changed
 
@@ -54,6 +57,8 @@ source-to-native executable pipeline.
   typed HIR, MIR, XLIL, and LLVM module. Same-module helper calls across project files now produce native `.xse` output.
 - Compiler-core sessions retain type-check, MIR-lowering, borrow-check, and optimization diagnostics instead of silently
   dropping failed function bodies. The C23 driver exposes those messages when native emission cannot proceed.
+- Recursive by-value `data` parameters are rejected with an explicit indirect-ABI diagnostic instead of recursing during
+  compiler lowering. Aggregate return values remain deferred until XLIL has a first-class aggregate return model.
 - Kotlin `sources` includes now expand `*`, `**`, and `?` globs, apply excludes, require exactly one resolved `main.xs`,
   and emit a deterministic main-first source registry.
 - `--warning all|medium|low|none`, `--werror true|false`, and `--verbose true|false` provide one-shot compiler-policy

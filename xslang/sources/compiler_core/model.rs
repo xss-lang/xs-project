@@ -172,8 +172,15 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
   }
   let xlil_text = if diagnostics.is_empty()
   {
-    xlil_lowering::lower_module(&declarations, &mir_functions)
-      .map(|module| crate::xlil::writer::module_to_string(&module).into_bytes())
+    match xlil_lowering::lower_module(&declarations, &mir_functions)
+    {
+      Some(module) => Some(crate::xlil::writer::module_to_string(&module).into_bytes()),
+      None =>
+      {
+        diagnostics.push("verified MIR could not be assembled into a valid XLIL module".to_string());
+        None
+      }
+    }
   }
   else
   {

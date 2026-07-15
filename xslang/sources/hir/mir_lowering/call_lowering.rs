@@ -120,6 +120,11 @@ impl HirToMirLowerer
     let mut lowered_arguments = Vec::with_capacity(arguments.len());
     for (argument, parameter_type) in arguments.iter().zip(parameter_types)
     {
+      if let Type::Named(type_name) = parameter_type
+      {
+        lowered_arguments.extend(self.lower_nominal_argument(argument, type_name, lowered)?);
+        continue;
+      }
       let parameter_type = self.lower_value_type(parameter_type, span)?;
       lowered_arguments.push(self.lower_expression_to_local(argument, parameter_type, lowered)?);
     }

@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use crate::hir::declarations::{Module as HirModule, TypeRef};
-use crate::hir::type_check::PrimitiveType;
+use crate::hir::declarations::{Module as HirModule, NominalKind, TypeRef};
 use crate::mir;
 use crate::xlil::{self, Function, Module, Type};
 
@@ -18,13 +17,44 @@ fn lower_type(value: &TypeRef) -> Option<Type>
   }
 }
 
-fn signature(function: &crate::hir::declarations::Function) -> Option<(Type, Vec<Type>)>
+fn flatten_parameter(module: &HirModule,
+                     value: &TypeRef,
+                     visiting: &mut Vec<String>,
+                     parameters: &mut Vec<Type>)
+                     -> Option<()>
+{
+  match value
+  {
+    TypeRef::Primitive(_) => parameters.push(lower_type(value)?),
+    TypeRef::Named(name) =>
+    {
+      if visiting.contains(name)
+      {
+        return None;
+      }
+      let definition = module.nominal_types
+                             .iter()
+                             .find(|definition| definition.name == *name && definition.kind == NominalKind::Data)?;
+      visiting.push(name.clone());
+      for field in &definition.fields
+      {
+        flatten_parameter(module, &field.ty, visiting, parameters)?;
+      }
+      visiting.pop();
+    }
+    TypeRef::Unit => return None,
+  }
+  Some(())
+}
+
+fn signature(module: &HirModule, function: &crate::hir::declarations::Function) -> Option<(Type, Vec<Type>)>
 {
   let return_type = lower_type(&function.return_type)?;
-  let parameters = function.parameters
-                           .iter()
-                           .map(|parameter| lower_type(&parameter.ty))
-                           .collect::<Option<Vec<_>>>()?;
+  let mut parameters = Vec::new();
+  for parameter in &function.parameters
+  {
+    flatten_parameter(module, &parameter.ty, &mut Vec::new(), &mut parameters)?;
+  }
   Some((return_type, parameters))
 }
 
@@ -40,44 +70,9 @@ fn matches_signature(function: &mir::Function, name: &str, return_type: Type, pa
 
 fn supports_source_native_subset(module: &HirModule) -> bool
 {
-  module.functions.iter().all(|function| {
-                           let parameters_supported = function.parameters.iter().all(|parameter| {
-                                                                                  matches!(parameter.ty,
-                                                               TypeRef::Primitive(PrimitiveType::Long |
-                                                                                  PrimitiveType::Int |
-                                                                                  PrimitiveType::Bool |
-                                                                                  PrimitiveType::Byte |
-                                                                                  PrimitiveType::SByte |
-                                                                                  PrimitiveType::Char |
-                                                                                  PrimitiveType::Short |
-                                                                                  PrimitiveType::Integer |
-                                                                                  PrimitiveType::UShort |
-                                                                                  PrimitiveType::ULong |
-                                                                                  PrimitiveType::UInt |
-                                                                                  PrimitiveType::UInteger |
-                                                                                  PrimitiveType::SFloat |
-                                                                                  PrimitiveType::Float |
-                                                                                  PrimitiveType::Str))
-                                                                                });
-                           let return_supported = matches!(function.return_type,
-                                                           TypeRef::Unit |
-                                                           TypeRef::Primitive(PrimitiveType::Long |
-                                                                              PrimitiveType::Int |
-                                                                              PrimitiveType::Bool |
-                                                                              PrimitiveType::Byte |
-                                                                              PrimitiveType::SByte |
-                                                                              PrimitiveType::Char |
-                                                                              PrimitiveType::Short |
-                                                                              PrimitiveType::Integer |
-                                                                              PrimitiveType::UShort |
-                                                                              PrimitiveType::ULong |
-                                                                              PrimitiveType::UInt |
-                                                                              PrimitiveType::UInteger |
-                                                                              PrimitiveType::SFloat |
-                                                                              PrimitiveType::Float |
-                                                                              PrimitiveType::Str));
-                           !function.body_present || (parameters_supported && return_supported)
-                         })
+  module.functions
+        .iter()
+        .all(|function| signature(module, function).is_some())
 }
 
 pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Function]) -> Option<Module>
@@ -90,7 +85,7 @@ pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Funct
   let mut used_mir = vec![false; mir_functions.len()];
   for declaration in &declarations.functions
   {
-    let (return_type, parameters) = signature(declaration)?;
+    let (return_type, parameters) = signature(declarations, declaration)?;
     if declaration.body_present
     {
       let index =

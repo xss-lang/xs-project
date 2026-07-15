@@ -6,8 +6,44 @@
 use super::*;
 use crate::hir::type_check::{FieldPath, Local};
 
+struct NominalArguments<'a>
+{
+  values: &'a mut Vec<mir::LocalId>,
+  visiting: &'a mut Vec<String>,
+}
+
 impl HirToMirLowerer
 {
+  pub(super) fn lower_nominal_parameter(&mut self, local: &Local, lowered: &mut mir::Function)
+  {
+    let Type::Named(type_name) = &local.ty
+    else
+    {
+      return;
+    };
+    let Some(definition) = self.nominal_types.get(type_name).cloned()
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  format!("nominal parameter type '{type_name}' has no HIR declaration"),
+                  local.span);
+      return;
+    };
+    if definition.kind != crate::hir::declarations::NominalKind::Data
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "only data parameters have a scalar native ABI in this compiler stage",
+                  local.span);
+      return;
+    }
+    self.append_nominal_parameters(&local.name,
+                                   &[],
+                                   &definition,
+                                   local.span,
+                                   lowered,
+                                   &mut vec![definition.name.clone()]);
+  }
+
   pub(super) fn lower_nominal_binding(&mut self,
                                       local: &Local,
                                       initializer: Option<&Expression>,
@@ -43,30 +79,8 @@ impl HirToMirLowerer
                   local.span);
       return;
     }
-    for field in &definition.fields
-    {
-      let Some(value_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
-      else
-      {
-        continue;
-      };
-      if !matches!(value_type, Type::Primitive(_))
-      {
-        self.report(DiagnosticCode::UnsupportedType,
-                    format!("field '{}.{}' is not scalar-lowerable yet", type_name, field.name),
-                    local.span);
-        continue;
-      }
-      let Some(initializer) = fields.iter().find(|candidate| candidate.name == field.name)
-      else
-      {
-        continue;
-      };
-      let key = field_key(&local.name, std::slice::from_ref(&field.name));
-      let field_local = self.declare_local(key.clone(), &value_type, field.mutable, initializer.span, lowered);
-      self.field_locals.insert(key, field_local);
-      self.lower_assignment(field_local, &initializer.value, lowered);
-    }
+    self.nominal_locals.insert(local.name.clone(), type_name.clone());
+    self.lower_object_fields(&local.name, &[], &definition, fields, local.span, lowered);
   }
 
   pub(super) fn lower_field_load(&mut self,
@@ -91,6 +105,10 @@ impl HirToMirLowerer
                   path.span);
       return None;
     }
+    if lowered.parameters.iter().any(|parameter| parameter.local == local)
+    {
+      return Some(local);
+    }
     let result = self.declare_temp(expected_type, path.span, lowered)?;
     self.current_block_mut(lowered)
         .statements
@@ -102,6 +120,48 @@ impl HirToMirLowerer
 
   pub(super) fn lower_field_assignment(&mut self, target: &FieldPath, value: &Expression, lowered: &mut mir::Function)
   {
+    if let Type::Named(type_name) = &target.ty
+    {
+      let assignment_span = expression_span(value);
+      let Some(definition) = self.nominal_types.get(type_name).cloned()
+      else
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    format!("assigned nominal field type '{type_name}' has no HIR declaration"),
+                    target.span);
+        return;
+      };
+      let Some(values) = self.lower_nominal_argument(value, type_name, lowered)
+      else
+      {
+        return;
+      };
+      let Some(locals) = self.nominal_place_locals(&target.root, &target.fields, &definition)
+      else
+      {
+        self.report(DiagnosticCode::UnknownLocal,
+                    format!("nominal field place '{}' has not been initialized",
+                            field_key(&target.root, &target.fields)),
+                    target.span);
+        return;
+      };
+      if locals.len() != values.len()
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    "nominal assignment source and destination layouts differ",
+                    target.span);
+        return;
+      }
+      for (local, value) in locals.into_iter().zip(values)
+      {
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::StoreLocal { local,
+                                               value,
+                                               span: assignment_span });
+      }
+      return;
+    }
     let key = field_key(&target.root, &target.fields);
     let Some(local) = self.field_locals.get(&key).copied()
     else
@@ -112,6 +172,369 @@ impl HirToMirLowerer
       return;
     };
     self.lower_assignment(local, value, lowered);
+  }
+
+  pub(super) fn lower_nominal_root_assignment(&mut self,
+                                              root: &str,
+                                              type_name: &str,
+                                              value: &Expression,
+                                              span: Span,
+                                              lowered: &mut mir::Function)
+  {
+    self.lower_field_assignment(&FieldPath { root: root.to_string(),
+                                             fields: Vec::new(),
+                                             ty: Type::Named(type_name.to_string()),
+                                             mutable: true,
+                                             span },
+                                value,
+                                lowered);
+  }
+
+  pub(super) fn lower_nominal_argument(&mut self,
+                                       expression: &Expression,
+                                       type_name: &str,
+                                       lowered: &mut mir::Function)
+                                       -> Option<Vec<mir::LocalId>>
+  {
+    let definition = self.nominal_types.get(type_name)?.clone();
+    if definition.kind != crate::hir::declarations::NominalKind::Data
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "only data arguments have a scalar native ABI in this compiler stage",
+                  expression_span(expression));
+      return None;
+    }
+    let mut arguments = Vec::new();
+    match expression
+    {
+      Expression::Local { name,
+                          span, } =>
+      {
+        let mut visiting = vec![definition.name.clone()];
+        self.append_nominal_place_arguments(name,
+                                            &[],
+                                            &definition,
+                                            *span,
+                                            lowered,
+                                            &mut NominalArguments { values: &mut arguments,
+                                                                    visiting: &mut visiting })?;
+      }
+      Expression::Field { path } if path.ty == Type::Named(type_name.to_string()) =>
+      {
+        let mut visiting = vec![definition.name.clone()];
+        self.append_nominal_place_arguments(&path.root,
+                                            &path.fields,
+                                            &definition,
+                                            path.span,
+                                            lowered,
+                                            &mut NominalArguments { values: &mut arguments,
+                                                                    visiting: &mut visiting })?;
+      }
+      Expression::Object { nominal_type,
+                           fields,
+                           span, }
+        if nominal_type == type_name =>
+      {
+        self.append_nominal_object_arguments(&definition,
+                                             fields,
+                                             *span,
+                                             lowered,
+                                             &mut arguments,
+                                             &mut vec![definition.name.clone()])?;
+      }
+      _ =>
+      {
+        self.report(DiagnosticCode::UnsupportedExpression,
+                    "data argument must be an initialized place or object literal before aggregate values are \
+                     available",
+                    expression_span(expression));
+        return None;
+      }
+    }
+    Some(arguments)
+  }
+
+  fn append_nominal_parameters(&mut self,
+                               root: &str,
+                               prefix: &[String],
+                               definition: &crate::hir::declarations::NominalType,
+                               span: Span,
+                               lowered: &mut mir::Function,
+                               visiting: &mut Vec<String>)
+  {
+    for field in &definition.fields
+    {
+      let Some(field_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
+      else
+      {
+        continue;
+      };
+      let mut path = prefix.to_vec();
+      path.push(field.name.clone());
+      match field_type
+      {
+        Type::Primitive(_) =>
+        {
+          let Some(value_type) = self.lower_value_type(&field_type, span)
+          else
+          {
+            continue;
+          };
+          let id = mir::LocalId(self.next_local);
+          self.next_local += 1;
+          let name = field_key(root, &path);
+          self.field_locals.insert(name.clone(), id);
+          lowered.parameters.push(mir::Parameter { local: id,
+                                                   name,
+                                                   value_type,
+                                                   span });
+        }
+        Type::Named(ref nested_type) =>
+        {
+          if visiting.contains(nested_type)
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        format!("recursive data parameter field '{}' requires an indirect ABI",
+                                field_key(root, &path)),
+                        span);
+            continue;
+          }
+          let Some(nested) = self.nominal_types.get(nested_type).cloned()
+          else
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        format!("nested parameter field '{}' has no HIR declaration",
+                                field_key(root, &path)),
+                        span);
+            continue;
+          };
+          visiting.push(nested_type.clone());
+          self.append_nominal_parameters(root, &path, &nested, span, lowered, visiting);
+          visiting.pop();
+        }
+        _ => self.report(DiagnosticCode::UnsupportedType,
+                         format!("parameter field '{}' has no scalar native ABI", field_key(root, &path)),
+                         span),
+      }
+    }
+  }
+
+  fn append_nominal_place_arguments(&mut self,
+                                    root: &str,
+                                    prefix: &[String],
+                                    definition: &crate::hir::declarations::NominalType,
+                                    span: Span,
+                                    lowered: &mut mir::Function,
+                                    arguments: &mut NominalArguments<'_>)
+                                    -> Option<()>
+  {
+    for field in &definition.fields
+    {
+      let field_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
+      let mut path = prefix.to_vec();
+      path.push(field.name.clone());
+      match field_type
+      {
+        Type::Primitive(_) =>
+        {
+          let value_type = self.lower_value_type(&field_type, span)?;
+          arguments.values
+                   .push(self.lower_field_load(&FieldPath { root: root.to_string(),
+                                                            fields: path,
+                                                            ty: field_type,
+                                                            mutable: false,
+                                                            span },
+                                               value_type,
+                                               lowered)?);
+        }
+        Type::Named(ref nested_type) =>
+        {
+          if arguments.visiting.contains(nested_type)
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        format!("recursive data argument field '{}' requires an indirect ABI",
+                                field_key(root, &path)),
+                        span);
+            return None;
+          }
+          let nested = self.nominal_types.get(nested_type)?.clone();
+          arguments.visiting.push(nested_type.clone());
+          self.append_nominal_place_arguments(root, &path, &nested, span, lowered, arguments)?;
+          arguments.visiting.pop();
+        }
+        _ => return None,
+      }
+    }
+    Some(())
+  }
+
+  fn append_nominal_object_arguments(&mut self,
+                                     definition: &crate::hir::declarations::NominalType,
+                                     initializers: &[crate::hir::type_check::ObjectField],
+                                     span: Span,
+                                     lowered: &mut mir::Function,
+                                     arguments: &mut Vec<mir::LocalId>,
+                                     visiting: &mut Vec<String>)
+                                     -> Option<()>
+  {
+    for field in &definition.fields
+    {
+      let initializer = initializers.iter().find(|candidate| candidate.name == field.name)?;
+      let field_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
+      match field_type
+      {
+        Type::Primitive(_) =>
+        {
+          let value_type = self.lower_value_type(&field_type, span)?;
+          arguments.push(self.lower_expression_to_local(&initializer.value, value_type, lowered)?);
+        }
+        Type::Named(ref nested_type) =>
+        {
+          if visiting.contains(nested_type)
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        "recursive data object arguments require an indirect ABI",
+                        initializer.span);
+            return None;
+          }
+          let nested = self.nominal_types.get(nested_type)?.clone();
+          let Expression::Object { nominal_type,
+                                   fields,
+                                   .. } = &initializer.value
+          else
+          {
+            return None;
+          };
+          if nominal_type != nested_type
+          {
+            return None;
+          }
+          visiting.push(nested_type.clone());
+          self.append_nominal_object_arguments(&nested, fields, initializer.span, lowered, arguments, visiting)?;
+          visiting.pop();
+        }
+        _ => return None,
+      }
+    }
+    Some(())
+  }
+
+  fn nominal_place_locals(&self,
+                          root: &str,
+                          prefix: &[String],
+                          definition: &crate::hir::declarations::NominalType)
+                          -> Option<Vec<mir::LocalId>>
+  {
+    let mut locals = Vec::new();
+    self.append_nominal_place_locals(root,
+                                     prefix,
+                                     definition,
+                                     &mut vec![definition.name.clone()],
+                                     &mut locals)?;
+    Some(locals)
+  }
+
+  fn append_nominal_place_locals(&self,
+                                 root: &str,
+                                 prefix: &[String],
+                                 definition: &crate::hir::declarations::NominalType,
+                                 visiting: &mut Vec<String>,
+                                 locals: &mut Vec<mir::LocalId>)
+                                 -> Option<()>
+  {
+    for field in &definition.fields
+    {
+      let field_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
+      let mut path = prefix.to_vec();
+      path.push(field.name.clone());
+      match field_type
+      {
+        Type::Primitive(_) => locals.push(*self.field_locals.get(&field_key(root, &path))?),
+        Type::Named(ref nested_type) =>
+        {
+          if visiting.contains(nested_type)
+          {
+            return None;
+          }
+          let nested = self.nominal_types.get(nested_type)?;
+          visiting.push(nested_type.clone());
+          self.append_nominal_place_locals(root, &path, nested, visiting, locals)?;
+          visiting.pop();
+        }
+        _ => return None,
+      }
+    }
+    Some(())
+  }
+
+  fn lower_object_fields(&mut self,
+                         root: &str,
+                         prefix: &[String],
+                         definition: &crate::hir::declarations::NominalType,
+                         initializers: &[crate::hir::type_check::ObjectField],
+                         fallback_span: Span,
+                         lowered: &mut mir::Function)
+  {
+    for field in &definition.fields
+    {
+      let Some(initializer) = initializers.iter().find(|candidate| candidate.name == field.name)
+      else
+      {
+        continue;
+      };
+      let Some(value_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
+      else
+      {
+        continue;
+      };
+      let mut path = prefix.to_vec();
+      path.push(field.name.clone());
+      match value_type
+      {
+        Type::Primitive(_) =>
+        {
+          let key = field_key(root, &path);
+          let field_local = self.declare_local(key.clone(), &value_type, field.mutable, initializer.span, lowered);
+          self.field_locals.insert(key, field_local);
+          self.lower_assignment(field_local, &initializer.value, lowered);
+        }
+        Type::Named(ref nested_type) =>
+        {
+          let Some(nested_definition) = self.nominal_types.get(nested_type).cloned()
+          else
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        format!("nested nominal field '{}' has no HIR declaration",
+                                field_key(root, &path)),
+                        initializer.span);
+            continue;
+          };
+          let Expression::Object { nominal_type,
+                                   fields,
+                                   .. } = &initializer.value
+          else
+          {
+            self.report(DiagnosticCode::UnsupportedExpression,
+                        format!("nested nominal field '{}' requires an object initializer",
+                                field_key(root, &path)),
+                        initializer.span);
+            continue;
+          };
+          if nominal_type != nested_type
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        format!("nested object initializer for '{}' has the wrong nominal type",
+                                field_key(root, &path)),
+                        initializer.span);
+            continue;
+          }
+          self.lower_object_fields(root, &path, &nested_definition, fields, fallback_span, lowered);
+        }
+        _ => self.report(DiagnosticCode::UnsupportedType,
+                         format!("field '{}' is not scalar-lowerable yet", field_key(root, &path)),
+                         fallback_span),
+      }
+    }
   }
 }
 
