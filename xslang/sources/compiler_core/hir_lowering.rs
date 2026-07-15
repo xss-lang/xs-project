@@ -37,6 +37,8 @@ const PARAMETER: u32 = 21;
 const IDENTIFIER: u32 = 24;
 const PATH: u32 = 25;
 const TYPE_NAMED: u32 = 27;
+const TYPE_ARRAY: u32 = 29;
+const TYPE_FIXED_ARRAY: u32 = 30;
 const TYPE_UNIT: u32 = 36;
 const STMT_BLOCK: u32 = 38;
 const STMT_EXPRESSION: u32 = 39;
@@ -65,6 +67,7 @@ const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
 const STMT_LOOP: u32 = 105;
 const EXPR_TYPED_OBJECT_LITERAL: u32 = 102;
+const TYPE_MAP: u32 = 106;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_FLOAT: u32 = 4;
 const TOKEN_STRING: u32 = 5;
@@ -198,7 +201,50 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
     }
     return declarations::TypeRef::Named(name);
   }
+  if value.kind == TYPE_ARRAY
+  {
+    let element = value.children
+                       .first()
+                       .and_then(|index| tree.nodes.get(*index))
+                       .map(|element| type_ref_text(&lower_type(tree, element)))
+                       .unwrap_or_default();
+    return declarations::TypeRef::Named(format!("[{element}]"));
+  }
+  if value.kind == TYPE_FIXED_ARRAY
+  {
+    let element = value.children
+                       .first()
+                       .and_then(|index| tree.nodes.get(*index))
+                       .map(|element| type_ref_text(&lower_type(tree, element)))
+                       .unwrap_or_default();
+    let length = value.children
+                      .get(1)
+                      .and_then(|index| tree.nodes.get(*index))
+                      .map_or("", |length| length.text.as_str());
+    return declarations::TypeRef::Named(format!("[{element}; {length}]"));
+  }
+  if value.kind == TYPE_MAP
+  {
+    let mut children = value.children.iter().filter_map(|index| tree.nodes.get(*index));
+    let key = children.next()
+                      .map(|key| type_ref_text(&lower_type(tree, key)))
+                      .unwrap_or_default();
+    let mapped = children.next()
+                         .map(|mapped| type_ref_text(&lower_type(tree, mapped)))
+                         .unwrap_or_default();
+    return declarations::TypeRef::Named(format!("[{key}: {mapped}]"));
+  }
   declarations::TypeRef::Named(value.text.clone())
+}
+
+fn type_ref_text(value: &declarations::TypeRef) -> String
+{
+  match value
+  {
+    declarations::TypeRef::Unit => "()".to_string(),
+    declarations::TypeRef::Primitive(value) => format!("{value:?}"),
+    declarations::TypeRef::Named(value) => value.clone(),
+  }
 }
 
 fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check::Type>

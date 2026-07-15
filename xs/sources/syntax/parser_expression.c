@@ -271,6 +271,50 @@ static XsSyntaxNode *parse_literal(SyntaxParser *parser)
   return literal;
 }
 
+static XsSyntaxNode *parse_square_literal(SyntaxParser *parser)
+{
+  size_t start = parser->current.span.start;
+  expect(parser, XS_TOKEN_LEFT_BRACKET, "expected '['");
+  if(accept(parser, XS_TOKEN_RIGHT_BRACKET))
+    return node(parser, XS_SYNTAX_EXPR_ARRAY_LITERAL, (XsSpan){start, parser->previous.span.end});
+  if(accept(parser, XS_TOKEN_COLON))
+  {
+    XsSyntaxNode *empty = node(parser, XS_SYNTAX_EXPR_MAP_LITERAL, (XsSpan){start, parser->previous.span.end});
+    expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after empty map literal");
+    finish_node(parser, empty, parser->previous.span.end);
+    return empty;
+  }
+  XsSyntaxNode *first = parse_expression(parser, 1);
+  if(accept(parser, XS_TOKEN_COLON))
+  {
+    XsSyntaxNode *map = node(parser, XS_SYNTAX_EXPR_MAP_LITERAL, (XsSpan){start, parser->previous.span.end});
+    XsSyntaxNode *entry = node(parser, XS_SYNTAX_MAP_ENTRY, (XsSpan){first->span.start_offset, parser->previous.span.end});
+    xs_syntax_node_add(parser->tree, entry, first);
+    xs_syntax_node_add(parser->tree, entry, parse_expression(parser, 1));
+    finish_node(parser, entry, parser->previous.span.end);
+    xs_syntax_node_add(parser->tree, map, entry);
+    while(accept(parser, XS_TOKEN_COMMA) && parser->current.kind != XS_TOKEN_RIGHT_BRACKET)
+    {
+      XsSyntaxNode *next = node(parser, XS_SYNTAX_MAP_ENTRY, parser->current.span);
+      xs_syntax_node_add(parser->tree, next, parse_expression(parser, 1));
+      expect(parser, XS_TOKEN_COLON, "expected ':' after map key");
+      xs_syntax_node_add(parser->tree, next, parse_expression(parser, 1));
+      finish_node(parser, next, parser->previous.span.end);
+      xs_syntax_node_add(parser->tree, map, next);
+    }
+    expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after map literal");
+    finish_node(parser, map, parser->previous.span.end);
+    return map;
+  }
+  XsSyntaxNode *array = node(parser, XS_SYNTAX_EXPR_ARRAY_LITERAL, (XsSpan){start, first->span.end_offset});
+  xs_syntax_node_add(parser->tree, array, first);
+  while(accept(parser, XS_TOKEN_COMMA) && parser->current.kind != XS_TOKEN_RIGHT_BRACKET)
+    xs_syntax_node_add(parser->tree, array, parse_expression(parser, 1));
+  expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after array literal");
+  finish_node(parser, array, parser->previous.span.end);
+  return array;
+}
+
 static XsSyntaxNode *parse_brace_literal(SyntaxParser *parser, XsSyntaxNode *type_expression)
 {
   size_t start = type_expression == nullptr ? parser->current.span.start : type_expression->span.start_offset;
@@ -397,6 +441,8 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
   }
   case XS_TOKEN_LEFT_BRACE:
     return parse_brace_literal(parser, nullptr);
+  case XS_TOKEN_LEFT_BRACKET:
+    return parse_square_literal(parser);
   case XS_TOKEN_KW_FN:
     return parse_function_expression(parser, start, false, false);
   case XS_TOKEN_KW_IF:

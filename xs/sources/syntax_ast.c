@@ -276,6 +276,8 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "pattern variable declaration",
       "loop statement",
       "map type",
+      "map literal",
+      "map entry",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown syntax node";

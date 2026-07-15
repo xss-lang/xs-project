@@ -220,3 +220,34 @@ fn resolves_function_body_calls_across_program_trees()
   };
   assert_eq!(function, "answer");
 }
+
+#[test]
+fn preserves_canonical_builtin_collection_types()
+{
+  let array = SyntaxTree { root: 0,
+                           nodes: vec![syntax(TYPE_ARRAY, "[Int]", None, vec![1]),
+                                       syntax(TYPE_NAMED, "Int", Some(0), vec![2]),
+                                       syntax(PATH, "Int", Some(1), vec![3]),
+                                       syntax(IDENTIFIER, "Int", Some(2), vec![])] };
+  let fixed = SyntaxTree { root: 0,
+                           nodes: vec![syntax(TYPE_FIXED_ARRAY, "[Long; 4]", None, vec![1, 4]),
+                                       syntax(TYPE_NAMED, "Long", Some(0), vec![2]),
+                                       syntax(PATH, "Long", Some(1), vec![3]),
+                                       syntax(IDENTIFIER, "Long", Some(2), vec![]),
+                                       syntax(EXPR_LITERAL, "4", Some(0), vec![])] };
+  let map = SyntaxTree { root: 0,
+                         nodes: vec![syntax(TYPE_MAP, "[String: Optional<Int>]", None, vec![1, 4]),
+                                     syntax(TYPE_NAMED, "String", Some(0), vec![2]),
+                                     syntax(PATH, "String", Some(1), vec![3]),
+                                     syntax(IDENTIFIER, "String", Some(2), vec![]),
+                                     syntax(TYPE_NAMED, "Optional<Int>", Some(0), vec![5]),
+                                     syntax(PATH, "Optional<Int>", Some(4), vec![6]),
+                                     syntax(IDENTIFIER, "Optional<Int>", Some(5), vec![])] };
+
+  assert_eq!(lower_type(&array, &array.nodes[0]),
+             declarations::TypeRef::Named("[Int]".to_string()));
+  assert_eq!(lower_type(&fixed, &fixed.nodes[0]),
+             declarations::TypeRef::Named("[Long; 4]".to_string()));
+  assert_eq!(lower_type(&map, &map.nodes[0]),
+             declarations::TypeRef::Named("[Optional<Str>: Optional<Int>]".to_string()));
+}
