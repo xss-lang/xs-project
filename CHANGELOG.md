@@ -14,6 +14,8 @@ source-to-native executable pipeline.
 
 ### Added
 
+- The structural parser now accepts canonical built-in collection type forms: `[T]`, fixed-size `[T; N]`, and map
+  `[K: V]`. These forms are compiler-known types and do not require a standard-library import.
 - Nominal `data` return values now use first-class aggregate values across typed HIR, MIR, XMIR, XLIL, LLVM, and native
   `.xse` emission. Aggregate-returning calls can initialize local `data` places, including nested layouts, and their fields
   are extracted back into the existing place model without exposing LLVM types to HIR or MIR.

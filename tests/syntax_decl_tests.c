@@ -498,6 +498,21 @@ static void test_dispatch_and_multiple_inheritance_modifiers(void)
   }
 }
 
+static void test_builtin_collection_type_syntax(void)
+{
+  const char *text = "fn Collections(values: [Int], fixed: [Long; 4], ages: [String: Optional<Int>]) {}\n";
+  XsSource source = {.path = "BuiltinCollections.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 90, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_ARRAY) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_FIXED_ARRAY) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_MAP) == 1);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_top_level_variable_declaration_structure();
@@ -514,5 +529,6 @@ int main(void)
   test_extern_c_function_structure();
   test_using_declaration_structure();
   test_dispatch_and_multiple_inheritance_modifiers();
+  test_builtin_collection_type_syntax();
   return failures == 0 ? 0 : 1;
 }

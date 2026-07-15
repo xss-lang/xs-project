@@ -54,6 +54,33 @@ static XsSyntaxNode *parse_function_type(SyntaxParser *parser, size_t start)
 XsSyntaxNode *parse_type(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
+  if(accept(parser, XS_TOKEN_LEFT_BRACKET))
+  {
+    XsSyntaxNode *element_or_key = parse_type(parser);
+    if(accept(parser, XS_TOKEN_COLON))
+    {
+      XsSyntaxNode *map = node(parser, XS_SYNTAX_TYPE_MAP, (XsSpan){start, parser->previous.span.end});
+      xs_syntax_node_add(parser->tree, map, element_or_key);
+      xs_syntax_node_add(parser->tree, map, parse_type(parser));
+      expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after map type");
+      finish_node(parser, map, parser->previous.span.end);
+      return map;
+    }
+    if(accept(parser, XS_TOKEN_SEMICOLON))
+    {
+      XsSyntaxNode *array = node(parser, XS_SYNTAX_TYPE_FIXED_ARRAY, (XsSpan){start, parser->previous.span.end});
+      xs_syntax_node_add(parser->tree, array, element_or_key);
+      xs_syntax_node_add(parser->tree, array, parse_expression(parser, 1));
+      expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after fixed array length");
+      finish_node(parser, array, parser->previous.span.end);
+      return array;
+    }
+    XsSyntaxNode *array = node(parser, XS_SYNTAX_TYPE_ARRAY, (XsSpan){start, parser->previous.span.end});
+    xs_syntax_node_add(parser->tree, array, element_or_key);
+    expect(parser, XS_TOKEN_RIGHT_BRACKET, "expected ']' after array type");
+    finish_node(parser, array, parser->previous.span.end);
+    return array;
+  }
   if(parser->current.kind == XS_TOKEN_KW_FN)
     return parse_function_type(parser, start);
   if(accept(parser, XS_TOKEN_AMPERSAND))

@@ -171,7 +171,8 @@ The documented compilation order is preserved:
 - In top-level and class-member contexts, `name!();` macro calls are represented as `XS_SYNTAX_DECL_MACRO_CALL` declaration
   nodes. This node is the entry point for item/declaration-producing macro expansion; inserting produced items as real AST
   replacements in scope is a later macro-expansion step.
-- Named, generic, array, fixed array, pointer, reference, tuple, unit, and `fn(...) -> T` function type nodes are parsed into
+- Named, generic, canonical `[T]` array, `[T; N]` fixed array, `[K: V]` map, pointer, reference, tuple, unit, and
+  `fn(...) -> T` function type nodes are parsed into
   the structural AST.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
