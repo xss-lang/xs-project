@@ -15,6 +15,29 @@ impl TypeChecker
       Expression::Local { name, .. } => self.find_local(name).map(|local| local.ty.clone()),
       Expression::Field { path } => Some(path.ty.clone()),
       Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
+      Expression::Array { elements, .. } =>
+      {
+        let first = self.expression_type(elements.first()?)?;
+        elements.iter()
+                .skip(1)
+                .all(|element| self.expression_type(element).as_ref() == Some(&first))
+                .then(|| Type::Array { element: Box::new(first),
+                                       length: u64::try_from(elements.len()).ok() })
+      }
+      Expression::Map { entries, .. } =>
+      {
+        let first = entries.first()?;
+        let key = self.expression_type(&first.key)?;
+        let value = self.expression_type(&first.value)?;
+        entries.iter()
+               .skip(1)
+               .all(|entry| {
+                 self.expression_type(&entry.key).as_ref() == Some(&key) &&
+                 self.expression_type(&entry.value).as_ref() == Some(&value)
+               })
+               .then(|| Type::Map { key: Box::new(key),
+                                    value: Box::new(value) })
+      }
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target, .. } => self.find_local(target).map(|local| local.ty.clone()),

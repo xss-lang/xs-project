@@ -53,6 +53,7 @@ impl HirToMirLowerer
       Expression::Local { name, .. } => self.local_value_type(*self.locals.get(name)?, lowered),
       Expression::Field { path } => type_to_xlil(&path.ty),
       Expression::Object { .. } => None,
+      Expression::Array { .. } | Expression::Map { .. } => None,
       Expression::Update { target, .. } => self.local_value_type(*self.locals.get(target)?, lowered),
       Expression::Binary { operator,
                            left,
@@ -103,6 +104,6 @@ fn type_to_xlil(value: &Type) -> Option<XlilType>
   match value
   {
     Type::Primitive(value) => primitive_to_xlil(*value),
-    Type::Unit | Type::Named(_) => None,
+    Type::Unit | Type::Named(_) | Type::Array { .. } | Type::Map { .. } => None,
   }
 }

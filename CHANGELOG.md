@@ -18,7 +18,8 @@ source-to-native executable pipeline.
   `[K: V]`. Square-bracket array literals and `[key: value]` map literals now have distinct structural AST records. These
   forms are compiler-known and do not require a standard-library import; `String` inside them still canonicalizes to the
   existing `Optional<Str>` sugar. Array and map declarations retain dedicated compiler-core type records rather than
-  desugaring to nominal collection names.
+  desugaring to nominal collection names. Typed HIR now preserves array/map literals, performs homogeneous inference and
+  contextual element checks, and round-trips those records through XHIR.
 - Nominal `data` return values now use first-class aggregate values across typed HIR, MIR, XMIR, XLIL, LLVM, and native
   `.xse` emission. Aggregate-returning calls can initialize local `data` places, including nested layouts, and their fields
   are extracted back into the existing place model without exposing LLVM types to HIR or MIR.

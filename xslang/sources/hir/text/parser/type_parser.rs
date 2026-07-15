@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use super::PrimitiveType;
+use super::{Local, Type, span};
+use crate::hir::type_check::PrimitiveType;
 
 pub(super) fn primitive_type(name: &str) -> Option<PrimitiveType>
 {
@@ -77,4 +78,65 @@ pub(super) fn split_type_list(text: &str) -> Vec<&str>
   }
   result.push(&text[start..]);
   result
+}
+
+pub(super) fn parse_type_text(name: &str) -> Option<Type>
+{
+  if name == "()"
+  {
+    return Some(Type::Unit);
+  }
+  if let Some(primitive) = primitive_type(name)
+  {
+    return Some(Type::Primitive(primitive));
+  }
+  if let Some(body) = name.strip_prefix('[').and_then(|value| value.strip_suffix(']'))
+  {
+    if let Some((key, value)) = split_collection_type(body, ':')
+    {
+      return Some(Type::Map { key: Box::new(parse_type_text(key.trim())?),
+                              value: Box::new(parse_type_text(value.trim())?) });
+    }
+    if let Some((element, length)) = split_collection_type(body, ';')
+    {
+      return Some(Type::Array { element: Box::new(parse_type_text(element.trim())?),
+                                length: Some(length.trim().parse().ok()?) });
+    }
+    return Some(Type::Array { element: Box::new(parse_type_text(body.trim())?),
+                              length: None });
+  }
+  is_named_type(name).then(|| Type::Named(name.to_string()))
+}
+
+pub(super) fn parse_local_record(text: &str) -> Option<Local>
+{
+  let (name, rest) = text.split_once(": ")?;
+  let (ty, mutability) = rest.rsplit_once(' ')?;
+  Some(Local { name: name.to_string(),
+               ty: parse_type_text(ty)?,
+               mutable: mutability == "mutable",
+               span: span() })
+}
+
+fn split_collection_type(value: &str, separator: char) -> Option<(&str, &str)>
+{
+  let mut angle_depth = 0_u32;
+  let mut bracket_depth = 0_u32;
+  for (index, character) in value.char_indices()
+  {
+    match character
+    {
+      '<' => angle_depth += 1,
+      '>' => angle_depth = angle_depth.saturating_sub(1),
+      '[' => bracket_depth += 1,
+      ']' => bracket_depth = bracket_depth.saturating_sub(1),
+      current if current == separator && angle_depth == 0 && bracket_depth == 0 =>
+      {
+        return Some((&value[..index], &value[index + current.len_utf8()..]));
+      }
+      _ =>
+      {}
+    }
+  }
+  None
 }

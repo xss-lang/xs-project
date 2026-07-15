@@ -47,6 +47,16 @@ pub enum DesugaredExpression
     fields: Vec<DesugaredObjectField>,
     span: Span,
   },
+  Array
+  {
+    elements: Vec<DesugaredExpression>,
+    span: Span,
+  },
+  Map
+  {
+    entries: Vec<DesugaredMapEntry>,
+    span: Span,
+  },
   Assign
   {
     target: String,
@@ -112,6 +122,14 @@ pub enum DesugaredExpression
     error_type: Type,
     span: Span,
   },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DesugaredMapEntry
+{
+  pub key: DesugaredExpression,
+  pub value: DesugaredExpression,
+  pub span: Span,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -341,6 +359,24 @@ impl ResultDesugar
                                                     .collect(),
                                       span: *span }
       }
+      Expression::Array { elements,
+                          span, } =>
+      {
+        DesugaredExpression::Array { elements: elements.iter().map(|value| self.desugar_expression(value)).collect(),
+                                     span: *span }
+      }
+      Expression::Map { entries,
+                        span, } =>
+      {
+        DesugaredExpression::Map { entries: entries.iter()
+                                                   .map(|entry| {
+                                                     DesugaredMapEntry { key: self.desugar_expression(&entry.key),
+                                                                         value: self.desugar_expression(&entry.value),
+                                                                         span: entry.span }
+                                                   })
+                                                   .collect(),
+                                   span: *span }
+      }
       Expression::Assign { target,
                            value,
                            span, } => DesugaredExpression::Assign { target: target.clone(),
@@ -507,6 +543,29 @@ impl ResultDesugar
                                                                                         }),
       Expression::Field { path } => Some(path.ty.clone()),
       Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
+      Expression::Array { elements, .. } =>
+      {
+        let first = self.expression_type(elements.first()?)?;
+        elements.iter()
+                .skip(1)
+                .all(|value| self.expression_type(value).as_ref() == Some(&first))
+                .then(|| Type::Array { element: Box::new(first),
+                                       length: u64::try_from(elements.len()).ok() })
+      }
+      Expression::Map { entries, .. } =>
+      {
+        let first = entries.first()?;
+        let key = self.expression_type(&first.key)?;
+        let value = self.expression_type(&first.value)?;
+        entries.iter()
+               .skip(1)
+               .all(|entry| {
+                 self.expression_type(&entry.key).as_ref() == Some(&key) &&
+                 self.expression_type(&entry.value).as_ref() == Some(&value)
+               })
+               .then(|| Type::Map { key: Box::new(key),
+                                    value: Box::new(value) })
+      }
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target,

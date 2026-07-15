@@ -174,6 +174,9 @@ The documented compilation order is preserved:
 - Named, generic, canonical `[T]` array, `[T; N]` fixed array, `[K: V]` map, pointer, reference, tuple, unit, and
   `fn(...) -> T` function type nodes are parsed into
   the structural AST.
+- Built-in array and map types remain first-class compiler types across the structural-AST/compiler-core boundary and
+  typed HIR; they are not aliases or desugarings of nominal standard-library collections. Array/map literal inference,
+  contextual element checking, and XHIR text round-tripping are implemented. MIR value/layout lowering remains deferred.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,

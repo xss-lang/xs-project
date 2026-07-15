@@ -121,6 +121,26 @@ impl HirToMirLowerer
                                                 .collect::<Option<Vec<_>>>()?,
                                   span: *span })
       }
+      DesugaredExpression::Array { elements,
+                                   span, } =>
+      {
+        Some(Expression::Array { elements: elements.iter()
+                                                   .map(|value| self.surface_expression_from_desugared(value))
+                                                   .collect::<Option<Vec<_>>>()?,
+                                 span: *span })
+      }
+      DesugaredExpression::Map { entries,
+                                 span, } => Some(Expression::Map { entries:
+                                                                     entries.iter()
+                                                                            .map(|entry| {
+                                                                              Some(crate::hir::type_check::MapEntry {
+                            key: self.surface_expression_from_desugared(&entry.key)?,
+                            value: self.surface_expression_from_desugared(&entry.value)?,
+                            span: entry.span,
+                          })
+                                                                            })
+                                                                            .collect::<Option<Vec<_>>>()?,
+                                                                   span: *span }),
       DesugaredExpression::Assign { target,
                                     value,
                                     span, } =>

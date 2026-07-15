@@ -20,6 +20,8 @@ mod block_writer;
 #[cfg(test)]
 mod call_tests;
 #[cfg(test)]
+mod collection_tests;
+#[cfg(test)]
 mod conditional_tests;
 #[cfg(test)]
 mod for_tests;
@@ -423,6 +425,29 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       }
       let _ = writeln!(output, "{pad}.end");
     }
+    Expression::Array { elements, .. } =>
+    {
+      let _ = writeln!(output, "{pad}array");
+      for element in elements
+      {
+        let _ = writeln!(output, "{pad}  element");
+        write_expression(output, element, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    Expression::Map { entries, .. } =>
+    {
+      let _ = writeln!(output, "{pad}map");
+      for entry in entries
+      {
+        let _ = writeln!(output, "{pad}  entry");
+        let _ = writeln!(output, "{pad}    key");
+        write_expression(output, &entry.key, indent + 3);
+        let _ = writeln!(output, "{pad}    value");
+        write_expression(output, &entry.value, indent + 3);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
     Expression::Assign { target,
                          value,
                          .. } =>
@@ -582,6 +607,29 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
       {
         let _ = writeln!(output, "{pad}  field {}", field.name);
         write_desugared_expression(output, &field.value, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    DesugaredExpression::Array { elements, .. } =>
+    {
+      let _ = writeln!(output, "{pad}array");
+      for element in elements
+      {
+        let _ = writeln!(output, "{pad}  element");
+        write_desugared_expression(output, element, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    DesugaredExpression::Map { entries, .. } =>
+    {
+      let _ = writeln!(output, "{pad}map");
+      for entry in entries
+      {
+        let _ = writeln!(output, "{pad}  entry");
+        let _ = writeln!(output, "{pad}    key");
+        write_desugared_expression(output, &entry.key, indent + 3);
+        let _ = writeln!(output, "{pad}    value");
+        write_desugared_expression(output, &entry.value, indent + 3);
       }
       let _ = writeln!(output, "{pad}.end");
     }
@@ -821,6 +869,12 @@ fn type_name(ty: &Type) -> String
     Type::Unit => "()".to_string(),
     Type::Primitive(primitive) => primitive_type_name(*primitive).to_string(),
     Type::Named(name) => name.clone(),
+    Type::Array { element,
+                  length: None, } => format!("[{}]", type_name(element)),
+    Type::Array { element,
+                  length: Some(length), } => format!("[{}; {length}]", type_name(element)),
+    Type::Map { key,
+                value, } => format!("[{}: {}]", type_name(key), type_name(value)),
   }
 }
 

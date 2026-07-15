@@ -33,7 +33,12 @@ pub fn type_ref_to_checked(value: &TypeRef) -> Option<type_check::Type>
     TypeRef::Unit => type_check::Type::Unit,
     TypeRef::Primitive(value) => type_check::Type::Primitive(*value),
     TypeRef::Named(value) => type_check::Type::Named(value.clone()),
-    TypeRef::Array { .. } | TypeRef::Map { .. } => return None,
+    TypeRef::Array { element,
+                     length, } => type_check::Type::Array { element: Box::new(type_ref_to_checked(element)?),
+                                                            length: *length },
+    TypeRef::Map { key,
+                   value, } => type_check::Type::Map { key: Box::new(type_ref_to_checked(key)?),
+                                                       value: Box::new(type_ref_to_checked(value)?) },
   })
 }
 

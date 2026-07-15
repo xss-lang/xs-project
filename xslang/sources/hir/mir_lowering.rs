@@ -285,6 +285,11 @@ impl HirToMirLowerer
       Expression::Object { nominal_type,
                            fields,
                            span, } => self.lower_object_value(nominal_type, fields, *span, lowered),
+      Expression::Array { .. } | Expression::Map { .. } =>
+      {
+        self.unsupported_expression(expression);
+        None
+      }
       Expression::Literal { literal,
                             span, } =>
       {
@@ -649,6 +654,8 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Literal { span, .. } |
     Expression::Local { span, .. } |
     Expression::Object { span, .. } |
+    Expression::Array { span, .. } |
+    Expression::Map { span, .. } |
     Expression::Assign { span, .. } |
     Expression::AssignField { span, .. } |
     Expression::Update { span, .. } |

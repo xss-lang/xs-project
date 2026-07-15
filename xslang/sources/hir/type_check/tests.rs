@@ -43,6 +43,27 @@ fn validates_literal_initializer_types()
 }
 
 #[test]
+fn validates_builtin_collection_literals_against_collection_types()
+{
+  let function = Function { name: "collections".to_string(),
+                            return_type: None,
+                            locals: vec![],
+                            body: vec![Statement::Let {
+      local: local("values",
+                   Type::Array { element: Box::new(primitive(PrimitiveType::Int)),
+                                 length: Some(2) },
+                   false),
+      initializer: Some(Expression::Array {
+        elements: vec![Expression::Literal { literal: Literal::Integer("1".to_string()), span: span(1, 2) },
+                       Expression::Literal { literal: Literal::Integer("2".to_string()), span: span(3, 4) }],
+        span: span(1, 5),
+      }),
+    }] };
+
+  assert!(TypeChecker::new().check_function(&function).is_empty());
+}
+
+#[test]
 fn rejects_literal_initializer_type_mismatch()
 {
   let function = Function { name: "main".to_string(),

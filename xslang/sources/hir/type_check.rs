@@ -34,6 +34,16 @@ pub enum Type
   Unit,
   Primitive(PrimitiveType),
   Named(String),
+  Array
+  {
+    element: Box<Type>,
+    length: Option<u64>,
+  },
+  Map
+  {
+    key: Box<Type>,
+    value: Box<Type>,
+  },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -59,6 +69,14 @@ pub struct FieldPath
 pub struct ObjectField
 {
   pub name: String,
+  pub value: Expression,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MapEntry
+{
+  pub key: Expression,
   pub value: Expression,
   pub span: Span,
 }
@@ -139,6 +157,14 @@ pub enum Expression
     nominal_type: String,
     fields: Vec<ObjectField>,
     span: Span,
+  },
+  Array
+  {
+    elements: Vec<Expression>, span: Span
+  },
+  Map
+  {
+    entries: Vec<MapEntry>, span: Span
   },
   Assign
   {
@@ -593,6 +619,21 @@ impl TypeChecker
       Expression::Object { nominal_type,
                            fields,
                            span, } => self.check_object(nominal_type, fields, *span),
+      Expression::Array { elements, .. } =>
+      {
+        for element in elements
+        {
+          self.check_expression(element);
+        }
+      }
+      Expression::Map { entries, .. } =>
+      {
+        for entry in entries
+        {
+          self.check_expression(&entry.key);
+          self.check_expression(&entry.value);
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
@@ -741,9 +782,52 @@ impl TypeChecker
                                  span: *span });
         }
       }
+      Expression::Array { elements,
+                          span, } =>
+      {
+        let Type::Array { element,
+                          length, } = ty
+        else
+        {
+          self.report_collection_mismatch(*span, "array literal requires an array target type");
+          return;
+        };
+        if length.is_some_and(|expected| u64::try_from(elements.len()).ok() != Some(expected))
+        {
+          self.report_collection_mismatch(*span, "fixed-size array literal length does not match its target type");
+        }
+        for value in elements
+        {
+          self.check_expression_against_type(value, element);
+        }
+      }
+      Expression::Map { entries,
+                        span, } =>
+      {
+        let Type::Map { key,
+                        value, } = ty
+        else
+        {
+          self.report_collection_mismatch(*span, "map literal requires a map target type");
+          return;
+        };
+        for entry in entries
+        {
+          self.check_expression_against_type(&entry.key, key);
+          self.check_expression_against_type(&entry.value, value);
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
+  }
+
+  fn report_collection_mismatch(&mut self, span: Span, message: &str)
+  {
+    self.diagnostics
+        .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                           message: message.to_string(),
+                           span });
   }
 
   fn check_condition(&mut self, condition: &Expression, span: Span)
@@ -839,104 +923,13 @@ impl TypeChecker
   {
     self.locals.iter().rev().find(|local| local.name == name)
   }
-
-  fn check_object(&mut self, nominal_type: &str, fields: &[ObjectField], span: Span)
-  {
-    let Some(definition) = self.nominal_types.get(nominal_type).cloned()
-    else
-    {
-      self.diagnostics
-          .push(Diagnostic { code: DiagnosticCode::UnknownNominalType,
-                             message: format!("unknown nominal type '{nominal_type}'"),
-                             span });
-      return;
-    };
-    let mut seen = std::collections::HashSet::new();
-    for field in fields
-    {
-      if !seen.insert(field.name.as_str())
-      {
-        self.diagnostics.push(Diagnostic { code: DiagnosticCode::DuplicateField,
-                                           message: format!("field '{}' is initialized more than once", field.name),
-                                           span: field.span });
-        continue;
-      }
-      let Some(expected) = definition.fields.iter().find(|candidate| candidate.name == field.name)
-      else
-      {
-        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
-                                           message: format!("type '{nominal_type}' has no field '{}'", field.name),
-                                           span: field.span });
-        continue;
-      };
-      if let Some(expected) = super::declarations::type_ref_to_checked(&expected.ty)
-      {
-        self.check_expression_against_type(&field.value, &expected);
-      }
-    }
-    for field in &definition.fields
-    {
-      if !seen.contains(field.name.as_str())
-      {
-        self.diagnostics.push(Diagnostic { code: DiagnosticCode::MissingField,
-                                           message: format!("object literal is missing field '{}'", field.name),
-                                           span });
-      }
-    }
-  }
-
-  fn check_field_path(&mut self, path: &FieldPath)
-  {
-    let Some(mut current_type) = self.find_local(&path.root).map(|local| local.ty.clone())
-    else
-    {
-      self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownLocal,
-                                         message: format!("unknown local '{}'", path.root),
-                                         span: path.span });
-      return;
-    };
-    for field_name in &path.fields
-    {
-      let Type::Named(type_name) = current_type
-      else
-      {
-        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
-                                           message: format!("type has no field '{field_name}'"),
-                                           span: path.span });
-        return;
-      };
-      let Some(field) =
-        self.nominal_types
-            .get(&type_name)
-            .and_then(|definition| definition.fields.iter().find(|field| field.name == *field_name))
-      else
-      {
-        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
-                                           message: format!("type '{type_name}' has no field '{field_name}'"),
-                                           span: path.span });
-        return;
-      };
-      let Some(field_type) = super::declarations::type_ref_to_checked(&field.ty)
-      else
-      {
-        return;
-      };
-      current_type = field_type;
-    }
-    if current_type != path.ty
-    {
-      self.diagnostics
-          .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
-                             message: "field path type does not match its nominal declaration".to_string(),
-                             span: path.span });
-    }
-  }
 }
 
 mod binary_type;
 mod expression_type;
 mod for_check;
 mod match_check;
+mod nominal_check;
 #[cfg(test)]
 mod nominal_tests;
 mod result_type;
@@ -944,55 +937,8 @@ mod type_semantics;
 mod unary_type;
 
 pub(crate) use result_type::result_type_parts;
-pub use type_semantics::ValueOwnership;
-
-fn literal_default_type(literal: &Literal) -> Option<Type>
-{
-  let primitive = match literal
-  {
-    Literal::Bool(_) => PrimitiveType::Bool,
-    Literal::Integer(_) => PrimitiveType::Int,
-    Literal::Float(_) => PrimitiveType::Float,
-    Literal::Char(_) => PrimitiveType::Char,
-    Literal::String(_) => PrimitiveType::Str,
-    Literal::None => return None,
-  };
-  Some(Type::Primitive(primitive))
-}
-
-#[must_use]
-pub fn literal_matches_type(literal: &Literal, ty: &Type) -> bool
-{
-  if ty.is_boxed_optional_str()
-  {
-    return matches!(literal, Literal::None);
-  }
-  let Type::Primitive(primitive) = ty
-  else
-  {
-    return true;
-  };
-
-  match literal
-  {
-    Literal::None => true,
-    Literal::Bool(_) => *primitive == PrimitiveType::Bool,
-    Literal::Integer(_) => matches!(primitive,
-                                    PrimitiveType::Byte |
-                                    PrimitiveType::SByte |
-                                    PrimitiveType::Short |
-                                    PrimitiveType::Long |
-                                    PrimitiveType::Int |
-                                    PrimitiveType::Integer |
-                                    PrimitiveType::UShort |
-                                    PrimitiveType::ULong |
-                                    PrimitiveType::UInt |
-                                    PrimitiveType::UInteger),
-    Literal::Float(_) => matches!(primitive, PrimitiveType::SFloat | PrimitiveType::Float),
-    Literal::Char(_) => *primitive == PrimitiveType::Char,
-    Literal::String(_) => *primitive == PrimitiveType::Str,
-  }
-}
+use type_semantics::literal_default_type;
+pub use type_semantics::{ValueOwnership, literal_matches_type};
 
 #[cfg(test)]
 mod tests;

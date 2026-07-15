@@ -25,7 +25,7 @@ xs_add_c_test(diagnostic tests/diagnostic_tests.c xs_compiler)
 find_program(XS_GRADLE_EXECUTABLE NAMES gradle REQUIRED)
 set(XS_PROJECT_TEST_DRIVER
     "${CMAKE_SOURCE_DIR}/xs_kts/build/install/xs-project/bin/xs-project")
-add_test(NAME kotlin_project_resolver_build COMMAND "${XS_GRADLE_EXECUTABLE}" --no-daemon
+add_test(NAME kotlin_project_resolver_build COMMAND "${XS_GRADLE_EXECUTABLE}" --daemon --build-cache
   -p "${CMAKE_SOURCE_DIR}/xs_kts" installDist)
 set_tests_properties(kotlin_project_resolver_build PROPERTIES TIMEOUT 180
   FIXTURES_SETUP kotlin_project_resolver ENVIRONMENT "GRADLE_OPTS=-Xmx512m")

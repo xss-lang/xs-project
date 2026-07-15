@@ -247,7 +247,14 @@ fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check:
     declarations::TypeRef::Unit => crate::hir::type_check::Type::Unit,
     declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(*value),
     declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value.clone()),
-    declarations::TypeRef::Array { .. } | declarations::TypeRef::Map { .. } => return None,
+    declarations::TypeRef::Array { element,
+                                   length, } => crate::hir::type_check::Type::Array { element:
+                                                                                        Box::new(checked_type(element)?),
+                                                                                      length: *length },
+    declarations::TypeRef::Map { key,
+                                 value, } => crate::hir::type_check::Type::Map { key: Box::new(checked_type(key)?),
+                                                                                 value:
+                                                                                   Box::new(checked_type(value)?) },
   })
 }
 

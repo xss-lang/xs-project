@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use super::{PrimitiveType, Type};
+use super::{Literal, PrimitiveType, Type};
 
 pub const OPTIONAL_STR_TYPE_NAME: &str = "Optional<Str>";
 
@@ -33,6 +33,53 @@ impl Type
       value if value.is_boxed_optional_str() => ValueOwnership::BoxedOwned,
       _ => ValueOwnership::Value,
     }
+  }
+}
+
+pub(super) fn literal_default_type(literal: &Literal) -> Option<Type>
+{
+  let primitive = match literal
+  {
+    Literal::Bool(_) => PrimitiveType::Bool,
+    Literal::Integer(_) => PrimitiveType::Int,
+    Literal::Float(_) => PrimitiveType::Float,
+    Literal::Char(_) => PrimitiveType::Char,
+    Literal::String(_) => PrimitiveType::Str,
+    Literal::None => return None,
+  };
+  Some(Type::Primitive(primitive))
+}
+
+#[must_use]
+pub fn literal_matches_type(literal: &Literal, ty: &Type) -> bool
+{
+  if ty.is_boxed_optional_str()
+  {
+    return matches!(literal, Literal::None);
+  }
+  let Type::Primitive(primitive) = ty
+  else
+  {
+    return true;
+  };
+  match literal
+  {
+    Literal::None => true,
+    Literal::Bool(_) => *primitive == PrimitiveType::Bool,
+    Literal::Integer(_) => matches!(primitive,
+                                    PrimitiveType::Byte |
+                                    PrimitiveType::SByte |
+                                    PrimitiveType::Short |
+                                    PrimitiveType::Long |
+                                    PrimitiveType::Int |
+                                    PrimitiveType::Integer |
+                                    PrimitiveType::UShort |
+                                    PrimitiveType::ULong |
+                                    PrimitiveType::UInt |
+                                    PrimitiveType::UInteger),
+    Literal::Float(_) => matches!(primitive, PrimitiveType::SFloat | PrimitiveType::Float),
+    Literal::Char(_) => *primitive == PrimitiveType::Char,
+    Literal::String(_) => *primitive == PrimitiveType::Str,
   }
 }
 

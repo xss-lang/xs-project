@@ -101,6 +101,19 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                                             .map(|local| local.ty.clone()),
     Expression::Field { path } => Some(path.ty.clone()),
     Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
+    Expression::Array { elements, .. } =>
+    {
+      let element = homogeneous_expression_type(elements, locals)?;
+      Some(Type::Array { element: Box::new(element),
+                         length: Some(elements.len().try_into().ok()?) })
+    }
+    Expression::Map { entries, .. } =>
+    {
+      let keys = entries.iter().map(|entry| &entry.key).collect::<Vec<_>>();
+      let values = entries.iter().map(|entry| &entry.value).collect::<Vec<_>>();
+      Some(Type::Map { key: Box::new(homogeneous_expression_refs_type(&keys, locals)?),
+                       value: Box::new(homogeneous_expression_refs_type(&values, locals)?) })
+    }
     Expression::Assign { value, .. } => infer_expression_type(value, locals),
     Expression::AssignField { value, .. } => infer_expression_type(value, locals),
     Expression::Update { target, .. } => locals.iter()
@@ -123,6 +136,21 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
     Expression::If { result_type, .. } => Some(result_type.as_ref().clone()),
     Expression::Match { result_type, .. } => Some(result_type.as_ref().clone()),
   }
+}
+
+fn homogeneous_expression_type(expressions: &[Expression], locals: &[Local]) -> Option<Type>
+{
+  let references = expressions.iter().collect::<Vec<_>>();
+  homogeneous_expression_refs_type(&references, locals)
+}
+
+fn homogeneous_expression_refs_type(expressions: &[&Expression], locals: &[Local]) -> Option<Type>
+{
+  let first = infer_expression_type(expressions.first()?, locals)?;
+  expressions.iter()
+             .skip(1)
+             .all(|value| infer_expression_type(value, locals).as_ref() == Some(&first))
+             .then_some(first)
 }
 
 fn infer_unary_expression_type(operator: UnaryOperator, operand: &Expression, locals: &[Local]) -> Option<Type>
@@ -269,6 +297,17 @@ mod tests
     assert_eq!(resolve_binding(&inferred(Literal::String("A".to_string())), &[]).unwrap()
                                                                                 .ty,
                Type::Primitive(PrimitiveType::Str));
+  }
+
+  #[test]
+  fn infers_builtin_array_type_without_desugaring()
+  {
+    let expression = Expression::Array { elements: vec![literal(Literal::Integer("1".to_string())),
+                                                        literal(Literal::Integer("2".to_string()))],
+                                         span: span() };
+    assert_eq!(infer_expression_type(&expression, &[]),
+               Some(Type::Array { element: Box::new(Type::Primitive(PrimitiveType::Int)),
+                                  length: Some(2) }));
   }
 
   #[test]

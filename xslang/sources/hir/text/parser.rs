@@ -6,19 +6,20 @@
 use crate::hir::async_check::Span;
 use crate::hir::symbols::{Import, Module, Symbol, SymbolKind, Visibility};
 use crate::hir::type_check::{
-  BinaryOperator, Block, Expression, FieldPath, Function, Literal, Local, ObjectField, PrimitiveType, Statement, Type,
-  UnaryOperator, UpdateOperator, UpdatePosition,
+  BinaryOperator, Block, Expression, FieldPath, Function, Literal, Local, ObjectField, Statement, Type, UnaryOperator,
+  UpdateOperator, UpdatePosition,
 };
 use crate::hir::{MatchArm, MatchPattern};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
+mod collection;
 mod match_expression;
 mod nominal;
 mod type_parser;
 mod unary;
 
-use type_parser::{is_named_type, primitive_type, split_type_list};
+use type_parser::{parse_local_record, parse_type_text, split_type_list};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XhirParseDiagnostic
@@ -483,6 +484,14 @@ impl Parser<'_>
     {
       return self.object_expression(nominal_type);
     }
+    if rest == "array"
+    {
+      return self.array_expression();
+    }
+    if rest == "map"
+    {
+      return self.map_expression();
+    }
     if let Some(target) = rest.strip_prefix("assign ")
     {
       self.index += 1;
@@ -731,20 +740,10 @@ impl Parser<'_>
 
   fn parse_type(&mut self, name: &str) -> Option<Type>
   {
-    if name == "()"
-    {
-      return Some(Type::Unit);
-    }
-    if let Some(primitive) = primitive_type(name)
-    {
-      return Some(Type::Primitive(primitive));
-    }
-    if is_named_type(name)
-    {
-      return Some(Type::Named(name.to_string()));
-    }
-    self.report(format!("unknown type '{name}'"));
-    None
+    parse_type_text(name).or_else(|| {
+                           self.report(format!("unknown type '{name}'"));
+                           None
+                         })
   }
 
   fn literal(&mut self, text: &str) -> Literal
@@ -966,16 +965,6 @@ fn parse_import_line(line: &str) -> Option<Import>
                           name: left.to_string(),
                           alias: None,
                           span: span() })
-}
-
-fn parse_local_record(text: &str) -> Option<Local>
-{
-  let (name, rest) = text.split_once(": ")?;
-  let (ty, mutability) = rest.rsplit_once(' ')?;
-  Some(Local { name: name.to_string(),
-               ty: primitive_type(ty).map_or_else(|| Type::Named(ty.to_string()), Type::Primitive),
-               mutable: mutability == "mutable",
-               span: span() })
 }
 
 const fn span() -> Span
