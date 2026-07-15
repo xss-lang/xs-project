@@ -54,6 +54,7 @@ impl HirToMirLowerer
       Expression::Field { path } => type_to_xlil(&path.ty),
       Expression::Object { .. } => None,
       Expression::Array { .. } | Expression::Map { .. } => None,
+      Expression::Index { element_type, .. } => type_to_xlil(element_type),
       Expression::Update { target, .. } => self.local_value_type(*self.locals.get(target)?, lowered),
       Expression::Binary { operator,
                            left,

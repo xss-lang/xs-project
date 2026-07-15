@@ -12,6 +12,8 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.7 - 2026-07-15
+
 ### Added
 
 - The structural parser now accepts canonical built-in collection type forms: `[T]`, fixed-size `[T; N]`, and map
@@ -20,6 +22,9 @@ source-to-native executable pipeline.
   existing `Optional<Str>` sugar. Array and map declarations retain dedicated compiler-core type records rather than
   desugaring to nominal collection names. Typed HIR now preserves array/map literals, performs homogeneous inference and
   contextual element checks, and round-trips those records through XHIR.
+- First-class fixed arrays now lower through typed HIR, MIR, XLIL `%aN` registry records, the public C23 XLIL API, LLVM
+  array values, object emission, and native `.xse` linking. XLIL construction and constant indexing use `array` and
+  `extract.array` records; dynamic arrays and maps remain deferred beyond typed HIR.
 - Nominal `data` return values now use first-class aggregate values across typed HIR, MIR, XMIR, XLIL, LLVM, and native
   `.xse` emission. Aggregate-returning calls can initialize local `data` places, including nested layouts, and their fields
   are extracted back into the existing place model without exposing LLVM types to HIR or MIR.

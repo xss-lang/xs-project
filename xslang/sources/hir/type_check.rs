@@ -166,6 +166,13 @@ pub enum Expression
   {
     entries: Vec<MapEntry>, span: Span
   },
+  Index
+  {
+    collection: Box<Expression>,
+    index: Box<Expression>,
+    element_type: Box<Type>,
+    span: Span,
+  },
   Assign
   {
     target: String,
@@ -634,6 +641,23 @@ impl TypeChecker
           self.check_expression(&entry.value);
         }
       }
+      Expression::Index { collection,
+                          index,
+                          element_type,
+                          span, } =>
+      {
+        self.check_expression(collection);
+        self.check_expression(index);
+        let collection_type = self.expression_type(collection);
+        if !matches!(collection_type, Some(Type::Array { element, .. }) if element.as_ref() == element_type.as_ref())
+        {
+          self.report_collection_mismatch(*span, "index source must be an array with the recorded element type");
+        }
+        if !matches!(self.expression_type(index), Some(Type::Primitive(primitive)) if is_supported_integer(primitive))
+        {
+          self.report_collection_mismatch(*span, "array index must have an integer type");
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
@@ -815,6 +839,14 @@ impl TypeChecker
         {
           self.check_expression_against_type(&entry.key, key);
           self.check_expression_against_type(&entry.value, value);
+        }
+      }
+      Expression::Index { span, .. } =>
+      {
+        self.check_expression(expression);
+        if self.expression_type(expression).as_ref() != Some(ty)
+        {
+          self.report_collection_mismatch(*span, "indexed element is not assignable to the target type");
         }
       }
       Expression::Literal { .. } =>

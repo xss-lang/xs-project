@@ -141,6 +141,16 @@ impl HirToMirLowerer
                                                                             })
                                                                             .collect::<Option<Vec<_>>>()?,
                                                                    span: *span }),
+      DesugaredExpression::Index { collection,
+                                   index,
+                                   element_type,
+                                   span, } =>
+      {
+        Some(Expression::Index { collection: Box::new(self.surface_expression_from_desugared(collection)?),
+                                 index: Box::new(self.surface_expression_from_desugared(index)?),
+                                 element_type: element_type.clone(),
+                                 span: *span })
+      }
       DesugaredExpression::Assign { target,
                                     value,
                                     span, } =>

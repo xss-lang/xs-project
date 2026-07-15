@@ -61,4 +61,24 @@ impl Parser<'_>
     self.report("unterminated map expression".to_string());
     None
   }
+
+  pub(super) fn index_expression(&mut self, element_type: &str) -> Option<Expression>
+  {
+    let element_type = self.parse_type(element_type)?;
+    self.index += 1;
+    self.consume_expression_field("collection");
+    let collection = self.expression()?;
+    self.consume_expression_field("offset");
+    let index = self.expression()?;
+    if self.current().as_deref() != Some(".end")
+    {
+      self.report("unterminated index expression".to_string());
+      return None;
+    }
+    self.index += 1;
+    Some(Expression::Index { collection: Box::new(collection),
+                             index: Box::new(index),
+                             element_type: Box::new(element_type),
+                             span: span() })
+  }
 }

@@ -32,7 +32,7 @@ impl Parser<'_>
   {
     let (result, value) = text.split_once(" = const.str ")?;
     let result = self.value_id(result.strip_suffix(":str")?, line)?;
-    let Some((encoding, units)) = crate::text_utf16::parse_encoded(value)
+    let Some((encoding, units)) = crate::text::parse_encoded(value)
     else
     {
       self.report(DiagnosticCode::InvalidInstruction,

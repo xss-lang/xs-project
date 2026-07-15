@@ -448,6 +448,18 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       }
       let _ = writeln!(output, "{pad}.end");
     }
+    Expression::Index { collection,
+                        index,
+                        element_type,
+                        .. } =>
+    {
+      let _ = writeln!(output, "{pad}index {}", type_name(element_type));
+      let _ = writeln!(output, "{pad}  collection");
+      write_expression(output, collection, indent + 2);
+      let _ = writeln!(output, "{pad}  offset");
+      write_expression(output, index, indent + 2);
+      let _ = writeln!(output, "{pad}.end");
+    }
     Expression::Assign { target,
                          value,
                          .. } =>
@@ -631,6 +643,18 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
         let _ = writeln!(output, "{pad}    value");
         write_desugared_expression(output, &entry.value, indent + 3);
       }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    DesugaredExpression::Index { collection,
+                                 index,
+                                 element_type,
+                                 .. } =>
+    {
+      let _ = writeln!(output, "{pad}index {}", type_name(element_type));
+      let _ = writeln!(output, "{pad}  collection");
+      write_desugared_expression(output, collection, indent + 2);
+      let _ = writeln!(output, "{pad}  offset");
+      write_desugared_expression(output, index, indent + 2);
       let _ = writeln!(output, "{pad}.end");
     }
     DesugaredExpression::Assign { target,
@@ -856,7 +880,7 @@ fn literal_name(literal: &Literal) -> String
     Literal::Bool(value) => format!("bool {value}"),
     Literal::Integer(value) => format!("integer {value}"),
     Literal::Float(value) => format!("float {value}"),
-    Literal::Char(value) => format!("char {}", crate::text_literal::format_character(*value)),
+    Literal::Char(value) => format!("char {}", crate::text::format_character(*value)),
     Literal::String(value) => format!("string {value:?}"),
     Literal::None => "None".to_string(),
   }

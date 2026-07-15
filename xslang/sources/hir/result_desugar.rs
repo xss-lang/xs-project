@@ -57,6 +57,13 @@ pub enum DesugaredExpression
     entries: Vec<DesugaredMapEntry>,
     span: Span,
   },
+  Index
+  {
+    collection: Box<DesugaredExpression>,
+    index: Box<DesugaredExpression>,
+    element_type: Box<Type>,
+    span: Span,
+  },
   Assign
   {
     target: String,
@@ -377,6 +384,14 @@ impl ResultDesugar
                                                    .collect(),
                                    span: *span }
       }
+      Expression::Index { collection,
+                          index,
+                          element_type,
+                          span, } => DesugaredExpression::Index { collection:
+                                                                    Box::new(self.desugar_expression(collection)),
+                                                                  index: Box::new(self.desugar_expression(index)),
+                                                                  element_type: element_type.clone(),
+                                                                  span: *span },
       Expression::Assign { target,
                            value,
                            span, } => DesugaredExpression::Assign { target: target.clone(),
@@ -566,6 +581,7 @@ impl ResultDesugar
                .then(|| Type::Map { key: Box::new(key),
                                     value: Box::new(value) })
       }
+      Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target,

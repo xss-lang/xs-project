@@ -53,6 +53,34 @@ fn roundtrips_aggregate_and_extract_registers()
 }
 
 #[test]
+fn roundtrips_fixed_array_registry_and_registers()
+{
+  let text = ".xlil version 0\n.xlil module Arrays\n.array %a0 : i32 x 3\n.func second : (i32, i32, i32) -> \
+              i32\n.param %r0:i32\n.param %r1:i32\n.param %r2:i32\nbb0.entry:\n  %r3:%a0 = array %r0, %r1, %r2\n  \
+              %r4:i32 = extract.array %r3, 1\n  ret %r4\n.end\n";
+  let module = parse_module(text).expect("fixed array XLIL should parse");
+
+  assert_eq!(module.array_types.len(), 1);
+  assert_eq!(module.array_types[0].element_type, Type::I32);
+  assert_eq!(module.array_types[0].length, 3);
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(crate::xlil::writer::module_to_string(&module), text);
+}
+
+#[test]
+fn verifier_rejects_wrong_fixed_array_length()
+{
+  let text = ".xlil version 0\n.xlil module Arrays\n.array %a0 : i32 x 2\n.func bad : (i32) -> %a0\n.param \
+              %r0:i32\nbb0.entry:\n  %r1:%a0 = array %r0\n  ret %r1\n.end\n";
+  let module = parse_module(text).expect("structurally valid fixed array should parse");
+
+  assert!(crate::xlil::verify::verify_module(&module).iter().any(|diagnostic| {
+                                                              diagnostic.code ==
+                                                              crate::xlil::verify::DiagnosticCode::InvalidArrayType
+                                                            }));
+}
+
+#[test]
 fn verifier_rejects_aggregate_field_type_mismatch()
 {
   let text = ".xlil version 0\n.xlil module Geometry\n.type %t0 Point : (i32, i32)\n.func bad : (i64, i32) -> \

@@ -333,10 +333,11 @@ impl<'a> Verifier<'a>
                       field_types: &[crate::xlil::Type],
                       span: Span)
   {
-    if value_type.kind != crate::xlil::TypeKind::Aggregate
+    if !matches!(value_type.kind,
+                 crate::xlil::TypeKind::Aggregate | crate::xlil::TypeKind::Array)
     {
       self.report(DiagnosticCode::LocalTypeMismatch,
-                  "aggregate statement requires an aggregate result type".to_string(),
+                  "aggregate statement requires a composite result type".to_string(),
                   span);
     }
     self.verify_exact_local(result, value_type, "aggregate result local", span);
@@ -351,16 +352,25 @@ impl<'a> Verifier<'a>
     {
       self.verify_exact_local(*field, *field_type, &format!("aggregate field {index}"), span);
     }
+    if value_type.kind == crate::xlil::TypeKind::Array &&
+       field_types.first()
+                  .is_some_and(|first| field_types.iter().any(|field| field != first))
+    {
+      self.report(DiagnosticCode::LocalTypeMismatch,
+                  "array aggregate elements must have one homogeneous type".to_string(),
+                  span);
+    }
   }
 
   fn verify_extract(&mut self, result: LocalId, aggregate: LocalId, field_type: crate::xlil::Type, span: Span)
   {
     self.verify_local(aggregate, span);
     if let Some(value_type) = self.local_type(aggregate) &&
-       value_type.kind != crate::xlil::TypeKind::Aggregate
+       !matches!(value_type.kind,
+                 crate::xlil::TypeKind::Aggregate | crate::xlil::TypeKind::Array)
     {
       self.report(DiagnosticCode::LocalTypeMismatch,
-                  "extract source local must have an aggregate type".to_string(),
+                  "extract source local must have a composite type".to_string(),
                   span);
     }
     self.verify_exact_local(result, field_type, "extract result local", span);

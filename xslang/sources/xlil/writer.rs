@@ -26,6 +26,14 @@ pub fn write_module(module: &Module, output: &mut impl Write) -> fmt::Result
     }
     writeln!(output, ")")?;
   }
+  for array in &module.array_types
+  {
+    writeln!(output,
+             ".array %a{} : {} x {}",
+             array.id,
+             type_text(array.element_type),
+             array.length)?;
+  }
   for function in &module.functions
   {
     write_function(function, output)?;
@@ -133,7 +141,7 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
                             ref units, } => writeln!(output,
                                                      "  %r{}:str = const.str {}",
                                                      result.0,
-                                                     crate::text_utf16::format_encoded(encoding, units)),
+                                                     crate::text::format_encoded(encoding, units)),
     Instruction::ConstBool { result,
                              value, } => writeln!(output, "  %r{}:bool = const.bool {}", result.0, value),
     Instruction::BinaryInteger { operation,
@@ -280,7 +288,15 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
                              value_type,
                              ref fields, } =>
     {
-      write!(output, "  %r{}:{} = aggregate ", result.0, type_text(value_type))?;
+      let instruction = if value_type.kind == crate::xlil::TypeKind::Array
+      {
+        "array"
+      }
+      else
+      {
+        "aggregate"
+      };
+      write!(output, "  %r{}:{} = {instruction} ", result.0, type_text(value_type))?;
       for (index, field) in fields.iter().enumerate()
       {
         if index != 0
@@ -293,12 +309,23 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
     }
     Instruction::Extract { result,
                            aggregate,
-                           field, } => writeln!(output,
-                                                "  %r{}:{} = extract %r{}, {}",
-                                                result.0,
-                                                type_text(function.values[result.0 as usize].value_type),
-                                                aggregate.0,
-                                                field),
+                           field, } =>
+    {
+      let instruction = if function.values[aggregate.0 as usize].value_type.kind == crate::xlil::TypeKind::Array
+      {
+        "extract.array"
+      }
+      else
+      {
+        "extract"
+      };
+      writeln!(output,
+               "  %r{}:{} = {instruction} %r{}, {}",
+               result.0,
+               type_text(function.values[result.0 as usize].value_type),
+               aggregate.0,
+               field)
+    }
     Instruction::Load { result,
                         slot, } => writeln!(output,
                                             "  %r{}:{} = load %s{}",

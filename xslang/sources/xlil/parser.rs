@@ -10,6 +10,8 @@ use crate::xlil::{
 
 mod aggregate;
 mod aggregate_instruction;
+mod array;
+mod control;
 mod float;
 mod header;
 mod i64;
@@ -47,6 +49,7 @@ pub fn parse_module(text: &str) -> Result<Module, Vec<Diagnostic>>
   let mut parser = Parser { lines: text.lines().collect(),
                             cursor: 0,
                             aggregate_type_count: 0,
+                            array_type_count: 0,
                             diagnostics: vec![] };
   let module = parser.module();
   if parser.diagnostics.is_empty()
@@ -64,6 +67,7 @@ struct Parser<'text>
   lines: Vec<&'text str>,
   cursor: usize,
   aggregate_type_count: u32,
+  array_type_count: u32,
   diagnostics: Vec<Diagnostic>,
 }
 
@@ -98,6 +102,14 @@ impl Parser<'_>
       if self.current_line().is_some_and(|line| line.starts_with(".type "))
       {
         if !self.aggregate_type(&mut module)
+        {
+          break;
+        }
+        continue;
+      }
+      if self.current_line().is_some_and(|line| line.starts_with(".array "))
+      {
+        if !self.array_type(&mut module)
         {
           break;
         }
@@ -186,6 +198,12 @@ impl Parser<'_>
                      .and_then(|id| id.parse::<u32>().ok())
                      .filter(|id| *id < self.aggregate_type_count)
                      .map(Type::aggregate)
+                     .or_else(|| {
+                       name.strip_prefix("%a")
+                           .and_then(|id| id.parse::<u32>().ok())
+                           .filter(|id| *id < self.array_type_count)
+                           .map(Type::array)
+                     })
                      .or_else(|| type_from_name(name));
     if parsed.is_none()
     {
@@ -412,7 +430,15 @@ impl Parser<'_>
     {
       return self.aggregate_instruction(function, result, fields, line);
     }
+    if let Some((result, elements)) = text.split_once(" = array ")
+    {
+      return self.array_instruction(function, result, elements, line);
+    }
     if let Some((result, source)) = text.split_once(" = extract ")
+    {
+      return self.extract_instruction(function, result, source, line);
+    }
+    if let Some((result, source)) = text.split_once(" = extract.array ")
     {
       return self.extract_instruction(function, result, source, line);
     }
@@ -822,136 +848,6 @@ impl Parser<'_>
                              function: function_name,
                              arguments,
                              return_type: Type::VOID })
-  }
-
-  fn call_operands(&mut self, call: &str, line: usize) -> Option<(String, Vec<ValueId>)>
-  {
-    let Some((function, arguments)) = call.split_once('(')
-    else
-    {
-      self.report(DiagnosticCode::InvalidInstruction,
-                  line,
-                  "XLIL call operands are invalid");
-      return None;
-    };
-    let Some(arguments) = arguments.strip_suffix(')')
-    else
-    {
-      self.report(DiagnosticCode::InvalidInstruction,
-                  line,
-                  "XLIL call arguments are invalid");
-      return None;
-    };
-    let mut parsed = Vec::new();
-    if !arguments.is_empty()
-    {
-      for argument in arguments.split(", ")
-      {
-        parsed.push(self.value_operand(argument, line)?);
-      }
-    }
-    Some((function.to_string(), parsed))
-  }
-
-  fn value_operand(&mut self, text: &str, line: usize) -> Option<ValueId>
-  {
-    let Some(value) = text.strip_prefix('%')
-    else
-    {
-      self.report(DiagnosticCode::InvalidInstruction,
-                  line,
-                  "XLIL value operand is invalid");
-      return None;
-    };
-    self.value_id(value, line)
-  }
-
-  fn return_terminator(&mut self, text: &str, line: usize) -> Option<Terminator>
-  {
-    if text.is_empty()
-    {
-      return Some(Terminator::Return(None));
-    }
-    let Some(value) = text.strip_prefix(" %")
-    else
-    {
-      self.report(DiagnosticCode::InvalidTerminator,
-                  line,
-                  "XLIL return terminator is invalid");
-      return None;
-    };
-    Some(Terminator::Return(Some(self.value_id(value, line)?)))
-  }
-
-  fn branch_terminator(&mut self, text: &str, line: usize) -> Option<Terminator>
-  {
-    let Some(target) = text.strip_prefix("bb")
-    else
-    {
-      self.report(DiagnosticCode::InvalidTerminator,
-                  line,
-                  "XLIL branch terminator is invalid");
-      return None;
-    };
-    let Some(target) = target.parse::<u32>().ok().map(BlockId)
-    else
-    {
-      self.report(DiagnosticCode::InvalidTerminator, line, "XLIL branch target is invalid");
-      return None;
-    };
-    Some(Terminator::Branch(target))
-  }
-
-  fn branch_if_terminator(&mut self, text: &str, line: usize) -> Option<Terminator>
-  {
-    let Some((condition, targets)) = text.split_once(", ")
-    else
-    {
-      self.report(DiagnosticCode::InvalidTerminator,
-                  line,
-                  "XLIL br_if terminator is invalid");
-      return None;
-    };
-    let condition = self.value_operand(condition, line)?;
-    let Some((then_block, else_block)) = targets.split_once(", ")
-    else
-    {
-      self.report(DiagnosticCode::InvalidTerminator,
-                  line,
-                  "XLIL br_if targets are invalid");
-      return None;
-    };
-    Some(Terminator::BranchIf { condition,
-                                then_block: self.branch_target(then_block, line)?,
-                                else_block: self.branch_target(else_block, line)? })
-  }
-
-  fn branch_target(&mut self, text: &str, line: usize) -> Option<BlockId>
-  {
-    let Some(target) = text.strip_prefix("bb")
-    else
-    {
-      self.report(DiagnosticCode::InvalidTerminator, line, "XLIL branch target is invalid");
-      return None;
-    };
-    let parsed = target.parse::<u32>().ok().map(BlockId);
-    if parsed.is_none()
-    {
-      self.report(DiagnosticCode::InvalidTerminator, line, "XLIL branch target is invalid");
-    }
-    parsed
-  }
-
-  fn value_id(&mut self, text: &str, line: usize) -> Option<ValueId>
-  {
-    let parsed = text.strip_prefix('r')
-                     .and_then(|text| text.parse::<u32>().ok())
-                     .map(ValueId);
-    if parsed.is_none()
-    {
-      self.report(DiagnosticCode::InvalidValueId, line, "XLIL value id is invalid");
-    }
-    parsed
   }
 
   fn current_line(&self) -> Option<&str>

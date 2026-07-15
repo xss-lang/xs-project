@@ -87,6 +87,35 @@ int main(int argc, char **argv)
   CHECK(LLVMGetTypeKind(type) == LLVMStructTypeKind && LLVMCountStructElementTypes(type) == 2);
   CHECK(xs_llvm_lil_type(backend, (XsLilType){.kind = XS_LIL_TYPE_F16}, &type, &error) == XS_BACKEND_DEFERRED);
 
+  XsLilModule *array_module = nullptr;
+  CHECK(xs_lil_module_create("ArrayLowering", &array_module, nullptr) == XS_LIL_OK);
+  XsLilType array_type = {0};
+  CHECK(xs_lil_module_add_array_type(array_module, (XsLilType){.kind = XS_LIL_TYPE_I32}, 3, &array_type, nullptr) ==
+        XS_LIL_OK);
+  const XsLilType array_parameters[] = {
+      {.kind = XS_LIL_TYPE_I32},
+      {.kind = XS_LIL_TYPE_I32},
+      {.kind = XS_LIL_TYPE_I32},
+  };
+  XsLilFunction *array_function = nullptr;
+  CHECK(xs_lil_module_add_function_definition(array_module, "Second", (XsLilType){.kind = XS_LIL_TYPE_I32},
+                                              array_parameters, 3, &array_function, nullptr) == XS_LIL_OK);
+  XsLilBlock *array_entry = nullptr;
+  CHECK(xs_lil_function_append_block(array_function, "entry", &array_entry, nullptr) == XS_LIL_OK);
+  const XsLilValueId array_fields[] = {0, 1, 2};
+  XsLilValueId array_value = 0;
+  XsLilValueId array_element = 0;
+  CHECK(xs_lil_block_add_array(array_entry, array_type, array_fields, 3, &array_value, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_add_extract(array_entry, array_value, 1, (XsLilType){.kind = XS_LIL_TYPE_I32}, &array_element,
+                                 nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_block_set_return_value(array_entry, array_element, nullptr) == XS_LIL_OK);
+  CHECK(xs_lil_module_verify(array_module, nullptr) == XS_LIL_OK);
+  CHECK(xs_llvm_register_lil_types(second, array_module, &error) == XS_BACKEND_OK);
+  LLVMValueRef array_llvm_function = nullptr;
+  CHECK(xs_llvm_declare_lil_function(second, "Second", (XsLilType){.kind = XS_LIL_TYPE_I32}, array_parameters, 3,
+                                     &array_llvm_function, &error) == XS_BACKEND_OK);
+  CHECK(xs_llvm_lower_lil_function_body(second, array_function, &error) == XS_BACKEND_OK);
+
   const XsPrimitiveType parameters[] = {XS_PRIMITIVE_INT, XS_PRIMITIVE_INT};
   XsFunctionSignature signature = {
       .name = "Add",
@@ -398,6 +427,11 @@ int main(int argc, char **argv)
   CHECK(file_contains(ir_path, "private unnamed_addr constant [6 x i8]"));
   CHECK(file_contains(ir_path, "c\"\\00L\\00e\\00i\""));
   CHECK(xs_llvm_emit_object_file(first, argv[1], &error) == XS_BACKEND_OK);
+  char array_ir_path[4096] = {0};
+  CHECK(snprintf(array_ir_path, sizeof(array_ir_path), "%s.array.ll", argv[1]) > 0);
+  CHECK(xs_llvm_write_ir_file(second, array_ir_path, &error) == XS_BACKEND_OK);
+  CHECK(file_contains(array_ir_path, "[3 x i32]"));
+  CHECK(file_contains(array_ir_path, "extractvalue [3 x i32]"));
 
   const char *linker_arguments[] = {"--version"};
   XsLinkerInvocation invocation = {
@@ -413,7 +447,9 @@ int main(int argc, char **argv)
   xs_llvm_codegen_unit_destroy(first);
   xs_llvm_backend_destroy(backend);
   xs_lil_module_destroy(lil_module);
+  xs_lil_module_destroy(array_module);
   remove(ir_path);
+  remove(array_ir_path);
   remove(argv[1]);
   return failures == 0 ? 0 : 1;
 }

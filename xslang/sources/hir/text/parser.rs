@@ -492,6 +492,10 @@ impl Parser<'_>
     {
       return self.map_expression();
     }
+    if let Some(element_type) = rest.strip_prefix("index ")
+    {
+      return self.index_expression(element_type);
+    }
     if let Some(target) = rest.strip_prefix("assign ")
     {
       self.index += 1;
@@ -762,7 +766,7 @@ impl Parser<'_>
     }
     if let Some(value) = text.strip_prefix("char ")
     {
-      return Literal::Char(crate::text_literal::decode_character(value).unwrap_or(0));
+      return Literal::Char(crate::text::decode_character(value).unwrap_or(0));
     }
     if let Some(value) = text.strip_prefix("string ")
     {

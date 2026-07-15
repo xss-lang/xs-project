@@ -105,6 +105,7 @@ void xs_lil_module_destroy(XsLilModule *module)
     free(module->aggregate_types[i].name);
   }
   free(module->aggregate_types);
+  free(module->array_types);
   free(module->functions);
   free(module->name);
   free(module);
@@ -978,7 +979,7 @@ const char *xs_lil_type_name(XsLilType type)
 {
   static const char *const names[] = {
       "void", "bool", "u8",   "i8",  "u16", "i16", "u32",  "i32", "u64",
-      "i64",  "u128", "i128", "f16", "f32", "f64", "f128", "str", "aggregate",
+      "i64",  "u128", "i128", "f16", "f32", "f64", "f128", "str", "aggregate", "array",
   };
   if((size_t)type.kind >= sizeof(names) / sizeof(names[0]))
     return "unknown";

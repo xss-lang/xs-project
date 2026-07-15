@@ -108,6 +108,10 @@ fn parse_type(parser: &mut Parser<'_>, value: &str, label: &str) -> Type
   {
     return Type::aggregate(id);
   }
+  if let Some(id) = value.strip_prefix("%a").and_then(|id| id.parse().ok())
+  {
+    return Type::array(id);
+  }
   type_from_name(value).unwrap_or_else(|| {
                          parser.report(format!("unknown {label} '{value}'"));
                          Type::VOID

@@ -17,6 +17,7 @@ use crate::hir::{
 
 use super::{SyntaxNode, SyntaxTree};
 
+mod collection;
 mod expression_type;
 mod match_expression;
 mod nominal;
@@ -301,6 +302,10 @@ fn lower_expression(tree: &SyntaxTree,
   let source_span = span(value)?;
   match value.kind
   {
+    kind if collection::is_expression(kind) =>
+    {
+      collection::lower_expression(tree, value, context, locals, expected_type, source_span)
+    }
     EXPR_LITERAL if value.token_kind == TOKEN_INTEGER =>
     {
       Some(Expression::Literal { literal: Literal::Integer(value.text.clone()),
@@ -325,7 +330,7 @@ fn lower_expression(tree: &SyntaxTree,
     }
     EXPR_LITERAL if value.token_kind == TOKEN_CHARACTER =>
     {
-      Some(Expression::Literal { literal: Literal::Char(crate::text_literal::decode_character(&value.text)?),
+      Some(Expression::Literal { literal: Literal::Char(crate::text::decode_character(&value.text)?),
                                  span: source_span })
     }
     EXPR_LITERAL if value.text == "None" && expected_type.is_some_and(Type::is_boxed_optional_str) =>

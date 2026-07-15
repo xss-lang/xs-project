@@ -98,6 +98,41 @@ static void test_aggregate_type_registry_round_trip(void)
   xs_lil_module_destroy(module);
 }
 
+static void test_array_type_registry_round_trip(void)
+{
+  static const char text[] = ".xlil version 0\n.xlil module Arrays\n.array %a0 : i32 x 3\n"
+                             ".func second : (i32, i32, i32) -> i32\n.param %r0:i32\n.param %r1:i32\n"
+                             ".param %r2:i32\nbb0.entry:\n  %r3:%a0 = array %r0, %r1, %r2\n"
+                             "  %r4:i32 = extract.array %r3, 1\n  ret %r4\n.end\n";
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("arrays.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  if(module == nullptr)
+    return;
+  CHECK(xs_lil_module_array_type_count(module) == 1);
+  CHECK(xs_lil_module_array_element_type(module, 0).kind == XS_LIL_TYPE_I32);
+  CHECK(xs_lil_module_array_length(module, 0) == 3);
+  CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
+  const XsLilBlock *block = xs_lil_function_block_at(xs_lil_module_function_at(module, 0), 0);
+  CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_AGGREGATE);
+  CHECK(xs_lil_function_value_type(xs_lil_module_function_at(module, 0), xs_lil_block_instruction_result(block, 0))
+            .kind == XS_LIL_TYPE_ARRAY);
+  FILE *stream = tmpfile();
+  CHECK(stream != nullptr);
+  if(stream != nullptr)
+  {
+    CHECK(xs_lil_module_write_text(module, stream, &error) == XS_LIL_OK);
+    CHECK(fseek(stream, 0, SEEK_SET) == 0);
+    char output[512] = {0};
+    size_t read = fread(output, 1, sizeof(output) - 1U, stream);
+    output[read] = '\0';
+    CHECK(strcmp(output, text) == 0);
+    fclose(stream);
+  }
+  xs_lil_module_destroy(module);
+}
+
 static void test_function_body_text_writer(void)
 {
   XsLilError error = {0};
@@ -823,6 +858,7 @@ int main(void)
 {
   test_module_and_text_writer();
   test_aggregate_type_registry_round_trip();
+  test_array_type_registry_round_trip();
   test_function_body_text_writer();
   test_function_body_rejects_missing_return_value();
   test_floating_constant_bits();

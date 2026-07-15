@@ -18,10 +18,10 @@ impl Parser<'_>
       Some(value) =>
       {
         self.index += 1;
-        crate::text_utf16::parse_units(value).unwrap_or_else(|| {
-                                               self.report("invalid const.str UTF-16 code units".to_string());
-                                               Vec::new()
-                                             })
+        crate::text::parse_units(value).unwrap_or_else(|| {
+                                         self.report("invalid const.str UTF-16 code units".to_string());
+                                         Vec::new()
+                                       })
       }
       None =>
       {

@@ -106,6 +106,7 @@ add_library(xs_lil
   xs/sources/xlil/memory.c
   xs/sources/xlil/model.c
   xs/sources/xlil/model_aggregate.c
+  xs/sources/xlil/model_array.c
   xs/sources/xlil/model_float.c
   xs/sources/xlil/model_integer.c
   xs/sources/xlil/model_integer_operation.c
@@ -113,7 +114,9 @@ add_library(xs_lil
   xs/sources/xlil/model_string_compare.c
   xs/sources/xlil/parser.c
   xs/sources/xlil/parser_aggregate.c
+  xs/sources/xlil/parser_array.c
   xs/sources/xlil/parser_scalar.c
+  xs/sources/xlil/parser_signature.c
   xs/sources/xlil/parser_integer_operation.c
   xs/sources/xlil/parser_string.c
   xs/sources/xlil/verify.c

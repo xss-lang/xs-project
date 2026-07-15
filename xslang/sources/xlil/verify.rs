@@ -7,11 +7,14 @@ use std::collections::HashSet;
 
 use crate::xlil::{Function, Instruction, Module, SlotId, Terminator, Type, TypeKind, ValueId, type_name};
 
+mod composite;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
 {
   EmptyModuleName,
   InvalidAggregateType,
+  InvalidArrayType,
   DuplicateAggregateName,
   EmptyFunctionName,
   DuplicateFunctionName,
@@ -87,6 +90,17 @@ impl Verifier
         }
       }
     }
+    for (index, array) in module.array_types.iter().enumerate()
+    {
+      if array.id as usize != index ||
+         array.length == 0 ||
+         array.element_type == Type::VOID ||
+         !Self::valid_type(module, array.element_type)
+      {
+        self.report(DiagnosticCode::InvalidArrayType,
+                    "XLIL array registry requires sequential ids, a non-void element type, and nonzero length");
+      }
+    }
     for function in &module.functions
     {
       if !names.insert(function.name.as_str())
@@ -114,10 +128,16 @@ impl Verifier
 
   fn valid_type(module: &Module, value_type: Type) -> bool
   {
-    value_type.kind != TypeKind::Aggregate ||
-    module.aggregate_types
-          .get(value_type.registry_id as usize)
-          .is_some_and(|entry| entry.id == value_type.registry_id)
+    match value_type.kind
+    {
+      TypeKind::Aggregate => module.aggregate_types
+                                   .get(value_type.registry_id as usize)
+                                   .is_some_and(|entry| entry.id == value_type.registry_id),
+      TypeKind::Array => module.array_types
+                               .get(value_type.registry_id as usize)
+                               .is_some_and(|entry| entry.id == value_type.registry_id),
+      _ => true,
+    }
   }
 
   fn function(&mut self, function: &Function, module: &Module)
@@ -423,52 +443,10 @@ impl Verifier
       }
       Instruction::Aggregate { result,
                                value_type: aggregate_type,
-                               ref fields, } =>
-      {
-        self.typed_value(function, result, aggregate_type, "XLIL aggregate result");
-        let Some(layout) = module.aggregate_type(aggregate_type)
-        else
-        {
-          self.report(DiagnosticCode::InvalidAggregateType,
-                      "XLIL aggregate instruction must reference a known aggregate type");
-          return;
-        };
-        if fields.len() != layout.fields.len()
-        {
-          self.report(DiagnosticCode::InvalidAggregateType,
-                      "XLIL aggregate field count must match its registry layout");
-        }
-        for (field, expected) in fields.iter().zip(&layout.fields)
-        {
-          if value_type(function, *field) != Some(*expected)
-          {
-            self.report(DiagnosticCode::InvalidAggregateType,
-                        "XLIL aggregate field value type must match its registry layout");
-          }
-        }
-      }
+                               ref fields, } => self.composite(function, module, result, aggregate_type, fields),
       Instruction::Extract { result,
                              aggregate,
-                             field, } =>
-      {
-        let Some(aggregate_type) = value_type(function, aggregate)
-        else
-        {
-          self.report(DiagnosticCode::InstructionResultUnknown,
-                      "XLIL extract source must reference a declared value");
-          return;
-        };
-        let Some(field_type) = module.aggregate_type(aggregate_type)
-                                     .and_then(|layout| layout.fields.get(field as usize))
-                                     .copied()
-        else
-        {
-          self.report(DiagnosticCode::InvalidAggregateType,
-                      "XLIL extract field must exist in the aggregate registry layout");
-          return;
-        };
-        self.typed_value(function, result, field_type, "XLIL extract result");
-      }
+                             field, } => self.extract(function, module, result, aggregate, field),
       Instruction::Load { result,
                           slot, } => self.memory(function, slot, result, "XLIL load"),
       Instruction::Store { slot,

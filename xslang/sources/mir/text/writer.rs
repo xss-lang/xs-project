@@ -172,7 +172,7 @@ fn write_statement(output: &mut String, statement: &Statement)
     {
       let _ = writeln!(output, "      statement const.str");
       let _ = writeln!(output, "        target local {}", local.0);
-      let _ = writeln!(output, "        value {}", crate::text_utf16::format_units(units));
+      let _ = writeln!(output, "        value {}", crate::text::format_units(units));
     }
     Statement::ConstBool { local,
                            value,

@@ -198,6 +198,7 @@ void xs_llvm_codegen_unit_destroy(XsLlvmCodegenUnit *unit)
   if(unit->module != nullptr)
     LLVMDisposeModule(unit->module);
   free(unit->lil_types);
+  free(unit->lil_array_types);
   free(unit);
 }
 
@@ -312,7 +313,8 @@ XsBackendStatus xs_llvm_lil_type(XsLlvmBackend *backend, XsLilType type, LLVMTyp
     break;
   }
   case XS_LIL_TYPE_AGGREGATE:
-    return set_error(error, XS_BACKEND_DEFERRED, "aggregate XLIL types require a codegen-unit type registry");
+  case XS_LIL_TYPE_ARRAY:
+    return set_error(error, XS_BACKEND_DEFERRED, "composite XLIL types require a codegen-unit type registry");
   default:
     return set_error(error, XS_BACKEND_INVALID_ARGUMENT, "unknown XLIL type");
   }

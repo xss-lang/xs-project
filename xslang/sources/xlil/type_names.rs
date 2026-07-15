@@ -28,6 +28,7 @@ pub const fn type_name(value_type: Type) -> &'static str
     TypeKind::F128 => "f128",
     TypeKind::Str => "str",
     TypeKind::Aggregate => "aggregate",
+    TypeKind::Array => "array",
   }
 }
 
@@ -65,6 +66,10 @@ pub fn type_text(value_type: Type) -> String
   if value_type.kind == TypeKind::Aggregate
   {
     format!("%t{}", value_type.registry_id)
+  }
+  else if value_type.kind == TypeKind::Array
+  {
+    format!("%a{}", value_type.registry_id)
   }
   else
   {

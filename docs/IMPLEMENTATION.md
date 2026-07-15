@@ -176,7 +176,9 @@ The documented compilation order is preserved:
   the structural AST.
 - Built-in array and map types remain first-class compiler types across the structural-AST/compiler-core boundary and
   typed HIR; they are not aliases or desugarings of nominal standard-library collections. Array/map literal inference,
-  contextual element checking, and XHIR text round-tripping are implemented. MIR value/layout lowering remains deferred.
+  contextual element checking, and XHIR text round-tripping are implemented. Fixed arrays also lower through MIR
+  composite values, XLIL `%aN` registry records, the public C23 XLIL boundary, and LLVM array values. Dynamic-array and
+  map value/layout lowering remains deferred.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,
@@ -679,9 +681,11 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   read-only function/body inspection, function bodies, basic blocks, parameters, all fixed-width integer constants, exact-bit
   `const.f32`/`const.f64`, `const.bool`, UTF-16 `eq.str`/`ne.str`,
   typed stack slots and `load`/`store`, i32 arithmetic/bitwise/shift/comparison, i64 arithmetic/bitwise/shift/comparison,
-  aggregate type registries, `aggregate`, `extract`, `call`, `br`, `br_if`, and `return`.
+  aggregate and fixed-array type registries, `aggregate`, `array`, `extract`, `extract.array`, `call`, `br`, `br_if`,
+  and `return`.
 - The XLIL text writer emits assembly-like registry records: `.xlil version 0`, `.xlil module`, `.extern`, `.func`,
-  `.type %tN Name : (...)`, `.slot %sN:type`, `bbN.label:`, typed SSA instructions, aggregate construction/extraction,
+  `.type %tN Name : (...)`, `.array %aN : T x N`, `.slot %sN:type`, `bbN.label:`, typed SSA instructions, composite
+  construction/extraction,
   `store %rN, %sA`, `%rN:type = load %sA`, `br bbN`,
   `br_if %rN, bbA, bbB`, `panic`, `ret`, and `.end`.
 - MIR parameters carry an explicit immutable local id plus XLIL-vocabulary type, allowing the first MIR → XLIL body bridge

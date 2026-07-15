@@ -20,7 +20,7 @@ bool xs_lil_parse_type_name(const XsLilModule *module, const char *text, size_t 
       return true;
     }
   }
-  if(length < 3 || text[0] != '%' || text[1] != 't')
+  if(length < 3 || text[0] != '%' || (text[1] != 't' && text[1] != 'a'))
     return false;
   uint32_t id = 0;
   for(size_t i = 2; i < length; ++i)
@@ -32,9 +32,11 @@ bool xs_lil_parse_type_name(const XsLilModule *module, const char *text, size_t 
       return false;
     id = id * 10U + digit;
   }
-  if(module == nullptr || id >= xs_lil_module_aggregate_type_count(module))
+  bool aggregate = text[1] == 't';
+  size_t count = aggregate ? xs_lil_module_aggregate_type_count(module) : xs_lil_module_array_type_count(module);
+  if(module == nullptr || id >= count)
     return false;
-  *type = xs_lil_aggregate_type(id);
+  *type = aggregate ? xs_lil_aggregate_type(id) : xs_lil_array_type(id);
   return true;
 }
 
@@ -113,8 +115,8 @@ static bool append_value(XsLilValueId **values, size_t *count, XsLilValueId valu
   return true;
 }
 
-static XsLilStatus parse_aggregate_values(XsLilBlock *block, XsLilType result_type, const char *cursor, const char *end,
-                                          XsLilValueId expected, XsLilError *error)
+static XsLilStatus parse_composite_values(XsLilBlock *block, XsLilType result_type, const char *cursor,
+                                          const char *end, XsLilValueId expected, bool array, XsLilError *error)
 {
   XsLilValueId *fields = nullptr;
   size_t field_count = 0;
@@ -136,7 +138,8 @@ static XsLilStatus parse_aggregate_values(XsLilBlock *block, XsLilType result_ty
     cursor += 2;
   }
   XsLilValueId result = UINT32_MAX;
-  XsLilStatus status = xs_lil_block_add_aggregate(block, result_type, fields, field_count, &result, error);
+  XsLilStatus status = array ? xs_lil_block_add_array(block, result_type, fields, field_count, &result, error)
+                            : xs_lil_block_add_aggregate(block, result_type, fields, field_count, &result, error);
   free(fields);
   if(status != XS_LIL_OK)
     return status;
@@ -154,12 +157,31 @@ XsLilStatus xs_lil_parse_aggregate_instruction(XsLilBlock *block, XsLilType resu
     *matched = true;
     if(result_type.kind != XS_LIL_TYPE_AGGREGATE)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate result type is invalid");
-    return parse_aggregate_values(block, result_type, operation + 10, end, expected_result, error);
+    return parse_composite_values(block, result_type, operation + 10, end, expected_result, false, error);
   }
-  if(operation_length >= 8 && strncmp(operation, "extract ", 8) == 0)
+  if(operation_length >= 6 && strncmp(operation, "array ", 6) == 0)
   {
     *matched = true;
-    const char *cursor = operation + 8;
+    if(result_type.kind != XS_LIL_TYPE_ARRAY)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array result type is invalid");
+    return parse_composite_values(block, result_type, operation + 6, end, expected_result, true, error);
+  }
+  const char *extract_prefix = nullptr;
+  size_t extract_prefix_length = 0;
+  if(operation_length >= 14 && strncmp(operation, "extract.array ", 14) == 0)
+  {
+    extract_prefix = "extract.array ";
+    extract_prefix_length = 14;
+  }
+  else if(operation_length >= 8 && strncmp(operation, "extract ", 8) == 0)
+  {
+    extract_prefix = "extract ";
+    extract_prefix_length = 8;
+  }
+  if(extract_prefix != nullptr)
+  {
+    *matched = true;
+    const char *cursor = operation + extract_prefix_length;
     XsLilValueId aggregate = UINT32_MAX;
     if(!parse_value(&cursor, end, &aggregate) || end - cursor < 3 || cursor[0] != ',' || cursor[1] != ' ')
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract source is invalid");

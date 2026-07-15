@@ -75,7 +75,7 @@ usage: xs --version
 
 ## `xs --version`
 
-`xs --version` prints the compiler version, such as `xs 0.1.6`.
+`xs --version` prints the compiler version, such as `xs 0.1.7`.
 
 ## `xs check`
 

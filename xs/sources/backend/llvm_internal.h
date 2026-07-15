@@ -25,6 +25,8 @@ struct XsLlvmCodegenUnit
   LLVMModuleRef module;
   LLVMTypeRef *lil_types;
   size_t lil_type_count;
+  LLVMTypeRef *lil_array_types;
+  size_t lil_array_type_count;
 };
 
 XsBackendStatus xs_llvm_codegen_lil_type(XsLlvmCodegenUnit *unit, XsLilType type, LLVMTypeRef *llvm_type,

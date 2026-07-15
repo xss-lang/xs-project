@@ -22,12 +22,13 @@ static XsBackendStatus aggregate_error(XsBackendError *error, XsBackendStatus st
 XsBackendStatus xs_llvm_codegen_lil_type(XsLlvmCodegenUnit *unit, XsLilType type, LLVMTypeRef *llvm_type,
                                          XsBackendError *error)
 {
-  if(type.kind != XS_LIL_TYPE_AGGREGATE)
+  if(type.kind != XS_LIL_TYPE_AGGREGATE && type.kind != XS_LIL_TYPE_ARRAY)
     return xs_llvm_lil_type(unit->backend, type, llvm_type, error);
-  if(type.registry_id >= unit->lil_type_count || unit->lil_types[type.registry_id] == nullptr)
-    return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT,
-                           "XLIL aggregate type is not registered in the codegen unit");
-  *llvm_type = unit->lil_types[type.registry_id];
+  LLVMTypeRef *registry = type.kind == XS_LIL_TYPE_ARRAY ? unit->lil_array_types : unit->lil_types;
+  size_t count = type.kind == XS_LIL_TYPE_ARRAY ? unit->lil_array_type_count : unit->lil_type_count;
+  if(type.registry_id >= count || registry[type.registry_id] == nullptr)
+    return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL composite type is not registered in the codegen unit");
+  *llvm_type = registry[type.registry_id];
   return XS_BACKEND_OK;
 }
 
@@ -35,13 +36,12 @@ XsBackendStatus xs_llvm_register_lil_types(XsLlvmCodegenUnit *unit, const XsLilM
 {
   if(error != nullptr)
     *error = (XsBackendError){.status = XS_BACKEND_OK};
-  if(unit == nullptr || module == nullptr || unit->lil_types != nullptr)
+  if(unit == nullptr || module == nullptr || unit->lil_types != nullptr || unit->lil_array_types != nullptr)
     return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT, "fresh codegen unit and XLIL module are required");
   size_t count = xs_lil_module_aggregate_type_count(module);
-  if(count == 0)
-    return XS_BACKEND_OK;
-  unit->lil_types = calloc(count, sizeof(*unit->lil_types));
-  if(unit->lil_types == nullptr)
+  if(count != 0)
+    unit->lil_types = calloc(count, sizeof(*unit->lil_types));
+  if(count != 0 && unit->lil_types == nullptr)
     return aggregate_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while registering XLIL aggregate types");
   unit->lil_type_count = count;
   for(size_t index = 0; index < count; ++index)
@@ -66,6 +66,23 @@ XsBackendStatus xs_llvm_register_lil_types(XsLlvmCodegenUnit *unit, const XsLilM
     free(fields);
     if(status != XS_BACKEND_OK)
       return status;
+  }
+  size_t array_count = xs_lil_module_array_type_count(module);
+  if(array_count != 0)
+    unit->lil_array_types = calloc(array_count, sizeof(*unit->lil_array_types));
+  if(array_count != 0 && unit->lil_array_types == nullptr)
+    return aggregate_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while registering XLIL array types");
+  unit->lil_array_type_count = array_count;
+  for(size_t index = 0; index < array_count; ++index)
+  {
+    LLVMTypeRef element = nullptr;
+    XsBackendStatus status =
+        xs_llvm_codegen_lil_type(unit, xs_lil_module_array_element_type(module, (uint32_t)index), &element, error);
+    if(status != XS_BACKEND_OK)
+      return status;
+    unit->lil_array_types[index] = LLVMArrayType2(element, xs_lil_module_array_length(module, (uint32_t)index));
+    if(unit->lil_array_types[index] == nullptr)
+      return aggregate_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not create an XLIL array type");
   }
   return XS_BACKEND_OK;
 }

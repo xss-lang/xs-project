@@ -31,7 +31,15 @@ impl MirToXlilLowerer
                       *span);
           return;
         };
-        let Some(value) = function.add_aggregate(block, *value_type, fields)
+        let value = if value_type.kind == crate::xlil::TypeKind::Array
+        {
+          function.add_array(block, *value_type, fields)
+        }
+        else
+        {
+          function.add_aggregate(block, *value_type, fields)
+        };
+        let Some(value) = value
         else
         {
           self.report(DiagnosticCode::UnsupportedLocalType,

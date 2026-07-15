@@ -13,6 +13,7 @@ pub(super) fn expression_type(tree: &SyntaxTree,
 {
   match value.kind
   {
+    kind if collection::is_expression(kind) => collection::expression_type(tree, value, context, locals),
     EXPR_LITERAL if value.text == "true" || value.text == "false" => Some(Type::Primitive(PrimitiveType::Bool)),
     EXPR_LITERAL if value.token_kind == TOKEN_INTEGER => Some(Type::Primitive(PrimitiveType::Int)),
     EXPR_LITERAL if value.token_kind == TOKEN_FLOAT => Some(Type::Primitive(PrimitiveType::Float)),

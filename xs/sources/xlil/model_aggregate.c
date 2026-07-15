@@ -15,14 +15,18 @@ XsLilType xs_lil_aggregate_type(uint32_t registry_id)
 
 bool xs_lil_type_equal(XsLilType left, XsLilType right)
 {
-  return left.kind == right.kind && (left.kind != XS_LIL_TYPE_AGGREGATE || left.registry_id == right.registry_id);
+  return left.kind == right.kind &&
+         ((left.kind != XS_LIL_TYPE_AGGREGATE && left.kind != XS_LIL_TYPE_ARRAY) ||
+          left.registry_id == right.registry_id);
 }
 
 static bool valid_field(const XsLilModule *module, XsLilType field)
 {
-  if(field.kind == XS_LIL_TYPE_VOID || (unsigned)field.kind > (unsigned)XS_LIL_TYPE_AGGREGATE)
+  if(field.kind == XS_LIL_TYPE_VOID || (unsigned)field.kind > (unsigned)XS_LIL_TYPE_ARRAY)
     return false;
-  return field.kind != XS_LIL_TYPE_AGGREGATE || field.registry_id < module->aggregate_type_count;
+  if(field.kind == XS_LIL_TYPE_AGGREGATE)
+    return field.registry_id < module->aggregate_type_count;
+  return field.kind != XS_LIL_TYPE_ARRAY || field.registry_id < module->array_type_count;
 }
 
 XsLilStatus xs_lil_module_add_aggregate_type(XsLilModule *module, const char *name, const XsLilType *fields,
@@ -91,12 +95,13 @@ XsLilType xs_lil_module_aggregate_field_type(const XsLilModule *module, uint32_t
   return module->aggregate_types[registry_id].fields[field];
 }
 
-XsLilStatus xs_lil_block_add_aggregate(XsLilBlock *block, XsLilType type, const XsLilValueId *fields,
-                                       size_t field_count, XsLilValueId *result, XsLilError *error)
+static XsLilStatus add_composite(XsLilBlock *block, XsLilType type, XsLilTypeKind expected_kind,
+                                 const XsLilValueId *fields, size_t field_count, XsLilValueId *result,
+                                 XsLilError *error)
 {
-  if(block == nullptr || block->owner == nullptr || type.kind != XS_LIL_TYPE_AGGREGATE || result == nullptr ||
+  if(block == nullptr || block->owner == nullptr || type.kind != expected_kind || result == nullptr ||
      (field_count != 0 && fields == nullptr))
-    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate instruction arguments are invalid");
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL composite instruction arguments are invalid");
   for(size_t i = 0; i < field_count; ++i)
     if(fields[i] >= block->owner->value_count)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate field value is unknown");
@@ -124,11 +129,25 @@ XsLilStatus xs_lil_block_add_aggregate(XsLilBlock *block, XsLilType type, const 
   return XS_LIL_OK;
 }
 
+XsLilStatus xs_lil_block_add_aggregate(XsLilBlock *block, XsLilType type, const XsLilValueId *fields,
+                                       size_t field_count, XsLilValueId *result, XsLilError *error)
+{
+  return add_composite(block, type, XS_LIL_TYPE_AGGREGATE, fields, field_count, result, error);
+}
+
+XsLilStatus xs_lil_block_add_array(XsLilBlock *block, XsLilType type, const XsLilValueId *elements,
+                                   size_t element_count, XsLilValueId *result, XsLilError *error)
+{
+  return add_composite(block, type, XS_LIL_TYPE_ARRAY, elements, element_count, result, error);
+}
+
 XsLilStatus xs_lil_block_add_extract(XsLilBlock *block, XsLilValueId aggregate, uint32_t field, XsLilType field_type,
                                      XsLilValueId *result, XsLilError *error)
 {
   if(block == nullptr || block->owner == nullptr || aggregate >= block->owner->value_count || result == nullptr ||
-     block->owner->values[aggregate].type.kind != XS_LIL_TYPE_AGGREGATE || field_type.kind == XS_LIL_TYPE_VOID)
+     (block->owner->values[aggregate].type.kind != XS_LIL_TYPE_AGGREGATE &&
+      block->owner->values[aggregate].type.kind != XS_LIL_TYPE_ARRAY) ||
+     field_type.kind == XS_LIL_TYPE_VOID)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract instruction arguments are invalid");
   XsLilValueId value = UINT32_MAX;
   XsLilStatus status = xs_lil_add_value(block->owner, field_type, &value, error);

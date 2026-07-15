@@ -38,6 +38,7 @@ impl TypeChecker
                .then(|| Type::Map { key: Box::new(key),
                                     value: Box::new(value) })
       }
+      Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target, .. } => self.find_local(target).map(|local| local.ty.clone()),

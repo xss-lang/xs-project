@@ -85,6 +85,7 @@ fn supports_source_native_subset(module: &HirModule,
 pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Function]) -> Option<Module>
 {
   let aggregates = crate::hir::aggregate_registry::build(&declarations.nominal_types)?;
+  let collections = crate::hir::collection_registry::build(declarations, &aggregates);
   if !supports_source_native_subset(declarations, &aggregates)
   {
     return None;
@@ -93,6 +94,13 @@ pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Funct
   for layout in &aggregates.layouts
   {
     if module.add_aggregate_type(layout.name.clone(), layout.fields.clone()) != Some(layout.value_type)
+    {
+      return None;
+    }
+  }
+  for layout in &collections.arrays
+  {
+    if module.add_array_type(layout.element_type, layout.length) != Some(layout.value_type)
     {
       return None;
     }

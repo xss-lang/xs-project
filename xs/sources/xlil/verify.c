@@ -222,23 +222,34 @@ static XsLilStatus verify_memory(const XsLilFunction *function, const XsLilInstr
 
 static bool valid_type(const XsLilModule *module, XsLilType type)
 {
-  return type.kind != XS_LIL_TYPE_AGGREGATE || type.registry_id < module->aggregate_type_count;
+  if(type.kind == XS_LIL_TYPE_AGGREGATE)
+    return type.registry_id < module->aggregate_type_count;
+  if(type.kind == XS_LIL_TYPE_ARRAY)
+    return type.registry_id < module->array_type_count;
+  return true;
 }
 
 static XsLilStatus verify_aggregate(const XsLilModule *module, const XsLilFunction *function,
                                     const XsLilInstruction *instruction, XsLilError *error)
 {
-  if((size_t)instruction->result >= function->value_count || instruction->integer_type.kind != XS_LIL_TYPE_AGGREGATE ||
+  XsLilType type = instruction->integer_type;
+  if((size_t)instruction->result >= function->value_count ||
+     (type.kind != XS_LIL_TYPE_AGGREGATE && type.kind != XS_LIL_TYPE_ARRAY) ||
      !valid_type(module, instruction->integer_type) ||
      !xs_lil_type_equal(function->values[instruction->result].type, instruction->integer_type))
-    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate result type is invalid");
-  const XsLilAggregateType *layout = &module->aggregate_types[instruction->integer_type.registry_id];
-  if(instruction->argument_count != layout->field_count)
-    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate field count does not match its layout");
-  for(size_t field = 0; field < layout->field_count; ++field)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL composite result type is invalid");
+  size_t field_count = type.kind == XS_LIL_TYPE_ARRAY ? (size_t)module->array_types[type.registry_id].length
+                                                      : module->aggregate_types[type.registry_id].field_count;
+  if(instruction->argument_count != field_count)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL composite field count does not match its layout");
+  for(size_t field = 0; field < field_count; ++field)
+  {
+    XsLilType expected = type.kind == XS_LIL_TYPE_ARRAY ? module->array_types[type.registry_id].element_type
+                                                        : module->aggregate_types[type.registry_id].fields[field];
     if(instruction->arguments[field] >= function->value_count ||
-       !xs_lil_type_equal(function->values[instruction->arguments[field]].type, layout->fields[field]))
-      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate field type does not match its layout");
+       !xs_lil_type_equal(function->values[instruction->arguments[field]].type, expected))
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL composite field type does not match its layout");
+  }
   return XS_LIL_OK;
 }
 
@@ -248,12 +259,18 @@ static XsLilStatus verify_extract(const XsLilModule *module, const XsLilFunction
   if(instruction->left >= function->value_count || instruction->result >= function->value_count)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract references an unknown value");
   XsLilType aggregate = function->values[instruction->left].type;
-  if(!valid_type(module, aggregate) || aggregate.kind != XS_LIL_TYPE_AGGREGATE || instruction->immediate_i64 < 0)
+  if(!valid_type(module, aggregate) ||
+     (aggregate.kind != XS_LIL_TYPE_AGGREGATE && aggregate.kind != XS_LIL_TYPE_ARRAY) ||
+     instruction->immediate_i64 < 0)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract source type or field is invalid");
-  const XsLilAggregateType *layout = &module->aggregate_types[aggregate.registry_id];
   size_t field = (size_t)instruction->immediate_i64;
-  if(field >= layout->field_count ||
-     !xs_lil_type_equal(function->values[instruction->result].type, layout->fields[field]))
+  size_t field_count = aggregate.kind == XS_LIL_TYPE_ARRAY ? (size_t)module->array_types[aggregate.registry_id].length
+                                                           : module->aggregate_types[aggregate.registry_id].field_count;
+  XsLilType expected = aggregate.kind == XS_LIL_TYPE_ARRAY
+                         ? module->array_types[aggregate.registry_id].element_type
+                         : (field < field_count ? module->aggregate_types[aggregate.registry_id].fields[field]
+                                                : (XsLilType){.kind = XS_LIL_TYPE_VOID});
+  if(field >= field_count || !xs_lil_type_equal(function->values[instruction->result].type, expected))
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract result type does not match its field");
   return XS_LIL_OK;
 }
@@ -263,6 +280,10 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
   xs_lil_clear_error(error);
   if(module == nullptr)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL module is required");
+  for(size_t index = 0; index < module->array_type_count; ++index)
+    if(module->array_types[index].length == 0 || !valid_type(module, module->array_types[index].element_type) ||
+       module->array_types[index].element_type.kind == XS_LIL_TYPE_VOID)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array registry entry is invalid");
   for(size_t index = 0; index < module->function_count; ++index)
   {
     const XsLilFunction *function = &module->functions[index];

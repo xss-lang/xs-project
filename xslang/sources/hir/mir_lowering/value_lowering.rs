@@ -202,6 +202,16 @@ impl HirToMirLowerer
                                                                                span);
                                                                    None
                                                                  }),
+      Type::Array { .. } => self.array_types
+                                .iter()
+                                .find(|(source_type, _)| source_type == ty)
+                                .map(|(_, value_type)| *value_type)
+                                .or_else(|| {
+                                  self.report(DiagnosticCode::UnsupportedType,
+                                              "fixed array HIR type has no MIR collection registry entry",
+                                              span);
+                                  None
+                                }),
       _ =>
       {
         self.report(DiagnosticCode::UnsupportedType,

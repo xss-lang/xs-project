@@ -5,6 +5,7 @@
 
 pub(crate) mod aggregate_registry;
 pub mod async_check;
+pub(crate) mod collection_registry;
 pub mod declarations;
 pub mod generics;
 pub mod inference;

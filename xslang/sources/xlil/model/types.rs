@@ -24,6 +24,7 @@ pub enum TypeKind
   F128,
   Str,
   Aggregate,
+  Array,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -61,6 +62,13 @@ impl Type
   pub const fn aggregate(registry_id: u32) -> Self
   {
     Self { kind: TypeKind::Aggregate,
+           registry_id }
+  }
+
+  #[must_use]
+  pub const fn array(registry_id: u32) -> Self
+  {
+    Self { kind: TypeKind::Array,
            registry_id }
   }
 

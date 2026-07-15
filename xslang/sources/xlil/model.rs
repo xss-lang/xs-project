@@ -404,7 +404,22 @@ impl Function
 
   pub fn add_aggregate(&mut self, block: BlockId, value_type: Type, fields: Vec<ValueId>) -> Option<ValueId>
   {
-    if value_type.kind != TypeKind::Aggregate || fields.iter().any(|field| self.value(*field).is_none())
+    self.add_composite(block, value_type, fields, TypeKind::Aggregate)
+  }
+
+  pub fn add_array(&mut self, block: BlockId, value_type: Type, elements: Vec<ValueId>) -> Option<ValueId>
+  {
+    self.add_composite(block, value_type, elements, TypeKind::Array)
+  }
+
+  fn add_composite(&mut self,
+                   block: BlockId,
+                   value_type: Type,
+                   fields: Vec<ValueId>,
+                   expected_kind: TypeKind)
+                   -> Option<ValueId>
+  {
+    if value_type.kind != expected_kind || fields.iter().any(|field| self.value(*field).is_none())
     {
       return None;
     }
@@ -421,7 +436,9 @@ impl Function
 
   pub fn add_extract(&mut self, block: BlockId, aggregate: ValueId, field: u32, field_type: Type) -> Option<ValueId>
   {
-    if field_type == Type::VOID || self.value(aggregate)?.value_type.kind != TypeKind::Aggregate
+    if field_type == Type::VOID ||
+       !matches!(self.value(aggregate)?.value_type.kind,
+                 TypeKind::Aggregate | TypeKind::Array)
     {
       return None;
     }
@@ -641,6 +658,7 @@ pub struct Module
 {
   pub name: String,
   pub aggregate_types: Vec<AggregateType>,
+  pub array_types: Vec<ArrayType>,
   pub functions: Vec<Function>,
 }
 
@@ -652,6 +670,14 @@ pub struct AggregateType
   pub fields: Vec<Type>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ArrayType
+{
+  pub id: u32,
+  pub element_type: Type,
+  pub length: u64,
+}
+
 impl Module
 {
   #[must_use]
@@ -659,6 +685,7 @@ impl Module
   {
     Self { name: name.into(),
            aggregate_types: vec![],
+           array_types: vec![],
            functions: vec![] }
   }
 
@@ -681,6 +708,30 @@ impl Module
   {
     (value_type.kind == TypeKind::Aggregate).then_some(())?;
     self.aggregate_types.get(value_type.registry_id as usize)
+  }
+
+  pub fn add_array_type(&mut self, element_type: Type, length: u64) -> Option<Type>
+  {
+    if element_type == Type::VOID ||
+       length == 0 ||
+       self.array_types
+           .iter()
+           .any(|entry| entry.element_type == element_type && entry.length == length)
+    {
+      return None;
+    }
+    let id = u32::try_from(self.array_types.len()).ok()?;
+    self.array_types.push(ArrayType { id,
+                                      element_type,
+                                      length });
+    Some(Type::array(id))
+  }
+
+  #[must_use]
+  pub fn array_type(&self, value_type: Type) -> Option<&ArrayType>
+  {
+    (value_type.kind == TypeKind::Array).then_some(())?;
+    self.array_types.get(value_type.registry_id as usize)
   }
 
   pub fn add_function(&mut self, function: Function)

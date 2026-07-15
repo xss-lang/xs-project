@@ -15,14 +15,35 @@ impl Parser<'_>
                                       line: usize)
                                       -> Option<Instruction>
   {
+    self.composite_instruction(function, result, fields, line, TypeKind::Aggregate)
+  }
+
+  pub(super) fn array_instruction(&mut self,
+                                  function: &mut Function,
+                                  result: &str,
+                                  elements: &str,
+                                  line: usize)
+                                  -> Option<Instruction>
+  {
+    self.composite_instruction(function, result, elements, line, TypeKind::Array)
+  }
+
+  fn composite_instruction(&mut self,
+                           function: &mut Function,
+                           result: &str,
+                           fields: &str,
+                           line: usize,
+                           expected_kind: TypeKind)
+                           -> Option<Instruction>
+  {
     let (result, result_type) = result.split_once(':')?;
     let result = self.value_id(result, line)?;
     let result_type = self.type_name(result_type, line)?;
-    if result_type.kind != TypeKind::Aggregate
+    if result_type.kind != expected_kind
     {
       self.report(DiagnosticCode::InvalidInstruction,
                   line,
-                  "XLIL aggregate result must have an aggregate registry type");
+                  "XLIL composite result must match its registry type");
       return None;
     }
     let mut parsed_fields = vec![];

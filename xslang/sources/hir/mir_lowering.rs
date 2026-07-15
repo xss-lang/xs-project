@@ -49,6 +49,8 @@ pub struct HirToMirLowerer
   storage_locals: HashSet<mir::LocalId>,
   nominal_types: HashMap<String, crate::hir::declarations::NominalType>,
   aggregate_types: HashMap<String, XlilType>,
+  array_types: Vec<(Type, XlilType)>,
+  array_layouts: Vec<(XlilType, XlilType, u64)>,
   nominal_locals: HashMap<String, String>,
   field_locals: HashMap<String, mir::LocalId>,
 }
@@ -85,6 +87,21 @@ impl HirToMirLowerer
     self.nominal_types = types.iter().map(|ty| (ty.name.clone(), ty.clone())).collect();
     self.aggregate_types =
       crate::hir::aggregate_registry::build(types).map_or_else(HashMap::new, |registry| registry.types);
+    self
+  }
+
+  #[must_use]
+  pub(crate) fn with_collection_types(mut self, registry: &crate::hir::collection_registry::CollectionRegistry)
+                                      -> Self
+  {
+    self.array_types = registry.arrays
+                               .iter()
+                               .map(|layout| (layout.source_type.clone(), layout.value_type))
+                               .collect();
+    self.array_layouts = registry.arrays
+                                 .iter()
+                                 .map(|layout| (layout.value_type, layout.element_type, layout.length))
+                                 .collect();
     self
   }
 
@@ -285,11 +302,13 @@ impl HirToMirLowerer
       Expression::Object { nominal_type,
                            fields,
                            span, } => self.lower_object_value(nominal_type, fields, *span, lowered),
-      Expression::Array { .. } | Expression::Map { .. } =>
+      Expression::Array { .. } => self.lower_array_expression(expression, expected_type, lowered),
+      Expression::Map { .. } =>
       {
         self.unsupported_expression(expression);
         None
       }
+      Expression::Index { .. } => self.lower_index_expression(expression, expected_type, lowered),
       Expression::Literal { literal,
                             span, } =>
       {
@@ -656,6 +675,7 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Object { span, .. } |
     Expression::Array { span, .. } |
     Expression::Map { span, .. } |
+    Expression::Index { span, .. } |
     Expression::Assign { span, .. } |
     Expression::AssignField { span, .. } |
     Expression::Update { span, .. } |
@@ -670,6 +690,9 @@ const fn expression_span(expression: &Expression) -> Span
 mod binary_operations;
 mod binary_types;
 mod call_lowering;
+mod collection;
+#[cfg(test)]
+mod collection_tests;
 mod control_flow;
 #[cfg(test)]
 mod control_flow_tests;

@@ -126,6 +126,8 @@ pub struct CompilerCoreSession
 fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_lowering::LoweringError>
 {
   let declarations = hir_lowering::lower_program(&syntax)?;
+  let aggregate_registry = crate::hir::aggregate_registry::build(&declarations.nominal_types).unwrap_or_default();
+  let collection_registry = crate::hir::collection_registry::build(&declarations, &aggregate_registry);
   let mut mir_functions = Vec::new();
   let mut diagnostics = Vec::new();
   for declaration in declarations.functions.iter().filter(|function| function.body_present)
@@ -146,6 +148,7 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
     }
     let mir =
       match crate::hir::mir_lowering::HirToMirLowerer::new().with_nominal_types(&declarations.nominal_types)
+                                                            .with_collection_types(&collection_registry)
                                                             .lower_function_with_parameters(&function,
                                                                                             declaration.parameters
                                                                                                        .len())

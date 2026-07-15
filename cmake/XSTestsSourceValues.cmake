@@ -11,7 +11,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainRecursiveCall MainUnitCalls MainShortCircuit
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainLoop
-                       MainBlockLocals
+                       MainBlockLocals MainFixedArray
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
                        ImmutableLocalReassignment BlockLocalShadow SameScopeDuplicateLocal
@@ -172,6 +172,17 @@ add_test(NAME source_native_integer_operators_artifacts COMMAND xs_xse_artifact_
                                                         "lshr i128" "icmp slt i128" "ashr i128")
 set_tests_properties(source_native_integer_operators_artifacts PROPERTIES
                      DEPENDS source_native_integer_operators_build TIMEOUT 5)
+
+add_test(NAME source_native_fixed_array_build COMMAND xs build -file
+                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFixedArray.xs)
+set_tests_properties(source_native_fixed_array_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_fixed_array_artifacts COMMAND xs_xse_artifact_tests
+                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFixedArray.ll
+                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFixedArray.o
+                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFixedArray.xse 7
+                                                   "[3 x i32]" "extractvalue [3 x i32]")
+set_tests_properties(source_native_fixed_array_artifacts PROPERTIES DEPENDS source_native_fixed_array_build TIMEOUT 5)
 
 add_test(NAME source_native_data_fields_build COMMAND xs build -file
                                                   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataFields.xs)
