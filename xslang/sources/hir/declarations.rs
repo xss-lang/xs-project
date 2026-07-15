@@ -13,6 +13,16 @@ pub enum TypeRef
   Unit,
   Primitive(PrimitiveType),
   Named(String),
+  Array
+  {
+    element: Box<TypeRef>,
+    length: Option<u64>,
+  },
+  Map
+  {
+    key: Box<TypeRef>,
+    value: Box<TypeRef>,
+  },
 }
 
 #[must_use]
@@ -23,6 +33,7 @@ pub fn type_ref_to_checked(value: &TypeRef) -> Option<type_check::Type>
     TypeRef::Unit => type_check::Type::Unit,
     TypeRef::Primitive(value) => type_check::Type::Primitive(*value),
     TypeRef::Named(value) => type_check::Type::Named(value.clone()),
+    TypeRef::Array { .. } | TypeRef::Map { .. } => return None,
   })
 }
 

@@ -61,6 +61,7 @@ fn visit(declaration: &NominalType,
             TypeRef::Primitive(primitive) => crate::hir::mir_lowering::primitive_to_xlil(*primitive)?,
             TypeRef::Named(name) => visit(definitions.get(name.as_str())?, definitions, visiting, registry)?,
             TypeRef::Unit => return None,
+            TypeRef::Array { .. } | TypeRef::Map { .. } => return None,
           });
   }
   visiting.remove(&declaration.name);

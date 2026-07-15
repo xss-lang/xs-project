@@ -17,7 +17,8 @@ source-to-native executable pipeline.
 - The structural parser now accepts canonical built-in collection type forms: `[T]`, fixed-size `[T; N]`, and map
   `[K: V]`. Square-bracket array literals and `[key: value]` map literals now have distinct structural AST records. These
   forms are compiler-known and do not require a standard-library import; `String` inside them still canonicalizes to the
-  existing `Optional<Str>` sugar.
+  existing `Optional<Str>` sugar. Array and map declarations retain dedicated compiler-core type records rather than
+  desugaring to nominal collection names.
 - Nominal `data` return values now use first-class aggregate values across typed HIR, MIR, XMIR, XLIL, LLVM, and native
   `.xse` emission. Aggregate-returning calls can initialize local `data` places, including nested layouts, and their fields
   are extracted back into the existing place model without exposing LLVM types to HIR or MIR.

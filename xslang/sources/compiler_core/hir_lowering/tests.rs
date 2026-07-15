@@ -245,9 +245,14 @@ fn preserves_canonical_builtin_collection_types()
                                      syntax(IDENTIFIER, "Optional<Int>", Some(5), vec![])] };
 
   assert_eq!(lower_type(&array, &array.nodes[0]),
-             declarations::TypeRef::Named("[Int]".to_string()));
+             declarations::TypeRef::Array { element: Box::new(declarations::TypeRef::Primitive(PrimitiveType::Int)),
+                                            length: None });
   assert_eq!(lower_type(&fixed, &fixed.nodes[0]),
-             declarations::TypeRef::Named("[Long; 4]".to_string()));
+             declarations::TypeRef::Array { element:
+                                              Box::new(declarations::TypeRef::Primitive(PrimitiveType::Long)),
+                                            length: Some(4) });
   assert_eq!(lower_type(&map, &map.nodes[0]),
-             declarations::TypeRef::Named("[Optional<Str>: Optional<Int>]".to_string()));
+             declarations::TypeRef::Map { key: Box::new(declarations::TypeRef::Named("Optional<Str>".to_string())),
+                                          value:
+                                            Box::new(declarations::TypeRef::Named("Optional<Int>".to_string())) });
 }

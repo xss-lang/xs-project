@@ -206,45 +206,38 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
     let element = value.children
                        .first()
                        .and_then(|index| tree.nodes.get(*index))
-                       .map(|element| type_ref_text(&lower_type(tree, element)))
-                       .unwrap_or_default();
-    return declarations::TypeRef::Named(format!("[{element}]"));
+                       .map(|element| lower_type(tree, element))
+                       .unwrap_or_else(|| declarations::TypeRef::Named(String::new()));
+    return declarations::TypeRef::Array { element: Box::new(element),
+                                          length: None };
   }
   if value.kind == TYPE_FIXED_ARRAY
   {
     let element = value.children
                        .first()
                        .and_then(|index| tree.nodes.get(*index))
-                       .map(|element| type_ref_text(&lower_type(tree, element)))
-                       .unwrap_or_default();
+                       .map(|element| lower_type(tree, element))
+                       .unwrap_or_else(|| declarations::TypeRef::Named(String::new()));
     let length = value.children
                       .get(1)
                       .and_then(|index| tree.nodes.get(*index))
-                      .map_or("", |length| length.text.as_str());
-    return declarations::TypeRef::Named(format!("[{element}; {length}]"));
+                      .and_then(|length| length.text.replace('\'', "").parse().ok());
+    return declarations::TypeRef::Array { element: Box::new(element),
+                                          length };
   }
   if value.kind == TYPE_MAP
   {
     let mut children = value.children.iter().filter_map(|index| tree.nodes.get(*index));
     let key = children.next()
-                      .map(|key| type_ref_text(&lower_type(tree, key)))
-                      .unwrap_or_default();
+                      .map(|key| lower_type(tree, key))
+                      .unwrap_or_else(|| declarations::TypeRef::Named(String::new()));
     let mapped = children.next()
-                         .map(|mapped| type_ref_text(&lower_type(tree, mapped)))
-                         .unwrap_or_default();
-    return declarations::TypeRef::Named(format!("[{key}: {mapped}]"));
+                         .map(|mapped| lower_type(tree, mapped))
+                         .unwrap_or_else(|| declarations::TypeRef::Named(String::new()));
+    return declarations::TypeRef::Map { key: Box::new(key),
+                                        value: Box::new(mapped) };
   }
   declarations::TypeRef::Named(value.text.clone())
-}
-
-fn type_ref_text(value: &declarations::TypeRef) -> String
-{
-  match value
-  {
-    declarations::TypeRef::Unit => "()".to_string(),
-    declarations::TypeRef::Primitive(value) => format!("{value:?}"),
-    declarations::TypeRef::Named(value) => value.clone(),
-  }
 }
 
 fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check::Type>
@@ -254,6 +247,7 @@ fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check:
     declarations::TypeRef::Unit => crate::hir::type_check::Type::Unit,
     declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(*value),
     declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value.clone()),
+    declarations::TypeRef::Array { .. } | declarations::TypeRef::Map { .. } => return None,
   })
 }
 

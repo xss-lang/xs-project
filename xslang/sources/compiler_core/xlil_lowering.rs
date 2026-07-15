@@ -14,6 +14,7 @@ fn lower_type(value: &TypeRef, aggregates: &crate::hir::aggregate_registry::Aggr
     TypeRef::Unit => Some(Type::VOID),
     TypeRef::Primitive(value) => crate::hir::mir_lowering::primitive_to_xlil(*value),
     TypeRef::Named(name) => aggregates.types.get(name).copied(),
+    TypeRef::Array { .. } | TypeRef::Map { .. } => None,
   }
 }
 
@@ -43,6 +44,7 @@ fn flatten_parameter(module: &HirModule,
       visiting.pop();
     }
     TypeRef::Unit => return None,
+    TypeRef::Array { .. } | TypeRef::Map { .. } => return None,
   }
   Some(())
 }
