@@ -107,6 +107,82 @@ pub(super) fn lower_index_assignment(tree: &SyntaxTree,
                                 span: super::span(assignment)? })
 }
 
+pub(super) fn array_member_type(tree: &SyntaxTree,
+                                member: &SyntaxNode,
+                                context: &LoweringContext,
+                                locals: &HashMap<String, Type>)
+                                -> Option<Type>
+{
+  if member.kind != EXPR_MEMBER_ACCESS || member.children.len() != 2
+  {
+    return None;
+  }
+  let receiver = tree.nodes.get(member.children[0])?;
+  let Type::Array { element,
+                    length: Some(length), } = super::expression_type(tree, receiver, context, locals)?
+  else
+  {
+    return None;
+  };
+  match path_text(tree, tree.nodes.get(member.children[1])?).as_str()
+  {
+    "count" | "capacity" | "start_index" | "end_index" => Some(Type::Primitive(PrimitiveType::Int)),
+    "is_empty" => Some(Type::Primitive(PrimitiveType::Bool)),
+    "first" | "last" if length != 0 => Some(*element),
+    _ => None,
+  }
+}
+
+pub(super) fn lower_array_member(tree: &SyntaxTree,
+                                 member: &SyntaxNode,
+                                 context: &LoweringContext,
+                                 locals: &HashMap<String, Type>,
+                                 span: Span)
+                                 -> Option<Expression>
+{
+  let receiver_node = tree.nodes.get(*member.children.first()?)?;
+  let array_type = super::expression_type(tree, receiver_node, context, locals)?;
+  let Type::Array { element,
+                    length: Some(length), } = &array_type
+  else
+  {
+    return None;
+  };
+  let name = path_text(tree, tree.nodes.get(*member.children.get(1)?)?);
+  match name.as_str()
+  {
+    "count" | "capacity" | "end_index" => integer_literal(*length, span),
+    "start_index" => integer_literal(0, span),
+    "is_empty" => Some(Expression::Literal { literal: Literal::Bool(*length == 0),
+                                             span }),
+    "first" | "last" =>
+    {
+      let last = length.checked_sub(1)?;
+      let index = if name == "first"
+      {
+        0
+      }
+      else
+      {
+        last
+      };
+      let receiver = super::lower_expression(tree, receiver_node, context, locals, Some(&array_type))?;
+      Some(Expression::Index { collection: Box::new(receiver),
+                               index: Box::new(integer_literal(index, span)?),
+                               element_type: element.clone(),
+                               span })
+    }
+    _ => None,
+  }
+}
+
+fn integer_literal(value: u64, span: Span) -> Option<Expression>
+{
+  i64::try_from(value).ok()
+                      .map(|value| Expression::Literal { literal: Literal::Integer(value.to_string()),
+                                                         span })
+}
+
 pub(super) fn expression_type(tree: &SyntaxTree,
                               value: &SyntaxNode,
                               context: &LoweringContext,

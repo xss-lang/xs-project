@@ -180,8 +180,10 @@ The documented compilation order is preserved:
   `HashSet<T>` type spelling. Square-bracket array inference, contextual element checks, set XHIR round-tripping, numeric
   default fill, excess-element discard, and element assignment are implemented. Constant indices use composite extraction;
   calculated `Int` indices use checked MIR/XLIL array access records. Fixed arrays continue through XLIL `%aN`, the public
-  C23 XLIL boundary, bounds-checked LLVM array access, and native `.xse` emission. Set runtime layout and operations,
-  runtime-sized collection storage, and map value/layout lowering remain deferred.
+  C23 XLIL boundary, bounds-checked LLVM array access, and native `.xse` emission. Fixed-array `count`, `capacity`,
+  `is_empty`, `start_index`, `end_index`, `first`, and `last` members are resolved in compiler-core and desugared to typed
+  constants or existing checked index expressions. Set runtime layout and operations, runtime-sized collection storage,
+  and map value/layout lowering remain deferred.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,

@@ -21,6 +21,9 @@ source-to-native executable pipeline.
   and can mutate array contents without reassigning a `val` binding.
 - Brace-delimited homogeneous literals now have a dedicated built-in set structural-AST and typed-HIR representation.
   The public source type remains `[T]`; there is no nominal `HashSet<T>` spelling.
+- Fixed arrays expose canonical `count`, `capacity`, `is_empty`, `start_index`, `end_index`, `first`, and `last` value
+  members. Compiler-core resolves them before nominal field lookup and lowers them through the existing typed HIR and
+  native array path.
 
 ### Changed
 
@@ -28,6 +31,7 @@ source-to-native executable pipeline.
   an array. The literal delimiter supplies the distinction when an initializer is present.
 - Fixed arrays now support calculated `Int` indices for reads and writes through MIR `array.get`/`array.set`, XLIL v0 text,
   the public C23 XLIL model, and bounds-checked LLVM lowering. Native `.xse` fixtures cover both operations.
+- Prefix operators now consume a postfix-complete operand, so `!value.member` is parsed as `!(value.member)`.
 
 ## 0.1.7 - 2026-07-15
 

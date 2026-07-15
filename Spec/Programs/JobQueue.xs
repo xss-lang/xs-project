@@ -35,7 +35,7 @@ class Queue {
 }
 
 class Worker {
-    async fn run(queue: &mut Queue) -> Result<Int, Error> {
+    static async fn run(queue: &mut Queue) -> Result<Int, Error> {
         completed: Int = 0;
 
         loop {

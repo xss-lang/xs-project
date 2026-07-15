@@ -378,6 +378,21 @@ static void test_optional_operator_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_postfix_binds_before_prefix(void)
+{
+  const char *text = "fn Main(value: Value) { if (!value.is_empty) { return; } }\n";
+  XsSource source = {.path = "PrefixPostfix.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 64, &diagnostics, &tree));
+  const XsSyntaxNode *unary = xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_UNARY);
+  CHECK(unary != nullptr && unary->child_count == 1);
+  CHECK(unary == nullptr || unary->child_count != 1 || unary->children[0]->kind == XS_SYNTAX_EXPR_MEMBER_ACCESS);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_expression_turbofish_structure(void)
 {
   const char *text = "fn Main() {\n"
@@ -552,6 +567,7 @@ int main(void)
   test_function_type_structure();
   test_character_literal_structure();
   test_optional_operator_structure();
+  test_postfix_binds_before_prefix();
   test_expression_turbofish_structure();
   test_removed_exception_syntax_is_rejected();
   test_result_propagation_structure();

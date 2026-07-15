@@ -22,9 +22,10 @@ mod expression_type;
 mod match_expression;
 mod nominal;
 mod program;
+mod syntax_helpers;
 mod unary;
-
 use expression_type::expression_type;
+use syntax_helpers::{first_child_kind, path_text};
 
 const FILE: u32 = 0;
 const DECL_MODULE: u32 = 1;
@@ -127,37 +128,6 @@ pub enum LoweringError
 fn node(tree: &SyntaxTree, index: usize) -> Result<&SyntaxNode, LoweringError>
 {
   tree.nodes.get(index).ok_or(LoweringError::InvalidRoot)
-}
-
-fn first_child_kind<'a>(tree: &'a SyntaxTree, parent: &'a SyntaxNode, kind: u32) -> Option<&'a SyntaxNode>
-{
-  parent.children
-        .iter()
-        .filter_map(|index| tree.nodes.get(*index))
-        .find(|child| child.kind == kind)
-}
-
-fn path_text(tree: &SyntaxTree, value: &SyntaxNode) -> String
-{
-  if value.kind == IDENTIFIER
-  {
-    return value.text.clone();
-  }
-  let path = if value.kind == PATH
-  {
-    value
-  }
-  else
-  {
-    first_child_kind(tree, value, PATH).unwrap_or(value)
-  };
-  path.children
-      .iter()
-      .filter_map(|index| tree.nodes.get(*index))
-      .filter(|child| child.kind == IDENTIFIER)
-      .map(|child| child.text.as_str())
-      .collect::<Vec<_>>()
-      .join("::")
 }
 
 fn primitive(name: &str) -> Option<PrimitiveType>
@@ -345,7 +315,8 @@ fn lower_expression(tree: &SyntaxTree,
     }
     EXPR_IDENTIFIER => Some(Expression::Local { name: path_text(tree, value),
                                                 span: source_span }),
-    EXPR_MEMBER_ACCESS => nominal::lower_field_expression(tree, value, context, locals),
+    EXPR_MEMBER_ACCESS => collection::lower_array_member(tree, value, context, locals, source_span)
+                                    .or_else(|| nominal::lower_field_expression(tree, value, context, locals)),
     EXPR_OBJECT_LITERAL | EXPR_TYPED_OBJECT_LITERAL =>
     {
       nominal::lower_object_expression(tree, value, context, locals, expected_type, source_span)

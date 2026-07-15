@@ -13,7 +13,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainLoop
                        MainBlockLocals MainFixedArray MainArrayMissingDefaults
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
-                       MainDynamicArrayIndex MainDynamicArrayMutation
+                       MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
                        CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
@@ -53,6 +53,7 @@ xs_add_source_native_array_test(MainArrayMutation 7 3)
 xs_add_source_native_array_test(MainDefaultFixedArray 0 3)
 xs_add_source_native_array_test(MainDynamicArrayIndex 7 3 "getelementptr")
 xs_add_source_native_array_test(MainDynamicArrayMutation 7 3 "llvm.trap")
+xs_add_source_native_array_test(MainArrayProperties 11 3 "extractvalue")
 
 add_test(NAME compiler_check_builtin_set COMMAND xs check -file
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/CollectionSetCheck.xs)

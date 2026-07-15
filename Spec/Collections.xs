@@ -1,347 +1,224 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-// collections system:
+// Built-in collections:
 
 //
-// Array:
-// - [T]
-// - [T; N]
-// - Fixed size.
-// - Supports indexing.
-// - Supports len().
-// - Does not support push().
-// - Does not support pop().
-// - Array element modification is controlled by array/type mutability rules.
-// - val array bindings cannot be reassigned, but val does not by itself make
-//   the array value deeply immutable.
+// Collection types are part of the language type system. They are not aliases
+// for nominal standard-library containers.
 //
-// Array size:
-// - [T; 4] contains four elements with indexes 0..3.
+// - [T] is an array when it has no initializer.
+// - [T] = [...] is an array whose fixed length is inferred from the initializer.
+// - [T; N] is an explicitly sized fixed array.
+// - [T] = {...} is a built-in set.
+// - [K: V] is a built-in map.
+// - ArrayList<T> is the built-in resizable sequence.
 //
-// Array initialization:
-// - Missing values are filled with the type's default value.
-// - Excess values are discarded.
-//
-// Default values:
-// - Numeric types -> 0
-// - Bool -> None
-// - Str -> None
-//
-// Built-in set:
-// - Uses the same [T] source type as an array.
-// - A brace initializer selects set semantics.
-// - There is no HashSet<T> nominal type.
-// - A declaration without an initializer defaults to array semantics.
-//
-// Vector:
-// - std::collections::Vector<T>
-// - Dynamic size.
-// - Supports push().
-// - Supports pop().
-// - Supports get().
-// - Supports adjust().
-// - Supports length().
-// - Supports literal initialization.
-// - Supports Vector<T>::new().
-//
-// HashMap:
-// - std::collections::HashMap<K, V>
-// - Supports HashMap<K, V>::new().
-// - Supports insert().
-// - Supports get().
-// - Supports delete().
-// - Does not support [] access.
-// - Does not support literal initialization.
+// There is no HashSet<T> type. The braces on a [T] initializer distinguish a
+// set from an array. Collection member names use snake_case.
 //
 
-imports collections;
+imports stdio;
 
+// ============================================================
+// Fixed arrays
+// ============================================================
 
-// arrays
+fn fixed_array_examples()
+{
+numbers: [Int] = [10, 20, 30];
 
-nums: [Int] = [1, 2, 3];
+// The effective type is [Int; 3].
 
-nums[0] = 5;
+repeated: [Int; 5];
 
-length: Int = nums.len();
+// Numeric default construction produces [0, 0, 0, 0, 0]. Missing numeric
+// initializer elements are filled with zero. Elements beyond an explicit
+// fixed length are discarded.
 
+trimmed: [Int; 2] = [1, 2, 3];
 
-// fixed-size arrays
 
-nums: [Int; 4] = [1, 2, 3, 4];
+// Reading and changing elements
 
-// Result:
-// {1, 2, 3, 4}
+first_value: Int = numbers[0];
+third_value: Int = numbers[2];
 
+val mutable_elements: [Int] = [1, 2, 3];
+mutable_elements[1] = 7;
 
-// missing values
+// `val` prevents rebinding. Element mutability is a separate property of the
+// collection value and element type.
+//
+// A calculated array index has type Int. An index outside 0..count causes a
+// runtime bounds error before memory is accessed.
 
-nums: [Int; 4] = [1, 2];
+index: Int = 1;
+selected: Int = numbers[index];
 
-// Result:
-// {1, 2, 0, 0}
 
+// Fixed-array properties
 
-// excess values
+count: Int = numbers.count;
+capacity: Int = numbers.capacity;
+empty: Bool = numbers.is_empty;
+start: Int = numbers.start_index;
+end: Int = numbers.end_index;
+first: Int = numbers.first;
+last: Int = numbers.last;
 
-nums: [Int; 4] = [1, 2, 3, 4, 5];
+// For a fixed array, capacity equals count. start_index is zero and end_index
+// is the position immediately after the last element; end_index is not a valid
+// element index. first and last require a non-empty array.
 
-// Result:
-// {1, 2, 3, 4}
 
+// Fixed-size restrictions
 
-// Str defaults
+// Operations that change element count are not available on fixed arrays.
+// Use ArrayList<T> when insertion or removal is required.
 
-names: [Str; 4] = ["Leitewolf"];
+}
 
-// Result:
-// {"Leitewolf", None, None, None}
 
+// ============================================================
+// Built-in sets
+// ============================================================
 
-// Bool defaults
+fn set_examples()
+{
+users: [Str] = {"Leitwolf", "Helmut"};
 
-flags: [Bool; 3] = [];
+users.append("Bob");
+users.remove("Helmut");
 
-// Result:
-// {None, None, None}
+has_bob: Bool = users.contains("Bob");
+user_count: Int = users.count;
+no_users: Bool = users.is_empty;
 
+users.remove_all();
 
-// val array binding
+// Duplicate values collapse to one element according to the equality and hash
+// semantics of T. Set iteration order is not insertion order and must not be
+// used as stable program output.
 
-val nums: [Int] = [1, 2, 3];
+}
 
-nums[0] = 5;
 
-// Valid when the array value's mutability rules allow element assignment.
-// Invalid only if the array/type rules make the element storage immutable.
+// ============================================================
+// Built-in maps
+// ============================================================
 
+fn map_examples()
+{
+ages: [Str: Optional<Int>] = [
+    "Leitwolf": Some(26),
+    "Helmut": Some(20),
+];
 
-// built-in sets
+ages["Bob"] = Some(25);
 
-users: [Str] = {"Leitewolf", "Helmut", "Bob"};
+age: Optional<Int> = ages["Bob"];
+has_bob: Bool = ages.contains("Bob");
+age_count: Int = ages.count;
+no_ages: Bool = ages.is_empty;
 
-// The brace delimiter selects set semantics. Duplicate values collapse to one
-// set element according to T equality/hash semantics.
+ages["Bob"] = None;
+ages.remove("Helmut");
 
-empty_users: [Str] = {};
+// Map lookup returns the declared V. A map whose lookup needs absence in its
+// result should therefore use Optional<V> as the mapped type.
 
+}
 
-// vectors
 
-users: std::collections::Vector<Str> = {
-    "Leitewolf",
-    "Alpha",
-};
+// ============================================================
+// Resizable arrays
+// ============================================================
 
+fn array_list_examples()
+{
+fruits: ArrayList<Str> = ["Apple", "Banana"];
 
-// vector constructor
+fruits.append("Orange");
+fruits += ["Mango"];
+fruits.append_contents(["Peach", "Pear"]);
+fruits.insert("Cherry", 0);
+fruits.insert_contents(["Lemon", "Lime"], 2);
 
-users: std::collections::Vector<Str> =
-    std::collections::Vector::new();
+fruits.remove(2);
+fruits.remove_first();
+fruits.remove_last();
+fruits.remove_all();
 
+// remove_all(true) preserves allocated capacity.
 
-// vector push
+fruits.remove_all(true);
 
-std::collections::Vector.push(users, "Friedrich");
+}
 
 
-// vector pop by value
+// ============================================================
+// Searching and transformations
+// ============================================================
 
-std::collections::Vector.pop(users, "Leitewolf");
+fn transformation_examples()
+{
+values: [Int] = [10, 20, 30, 20, 40];
 
+has_twenty: Bool = values.contains(20);
+first_twenty: Optional<Int> = values.first_index(20);
+last_twenty: Optional<Int> = values.last_index(20);
 
-// vector pop by index
+doubled: [Int] = values.map(fn(value) { value * 2 });
+large: [Int] = values.filter(fn(value) { value > 20 });
+sum: Int = values.reduce(0, fn(total, value) { total + value });
 
-std::collections::Vector.pop(users[1]);
+ascending: [Int] = values.sorted();
+descending: [Int] = values.sorted(fn(left, right) { left > right });
 
+minimum: Optional<Int> = values.min();
+maximum: Optional<Int> = values.max();
 
-// vector get
+}
 
-name: Str =
-    std::collections::Vector.get(users[0]);
 
+// ============================================================
+// Iteration
+// ============================================================
 
-// vector update
+fn iteration_examples()
+{
+values: [Int] = [10, 20, 30];
 
-std::collections::Vector.adjust(
-    users[1],
-    "Friedrich"
-);
+for (value in values)
+{
+    println!("{}", value);
+}
 
+for (index in values.indices)
+{
+    println!("{} {}", index, values[index]);
+}
 
-// vector length
+for ((index, value) in values.enumerated())
+{
+    println!("{} {}", index, value);
+}
 
-count: Int =
-    std::collections::Vector.length(users);
+}
 
 
-// hashmaps
+// ============================================================
+// Nested arrays
+// ============================================================
 
-scores: std::collections::HashMap<Str, Int> =
-    std::collections::HashMap::new();
+fn nested_array_examples()
+{
+nested: [[Int]] = [
+    [1, 2],
+    [3, 4],
+    [5],
+];
 
-
-// insert
-
-std::collections::HashMap.insert(
-    scores,
-    "Alpha",
-    90
-);
-
-std::collections::HashMap.insert(
-    scores,
-    "Leitewolf",
-    50
-);
-
-
-// get
-
-score: Int =
-    std::collections::HashMap.get(
-        scores,
-        "Alpha"
-    );
-
-
-// delete
-
-std::collections::HashMap.delete(
-    scores,
-    "Alpha"
-);
-
-
-// output example
-
-imports collections, format;
-
-scores: std::collections::HashMap<Str, Int> =
-    std::collections::HashMap::new();
-
-std::collections::HashMap.insert(
-    scores,
-    "Alpha",
-    90
-);
-
-std::collections::HashMap.insert(
-    scores,
-    "Leitewolf",
-    50
-);
-
-println!("{}", std::collections::HashMap.get(scores, "Alpha"));
-
-println!(
-    "Leitewolf's score: {}",
-    std::collections::HashMap.get(scores, "Leitewolf")
-);
-
-
-// VALID
-
-nums: [Int] = [1, 2, 3];
-
-
-// VALID
-
-nums: [Int; 3] = [1, 2];
-
-
-// VALID
-
-users: std::collections::Vector<Str> =
-    std::collections::Vector::new();
-
-
-// VALID
-
-std::collections::Vector.push(
-    users,
-    "Friedrich"
-);
-
-
-// VALID
-
-std::collections::Vector.get(
-    users[0]
-);
-
-
-// VALID
-
-std::collections::Vector.adjust(
-    users[1],
-    "Friedrich"
-);
-
-
-// VALID
-
-scores: std::collections::HashMap<Str, Int> =
-    std::collections::HashMap::new();
-
-
-// VALID
-
-std::collections::HashMap.insert(
-    scores,
-    "Alpha",
-    90
-);
-
-
-// VALID
-
-std::collections::HashMap.get(
-    scores,
-    "Alpha"
-);
-
-
-// VALID
-
-std::collections::HashMap.delete(
-    scores,
-    "Alpha"
-);
-
-
-// INVALID
-
-std::collections::Vector.get(
-    users,
-    0
-);
-
-
-// INVALID
-
-scores["Alpha"];
-
-
-// INVALID
-
-scores: std::collections::HashMap<Str, Int> = {
-    "Alpha": 90,
-};
-
-
-// INVALID
-
-std::collections::Vector.push(
-    nums,
-    5
-);
-
-
-// INVALID
-
-std::collections::Vector.pop(
-    nums,
-    0
-);
+nested_value: Int = nested[1][0];
+}

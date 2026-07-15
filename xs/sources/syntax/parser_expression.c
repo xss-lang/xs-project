@@ -457,6 +457,8 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
   }
 }
 
+static XsSyntaxNode *parse_postfix(SyntaxParser *parser);
+
 static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
@@ -529,7 +531,10 @@ static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
   expression->token_kind = operator_kind;
   if(operator_kind == XS_TOKEN_PLUS_PLUS || operator_kind == XS_TOKEN_MINUS_MINUS)
     expression->flags |= XS_SYNTAX_FLAG_PREFIX_UPDATE;
-  xs_syntax_node_add(parser->tree, expression, parse_prefix(parser));
+  // Postfix operations bind more tightly than prefix operations. Parsing the
+  // operand through the postfix layer makes `!value.member` mean
+  // `!(value.member)` while consecutive prefix operators remain recursive.
+  xs_syntax_node_add(parser->tree, expression, parse_postfix(parser));
   finish_node(parser, expression, parser->previous.span.end);
   return expression;
 }

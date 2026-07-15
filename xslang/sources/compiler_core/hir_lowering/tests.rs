@@ -256,3 +256,41 @@ fn preserves_canonical_builtin_collection_types()
                                           value:
                                             Box::new(declarations::TypeRef::Named("Optional<Int>".to_string())) });
 }
+
+#[test]
+fn resolves_fixed_array_members_to_canonical_hir()
+{
+  let tree = SyntaxTree { root: 0,
+                          nodes: vec![syntax(EXPR_MEMBER_ACCESS, "values.count", None, vec![1, 4]),
+                                      syntax(EXPR_IDENTIFIER, "values", Some(0), vec![2]),
+                                      syntax(PATH, "values", Some(1), vec![3]),
+                                      syntax(IDENTIFIER, "values", Some(2), vec![]),
+                                      syntax(IDENTIFIER, "count", Some(0), vec![])] };
+  let context = LoweringContext { calls: HashMap::new(),
+                                  nominal_types: HashMap::new() };
+  let array_type = Type::Array { element: Box::new(Type::Primitive(PrimitiveType::Long)),
+                                 length: Some(3) };
+  let locals = HashMap::from([("values".to_string(), array_type)]);
+
+  assert_eq!(collection::array_member_type(&tree, &tree.nodes[0], &context, &locals),
+             Some(Type::Primitive(PrimitiveType::Int)));
+  assert!(matches!(collection::lower_array_member(&tree,
+                                                   &tree.nodes[0],
+                                                   &context,
+                                                   &locals,
+                                                   Span::new(1, 0, 12)),
+                   Some(Expression::Literal { literal: Literal::Integer(ref value), .. }) if value == "3"));
+
+  let mut first_tree = tree;
+  first_tree.nodes[4].text = "first".to_string();
+  assert!(matches!(collection::lower_array_member(&first_tree,
+                                                   &first_tree.nodes[0],
+                                                   &context,
+                                                   &locals,
+                                                   Span::new(1, 0, 12)),
+                   Some(Expression::Index { element_type, .. })
+                     if element_type.as_ref() == &Type::Primitive(PrimitiveType::Long)));
+  first_tree.nodes[4].text = "isEmpty".to_string();
+  assert_eq!(collection::array_member_type(&first_tree, &first_tree.nodes[0], &context, &locals),
+             None);
+}
