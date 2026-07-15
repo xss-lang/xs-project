@@ -26,13 +26,21 @@
 // Memory model
 // ============================================================
 
-// XGC is a generational moving collector.
+// XGC is a precise, generational, moving garbage collector.
 //
-// - The young generation uses copying collection.
-// - The old generation uses marking and compaction.
+// - The heap is divided into fixed-size regions.
+// - Region roles (Eden, Survivor, Old, Humongous, Free) are assigned dynamically.
+// - The young generation uses semi-space copying collection.
+// - The old generation uses concurrent SATB marking followed by region
+//   evacuation (moving collection).
+// - Humongous objects occupy dedicated regions and are collected with a
+//   non-moving mark-sweep collector.
 // - Compiler-produced stack maps identify precise roots.
 // - Safepoints delimit locations where collection may occur.
-// - Write barriers preserve cross-generation and concurrent-mark invariants.
+// - Type metadata provides precise object traversal.
+// - Write barriers preserve SATB and remembered-set invariants.
+// - Card tables and remembered sets avoid scanning the entire old generation
+//   during young collections.
 // - Global, static, thread-local, stack, and live register roots are scanned.
 //
 // Collection timing is not observable language behavior. Programs must not
@@ -113,8 +121,9 @@
 // reclaimed; it does not make an invalid borrow valid or make a type thread-safe.
 //
 // Each thread participates in safepoints and root publication. Collection may
-// run concurrently where supported, but language-visible reads and writes keep
-// their normal data-race and synchronization requirements.
+// perform concurrent marking and parallel evacuation, but language-visible
+// reads and writes keep their normal data-race and synchronization
+// requirements.
 //
 
 // ============================================================
