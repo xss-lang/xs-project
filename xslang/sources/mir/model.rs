@@ -143,6 +143,22 @@ pub enum Statement
     local: LocalId,
     span: Span,
   },
+  Aggregate
+  {
+    result: LocalId,
+    value_type: Type,
+    fields: Vec<LocalId>,
+    field_types: Vec<Type>,
+    span: Span,
+  },
+  Extract
+  {
+    result: LocalId,
+    aggregate: LocalId,
+    field: u32,
+    field_type: Type,
+    span: Span,
+  },
   AddI64
   {
     result: LocalId,
@@ -546,6 +562,25 @@ impl BorrowChecker
                              span, } =>
       {
         self.require_live(local, span);
+        let _ = self.state(result, span);
+      }
+      Statement::Aggregate { result,
+                             ref fields,
+                             span,
+                             .. } =>
+      {
+        for field in fields
+        {
+          self.require_live(*field, span);
+        }
+        let _ = self.state(result, span);
+      }
+      Statement::Extract { result,
+                           aggregate,
+                           span,
+                           .. } =>
+      {
+        self.require_live(aggregate, span);
         let _ = self.state(result, span);
       }
       Statement::Move { local,

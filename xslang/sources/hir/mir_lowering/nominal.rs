@@ -14,6 +14,61 @@ struct NominalArguments<'a>
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_object_value(&mut self,
+                                   type_name: &str,
+                                   initializers: &[crate::hir::type_check::ObjectField],
+                                   span: Span,
+                                   lowered: &mut mir::Function)
+                                   -> Option<mir::LocalId>
+  {
+    let definition = self.nominal_types.get(type_name)?.clone();
+    let value_type = self.aggregate_types.get(type_name).copied()?;
+    let mut fields = Vec::with_capacity(definition.fields.len());
+    let mut field_types = Vec::with_capacity(definition.fields.len());
+    for field in &definition.fields
+    {
+      let initializer = initializers.iter().find(|candidate| candidate.name == field.name)?;
+      let checked_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
+      let field_type = self.lower_value_type(&checked_type, initializer.span)?;
+      let value = match &checked_type
+      {
+        Type::Named(nested) =>
+        {
+          let Expression::Object { nominal_type,
+                                   fields,
+                                   span, } = &initializer.value
+          else
+          {
+            self.report(DiagnosticCode::UnsupportedExpression,
+                        "aggregate field requires a matching object value",
+                        initializer.span);
+            return None;
+          };
+          if nominal_type != nested
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        "aggregate field object has the wrong nominal type",
+                        initializer.span);
+            return None;
+          }
+          self.lower_object_value(nested, fields, *span, lowered)?
+        }
+        _ => self.lower_expression_to_local(&initializer.value, field_type, lowered)?,
+      };
+      fields.push(value);
+      field_types.push(field_type);
+    }
+    let result = self.declare_temp(value_type, span, lowered)?;
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::Aggregate { result,
+                                          value_type,
+                                          fields,
+                                          field_types,
+                                          span });
+    Some(result)
+  }
+
   pub(super) fn lower_nominal_parameter(&mut self, local: &Local, lowered: &mut mir::Function)
   {
     let Type::Named(type_name) = &local.ty
@@ -62,9 +117,7 @@ impl HirToMirLowerer
                   local.span);
       return;
     };
-    let Some(Expression::Object { nominal_type,
-                                  fields,
-                                  .. }) = initializer
+    let Some(initializer) = initializer
     else
     {
       self.report(DiagnosticCode::UnsupportedExpression,
@@ -72,15 +125,133 @@ impl HirToMirLowerer
                   local.span);
       return;
     };
-    if nominal_type != type_name
+    self.nominal_locals.insert(local.name.clone(), type_name.clone());
+    if let Expression::Object { nominal_type,
+                                fields,
+                                .. } = initializer
     {
-      self.report(DiagnosticCode::UnsupportedType,
-                  "object initializer type does not match nominal local type",
-                  local.span);
+      if nominal_type != type_name
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    "object initializer type does not match nominal local type",
+                    local.span);
+        return;
+      }
+      self.lower_object_fields(&local.name, &[], &definition, fields, local.span, lowered);
       return;
     }
-    self.nominal_locals.insert(local.name.clone(), type_name.clone());
-    self.lower_object_fields(&local.name, &[], &definition, fields, local.span, lowered);
+    let Some(value_type) = self.aggregate_types.get(type_name).copied()
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "nominal local type has no aggregate MIR layout",
+                  local.span);
+      return;
+    };
+    let Some(value) = self.lower_expression_to_local(initializer, value_type, lowered)
+    else
+    {
+      return;
+    };
+    self.declare_nominal_place_fields(&local.name, &[], &definition, local.span, lowered);
+    self.extract_into_nominal_place(&local.name, &[], &definition, value, local.span, lowered);
+  }
+
+  fn declare_nominal_place_fields(&mut self,
+                                  root: &str,
+                                  prefix: &[String],
+                                  definition: &crate::hir::declarations::NominalType,
+                                  span: Span,
+                                  lowered: &mut mir::Function)
+  {
+    for field in &definition.fields
+    {
+      let Some(field_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
+      else
+      {
+        continue;
+      };
+      let mut path = prefix.to_vec();
+      path.push(field.name.clone());
+      match field_type
+      {
+        Type::Primitive(_) =>
+        {
+          let key = field_key(root, &path);
+          let local = self.declare_local(key.clone(), &field_type, field.mutable, span, lowered);
+          self.field_locals.insert(key, local);
+        }
+        Type::Named(ref nested_name) =>
+        {
+          if let Some(nested) = self.nominal_types.get(nested_name).cloned()
+          {
+            self.declare_nominal_place_fields(root, &path, &nested, span, lowered);
+          }
+        }
+        _ =>
+        {}
+      }
+    }
+  }
+
+  fn extract_into_nominal_place(&mut self,
+                                root: &str,
+                                prefix: &[String],
+                                definition: &crate::hir::declarations::NominalType,
+                                aggregate: mir::LocalId,
+                                span: Span,
+                                lowered: &mut mir::Function)
+  {
+    for (index, field) in definition.fields.iter().enumerate()
+    {
+      let Some(field_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
+      else
+      {
+        continue;
+      };
+      let Some(value_type) = self.lower_value_type(&field_type, span)
+      else
+      {
+        continue;
+      };
+      let Some(value) = self.declare_temp(value_type, span, lowered)
+      else
+      {
+        continue;
+      };
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::Extract { result: value,
+                                          aggregate,
+                                          field: index as u32,
+                                          field_type: value_type,
+                                          span });
+      let mut path = prefix.to_vec();
+      path.push(field.name.clone());
+      match field_type
+      {
+        Type::Primitive(_) =>
+        {
+          if let Some(local) = self.field_locals.get(&field_key(root, &path)).copied()
+          {
+            self.current_block_mut(lowered)
+                .statements
+                .push(mir::Statement::StoreLocal { local,
+                                                   value,
+                                                   span });
+          }
+        }
+        Type::Named(ref nested_name) =>
+        {
+          if let Some(nested) = self.nominal_types.get(nested_name).cloned()
+          {
+            self.extract_into_nominal_place(root, &path, &nested, value, span, lowered);
+          }
+        }
+        _ =>
+        {}
+      }
+    }
   }
 
   pub(super) fn lower_field_load(&mut self,

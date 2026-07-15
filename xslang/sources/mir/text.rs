@@ -8,6 +8,8 @@ use std::fmt::Write;
 use super::optimizer::{OptimizationPass, OptimizationReport};
 use super::verify::{Diagnostic as VerifyDiagnostic, DiagnosticCode as VerifyDiagnosticCode};
 
+#[cfg(test)]
+mod aggregate_tests;
 pub mod parser;
 #[cfg(test)]
 mod storage_tests;

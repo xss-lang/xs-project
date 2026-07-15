@@ -417,9 +417,11 @@ Top-level `data` and `class` declarations now enter the Rust declaration registr
 For the first executable aggregate slice, locally initialized `data` objects are recursively scalarized into
 target-independent MIR storage places. Field reads, leaf assignments, nested aggregate replacement, and whole local copies
 then lower through XLIL stack slots to LLVM. Non-recursive `data` parameters are flattened in declaration order to their
-primitive leaves at the MIR/XLIL function boundary; calls accept either initialized places or object literals. Recursive
-by-value parameters require a future indirect ABI and are rejected explicitly. This is deliberately not the final aggregate
-ABI: nominal return values, constructors, escaping objects, class allocation, and stable cross-module layout remain deferred.
+primitive leaves at the MIR/XLIL function boundary; calls accept either initialized places or object literals. Non-recursive
+`data` return values use deterministic nominal aggregate registry entries and real MIR `aggregate`/`extract` statements.
+Aggregate-returning calls can initialize local places, including nested `data` layouts. Recursive by-value parameters and
+returns require a future indirect ABI and are rejected explicitly. Constructors, escaping objects, class allocation, and a
+stable cross-module layout remain deferred.
 The imported HIR body model now has explicit lexical blocks and distinguishes statement `if` from value-producing `if`.
 Both forms require a `Bool` condition during Rust type checking. Statement branches lower to MIR basic blocks with an
 explicit merge when control can continue. A directly returned `if` expression may lower each required value branch to its

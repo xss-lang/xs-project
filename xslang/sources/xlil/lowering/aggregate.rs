@@ -1,0 +1,72 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+use super::{BlockId, DiagnosticCode, Function, HashMap, MirToXlilLowerer, ValueId, mir};
+
+impl MirToXlilLowerer
+{
+  pub(super) fn lower_aggregate_statement(&mut self,
+                                          statement: &mir::Statement,
+                                          block: BlockId,
+                                          values: &mut HashMap<mir::LocalId, ValueId>,
+                                          function: &mut Function)
+  {
+    match statement
+    {
+      mir::Statement::Aggregate { result,
+                                  value_type,
+                                  fields,
+                                  span,
+                                  .. } =>
+      {
+        let Some(fields) = fields.iter()
+                                 .map(|field| values.get(field).copied())
+                                 .collect::<Option<Vec<_>>>()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR aggregate field has not been lowered",
+                      *span);
+          return;
+        };
+        let Some(value) = function.add_aggregate(block, *value_type, fields)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR aggregate could not lower to XLIL",
+                      *span);
+          return;
+        };
+        values.insert(*result, value);
+      }
+      mir::Statement::Extract { result,
+                                aggregate,
+                                field,
+                                field_type,
+                                span, } =>
+      {
+        let Some(aggregate) = values.get(aggregate).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR extract source has not been lowered",
+                      *span);
+          return;
+        };
+        let Some(value) = function.add_extract(block, aggregate, *field, *field_type)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR extract could not lower to XLIL",
+                      *span);
+          return;
+        };
+        values.insert(*result, value);
+      }
+      _ =>
+      {}
+    }
+  }
+}

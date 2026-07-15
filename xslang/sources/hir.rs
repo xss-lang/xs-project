@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+pub(crate) mod aggregate_registry;
 pub mod async_check;
 pub mod declarations;
 pub mod generics;

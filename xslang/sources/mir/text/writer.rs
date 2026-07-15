@@ -6,7 +6,7 @@
 use std::fmt::Write;
 
 use crate::mir::{BasicBlock, Function, LocalId, Parameter, Statement, Terminator};
-use crate::xlil::type_name;
+use crate::xlil::type_text;
 
 #[must_use]
 pub fn function_to_xmir(function: &Function) -> String
@@ -14,7 +14,7 @@ pub fn function_to_xmir(function: &Function) -> String
   let mut output = String::new();
   let _ = writeln!(output, ".xmir version 0");
   let _ = writeln!(output, "function {}", function.name);
-  let _ = writeln!(output, "returns {}", type_name(function.return_type));
+  let _ = writeln!(output, "returns {}", type_text(function.return_type));
   write_parameters(&mut output, function);
   write_locals(&mut output, function);
   write_blocks(&mut output, function);
@@ -41,7 +41,7 @@ fn write_parameter(output: &mut String, parameter: &Parameter)
 {
   let _ = writeln!(output, "  parameter {}", parameter.name);
   let _ = writeln!(output, "    local {}", parameter.local.0);
-  let _ = writeln!(output, "    type {}", type_name(parameter.value_type));
+  let _ = writeln!(output, "    type {}", type_text(parameter.value_type));
 }
 
 fn write_locals(output: &mut String, function: &Function)
@@ -66,7 +66,7 @@ fn write_locals(output: &mut String, function: &Function)
     let _ = writeln!(output, "    name {}", local.name);
     if let Some(value_type) = local.value_type
     {
-      let _ = writeln!(output, "    type {}", type_name(value_type));
+      let _ = writeln!(output, "    type {}", type_text(value_type));
     }
     let _ = writeln!(output, "    mutability {mutability}");
   }
@@ -188,7 +188,7 @@ fn write_statement(output: &mut String, statement: &Statement)
                                left,
                                right,
                                .. } => write_binary(output,
-                                                    &format!("{}.{}", operation.text_stem(), type_name(*value_type)),
+                                                    &format!("{}.{}", operation.text_stem(), type_text(*value_type)),
                                                     *result,
                                                     *left,
                                                     *right),
@@ -198,7 +198,7 @@ fn write_statement(output: &mut String, statement: &Statement)
                              left,
                              right,
                              .. } => write_binary(output,
-                                                  &format!("{}.{}", operation.text_stem(), type_name(*value_type)),
+                                                  &format!("{}.{}", operation.text_stem(), type_text(*value_type)),
                                                   *result,
                                                   *left,
                                                   *right),
@@ -208,7 +208,7 @@ fn write_statement(output: &mut String, statement: &Statement)
                               left,
                               right,
                               .. } => write_binary(output,
-                                                   &format!("{}.{}", operation.text_stem(), type_name(*value_type)),
+                                                   &format!("{}.{}", operation.text_stem(), type_text(*value_type)),
                                                    *result,
                                                    *left,
                                                    *right),
@@ -236,6 +236,35 @@ fn write_statement(output: &mut String, statement: &Statement)
       let _ = writeln!(output, "      statement load.local");
       let _ = writeln!(output, "        result local {}", result.0);
       let _ = writeln!(output, "        source local {}", local.0);
+    }
+    Statement::Aggregate { result,
+                           value_type,
+                           fields,
+                           field_types,
+                           .. } =>
+    {
+      let _ = writeln!(output, "      statement aggregate");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        type {}", type_text(*value_type));
+      for (field, field_type) in fields.iter().zip(field_types)
+      {
+        let _ = writeln!(output,
+                         "        field local {} type {}",
+                         field.0,
+                         type_text(*field_type));
+      }
+    }
+    Statement::Extract { result,
+                         aggregate,
+                         field,
+                         field_type,
+                         .. } =>
+    {
+      let _ = writeln!(output, "      statement extract");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        aggregate local {}", aggregate.0);
+      let _ = writeln!(output, "        field {field}");
+      let _ = writeln!(output, "        type {}", type_text(*field_type));
     }
     Statement::AddI64 { result,
                         left,
@@ -316,7 +345,7 @@ fn write_statement(output: &mut String, statement: &Statement)
     {
       let _ = writeln!(output, "      statement call");
       let _ = writeln!(output, "        function {function}");
-      let _ = writeln!(output, "        returns {}", type_name(*return_type));
+      let _ = writeln!(output, "        returns {}", type_text(*return_type));
       write_call_result(output, *result);
       for argument in arguments
       {

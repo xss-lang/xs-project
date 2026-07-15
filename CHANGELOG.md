@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Nominal `data` return values now use first-class aggregate values across typed HIR, MIR, XMIR, XLIL, LLVM, and native
+  `.xse` emission. Aggregate-returning calls can initialize local `data` places, including nested layouts, and their fields
+  are extracted back into the existing place model without exposing LLVM types to HIR or MIR.
 - XLIL v0 now has sequential nominal aggregate type registry records, first-class aggregate construction and field
   extraction instructions, matching Rust and public C23 parse/write/verify APIs, and LLVM named-structure lowering.
   Direct XLIL builds exercise the complete path through object emission and a native `.xse` executable.
@@ -61,8 +64,8 @@ source-to-native executable pipeline.
 - Compiler-core sessions retain type-check, MIR-lowering, borrow-check, and optimization diagnostics instead of silently
   dropping failed function bodies. The C23 driver exposes those messages when native emission cannot proceed.
 - Recursive by-value `data` parameters are rejected with an explicit indirect-ABI diagnostic instead of recursing during
-  compiler lowering. XLIL now has a first-class aggregate return model; connecting nominal source returns through MIR
-  remains the next compiler-core step.
+  compiler lowering. Non-recursive `data` returns now use the shared aggregate registry rather than the scalar parameter
+  ABI.
 - Kotlin `sources` includes now expand `*`, `**`, and `?` globs, apply excludes, require exactly one resolved `main.xs`,
   and emit a deterministic main-first source registry.
 - `--warning all|medium|low|none`, `--werror true|false`, and `--verbose true|false` provide one-shot compiler-policy

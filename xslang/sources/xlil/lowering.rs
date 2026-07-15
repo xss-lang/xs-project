@@ -11,6 +11,7 @@ use crate::xlil::{
   BlockId, Function, I32BinaryOperation, IntegerBinaryOperation, IntegerConstant, SlotId, Type, Utf16Encoding, ValueId,
 };
 
+mod aggregate;
 mod integer;
 mod storage;
 mod string;
@@ -118,6 +119,7 @@ impl MirToXlilLowerer
   {
     for statement in &block.statements
     {
+      self.lower_aggregate_statement(statement, xlil_block, values, lowered);
       if let mir::Statement::ConstI64 { local,
                                         value,
                                         span, } = *statement
@@ -988,5 +990,7 @@ fn local_types(function: &mir::Function) -> HashMap<mir::LocalId, Option<Type>>
           .collect()
 }
 
+#[cfg(test)]
+mod aggregate_tests;
 #[cfg(test)]
 mod tests;

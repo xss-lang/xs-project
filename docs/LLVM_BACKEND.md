@@ -109,4 +109,6 @@ runtime or external library resolution is not configured yet.
 
 XLIL aggregate registry entries lower to named LLVM structure types. The backend creates all opaque named types before
 setting their field bodies, then lowers `aggregate` and `extract` records with LLVM `insertvalue` and `extractvalue`.
-This supports aggregate signatures and direct XLIL native builds without coupling HIR or MIR models to LLVM APIs.
+This supports aggregate signatures, direct XLIL native builds, and non-recursive source `data` returns without coupling HIR
+or MIR models to LLVM APIs. Aggregate-returning source calls may initialize local `data` places; nested layouts retain their
+named structure identity through the generated LLVM function signature.

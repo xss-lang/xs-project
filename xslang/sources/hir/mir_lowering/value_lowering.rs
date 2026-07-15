@@ -186,19 +186,29 @@ impl HirToMirLowerer
 
   pub(super) fn lower_value_type(&mut self, ty: &Type, span: Span) -> Option<XlilType>
   {
-    let Type::Primitive(primitive) = ty
-    else
+    match ty
     {
-      self.report(DiagnosticCode::UnsupportedType,
-                  "user-defined HIR type has no MIR value model yet",
-                  span);
-      return None;
-    };
-    primitive_to_xlil(*primitive).or_else(|| {
-                                   self.report(DiagnosticCode::UnsupportedType,
-                                               "HIR primitive has no XLIL-backed MIR value type yet",
-                                               span);
-                                   None
-                                 })
+      Type::Named(name) => self.aggregate_types.get(name).copied().or_else(|| {
+                                                                    self.report(DiagnosticCode::UnsupportedType,
+                                                                                format!("nominal HIR type '{name}' \
+                                                                                         has no aggregate MIR layout"),
+                                                                                span);
+                                                                    None
+                                                                  }),
+      Type::Primitive(primitive) => primitive_to_xlil(*primitive).or_else(|| {
+                                                                   self.report(DiagnosticCode::UnsupportedType,
+                                                                               "HIR primitive has no XLIL-backed MIR \
+                                                                                value type yet",
+                                                                               span);
+                                                                   None
+                                                                 }),
+      _ =>
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    "HIR type has no MIR value model yet",
+                    span);
+        None
+      }
+    }
   }
 }

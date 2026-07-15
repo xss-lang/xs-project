@@ -48,6 +48,7 @@ pub struct HirToMirLowerer
   loop_targets: Vec<(mir::BlockId, mir::BlockId)>,
   storage_locals: HashSet<mir::LocalId>,
   nominal_types: HashMap<String, crate::hir::declarations::NominalType>,
+  aggregate_types: HashMap<String, XlilType>,
   nominal_locals: HashMap<String, String>,
   field_locals: HashMap<String, mir::LocalId>,
 }
@@ -62,6 +63,8 @@ mod integer_operator_tests;
 #[cfg(test)]
 mod integer_width_tests;
 mod nominal;
+#[cfg(test)]
+mod nominal_return_tests;
 #[cfg(test)]
 mod operator_tests;
 mod unary;
@@ -80,6 +83,8 @@ impl HirToMirLowerer
   pub fn with_nominal_types(mut self, types: &[crate::hir::declarations::NominalType]) -> Self
   {
     self.nominal_types = types.iter().map(|ty| (ty.name.clone(), ty.clone())).collect();
+    self.aggregate_types =
+      crate::hir::aggregate_registry::build(types).map_or_else(HashMap::new, |registry| registry.types);
     self
   }
 
@@ -277,11 +282,9 @@ impl HirToMirLowerer
         }
       }
       Expression::Field { path } => self.lower_field_load(path, expected_type, lowered),
-      Expression::Object { .. } =>
-      {
-        self.unsupported_expression(expression);
-        None
-      }
+      Expression::Object { nominal_type,
+                           fields,
+                           span, } => self.lower_object_value(nominal_type, fields, *span, lowered),
       Expression::Literal { literal,
                             span, } =>
       {

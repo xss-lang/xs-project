@@ -1,0 +1,19 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
+data Point {
+    x: Long;
+    y: Long;
+}
+
+fn make_point() -> Point {
+    return Point {
+        x: 2,
+        y: 3,
+    };
+}
+
+fn main() -> Long {
+    point: Point = make_point();
+    return point.x + point.y;
+}

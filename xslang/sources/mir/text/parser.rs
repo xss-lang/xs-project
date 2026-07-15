@@ -9,6 +9,7 @@ use crate::xlil::{I64BinaryOperation, I64ComparisonOperation, Type, type_from_na
 
 use super::{SUPPORTED_XMIR_VERSION, is_supported_xmir_version};
 
+mod aggregate;
 mod float;
 mod i32;
 mod i64;
@@ -44,6 +45,14 @@ struct Parser<'a>
   lines: Vec<&'a str>,
   index: usize,
   diagnostics: Vec<XmirParseDiagnostic>,
+}
+
+fn type_from_text(text: &str) -> Option<Type>
+{
+  text.strip_prefix("%t")
+      .and_then(|id| id.parse().ok())
+      .map(Type::aggregate)
+      .or_else(|| type_from_name(text))
 }
 
 impl Parser<'_>
@@ -107,7 +116,7 @@ impl Parser<'_>
       return Type::VOID;
     };
     self.index += 1;
-    let return_type = type_from_name(type_name);
+    let return_type = type_from_text(type_name);
     if return_type.is_none()
     {
       self.report(format!("unknown return type '{type_name}'"));
@@ -178,7 +187,7 @@ impl Parser<'_>
       self.report("expected parameter type".to_string());
       return Type::VOID;
     };
-    let value_type = type_from_name(type_name);
+    let value_type = type_from_text(type_name);
     if value_type.is_none()
     {
       self.report(format!("unknown parameter type '{type_name}'"));
@@ -288,6 +297,8 @@ impl Parser<'_>
         "const.bool" => block.statements.push(self.const_bool_statement()),
         "store.local" => block.statements.push(self.store_local_statement()),
         "load.local" => block.statements.push(self.load_local_statement()),
+        "aggregate" => block.statements.push(aggregate::statement(self)),
+        "extract" => block.statements.push(aggregate::extract_statement(self)),
         "add.i64" => block.statements.push(self.add_i64_statement()),
         "sub.i64" => block.statements.push(self.sub_i64_statement()),
         "mul.i64" => block.statements.push(self.mul_i64_statement()),
@@ -497,7 +508,7 @@ impl Parser<'_>
     let line = self.current()?;
     let type_name = line.strip_prefix("type ")?;
     self.index += 1;
-    let value_type = type_from_name(type_name);
+    let value_type = type_from_text(type_name);
     if value_type.is_none()
     {
       self.report(format!("unknown local type '{type_name}'"));
@@ -826,7 +837,7 @@ impl Parser<'_>
       self.report("expected call return type".to_string());
       return Type::VOID;
     };
-    let value_type = type_from_name(type_name);
+    let value_type = type_from_text(type_name);
     if value_type.is_none()
     {
       self.report(format!("unknown call return type '{type_name}'"));

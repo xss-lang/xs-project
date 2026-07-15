@@ -238,6 +238,16 @@ impl<'a> Verifier<'a>
       Statement::LoadLocal { result,
                              local,
                              span, } => self.verify_local_storage(local, result, "load.local", span),
+      Statement::Aggregate { result,
+                             value_type,
+                             ref fields,
+                             ref field_types,
+                             span, } => self.verify_aggregate(result, value_type, fields, field_types, span),
+      Statement::Extract { result,
+                           aggregate,
+                           field_type,
+                           span,
+                           .. } => self.verify_extract(result, aggregate, field_type, span),
       Statement::AddI64 { result,
                           left,
                           right,
@@ -314,6 +324,46 @@ impl<'a> Verifier<'a>
                         span,
                         .. } => self.verify_call(result, arguments, return_type, span),
     }
+  }
+
+  fn verify_aggregate(&mut self,
+                      result: LocalId,
+                      value_type: crate::xlil::Type,
+                      fields: &[LocalId],
+                      field_types: &[crate::xlil::Type],
+                      span: Span)
+  {
+    if value_type.kind != crate::xlil::TypeKind::Aggregate
+    {
+      self.report(DiagnosticCode::LocalTypeMismatch,
+                  "aggregate statement requires an aggregate result type".to_string(),
+                  span);
+    }
+    self.verify_exact_local(result, value_type, "aggregate result local", span);
+    if fields.len() != field_types.len()
+    {
+      self.report(DiagnosticCode::LocalTypeMismatch,
+                  "aggregate field values and field types have different lengths".to_string(),
+                  span);
+      return;
+    }
+    for (index, (field, field_type)) in fields.iter().zip(field_types).enumerate()
+    {
+      self.verify_exact_local(*field, *field_type, &format!("aggregate field {index}"), span);
+    }
+  }
+
+  fn verify_extract(&mut self, result: LocalId, aggregate: LocalId, field_type: crate::xlil::Type, span: Span)
+  {
+    self.verify_local(aggregate, span);
+    if let Some(value_type) = self.local_type(aggregate) &&
+       value_type.kind != crate::xlil::TypeKind::Aggregate
+    {
+      self.report(DiagnosticCode::LocalTypeMismatch,
+                  "extract source local must have an aggregate type".to_string(),
+                  span);
+    }
+    self.verify_exact_local(result, field_type, "extract result local", span);
   }
 
   fn verify_terminator(&mut self, terminator: &Terminator, span: Span)
