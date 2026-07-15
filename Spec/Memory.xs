@@ -13,7 +13,8 @@
 // - RAII
 // - Arena Allocation
 //
-// Garbage Collection does not exist.
+// Garbage collection is not used in the default mode. The optional XGC mode
+// and its different cleanup guarantees are specified in GC.xs.
 //
 // All values are move-by-default.
 //
@@ -293,7 +294,7 @@ result: Str = a + b;
 // performance principles
 
 //
-// No Garbage Collection.
+// RAII mode has no garbage collection. XGC is an explicit whole-program mode.
 //
 // No Hidden Allocation.
 //
