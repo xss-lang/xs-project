@@ -21,6 +21,32 @@ static int failures;
     }                                                                                                                  \
   } while(0)
 
+#define CHECK_EQ(actual, expected)                                                                                     \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    const long long actual_value = (long long)(actual);                                                                \
+    const long long expected_value = (long long)(expected);                                                            \
+    if(actual_value != expected_value)                                                                                 \
+    {                                                                                                                  \
+      fprintf(stderr, "%s:%d: check failed: %s == %s; expected %lld, got %lld\n", __FILE__, __LINE__, #actual,         \
+              #expected, expected_value, actual_value);                                                                \
+      ++failures;                                                                                                      \
+    }                                                                                                                  \
+  } while(0)
+
+#define CHECK_TOKEN_EQ(actual_expression, expected_expression)                                                         \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    const XsTokenKind actual_value = (actual_expression);                                                              \
+    const XsTokenKind expected_value = (expected_expression);                                                          \
+    if(actual_value != expected_value)                                                                                 \
+    {                                                                                                                  \
+      fprintf(stderr, "%s:%d: expected token %s, got %s\n", __FILE__, __LINE__, xs_token_kind_name(expected_value),    \
+              xs_token_kind_name(actual_value));                                                                       \
+      ++failures;                                                                                                      \
+    }                                                                                                                  \
+  } while(0)
+
 static void expect_tokens(const char *text, const XsTokenKind *expected, size_t count)
 {
   XsSource source = {.path = "<test>", .text = text, .length = strlen(text)};
@@ -31,13 +57,9 @@ static void expect_tokens(const char *text, const XsTokenKind *expected, size_t 
   for(size_t i = 0; i < count; ++i)
   {
     XsToken actual = xs_lexer_next(&lexer);
-    if(actual.kind != expected[i])
-    {
-      fprintf(stderr, "token %zu: expected %s, got %s\n", i, xs_token_kind_name(expected[i]),
-              xs_token_kind_name(actual.kind));
-      ++failures;
-    }
+    CHECK_TOKEN_EQ(actual.kind, expected[i]);
   }
+  CHECK_EQ(lexer.cursor, source.length);
   CHECK(!xs_diagnostics_has_error(&diagnostics));
   xs_diagnostics_free(&diagnostics);
 }
