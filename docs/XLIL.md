@@ -61,7 +61,7 @@ Format notes:
 - `.xlil module <name>` declares the module name after the version header.
 - `.type %tN <name> : (<fields>)` adds a sequential nominal aggregate layout to the module type registry. Aggregate
   fields may reference primitive types or previously declared `%tN` types.
-- `.array %aN : <element> x <length>` adds a sequential fixed-array layout. The positive length is part of the type;
+- `.array %aN : <element> x <length>` adds a sequential fixed-array layout. The positive element count is part of the type;
   fixed arrays remain compiler-known structural types and are not aliases for nominal collection types.
 - `.extern <symbol> : (<params>) -> <return>` declares an external function.
 - `.func <symbol> : (<params>) -> <return>` starts a function body.

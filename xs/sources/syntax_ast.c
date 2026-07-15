@@ -278,6 +278,7 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "map type",
       "map literal",
       "map entry",
+      "set literal",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown syntax node";

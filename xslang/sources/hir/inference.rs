@@ -107,6 +107,10 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
       Some(Type::Array { element: Box::new(element),
                          length: Some(elements.len().try_into().ok()?) })
     }
+    Expression::Set { elements, .. } =>
+    {
+      Some(Type::Set { element: Box::new(homogeneous_expression_type(elements, locals)?) })
+    }
     Expression::Map { entries, .. } =>
     {
       let keys = entries.iter().map(|entry| &entry.key).collect::<Vec<_>>();

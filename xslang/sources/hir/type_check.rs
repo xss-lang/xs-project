@@ -39,6 +39,10 @@ pub enum Type
     element: Box<Type>,
     length: Option<u64>,
   },
+  Set
+  {
+    element: Box<Type>,
+  },
   Map
   {
     key: Box<Type>,
@@ -162,6 +166,10 @@ pub enum Expression
   {
     elements: Vec<Expression>, span: Span
   },
+  Set
+  {
+    elements: Vec<Expression>, span: Span
+  },
   Map
   {
     entries: Vec<MapEntry>, span: Span
@@ -244,6 +252,14 @@ pub enum Statement
     initializer: Option<Expression>,
   },
   Expr(Expression),
+  AssignIndex
+  {
+    target: String,
+    index: Expression,
+    value: Expression,
+    element_type: Type,
+    span: Span,
+  },
   Return
   {
     value: Option<Expression>,
@@ -404,6 +420,11 @@ impl TypeChecker
         }
       }
       Statement::Expr(expression) => self.check_expression(expression),
+      Statement::AssignIndex { target,
+                               index,
+                               value,
+                               element_type,
+                               span, } => self.check_index_assignment(target, index, value, element_type, *span),
       Statement::Return { value,
                           span, } =>
       {
@@ -626,7 +647,7 @@ impl TypeChecker
       Expression::Object { nominal_type,
                            fields,
                            span, } => self.check_object(nominal_type, fields, *span),
-      Expression::Array { elements, .. } =>
+      Expression::Array { elements, .. } | Expression::Set { elements, .. } =>
       {
         for element in elements
         {
@@ -825,6 +846,20 @@ impl TypeChecker
           self.check_expression_against_type(value, element);
         }
       }
+      Expression::Set { elements,
+                        span, } =>
+      {
+        let Type::Set { element } = ty
+        else
+        {
+          self.report_collection_mismatch(*span, "set literal requires a set target type");
+          return;
+        };
+        for value in elements
+        {
+          self.check_expression_against_type(value, element);
+        }
+      }
       Expression::Map { entries,
                         span, } =>
       {
@@ -852,14 +887,6 @@ impl TypeChecker
       Expression::Literal { .. } =>
       {}
     }
-  }
-
-  fn report_collection_mismatch(&mut self, span: Span, message: &str)
-  {
-    self.diagnostics
-        .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
-                           message: message.to_string(),
-                           span });
   }
 
   fn check_condition(&mut self, condition: &Expression, span: Span)
@@ -950,14 +977,10 @@ impl TypeChecker
     let value_type = self.expression_type(value)?;
     result_type_parts(&value_type)
   }
-
-  fn find_local(&self, name: &str) -> Option<&Local>
-  {
-    self.locals.iter().rev().find(|local| local.name == name)
-  }
 }
 
 mod binary_type;
+mod collection_check;
 mod expression_type;
 mod for_check;
 mod match_check;

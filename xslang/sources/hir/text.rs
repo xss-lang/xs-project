@@ -435,6 +435,16 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       }
       let _ = writeln!(output, "{pad}.end");
     }
+    Expression::Set { elements, .. } =>
+    {
+      let _ = writeln!(output, "{pad}set");
+      for element in elements
+      {
+        let _ = writeln!(output, "{pad}  element");
+        write_expression(output, element, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
     Expression::Map { entries, .. } =>
     {
       let _ = writeln!(output, "{pad}map");
@@ -625,6 +635,16 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
     DesugaredExpression::Array { elements, .. } =>
     {
       let _ = writeln!(output, "{pad}array");
+      for element in elements
+      {
+        let _ = writeln!(output, "{pad}  element");
+        write_desugared_expression(output, element, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    DesugaredExpression::Set { elements, .. } =>
+    {
+      let _ = writeln!(output, "{pad}set");
       for element in elements
       {
         let _ = writeln!(output, "{pad}  element");
@@ -897,6 +917,7 @@ fn type_name(ty: &Type) -> String
                   length: None, } => format!("[{}]", type_name(element)),
     Type::Array { element,
                   length: Some(length), } => format!("[{}; {length}]", type_name(element)),
+    Type::Set { element } => format!("set [{}]", type_name(element)),
     Type::Map { key,
                 value, } => format!("[{}: {}]", type_name(key), type_name(value)),
   }

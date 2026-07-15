@@ -9,10 +9,102 @@ use crate::hir::type_check::MapEntry;
 const EXPR_INDEX: u32 = 68;
 const EXPR_ARRAY_LITERAL: u32 = 76;
 const EXPR_MAP_LITERAL: u32 = 107;
+const EXPR_SET_LITERAL: u32 = 109;
 
 pub(super) const fn is_expression(kind: u32) -> bool
 {
-  matches!(kind, EXPR_INDEX | EXPR_ARRAY_LITERAL | EXPR_MAP_LITERAL)
+  matches!(kind,
+           EXPR_INDEX | EXPR_ARRAY_LITERAL | EXPR_MAP_LITERAL | EXPR_SET_LITERAL)
+}
+
+pub(super) const fn is_array_literal(kind: u32) -> bool
+{
+  kind == EXPR_ARRAY_LITERAL
+}
+
+pub(super) const fn is_set_literal(kind: u32) -> bool
+{
+  kind == EXPR_SET_LITERAL
+}
+
+pub(super) fn default_array_initializer(value_type: &Type, span: Span) -> Option<Expression>
+{
+  let Type::Array { element,
+                    length: Some(length), } = value_type
+  else
+  {
+    return None;
+  };
+  let count = usize::try_from(*length).ok()?;
+  let elements = (0..count).map(|_| default_element(element, span))
+                           .collect::<Option<Vec<_>>>()?;
+  Some(Expression::Array { elements,
+                           span })
+}
+
+pub(super) fn refine_local_type(value_type: &Type, initializer: Option<&SyntaxNode>) -> Type
+{
+  let Type::Array { element,
+                    length: None, } = value_type
+  else
+  {
+    return value_type.clone();
+  };
+  match initializer
+  {
+    Some(value) if is_array_literal(value.kind) => Type::Array { element: element.clone(),
+                                                                 length: u64::try_from(value.children.len()).ok() },
+    Some(value) if is_set_literal(value.kind) => Type::Set { element: element.clone() },
+    _ => value_type.clone(),
+  }
+}
+
+pub(super) fn is_index_assignment(tree: &SyntaxTree, node: &SyntaxNode) -> bool
+{
+  node.kind == EXPR_ASSIGNMENT &&
+  node.children
+      .first()
+      .and_then(|index| tree.nodes.get(*index))
+      .is_some_and(|target| target.kind == EXPR_INDEX)
+}
+
+pub(super) fn lower_index_assignment(tree: &SyntaxTree,
+                                     assignment: &SyntaxNode,
+                                     context: &LoweringContext,
+                                     locals: &HashMap<String, Type>)
+                                     -> Option<Statement>
+{
+  if assignment.token_kind != TOKEN_ASSIGN || assignment.children.len() != 3
+  {
+    return None;
+  }
+  let target = tree.nodes.get(assignment.children[0])?;
+  let collection = tree.nodes.get(*target.children.first()?)?;
+  if collection.kind != EXPR_IDENTIFIER || target.children.len() != 2
+  {
+    return None;
+  }
+  let name = path_text(tree, collection);
+  let Type::Array { element, .. } = locals.get(&name)?
+  else
+  {
+    return None;
+  };
+  let index = super::lower_expression(tree,
+                                      tree.nodes.get(target.children[1])?,
+                                      context,
+                                      locals,
+                                      Some(&Type::Primitive(PrimitiveType::Int)))?;
+  let value = super::lower_expression(tree,
+                                      tree.nodes.get(assignment.children[2])?,
+                                      context,
+                                      locals,
+                                      Some(element))?;
+  Some(Statement::AssignIndex { target: name,
+                                index,
+                                value,
+                                element_type: element.as_ref().clone(),
+                                span: super::span(assignment)? })
 }
 
 pub(super) fn expression_type(tree: &SyntaxTree,
@@ -40,6 +132,10 @@ pub(super) fn expression_type(tree: &SyntaxTree,
            .then(|| Type::Array { element: Box::new(element),
                                   length: u64::try_from(value.children.len()).ok() })
     }
+    EXPR_SET_LITERAL =>
+    {
+      homogeneous_type(tree, value, context, locals).map(|element| Type::Set { element: Box::new(element) })
+    }
     EXPR_MAP_LITERAL => map_type(tree, value, context, locals),
     EXPR_INDEX =>
     {
@@ -65,6 +161,7 @@ pub(super) fn lower_expression(tree: &SyntaxTree,
   match value.kind
   {
     EXPR_ARRAY_LITERAL => lower_array(tree, value, context, locals, expected_type, span),
+    EXPR_SET_LITERAL => lower_set(tree, value, context, locals, expected_type, span),
     EXPR_MAP_LITERAL => lower_map(tree, value, context, locals, expected_type, span),
     EXPR_INDEX if value.children.len() == 2 =>
     {
@@ -90,6 +187,27 @@ pub(super) fn lower_expression(tree: &SyntaxTree,
   }
 }
 
+fn homogeneous_type(tree: &SyntaxTree,
+                    value: &SyntaxNode,
+                    context: &LoweringContext,
+                    locals: &HashMap<String, Type>)
+                    -> Option<Type>
+{
+  let first = tree.nodes.get(*value.children.first()?)?;
+  let element = super::expression_type(tree, first, context, locals)?;
+  value.children
+       .iter()
+       .skip(1)
+       .all(|index| {
+         tree.nodes
+             .get(*index)
+             .and_then(|node| super::expression_type(tree, node, context, locals))
+             .as_ref() ==
+         Some(&element)
+       })
+       .then_some(element)
+}
+
 fn lower_array(tree: &SyntaxTree,
                value: &SyntaxNode,
                context: &LoweringContext,
@@ -106,17 +224,71 @@ fn lower_array(tree: &SyntaxTree,
   {
     return None;
   };
-  if length.is_some_and(|length| u64::try_from(value.children.len()).ok() != Some(length))
+  let retained = length.map_or(value.children.len(), |length| {
+                         usize::try_from(length).unwrap_or(usize::MAX).min(value.children.len())
+                       });
+  let mut elements =
+    value.children[..retained].iter()
+                              .map(|index| {
+                                super::lower_expression(tree, tree.nodes.get(*index)?, context, locals, Some(element))
+                              })
+                              .collect::<Option<Vec<_>>>()?;
+  if let Some(length) = length
+  {
+    let target = usize::try_from(*length).ok()?;
+    while elements.len() < target
+    {
+      elements.push(default_element(element, span)?);
+    }
+  }
+  Some(Expression::Array { elements,
+                           span })
+}
+
+fn lower_set(tree: &SyntaxTree,
+             value: &SyntaxNode,
+             context: &LoweringContext,
+             locals: &HashMap<String, Type>,
+             expected_type: Option<&Type>,
+             span: Span)
+             -> Option<Expression>
+{
+  let inferred = expression_type(tree, value, context, locals);
+  let set_type = expected_type.or(inferred.as_ref())?;
+  let Type::Set { element } = set_type
+  else
   {
     return None;
-  }
+  };
   let elements =
     value.children
          .iter()
          .map(|index| super::lower_expression(tree, tree.nodes.get(*index)?, context, locals, Some(element)))
          .collect::<Option<Vec<_>>>()?;
-  Some(Expression::Array { elements,
-                           span })
+  Some(Expression::Set { elements,
+                         span })
+}
+
+fn default_element(element: &Type, span: Span) -> Option<Expression>
+{
+  let literal = match element
+  {
+    Type::Primitive(PrimitiveType::Byte |
+                    PrimitiveType::SByte |
+                    PrimitiveType::Short |
+                    PrimitiveType::Long |
+                    PrimitiveType::Int |
+                    PrimitiveType::Integer |
+                    PrimitiveType::UShort |
+                    PrimitiveType::ULong |
+                    PrimitiveType::UInt |
+                    PrimitiveType::UInteger) => Literal::Integer("0".to_string()),
+    Type::Primitive(PrimitiveType::SFloat | PrimitiveType::Float) => Literal::Float("0.0".to_string()),
+    Type::Primitive(PrimitiveType::Char) => Literal::Char(0),
+    _ => return None,
+  };
+  Some(Expression::Literal { literal,
+                             span })
 }
 
 fn lower_map(tree: &SyntaxTree,

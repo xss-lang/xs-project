@@ -55,7 +55,7 @@ impl CollectionRegistry
                                        length: *length });
         Some(value_type)
       }
-      Type::Unit | Type::Array { length: None, .. } | Type::Map { .. } => None,
+      Type::Unit | Type::Array { length: None, .. } | Type::Set { .. } | Type::Map { .. } => None,
     }
   }
 }
@@ -130,6 +130,7 @@ fn visit_statements(registry: &mut CollectionRegistry, statements: &[Statement],
         }
       }
       Statement::Expr(_) |
+      Statement::AssignIndex { .. } |
       Statement::Return { .. } |
       Statement::Break { .. } |
       Statement::Continue { .. } |

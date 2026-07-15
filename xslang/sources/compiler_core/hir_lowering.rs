@@ -222,7 +222,7 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
     let length = value.children
                       .get(1)
                       .and_then(|index| tree.nodes.get(*index))
-                      .and_then(|length| length.text.replace('\'', "").parse().ok());
+                      .and_then(|length| length.text.replace('\'', "").parse::<u64>().ok());
     return declarations::TypeRef::Array { element: Box::new(element),
                                           length };
   }
@@ -581,10 +581,11 @@ fn lower_local(tree: &SyntaxTree,
                         .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))?;
     checked_type(&lower_type(tree, ty))?
   };
+  let checked_type = collection::refine_local_type(&checked_type, initializer_node);
   let initializer = match initializer_node
   {
     Some(value) => Some(lower_expression(tree, value, context, locals, Some(&checked_type))?),
-    None => None,
+    None => collection::default_array_initializer(&checked_type, span(declaration)?),
   };
   locals.insert(name.text.clone(), checked_type.clone());
   Some(Statement::Let { local: crate::hir::type_check::Local { name: name.text.clone(),
@@ -620,6 +621,10 @@ fn lower_statement_node(tree: &SyntaxTree,
     STMT_EXPRESSION if statement.children.len() == 1 =>
     {
       let expression = tree.nodes.get(statement.children[0])?;
+      if collection::is_index_assignment(tree, expression)
+      {
+        return collection::lower_index_assignment(tree, expression, context, locals);
+      }
       let expected = if expression.kind == EXPR_ASSIGNMENT
       {
         expression.children

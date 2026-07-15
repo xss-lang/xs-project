@@ -40,7 +40,7 @@ imports collections;
 
 // array iteration
 
-nums: Int[] = {1, 2, 3};
+nums: [Int] = [1, 2, 3];
 
 for (num in nums.iter()) {
 

@@ -12,6 +12,21 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- Canonical `[T; N]` fixed arrays and `[T]` declarations initialized by square-bracket literals now preserve their element
+  count through typed HIR, MIR, XLIL, LLVM, and native `.xse` emission.
+- Fixed-array literals now fill omitted numeric elements with zero and discard elements beyond the declared layout, as
+  required by the collection specification. Literal index assignment reconstructs the target-independent MIR aggregate
+  and can mutate array contents without reassigning a `val` binding.
+- Brace-delimited homogeneous literals now have a dedicated built-in set structural-AST and typed-HIR representation.
+  The public source type remains `[T]`; there is no nominal `HashSet<T>` spelling.
+
+### Changed
+
+- `[T] = [...]` denotes an array and `[T] = {...}` denotes a built-in set. A `[T]` declaration without an initializer is
+  an array. The literal delimiter supplies the distinction when an initializer is present.
+
 ## 0.1.7 - 2026-07-15
 
 ### Added

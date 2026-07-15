@@ -141,6 +141,7 @@ typedef enum
   XS_SYNTAX_TYPE_MAP,
   XS_SYNTAX_EXPR_MAP_LITERAL,
   XS_SYNTAX_MAP_ENTRY,
+  XS_SYNTAX_EXPR_SET_LITERAL,
 } XsSyntaxKind;
 
 typedef enum

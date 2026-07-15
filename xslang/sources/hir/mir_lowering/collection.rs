@@ -7,6 +7,109 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_index_assignment(&mut self,
+                                       target: &str,
+                                       index: &Expression,
+                                       value: &Expression,
+                                       element_type: &Type,
+                                       span: Span,
+                                       lowered: &mut mir::Function)
+  {
+    let Some(local) = self.locals.get(target).copied()
+    else
+    {
+      self.report(DiagnosticCode::UnknownLocal,
+                  format!("unknown array local '{target}'"),
+                  span);
+      return;
+    };
+    let Some(array_type) = self.local_value_type(local, lowered)
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "array assignment target has no MIR value type",
+                  span);
+      return;
+    };
+    let Some((_, lowered_element_type, length)) = self.array_layouts
+                                                      .iter()
+                                                      .find(|(value_type, _, _)| *value_type == array_type)
+                                                      .copied()
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "array assignment target has no fixed layout",
+                  span);
+      return;
+    };
+    if self.lower_value_type(element_type, span) != Some(lowered_element_type)
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "array assignment element type does not match its layout",
+                  span);
+      return;
+    }
+    let Some(index) = literal_index(index, length, span, self)
+    else
+    {
+      return;
+    };
+    let loaded = match self.declare_temp(array_type, span, lowered)
+    {
+      Some(value) => value,
+      None => return,
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::LoadLocal { result: loaded,
+                                          local,
+                                          span });
+    let mut fields = Vec::with_capacity(usize::try_from(length).unwrap_or(0));
+    for field in 0..length
+    {
+      if field == u64::from(index)
+      {
+        let Some(replacement) = self.lower_expression_to_local(value, lowered_element_type, lowered)
+        else
+        {
+          return;
+        };
+        fields.push(replacement);
+        continue;
+      }
+      let Some(result) = self.declare_temp(lowered_element_type, span, lowered)
+      else
+      {
+        return;
+      };
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::Extract { result,
+                                          aggregate: loaded,
+                                          field: u32::try_from(field).unwrap_or(u32::MAX),
+                                          field_type: lowered_element_type,
+                                          span });
+      fields.push(result);
+    }
+    let Some(updated) = self.declare_temp(array_type, span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::Aggregate { result: updated,
+                                          value_type: array_type,
+                                          field_types: vec![lowered_element_type; fields.len()],
+                                          fields,
+                                          span });
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::StoreLocal { local,
+                                           value: updated,
+                                           span });
+  }
+
   pub(super) fn lower_array_expression(&mut self,
                                        expression: &Expression,
                                        expected_type: XlilType,
@@ -84,30 +187,7 @@ impl HirToMirLowerer
                   *span);
       return None;
     }
-    let Expression::Literal { literal: Literal::Integer(index),
-                              .. } = index.as_ref()
-    else
-    {
-      self.report(DiagnosticCode::UnsupportedExpression,
-                  "fixed-array MIR indexing currently requires an integer literal",
-                  *span);
-      return None;
-    };
-    let Ok(index) = index.replace('\'', "").parse::<u32>()
-    else
-    {
-      self.report(DiagnosticCode::InvalidIntegerLiteral,
-                  "array index is not a valid u32 literal",
-                  *span);
-      return None;
-    };
-    if u64::from(index) >= length
-    {
-      self.report(DiagnosticCode::UnsupportedExpression,
-                  "fixed-array index is out of bounds",
-                  *span);
-      return None;
-    }
+    let index = literal_index(index, length, *span, self)?;
     let array = self.lower_expression_to_local(collection, collection_type, lowered)?;
     let result = self.declare_temp(element_type, *span, lowered)?;
     self.current_block_mut(lowered)
@@ -119,4 +199,33 @@ impl HirToMirLowerer
                                         span: *span });
     Some(result)
   }
+}
+
+fn literal_index(expression: &Expression, length: u64, span: Span, lowerer: &mut HirToMirLowerer) -> Option<u32>
+{
+  let Expression::Literal { literal: Literal::Integer(index),
+                            .. } = expression
+  else
+  {
+    lowerer.report(DiagnosticCode::UnsupportedExpression,
+                   "fixed-array MIR indexing currently requires an integer literal",
+                   span);
+    return None;
+  };
+  let Ok(index) = index.replace('\'', "").parse::<u32>()
+  else
+  {
+    lowerer.report(DiagnosticCode::InvalidIntegerLiteral,
+                   "array index is not a valid u32 literal",
+                   span);
+    return None;
+  };
+  if u64::from(index) >= length
+  {
+    lowerer.report(DiagnosticCode::UnsupportedExpression,
+                   "fixed-array index is out of bounds",
+                   span);
+    return None;
+  }
+  Some(index)
 }

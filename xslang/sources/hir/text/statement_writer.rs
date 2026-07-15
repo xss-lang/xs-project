@@ -32,6 +32,20 @@ pub(super) fn write_statement(output: &mut String, statement: &Statement, indent
       let _ = writeln!(output, "{pad}expression");
       write_expression(output, expression, indent + 1);
     }
+    Statement::AssignIndex { target,
+                             index,
+                             value,
+                             element_type,
+                             .. } =>
+    {
+      let _ = writeln!(output, "{pad}assign_index {target}");
+      let _ = writeln!(output, "{pad}  type {}", type_name(element_type));
+      let _ = writeln!(output, "{pad}  index");
+      write_expression(output, index, indent + 2);
+      let _ = writeln!(output, "{pad}  value");
+      write_expression(output, value, indent + 2);
+      let _ = writeln!(output, "{pad}.end");
+    }
     Statement::Return { value, .. } =>
     {
       let _ = writeln!(output, "{pad}return");
@@ -163,6 +177,20 @@ pub(super) fn write_desugared_statement(output: &mut String, statement: &Desugar
     {
       let _ = writeln!(output, "{pad}expression");
       write_desugared_expression(output, expression, indent + 1);
+    }
+    DesugaredStatement::AssignIndex { target,
+                                      index,
+                                      value,
+                                      element_type,
+                                      .. } =>
+    {
+      let _ = writeln!(output, "{pad}assign_index {target}");
+      let _ = writeln!(output, "{pad}  type {}", type_name(element_type));
+      let _ = writeln!(output, "{pad}  index");
+      write_desugared_expression(output, index, indent + 2);
+      let _ = writeln!(output, "{pad}  value");
+      write_desugared_expression(output, value, indent + 2);
+      let _ = writeln!(output, "{pad}.end");
     }
     DesugaredStatement::Return { value, .. } =>
     {

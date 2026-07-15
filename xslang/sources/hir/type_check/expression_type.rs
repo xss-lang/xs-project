@@ -24,6 +24,14 @@ impl TypeChecker
                 .then(|| Type::Array { element: Box::new(first),
                                        length: u64::try_from(elements.len()).ok() })
       }
+      Expression::Set { elements, .. } =>
+      {
+        let first = self.expression_type(elements.first()?)?;
+        elements.iter()
+                .skip(1)
+                .all(|element| self.expression_type(element).as_ref() == Some(&first))
+                .then(|| Type::Set { element: Box::new(first) })
+      }
       Expression::Map { entries, .. } =>
       {
         let first = entries.first()?;

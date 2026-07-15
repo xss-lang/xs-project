@@ -25,6 +25,7 @@ fn roundtrips_builtin_array_and_map_records()
                                  length: Some(2) };
   let map_type = Type::Map { key: Box::new(Type::Primitive(PrimitiveType::Str)),
                              value: Box::new(Type::Primitive(PrimitiveType::Int)) };
+  let set_type = Type::Set { element: Box::new(Type::Primitive(PrimitiveType::Int)) };
   let function = Function { name: "collections".to_string(),
                             return_type: None,
                             locals: vec![Local { name: "values".to_string(),
@@ -33,6 +34,10 @@ fn roundtrips_builtin_array_and_map_records()
                                                  span: span() },
                                          Local { name: "lookup".to_string(),
                                                  ty: map_type.clone(),
+                                                 mutable: false,
+                                                 span: span() },
+                                         Local { name: "unique".to_string(),
+                                                 ty: set_type.clone(),
                                                  mutable: false,
                                                  span: span() }],
                             body: vec![
@@ -55,11 +60,38 @@ fn roundtrips_builtin_array_and_map_records()
                                                   span: span() }],
                          span: span(),
                        }) },
+      Statement::Let { local: Local { name: "unique".to_string(),
+                                      ty: set_type,
+                                      mutable: false,
+                                      span: span() },
+                       initializer: Some(Expression::Set { elements: vec![integer("1"), integer("2")],
+                                                           span: span() }) },
     ] };
 
   let text = function_to_xhir(&function);
   assert!(text.contains("local values: [Int; 2] immutable"));
   assert!(text.contains("local lookup: [Str: Int] immutable"));
+  assert!(text.contains("local unique: set [Int] immutable"));
   assert_eq!(parse_xhir_function(&text).expect("collection XHIR should parse"),
+             function);
+}
+
+#[test]
+fn roundtrips_array_index_assignment()
+{
+  let function = Function { name: "mutate_array".to_string(),
+                            return_type: None,
+                            locals: Vec::new(),
+                            body: vec![Statement::AssignIndex { target: "values".to_string(),
+                                                                index: integer("1"),
+                                                                value: integer("7"),
+                                                                element_type:
+                                                                  Type::Primitive(PrimitiveType::Long),
+                                                                span: span() }] };
+
+  let text = function_to_xhir(&function);
+  assert!(text.contains("assign_index values"));
+  assert!(text.contains("type Long"));
+  assert_eq!(parse_xhir_function(&text).expect("array assignment XHIR should parse"),
              function);
 }

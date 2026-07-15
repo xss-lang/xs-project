@@ -8,6 +8,36 @@ use crate::hir::type_check::MapEntry;
 
 impl Parser<'_>
 {
+  pub(super) fn assign_index_statement(&mut self) -> Statement
+  {
+    let target = self.current()
+                     .and_then(|line| line.strip_prefix("assign_index ").map(ToString::to_string))
+                     .unwrap_or_default();
+    self.index += 1;
+    let element_type = self.current()
+                           .and_then(|line| line.strip_prefix("type ").map(ToString::to_string))
+                           .and_then(|name| self.parse_type(&name))
+                           .unwrap_or(Type::Unit);
+    self.index += 1;
+    self.consume_expression_field("index");
+    let index = self.expression()
+                    .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                     span: span() });
+    self.consume_expression_field("value");
+    let value = self.expression()
+                    .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                     span: span() });
+    if self.current().as_deref() == Some(".end")
+    {
+      self.index += 1;
+    }
+    Statement::AssignIndex { target,
+                             index,
+                             value,
+                             element_type,
+                             span: span() }
+  }
+
   pub(super) fn array_expression(&mut self) -> Option<Expression>
   {
     self.index += 1;
@@ -59,6 +89,30 @@ impl Parser<'_>
                               span: span() });
     }
     self.report("unterminated map expression".to_string());
+    None
+  }
+
+  pub(super) fn set_expression(&mut self) -> Option<Expression>
+  {
+    self.index += 1;
+    let mut elements = Vec::new();
+    while let Some(line) = self.current()
+    {
+      if line == ".end"
+      {
+        self.index += 1;
+        return Some(Expression::Set { elements,
+                                      span: span() });
+      }
+      if line != "element"
+      {
+        self.report(format!("expected set element, got '{line}'"));
+        return None;
+      }
+      self.index += 1;
+      elements.push(self.expression()?);
+    }
+    self.report("unterminated set expression".to_string());
     None
   }
 

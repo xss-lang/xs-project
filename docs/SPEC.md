@@ -26,7 +26,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 
 - Macro names are snake_case and are not under `STD`.
 - Standard modules use `std::<module>` names, such as `std::fs`. Built-in collections use language type syntax and do not
-  require a standard-module import: `[T]`, `[T; N]`, and `[K: V]`.
+  require a standard-module import: `[T]`, `[T; N]`, and `[K: V]`. A square-bracket initializer makes `[T]` an array; a
+  brace initializer makes it a built-in set. Without an initializer, `[T]` is an array. No public `HashSet<T>` type exists.
 - `::` separates modules, namespaces, types, associated items, and
   constructors; `.` is reserved for value member access and method calls. Generic arguments in expression paths use
   turbofish, for example `Some::<Str>("value")`.

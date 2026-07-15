@@ -52,6 +52,11 @@ pub enum DesugaredExpression
     elements: Vec<DesugaredExpression>,
     span: Span,
   },
+  Set
+  {
+    elements: Vec<DesugaredExpression>,
+    span: Span,
+  },
   Map
   {
     entries: Vec<DesugaredMapEntry>,
@@ -156,6 +161,14 @@ pub enum DesugaredStatement
     initializer: Option<DesugaredExpression>,
   },
   Expr(DesugaredExpression),
+  AssignIndex
+  {
+    target: String,
+    index: DesugaredExpression,
+    value: DesugaredExpression,
+    element_type: Type,
+    span: Span,
+  },
   Return
   {
     value: Option<DesugaredExpression>,
@@ -281,6 +294,15 @@ impl ResultDesugar
                                   initializer }
       }
       Statement::Expr(expression) => DesugaredStatement::Expr(self.desugar_expression(expression)),
+      Statement::AssignIndex { target,
+                               index,
+                               value,
+                               element_type,
+                               span, } => DesugaredStatement::AssignIndex { target: target.clone(),
+                                                                            index: self.desugar_expression(index),
+                                                                            value: self.desugar_expression(value),
+                                                                            element_type: element_type.clone(),
+                                                                            span: *span },
       Statement::Return { value,
                           span, } =>
       {
@@ -371,6 +393,12 @@ impl ResultDesugar
       {
         DesugaredExpression::Array { elements: elements.iter().map(|value| self.desugar_expression(value)).collect(),
                                      span: *span }
+      }
+      Expression::Set { elements,
+                        span, } =>
+      {
+        DesugaredExpression::Set { elements: elements.iter().map(|value| self.desugar_expression(value)).collect(),
+                                   span: *span }
       }
       Expression::Map { entries,
                         span, } =>
@@ -566,6 +594,14 @@ impl ResultDesugar
                 .all(|value| self.expression_type(value).as_ref() == Some(&first))
                 .then(|| Type::Array { element: Box::new(first),
                                        length: u64::try_from(elements.len()).ok() })
+      }
+      Expression::Set { elements, .. } =>
+      {
+        let first = self.expression_type(elements.first()?)?;
+        elements.iter()
+                .skip(1)
+                .all(|value| self.expression_type(value).as_ref() == Some(&first))
+                .then(|| Type::Set { element: Box::new(first) })
       }
       Expression::Map { entries, .. } =>
       {

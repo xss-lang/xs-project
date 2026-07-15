@@ -171,6 +171,14 @@ impl HirToMirLowerer
       Statement::Expr(Expression::AssignField { target,
                                                 value,
                                                 .. }) => self.lower_field_assignment(target, value, lowered),
+      Statement::AssignIndex { target,
+                               index,
+                               value,
+                               element_type,
+                               span, } =>
+      {
+        self.lower_index_assignment(target, index, value, element_type, *span, lowered)
+      }
       Statement::Expr(expression @ Expression::Update { .. }) =>
       {
         let Some(value_type) = self.expression_value_type(expression, lowered)
@@ -303,7 +311,7 @@ impl HirToMirLowerer
                            fields,
                            span, } => self.lower_object_value(nominal_type, fields, *span, lowered),
       Expression::Array { .. } => self.lower_array_expression(expression, expected_type, lowered),
-      Expression::Map { .. } =>
+      Expression::Set { .. } | Expression::Map { .. } =>
       {
         self.unsupported_expression(expression);
         None
@@ -674,6 +682,7 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Local { span, .. } |
     Expression::Object { span, .. } |
     Expression::Array { span, .. } |
+    Expression::Set { span, .. } |
     Expression::Map { span, .. } |
     Expression::Index { span, .. } |
     Expression::Assign { span, .. } |

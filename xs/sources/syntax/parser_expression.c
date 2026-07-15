@@ -323,7 +323,7 @@ static XsSyntaxNode *parse_brace_literal(SyntaxParser *parser, XsSyntaxNode *typ
                 (parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON);
   XsSyntaxKind kind = type_expression != nullptr
                           ? XS_SYNTAX_EXPR_TYPED_OBJECT_LITERAL
-                          : (object ? XS_SYNTAX_EXPR_OBJECT_LITERAL : XS_SYNTAX_EXPR_ARRAY_LITERAL);
+                          : (object ? XS_SYNTAX_EXPR_OBJECT_LITERAL : XS_SYNTAX_EXPR_SET_LITERAL);
   XsSyntaxNode *literal = node(parser, kind, (XsSpan){start, start});
   if(type_expression != nullptr)
     xs_syntax_node_add(parser->tree, literal, type_expression);

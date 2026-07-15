@@ -5,8 +5,8 @@
 
 //
 // Array:
-// - T[]
-// - T[n]
+// - [T]
+// - [T; N]
 // - Fixed size.
 // - Supports indexing.
 // - Supports len().
@@ -17,8 +17,7 @@
 //   the array value deeply immutable.
 //
 // Array size:
-// - T[3] means indexes 0..3.
-// - Total element count is 4.
+// - [T; 4] contains four elements with indexes 0..3.
 //
 // Array initialization:
 // - Missing values are filled with the type's default value.
@@ -28,6 +27,12 @@
 // - Numeric types -> 0
 // - Bool -> None
 // - Str -> None
+//
+// Built-in set:
+// - Uses the same [T] source type as an array.
+// - A brace initializer selects set semantics.
+// - There is no HashSet<T> nominal type.
+// - A declaration without an initializer defaults to array semantics.
 //
 // Vector:
 // - std::collections::Vector<T>
@@ -55,7 +60,7 @@ imports collections;
 
 // arrays
 
-nums: Int[] = {1, 2, 3};
+nums: [Int] = [1, 2, 3];
 
 nums[0] = 5;
 
@@ -64,7 +69,7 @@ length: Int = nums.len();
 
 // fixed-size arrays
 
-nums: Int[3] = {1, 2, 3, 4};
+nums: [Int; 4] = [1, 2, 3, 4];
 
 // Result:
 // {1, 2, 3, 4}
@@ -72,7 +77,7 @@ nums: Int[3] = {1, 2, 3, 4};
 
 // missing values
 
-nums: Int[3] = {1, 2};
+nums: [Int; 4] = [1, 2];
 
 // Result:
 // {1, 2, 0, 0}
@@ -80,7 +85,7 @@ nums: Int[3] = {1, 2};
 
 // excess values
 
-nums: Int[3] = {1, 2, 3, 4, 5};
+nums: [Int; 4] = [1, 2, 3, 4, 5];
 
 // Result:
 // {1, 2, 3, 4}
@@ -88,7 +93,7 @@ nums: Int[3] = {1, 2, 3, 4, 5};
 
 // Str defaults
 
-names: Str[3] = {"Leitewolf"};
+names: [Str; 4] = ["Leitewolf"];
 
 // Result:
 // {"Leitewolf", None, None, None}
@@ -96,7 +101,7 @@ names: Str[3] = {"Leitewolf"};
 
 // Bool defaults
 
-flags: Bool[2] = {};
+flags: [Bool; 3] = [];
 
 // Result:
 // {None, None, None}
@@ -104,12 +109,22 @@ flags: Bool[2] = {};
 
 // val array binding
 
-val nums: Int[] = {1, 2, 3};
+val nums: [Int] = [1, 2, 3];
 
 nums[0] = 5;
 
 // Valid when the array value's mutability rules allow element assignment.
 // Invalid only if the array/type rules make the element storage immutable.
+
+
+// built-in sets
+
+users: [Str] = {"Leitewolf", "Helmut", "Bob"};
+
+// The brace delimiter selects set semantics. Duplicate values collapse to one
+// set element according to T equality/hash semantics.
+
+empty_users: [Str] = {};
 
 
 // vectors
@@ -228,12 +243,12 @@ println!(
 
 // VALID
 
-nums: Int[] = {1, 2, 3};
+nums: [Int] = [1, 2, 3];
 
 
 // VALID
 
-nums: Int[3] = {1, 2};
+nums: [Int; 3] = [1, 2];
 
 
 // VALID

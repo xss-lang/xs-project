@@ -85,10 +85,10 @@ data SourceSpan {
 // ============================================================
 
 data AstFile {
-    inner_attributes: AttributeNode[]
+    inner_attributes: [AttributeNode]
     module_declaration: ModuleDeclaration
-    imports: ImportDeclaration[]
-    declarations: Declaration[]
+    imports: [ImportDeclaration]
+    declarations: [Declaration]
     span: SourceSpan
 }
 
@@ -126,7 +126,7 @@ enum data Declaration {
 
 data AttributeNode {
     path: PathNode
-    arguments: AttributeArgument[]
+    arguments: [AttributeArgument]
     is_inner: Bool
     span: SourceSpan
 }
@@ -158,7 +158,7 @@ data AttributeNameValue {
 // ============================================================
 
 data ModuleDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: PathNode
     visibility: VisibilityNode
     span: SourceSpan
@@ -173,10 +173,10 @@ data ModuleDeclaration {
 // ============================================================
 
 data ImportDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     kind: ImportKind
     module_path: PathNode
-    imported_names: ImportName[]
+    imported_names: [ImportName]
     alias: IdentifierNode
     span: SourceSpan
 }
@@ -204,7 +204,7 @@ data ImportName {
 // ============================================================
 
 data NamespaceDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     path: PathNode
     visibility: VisibilityNode
     span: SourceSpan
@@ -241,7 +241,7 @@ data IdentifierNode {
 
 
 data PathNode {
-    segments: IdentifierNode[]
+    segments: [IdentifierNode]
     span: SourceSpan
 }
 
@@ -262,7 +262,7 @@ data PathNode {
 
 data GenericParameter {
     name: IdentifierNode
-    constraints: TypeNode[]
+    constraints: [TypeNode]
     span: SourceSpan
 }
 
@@ -283,10 +283,10 @@ data GenericParameter {
 // ============================================================
 
 data ExternBlockDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     abi: TokenNode
-    functions: FunctionDeclaration[]
-    variables: VariableDeclaration[]
+    functions: [FunctionDeclaration]
+    variables: [VariableDeclaration]
     span: SourceSpan
 }
 
@@ -309,7 +309,7 @@ data ExternBlockDeclaration {
 // ============================================================
 
 data FunctionDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     visibility: VisibilityNode
 
@@ -321,8 +321,8 @@ data FunctionDeclaration {
     is_extern: Bool
     extern_abi: TokenNode
 
-    generic_parameters: GenericParameter[]
-    parameters: ParameterDeclaration[]
+    generic_parameters: [GenericParameter]
+    parameters: [ParameterDeclaration]
 
     return_type: TypeNode
 
@@ -344,7 +344,7 @@ data FunctionDeclaration {
 // ============================================================
 
 data ParameterDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     parameter_type: TypeNode
     span: SourceSpan
@@ -356,17 +356,17 @@ data ParameterDeclaration {
 // ============================================================
 
 data ClassDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     visibility: VisibilityNode
 
     is_incomplete: Bool
 
-    generic_parameters: GenericParameter[]
+    generic_parameters: [GenericParameter]
 
-    base_specifiers: BaseSpecifier[]
+    base_specifiers: [BaseSpecifier]
 
-    members: ClassMember[]
+    members: [ClassMember]
     span: SourceSpan
 }
 
@@ -395,7 +395,7 @@ enum data ClassMember {
 // ============================================================
 
 data FieldDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     field_type: TypeNode
     initializer: Expression
@@ -414,9 +414,9 @@ data FieldDeclaration {
 // ============================================================
 
 data ConstructorDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     class_name: IdentifierNode
-    parameters: ParameterDeclaration[]
+    parameters: [ParameterDeclaration]
     body: BlockStatement
     visibility: VisibilityNode
     span: SourceSpan
@@ -432,7 +432,7 @@ data ConstructorDeclaration {
 // ============================================================
 
 data DestructorDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     class_name: IdentifierNode
     body: BlockStatement
     span: SourceSpan
@@ -450,12 +450,12 @@ data DestructorDeclaration {
 // ============================================================
 
 data InterfaceDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     visibility: VisibilityNode
-    generic_parameters: GenericParameter[]
-    base_specifiers: BaseSpecifier[]
-    members: FunctionDeclaration[]
+    generic_parameters: [GenericParameter]
+    base_specifiers: [BaseSpecifier]
+    members: [FunctionDeclaration]
     span: SourceSpan
 }
 
@@ -465,18 +465,18 @@ data InterfaceDeclaration {
 // ============================================================
 
 data EnumDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     visibility: VisibilityNode
     is_data_enum: Bool
-    base_specifiers: BaseSpecifier[]
-    variants: EnumVariant[]
+    base_specifiers: [BaseSpecifier]
+    variants: [EnumVariant]
     span: SourceSpan
 }
 
 
 data EnumVariant {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     payload_type: TypeNode
     is_overload: Bool
@@ -515,20 +515,20 @@ data EnumVariant {
 // ============================================================
 
 data DataDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     visibility: VisibilityNode
-    generic_parameters: GenericParameter[]
-    base_specifiers: BaseSpecifier[]
-    fields: DataField[]
-    constructors: ConstructorDeclaration[]
-    methods: FunctionDeclaration[]
+    generic_parameters: [GenericParameter]
+    base_specifiers: [BaseSpecifier]
+    fields: [DataField]
+    constructors: [ConstructorDeclaration]
+    methods: [FunctionDeclaration]
     span: SourceSpan
 }
 
 
 data DataField {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     field_type: TypeNode
     span: SourceSpan
@@ -554,7 +554,7 @@ enum VariableBindingKind {
 
 
 data VariableDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
     variable_type: TypeNode?
     initializer: Expression
@@ -590,7 +590,7 @@ data NamedTypeNode {
 
 data GenericTypeNode {
     base_type: TypeNode
-    arguments: TypeNode[]
+    arguments: [TypeNode]
     span: SourceSpan
 }
 
@@ -629,13 +629,13 @@ data MutableReferenceTypeNode {
 
 
 data TupleTypeNode {
-    element_types: TypeNode[]
+    element_types: [TypeNode]
     span: SourceSpan
 }
 
 
 data FunctionTypeNode {
-    parameter_types: TypeNode[]
+    parameter_types: [TypeNode]
     return_type: TypeNode
     span: SourceSpan
 }
@@ -705,7 +705,7 @@ enum data Statement {
 // ============================================================
 
 data BlockStatement {
-    statements: Statement[]
+    statements: [Statement]
     span: SourceSpan
 }
 
@@ -770,7 +770,7 @@ data ReturnStatement {
 data IfStatement {
     condition: Expression
     then_block: BlockStatement
-    else_if_branches: ElseIfBranch[]
+    else_if_branches: [ElseIfBranch]
     else_block: BlockStatement
     span: SourceSpan
 }
@@ -840,7 +840,7 @@ data LoopStatement {
 
 data MatchStatement {
     value: Expression
-    arms: MatchArm[]
+    arms: [MatchArm]
     span: SourceSpan
 }
 
@@ -911,7 +911,7 @@ data IdentifierExpression {
 
 data GenericQualifierExpression {
     base: PathNode
-    type_arguments: TypeNode[]
+    type_arguments: [TypeNode]
     associated_path: PathNode
     span: SourceSpan
 }
@@ -1033,7 +1033,7 @@ data AssignmentExpression {
 
 data CallExpression {
     callee: Expression
-    arguments: Expression[]
+    arguments: [Expression]
     span: SourceSpan
 }
 
@@ -1050,7 +1050,7 @@ data CallExpression {
 data MethodCallExpression {
     receiver: Expression
     method_name: IdentifierNode
-    arguments: Expression[]
+    arguments: [Expression]
     span: SourceSpan
 }
 
@@ -1096,7 +1096,7 @@ data IndexExpression {
 
 data NewExpression {
     constructed_type: TypeNode
-    arguments: Expression[]
+    arguments: [Expression]
     span: SourceSpan
 }
 
@@ -1109,7 +1109,7 @@ data NewExpression {
 // ============================================================
 
 data FunctionExpression {
-    parameters: Identifier[]
+    parameters: [Identifier]
     body: BlockStatement
     capture_kind: FunctionCaptureKind
     span: SourceSpan
@@ -1182,7 +1182,7 @@ data DereferenceExpression {
 // ============================================================
 
 data ArrayLiteralExpression {
-    elements: Expression[]
+    elements: [Expression]
     span: SourceSpan
 }
 
@@ -1192,14 +1192,14 @@ data ArrayLiteralExpression {
 // ============================================================
 
 data ObjectLiteralExpression {
-    fields: ObjectLiteralField[]
+    fields: [ObjectLiteralField]
     span: SourceSpan
 }
 
 
 data TypedObjectLiteralExpression {
     constructor: Expression
-    fields: ObjectLiteralField[]
+    fields: [ObjectLiteralField]
     span: SourceSpan
 }
 
@@ -1219,7 +1219,7 @@ data ObjectLiteralField {
 // ============================================================
 
 data TupleExpression {
-    elements: Expression[]
+    elements: [Expression]
     span: SourceSpan
 }
 
@@ -1246,7 +1246,7 @@ data IfExpression {
 
 data MatchExpression {
     value: Expression
-    arms: MatchExpressionArm[]
+    arms: [MatchExpressionArm]
     span: SourceSpan
 }
 
@@ -1289,13 +1289,13 @@ data LiteralPattern {
 
 data EnumVariantPattern {
     path: PathNode
-    bindings: PatternNode[]
+    bindings: [PatternNode]
     span: SourceSpan
 }
 
 
 data TuplePattern {
-    elements: PatternNode[]
+    elements: [PatternNode]
     span: SourceSpan
 }
 
@@ -1317,9 +1317,9 @@ data ElsePattern {
 // ============================================================
 
 data MacroDeclaration {
-    attributes: AttributeNode[]
+    attributes: [AttributeNode]
     name: IdentifierNode
-    rules: MacroRule[]
+    rules: [MacroRule]
     span: SourceSpan
 }
 
@@ -1336,7 +1336,7 @@ data MacroRule {
 // ============================================================
 
 data MacroMatcher {
-    elements: MacroMatcherElement[]
+    elements: [MacroMatcherElement]
     span: SourceSpan
 }
 
@@ -1385,7 +1385,7 @@ enum MacroRepetitionKind {
 
 
 data MacroRepetitionMatcher {
-    elements: MacroMatcherElement[]
+    elements: [MacroMatcherElement]
     separator: MacroSeparator
     repetition_kind: MacroRepetitionKind
     span: SourceSpan
@@ -1406,7 +1406,7 @@ enum MacroSeparator {
 // ============================================================
 
 data MacroExpansion {
-    elements: MacroExpansionElement[]
+    elements: [MacroExpansionElement]
     span: SourceSpan
 }
 
@@ -1431,7 +1431,7 @@ data MacroExpansionVariable {
 
 
 data MacroExpansionRepetition {
-    elements: MacroExpansionElement[]
+    elements: [MacroExpansionElement]
     repetition_kind: MacroRepetitionKind
     span: SourceSpan
 }
@@ -1443,7 +1443,7 @@ data MacroExpansionRepetition {
 
 data MacroCallExpression {
     macro_name: IdentifierNode
-    arguments: MacroArgument[]
+    arguments: [MacroArgument]
     span: SourceSpan
 }
 
@@ -1455,7 +1455,7 @@ data MacroCallStatement {
 
 
 data MacroArgument {
-    tokens: TokenNode[]
+    tokens: [TokenNode]
     span: SourceSpan
 }
 

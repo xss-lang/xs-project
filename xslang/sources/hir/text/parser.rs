@@ -234,6 +234,7 @@ impl Parser<'_>
     {
       line if line.starts_with("let ") => Some(self.let_statement()),
       "expression" => Some(self.expression_statement()),
+      line if line.starts_with("assign_index ") => Some(self.assign_index_statement()),
       "return" => Some(self.return_statement()),
       "if" => Some(self.if_statement()),
       "while" => Some(self.while_statement()),
@@ -487,6 +488,10 @@ impl Parser<'_>
     if rest == "array"
     {
       return self.array_expression();
+    }
+    if rest == "set"
+    {
+      return self.set_expression();
     }
     if rest == "map"
     {

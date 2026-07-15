@@ -171,14 +171,17 @@ The documented compilation order is preserved:
 - In top-level and class-member contexts, `name!();` macro calls are represented as `XS_SYNTAX_DECL_MACRO_CALL` declaration
   nodes. This node is the entry point for item/declaration-producing macro expansion; inserting produced items as real AST
   replacements in scope is a later macro-expansion step.
-- Named, generic, canonical `[T]` array, `[T; N]` fixed array, `[K: V]` map, pointer, reference, tuple, unit, and
+- Named, generic, canonical `[T]` collection, `[T; N]` fixed array, `[K: V]` map, pointer, reference, tuple, unit, and
   `fn(...) -> T` function type nodes are parsed into
   the structural AST.
-- Built-in array and map types remain first-class compiler types across the structural-AST/compiler-core boundary and
-  typed HIR; they are not aliases or desugarings of nominal standard-library collections. Array/map literal inference,
-  contextual element checking, and XHIR text round-tripping are implemented. Fixed arrays also lower through MIR
-  composite values, XLIL `%aN` registry records, the public C23 XLIL boundary, and LLVM array values. Dynamic-array and
-  map value/layout lowering remains deferred.
+- Built-in array, set, and map types remain first-class compiler types across the structural-AST/compiler-core boundary
+  and typed HIR; they are not aliases or desugarings of nominal standard-library collections. `[T] = [...]` creates an
+  array, `[T] = {...}` creates a built-in set, and an uninitialized `[T]` defaults to array. There is no public
+  `HashSet<T>` type spelling. Square-bracket array inference, contextual element checks, set XHIR round-tripping, numeric
+  default fill, excess-element discard, and literal-index element assignment are implemented. Fixed arrays continue
+  through MIR aggregate reconstruction, XLIL `%aN`, the public C23 XLIL boundary, LLVM array values, and native `.xse`
+  emission. Set runtime layout and operations, runtime-sized collection storage, and map value/layout lowering remain
+  deferred.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,

@@ -58,6 +58,16 @@ fn validates_builtin_collection_literals_against_collection_types()
                        Expression::Literal { literal: Literal::Integer("2".to_string()), span: span(3, 4) }],
         span: span(1, 5),
       }),
+    },
+                                       Statement::Let {
+      local: local("unique",
+                   Type::Set { element: Box::new(primitive(PrimitiveType::Int)) },
+                   false),
+      initializer: Some(Expression::Set {
+        elements: vec![Expression::Literal { literal: Literal::Integer("1".to_string()), span: span(6, 7) },
+                       Expression::Literal { literal: Literal::Integer("2".to_string()), span: span(8, 9) }],
+        span: span(6, 10),
+      }),
     }] };
 
   assert!(TypeChecker::new().check_function(&function).is_empty());

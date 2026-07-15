@@ -11,7 +11,9 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainRecursiveCall MainUnitCalls MainShortCircuit
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainLoop
-                       MainBlockLocals MainFixedArray
+                       MainBlockLocals MainFixedArray MainArrayMissingDefaults
+                       MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
+                       CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
                        ImmutableLocalReassignment BlockLocalShadow SameScopeDuplicateLocal
@@ -23,6 +25,32 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
+
+function(xs_add_source_native_array_test fixture expected_exit expected_length)
+  string(TOLOWER "${fixture}" test_suffix)
+  add_test(NAME source_native_${test_suffix}_build COMMAND xs build -file
+                                                        ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xs)
+  set_tests_properties(source_native_${test_suffix}_build PROPERTIES TIMEOUT 5
+                       PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+  add_test(NAME source_native_${test_suffix}_artifacts COMMAND xs_xse_artifact_tests
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.ll
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.o
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xse
+                                                            ${expected_exit} "[${expected_length} x i32]" "extractvalue")
+  set_tests_properties(source_native_${test_suffix}_artifacts PROPERTIES
+                       DEPENDS source_native_${test_suffix}_build TIMEOUT 5)
+endfunction()
+
+xs_add_source_native_array_test(MainArrayMissingDefaults 0 4)
+xs_add_source_native_array_test(MainArrayExcessDiscard 7 2)
+xs_add_source_native_array_test(MainInferredSizeArray 7 3)
+xs_add_source_native_array_test(MainArrayMutation 7 3)
+xs_add_source_native_array_test(MainDefaultFixedArray 0 3)
+
+add_test(NAME compiler_check_builtin_set COMMAND xs check -file
+                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/CollectionSetCheck.xs)
+set_tests_properties(compiler_check_builtin_set PROPERTIES TIMEOUT 5)
+
 set(XS_PROJECT_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/projects")
 file(COPY tests/fixtures/projects/ DESTINATION "${XS_PROJECT_NATIVE_FIXTURE_DIR}")
 

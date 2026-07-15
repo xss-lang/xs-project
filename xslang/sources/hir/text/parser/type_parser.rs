@@ -90,6 +90,10 @@ pub(super) fn parse_type_text(name: &str) -> Option<Type>
   {
     return Some(Type::Primitive(primitive));
   }
+  if let Some(body) = name.strip_prefix("set [").and_then(|value| value.strip_suffix(']'))
+  {
+    return Some(Type::Set { element: Box::new(parse_type_text(body.trim())?) });
+  }
   if let Some(body) = name.strip_prefix('[').and_then(|value| value.strip_suffix(']'))
   {
     if let Some((key, value)) = split_collection_type(body, ':')

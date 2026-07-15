@@ -20,6 +20,18 @@ impl HirToMirLowerer
                               initializer })
       }
       DesugaredStatement::Expr(expression) => self.surface_expression_from_desugared(expression).map(Statement::Expr),
+      DesugaredStatement::AssignIndex { target,
+                                        index,
+                                        value,
+                                        element_type,
+                                        span, } =>
+      {
+        Some(Statement::AssignIndex { target: target.clone(),
+                                      index: self.surface_expression_from_desugared(index)?,
+                                      value: self.surface_expression_from_desugared(value)?,
+                                      element_type: element_type.clone(),
+                                      span: *span })
+      }
       DesugaredStatement::Return { value,
                                    span, } =>
       {
@@ -128,6 +140,14 @@ impl HirToMirLowerer
                                                    .map(|value| self.surface_expression_from_desugared(value))
                                                    .collect::<Option<Vec<_>>>()?,
                                  span: *span })
+      }
+      DesugaredExpression::Set { elements,
+                                 span, } =>
+      {
+        Some(Expression::Set { elements: elements.iter()
+                                                 .map(|value| self.surface_expression_from_desugared(value))
+                                                 .collect::<Option<Vec<_>>>()?,
+                               span: *span })
       }
       DesugaredExpression::Map { entries,
                                  span, } => Some(Expression::Map { entries:
