@@ -494,6 +494,44 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
 
 static XsSyntaxNode *parse_postfix(SyntaxParser *parser);
 
+static bool split_positional_member_token(const SyntaxParser *parser, XsSpan *first, XsSpan *second)
+{
+  if(parser->current.kind != XS_TOKEN_FLOAT)
+    return false;
+  XsSpan span = parser->current.span;
+  const char *text = parser->tree->source->text;
+  size_t separator = span.end;
+  for(size_t index = span.start; index < span.end; ++index)
+  {
+    char character = text[index];
+    if(character == '.')
+    {
+      if(separator != span.end)
+        return false;
+      separator = index;
+    }
+    else if(character < '0' || character > '9')
+      return false;
+  }
+  if(separator == span.start || separator + 1 >= span.end)
+    return false;
+  *first = (XsSpan){span.start, separator};
+  *second = (XsSpan){separator + 1, span.end};
+  return true;
+}
+
+static XsSyntaxNode *append_positional_member(SyntaxParser *parser,
+                                              XsSyntaxNode *receiver,
+                                              size_t start,
+                                              XsSpan selector)
+{
+  XsSyntaxNode *member = node(parser, XS_SYNTAX_EXPR_MEMBER_ACCESS, (XsSpan){start, selector.end});
+  xs_syntax_node_add(parser->tree, member, receiver);
+  xs_syntax_node_add(parser->tree, member, node(parser, XS_SYNTAX_IDENTIFIER, selector));
+  finish_node(parser, member, selector.end);
+  return member;
+}
+
 static XsSyntaxNode *parse_prefix(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
@@ -597,6 +635,15 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
     }
     else if(accept(parser, XS_TOKEN_DOT))
     {
+      XsSpan first_selector;
+      XsSpan second_selector;
+      if(split_positional_member_token(parser, &first_selector, &second_selector))
+      {
+        advance(parser);
+        expression = append_positional_member(parser, expression, start, first_selector);
+        expression = append_positional_member(parser, expression, start, second_selector);
+        continue;
+      }
       XsSyntaxNode *name = parse_member_identifier(parser);
       XsSyntaxKind kind =
           parser->current.kind == XS_TOKEN_LEFT_PAREN ? XS_SYNTAX_EXPR_METHOD_CALL : XS_SYNTAX_EXPR_MEMBER_ACCESS;

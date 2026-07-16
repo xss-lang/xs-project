@@ -237,6 +237,7 @@ impl Parser<'_>
       line if line.starts_with("let ") => Some(self.let_statement()),
       "expression" => Some(self.expression_statement()),
       line if line.starts_with("assign_index ") => Some(self.assign_index_statement()),
+      line if line.starts_with("assign_tuple_element ") => Some(self.assign_tuple_element_statement()),
       "return" => Some(self.return_statement()),
       "if" => Some(self.if_statement()),
       "while" => Some(self.while_statement()),

@@ -7,6 +7,115 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_tuple_assignment(&mut self, statement: &Statement, lowered: &mut mir::Function)
+  {
+    let Statement::AssignTupleElement { target,
+                                        index,
+                                        value,
+                                        tuple_type,
+                                        element_type,
+                                        span, } = statement
+    else
+    {
+      return;
+    };
+    let Some(storage) = self.locals.get(target).copied()
+    else
+    {
+      self.report(DiagnosticCode::UnknownLocal,
+                  format!("unknown tuple local '{target}'"),
+                  *span);
+      return;
+    };
+    let Some(value_type) = self.lower_value_type(tuple_type, *span)
+    else
+    {
+      return;
+    };
+    if self.local_value_type(storage, lowered) != Some(value_type)
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "tuple assignment target has the wrong MIR type",
+                  *span);
+      return;
+    }
+    let Type::Tuple { fields: source_fields } = tuple_type
+    else
+    {
+      return;
+    };
+    if source_fields.get(*index as usize).map(|field| &field.ty) != Some(element_type)
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "tuple assignment field type does not match its layout",
+                  *span);
+      return;
+    }
+    let Some(loaded) = self.declare_temp(value_type, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::LoadLocal { result: loaded,
+                                          local: storage,
+                                          span: *span });
+    let mut fields = Vec::with_capacity(source_fields.len());
+    let mut field_types = Vec::with_capacity(source_fields.len());
+    for (position, field) in source_fields.iter().enumerate()
+    {
+      let Some(field_type) = self.lower_value_type(&field.ty, *span)
+      else
+      {
+        return;
+      };
+      let field_value = if position == *index as usize
+      {
+        match self.lower_expression_to_local(value, field_type, lowered)
+        {
+          Some(value) => value,
+          None => return,
+        }
+      }
+      else
+      {
+        let Some(extracted) = self.declare_temp(field_type, *span, lowered)
+        else
+        {
+          return;
+        };
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::Extract { result: extracted,
+                                            aggregate: loaded,
+                                            field: position as u32,
+                                            field_type,
+                                            span: *span });
+        extracted
+      };
+      fields.push(field_value);
+      field_types.push(field_type);
+    }
+    let Some(updated) = self.declare_temp(value_type, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::Aggregate { result: updated,
+                                          value_type,
+                                          fields,
+                                          field_types,
+                                          span: *span });
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::StoreLocal { local: storage,
+                                           value: updated,
+                                           span: *span });
+  }
+
   pub(super) fn lower_tuple_expression(&mut self,
                                        expression: &Expression,
                                        expected_type: XlilType,

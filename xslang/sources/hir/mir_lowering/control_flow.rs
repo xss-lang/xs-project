@@ -7,6 +7,17 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_panic(&mut self, span: Span, lowered: &mut mir::Function)
+  {
+    if self.current_block_mut(lowered).terminator.is_some()
+    {
+      return;
+    }
+    let block = self.current_block_mut(lowered);
+    block.terminator = Some(mir::Terminator::Panic);
+    block.span = span;
+  }
+
   pub(super) fn lower_match_expression(&mut self,
                                        expression: &Expression,
                                        expected_type: XlilType,

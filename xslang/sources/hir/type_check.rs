@@ -292,6 +292,15 @@ pub enum Statement
     element_type: Type,
     span: Span,
   },
+  AssignTupleElement
+  {
+    target: String,
+    index: u32,
+    value: Expression,
+    tuple_type: Type,
+    element_type: Type,
+    span: Span,
+  },
   Return
   {
     value: Option<Expression>,
@@ -466,6 +475,15 @@ impl TypeChecker
                                value,
                                element_type,
                                span, } => self.check_index_assignment(target, index, value, element_type, *span),
+      Statement::AssignTupleElement { target,
+                                      index,
+                                      value,
+                                      tuple_type,
+                                      element_type,
+                                      span, } =>
+      {
+        self.check_tuple_assignment(target, *index, value, tuple_type, element_type, *span)
+      }
       Statement::Return { value,
                           span, } =>
       {

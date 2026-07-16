@@ -14,7 +14,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainBlockLocals MainFixedArray MainArrayMissingDefaults
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
                        MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
-                       MainForEach MainTuple MainNamedTuple
+                       MainForEach MainTuple MainNamedTuple MainTupleCalls MainNestedTuple MainTupleArray MainTupleMutation
+                       TupleUnknownMember TupleAssignmentMismatch
                        CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
@@ -68,13 +69,17 @@ function(xs_add_source_native_tuple_test fixture expected_exit)
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.ll
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.o
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xse
-                                                            ${expected_exit} "%tuple.0 = type { i32, i32 }" "extractvalue")
+                                                            ${expected_exit} ${ARGN})
   set_tests_properties(source_native_${test_suffix}_artifacts PROPERTIES
                        DEPENDS source_native_${test_suffix}_build TIMEOUT 5)
 endfunction()
 
-xs_add_source_native_tuple_test(MainTuple 7)
-xs_add_source_native_tuple_test(MainNamedTuple 7)
+xs_add_source_native_tuple_test(MainTuple 7 "%tuple.0 = type { i32, i32 }" "extractvalue")
+xs_add_source_native_tuple_test(MainNamedTuple 7 "%tuple.0 = type { i32, i32 }" "extractvalue")
+xs_add_source_native_tuple_test(MainTupleCalls 7 "call %tuple.0 @make_pair" "call i32 @select_right")
+xs_add_source_native_tuple_test(MainNestedTuple 7 "%tuple.1 = type { %tuple.0, i32 }" "extractvalue")
+xs_add_source_native_tuple_test(MainTupleArray 7 "[2 x %tuple.0]" "extractvalue")
+xs_add_source_native_tuple_test(MainTupleMutation 7 "store %tuple.0" "insertvalue")
 
 add_test(NAME compiler_check_builtin_set COMMAND xs check -file
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/CollectionSetCheck.xs)

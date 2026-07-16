@@ -46,10 +46,16 @@ fn lowers_named_tuple_construction_and_projection_through_xlil()
                                 TupleFieldValue { name: Some("right".to_string()),
                                                   value: integer("7"),
                                                   span: span() }],
-                   tuple_type: Box::new(tuple_type),
+                   tuple_type: Box::new(tuple_type.clone()),
                    span: span(),
                  }),
                },
+               Statement::AssignTupleElement { target: "pair".to_string(),
+                                                index: 1,
+                                                value: integer("9"),
+                                                tuple_type: tuple_type.clone(),
+                                                element_type: Type::Primitive(PrimitiveType::Long),
+                                                span: span() },
                Statement::Return {
                  value: Some(Expression::TupleElement {
                    tuple: Box::new(Expression::Local { name: "pair".to_string(), span: span() }),

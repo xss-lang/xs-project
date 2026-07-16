@@ -7,6 +7,35 @@ use super::*;
 
 impl TypeChecker
 {
+  pub(super) fn check_tuple_assignment(&mut self,
+                                       target: &str,
+                                       index: u32,
+                                       value: &Expression,
+                                       tuple_type: &Type,
+                                       element_type: &Type,
+                                       span: Span)
+  {
+    let Some(local_type) = self.find_local(target).map(|local| local.ty.clone())
+    else
+    {
+      self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownLocal,
+                                         message: format!("unknown tuple local '{target}'"),
+                                         span });
+      return;
+    };
+    let Type::Tuple { fields } = tuple_type
+    else
+    {
+      self.report_collection_mismatch(span, "tuple element assignment requires a tuple target type");
+      return;
+    };
+    if local_type != *tuple_type || fields.get(index as usize).map(|field| &field.ty) != Some(element_type)
+    {
+      self.report_collection_mismatch(span, "tuple element assignment does not match its target layout");
+    }
+    self.check_expression_against_type(value, element_type);
+  }
+
   pub(super) fn check_tuple(&mut self, fields: &[TupleFieldValue], tuple_type: &Type, span: Span)
   {
     let Type::Tuple { fields: expected } = tuple_type

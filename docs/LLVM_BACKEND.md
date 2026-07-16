@@ -116,5 +116,7 @@ XLIL aggregate registry entries lower to named LLVM structure types. The backend
 setting their field bodies, then lowers `aggregate` and `extract` records with LLVM `insertvalue` and `extractvalue`.
 This supports aggregate signatures, direct XLIL native builds, and non-recursive source `data` returns without coupling HIR
 or MIR models to LLVM APIs. Structural tuple values use the same registry and instructions while retaining their tuple field
-identity in typed HIR and XHIR. Aggregate-returning source calls may initialize local `data` places; nested layouts retain their
-named structure identity through the generated LLVM function signature.
+identity in typed HIR and XHIR. Aggregate-returning source calls may initialize local `data` or tuple places; tuple-valued
+parameters and returns retain their named structure identity through generated LLVM function signatures. Nested tuple layouts
+and fixed arrays containing tuples are declared before use. Tuple element updates are rebuilt with target-independent
+aggregate operations and lower to LLVM `insertvalue`; source array access remains ordinary indexing syntax.

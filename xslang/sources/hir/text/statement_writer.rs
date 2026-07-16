@@ -46,6 +46,20 @@ pub(super) fn write_statement(output: &mut String, statement: &Statement, indent
       write_expression(output, value, indent + 2);
       let _ = writeln!(output, "{pad}.end");
     }
+    Statement::AssignTupleElement { target,
+                                    index,
+                                    value,
+                                    tuple_type,
+                                    element_type,
+                                    .. } =>
+    {
+      let _ = writeln!(output, "{pad}assign_tuple_element {target} {index}");
+      let _ = writeln!(output, "{pad}  tuple_type {}", type_name(tuple_type));
+      let _ = writeln!(output, "{pad}  element_type {}", type_name(element_type));
+      let _ = writeln!(output, "{pad}  value");
+      write_expression(output, value, indent + 2);
+      let _ = writeln!(output, "{pad}.end");
+    }
     Statement::Return { value, .. } =>
     {
       let _ = writeln!(output, "{pad}return");
@@ -202,6 +216,20 @@ pub(super) fn write_desugared_statement(output: &mut String, statement: &Desugar
       let _ = writeln!(output, "{pad}  type {}", type_name(element_type));
       let _ = writeln!(output, "{pad}  index");
       write_desugared_expression(output, index, indent + 2);
+      let _ = writeln!(output, "{pad}  value");
+      write_desugared_expression(output, value, indent + 2);
+      let _ = writeln!(output, "{pad}.end");
+    }
+    DesugaredStatement::AssignTupleElement { target,
+                                             index,
+                                             value,
+                                             tuple_type,
+                                             element_type,
+                                             .. } =>
+    {
+      let _ = writeln!(output, "{pad}assign_tuple_element {target} {index}");
+      let _ = writeln!(output, "{pad}  tuple_type {}", type_name(tuple_type));
+      let _ = writeln!(output, "{pad}  element_type {}", type_name(element_type));
       let _ = writeln!(output, "{pad}  value");
       write_desugared_expression(output, value, indent + 2);
       let _ = writeln!(output, "{pad}.end");

@@ -138,7 +138,19 @@ fn visit_checked_type(value: &HirType,
       registry.tuples.push((value.clone(), value_type));
       Some(value_type)
     }
-    HirType::Unit | HirType::Array { .. } | HirType::Set { .. } | HirType::Map { .. } => None,
+    HirType::Array { element, .. } | HirType::Set { element } =>
+    {
+      let _ = visit_checked_type(element, definitions, visiting, registry);
+      None
+    }
+    HirType::Map { key,
+                   value, } =>
+    {
+      let _ = visit_checked_type(key, definitions, visiting, registry);
+      let _ = visit_checked_type(value, definitions, visiting, registry);
+      None
+    }
+    HirType::Unit => None,
   }
 }
 

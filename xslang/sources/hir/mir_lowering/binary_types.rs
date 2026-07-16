@@ -51,7 +51,7 @@ impl HirToMirLowerer
     match expression
     {
       Expression::Local { name, .. } => self.local_value_type(*self.locals.get(name)?, lowered),
-      Expression::Field { path } => type_to_xlil(&path.ty),
+      Expression::Field { path } => self.known_value_type(&path.ty),
       Expression::Object { .. } => None,
       Expression::Array { .. } | Expression::Set { .. } | Expression::Map { .. } => None,
       Expression::Tuple { tuple_type, .. } => self.tuple_types
@@ -59,7 +59,7 @@ impl HirToMirLowerer
                                                   .find(|(source, _)| source == tuple_type.as_ref())
                                                   .map(|(_, value_type)| *value_type),
       Expression::TupleElement { element_type, .. } => self.known_value_type(element_type),
-      Expression::Index { element_type, .. } => type_to_xlil(element_type),
+      Expression::Index { element_type, .. } => self.known_value_type(element_type),
       Expression::Update { target, .. } => self.local_value_type(*self.locals.get(target)?, lowered),
       Expression::Binary { operator,
                            left,
@@ -91,8 +91,8 @@ impl HirToMirLowerer
         UnaryOperator::LogicalNot => Some(XlilType::BOOL),
         UnaryOperator::Positive | UnaryOperator::Negative => self.expression_value_type(operand, lowered),
       },
-      Expression::Call { return_type, .. } => type_to_xlil(return_type),
-      Expression::If { result_type, .. } | Expression::Match { result_type, .. } => type_to_xlil(result_type),
+      Expression::Call { return_type, .. } => self.known_value_type(return_type),
+      Expression::If { result_type, .. } | Expression::Match { result_type, .. } => self.known_value_type(result_type),
       Expression::Literal { literal, .. } => match literal
       {
         Literal::String(_) => Some(XlilType::STR),
@@ -120,14 +120,5 @@ impl HirToMirLowerer
                                 .map(|(_, ty)| *ty),
       Type::Unit | Type::Set { .. } | Type::Map { .. } => None,
     }
-  }
-}
-
-fn type_to_xlil(value: &Type) -> Option<XlilType>
-{
-  match value
-  {
-    Type::Primitive(value) => primitive_to_xlil(*value),
-    Type::Unit | Type::Named(_) | Type::Array { .. } | Type::Set { .. } | Type::Map { .. } | Type::Tuple { .. } => None,
   }
 }

@@ -19,7 +19,9 @@ source-to-native executable pipeline.
   binding is lexical and immutable, and `break`/`continue` target the generated loop exit/update blocks.
 - Positional and named tuple values now cross the Rust compiler core as structural typed-HIR tuples, use target-independent
   MIR/XLIL aggregate construction and extraction, lower to LLVM structure values, and execute in native `.xse` fixtures.
-  XHIR v0 preserves tuple types, field names, literals, and element projections in its human-readable text form.
+  XHIR v0 preserves tuple types, field names, literals, element projections, and element assignments in its human-readable
+  text form. Tuple values can cross same-module function signatures, nest inside other tuples, and appear as fixed-array
+  elements. Chained positional projection such as `value.0.1` remains source syntax; arrays continue to use `value[index]`.
 
 ## 0.1.8 - 2026-07-16
 

@@ -188,6 +188,7 @@ impl HirToMirLowerer
       {
         self.lower_index_assignment(target, index, value, element_type, *span, lowered)
       }
+      Statement::AssignTupleElement { .. } => self.lower_tuple_assignment(statement, lowered),
       Statement::Expr(expression @ Expression::Update { .. }) =>
       {
         let Some(value_type) = self.expression_value_type(expression, lowered)
@@ -211,17 +212,6 @@ impl HirToMirLowerer
       Statement::Continue { span } => self.lower_loop_jump(true, *span, lowered),
       Statement::Panic { span } => self.lower_panic(*span, lowered),
     }
-  }
-
-  fn lower_panic(&mut self, span: Span, lowered: &mut mir::Function)
-  {
-    if self.current_block_mut(lowered).terminator.is_some()
-    {
-      return;
-    }
-    let block = self.current_block_mut(lowered);
-    block.terminator = Some(mir::Terminator::Panic);
-    block.span = span;
   }
 
   fn lower_assignment(&mut self, target: mir::LocalId, expression: &Expression, lowered: &mut mir::Function)

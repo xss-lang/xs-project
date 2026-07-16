@@ -8,6 +8,43 @@ use crate::hir::type_check::TupleFieldValue;
 
 impl Parser<'_>
 {
+  pub(super) fn assign_tuple_element_statement(&mut self) -> Statement
+  {
+    let record = self.current().unwrap_or_default();
+    let record = record.strip_prefix("assign_tuple_element ").unwrap_or_default();
+    let (target, index) = record.rsplit_once(' ').unwrap_or((record, "0"));
+    let index = index.parse().unwrap_or(0);
+    self.index += 1;
+    let tuple_record = self.current().unwrap_or_default();
+    let tuple_type = tuple_record.strip_prefix("tuple_type ")
+                                 .and_then(|value| self.parse_type(value))
+                                 .unwrap_or(Type::Unit);
+    self.index += 1;
+    let element_record = self.current().unwrap_or_default();
+    let element_type = element_record.strip_prefix("element_type ")
+                                     .and_then(|value| self.parse_type(value))
+                                     .unwrap_or(Type::Unit);
+    self.index += 1;
+    self.consume_expression_field("value");
+    let value = self.expression()
+                    .unwrap_or(Expression::Literal { literal: Literal::None,
+                                                     span: span() });
+    if self.current().as_deref() == Some(".end")
+    {
+      self.index += 1;
+    }
+    else
+    {
+      self.report("unterminated tuple element assignment".to_string());
+    }
+    Statement::AssignTupleElement { target: target.to_string(),
+                                    index,
+                                    value,
+                                    tuple_type,
+                                    element_type,
+                                    span: span() }
+  }
+
   pub(super) fn tuple_expression(&mut self, type_text: &str) -> Option<Expression>
   {
     let tuple_type = self.parse_type(type_text)?;

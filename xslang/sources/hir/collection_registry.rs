@@ -144,6 +144,7 @@ fn visit_statements(registry: &mut CollectionRegistry, statements: &[Statement],
       }
       Statement::Expr(_) |
       Statement::AssignIndex { .. } |
+      Statement::AssignTupleElement { .. } |
       Statement::Return { .. } |
       Statement::Break { .. } |
       Statement::Continue { .. } |

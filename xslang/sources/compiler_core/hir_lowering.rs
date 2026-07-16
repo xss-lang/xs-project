@@ -606,6 +606,10 @@ fn lower_statement_node(tree: &SyntaxTree,
     STMT_EXPRESSION if statement.children.len() == 1 =>
     {
       let expression = tree.nodes.get(statement.children[0])?;
+      if tuple::is_tuple_assignment(tree, expression, locals)
+      {
+        return tuple::lower_tuple_assignment(tree, expression, context, locals);
+      }
       if collection::is_index_assignment(tree, expression)
       {
         return collection::lower_index_assignment(tree, expression, context, locals);

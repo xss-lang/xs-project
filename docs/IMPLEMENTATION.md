@@ -188,8 +188,10 @@ The documented compilation order is preserved:
   and map value/layout lowering remain deferred.
 - Positional and named tuple types, literals, and projections now remain structural through typed HIR and XHIR v0. Tuple
   layouts share the target-independent aggregate registry with nominal `data` values, then reuse MIR/XLIL `aggregate` and
-  `extract` operations through LLVM structure lowering and native `.xse` emission. Tuple-pattern destructuring remains a
-  separate deferred lowering step.
+  `extract` operations through LLVM structure lowering and native `.xse` emission. The same registry discovers nested tuple
+  layouts in tuple and fixed-array element types. Tuple-valued parameters, returns, calls, direct element assignment, and
+  chained positional projection use the same typed path. Tuple-pattern destructuring remains a separate deferred lowering
+  step.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,

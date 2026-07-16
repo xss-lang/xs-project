@@ -32,6 +32,20 @@ impl HirToMirLowerer
                                       element_type: element_type.clone(),
                                       span: *span })
       }
+      DesugaredStatement::AssignTupleElement { target,
+                                               index,
+                                               value,
+                                               tuple_type,
+                                               element_type,
+                                               span, } =>
+      {
+        Some(Statement::AssignTupleElement { target: target.clone(),
+                                             index: *index,
+                                             value: self.surface_expression_from_desugared(value)?,
+                                             tuple_type: tuple_type.clone(),
+                                             element_type: element_type.clone(),
+                                             span: *span })
+      }
       DesugaredStatement::Return { value,
                                    span, } =>
       {

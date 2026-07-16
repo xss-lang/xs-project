@@ -49,6 +49,12 @@ fn roundtrips_named_tuple_and_element_records()
                    span: span(),
                  }),
                },
+               Statement::AssignTupleElement { target: "pair".to_string(),
+                                                index: 1,
+                                                value: integer("9"),
+                                                tuple_type: tuple_type.clone(),
+                                                element_type: Type::Primitive(PrimitiveType::Long),
+                                                span: span() },
                Statement::Return {
                  value: Some(Expression::TupleElement {
                    tuple: Box::new(Expression::Local { name: "pair".to_string(), span: span() }),
@@ -62,5 +68,6 @@ fn roundtrips_named_tuple_and_element_records()
   let text = function_to_xhir(&function);
   assert!(text.contains("tuple (left: Long, right: Long)"));
   assert!(text.contains("tuple_element 1 Long"));
+  assert!(text.contains("assign_tuple_element pair 1"));
   assert_eq!(parse_xhir_function(&text).expect("tuple XHIR should parse"), function);
 }

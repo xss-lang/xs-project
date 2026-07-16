@@ -441,6 +441,19 @@ static void test_positional_and_named_tuple_structure(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_chained_positional_tuple_projection(void)
+{
+  const char *text = "fn nested(value: ((Long, Bool), Long)) -> Long { return value.0.0 + value.1; }\n";
+  XsSource source = {.path = "NestedTuple.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 67, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS) == 3);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_tuple_forms_cannot_be_mixed(void)
 {
   const char *text = "fn invalid(value: (left: Int, Int)) { pair := (left: 1, 2); }\n";
@@ -631,6 +644,7 @@ int main(void)
   test_postfix_binds_before_prefix();
   test_control_parentheses_are_optional();
   test_positional_and_named_tuple_structure();
+  test_chained_positional_tuple_projection();
   test_tuple_forms_cannot_be_mixed();
   test_expression_turbofish_structure();
   test_removed_exception_syntax_is_rejected();

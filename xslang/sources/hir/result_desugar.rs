@@ -190,6 +190,15 @@ pub enum DesugaredStatement
     element_type: Type,
     span: Span,
   },
+  AssignTupleElement
+  {
+    target: String,
+    index: u32,
+    value: DesugaredExpression,
+    tuple_type: Type,
+    element_type: Type,
+    span: Span,
+  },
   Return
   {
     value: Option<DesugaredExpression>,
@@ -332,6 +341,20 @@ impl ResultDesugar
                                                                             value: self.desugar_expression(value),
                                                                             element_type: element_type.clone(),
                                                                             span: *span },
+      Statement::AssignTupleElement { target,
+                                      index,
+                                      value,
+                                      tuple_type,
+                                      element_type,
+                                      span, } =>
+      {
+        DesugaredStatement::AssignTupleElement { target: target.clone(),
+                                                 index: *index,
+                                                 value: self.desugar_expression(value),
+                                                 tuple_type: tuple_type.clone(),
+                                                 element_type: element_type.clone(),
+                                                 span: *span }
+      }
       Statement::Return { value,
                           span, } =>
       {

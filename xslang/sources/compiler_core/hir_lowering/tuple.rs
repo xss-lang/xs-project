@@ -32,6 +32,58 @@ pub(super) fn lower_tuple_type(tree: &SyntaxTree, value: &SyntaxNode) -> declara
                                               .collect() }
 }
 
+pub(super) fn is_tuple_assignment(tree: &SyntaxTree, value: &SyntaxNode, locals: &HashMap<String, Type>) -> bool
+{
+  assignment_parts(tree, value, locals).is_some()
+}
+
+pub(super) fn lower_tuple_assignment(tree: &SyntaxTree,
+                                     value: &SyntaxNode,
+                                     context: &LoweringContext,
+                                     locals: &HashMap<String, Type>)
+                                     -> Option<Statement>
+{
+  let (target, tuple_type, index, element_type) = assignment_parts(tree, value, locals)?;
+  let assigned = lower_expression(tree,
+                                  tree.nodes.get(value.children[2])?,
+                                  context,
+                                  locals,
+                                  Some(&element_type))?;
+  Some(Statement::AssignTupleElement { target,
+                                       index,
+                                       value: assigned,
+                                       tuple_type,
+                                       element_type,
+                                       span: span(value)? })
+}
+
+fn assignment_parts(tree: &SyntaxTree,
+                    value: &SyntaxNode,
+                    locals: &HashMap<String, Type>)
+                    -> Option<(String, Type, u32, Type)>
+{
+  (value.kind == EXPR_ASSIGNMENT && value.token_kind == TOKEN_ASSIGN && value.children.len() == 3).then_some(())?;
+  let member = tree.nodes.get(value.children[0])?;
+  (member.kind == EXPR_MEMBER_ACCESS && member.children.len() == 2).then_some(())?;
+  let receiver = tree.nodes.get(member.children[0])?;
+  (receiver.kind == EXPR_IDENTIFIER).then_some(())?;
+  let target = path_text(tree, receiver);
+  let tuple_type = locals.get(&target)?.clone();
+  let Type::Tuple { fields } = &tuple_type
+  else
+  {
+    return None;
+  };
+  let selector = path_text(tree, tree.nodes.get(member.children[1])?);
+  let position = selector.parse::<usize>().ok().or_else(|| {
+                                                  fields.iter().position(|field| {
+                                                                 field.name.as_deref() == Some(selector.as_str())
+                                                               })
+                                                })?;
+  let element_type = fields.get(position)?.ty.clone();
+  Some((target, tuple_type, u32::try_from(position).ok()?, element_type))
+}
+
 pub(super) fn tuple_expression_type(tree: &SyntaxTree,
                                     value: &SyntaxNode,
                                     context: &LoweringContext,
