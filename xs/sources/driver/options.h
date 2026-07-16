@@ -23,6 +23,7 @@ typedef struct
   XsWarningLevel warning_level;
   bool warnings_as_errors;
   bool verbose;
+  bool xgc_enabled;
 } XsCompilerSettings;
 
 typedef struct
@@ -36,6 +37,7 @@ typedef struct
   bool warning_override;
   bool werror_override;
   bool verbose_override;
+  bool xgc_override;
 } XsCliOptions;
 
 XsCompilerSettings xs_cli_default_compiler_settings(void);

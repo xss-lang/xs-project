@@ -136,8 +136,9 @@
 // warnings("medium")
 // werror(false)
 // verbose(true)
+// set("XGC_ENABLED", false)
 //
-// Command-line warning/verbose options override one invocation without
+// Command-line warning/verbose/XGC options override one invocation without
 // rewriting project scripts.
 //
 // set("TARGET", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu")

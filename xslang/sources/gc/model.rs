@@ -21,6 +21,93 @@ pub enum RegionState
   Humongous,
 }
 
+impl RegionState
+{
+  const fn can_transition_to(self, next: Self) -> bool
+  {
+    matches!((self, next),
+             (Self::Free, Self::Eden | Self::Humongous) |
+             (Self::Eden, Self::Survivor | Self::Old | Self::Free) |
+             (Self::Survivor, Self::Survivor | Self::Old | Self::Free) |
+             (Self::Old, Self::Old | Self::Free) |
+             (Self::Humongous, Self::Free))
+  }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct RegionId(pub u32);
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd)]
+pub struct GenerationId(pub u64);
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RegionModelError
+{
+  InvalidStateTransition,
+  UsageExceedsRegion,
+}
+
+/// Metadata lives outside the managed heap and never moves with objects.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RegionMetadata
+{
+  pub id: RegionId,
+  pub state: RegionState,
+  pub generation: GenerationId,
+  pub live_bytes: usize,
+  pub garbage_bytes: usize,
+  pub allocation_top: usize,
+}
+
+impl RegionMetadata
+{
+  #[must_use]
+  pub const fn free(id: RegionId) -> Self
+  {
+    Self { id,
+           state: RegionState::Free,
+           generation: GenerationId(0),
+           live_bytes: 0,
+           garbage_bytes: 0,
+           allocation_top: 0 }
+  }
+
+  pub fn transition(&mut self, next: RegionState, generation: GenerationId) -> Result<(), RegionModelError>
+  {
+    if !self.state.can_transition_to(next)
+    {
+      return Err(RegionModelError::InvalidStateTransition);
+    }
+    self.state = next;
+    self.generation = generation;
+    self.live_bytes = 0;
+    self.garbage_bytes = 0;
+    self.allocation_top = 0;
+    Ok(())
+  }
+
+  pub fn update_usage(&mut self,
+                      live_bytes: usize,
+                      garbage_bytes: usize,
+                      allocation_top: usize)
+                      -> Result<(), RegionModelError>
+  {
+    let Some(classified_bytes) = live_bytes.checked_add(garbage_bytes)
+    else
+    {
+      return Err(RegionModelError::UsageExceedsRegion);
+    };
+    if allocation_top > REGION_SIZE_BYTES || classified_bytes > allocation_top
+    {
+      return Err(RegionModelError::UsageExceedsRegion);
+    }
+    self.live_bytes = live_bytes;
+    self.garbage_bytes = garbage_bytes;
+    self.allocation_top = allocation_top;
+    Ok(())
+  }
+}
+
 /// Whole-program XGC selection. RAII remains the default mode.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct XgcConfiguration
@@ -65,5 +152,21 @@ mod tests
     assert_eq!(REGION_SIZE_BYTES, 2_097_152);
     assert!(!XgcConfiguration::is_humongous(HUMONGOUS_OBJECT_THRESHOLD_BYTES - 1));
     assert!(XgcConfiguration::is_humongous(HUMONGOUS_OBJECT_THRESHOLD_BYTES));
+  }
+
+  #[test]
+  fn region_metadata_enforces_lifecycle_and_usage_bounds()
+  {
+    let mut region = RegionMetadata::free(RegionId(7));
+    assert_eq!(region.transition(RegionState::Eden, GenerationId(11)), Ok(()));
+    assert_eq!(region.update_usage(512, 128, 640), Ok(()));
+    assert_eq!(region.live_bytes, 512);
+    assert_eq!(region.transition(RegionState::Humongous, GenerationId(12)),
+               Err(RegionModelError::InvalidStateTransition));
+    assert_eq!(region.update_usage(REGION_SIZE_BYTES, 1, REGION_SIZE_BYTES),
+               Err(RegionModelError::UsageExceedsRegion));
+    assert_eq!(region.transition(RegionState::Survivor, GenerationId(12)), Ok(()));
+    assert_eq!(region.live_bytes, 0);
+    assert_eq!(region.transition(RegionState::Free, GenerationId(12)), Ok(()));
   }
 }

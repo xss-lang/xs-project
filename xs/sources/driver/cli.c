@@ -47,8 +47,9 @@ static void print_verbose_settings(const XsCliOptions *options, const XsCompiler
 {
   if(!settings->verbose)
     return;
-  fprintf(stderr, "xs: verbose: command=%s input=%s warning=%s werror=%s\n", options->command, input,
-          xs_cli_warning_level_name(settings->warning_level), settings->warnings_as_errors ? "true" : "false");
+  fprintf(stderr, "xs: verbose: command=%s input=%s warning=%s werror=%s xgc=%s\n", options->command, input,
+          xs_cli_warning_level_name(settings->warning_level), settings->warnings_as_errors ? "true" : "false",
+          settings->xgc_enabled ? "true" : "false");
 }
 
 static char *read_file(const char *path, size_t *length)

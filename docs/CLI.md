@@ -26,6 +26,7 @@ xs build --hir -file Main.xs
 xs build --mir -file Main.xs
 xs build --xlil -file Main.xs
 xs build --warning all --werror true --verbose true
+xs build --xgc-enabled true
 xs build --module ./Modules
 xs build -proj Example.xsproj --module ./Modules
 xs --version
@@ -51,8 +52,10 @@ project build, `-proj`, or `-file`:
 - `--werror true|false` controls whether enabled warnings fail the compilation.
 - `--verbose true|false` controls compiler progress output. When enabled, `xs` prints the effective policy and the
   ordered source registry entering the frontend.
+- `--xgc-enabled true|false` selects the whole-program memory-management mode. It defaults to `false`. The setting now
+  reaches compiler policy; XGC allocation, barriers, and collection are not implemented yet.
 
-The default policy is `warning=medium`, `werror=false`, and `verbose=true`. An explicit KTS `compiler {}` value is used
+The default policy is `warning=medium`, `werror=false`, `verbose=true`, and `xgc=false`. An explicit KTS project value is used
 for that project, and a command-line value has final precedence for the current invocation.
 
 For Kotlin projects these values override the evaluated `compiler {}` block without modifying either KTS file:
@@ -73,6 +76,7 @@ The compiler usage is:
 usage: xs build -file <Main.xs>
 usage: xs <check|build|run>
        [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]
+       [--xgc-enabled true|false]
 usage: xs <check|build|run> -proj <project.xsproj>
 usage: xs build [--output hir|mir|xlil] -file <input>
 usage: xs build [--hir|--mir|--xlil] -file <input>

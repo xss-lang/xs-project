@@ -78,6 +78,9 @@ class ProjectDslTest {
     assertEquals("Demo, BETA, 0.1.0", context.get("PROJECT"))
     assertEquals("LLVM", context.get("XS_BACKEND"))
     assertEquals("xs", context.get("XS_EXTENSION"))
+    assertEquals("false", context.get("XGC_ENABLED"))
+    context.set("XGC_ENABLED", true)
+    assertEquals("true", context.get("XGC_ENABLED"))
     assertFailsWith<ProjectConfigurationException> { context.get("MISSING") }
     context.authors(arrayOf("Leitwolf", "leitwolf@example.me"))
     context.source {
@@ -159,10 +162,10 @@ class ProjectDslTest {
           .toString(StandardCharsets.UTF_8)
           .split('\u0000')
           .filter(String::isNotEmpty)
-      assertEquals(listOf("xs-project-sources-v2", "medium", "false", "true", "1", "1"), records.take(6))
+      assertEquals(listOf("xs-project-sources-v3", "medium", "false", "true", "false", "1", "1"), records.take(7))
       assertEquals(
         listOf(sources.resolve("main.xsharp").toString(), "Math", modules.resolve("math.xsharp").toString()),
-        records.drop(6),
+        records.drop(7),
       )
     } finally {
       restoreProperty("xs.project.root", oldRoot)
@@ -235,6 +238,7 @@ class ProjectDslTest {
           werror(true)
           verbose(true)
         }
+        set("XGC_ENABLED", true)
       }
     val oldRoot = System.getProperty("xs.project.root")
     val oldOutput = System.getProperty("xs.project.output")
@@ -251,10 +255,10 @@ class ProjectDslTest {
           .split('\u0000')
           .filter(String::isNotEmpty)
       assertEquals(
-        listOf("xs-project-sources-v2", "all", "true", "true", "2", "0"),
-        paths.take(6),
+        listOf("xs-project-sources-v3", "all", "true", "true", "true", "2", "0"),
+        paths.take(7),
       )
-      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths.drop(6))
+      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths.drop(7))
     } finally {
       restoreProperty("xs.project.root", oldRoot)
       restoreProperty("xs.project.output", oldOutput)
@@ -300,8 +304,8 @@ class ProjectDslTest {
           .toString(StandardCharsets.UTF_8)
           .split('\u0000')
           .filter(String::isNotEmpty)
-      assertEquals(listOf("xs-project-sources-v2", "medium", "false", "true", "1", "2"), records.take(6))
-      assertEquals(sources.resolve("main.xs").toString(), records[6])
+      assertEquals(listOf("xs-project-sources-v3", "medium", "false", "true", "false", "1", "2"), records.take(7))
+      assertEquals(sources.resolve("main.xs").toString(), records[7])
       assertEquals(
         listOf(
           "MyModule",
@@ -309,7 +313,7 @@ class ProjectDslTest {
           "MyModule::util",
           modules.resolve("topla.xs").toString(),
         ),
-        records.drop(7),
+        records.drop(8),
       )
     } finally {
       restoreProperty("xs.project.root", oldRoot)

@@ -107,9 +107,9 @@ Example, BETA, 0.1.0
 ```
 
 The compiler policy is transferred with the resolved source registry to the JVM-free `xs` process. Command-line
-`--warning`, `--werror`, and `--verbose` values are one-shot overrides applied after KTS evaluation; they never rewrite
-the project script. The defaults are `warnings("medium")`, `werror(false)`, and `verbose(true)`. XSPROJ intentionally has
-no persistent equivalent.
+`--warning`, `--werror`, `--verbose`, and `--xgc-enabled` values are one-shot overrides applied after KTS evaluation;
+they never rewrite the project script. The defaults are `warnings("medium")`, `werror(false)`, `verbose(true)`, and
+`set("XGC_ENABLED", false)`. XSPROJ intentionally has no persistent equivalent.
 
 ## Source registries
 

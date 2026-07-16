@@ -145,7 +145,12 @@ class ProjectContext internal constructor(
 ) {
   private var identity: ProjectIdentity? = state?.identity
   private val variables =
-    (state?.variables ?: mapOf("XS_BACKEND" to listOf("LLVM"), "XS_EXTENSION" to listOf("xs"))).toMutableMap()
+    (state?.variables
+      ?: mapOf(
+        "XS_BACKEND" to listOf("LLVM"),
+        "XS_EXTENSION" to listOf("xs"),
+        "XGC_ENABLED" to listOf("false"),
+      )).toMutableMap()
   private val authors = state?.authors?.toMutableList() ?: mutableListOf()
   private val modules = state?.modules?.toMutableList() ?: mutableListOf()
   private val sourceIncludes = state?.sourceIncludes?.toMutableList() ?: mutableListOf()
@@ -173,10 +178,17 @@ class ProjectContext internal constructor(
 
   fun set(
     name: String,
-    vararg values: String,
+    vararg values: Any,
   ) {
     if (values.isEmpty()) throw ProjectConfigurationException("set(...) requires at least one value")
-    variables[requireText(name, "variable name")] = values.map { value -> requireText(value, "variable value") }
+    variables[requireText(name, "variable name")] =
+      values.map { value ->
+        when (value) {
+          is String -> requireText(value, "variable value")
+          is Boolean -> value.toString()
+          else -> throw ProjectConfigurationException("project variable values must be strings or booleans")
+        }
+      }
   }
 
   fun get(name: String): String {
@@ -310,7 +322,7 @@ object ProjectRuntime {
 
   fun set(
     name: String,
-    vararg values: String,
+    vararg values: Any,
   ) = context.set(name, *values)
 
   fun get(name: String) = context.get(name)
@@ -366,7 +378,7 @@ fun project(
 
 fun set(
   name: String,
-  vararg values: String,
+  vararg values: Any,
 ) = ProjectRuntime.set(name, *values)
 
 fun get(name: String) = ProjectRuntime.get(name)

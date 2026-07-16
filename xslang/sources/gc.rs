@@ -5,4 +5,7 @@
 
 mod model;
 
-pub use model::{HUMONGOUS_OBJECT_THRESHOLD_BYTES, REGION_SIZE_BYTES, RegionState, XgcConfiguration};
+pub use model::{
+  GenerationId, HUMONGOUS_OBJECT_THRESHOLD_BYTES, REGION_SIZE_BYTES, RegionId, RegionMetadata, RegionModelError,
+  RegionState, XgcConfiguration,
+};

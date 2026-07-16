@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 project("NativeCall", "BETA", "0.1.7")
+set("XGC_ENABLED", true)
 
 source {
   include("sources")

@@ -16,7 +16,7 @@ object ProjectOutput {
     val resolved = resolveSources(plan)
     when (System.getProperty("xs.project.output", "plan")) {
       "plan" -> println(PlanWriter.write(plan))
-      "sources0" -> writeSources(resolved, plan.compiler)
+      "sources0" -> writeSources(resolved, plan.compiler, plan.variables)
       else -> throw ProjectConfigurationException("unknown project output mode")
     }
   }
@@ -25,7 +25,7 @@ object ProjectOutput {
     val root = Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
     val extension = sourceExtension(state.variables)
     val modules = resolveModules(root, state.moduleIncludes, state.moduleSources, extension)
-    writeSources(ResolvedProject(emptyList(), modules, emptyList()), state.compiler)
+    writeSources(ResolvedProject(emptyList(), modules, emptyList()), state.compiler, state.variables)
   }
 
   private data class ResolvedProject(
@@ -161,14 +161,16 @@ object ProjectOutput {
   private fun writeSources(
     project: ResolvedProject,
     compiler: CompilerSettings,
+    variables: Map<String, List<String>>,
   ) {
     val configuredOutput = System.getProperty("xs.project.sources")?.takeIf(String::isNotBlank)
     val output = configuredOutput?.let { path -> Files.newOutputStream(Path.of(path)) } ?: System.out
     output.useIfOwned(configuredOutput != null) { stream ->
-      writeRecord(stream, "xs-project-sources-v2")
+      writeRecord(stream, "xs-project-sources-v3")
       writeRecord(stream, compiler.warningLevel.name.lowercase())
       writeRecord(stream, compiler.warningsAsErrors.toString())
       writeRecord(stream, compiler.verbose.toString())
+      writeRecord(stream, xgcEnabled(variables).toString())
       writeRecord(stream, project.sources.size.toString())
       writeRecord(stream, project.modules.size.toString())
       project.sources.forEach { path ->
@@ -180,6 +182,14 @@ object ProjectOutput {
       }
       stream.flush()
     }
+  }
+
+  private fun xgcEnabled(variables: Map<String, List<String>>): Boolean {
+    val values = variables["XGC_ENABLED"] ?: listOf("false")
+    if (values.size != 1 || values.single() !in setOf("true", "false")) {
+      throw ProjectConfigurationException("XGC_ENABLED must be exactly true or false")
+    }
+    return values.single().toBooleanStrict()
   }
 
   private fun writeRecord(

@@ -15,7 +15,7 @@
 
 extern char **environ;
 
-static const char *const REGISTRY_VERSION = "xs-project-sources-v2";
+static const char *const REGISTRY_VERSION = "xs-project-sources-v3";
 
 static bool run_resolver(const char *mode, const char *project_root, const char *output_path, const char *module_path)
 {
@@ -121,12 +121,13 @@ static bool parse_header(char *data, size_t record_count, size_t *source_count, 
                          XsCompilerSettings *settings)
 {
   *settings = xs_cli_default_compiler_settings();
-  if(strcmp(data, REGISTRY_VERSION) != 0 || record_count < 6U)
+  if(strcmp(data, REGISTRY_VERSION) != 0 || record_count < 7U)
     return false;
   char *warning = next_record(data);
   char *werror = next_record(warning);
   char *verbose = next_record(werror);
-  char *sources = next_record(verbose);
+  char *xgc = next_record(verbose);
+  char *sources = next_record(xgc);
   char *modules = next_record(sources);
   bool parsed_warning = false;
   for(XsWarningLevel level = XS_WARNING_NONE; level <= XS_WARNING_ALL; ++level)
@@ -139,12 +140,13 @@ static bool parse_header(char *data, size_t record_count, size_t *source_count, 
     }
   }
   if(!parsed_warning || !parse_bool_record(werror, &settings->warnings_as_errors) ||
-     !parse_bool_record(verbose, &settings->verbose) || !parse_size_record(sources, source_count) ||
+     !parse_bool_record(verbose, &settings->verbose) || !parse_bool_record(xgc, &settings->xgc_enabled) ||
+     !parse_size_record(sources, source_count) ||
      !parse_size_record(modules, module_count))
     return false;
-  if(*module_count > (SIZE_MAX - 6U - *source_count) / 2U)
+  if(*module_count > (SIZE_MAX - 7U - *source_count) / 2U)
     return false;
-  return record_count == 6U + *source_count + (*module_count * 2U);
+  return record_count == 7U + *source_count + (*module_count * 2U);
 }
 
 static bool resolve_kotlin_registry(const char *mode, const char *project_root, const char *module_path,
@@ -195,7 +197,7 @@ static bool resolve_kotlin_registry(const char *mode, const char *project_root, 
   }
   project->path_count = path_count;
   char *record = data;
-  for(size_t i = 0; i < 6U; ++i)
+  for(size_t i = 0; i < 7U; ++i)
     record = next_record(record);
   for(size_t i = 0; i < source_count; ++i)
   {

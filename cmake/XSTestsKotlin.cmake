@@ -6,7 +6,7 @@ set_tests_properties(kotlin_project_call_build PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call"
   ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
   FIXTURES_REQUIRED kotlin_project_resolver FIXTURES_SETUP kotlin_project_call_native
-  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+  PASS_REGULAR_EXPRESSION "xgc=true")
 add_test(NAME kotlin_project_call_artifacts COMMAND xs_xse_artifact_tests
   ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/sources/main.ll
   ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/sources/main.o
