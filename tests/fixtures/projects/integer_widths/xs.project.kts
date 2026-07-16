@@ -3,6 +3,6 @@
 
 project("IntegerWidths", "BETA", "0.1.7")
 
-sources {
-  include("sources/main.xs")
+source {
+  include("sources")
 }

@@ -51,6 +51,19 @@ static XsSyntaxNode *parse_function_type(SyntaxParser *parser, size_t start)
   return function;
 }
 
+static XsSyntaxNode *parse_tuple_type_element(SyntaxParser *parser)
+{
+  if(parser->current.kind != XS_TOKEN_IDENTIFIER || parser->next.kind != XS_TOKEN_COLON)
+    return parse_type(parser);
+  size_t start = parser->current.span.start;
+  XsSyntaxNode *field = node(parser, XS_SYNTAX_TUPLE_FIELD, (XsSpan){start, start});
+  xs_syntax_node_add(parser->tree, field, identifier(parser));
+  expect(parser, XS_TOKEN_COLON, "expected ':' after tuple field name");
+  xs_syntax_node_add(parser->tree, field, parse_type(parser));
+  finish_node(parser, field, parser->previous.span.end);
+  return field;
+}
+
 XsSyntaxNode *parse_type(SyntaxParser *parser)
 {
   size_t start = parser->current.span.start;
@@ -107,9 +120,20 @@ XsSyntaxNode *parse_type(SyntaxParser *parser)
     if(accept(parser, XS_TOKEN_RIGHT_PAREN))
       return node(parser, XS_SYNTAX_TYPE_UNIT, (XsSpan){start, parser->previous.span.end});
     XsSyntaxNode *tuple = node(parser, XS_SYNTAX_TYPE_TUPLE, (XsSpan){start, start});
-    xs_syntax_node_add(parser->tree, tuple, parse_type(parser));
+    XsSyntaxNode *first = parse_tuple_type_element(parser);
+    bool named = first != nullptr && first->kind == XS_SYNTAX_TUPLE_FIELD;
+    xs_syntax_node_add(parser->tree, tuple, first);
     while(accept(parser, XS_TOKEN_COMMA))
-      xs_syntax_node_add(parser->tree, tuple, parse_type(parser));
+    {
+      if(parser->current.kind == XS_TOKEN_RIGHT_PAREN)
+        break;
+      XsSyntaxNode *element = parse_tuple_type_element(parser);
+      if(element != nullptr && (element->kind == XS_SYNTAX_TUPLE_FIELD) != named)
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){element->span.start_offset, element->span.end_offset},
+                           "tuple type cannot mix named and positional elements");
+      xs_syntax_node_add(parser->tree, tuple, element);
+    }
     expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after tuple type");
     finish_node(parser, tuple, parser->previous.span.end);
     return tuple;

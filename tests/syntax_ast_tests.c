@@ -83,9 +83,9 @@ static void test_function_tree(void)
   xs_diagnostics_free(&diagnostics);
 }
 
-static void test_module_import_and_macro(void)
+static void test_import_and_macro(void)
 {
-  const char *text = "module App::Core;\nimports Math::Advanced;\n"
+  const char *text = "import Math::Advanced;\n"
                      "macro_rules! identity { ($value:expr) -> { $value }; }\n"
                      "fn Main() { identity!(42); }\n";
   XsSource source = {.path = "Main.xs", .text = text, .length = strlen(text)};
@@ -93,7 +93,7 @@ static void test_module_import_and_macro(void)
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 7, &diagnostics, &tree));
-  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MODULE) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MODULE) == nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_IMPORT) != nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MACRO) != nullptr);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_MACRO_MATCHER_FRAGMENT) != nullptr);
@@ -393,6 +393,67 @@ static void test_postfix_binds_before_prefix(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_control_parentheses_are_optional(void)
+{
+  const char *text = "fn main(flag: Bool, items: [Int]) {\n"
+                     "  if flag { while flag { break; } } else if !flag { return; }\n"
+                     "  do { continue; } while flag;\n"
+                     "  for item in items { item; }\n"
+                     "  for index: Int = 0; index < 2; index++ { index; }\n"
+                     "  match flag { true -> return;, else -> return;, }\n"
+                     "}\n"
+                     "fn choose(flag: Bool) -> Int { return if flag { 1 } else { 2 }; }\n"
+                     "fn inspect(flag: Bool) -> Int { return match flag { true -> { 1 }, else -> { 0 }, }; }\n";
+  XsSource source = {.path = "OptionalControlParentheses.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 64, &diagnostics, &tree));
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_IF) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_FOR_EACH) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_IF) != nullptr);
+  CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_MATCH) != nullptr);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_positional_and_named_tuple_structure(void)
+{
+  const char *text = "fn pair() -> (Str, Int) { return (\"Leitwolf\", 29); }\n"
+                     "fn person() -> (name: Str, age: Int) {\n"
+                     "  value := (name: \"Leitwolf\", age: 29);\n"
+                     "  value.age;\n"
+                     "  return value;\n"
+                     "}\n"
+                     "fn singleton() -> (name: Str) { return (name: \"Leitwolf\"); }\n"
+                     "fn first(value: (Int, Int)) -> Int { return value.0; }\n";
+  XsSource source = {.path = "Tuples.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 65, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_TYPE_TUPLE) == 4);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_TUPLE) == 3);
+  CHECK(count_kind(tree.root, XS_SYNTAX_TUPLE_FIELD) == 6);
+  const XsSyntaxNode *member = xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_MEMBER_ACCESS);
+  CHECK(member != nullptr);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_tuple_forms_cannot_be_mixed(void)
+{
+  const char *text = "fn invalid(value: (left: Int, Int)) { pair := (left: 1, 2); }\n";
+  XsSource source = {.path = "MixedTuple.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 66, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_expression_turbofish_structure(void)
 {
   const char *text = "fn Main() {\n"
@@ -552,7 +613,7 @@ static void test_complete_program_expression_shapes(void)
 int main(void)
 {
   test_function_tree();
-  test_module_import_and_macro();
+  test_import_and_macro();
   test_macro_call_declaration_structure();
   test_control_flow_structure();
   test_control_flow_expression_structure();
@@ -568,6 +629,9 @@ int main(void)
   test_character_literal_structure();
   test_optional_operator_structure();
   test_postfix_binds_before_prefix();
+  test_control_parentheses_are_optional();
+  test_positional_and_named_tuple_structure();
+  test_tuple_forms_cannot_be_mixed();
   test_expression_turbofish_structure();
   test_removed_exception_syntax_is_rejected();
   test_result_propagation_structure();

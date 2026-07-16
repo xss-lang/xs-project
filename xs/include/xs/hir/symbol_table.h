@@ -37,6 +37,7 @@ typedef struct
 {
   XsHirSymbolKind kind;
   char *name;
+  char *module_name;
   char *namespace_name;
   char *qualified_name;
   XsSyntaxVisibility visibility;
@@ -95,6 +96,10 @@ const XsHirSymbol *xs_hir_symbol_table_find(const XsHirSymbolTable *table, const
 bool xs_hir_collect_symbols(const XsSyntaxTree *tree, XsHirSymbolTable *table, XsDiagnostics *diagnostics);
 bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree, const XsMacroDeclarationExpansionSet *macro_declarations,
                                      XsHirSymbolTable *table, XsDiagnostics *diagnostics);
+bool xs_hir_collect_symbols_in_module_expanded(const XsSyntaxTree *tree,
+                                               const XsMacroDeclarationExpansionSet *macro_declarations,
+                                               const char *module_name, XsHirSymbolTable *table,
+                                               XsDiagnostics *diagnostics);
 const char *xs_hir_symbol_kind_name(XsHirSymbolKind kind);
 const char *xs_hir_member_kind_name(XsHirMemberKind kind);
 
@@ -112,14 +117,14 @@ bool xs_hir_import_scope_has_module(const XsHirImportScope *scope, const char *n
 bool xs_hir_resolve_imports(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols, XsHirImportScope *scope,
                             XsDiagnostics *diagnostics);
 bool xs_hir_validate_name_uses(const XsSyntaxTree *tree, const XsHirSymbolTable *project_symbols,
-                               const XsHirImportScope *imports, XsDiagnostics *diagnostics);
+                               const XsHirImportScope *import, XsDiagnostics *diagnostics);
 bool xs_hir_validate_name_uses_expanded(const XsSyntaxTree *tree, const XsMacroStatementExpansionSet *macro_statements,
-                                        const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
+                                        const XsHirSymbolTable *project_symbols, const XsHirImportScope *import,
                                         XsDiagnostics *diagnostics);
 bool xs_hir_validate_name_uses_with_macros(const XsSyntaxTree *tree,
                                            const XsMacroDeclarationExpansionSet *macro_declarations,
                                            const XsMacroStatementExpansionSet *macro_statements,
-                                           const XsHirSymbolTable *project_symbols, const XsHirImportScope *imports,
+                                           const XsHirSymbolTable *project_symbols, const XsHirImportScope *import,
                                            XsDiagnostics *diagnostics);
 
 #endif

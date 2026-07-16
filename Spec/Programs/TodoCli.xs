@@ -4,9 +4,9 @@
 // Complete-language example program:
 // A small command-line todo database that persists tasks to a text file.
 
-module programs::todo_cli;
 
-imports stdio, fs, collections, process;
+
+import stdio, fs, collections, process;
 
 enum data Command {
     Add: Str,

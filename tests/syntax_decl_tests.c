@@ -394,7 +394,7 @@ static void test_generic_constraint_structure(void)
 
 static void test_extern_c_function_structure(void)
 {
-  const char *text = "imports cffi;\n"
+  const char *text = "import cffi;\n"
                      "#[repr(C)]\n"
                      "extern \"C\" {\n"
                      "  #[LinkName(\"puts\")]\n"
@@ -439,6 +439,7 @@ static void test_extern_c_function_structure(void)
 static void test_using_declaration_structure(void)
 {
   const char *text = "using namespace Math::Advanced;\n"
+                     "using namespace Math::Advanced::*;\n"
                      "using Math::Add;\n"
                      "using Sum = Math::Add;\n";
   XsSource source = {.path = "Using.xs", .text = text, .length = strlen(text)};
@@ -446,17 +447,48 @@ static void test_using_declaration_structure(void)
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 50, &diagnostics, &tree));
-  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_IMPORT) == 3);
-  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_USING) == 3);
-  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_WILDCARD) == 1);
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_IMPORT) == 4);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_USING) == 4);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_WILDCARD) == 2);
   CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_IMPORT, XS_SYNTAX_FLAG_USING_ALIAS) == 1);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *glob = "using Math.*;\n";
+  const char *glob = "using Math::*;\n";
   source = (XsSource){.path = "UsingGlobInvalid.xs", .text = glob, .length = strlen(glob)};
   xs_diagnostics_init(&diagnostics);
   CHECK(!xs_syntax_parse(&source, 51, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_namespace_scoping_forms(void)
+{
+  const char *blocks = "namespace first { fn one() {} }\n"
+                       "namespace second { namespace nested { fn two() {} } }\n";
+  XsSource source = {.path = "BlockNamespaces.xs", .text = blocks, .length = strlen(blocks)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 52, &diagnostics, &tree));
+  CHECK(count_kind(tree.root, XS_SYNTAX_DECL_NAMESPACE) == 3);
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_NAMESPACE, XS_SYNTAX_FLAG_BLOCK_NAMESPACE) == 3);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *mixed = "namespace scoped;\nnamespace blocked { namespace nested { fn value() {} } }\n";
+  source = (XsSource){.path = "CombinedNamespaces.xs", .text = mixed, .length = strlen(mixed)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 53, &diagnostics, &tree));
+  CHECK(count_kind_with_flag(tree.root, XS_SYNTAX_DECL_NAMESPACE, XS_SYNTAX_FLAG_BLOCK_NAMESPACE) == 2);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *duplicate = "namespace first;\nnamespace second;\n";
+  source = (XsSource){.path = "DuplicateScopedNamespace.xs", .text = duplicate, .length = strlen(duplicate)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 54, &diagnostics, &tree));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -534,6 +566,7 @@ int main(void)
   test_generic_constraint_structure();
   test_extern_c_function_structure();
   test_using_declaration_structure();
+  test_namespace_scoping_forms();
   test_dispatch_and_multiple_inheritance_modifiers();
   test_builtin_collection_type_syntax();
   return failures == 0 ? 0 : 1;

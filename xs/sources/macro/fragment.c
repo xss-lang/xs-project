@@ -159,6 +159,8 @@ bool xs_macro_external_import_resolves(const XsSyntaxTree *tree, XsText name)
     const XsSyntaxNode *child = tree->root->children[index];
     if(child->kind != XS_SYNTAX_DECL_IMPORT)
       continue;
+    if((child->flags & XS_SYNTAX_FLAG_USING) != 0)
+      continue;
     if(import_resolves_module_macro(child, "panic", name) || import_resolves_module_macro(child, "stdio", name))
       return true;
   }

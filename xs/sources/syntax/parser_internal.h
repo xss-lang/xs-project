@@ -23,6 +23,9 @@ typedef struct
   XsToken next;
   size_t loop_depth;
   bool allow_untyped_new;
+  bool suppress_typed_object_literal;
+  bool has_source_namespace;
+  bool seen_non_namespace;
 } SyntaxParser;
 
 typedef struct

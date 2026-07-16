@@ -11,9 +11,10 @@ driver. It never reads or compiles `.xs` files. The compiler and
 JRE are not embedded: JRE 25 or newer and an executable `kotlin` scripting command are runtime requirements.
 
 Projects use one `xs.project.kts` file or the `xs.settings.kts` + `xs.build.kts` pair. Only
-`project(name, channel, version)` and at least one source include are required. Source includes accept concrete paths or
-`*`, `**`, and `?` glob patterns; excludes are applied afterward. The resolved registry must contain exactly one
-case-sensitive `main.xs`, which is placed first as the entry. Optional sections cover authors, external modules,
+`project(name, channel, version)` and at least one source include are required. `source.include` names recursive directory
+roots; source/test excludes may use `*`, `**`, and `?` glob patterns. The
+resolved registry must contain exactly one case-sensitive `main.xs`, which is placed first as the entry. Setting
+`XS_EXTENSION` replaces both the selected suffix and entry suffix. Optional sections cover authors, external modules,
 multi-value settings such as `TARGET`, tests, compiler diagnostics, variables, and host-dependent `cfg(...)` branches. See `xs.project.kts` for the complete
 working DSL example.
 
@@ -23,21 +24,21 @@ Both scripts may use the full DSL; the second script extends the state produced 
 The canonical recursive source form is:
 
 ```kotlin
-sources {
-  include("sources/**/*.xs")
-  exclude("sources/tests/**")
+source {
+  include("Sources")
+  exclude("Sources/tests/**")
 }
 ```
 
-Concrete includes may be mixed with `*`, `**`, and `?` patterns. Matching happens relative to the project root,
-excludes run after includes, and the deterministic result must contain exactly one case-sensitive `main.xs`. The
+Include roots do not accept globs. Discovery is recursive relative to the project root, excludes run afterward, and the
+deterministic result must contain exactly one case-sensitive `main.xs` by default. The
 resolver emits that exact registry with `main.xs` first; it does not pass unresolved patterns to the compiler.
 The internal registry also carries the evaluated `compiler {}` warning, warnings-as-errors, and verbose policy. The
 JVM-free compiler may replace those values for one invocation through its corresponding command-line overrides.
 
 ```text
-gradle -p xs_kts test
-gradle -p xs_kts run --args="evaluate xs_kts"
+./xs_kts/gradlew --daemon --build-cache -p xs_kts test
+./xs_kts/gradlew --daemon --build-cache -p xs_kts run --args="evaluate xs_kts"
 ```
 
 Project files are build programs and must be trusted. They are executed by the external `kotlin` script runner; xs-project

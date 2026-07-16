@@ -26,6 +26,8 @@ xs build --hir -file Main.xs
 xs build --mir -file Main.xs
 xs build --xlil -file Main.xs
 xs build --warning all --werror true --verbose true
+xs build --module ./Modules
+xs build -proj Example.xsproj --module ./Modules
 xs --version
 ```
 
@@ -33,6 +35,10 @@ The `-proj` flag is accepted only by `xs` and only for `.xsproj` input. Kotlin p
 `xs check`, `xs build`, and `xs run` ask `xs-project` to discover and evaluate `xs.project.kts` or the
 `xs.settings.kts` + `xs.build.kts` pair. `xs-project` returns source metadata and never parses or compiles `.xs` files.
 `xs-proj` accepts a manifest path directly and performs parser/model validation only.
+
+`--module <directory>` supplies a recursive module source root when the KTS project does not declare
+`module { include(...) }`. It is mandatory when a legacy `.xsproj` build is combined with a sibling `xs.module.kts`;
+that combination is never discovered implicitly.
 
 ## One-shot compiler policy
 

@@ -8,7 +8,7 @@
 // family and both payload types are unrestricted. Postfix @ propagates E.
 //
 
-imports fs, stdio;
+import fs, stdio;
 
 
 // result data model

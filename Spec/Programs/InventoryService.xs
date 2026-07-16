@@ -4,9 +4,9 @@
 // Complete-language example program:
 // A small in-memory order service using ownership, Arc, Mutex, channels and generics.
 
-module programs::inventory_service;
 
-imports collections, thread, sync, stdio;
+
+import collections, thread, sync, stdio;
 
 data Product {
     sku: Str;

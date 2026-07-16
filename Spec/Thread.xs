@@ -21,7 +21,7 @@
 // move and Send rules.
 //
 
-imports thread, result;
+import thread, result;
 
 
 // ============================================================
@@ -412,7 +412,7 @@ fn invalid_receiver_clone() {
 // Interaction with synchronization types
 // ============================================================
 
-imports mutex, rw_lock, arc;
+import mutex, rw_lock, arc;
 
 
 // moving a mutex into a thread

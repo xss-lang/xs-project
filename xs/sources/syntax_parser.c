@@ -261,7 +261,6 @@ bool xs_syntax_parse(const XsSource *source, uint64_t file_id, XsDiagnostics *di
   tree->root = node(&parser, XS_SYNTAX_FILE, (XsSpan){0, source->length});
 
   bool seen_declaration = false;
-  bool seen_module = false;
   while(parser.current.kind != XS_TOKEN_EOF)
   {
     if(parser.current.kind == XS_TOKEN_HASH && parser.next.kind == XS_TOKEN_BANG)
@@ -278,24 +277,10 @@ bool xs_syntax_parse(const XsSource *source, uint64_t file_id, XsDiagnostics *di
     XsSyntaxNode *declaration = parse_declaration(&parser, true);
     if(declaration != nullptr)
     {
-      if(declaration->kind == XS_SYNTAX_DECL_MODULE)
-      {
-        if(seen_declaration)
-          xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
-                             (XsSpan){declaration->span.start_offset, declaration->span.end_offset},
-                             "module must be the first declaration in the file");
-        if(seen_module)
-          xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
-                             (XsSpan){declaration->span.start_offset, declaration->span.end_offset},
-                             "only one module declaration is allowed per file");
-        seen_module = true;
-      }
-      if(declaration->kind == XS_SYNTAX_DECL_NAMESPACE && !seen_module)
-        xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR,
-                           (XsSpan){declaration->span.start_offset, declaration->span.end_offset},
-                           "namespace must be declared under module");
       xs_syntax_node_add(tree, tree->root, declaration);
       seen_declaration = true;
+      if(declaration->kind != XS_SYNTAX_DECL_NAMESPACE)
+        parser.seen_non_namespace = true;
     }
     if(parser.current.span.start == before)
     {

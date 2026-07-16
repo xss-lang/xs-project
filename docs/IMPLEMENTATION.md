@@ -95,8 +95,8 @@ The documented compilation order is preserved:
 - Kotlin `xs.project.kts` or split `xs.settings.kts` + `xs.build.kts` projects are evaluated by `/usr/bin/xs-project` on
   JRE 25 or newer through an external `kotlin` scripting command. Argument-free `xs` starts this resolver and
   retains all `.xs` compilation work itself.
-- Kotlin source includes expand project-relative glob patterns and produce a deterministic registry with the sole
-  case-sensitive `main.xs` first.
+- Kotlin source, test, and module includes name directory roots; the resolver recursively selects the configured source
+  extension while excludes retain glob support. `XS_EXTENSION` defaults to `xs` and may select another extension.
 - `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
   reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macro_rules!` declaration.
 - `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
@@ -225,10 +225,10 @@ The documented compilation order is preserved:
   `XS_SYNTAX_PROPERTY_ACCESSOR` children; accessor bodies are parsed as ordinary blocks when present. Properties use the
   canonical X# field spelling, for example `public Name: Str { getter; setter; }`.
 - Visibility modifiers are explicit: `public` is externally visible, `private` is limited to the declaring scope,
-  `protected` is available to derived classes, and `internal` is limited to the current project/package boundary. Current HIR
+  `protected` is available to derived classes, and `internal` is limited to the current logical module. Current HIR
   symbol collection applies one default everywhere: declarations, members, and base entries are `internal` unless an
   explicit modifier says otherwise. Current HIR visibility
-  checks fully enforce public/private module access; protected/internal member enforcement remains part of later
+  checks enforce public, private, and internal module access; protected inheritance-aware access remains later
   member-resolution work.
 - The C23 HIR expression checker performs the first property validation slice: duplicate accessors are rejected, getter
   return values are checked against the field type where that type is currently understood, setter bodies get an implicit
@@ -260,11 +260,14 @@ The documented compilation order is preserved:
 
 ### Module discovery and import graph
 
-- The project root is the directory containing the active `.xsproj` file.
-- `.xs` files under the project root are scanned recursively.
-- Modules are registered by their declared full module path, not by file name.
-- Declaring the same module name in multiple files is an error.
-- `imports` and `using` dependencies are resolved by declared module name.
+- Kotlin projects recursively discover configured-extension sources under `source.include` directory roots. Module source
+  roots come from `module.include` or the explicit `--module` option.
+- `xs.module.kts` assigns every selected module source to one case-sensitive logical module name; file paths never infer
+  module identity. Direct and `members` entries belong to the named module, while `submodule` appends one path segment.
+- A legacy `.xsproj` build may consume a sibling `xs.module.kts` only with an explicit `--module <directory>` option.
+- `import` and `using` dependencies are resolved against project-assigned module names. Source-level `module` declarations
+  have been removed; Kotlin projects transfer exact source paths and optional logical module names through the v2 project
+  registry. The C23 symbol collector and Rust compiler-core session boundary both accept that external assignment.
 - Missing import targets produce errors.
 - Imported sources that are not listed in `addFiles` are added to the dependency graph and checked.
 
@@ -275,7 +278,9 @@ This layer lives under the HIR directory.
 - The `xs check` flow runs HIR symbol collection after structural AST and macro validation.
 - During project checking, direct sources and sources discovered through the import graph are collected into one shared HIR
   symbol table.
-- File-level `module` and `namespace` declarations determine the active HIR namespace path.
+- Project metadata determines the module path. Namespace syntax is optional: one leading source-scoped namespace may
+  establish a file base, brace-scoped namespaces may occur multiple times or nest, and their paths are restored when a
+  block ends. There is no source-level `module` declaration.
 - `public namespace` does not promote contained declarations; omitted declaration visibility remains `internal`.
 - Top-level `fn`, `class`, `interface`, `enum`, `data`, and `macro_rules!` declarations are collected into the symbol table.
 - `macro_rules!` rules use `matcher -> { expansion };`; the older `matcher: { expansion };` spelling is not accepted.
@@ -293,22 +298,24 @@ This layer lives under the HIR directory.
   covers fields, field-like macro output, methods, constructors, destructors, and nested types.
 - If methods repeat with the same name, the last declaration wins in lookup according to the X# method-merge rule; field and
   nested-member name conflicts produce diagnostics.
-- Symbols carry short name, namespace name, fully qualified name, visibility, source location, and source AST node.
+- Symbols carry short name, logical module name, namespace name, fully qualified name, visibility, source location, and
+  source AST node.
 - Duplicate top-level declarations with the same short name in the same namespace are errors.
 - The same short name may be used under different namespaces.
-- `imports Module;` records that the module is usable through its qualified name. It does not place public symbols into the
+- `import Module;` records that the module is usable through its qualified name. It does not place public symbols into the
   local import scope.
 - Source syntax uses qualified paths: `Module::Name` and `Module::Type::Item` are namespace/type paths, while
   `value.member` remains value member access. Expression generic arguments use turbofish, for example
   `Factory::<Int>()`. HIR still stores canonical qualified names with `.` internally.
 - `using Module::Name;` and `using Alias = Module::Name;` open one public top-level symbol into the local import scope.
 - `using namespace Module;` opens public top-level symbols from that namespace into the local import scope.
-- Non-public symbols are not opened through external module imports.
-- Qualified external names and types require a matching `imports Module;` or `imports Module::Namespace;` declaration unless
-  they share the same root module as the current namespace.
+- Non-public symbols are not opened through external module import.
+- Qualified external names and types require a case-sensitive matching `import Module;` or `import Module::Namespace;`
+  declaration unless they belong to the exact current logical module.
 - Direct call targets in function bodies are resolved through same-namespace symbols and the import scope.
 - Fully qualified call targets through another namespace/module resolve only to public symbols.
-- Non-public symbols can be resolved only from the same namespace and same source file through direct qualified names.
+- Internal symbols resolve only inside their exact logical module. Private symbols additionally require the same namespace
+  and source file.
 - Calls where the first segment is a local parameter/variable are deferred to type checking.
 - `value.Method()` calls on locals/parameters with explicit named type annotations are validated for member existence through
   the HIR member symbol table. At this stage the receiver type is resolved only for direct identifier receivers and named type
@@ -339,7 +346,7 @@ validation does not decide dispatch, override, or overload selection.
   situation. Its length is considered unbounded except by the representation allowed by UTF-16.
 - Semantically, `Str` is an immutable, borrowed static-lifetime string reference. The lifetime is implicit in source. Its
   runtime layout remains deferred and it is not yet lowered to XLIL storage.
-- `Optional<T>` resolves as if the compiler had inserted `imports optional; using namespace std::optional;`, making
+- `Optional<T>` resolves as if the compiler had inserted `import optional; using namespace std::optional;`, making
   `std::optional::Optional<T>` available as `Optional<T>`. It is compiler-provided enum data with `Some: T` and
   payload-free `None` variants, made available through that implicit namespace using. `?.`, `??`, `??=`, and postfix `!`
   are represented syntactically; `Optional<T>` has automatic unboxing to
@@ -351,16 +358,21 @@ validation does not decide dispatch, override, or overload selection.
   There is no nullable `T?` type operator.
 - The C23 HIR type resolver recognizes the standard wrapper type names `Optional<T>`, `std::optional::Optional<T>`,
   `std::result::Result<(), E>`, `std::result::Result<T, E>`, the special shorthand `Result<()>`, and the standard error type `Error`.
-  The compiler treats the `std::result` namespace as implicitly usable, so `imports result;` is optional for `Result<T, E>`,
+  The compiler treats the `std::result` namespace as implicitly usable, so `import result;` is optional for `Result<T, E>`,
   `Result<T, E>`, `Ok(...)`, and `Error(...)`. The only one-argument form is `Result<()>`, defaulting its error payload to
   `Error`; `Result<Int>` is rejected as incomplete. This is name and arity validation only. Postfix `@` and direct `Ok(...)`/`Error(...)` constructor use require an enclosing function with
   a Result return type; constructor payload checking and complete propagation lowering remain later semantic work.
 - `Panic` is treated as an implicit standard import for the assertion and panic macro family. Those macros remain normal
-  imported macros rather than built-ins; the macro validator simply treats the `Panic` module as always available.
+  imported macros rather than built-ins; the macro validator treats the `Panic` module as always available. Panic is a
+  macro-only module and HIR rejects `using namespace panic;`.
 - `Stdio` is intentionally not prelude. `print!`, `println!`, `eprint!`, `eprintln!`, `format!`, and `std::fmt::*` require
-  `imports stdio;` or `using namespace stdio;`. `format_args!` and `format_args_nl!` are compiler-special built-ins:
+  `import stdio;`. `format_args!` and `format_args_nl!` are compiler-special built-ins:
   they bypass `macro_rules!` resolution and cannot be declared or shadowed by user macros. `write!` and `writeln!` are
   built-in writer macros.
+- Macros are not prelude entries. `#[MacroExport]` identifies a top-level module macro export; importing its module makes
+  the macro available under its unqualified invocation name. Qualified macro invocation syntax does not exist. The
+  standard-module registry and attribute placement checks are implemented; project-wide user macro export expansion
+  across source files remains pending.
 - The C23 HIR type resolver also recognizes the initial standard CFFI family: `std::cffi::CStr`, `std::cffi::CString`,
   `std::cffi::RawPtr<T>`, `std::cffi::NonNull<T>`, `std::cffi::Slice<T>`, `std::cffi::Handle<T>`, `std::cffi::Owned<T>`, `std::cffi::Borrowed<T>`,
   `std::cffi::Out<T>`, `std::cffi::DynamicLibrary`, `std::cffi::Symbol<T>`, `std::cffi::File`, and `std::cffi::VarArgs`.
@@ -372,7 +384,8 @@ validation does not decide dispatch, override, or overload selection.
 - Generic parameter names are recognized in their own declaration scope.
 - User-defined `class`, `interface`, `enum`, and `data` types are resolved through the HIR symbol table and import scope.
 - Fully qualified type uses through another namespace/module can resolve only to public type symbols.
-- Non-public type symbols can be resolved only from the same namespace and same source file.
+- Internal type symbols resolve only inside their exact logical module. Private type symbols additionally require the
+  same namespace and source file.
 - Generic type uses must provide the same number of type arguments as the declaration’s generic parameter count.
 - Because generic type erasure and default generic parameters are not supported, using generic types without arguments is an
   error.
@@ -494,7 +507,7 @@ complete.
   `format_args_nl!` are compiler-special syntax rather than `macro_rules!` definitions. They use the same format string
   validation as the Stdio output macros where applicable.
 - Imported `Stdio` macros are treated as external macros, not built-ins. The validator recognizes `print!`, `println!`,
-  `eprint!`, `eprintln!`, and `format!` through `imports stdio` or `using namespace stdio;`. `println!()` and `eprintln!()`
+  `eprint!`, `eprintln!`, and `format!` through `import stdio`. `println!()` and `eprintln!()`
   accept the newline-only form. Built-in `writeln!(destination)` accepts the destination-only newline form. Other
   formatting forms require a string literal format template and matching placeholder argument count. Debug, pretty-debug,
   hexadecimal, padding, and alignment specs such as `{:?}`, `{:#?}`, `{:08x}`, and `{:_>8}` are accepted by the validator.

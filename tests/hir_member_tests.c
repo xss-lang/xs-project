@@ -25,7 +25,7 @@ static int failures;
 
 static bool parse_symbols(const char *text, XsSyntaxTree *tree, XsHirSymbolTable *symbols, XsDiagnostics *diagnostics)
 {
-  XsSource source = {.path = "Members.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "Members.xs", .module_name = "App", .text = text, .length = strlen(text)};
   xs_diagnostics_init(diagnostics);
   xs_hir_symbol_table_init(symbols);
   if(!xs_syntax_parse(&source, 101, diagnostics, tree))
@@ -35,7 +35,7 @@ static bool parse_symbols(const char *text, XsSyntaxTree *tree, XsHirSymbolTable
 
 static void test_class_member_symbols(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  name: Str;\n"
                      "  fn get_name() -> Str { return name; }\n"
@@ -65,7 +65,7 @@ static void test_class_member_symbols(void)
 
 static void test_csharp_style_public_property_members(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "public class Person {\n"
                      "  public Name: Str { getter; setter; }\n"
                      "  public Age: Int { getter; setter; }\n"
@@ -93,7 +93,7 @@ static void test_csharp_style_public_property_members(void)
 
 static void test_data_member_symbols_and_method_resolution(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "data User {\n"
                      "  name: Str;\n"
                      "  User(name: Str) {}\n"
@@ -104,7 +104,7 @@ static void test_data_member_symbols_and_method_resolution(void)
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirMemberSymbolTable members;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   CHECK(parse_symbols(text, &tree, &symbols, &diagnostics));
   xs_hir_member_symbol_table_init(&members);
@@ -116,10 +116,10 @@ static void test_data_member_symbols_and_method_resolution(void)
   CHECK(constructor != nullptr && constructor->kind == XS_HIR_MEMBER_CONSTRUCTOR);
   const XsHirMemberSymbol *method = xs_hir_member_symbol_table_find(&members, "App.User", "get_name");
   CHECK(method != nullptr && method->kind == XS_HIR_MEMBER_METHOD);
-  xs_hir_import_scope_init(&imports);
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_init(&import);
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_member_symbol_table_free(&members);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
@@ -128,7 +128,7 @@ static void test_data_member_symbols_and_method_resolution(void)
 
 static void test_method_merge_uses_last_member_symbol(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  incomplete fn Merge(value: Int);\n"
                      "  incomplete fn Merge(value: Str);\n"
@@ -153,7 +153,7 @@ static void test_method_merge_uses_last_member_symbol(void)
 
 static void test_duplicate_field_member_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  value: Int;\n"
                      "  value: Str;\n"
@@ -175,12 +175,12 @@ static void test_duplicate_field_member_errors(void)
 
 static void test_macro_generated_field_like_member_symbol(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  macro_rules! make { () -> { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
-  XsSource source = {.path = "MacroMembers.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroMembers.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirMemberSymbolTable members;
@@ -206,13 +206,13 @@ static void test_macro_generated_field_like_member_symbol(void)
 
 static void test_macro_generated_member_conflicts_with_field(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  value: Int;\n"
                      "  macro_rules! make { () -> { value: Str; }; }\n"
                      "  make!();\n"
                      "}\n";
-  XsSource source = {.path = "MacroFieldConflict.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroFieldConflict.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirMemberSymbolTable members;
@@ -237,13 +237,13 @@ static void test_macro_generated_member_conflicts_with_field(void)
 
 static void test_macro_generated_member_conflicts_with_method(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  incomplete fn value();\n"
                      "  macro_rules! make { () -> { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
-  XsSource source = {.path = "MacroMethodFieldConflict.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroMethodFieldConflict.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsHirMemberSymbolTable members;
@@ -268,18 +268,18 @@ static void test_macro_generated_member_conflicts_with_method(void)
 
 static void test_explicit_local_method_call_resolution(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User { incomplete fn get_name(); }\n"
                      "fn main() { user: User = new User(); user.get_name(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   CHECK(parse_symbols(text, &tree, &symbols, &diagnostics));
-  xs_hir_import_scope_init(&imports);
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_init(&import);
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -287,19 +287,19 @@ static void test_explicit_local_method_call_resolution(void)
 
 static void test_missing_explicit_local_method_call_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User { incomplete fn get_name(); }\n"
                      "fn main() { user: User = new User(); user.missing(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   CHECK(parse_symbols(text, &tree, &symbols, &diagnostics));
-  xs_hir_import_scope_init(&imports);
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_with_macros(&tree, nullptr, nullptr, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -307,29 +307,29 @@ static void test_missing_explicit_local_method_call_errors(void)
 
 static void test_macro_generated_method_call_resolution(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  macro_rules! make { () -> { incomplete fn generated(); }; }\n"
                      "  make!();\n"
                      "}\n"
                      "fn main() { user: User = new User(); user.generated(); }\n";
-  XsSource source = {.path = "MacroMethodCall.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroMethodCall.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsMacroDeclarationExpansionSet declarations;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 103, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
   CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses_with_macros(&tree, &declarations, nullptr, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_with_macros(&tree, &declarations, nullptr, &symbols, &import, &diagnostics));
   xs_macro_declaration_expansion_set_free(&declarations);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);

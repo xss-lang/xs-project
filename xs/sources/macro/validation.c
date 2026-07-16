@@ -51,6 +51,53 @@ static XsText macro_name(const XsSyntaxNode *macro)
   return (XsText){0};
 }
 
+static bool attribute_name_is(const XsSyntaxNode *attribute, const char *name)
+{
+  if(attribute == nullptr || attribute->kind != XS_SYNTAX_ATTRIBUTE || attribute->child_count == 0)
+    return false;
+  const XsSyntaxNode *path = attribute->children[0];
+  if(path->kind != XS_SYNTAX_PATH || path->child_count != 1)
+    return false;
+  const XsSyntaxNode *segment = path->children[0];
+  size_t length = strlen(name);
+  return segment->kind == XS_SYNTAX_IDENTIFIER && segment->text.length == length &&
+         memcmp(segment->text.data, name, length) == 0;
+}
+
+static bool macro_has_attribute(const XsSyntaxNode *macro, const char *name)
+{
+  for(size_t index = 0; index < macro->child_count; ++index)
+  {
+    const XsSyntaxNode *list = macro->children[index];
+    if(list->kind != XS_SYNTAX_ATTRIBUTE_LIST)
+      continue;
+    for(size_t attribute = 0; attribute < list->child_count; ++attribute)
+    {
+      if(attribute_name_is(list->children[attribute], name))
+        return true;
+    }
+  }
+  return false;
+}
+
+static void validate_export_placement(const XsSyntaxNode *node, bool module_scope, XsDiagnostics *diagnostics)
+{
+  if(node == nullptr)
+    return;
+  for(size_t index = 0; index < node->child_count; ++index)
+  {
+    const XsSyntaxNode *child = node->children[index];
+    if(child->kind == XS_SYNTAX_DECL_MACRO && macro_has_attribute(child, "MacroExport") && !module_scope)
+    {
+      XsSpan span = {.start = child->span.start_offset, .end = child->span.end_offset};
+      xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, span,
+                         "MacroExport is only valid on macros declared at module or namespace scope");
+    }
+    bool child_module_scope = child->kind == XS_SYNTAX_DECL_NAMESPACE;
+    validate_export_placement(child, child_module_scope, diagnostics);
+  }
+}
+
 static bool matcher_variable_depth(const XsSyntaxNode *node, XsText name, size_t depth, size_t *result)
 {
   if(node == nullptr)
@@ -744,6 +791,7 @@ bool xs_macro_validate(const XsSyntaxTree *tree, XsDiagnostics *diagnostics)
     }
     validate_macro_rules(macros.items[i], diagnostics);
   }
+  validate_export_placement(tree->root, true, diagnostics);
   validate_scope_recursion(tree->root, diagnostics);
   NodeList empty = {0};
   validate_scope_calls(tree, tree->root, &empty, diagnostics);

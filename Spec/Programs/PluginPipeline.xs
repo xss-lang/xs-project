@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Runs a configurable text-processing pipeline through nominal plugin types.
 
-module programs::plugin_pipeline;
 
-imports collections, stdio, process;
+
+import collections, stdio, process;
 
 interface TextPlugin {
     fn name() -> Str;

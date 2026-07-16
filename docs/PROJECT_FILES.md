@@ -49,13 +49,18 @@ dependencies {
   addModule("https://github.com/xss-lang/externalModules/::XML::0.1.0")
 }
 
-sources {
-  include("sources/**/*.xs")
-  exclude("sources/tests/**")
+source {
+  include("Sources")
+  exclude("Sources/tests/**")
+}
+
+module {
+  include("Modules")
 }
 
 test {
-  include("tests/**/*.xs")
+  include("Tests")
+  exclude("Tests/fixtures/**")
   framework("xs-test")
 }
 
@@ -68,12 +73,13 @@ compiler {
 
 Alternatively, configuration may be split between `xs.settings.kts` and `xs.build.kts`. Both files are required in split
 mode, and `xs.project.kts` cannot coexist with them. Each file is evaluated separately by `kotlin`, so normal Kotlin
-imports and diagnostics retain their file boundary.
+import and diagnostics retain their file boundary.
 
-`project(name, channel, version)` and at least one source include are required. An include may name a concrete
-project-relative `.xs` file or use `*`, `**`, and `?` glob segments. Excludes are applied after all includes, duplicate
-matches are removed, and the final registry is sorted deterministically with `main.xs` first. The resolved set must
-contain exactly one case-sensitive `main.xs`; it is always the entry file. A pattern that matches no files is an error.
+`project(name, channel, version)` and at least one source include are required. `source` is the canonical block name;
+`sources` remains a compatibility alias. An include names a project-relative directory and recursively selects files
+with the configured source extension. Include roots do not accept globs. Excludes may use `*`, `**`, and `?`; they are
+applied after discovery. The default extension is `xs`, so the registry must contain exactly one case-sensitive
+`main.xs`. `set("XS_EXTENSION", "xsharp")` instead selects `.xsharp` files and requires `main.xsharp`.
 
 The DSL also provides:
 
@@ -84,7 +90,8 @@ The DSL also provides:
 - `getAll(name)` to read every value without joining a multi-value setting;
 - `authors(...)` for project authors;
 - `dependencies { addModule(...) }` for external module coordinates;
-- `test { include(...); framework(...) }` for test discovery metadata;
+- `module { include(...) }` for the pool assigned by `xs.module.kts`;
+- `test { include(...); exclude(...); framework(...) }` for recursive test discovery metadata;
 - `compiler { warnings(...); werror(...); verbose(...) }` for diagnostic policy;
 - `cfg(...)`, `OS`, `FAMILY`, and `ARCH` for ordinary Kotlin conditional configuration;
 - `panic(...)` to reject the project configuration.
@@ -106,16 +113,14 @@ no persistent equivalent.
 
 ## Source registries
 
-`sources` builds the exact source registry passed to the JVM-free compiler. Concrete paths and glob patterns may be
-mixed in the same block:
+`source` defines one or more directory roots for the exact source registry passed to the JVM-free compiler:
 
 ```kotlin
-sources {
-  include("sources/main.xs")
-  include("sources/app/**/*.xs")
-  include("sources/platform/${OS.name.lowercase()}/**/*.xs")
-  exclude("sources/app/generated/**")
-  exclude("sources/**/*_test.xs")
+source {
+  include("Sources")
+  include("Platform/${OS.name.lowercase()}")
+  exclude("Sources/generated/**")
+  exclude("Sources/**/*_test.xs")
 }
 ```
 
@@ -127,20 +132,63 @@ The supported pattern operators are:
 | `?` | exactly one character inside one path segment |
 | `**` | zero or more complete path segments |
 
-Includes are evaluated relative to the project directory and must not escape it. Every include must resolve at least
-one regular file. Excludes are evaluated after includes, duplicate paths are removed, and the resulting registry is
-sorted deterministically. It is an error if exclusion removes the entry file or if the final registry does not contain
-exactly one case-sensitive `main.xs`.
+Include roots are evaluated relative to the project directory, must exist as directories, and must not escape the
+project. They are searched recursively. Excludes are evaluated after includes, duplicate paths are removed, and the
+resulting registry is sorted deterministically. It is an error if exclusion removes the entry file or if the final
+registry does not contain exactly one case-sensitive entry name for `XS_EXTENSION`.
 
-For a small project, listing every source is also valid:
+## Module registries
+
+X# source files do not contain a `module` declaration. Projects that need importable modules select a module source pool
+in `xs.project.kts` and assign every selected file in a sibling `xs.module.kts` file:
 
 ```kotlin
-sources {
-  include("sources/main.xs")
-  include("sources/math/vector.xs")
-  include("sources/io/terminal.xs")
+// xs.project.kts
+project("Example", "BETA", "0.1.0")
+
+source {
+  include("Sources")
+}
+
+module {
+  include("Modules")
 }
 ```
+
+```kotlin
+// xs.module.kts
+module {
+  name("MyModule")
+  members {
+    add("Modules/Example/*.xs")
+  }
+
+  submodule {
+    name("util")
+    add("Modules/Example/Utils/**/*.xs")
+  }
+}
+
+module {
+  name("FooModule")
+  add("Modules/Foo/*.xs")
+}
+```
+
+`add(...)` accepts a concrete source path or a glob. Direct `add` and `members` entries expose declarations as
+`MyModule::<item>`; `submodule` above exposes them as `MyModule::util::<item>`. Every file selected by the project module
+pool must be assigned exactly once. Missing/empty matches, duplicate assignments, unassigned module files, and overlap
+between the ordinary source and module registries are configuration errors.
+
+The project normally declares the module root with `module { include("Modules") }`. If it does not, the compiler
+invocation must provide it explicitly with `xs build --module ./Modules`. The same explicit option enables a legacy
+`.xsproj` build to consume the sibling `xs.module.kts`; `.xsproj` never enables module discovery implicitly.
+
+`xs.module.kts` requires `xs-project`; `xs-compiler` does not execute Kotlin scripts. Argument-free `xs build`/`xs check`
+ask `xs-project` for a resolved registry containing physical paths and logical module names. A direct `-file` invocation
+does not load module project metadata.
+
+For `.xs` sources, `PascalCase` directories and `snake_case.xs` file names are canonical but not mandatory.
 
 ## Split project scripts
 
@@ -163,9 +211,9 @@ The second file then adds sources and compiler policy:
 
 ```kotlin
 // xs.build.kts
-sources {
-  include("sources/**/*.xs")
-  exclude("sources/tests/**")
+source {
+  include("Sources")
+  exclude("Sources/tests/**")
 }
 
 set(
@@ -184,7 +232,7 @@ set(
 )
 
 test {
-  include("tests/**/*.xs")
+  include("Tests")
   framework("xs-test")
 }
 
@@ -195,7 +243,9 @@ compiler {
 }
 ```
 
-The split form is stateful. Across the final accumulated state, `project(...)` must be called exactly once and at least
+The split form is stateful. `xs.settings.kts` is evaluated first, `xs.build.kts` second, and an optional
+`xs.module.kts` last. The module script receives the accumulated project state. Across the final state,
+`project(...)` must be called exactly once and at least
 one source include must exist; neither requirement is tied to a particular file. Normal Kotlin expressions, local
 values, string interpolation, collections, loops, and conditionals remain available because these are real Kotlin
 scripts rather than a simulated Kotlin parser.

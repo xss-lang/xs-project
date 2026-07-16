@@ -86,19 +86,16 @@ data SourceSpan {
 
 data AstFile {
     inner_attributes: [AttributeNode]
-    module_declaration: ModuleDeclaration
-    imports: [ImportDeclaration]
+    assigned_module: Optional<ProjectModuleAssignment>
+    import: [ImportDeclaration]
     declarations: [Declaration]
     span: SourceSpan
 }
 
 
-// module_declaration may be None.
-//
-// A file without a module declaration may still be a direct
-// build-graph source.
-//
-// A file that is imported must declare a module.
+// assigned_module is external project metadata. It is not parsed from source.
+// Direct program sources may have None; xs.module.kts supplies named module
+// assignments before semantic analysis.
 
 
 // ============================================================
@@ -106,7 +103,6 @@ data AstFile {
 // ============================================================
 
 enum data Declaration {
-    Module: ModuleDeclaration,
     Import: ImportDeclaration,
     Namespace: NamespaceDeclaration,
     Function: FunctionDeclaration,
@@ -147,25 +143,20 @@ data AttributeNameValue {
 
 // Attribute delimiter syntax is built into the parser.
 // Official X# attributes live in the Attrs module under std. That module is
-// implicitly available for attribute lookup. Explicit `imports attrs;` is
+// implicitly available for attribute lookup. Explicit `import attrs;` is
 // optional.
 // Outer attributes use #[...]. Inner file attributes use #![...].
 // Attribute semantic names are not keywords.
 
 
 // ============================================================
-// Module declarations
+// Project module assignment
 // ============================================================
 
-data ModuleDeclaration {
-    attributes: [AttributeNode]
+data ProjectModuleAssignment {
     name: PathNode
-    visibility: VisibilityNode
     span: SourceSpan
 }
-
-
-// module must be the first declaration when present.
 
 
 // ============================================================
@@ -207,8 +198,13 @@ data NamespaceDeclaration {
     attributes: [AttributeNode]
     path: PathNode
     visibility: VisibilityNode
+    declarations: Optional<[Declaration]>
     span: SourceSpan
 }
+
+
+// declarations is None for the one permitted source-scoped `namespace path;`
+// form and contains the nested declarations for `namespace path { ... }`.
 
 
 // ============================================================
@@ -629,7 +625,14 @@ data MutableReferenceTypeNode {
 
 
 data TupleTypeNode {
-    element_types: [TypeNode]
+    elements: [TupleTypeElement]
+    span: SourceSpan
+}
+
+
+data TupleTypeElement {
+    name: Optional<Identifier>
+    element_type: TypeNode
     span: SourceSpan
 }
 
@@ -1219,7 +1222,14 @@ data ObjectLiteralField {
 // ============================================================
 
 data TupleExpression {
-    elements: [Expression]
+    elements: [TupleExpressionElement]
+    span: SourceSpan
+}
+
+
+data TupleExpressionElement {
+    name: Optional<Identifier>
+    value: Expression
     span: SourceSpan
 }
 

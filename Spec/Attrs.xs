@@ -8,10 +8,10 @@
 // - #[...] applies to the following declaration/member.
 // - #![...] applies to the enclosing file/module form.
 //
-// Attribute names are not compiler keywords. The compiler implicitly imports
+// Attribute names are not compiler keywords. The compiler implicitly import
 // the standard Attrs module and places its exported names in scope for
 // attribute lookup.
-// An explicit `imports attrs;` declaration is optional and may be used for
+// An explicit `import attrs;` declaration is optional and may be used for
 // readability or aliasing, but it is not required.
 // Therefore examples normally use the short scoped form:
 //

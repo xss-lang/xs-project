@@ -95,9 +95,13 @@ static XsSyntaxNode *parse_if(SyntaxParser *parser)
 {
   size_t start = parser->previous.span.start;
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_IF, (XsSpan){start, parser->previous.span.end});
-  expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after if");
+  bool parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
+  bool previous_suppression = parser->suppress_typed_object_literal;
+  parser->suppress_typed_object_literal = !parenthesized;
   xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
-  expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after if condition");
+  parser->suppress_typed_object_literal = previous_suppression;
+  if(parenthesized)
+    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after if condition");
   xs_syntax_node_add(parser->tree, statement, parse_block(parser));
   while(parser->current.kind == XS_TOKEN_KW_ELSE && parser->next.kind != XS_TOKEN_COLON)
   {
@@ -106,9 +110,13 @@ static XsSyntaxNode *parse_if(SyntaxParser *parser)
     {
       XsSyntaxNode *branch =
           node(parser, XS_SYNTAX_STMT_ELSE_IF, (XsSpan){parser->previous.span.start, parser->previous.span.end});
-      expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after else if");
+      parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
+      previous_suppression = parser->suppress_typed_object_literal;
+      parser->suppress_typed_object_literal = !parenthesized;
       xs_syntax_node_add(parser->tree, branch, parse_expression(parser, 1));
-      expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after else-if condition");
+      parser->suppress_typed_object_literal = previous_suppression;
+      if(parenthesized)
+        expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after else-if condition");
       xs_syntax_node_add(parser->tree, branch, parse_block(parser));
       finish_node(parser, branch, parser->previous.span.end);
       xs_syntax_node_add(parser->tree, statement, branch);
@@ -158,6 +166,10 @@ static bool for_header_is_each(const SyntaxParser *parser)
     {
       return false;
     }
+    else if(lookahead.current.kind == XS_TOKEN_LEFT_BRACE && depth == 0)
+    {
+      return false;
+    }
     advance(&lookahead);
   }
   return false;
@@ -201,7 +213,7 @@ static XsSyntaxNode *parse_pattern_variable(SyntaxParser *parser)
 
 static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
 {
-  expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after for");
+  bool parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
   bool each = for_header_is_each(parser);
   XsSyntaxNode *statement =
       node(parser, each ? XS_SYNTAX_STMT_FOR_EACH : XS_SYNTAX_STMT_FOR, (XsSpan){start, parser->previous.span.end});
@@ -209,8 +221,12 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
   {
     xs_syntax_node_add(parser->tree, statement, parse_pattern(parser));
     expect(parser, XS_TOKEN_KW_IN, "expected in after for-each pattern");
+    bool previous_suppression = parser->suppress_typed_object_literal;
+    parser->suppress_typed_object_literal = !parenthesized;
     xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
-    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after for-each iterable");
+    parser->suppress_typed_object_literal = previous_suppression;
+    if(parenthesized)
+      expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after for-each iterable");
   }
   else
   {
@@ -232,12 +248,16 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
       xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
     }
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after for condition");
-    if(parser->current.kind != XS_TOKEN_RIGHT_PAREN)
+    if(parser->current.kind != (parenthesized ? XS_TOKEN_RIGHT_PAREN : XS_TOKEN_LEFT_BRACE))
     {
       statement->flags |= XS_SYNTAX_FLAG_FOR_UPDATE;
+      bool previous_suppression = parser->suppress_typed_object_literal;
+      parser->suppress_typed_object_literal = !parenthesized;
       xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
+      parser->suppress_typed_object_literal = previous_suppression;
     }
-    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after for increment");
+    if(parenthesized)
+      expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after for increment");
   }
   ++parser->loop_depth;
   xs_syntax_node_add(parser->tree, statement, parse_block(parser));
@@ -249,9 +269,13 @@ static XsSyntaxNode *parse_for(SyntaxParser *parser, size_t start)
 static XsSyntaxNode *parse_match(SyntaxParser *parser, size_t start)
 {
   XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_MATCH, (XsSpan){start, parser->previous.span.end});
-  expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after match");
+  bool parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
+  bool previous_suppression = parser->suppress_typed_object_literal;
+  parser->suppress_typed_object_literal = !parenthesized;
   xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
-  expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after match value");
+  parser->suppress_typed_object_literal = previous_suppression;
+  if(parenthesized)
+    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after match value");
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before match arms");
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
   {
@@ -299,9 +323,10 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
     XsSyntaxNode *body = parse_block(parser);
     --parser->loop_depth;
     expect(parser, XS_TOKEN_KW_WHILE, "expected 'while' after do block");
-    expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after while");
+    bool parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
     XsSyntaxNode *condition = parse_expression(parser, 1);
-    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after do-while condition");
+    if(parenthesized)
+      expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after do-while condition");
     expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after do-while statement");
     xs_syntax_node_add(parser->tree, statement, condition);
     xs_syntax_node_add(parser->tree, statement, body);
@@ -311,9 +336,13 @@ XsSyntaxNode *parse_statement(SyntaxParser *parser)
   if(accept(parser, XS_TOKEN_KW_WHILE))
   {
     XsSyntaxNode *statement = node(parser, XS_SYNTAX_STMT_WHILE, (XsSpan){start, parser->previous.span.end});
-    expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after while");
+    bool parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
+    bool previous_suppression = parser->suppress_typed_object_literal;
+    parser->suppress_typed_object_literal = !parenthesized;
     xs_syntax_node_add(parser->tree, statement, parse_expression(parser, 1));
-    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after while condition");
+    parser->suppress_typed_object_literal = previous_suppression;
+    if(parenthesized)
+      expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after while condition");
     ++parser->loop_depth;
     xs_syntax_node_add(parser->tree, statement, parse_block(parser));
     --parser->loop_depth;

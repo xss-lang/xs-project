@@ -38,13 +38,13 @@ dependencies {
   addModule("https://github.com/xss-lang/externalModules/::XML::0.1.0")
 }
 
-sources {
-  include("sources/**/*.xs")
-  exclude("sources/tests/**")
+source {
+  include("Sources")
+  exclude("Sources/Tests/**")
 }
 
 test {
-  include("tests/**/*.xs")
+  include("Sources/Tests")
   framework("xs-test")
 }
 

@@ -148,7 +148,7 @@ _x2
 fn: Int = 1;
 class: Str = "A";
 module: Bool = true;
-imports: Int = 2;
+import: Int = 2;
 if: Int = 3;
 else: Int = 4;
 return: Int = 5;

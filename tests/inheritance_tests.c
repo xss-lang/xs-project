@@ -24,24 +24,24 @@ static int failures;
 
 static bool validate(const char *text)
 {
-  XsSource source = {.path = "Inheritance.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "Inheritance.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   bool success = xs_syntax_parse(&source, 201, &diagnostics, &tree);
   if(success)
     success = xs_hir_collect_symbols(&tree, &symbols, &diagnostics);
   if(success)
-    success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
+    success = xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics);
   if(success)
-    success = xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics);
+    success = xs_hir_resolve_types(&tree, &symbols, &import, &diagnostics);
   if(success)
-    success = xs_hir_validate_inheritance(&tree, &symbols, &imports, &diagnostics);
-  xs_hir_import_scope_free(&imports);
+    success = xs_hir_validate_inheritance(&tree, &symbols, &import, &diagnostics);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);

@@ -44,7 +44,7 @@ value_float: Float = 1.0;
 // native targets are x86-64 and ARM64.
 
 // Optional<T> is resolved as if the compiler had inserted
-// `imports optional; using namespace std::optional;` and brought
+// `import optional; using namespace std::optional;` and brought
 // std::optional::Optional<T> into scope as Optional<T>.
 // Optional<T> is compiler-provided enum data with `Some: T` and payload-free
 // `None` variants. The compiler makes both constructors available.
@@ -56,7 +56,7 @@ value_float: Float = 1.0;
 name: Optional<Str> = None;
 name = Some("Leitwolf");
 
-// Result is also special. `imports result;` is optional; the compiler behaves
+// Result is also special. `import result;` is optional; the compiler behaves
 // as if `using namespace std::result;` existed for Result<()>, Result<T, E>, Ok(...), and
 // Error(...). Result<T, E> is enum data and both payload types are unrestricted.
 // The only single-argument form is Result<()>, whose error payload defaults to Error.

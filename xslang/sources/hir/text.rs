@@ -88,7 +88,7 @@ pub fn module_symbols_to_xhir(module: &Module) -> String
   if !module.imports.is_empty()
   {
     let _ = writeln!(output);
-    let _ = writeln!(output, "imports");
+    let _ = writeln!(output, "import");
     for import in &module.imports
     {
       write_import(&mut output, import);

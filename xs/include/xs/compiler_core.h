@@ -70,7 +70,11 @@ const XsCompilerCoreSyntaxPacket *xs_compiler_core_syntax_packet(const XsCompile
 void xs_compiler_core_syntax_packet_free(XsCompilerCoreSyntaxStorage *storage);
 
 XsCompilerCoreFfiStatus xslang_compiler_core_session_create(const XsCompilerCoreSyntaxPacket *packet,
-                                                            XsCompilerCoreSession **session);
+                                                             XsCompilerCoreSession **session);
+XsCompilerCoreFfiStatus xslang_compiler_core_session_create_in_module(const XsCompilerCoreSyntaxPacket *packet,
+                                                                      const uint8_t *module_name,
+                                                                      uint64_t module_name_length,
+                                                                      XsCompilerCoreSession **session);
 XsCompilerCoreFfiStatus xslang_compiler_core_session_merge(const XsCompilerCoreSession *const *sessions,
                                                            uint64_t session_count, XsCompilerCoreSession **merged);
 uint64_t xslang_compiler_core_session_syntax_node_count(const XsCompilerCoreSession *session);

@@ -65,6 +65,17 @@ add_test(NAME kotlin_project_integer_operators_artifacts COMMAND xs_xse_artifact
   "sdiv i8" "udiv i64" "icmp ult i128" "icmp slt i128")
 set_tests_properties(kotlin_project_integer_operators_artifacts PROPERTIES
   TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_integer_operators)
+add_test(NAME kotlin_project_module_check COMMAND xs check --module ./Modules)
+set_tests_properties(kotlin_project_module_check PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/modules"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver
+  PASS_REGULAR_EXPRESSION "source\\[1\\].*Modules/Math/add.xs")
+add_test(NAME kotlin_project_module_requires_root COMMAND xs check)
+set_tests_properties(kotlin_project_module_requires_root PROPERTIES TIMEOUT 60 WILL_FAIL TRUE
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/modules"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver)
 set_tests_properties(
   kotlin_project_resolver_build
   kotlin_project_call_build kotlin_project_call_artifacts
@@ -72,5 +83,6 @@ set_tests_properties(
   kotlin_project_multi_file_native_build kotlin_project_multi_file_native_artifacts
   kotlin_project_integer_widths_build kotlin_project_integer_widths_artifacts
   kotlin_project_integer_operators_build kotlin_project_integer_operators_artifacts
+  kotlin_project_module_check
+  kotlin_project_module_requires_root
   PROPERTIES LABELS jvm)
-

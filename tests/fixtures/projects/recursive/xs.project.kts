@@ -3,8 +3,6 @@
 
 project("Recursive", "BETA", "0.1.7")
 
-sources {
-  include("sources/main.xs")
-  include("sources/even.xs")
-  include("sources/odd.xs")
+source {
+  include("sources")
 }

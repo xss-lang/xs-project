@@ -17,6 +17,7 @@ typedef struct
 typedef struct
 {
   const char *path;
+  const char *module_name;
   const char *text;
   size_t length;
 } XsSource;

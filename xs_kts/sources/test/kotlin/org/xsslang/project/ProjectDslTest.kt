@@ -25,7 +25,7 @@ class ProjectDslTest {
   fun splitFilesShareStateWithoutSectionOwnership() {
     val settings =
       ProjectContext().apply {
-        sources { include("sources/main.xs") }
+        source { include("sources") }
         compiler { warnings("low") }
       }
     val build =
@@ -35,7 +35,7 @@ class ProjectDslTest {
       }
     val plan = build.build()
     assertEquals("Split", plan.identity.name)
-    assertEquals(listOf("sources/main.xs"), plan.sourceIncludes)
+    assertEquals(listOf("sources"), plan.sourceIncludes)
     assertEquals(WarningLevel.LOW, plan.compiler.warningLevel)
   }
 
@@ -77,11 +77,11 @@ class ProjectDslTest {
     )
     assertEquals("Demo, BETA, 0.1.0", context.get("PROJECT"))
     assertEquals("LLVM", context.get("XS_BACKEND"))
+    assertEquals("xs", context.get("XS_EXTENSION"))
     assertFailsWith<ProjectConfigurationException> { context.get("MISSING") }
     context.authors(arrayOf("Leitwolf", "leitwolf@example.me"))
-    context.sources {
-      include("sources/main.xs")
-      include("sources/library.xs")
+    context.source {
+      include("sources")
       exclude("sources/tests/**")
     }
     context.compiler {
@@ -101,24 +101,75 @@ class ProjectDslTest {
     val context = ProjectContext()
     context.project("Demo", "BETA", "0.1.0")
     val error = assertFailsWith<ProjectConfigurationException> { context.build() }
-    assertTrue(error.message.orEmpty().contains("sources.include"))
+    assertTrue(error.message.orEmpty().contains("source.include"))
   }
 
   @Test
-  fun requiresOneExplicitMainSource() {
-    val missingMain =
+  fun sourceAndModuleRootsRejectGlobs() {
+    val sourceGlob =
       ProjectContext().apply {
         project("Demo", "BETA", "0.1.0")
-        sources { include("sources/library.xs") }
       }
-    assertFailsWith<ProjectConfigurationException> { missingMain.build() }
+    assertFailsWith<ProjectConfigurationException> { sourceGlob.source { include("sources/**/*.xs") } }
+    assertFailsWith<ProjectConfigurationException> { sourceGlob.module { include("Modules/*") } }
+    assertFailsWith<ProjectConfigurationException> { sourceGlob.test { include("Tests/*.xs") } }
+    sourceGlob.source { include("Sources") }
+    sourceGlob.test {
+      include("Tests")
+      exclude("Tests/fixtures/**")
+    }
+    assertEquals(listOf("Tests/fixtures/**"), sourceGlob.build().testExcludes)
+  }
 
-    val glob =
+  @Test
+  fun customSourceExtensionReplacesXsDiscovery() {
+    val root = Files.createTempDirectory("xs-project-extension-test-")
+    val sources = Files.createDirectories(root.resolve("Sources"))
+    val modules = Files.createDirectories(root.resolve("Modules"))
+    val tests = Files.createDirectories(root.resolve("Tests"))
+    Files.writeString(sources.resolve("main.xsharp"), "fn main() -> Long { return 0; }")
+    Files.writeString(sources.resolve("ignored.xs"), "fn ignored() -> Long { return 1; }")
+    Files.writeString(modules.resolve("math.xsharp"), "public fn add() -> Long { return 1; }")
+    Files.writeString(modules.resolve("ignored.xs"), "public fn ignored() -> Long { return 2; }")
+    Files.writeString(tests.resolve("smoke.xsharp"), "fn smoke() {}")
+    val output = root.resolve("sources.bin")
+    val context =
       ProjectContext().apply {
-        project("Demo", "BETA", "0.1.0")
-        sources { include("sources/**/*.xs") }
+        project("Extension", "BETA", "0.1.0")
+        set("XS_EXTENSION", "xsharp")
+        source { include("Sources") }
+        module { include("Modules") }
+        module {
+          name("Math")
+          add("Modules/*.xsharp")
+        }
+        test { include("Tests") }
       }
-    assertEquals(listOf("sources/**/*.xs"), glob.build().sourceIncludes)
+    val oldRoot = System.getProperty("xs.project.root")
+    val oldOutput = System.getProperty("xs.project.output")
+    val oldSources = System.getProperty("xs.project.sources")
+    try {
+      System.setProperty("xs.project.root", root.toString())
+      System.setProperty("xs.project.output", "sources0")
+      System.setProperty("xs.project.sources", output.toString())
+      ProjectOutput.emit(context.build())
+      val records =
+        Files
+          .readAllBytes(output)
+          .toString(StandardCharsets.UTF_8)
+          .split('\u0000')
+          .filter(String::isNotEmpty)
+      assertEquals(listOf("xs-project-sources-v2", "medium", "false", "true", "1", "1"), records.take(6))
+      assertEquals(
+        listOf(sources.resolve("main.xsharp").toString(), "Math", modules.resolve("math.xsharp").toString()),
+        records.drop(6),
+      )
+    } finally {
+      restoreProperty("xs.project.root", oldRoot)
+      restoreProperty("xs.project.output", oldOutput)
+      restoreProperty("xs.project.sources", oldSources)
+      root.toFile().deleteRecursively()
+    }
   }
 
   @Test
@@ -164,7 +215,7 @@ class ProjectDslTest {
   }
 
   @Test
-  fun expandsSourceGlobsWithMainFirstAndExcludes() {
+  fun expandsSourceDirectoriesRecursivelyWithMainFirstAndExcludes() {
     val root = Files.createTempDirectory("xs-project-glob-test-")
     val sources = Files.createDirectories(root.resolve("sources"))
     val tests = Files.createDirectories(sources.resolve("tests"))
@@ -175,8 +226,8 @@ class ProjectDslTest {
     val context =
       ProjectContext().apply {
         project("Glob", "BETA", "0.1.0")
-        sources {
-          include("sources/**/*.xs")
+        source {
+          include("sources")
           exclude("sources/tests/**")
         }
         compiler {
@@ -200,10 +251,66 @@ class ProjectDslTest {
           .split('\u0000')
           .filter(String::isNotEmpty)
       assertEquals(
-        listOf("xs-project-sources-v1", "all", "true", "true"),
-        paths.take(4),
+        listOf("xs-project-sources-v2", "all", "true", "true", "2", "0"),
+        paths.take(6),
       )
-      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths.drop(4))
+      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths.drop(6))
+    } finally {
+      restoreProperty("xs.project.root", oldRoot)
+      restoreProperty("xs.project.output", oldOutput)
+      restoreProperty("xs.project.sources", oldSources)
+      root.toFile().deleteRecursively()
+    }
+  }
+
+  @Test
+  fun resolvesExplicitModuleMemberships() {
+    val root = Files.createTempDirectory("xs-project-module-test-")
+    val sources = Files.createDirectories(root.resolve("Sources"))
+    val modules = Files.createDirectories(root.resolve("Modules/Example/Utils"))
+    Files.writeString(sources.resolve("main.xs"), "import MyModule;\nfn main() -> Long { return 0; }")
+    Files.writeString(modules.resolve("math.xs"), "public fn math(a: Int, b: Int) { a + b }")
+    Files.writeString(modules.resolve("topla.xs"), "public fn topla(a: Int, b: Int) { a + b }")
+    val output = root.resolve("sources.bin")
+    val context =
+      ProjectContext().apply {
+        project("Modules", "BETA", "0.1.0")
+        source { include("Sources") }
+        module { include("Modules") }
+        module {
+          name("MyModule")
+          add("Modules/Example/Utils/math*.xs")
+          submodule {
+            name("util")
+            add("Modules/Example/Utils/topla.xs")
+          }
+        }
+      }
+    val oldRoot = System.getProperty("xs.project.root")
+    val oldOutput = System.getProperty("xs.project.output")
+    val oldSources = System.getProperty("xs.project.sources")
+    try {
+      System.setProperty("xs.project.root", root.toString())
+      System.setProperty("xs.project.output", "sources0")
+      System.setProperty("xs.project.sources", output.toString())
+      ProjectOutput.emit(context.build())
+      val records =
+        Files
+          .readAllBytes(output)
+          .toString(StandardCharsets.UTF_8)
+          .split('\u0000')
+          .filter(String::isNotEmpty)
+      assertEquals(listOf("xs-project-sources-v2", "medium", "false", "true", "1", "2"), records.take(6))
+      assertEquals(sources.resolve("main.xs").toString(), records[6])
+      assertEquals(
+        listOf(
+          "MyModule",
+          modules.resolve("math.xs").toString(),
+          "MyModule::util",
+          modules.resolve("topla.xs").toString(),
+        ),
+        records.drop(7),
+      )
     } finally {
       restoreProperty("xs.project.root", oldRoot)
       restoreProperty("xs.project.output", oldOutput)

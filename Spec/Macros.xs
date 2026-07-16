@@ -55,7 +55,7 @@
 // Neither macro participates in macro_rules! lookup or matcher expansion, and
 // neither name can be declared or shadowed by a macro_rules! declaration.
 
-imports stdio;
+import stdio;
 
 // print!, println!, eprint!, eprintln!, and format! are normal macros exported
 // by Stdio. They are not compiler built-ins.
@@ -526,6 +526,18 @@ macro_rules! global_macro {
 
 
 // A top-level macro is global.
+
+// Macros are not prelude entries. `#[MacroExport]` places a top-level macro in
+// its module's exported macro registry. Importing that module makes the macro
+// available by its unqualified invocation name; qualified macro calls do not
+// exist.
+
+#[MacroExport]
+macro_rules! exported_notice {
+    () -> {
+        println!("exported");
+    };
+}
 
 
 // A macro may also be declared inside a scope.

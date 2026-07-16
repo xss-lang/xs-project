@@ -1,238 +1,190 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-// module system:
-
+// X# module system
 //
-// module declaration is optional.
+// `module` is not an X# keyword. A .xs file never declares its own module.
+// Module identity and file membership are project metadata supplied by
+// xs-project through xs.module.kts.
 //
-// If a file will be imported by another file,
-// it must contain a module declaration.
+// xs-project is required when a project uses xs.module.kts. xs-compiler does
+// not interpret Kotlin scripts and does not guess module membership from a
+// directory or file name.
 //
-// Only one module declaration is allowed per file.
+// Project source selection in xs.project.kts:
 //
-// module name does not have to match the file name.
+// project("Example", "BETA", "0.1.0")
 //
-// namespace is optional.
-// namespace must be declared under module.
-// namespace does not use braces.
-// namespace declarations are chained.
+// source {
+//   include("Sources")
+// }
 //
-// public namespace is file-scoped.
-// It does not promote contained declarations; omitted visibility remains internal.
+// module {
+//   include("Modules")
+// }
 //
-// Non-public members are not visible from other modules.
+// Module membership in xs.module.kts:
 //
-// Duplicate imports are allowed.
-// Duplicate imports are treated as one import.
+// module {
+//   name("Math")
+//   members {
+//     add("Modules/Math/*.xs")
+//   }
+// }
 //
+// module {
+//   name("Application")
+//   add("Modules/Application/start.xs")
+//   submodule {
+//     name("util")
+//     add("Modules/Application/Utils/**/*.xs")
+//   }
+// }
+//
+// `add` accepts either one concrete .xs path or a glob. Direct add/members
+// records belong to the named module. A submodule record belongs to the
+// qualified module path formed with `::`.
+//
+// - Math members are named as Math::<item>.
+// - Application members are named as Application::<item>.
+// - Application util members are named as Application::util::<item>.
+//
+// A module source must be selected by module.include(...) and assigned exactly
+// once by xs.module.kts. An unassigned file, duplicate membership, missing path,
+// empty glob, or source/module registry overlap is a project error.
 
-// module declaration
-module math;
 
-// namespace
-module math;
+// ============================================================
+// Import
+// ============================================================
 
-namespace advanced;
+// `import` makes a module available through its qualified name. It does not
+// copy public declarations into local scope.
 
-// chained namespace
-module math;
+import Math;
 
-namespace advanced;
-namespace algebra;
+fn use_qualified_module() -> Int
+{
+  return Math::add(10, 20);
+}
 
-// equivalent full path:
-// math::advanced::algebra
+// Multiple modules may be imported by one declaration.
+
+import Geometry, Text;
+
+// Duplicate import records are valid and behave as one import.
+
+import Math;
 
 
-// public namespace
-module math;
+// ============================================================
+// Using
+// ============================================================
 
-public namespace advanced;
+// `using` makes one qualified item available under a local name. Glob is not
+// allowed with using.
 
-public fn add(a: Int, b: Int) -> Int {
-    return a + b;
+using Math::add;
+using sum = Math::add;
+
+fn use_selected_item() -> Int
+{
+  return add(1, 2) + sum(3, 4);
+}
+
+// `using namespace` makes the public members of a namespace/module path
+// available. Glob is allowed only with using namespace.
+
+using namespace Geometry::*;
+
+// `using namespace Geometry;` is also valid. `using Geometry::*;` is invalid;
+// only using namespace may carry a trailing glob.
+
+
+// ============================================================
+// Namespace
+// ============================================================
+
+// namespace remains a source declaration. It organizes declarations inside
+// the module assigned by project metadata. It does not assign module identity.
+
+namespace detail;
+
+internal fn normalize(value: Int) -> Int
+{
+  return value;
+}
+
+// If this file belongs to module Math, the function above is named
+// Math::detail::normalize.
+//
+// Namespace syntax is optional. A file may instead contain multiple block
+// namespaces:
+
+// namespace algebra
+// {
+//   public fn identity(value: Int) -> Int
+//   {
+//     return value;
+//   }
+// }
+//
+// namespace geometry
+// {
+//   public fn origin() -> (Int, Int)
+//   {
+//     return (0, 0);
+//   }
+// }
+
+// One file may use one source-scoped `namespace path;` followed by one or more
+// block-scoped namespaces. Block namespaces may nest. A file may also omit the
+// source-scoped form and use only block namespaces. Namespace syntax itself is
+// optional.
+
+
+// ============================================================
+// Visibility
+// ============================================================
+
+// The default visibility is internal. Internal declarations are visible to
+// every source assigned to the same module, including separate physical files.
+// public declarations are visible to importing modules. private/protected
+// retain their type/member visibility meanings.
+
+public fn exported(value: Int) -> Int
+{
+  return value;
+}
+
+internal fn module_only(value: Int) -> Int
+{
+  return value;
 }
 
 
-// normal import
-// imports makes the module usable through its qualified name.
-// It does not place the module's public symbols directly in local scope.
-imports math;
-
-fn main() {
-    result: Int = math::add(1, 2);
-}
-
-
-// multiple imports
-imports stdio, math, collections;
-
-
-// namespace using declaration
-using namespace math;
-
-fn main() {
-    result: Int = add(1, 2);
-}
-
-
-// using declaration
-// using declarations place one selected public name in local scope.
-using math::add;
-
-fn main() {
-    result: Int = add(1, 2);
-}
-
-
-// multiple using declarations
-using math::add;
-using math::subtract;
-
-fn main() {
-    a: Int = add(1, 2);
-    b: Int = subtract(5, 3);
-}
-
-
-// using alias declaration
-using sum = math::add;
-
-fn main() {
-    result: Int = sum(1, 2);
-}
-
-
-// fully qualified enum access
-imports math;
-
-fn main() {
-    color: math::Color = math::Color::Red;
-}
-
-
-// fully qualified namespace enum access
-imports math;
-
-fn main() {
-    color: math::advanced::Color = math::advanced::Color::Red;
-}
-
-
-// direct enum access after namespace using
-using namespace math;
-
-fn main() {
-    color: Color = Color::Red;
-}
-
-
-// direct enum access after using declaration
-using math::Color;
-
-fn main() {
-    color: Color = Color::Red;
-}
-
-
-// duplicate imports
-imports math;
-imports math;
-
-imports math, math;
-
-using math::add;
-using math::add;
-
-// Duplicate imports are valid and treated as one import.
-
-
-// using name collision
-using math::add;
-using utils::add;
-
-fn main() {
-    math::add(1, 2);
-    utils::add(1, 2);
-}
-
-// If the same local name is opened from multiple modules,
-// it is a diagnostic. Keep the calls qualified instead.
-
-
-// VALID
-module calculator;
-
-fn add(a: Int, b: Int) -> Int {
-    return a + b;
-}
-
-// This module is imported as calculator.
-
-
-// VALID
-imports calculator;
-
-fn main() {
-    result: Int = calculator::add(1, 2);
-}
-
-
-// VALID
-fn main() {
-}
-
-// module is optional if the file is not imported.
-
-
-// VALID
-module math;
-
-namespace advanced;
-namespace algebra;
-
-fn add() {
-}
-
-
-// INVALID
-fn add(a: Int, b: Int) -> Int {
-    return a + b;
-}
-
-// This file cannot be imported because it has no module declaration.
-
-
-// INVALID
-module math;
-module utils;
-
-// Only one module declaration is allowed per file.
-
-
-// INVALID
-namespace advanced;
-
-module math;
-
-// namespace must be declared under module.
-
-
-// INVALID
-namespace advanced {
-}
-
-// namespace does not use braces.
-
-
-// INVALID
-module math;
-
-fn internal_helper() {
-}
-
-// from another file:
-using math::internal_helper;
-
-// Non-public members are not visible from other modules.
+// ============================================================
+// Canonical project layout
+// ============================================================
+
+// For X# sources, PascalCase directory names and snake_case .xs file names are
+// canonical. This is a style convention, not a compilation requirement.
+//
+// Canonical:
+//   Modules/Math/integer_ops.xs
+//   Modules/Application/Utils/path_tools.xs
+//
+// Accepted but non-canonical:
+//   modules/math/IntegerOps.xs
+
+
+// ============================================================
+// Invalid legacy syntax
+// ============================================================
+
+// The following is not an X# declaration:
+//
+// module math;
+//
+// `module` lexes as an ordinary identifier. Module membership can only come
+// from project metadata.

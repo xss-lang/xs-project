@@ -18,7 +18,7 @@
 // set from an array. Collection member names use snake_case.
 //
 
-imports stdio;
+import stdio;
 
 // ============================================================
 // Fixed arrays

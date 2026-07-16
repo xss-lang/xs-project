@@ -26,7 +26,8 @@ typedef enum
 } XsHirStandardLookup;
 
 const XsHirStandardTypeInfo *xs_hir_standard_type_find(const char *name);
-XsHirStandardLookup xs_hir_standard_type_lookup(const XsHirStandardTypeInfo *type, const XsHirImportScope *imports);
-XsHirStandardLookup xs_hir_standard_call_lookup(const char *name, const XsHirImportScope *imports);
+XsHirStandardLookup xs_hir_standard_type_lookup(const XsHirStandardTypeInfo *type, const XsHirImportScope *import);
+XsHirStandardLookup xs_hir_standard_call_lookup(const char *name, const XsHirImportScope *import);
+bool xs_hir_standard_module_name(const char *name);
 
 #endif

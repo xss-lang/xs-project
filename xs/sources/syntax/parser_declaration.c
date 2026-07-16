@@ -272,7 +272,7 @@ static XsSyntaxNode *parse_import(SyntaxParser *parser, bool selected, size_t st
   if(selected)
   {
     xs_syntax_node_add(parser->tree, import, parse_path(parser));
-    expect(parser, XS_TOKEN_KW_IMPORTS, "expected imports after module path");
+    expect(parser, XS_TOKEN_KW_IMPORT, "expected import after module path");
     if(accept_trailing_glob(parser))
     {
       import->flags |= XS_SYNTAX_FLAG_WILDCARD;
@@ -331,7 +331,7 @@ static XsSyntaxNode *parse_using(SyntaxParser *parser, size_t start)
     using_decl->flags |= XS_SYNTAX_FLAG_WILDCARD;
   if((using_decl->flags & XS_SYNTAX_FLAG_WILDCARD) != 0 && !namespace_using)
     xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                       "using does not support glob imports; use 'using namespace' instead");
+                       "using does not support glob import; use 'using namespace' instead");
   expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after using declaration");
   finish_node(parser, using_decl, parser->previous.span.end);
   return using_decl;
@@ -783,7 +783,11 @@ static XsSyntaxNode *parse_class(SyntaxParser *parser, Modifiers modifiers, size
       else if(accept(parser, XS_TOKEN_KW_DATA))
         xs_syntax_node_add(parser->tree, declaration, parse_data(parser, member, before));
       else if(accept(parser, XS_TOKEN_KW_MACRO_RULES))
-        xs_syntax_node_add(parser->tree, declaration, parse_macro(parser, before));
+      {
+        XsSyntaxNode *macro = parse_macro(parser, before);
+        attach_modifiers(parser, macro, member);
+        xs_syntax_node_add(parser->tree, declaration, macro);
+      }
       else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_BANG)
         xs_syntax_node_add(parser->tree, declaration, parse_declaration_macro_call(parser, before));
       else if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_COLON)
@@ -855,18 +859,50 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
 {
   size_t start = parser->current.span.start;
   Modifiers modifiers = parse_modifiers(parser);
-  if(accept(parser, XS_TOKEN_KW_MODULE) || accept(parser, XS_TOKEN_KW_NAMESPACE))
+  if(accept(parser, XS_TOKEN_KW_NAMESPACE))
   {
-    bool module = parser->previous.kind == XS_TOKEN_KW_MODULE;
-    XsSyntaxNode *declaration = node(parser, module ? XS_SYNTAX_DECL_MODULE : XS_SYNTAX_DECL_NAMESPACE,
-                                     (XsSpan){start, parser->previous.span.end});
+    XsSyntaxNode *declaration = node(parser, XS_SYNTAX_DECL_NAMESPACE, (XsSpan){start, parser->previous.span.end});
     attach_modifiers(parser, declaration, modifiers);
     xs_syntax_node_add(parser->tree, declaration, parse_path(parser));
-    expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after module or namespace declaration");
+    if(!top_level)
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                         "namespace declarations are only valid at file or namespace scope");
+    if(accept(parser, XS_TOKEN_SEMICOLON))
+    {
+      if(parser->has_source_namespace)
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                           "a file may contain only one source-scoped namespace");
+      if(parser->seen_non_namespace)
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
+                           "a source-scoped namespace must precede ordinary declarations");
+      parser->has_source_namespace = true;
+    }
+    else if(accept(parser, XS_TOKEN_LEFT_BRACE))
+    {
+      declaration->flags |= XS_SYNTAX_FLAG_BLOCK_NAMESPACE;
+      parser->seen_non_namespace = true;
+      while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
+      {
+        size_t before = parser->current.span.start;
+        xs_syntax_node_add(parser->tree, declaration, parse_declaration(parser, true));
+        if(parser->current.span.start == before)
+        {
+          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                             "parser made no progress in namespace block");
+          advance(parser);
+        }
+      }
+      expect(parser, XS_TOKEN_RIGHT_BRACE, "expected '}' after namespace block");
+    }
+    else
+    {
+      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->current.span,
+                         "expected ';' or '{' after namespace path");
+    }
     finish_node(parser, declaration, parser->previous.span.end);
     return declaration;
   }
-  if(accept(parser, XS_TOKEN_KW_IMPORTS))
+  if(accept(parser, XS_TOKEN_KW_IMPORT))
     return parse_import(parser, false, start);
   if(accept(parser, XS_TOKEN_KW_USING))
     return parse_using(parser, start);
@@ -888,7 +924,11 @@ XsSyntaxNode *parse_declaration(SyntaxParser *parser, bool top_level)
   if(accept(parser, XS_TOKEN_KW_DATA))
     return parse_data(parser, modifiers, start);
   if(accept(parser, XS_TOKEN_KW_MACRO_RULES))
-    return parse_macro(parser, start);
+  {
+    XsSyntaxNode *macro = parse_macro(parser, start);
+    attach_modifiers(parser, macro, modifiers);
+    return macro;
+  }
   if(parser->current.kind == XS_TOKEN_IDENTIFIER && parser->next.kind == XS_TOKEN_BANG)
     return parse_declaration_macro_call(parser, start);
   if(parser->current.kind == XS_TOKEN_KW_VAL || parser->current.kind == XS_TOKEN_KW_CONST ||

@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Reads an application log and prints level counts plus the newest error line.
 
-module programs::log_aggregator;
 
-imports collections, fs, optional, stdio, process;
+
+import collections, fs, optional, stdio, process;
 
 data LogEntry {
     level: Str;

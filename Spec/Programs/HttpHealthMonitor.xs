@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Concurrently checks HTTP endpoints and prints a compact health report.
 
-module programs::http_health_monitor;
 
-imports http, collections, thread, sync, stdio;
+
+import http, collections, thread, sync, stdio;
 
 data Endpoint {
     name: Str;

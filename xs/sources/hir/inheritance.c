@@ -85,13 +85,13 @@ static bool supports_base_list(const XsHirSymbol *symbol)
 }
 
 static const XsHirSymbol *resolve_base(const XsSyntaxNode *type, const char *namespace_name,
-                                       const XsHirSymbolTable *symbols, const XsHirImportScope *imports)
+                                       const XsHirSymbolTable *symbols, const XsHirImportScope *import)
 {
   const XsSyntaxNode *named = base_named_type(type);
   char *path = xs_hir_path_to_string(xs_hir_first_child_kind(named, XS_SYNTAX_PATH));
   if(path == nullptr)
     return nullptr;
-  const XsHirImportBinding *binding = xs_hir_import_scope_find(imports, path);
+  const XsHirImportBinding *binding = xs_hir_import_scope_find(import, path);
   const XsHirSymbol *symbol = binding == nullptr ? nullptr : binding->symbol;
   if(symbol == nullptr && strchr(path, '.') != nullptr)
     symbol = xs_hir_symbol_table_find(symbols, path);
@@ -136,7 +136,7 @@ static bool method_signature_equal(const XsSyntaxNode *left, const XsSyntaxNode 
 }
 
 static void find_override_match(const XsHirSymbol *base, const XsSyntaxNode *method, const XsHirSymbolTable *symbols,
-                                const XsHirImportScope *imports, size_t depth, OverrideMatch *match)
+                                const XsHirImportScope *import, size_t depth, OverrideMatch *match)
 {
   if(base == nullptr || base->kind != XS_HIR_SYMBOL_CLASS || depth > symbols->count)
     return;
@@ -156,13 +156,13 @@ static void find_override_match(const XsHirSymbol *base, const XsSyntaxNode *met
     const XsSyntaxNode *type = base->syntax->children[index];
     if(!is_base_type_node(type))
       continue;
-    const XsHirSymbol *next = resolve_base(type, base->namespace_name, symbols, imports);
-    find_override_match(next, method, symbols, imports, depth + 1, match);
+    const XsHirSymbol *next = resolve_base(type, base->namespace_name, symbols, import);
+    find_override_match(next, method, symbols, import, depth + 1, match);
   }
 }
 
 static bool inherits_from(const XsHirSymbol *symbol, const XsHirSymbol *target, const XsHirSymbolTable *symbols,
-                          const XsHirImportScope *imports, size_t depth)
+                          const XsHirImportScope *import, size_t depth)
 {
   if(symbol == nullptr || depth > symbols->count)
     return false;
@@ -173,8 +173,8 @@ static bool inherits_from(const XsHirSymbol *symbol, const XsHirSymbol *target, 
     const XsSyntaxNode *type = symbol->syntax->children[index];
     if(!is_base_type_node(type))
       continue;
-    const XsHirSymbol *base = resolve_base(type, symbol->namespace_name, symbols, imports);
-    if(inherits_from(base, target, symbols, imports, depth + 1))
+    const XsHirSymbol *base = resolve_base(type, symbol->namespace_name, symbols, import);
+    if(inherits_from(base, target, symbols, import, depth + 1))
       return true;
   }
   return false;
@@ -186,9 +186,9 @@ static bool report(XsDiagnostics *diagnostics, const XsSyntaxNode *node, const c
 }
 
 static bool validate_base(const XsHirSymbol *owner, const XsSyntaxNode *type, const XsHirSymbolTable *symbols,
-                          const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+                          const XsHirImportScope *import, XsDiagnostics *diagnostics)
 {
-  const XsHirSymbol *base = resolve_base(type, owner->namespace_name, symbols, imports);
+  const XsHirSymbol *base = resolve_base(type, owner->namespace_name, symbols, import);
   if(base == nullptr)
   {
     if(!standard_enum_data_family(type))
@@ -210,14 +210,14 @@ static bool validate_base(const XsHirSymbol *owner, const XsSyntaxNode *type, co
     success = report(diagnostics, type, "enum data types may inherit only from enum data types") && success;
   if((base->syntax->flags & XS_SYNTAX_FLAG_SEALED) != 0)
     success = report(diagnostics, type, "sealed classes cannot be inherited") && success;
-  if(inherits_from(base, owner, symbols, imports, 0))
+  if(inherits_from(base, owner, symbols, import, 0))
     success = report(diagnostics, type, "inheritance cycle detected") && success;
   for(size_t index = 0; index < owner->syntax->child_count; ++index)
   {
     const XsSyntaxNode *previous = owner->syntax->children[index];
     if(previous == type)
       break;
-    if(is_base_type_node(previous) && resolve_base(previous, owner->namespace_name, symbols, imports) == base)
+    if(is_base_type_node(previous) && resolve_base(previous, owner->namespace_name, symbols, import) == base)
     {
       success = report(diagnostics, type, "duplicate type in inheritance base list") && success;
       break;
@@ -227,7 +227,7 @@ static bool validate_base(const XsHirSymbol *owner, const XsSyntaxNode *type, co
 }
 
 static bool validate_overrides(const XsHirSymbol *owner, const XsHirSymbolTable *symbols,
-                               const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+                               const XsHirImportScope *import, XsDiagnostics *diagnostics)
 {
   bool success = true;
   for(size_t method_index = 0; method_index < owner->syntax->child_count; ++method_index)
@@ -241,7 +241,7 @@ static bool validate_overrides(const XsHirSymbol *owner, const XsHirSymbolTable 
       const XsSyntaxNode *type = owner->syntax->children[base_index];
       if(!is_base_type_node(type))
         continue;
-      find_override_match(resolve_base(type, owner->namespace_name, symbols, imports), method, symbols, imports, 0,
+      find_override_match(resolve_base(type, owner->namespace_name, symbols, import), method, symbols, import, 0,
                           &match);
     }
     if(!match.found)
@@ -253,9 +253,9 @@ static bool validate_overrides(const XsHirSymbol *owner, const XsHirSymbolTable 
 }
 
 bool xs_hir_validate_inheritance(const XsSyntaxTree *tree, const XsHirSymbolTable *symbols,
-                                 const XsHirImportScope *imports, XsDiagnostics *diagnostics)
+                                 const XsHirImportScope *import, XsDiagnostics *diagnostics)
 {
-  if(tree == nullptr || symbols == nullptr || imports == nullptr || diagnostics == nullptr)
+  if(tree == nullptr || symbols == nullptr || import == nullptr || diagnostics == nullptr)
     return false;
   bool success = true;
   for(size_t symbol_index = 0; symbol_index < symbols->count; ++symbol_index)
@@ -267,10 +267,10 @@ bool xs_hir_validate_inheritance(const XsSyntaxTree *tree, const XsHirSymbolTabl
     {
       const XsSyntaxNode *type = owner->syntax->children[child_index];
       if(is_base_type_node(type))
-        success = validate_base(owner, type, symbols, imports, diagnostics) && success;
+        success = validate_base(owner, type, symbols, import, diagnostics) && success;
     }
     if(owner->kind == XS_HIR_SYMBOL_CLASS)
-      success = validate_overrides(owner, symbols, imports, diagnostics) && success;
+      success = validate_overrides(owner, symbols, import, diagnostics) && success;
   }
   return success && !xs_diagnostics_has_error(diagnostics);
 }

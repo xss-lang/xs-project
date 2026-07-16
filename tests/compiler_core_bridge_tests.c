@@ -44,7 +44,7 @@ static bool text_contains(const uint8_t *text, uint64_t text_length, const char 
 
 static void test_materialized_syntax_packet(void)
 {
-  const char *text = "module app;\n"
+  const char *text = ""
                      "macro_rules! make { () -> { incomplete fn generated(); }; }\n"
                      "make!();\n"
                      "fn add(a: Long, b: Long) -> Long { return a + b; }\n"
@@ -70,7 +70,7 @@ static void test_materialized_syntax_packet(void)
                      "(left | right) & (left ^ right) & ((left << right) >> right); }\n"
                      "fn wide_compare(left: Int, right: Int) -> Bool { return left >= right; }\n"
                      "fn main() -> Long { if (true) { return add(3, 4); } else { return choose(false); } }\n";
-  XsSource source = {.path = "Bridge.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "Bridge.xs", .module_name = "app", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsSyntaxTree expanded;

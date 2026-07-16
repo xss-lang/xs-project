@@ -35,7 +35,7 @@
 //
 
 
-imports collections;
+import collections;
 
 
 // array iteration

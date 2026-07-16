@@ -279,6 +279,7 @@ const char *xs_syntax_kind_name(XsSyntaxKind kind)
       "map literal",
       "map entry",
       "set literal",
+      "tuple field",
   };
   if((size_t)kind >= sizeof(names) / sizeof(names[0]))
     return "unknown syntax node";

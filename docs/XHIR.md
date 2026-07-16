@@ -12,7 +12,7 @@ HIR is split into coordinated THIR and XHIR sides. THIR carries the typed, sourc
 the normalized high-level operations used by MIR lowering. These are parts of one HIR layer, not unrelated pipeline IRs.
 A `.xhir` document represents XHIR only and is not a textual THIR dump.
 
-XHIR exists for MIR input and semantic inspection: names, modules, imports, declarations, resolved types, generic
+XHIR exists for MIR input and semantic inspection: names, modules, import, declarations, resolved types, generic
 parameters, interfaces, macro expansion results, and expression/type-check information. It should read like a structured
 semantic tree, not like an instruction stream.
 
@@ -37,7 +37,7 @@ The exact grammar will be tightened as HIR stabilizes, but the intended shape is
 .xhir version 0
 module App
 
-imports
+import
   import std::io
 .end
 
@@ -66,7 +66,7 @@ reviewer should be able to understand which declaration or expression changed wi
 Rust `xslang` currently parses the module-symbol and checked-function subsets emitted by the first XHIR writer:
 
 - `.xhir version 0`
-- `module <name>` with `imports`, `declarations`, and `symbol` records
+- `module <name>` with `import`, `declarations`, and `symbol` records
 - `function <name>` with `signature`, `locals`, and `body`
 - explicit `.end` section markers and `.program end` document marker
 - primitive and named type records

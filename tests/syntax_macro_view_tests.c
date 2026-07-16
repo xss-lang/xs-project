@@ -59,14 +59,14 @@ static bool has_identifier(const XsSyntaxNode *node, const char *value)
 
 static void test_top_level_declaration_view_expands_macro_calls(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! make {\n"
                      "  (first) -> { incomplete fn First(); };\n"
                      "  (second) -> { incomplete fn Second(); };\n"
                      "}\n"
                      "make!(first);\n"
                      "data Tail { value: Int }\n";
-  XsSource source = {.path = "ExpandedView.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "ExpandedView.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroDeclarationExpansionSet declarations;
@@ -77,11 +77,11 @@ static void test_top_level_declaration_view_expands_macro_calls(void)
   CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
   CHECK(declarations.count == 1);
   CHECK(xs_macro_expand_top_level_declarations(&tree, &declarations, &diagnostics, &expanded));
-  CHECK(expanded.count == 4);
-  CHECK(expanded.count < 3 || expanded.items[2].from_macro_expansion);
-  CHECK(expanded.count < 3 || expanded.items[2].declaration->kind == XS_SYNTAX_DECL_FUNCTION);
-  CHECK(expanded.count < 4 || expanded.items[3].declaration->kind == XS_SYNTAX_DECL_DATA);
-  const XsSyntaxNode *first = expanded.count < 3 ? nullptr : first_identifier(expanded.items[2].declaration);
+  CHECK(expanded.count == 3);
+  CHECK(expanded.count < 2 || expanded.items[1].from_macro_expansion);
+  CHECK(expanded.count < 2 || expanded.items[1].declaration->kind == XS_SYNTAX_DECL_FUNCTION);
+  CHECK(expanded.count < 3 || expanded.items[2].declaration->kind == XS_SYNTAX_DECL_DATA);
+  const XsSyntaxNode *first = expanded.count < 2 ? nullptr : first_identifier(expanded.items[1].declaration);
   CHECK(first != nullptr && text_is(first->text, "First"));
   xs_macro_expanded_declaration_set_free(&expanded);
   xs_macro_declaration_expansion_set_free(&declarations);
@@ -91,12 +91,12 @@ static void test_top_level_declaration_view_expands_macro_calls(void)
 
 static void test_child_declaration_view_expands_member_macro_calls(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "  make!();\n"
                      "}\n";
-  XsSource source = {.path = "ExpandedMemberView.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "ExpandedMemberView.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroDeclarationExpansionSet declarations;
@@ -126,12 +126,12 @@ static void test_child_declaration_view_expands_member_macro_calls(void)
 
 static void test_child_declaration_view_expands_field_like_macro_calls(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  macro_rules! make { () -> { value: Int; }; }\n"
                      "  make!();\n"
                      "}\n";
-  XsSource source = {.path = "ExpandedFieldLikeMemberView.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "ExpandedFieldLikeMemberView.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroDeclarationExpansionSet declarations;
@@ -161,7 +161,7 @@ static void test_child_declaration_view_expands_field_like_macro_calls(void)
 
 static void test_child_statement_view_expands_macro_calls(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! emit { () -> { Known(); }; }\n"
                      "fn Known() {}\n"
                      "fn Main() {\n"
@@ -169,7 +169,7 @@ static void test_child_statement_view_expands_macro_calls(void)
                      "  emit!();\n"
                      "  After();\n"
                      "}\n";
-  XsSource source = {.path = "ExpandedStatementView.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "ExpandedStatementView.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroStatementExpansionSet statements;
@@ -205,12 +205,12 @@ static void test_child_statement_view_expands_macro_calls(void)
 
 static void test_materialized_expanded_tree_replaces_macro_calls(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "macro_rules! emit { () -> { Generated(); }; }\n"
                      "make!();\n"
                      "fn Main() { emit!(); }\n";
-  XsSource source = {.path = "MaterializedMacroTree.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MaterializedMacroTree.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsSyntaxTree expanded_tree;

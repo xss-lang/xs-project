@@ -10,7 +10,7 @@
 // std::fs::write does not format text and does not add a newline.
 //
 
-imports fs, stdio, collections, result;
+import fs, stdio, collections, result;
 
 
 // raw writes

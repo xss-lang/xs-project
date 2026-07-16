@@ -95,7 +95,8 @@ static XsSyntaxNode *parse_generic_qualifier(SyntaxParser *parser, XsSyntaxNode 
 
 static XsSyntaxNode *parse_member_identifier(SyntaxParser *parser)
 {
-  if(parser->current.kind == XS_TOKEN_IDENTIFIER || parser->current.kind == XS_TOKEN_KW_NONE)
+  if(parser->current.kind == XS_TOKEN_IDENTIFIER || parser->current.kind == XS_TOKEN_INTEGER ||
+     parser->current.kind == XS_TOKEN_KW_NONE)
   {
     XsToken token = parser->current;
     advance(parser);
@@ -105,22 +106,37 @@ static XsSyntaxNode *parse_member_identifier(SyntaxParser *parser)
   return nullptr;
 }
 
-static void parse_parenthesized_condition(SyntaxParser *parser, XsSyntaxNode *parent, const char *owner)
+static XsSyntaxNode *parse_tuple_expression_element(SyntaxParser *parser)
 {
-  char open_message[64];
+  if(parser->current.kind != XS_TOKEN_IDENTIFIER || parser->next.kind != XS_TOKEN_COLON)
+    return parse_expression(parser, 1);
+  size_t start = parser->current.span.start;
+  XsSyntaxNode *field = node(parser, XS_SYNTAX_TUPLE_FIELD, (XsSpan){start, start});
+  xs_syntax_node_add(parser->tree, field, identifier(parser));
+  expect(parser, XS_TOKEN_COLON, "expected ':' after tuple field name");
+  xs_syntax_node_add(parser->tree, field, parse_expression(parser, 1));
+  finish_node(parser, field, parser->previous.span.end);
+  return field;
+}
+
+static void parse_control_value(SyntaxParser *parser, XsSyntaxNode *parent, const char *owner)
+{
   char close_message[64];
-  snprintf(open_message, sizeof(open_message), "expected '(' after %s", owner);
   snprintf(close_message, sizeof(close_message), "expected ')' after %s condition", owner);
-  expect(parser, XS_TOKEN_LEFT_PAREN, open_message);
+  bool parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
+  bool previous_suppression = parser->suppress_typed_object_literal;
+  parser->suppress_typed_object_literal = !parenthesized;
   xs_syntax_node_add(parser->tree, parent, parse_expression(parser, 1));
-  expect(parser, XS_TOKEN_RIGHT_PAREN, close_message);
+  parser->suppress_typed_object_literal = previous_suppression;
+  if(parenthesized)
+    expect(parser, XS_TOKEN_RIGHT_PAREN, close_message);
 }
 
 static XsSyntaxNode *parse_if_expression(SyntaxParser *parser, size_t start)
 {
   expect(parser, XS_TOKEN_KW_IF, "expected 'if'");
   XsSyntaxNode *expression = node(parser, XS_SYNTAX_EXPR_IF, (XsSpan){start, parser->previous.span.end});
-  parse_parenthesized_condition(parser, expression, "if");
+  parse_control_value(parser, expression, "if");
   xs_syntax_node_add(parser->tree, expression, parse_block(parser));
   if(!expect(parser, XS_TOKEN_KW_ELSE, "if expression requires else"))
   {
@@ -136,9 +152,13 @@ static XsSyntaxNode *parse_match_expression(SyntaxParser *parser, size_t start)
 {
   expect(parser, XS_TOKEN_KW_MATCH, "expected 'match'");
   XsSyntaxNode *expression = node(parser, XS_SYNTAX_EXPR_MATCH, (XsSpan){start, parser->previous.span.end});
-  expect(parser, XS_TOKEN_LEFT_PAREN, "expected '(' after match");
+  bool parenthesized = accept(parser, XS_TOKEN_LEFT_PAREN);
+  bool previous_suppression = parser->suppress_typed_object_literal;
+  parser->suppress_typed_object_literal = !parenthesized;
   xs_syntax_node_add(parser->tree, expression, parse_expression(parser, 1));
-  expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after match value");
+  parser->suppress_typed_object_literal = previous_suppression;
+  if(parenthesized)
+    expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after match value");
   expect(parser, XS_TOKEN_LEFT_BRACE, "expected '{' before match arms");
   while(parser->current.kind != XS_TOKEN_RIGHT_BRACE && parser->current.kind != XS_TOKEN_EOF)
   {
@@ -423,17 +443,32 @@ static XsSyntaxNode *parse_primary(SyntaxParser *parser)
     advance(parser);
     if(accept(parser, XS_TOKEN_RIGHT_PAREN))
       return node(parser, XS_SYNTAX_EXPR_TUPLE, (XsSpan){start, parser->previous.span.end});
-    XsSyntaxNode *first = parse_expression(parser, 1);
+    XsSyntaxNode *first = parse_tuple_expression_element(parser);
     if(!accept(parser, XS_TOKEN_COMMA))
     {
       expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after expression");
+      if(first != nullptr && first->kind == XS_SYNTAX_TUPLE_FIELD)
+      {
+        XsSyntaxNode *tuple = node(parser, XS_SYNTAX_EXPR_TUPLE, (XsSpan){start, start});
+        xs_syntax_node_add(parser->tree, tuple, first);
+        finish_node(parser, tuple, parser->previous.span.end);
+        return tuple;
+      }
       return first;
     }
     XsSyntaxNode *tuple = node(parser, XS_SYNTAX_EXPR_TUPLE, (XsSpan){start, start});
+    bool named = first != nullptr && first->kind == XS_SYNTAX_TUPLE_FIELD;
     xs_syntax_node_add(parser->tree, tuple, first);
     do
     {
-      xs_syntax_node_add(parser->tree, tuple, parse_expression(parser, 1));
+      if(parser->current.kind == XS_TOKEN_RIGHT_PAREN)
+        break;
+      XsSyntaxNode *element = parse_tuple_expression_element(parser);
+      if(element != nullptr && (element->kind == XS_SYNTAX_TUPLE_FIELD) != named)
+        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR,
+                           (XsSpan){element->span.start_offset, element->span.end_offset},
+                           "tuple expression cannot mix named and positional elements");
+      xs_syntax_node_add(parser->tree, tuple, element);
     } while(accept(parser, XS_TOKEN_COMMA));
     expect(parser, XS_TOKEN_RIGHT_PAREN, "expected ')' after tuple expression");
     finish_node(parser, tuple, parser->previous.span.end);
@@ -643,7 +678,8 @@ static XsSyntaxNode *parse_postfix(SyntaxParser *parser)
       finish_node(parser, update, parser->previous.span.end);
       expression = update;
     }
-    else if(parser->current.kind == XS_TOKEN_LEFT_BRACE && expression != nullptr &&
+    else if(!parser->suppress_typed_object_literal && parser->current.kind == XS_TOKEN_LEFT_BRACE &&
+            expression != nullptr &&
             (expression->kind == XS_SYNTAX_EXPR_IDENTIFIER || expression->kind == XS_SYNTAX_EXPR_GENERIC_QUALIFIER))
     {
       expression = parse_brace_literal(parser, expression);

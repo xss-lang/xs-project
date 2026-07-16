@@ -237,40 +237,17 @@ static bool parse_item(XsParser *parser, XsAst *ast)
   bool incomplete = accept(parser, XS_TOKEN_KW_INCOMPLETE);
   bool is_async = accept(parser, XS_TOKEN_KW_ASYNC);
 
-  if(accept(parser, XS_TOKEN_KW_MODULE) || accept(parser, XS_TOKEN_KW_NAMESPACE))
+  if(accept(parser, XS_TOKEN_KW_NAMESPACE))
   {
-    XsTokenKind keyword = parser->previous.kind;
-    if(keyword == XS_TOKEN_KW_MODULE && ast->count != 0)
-      xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                         "module must be the first declaration in the file");
-    if(keyword == XS_TOKEN_KW_NAMESPACE)
-    {
-      bool has_module = false;
-      for(size_t i = 0; i < ast->count; ++i)
-        has_module = has_module || ast->items[i].kind == XS_AST_MODULE;
-      if(!has_module)
-        xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, parser->previous.span,
-                           "namespace must be declared under module");
-    }
-    if(!expect(parser, XS_TOKEN_IDENTIFIER, "expected module or namespace name"))
+    if(!expect(parser, XS_TOKEN_IDENTIFIER, "expected namespace name"))
       return false;
     XsSpan name = parser->previous.span;
-    if(!expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after module or namespace declaration"))
+    if(!expect(parser, XS_TOKEN_SEMICOLON, "expected ';' after namespace declaration"))
       return false;
     XsAstItem item = {.span = {start, parser->previous.span.end}, .name = name, .visibility = visibility};
-    XsAstItemKind kind = keyword == XS_TOKEN_KW_MODULE ? XS_AST_MODULE : XS_AST_NAMESPACE;
-    if(kind == XS_AST_MODULE)
-    {
-      for(size_t i = 0; i < ast->count; ++i)
-      {
-        if(ast->items[i].kind == XS_AST_MODULE)
-          xs_diagnostics_add(parser->diagnostics, XS_DIAGNOSTIC_ERROR, name,
-                             "only one module declaration is allowed per file");
-      }
-    }
-    return xs_ast_push(ast, (XsAstNode){.kind = kind, .item = item});
+    return xs_ast_push(ast, (XsAstNode){.kind = XS_AST_NAMESPACE, .item = item});
   }
-  if(accept(parser, XS_TOKEN_KW_IMPORTS) || accept(parser, XS_TOKEN_KW_USING))
+  if(accept(parser, XS_TOKEN_KW_IMPORT) || accept(parser, XS_TOKEN_KW_USING))
   {
     XsSpan import_span;
     if(!skip_until_semicolon(parser, &import_span))
@@ -305,9 +282,8 @@ static void synchronize(XsParser *parser)
   {
     switch(parser->current.kind)
     {
-    case XS_TOKEN_KW_MODULE:
     case XS_TOKEN_KW_NAMESPACE:
-    case XS_TOKEN_KW_IMPORTS:
+    case XS_TOKEN_KW_IMPORT:
     case XS_TOKEN_KW_USING:
     case XS_TOKEN_KW_FN:
     case XS_TOKEN_KW_OP:

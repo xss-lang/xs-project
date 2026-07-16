@@ -250,6 +250,7 @@ static char *build_output_path(const char *manifest_path, XsBuildOutput output)
 typedef struct
 {
   char *path;
+  char *module_name;
   char *text;
   XsSource source;
   XsDiagnostics diagnostics;
@@ -257,7 +258,7 @@ typedef struct
   XsMacroStatementExpansionSet macro_statements;
   XsMacroDeclarationExpansionSet macro_declarations;
   XsCompilerCoreSession *compiler_core;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   bool diagnostics_initialized;
   bool tree_initialized;
   bool macro_statements_initialized;
@@ -270,7 +271,7 @@ static void compilation_unit_free(CompilationUnit *unit)
 {
   xslang_compiler_core_session_free(unit->compiler_core);
   if(unit->imports_initialized)
-    xs_hir_import_scope_free(&unit->imports);
+    xs_hir_import_scope_free(&unit->import);
   if(unit->macro_declarations_initialized)
     xs_macro_declaration_expansion_set_free(&unit->macro_declarations);
   if(unit->macro_statements_initialized)
@@ -280,6 +281,7 @@ static void compilation_unit_free(CompilationUnit *unit)
   if(unit->diagnostics_initialized)
     xs_diagnostics_free(&unit->diagnostics);
   free(unit->text);
+  free(unit->module_name);
   free(unit->path);
   *unit = (CompilationUnit){0};
 }
@@ -294,7 +296,8 @@ static bool unit_path_exists(const CompilationUnit *units, size_t count, const c
   return false;
 }
 
-static bool append_compilation_unit(CompilationUnit **units, size_t *count, size_t *capacity, char *path)
+static bool append_compilation_unit(CompilationUnit **units, size_t *count, size_t *capacity, char *path,
+                                    const char *module_name)
 {
   if(unit_path_exists(*units, *count, path))
   {
@@ -313,7 +316,13 @@ static bool append_compilation_unit(CompilationUnit **units, size_t *count, size
     *units = grown;
     *capacity = new_capacity;
   }
-  (*units)[(*count)++] = (CompilationUnit){.path = path};
+  char *module_copy = module_name == nullptr ? nullptr : copy_text(module_name);
+  if(module_name != nullptr && module_copy == nullptr)
+  {
+    free(path);
+    return false;
+  }
+  (*units)[(*count)++] = (CompilationUnit){.path = path, .module_name = module_copy};
   return true;
 }
 
@@ -334,7 +343,11 @@ static bool import_compiler_core_syntax(CompilationUnit *unit)
            false;
   }
   const XsCompilerCoreSyntaxPacket *packet = xs_compiler_core_syntax_packet(storage);
-  XsCompilerCoreFfiStatus import_status = xslang_compiler_core_session_create(packet, &unit->compiler_core);
+  XsCompilerCoreFfiStatus import_status =
+      unit->module_name == nullptr
+          ? xslang_compiler_core_session_create(packet, &unit->compiler_core)
+          : xslang_compiler_core_session_create_in_module(packet, (const uint8_t *)unit->module_name,
+                                                           (uint64_t)strlen(unit->module_name), &unit->compiler_core);
   xs_compiler_core_syntax_packet_free(storage);
   xs_syntax_tree_free(&expanded);
   if(import_status == XS_COMPILER_CORE_FFI_OK)
@@ -357,8 +370,9 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   xs_diagnostics_init(&unit->diagnostics);
   xs_diagnostics_set_warning_policy(&unit->diagnostics, settings->warning_level, settings->warnings_as_errors);
   unit->diagnostics_initialized = true;
-  unit->source = (XsSource){.path = unit->path, .text = unit->text, .length = length};
-  xs_hir_import_scope_init(&unit->imports);
+  unit->source =
+      (XsSource){.path = unit->path, .module_name = unit->module_name, .text = unit->text, .length = length};
+  xs_hir_import_scope_init(&unit->import);
   unit->imports_initialized = true;
   bool success = xs_syntax_parse(&unit->source, file_id, &unit->diagnostics, &unit->tree);
   unit->tree_initialized = true;
@@ -371,7 +385,10 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
     free(unit->text);
     unit->text = included.text;
     included.text = nullptr;
-    unit->source = (XsSource){.path = unit->path, .text = unit->text, .length = included.length};
+    unit->source = (XsSource){.path = unit->path,
+                              .module_name = unit->module_name,
+                              .text = unit->text,
+                              .length = included.length};
     success = xs_syntax_parse(&unit->source, file_id, &unit->diagnostics, &unit->tree);
   }
   xs_included_source_free(&included);
@@ -393,7 +410,8 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   if(success)
     success = import_compiler_core_syntax(unit);
   if(success)
-    success = xs_hir_collect_symbols_expanded(&unit->tree, &unit->macro_declarations, symbols, &unit->diagnostics);
+    success = xs_hir_collect_symbols_in_module_expanded(&unit->tree, &unit->macro_declarations, unit->module_name,
+                                                        symbols, &unit->diagnostics);
   unit->hir_ready = success;
   return success;
 }
@@ -419,15 +437,15 @@ static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolT
 {
   if(!unit->hir_ready)
     return false;
-  bool success = xs_hir_resolve_imports(&unit->tree, symbols, &unit->imports, &unit->diagnostics);
+  bool success = xs_hir_resolve_imports(&unit->tree, symbols, &unit->import, &unit->diagnostics);
   success = xs_hir_validate_cffi(&unit->tree, &unit->diagnostics) && success;
   success = xs_hir_validate_name_uses_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
-                                                  symbols, &unit->imports, &unit->diagnostics) &&
+                                                  symbols, &unit->import, &unit->diagnostics) &&
             success;
   success = xs_hir_resolve_types_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements, symbols,
-                                             &unit->imports, &unit->diagnostics) &&
+                                             &unit->import, &unit->diagnostics) &&
             success;
-  success = xs_hir_validate_inheritance(&unit->tree, symbols, &unit->imports, &unit->diagnostics) && success;
+  success = xs_hir_validate_inheritance(&unit->tree, symbols, &unit->import, &unit->diagnostics) && success;
   return xs_hir_check_expression_types_with_macros(&unit->tree, &unit->macro_declarations, &unit->macro_statements,
                                                    &unit->diagnostics) &&
          success;
@@ -484,7 +502,8 @@ static XsCompilerCoreSession *merge_compiler_core_sessions(CompilationUnit *unit
 }
 
 static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output,
-                                  bool build_native, const XsCompilerSettings *settings)
+                                  bool build_native, const XsCompilerSettings *settings,
+                                  char *const *assigned_modules)
 {
   if(project->xs_version.is_nil || xs_project_selected_entry(project) == nullptr)
   {
@@ -532,13 +551,14 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
   for(size_t i = 0; i < direct_count; ++i)
   {
     char *path = direct[i][0] == '/' ? copy_text(direct[i]) : project_path(manifest_path, direct[i]);
-    if(path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path))
+    const char *module_name = assigned_modules == nullptr ? nullptr : assigned_modules[i];
+    if(path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path, module_name))
       success = false;
   }
   for(size_t i = 0; i < graph.count; ++i)
   {
     char *path = copy_text(graph.dependencies[i].imported_path);
-    if(path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path))
+    if(path == nullptr || !append_compilation_unit(&units, &unit_count, &unit_capacity, path, nullptr))
       success = false;
   }
 
@@ -635,9 +655,46 @@ static int run_project_command(const XsCliOptions *options)
   bool success = xs_project_parse(&source, &diagnostics, &project);
   xs_diagnostics_print(&diagnostics, &source, stderr);
   if(success)
-    success = check_project_sources(options->manifest_path, &project, options->output,
-                                    strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE,
-                                    &settings);
+  {
+    XsResolvedKotlinProject modules = {0};
+    XsProject combined = project;
+    XsProjectValue *additional = nullptr;
+    char **assigned = nullptr;
+    char *root = nullptr;
+    if(options->module_path != nullptr)
+    {
+      root = project_root(options->manifest_path);
+      success = root != nullptr && xs_driver_resolve_kotlin_modules(root, options->module_path, &modules);
+      size_t combined_count = project.additional_file_count + modules.path_count;
+      additional = calloc(combined_count, sizeof(*additional));
+      size_t direct_count = combined_count + (project.entry.is_nil ? 0U : 1U);
+      assigned = calloc(direct_count, sizeof(*assigned));
+      if(additional == nullptr || assigned == nullptr)
+        success = false;
+      if(success)
+      {
+        for(size_t i = 0; i < project.additional_file_count; ++i)
+          additional[i] = project.additional_files[i];
+        size_t module_offset = project.additional_file_count;
+        size_t assigned_offset = module_offset + (project.entry.is_nil ? 0U : 1U);
+        for(size_t i = 0; i < modules.path_count; ++i)
+        {
+          additional[module_offset + i] = (XsProjectValue){.text = modules.paths[i]};
+          assigned[assigned_offset + i] = modules.module_names[i];
+        }
+        combined.additional_files = additional;
+        combined.additional_file_count = combined_count;
+      }
+    }
+    if(success)
+      success = check_project_sources(
+          options->manifest_path, &combined, options->output,
+          strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE, &settings, assigned);
+    free(root);
+    free(assigned);
+    free(additional);
+    xs_driver_free_kotlin_project(&modules);
+  }
 
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
@@ -647,36 +704,34 @@ static int run_project_command(const XsCliOptions *options)
 
 static int run_kotlin_project_command(const XsCliOptions *options)
 {
-  char **paths = nullptr;
-  size_t path_count = 0;
-  XsCompilerSettings settings;
-  if(!xs_driver_resolve_kotlin_project(&paths, &path_count, &settings))
+  XsResolvedKotlinProject resolved;
+  if(!xs_driver_resolve_kotlin_project(options->module_path, &resolved))
     return 1;
-  xs_cli_apply_compiler_overrides(options, &settings);
-  print_verbose_settings(options, &settings, "Kotlin project");
+  xs_cli_apply_compiler_overrides(options, &resolved.settings);
+  print_verbose_settings(options, &resolved.settings, "Kotlin project");
   XsProjectValue *additional = nullptr;
-  if(path_count > 1U)
+  if(resolved.path_count > 1U)
   {
-    additional = calloc(path_count - 1U, sizeof(*additional));
+    additional = calloc(resolved.path_count - 1U, sizeof(*additional));
     if(additional == nullptr)
     {
-      xs_driver_free_project_paths(paths, path_count);
+      xs_driver_free_kotlin_project(&resolved);
       return 1;
     }
-    for(size_t i = 1; i < path_count; ++i)
-      additional[i - 1U] = (XsProjectValue){.text = paths[i]};
+    for(size_t i = 1; i < resolved.path_count; ++i)
+      additional[i - 1U] = (XsProjectValue){.text = resolved.paths[i]};
   }
   XsProject project = {
       .xs_version = {.text = "kotlin-project"},
-      .entry = {.text = paths[0]},
+      .entry = {.text = resolved.paths[0]},
       .additional_files = additional,
-      .additional_file_count = path_count - 1U,
+      .additional_file_count = resolved.path_count - 1U,
   };
   bool success = check_project_sources(
       ".", &project, options->output, strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE,
-      &settings);
+      &resolved.settings, resolved.module_names);
   free(additional);
-  xs_driver_free_project_paths(paths, path_count);
+  xs_driver_free_kotlin_project(&resolved);
   return success ? 0 : 1;
 }
 

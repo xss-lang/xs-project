@@ -24,6 +24,15 @@ source-to-native executable pipeline.
 - Fixed arrays expose canonical `count`, `capacity`, `is_empty`, `start_index`, `end_index`, `first`, and `last` value
   members. Compiler-core resolves them before nominal field lookup and lowers them through the existing typed HIR and
   native array path.
+- Kotlin projects may define importable source membership in `xs.module.kts`. Direct members and optional `submodule`
+  blocks accept concrete paths or globs and cross the xs-project/xs-compiler boundary in a module-aware v2 registry.
+- Project source, test, and module includes are recursive directory roots rather than globs. Exclude patterns retain glob
+  support, `--module` supplies an omitted module root, and `XS_EXTENSION` replaces the default `.xs` discovery suffix.
+- Positional and named tuple types/literals now have explicit structural-AST tuple field records, including positional
+  `.0` member syntax.
+- Source files now support one optional source-scoped namespace and any number of nested block-scoped namespaces.
+- `#[MacroExport]` is retained on macro declarations and is restricted to module or namespace scope. Importing the
+  exporting module makes the macro callable by its unqualified name without placing it in the prelude.
 
 ### Changed
 
@@ -32,6 +41,12 @@ source-to-native executable pipeline.
 - Fixed arrays now support calculated `Int` indices for reads and writes through MIR `array.get`/`array.set`, XLIL v0 text,
   the public C23 XLIL model, and bounds-checked LLVM lowering. Native `.xse` fixtures cover both operations.
 - Prefix operators now consume a postfix-complete operand, so `!value.member` is parsed as `!(value.member)`.
+- The source keyword is now singular `import`; legacy `imports` is no longer tokenized as a keyword. Source-level
+  `module` declarations have been removed in favor of project metadata, and control-flow parentheses are optional.
+- Module names are case-sensitive. Omitted declaration visibility is `internal` and is enforced against the exact logical
+  module; cross-module use requires `public` plus the correctly cased import.
+- `using namespace` no longer acts as a module import for exported macros; `import stdio;` is required before calling
+  Stdio exports such as `println!`.
 
 ## 0.1.7 - 2026-07-15
 
@@ -212,7 +227,7 @@ source-to-native executable pipeline.
 
 ### Changed
 
-- `write!` and `writeln!` are built-in writer macros and no longer require `imports stdio;`. Stdio continues to export
+- `write!` and `writeln!` are built-in writer macros and no longer require `import stdio;`. Stdio continues to export
   `print!`, `println!`, `eprint!`, `eprintln!`, and `format!`.
 - Result is no longer implied by ordinary output examples. Functions using postfix `@`, `Ok(...)`, or `Error(...)` must
   declare a Result return type; ordinary functions remain free to return unit or another declared type.
@@ -221,7 +236,7 @@ source-to-native executable pipeline.
 
 ### Added
 
-- Rust compiler-core HIR now imports statement `match` with typed `Long`/`Bool` selectors, literal arms, and a required
+- Rust compiler-core HIR now import statement `match` with typed `Long`/`Bool` selectors, literal arms, and a required
   final `else`; HIR verification rejects mismatched, duplicate, and incomplete arm sets.
 - HIR `match` lowers into explicit MIR test/body/merge blocks and continues through XLIL `eq.i32`/`br_if`, LLVM IR,
   object emission, and native `.xse` linking.
@@ -242,7 +257,7 @@ source-to-native executable pipeline.
 
 ### Added
 
-- Rust compiler-core HIR now imports `while`, `break`, and `continue`, verifies loop conditions and jump placement, and
+- Rust compiler-core HIR now import `while`, `break`, and `continue`, verifies loop conditions and jump placement, and
   lowers loops through target-independent MIR and XLIL control-flow graphs.
 - Class declarations now retain multiple base specifiers with per-base access and virtual-inheritance metadata. HIR
   validates duplicate bases, cycles, sealed bases, and compatible `virtual`/`override`/`sealed` method slots.
@@ -375,7 +390,7 @@ source-to-native executable pipeline.
 ### Changed
 
 - `Optional<T>` and `Result<T>`/`Result<T, E>` implicit namespace behavior is documented: Optional still behaves as if
-  `imports optional; using namespace std::optional;` existed, while Result treats `imports result;` as optional and brings
+  `import optional; using namespace std::optional;` existed, while Result treats `import result;` as optional and brings
   `std::result` names such as `Result`, `Ok`, and `Error` into scope.
 - The C23 HIR type resolver now accepts canonical `std::result::Result<T>`, `std::result::Result<T, E>`, shorthand
   `Result<T>`, and short `Error` names without a user-defined project symbol.
@@ -384,8 +399,8 @@ source-to-native executable pipeline.
 
 - HIR CFFI validation now checks the first standard CFFI attribute shapes and scopes for extern blocks, extern functions,
   and extern static declarations.
-- `imports Module;` now records module usability without placing module symbols in local scope. `Result` and `Panic` are
-  implicit standard imports; `Panic` assertion/panic macros no longer require an explicit import. `Stdio` remains explicit
+- `import Module;` now records module usability without placing module symbols in local scope. `Result` and `Panic` are
+  implicit standard import; `Panic` assertion/panic macros no longer require an explicit import. `Stdio` remains explicit
   and is not prelude.
 
 ## 0.0.6 - 2026-07-13

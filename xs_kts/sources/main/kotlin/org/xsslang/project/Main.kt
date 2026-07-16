@@ -18,10 +18,13 @@ private data class ProjectFiles(
   val project: File?,
   val settings: File?,
   val build: File?,
+  val modules: File?,
 )
 
 private fun usage() =
-  "usage: xs-project evaluate [project-root]\n       xs-project sources0 <project-root> <output-file>"
+  "usage: xs-project evaluate [project-root]\n" +
+    "       xs-project sources0 <project-root> <output-file> [module-root]\n" +
+    "       xs-project modules0 <project-root> <output-file> <module-root>"
 
 internal fun isSupportedJavaFeature(actual: Int) = actual >= MINIMUM_JAVA
 
@@ -36,15 +39,16 @@ private fun filesAt(root: File): ProjectFiles? {
   val project = root.resolve("xs.project.kts").takeIf(File::isFile)
   val settings = root.resolve("xs.settings.kts").takeIf(File::isFile)
   val build = root.resolve("xs.build.kts").takeIf(File::isFile)
+  val modules = root.resolve("xs.module.kts").takeIf(File::isFile)
   if (project == null && settings == null && build == null) return null
   if (project != null && (settings != null || build != null)) {
     throw ProjectConfigurationException("xs.project.kts cannot be combined with split project files")
   }
-  if (project != null) return ProjectFiles(root, project, null, null)
+  if (project != null) return ProjectFiles(root, project, null, null, modules)
   if (settings == null || build == null) {
     throw ProjectConfigurationException("split projects require both xs.settings.kts and xs.build.kts")
   }
-  return ProjectFiles(root, null, settings, build)
+  return ProjectFiles(root, null, settings, build, modules)
 }
 
 private fun discover(input: File): ProjectFiles {
@@ -80,6 +84,8 @@ private fun runKotlin(
     val suffix =
       if (output == "state") {
         "\nProjectStateFile.writeConfigured(ProjectRuntime.snapshot())\n"
+      } else if (output == "modules0") {
+        "\nProjectOutput.emitModules(ProjectRuntime.snapshot())\n"
       } else {
         "\nProjectOutput.emit(ProjectRuntime.build())\n"
       }
@@ -93,6 +99,9 @@ private fun runKotlin(
       )
     if (state != null) arguments += "-Dxs.project.state=$state"
     if (sourcesOutput != null) arguments += "-Dxs.project.sources=$sourcesOutput"
+    System.getProperty("xs.project.moduleRoot")?.takeIf(String::isNotBlank)?.let { rootPath ->
+      arguments += "-Dxs.project.moduleRoot=$rootPath"
+    }
     arguments +=
       listOf(
         "-classpath",
@@ -119,24 +128,49 @@ internal fun evaluateWithKotlin(
   input: File,
   output: String = "plan",
   sourcesOutput: Path? = null,
+  moduleRoot: String? = null,
 ): Int {
   requireSupportedJava()
+  if (moduleRoot != null) System.setProperty("xs.project.moduleRoot", moduleRoot)
   val files = discover(input)
-  files.project?.let { project -> return runKotlin(project, files.root, output, null, sourcesOutput) }
+  if (files.project != null && files.modules == null) {
+    return runKotlin(files.project, files.root, output, null, sourcesOutput)
+  }
   val stateDirectory = Files.createTempDirectory("xs-project-state-")
   return try {
     val state = stateDirectory.resolve("state.bin")
-    val settingsStatus = runKotlin(files.settings!!, files.root, "state", state, null)
-    if (settingsStatus != 0) settingsStatus else runKotlin(files.build!!, files.root, output, state, sourcesOutput)
+    val first = files.project ?: files.settings!!
+    val firstStatus = runKotlin(first, files.root, "state", state, null)
+    if (firstStatus != 0) return firstStatus
+    if (files.project == null) {
+      val buildOutput = if (files.modules == null) output else "state"
+      val buildStatus = runKotlin(files.build!!, files.root, buildOutput, state, sourcesOutput)
+      if (buildStatus != 0 || files.modules == null) return buildStatus
+    }
+    runKotlin(files.modules!!, files.root, output, state, sourcesOutput)
   } finally {
     stateDirectory.toFile().deleteRecursively()
   }
 }
 
+internal fun evaluateModulesWithKotlin(
+  input: File,
+  sourcesOutput: Path,
+  moduleRoot: String,
+): Int {
+  requireSupportedJava()
+  val root = input.canonicalFile
+  val script = root.resolve("xs.module.kts")
+  if (!script.isFile) throw ProjectConfigurationException("xs.module.kts was not found in $root")
+  System.setProperty("xs.project.moduleRoot", moduleRoot)
+  return runKotlin(script, root, "modules0", null, sourcesOutput)
+}
+
 fun main(args: Array<String>) {
   val validEvaluate = args.size in 1..2 && args[0] == "evaluate"
-  val validSources = args.size == 3 && args[0] == "sources0"
-  if (!validEvaluate && !validSources) {
+  val validSources = args.size in 3..4 && args[0] == "sources0"
+  val validModules = args.size == 4 && args[0] == "modules0"
+  if (!validEvaluate && !validSources && !validModules) {
     System.err.println(usage())
     exitProcess(2)
   }
@@ -147,8 +181,10 @@ fun main(args: Array<String>) {
         "evaluate"
       ) {
         evaluateWithKotlin(input)
+      } else if (args[0] == "sources0") {
+        evaluateWithKotlin(input, "sources0", Path.of(args[2]), args.getOrNull(3))
       } else {
-        evaluateWithKotlin(input, "sources0", Path.of(args[2]))
+        evaluateModulesWithKotlin(input, Path.of(args[2]), args[3])
       }
     exitProcess(status)
   } catch (error: ProjectConfigurationException) {

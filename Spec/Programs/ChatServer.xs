@@ -4,9 +4,9 @@
 // Complete-language example program:
 // A tiny multi-room chat server using async sockets and channels.
 
-module programs::chat_server;
 
-imports collections, sync, thread, net;
+
+import collections, sync, thread, net;
 
 data ClientId {
     value: Int;

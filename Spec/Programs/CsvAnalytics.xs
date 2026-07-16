@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Reads CSV sales records, groups them by region, and prints totals.
 
-module programs::csv_analytics;
 
-imports collections, stdio, fs, process;
+
+import collections, stdio, fs, process;
 
 data Sale {
     region: Str;

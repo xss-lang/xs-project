@@ -25,30 +25,36 @@ static int failures;
     }                                                                                                                  \
   } while(0)
 
-static bool add_file(const char *text, uint64_t file_id, XsSyntaxTree *tree, XsHirSymbolTable *symbols,
-                     XsDiagnostics *diagnostics)
+static bool add_file_in_module(const char *text, const char *module_name, uint64_t file_id, XsSyntaxTree *tree,
+                               XsHirSymbolTable *symbols, XsDiagnostics *diagnostics)
 {
-  XsSource source = {.path = "HirTypes.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "HirTypes.xs", .module_name = module_name, .text = text, .length = strlen(text)};
   if(!xs_syntax_parse(&source, file_id, diagnostics, tree))
     return false;
   return xs_hir_collect_symbols(tree, symbols, diagnostics);
+}
+
+static bool add_file(const char *text, uint64_t file_id, XsSyntaxTree *tree, XsHirSymbolTable *symbols,
+                     XsDiagnostics *diagnostics)
+{
+  return add_file_in_module(text, "App", file_id, tree, symbols, diagnostics);
 }
 
 static bool check_single_source(const char *text)
 {
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   bool success = add_file(text, 71, &tree, &symbols, &diagnostics);
   if(success)
-    success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
+    success = xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics);
   if(success)
-    success = xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics);
-  xs_hir_import_scope_free(&imports);
+    success = xs_hir_resolve_types(&tree, &symbols, &import, &diagnostics);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -85,18 +91,18 @@ static void test_hir_primitive_info(void)
 
 static void test_primitive_and_generic_types(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "fn Keep<T>(a: Str, b: Bool, c: Byte, d: SByte, e: Char, f: Short, g: Long, h: Int,\n"
                      "           i: Integer, j: UShort, k: ULong, l: UInt, m: UInteger,\n"
                      "           n: SFloat, o: Float, p: T) -> T { return p; }\n";
   CHECK(check_single_source(text));
-  CHECK(!check_single_source("module App;\nfn Main(value: Float16) {}\n"));
-  CHECK(!check_single_source("module App;\nfn Main(value: double) {}\n"));
+  CHECK(!check_single_source("fn Main(value: Float16) {}\n"));
+  CHECK(!check_single_source("fn Main(value: double) {}\n"));
 }
 
 static void test_local_user_type(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "data User { name: Str; }\n"
                      "fn Main(value: User) {}\n";
   CHECK(check_single_source(text));
@@ -104,20 +110,20 @@ static void test_local_user_type(void)
 
 static void test_generic_type_arity(void)
 {
-  const char *valid = "module App;\n"
+  const char *valid = ""
                       "class Box<T> { value: T; }\n"
                       "data Pair<T, U> { first: T; second: U; }\n"
                       "fn Main(box: Box<Int>, pair: Pair<Str, Int>) {}\n";
   CHECK(check_single_source(valid));
-  const char *missing = "module App;\n"
+  const char *missing = ""
                         "class Box<T> { value: T; }\n"
                         "fn Main(box: Box) {}\n";
   CHECK(!check_single_source(missing));
-  const char *too_few = "module App;\n"
+  const char *too_few = ""
                         "data Pair<T, U> { first: T; second: U; }\n"
                         "fn Main(pair: Pair<Int>) {}\n";
   CHECK(!check_single_source(too_few));
-  const char *too_many = "module App;\n"
+  const char *too_many = ""
                          "class Box<T> { value: T; }\n"
                          "fn Main(box: Box<Int, Str>) {}\n";
   CHECK(!check_single_source(too_many));
@@ -125,7 +131,7 @@ static void test_generic_type_arity(void)
 
 static void test_standard_generic_types(void)
 {
-  const char *valid = "module App;\n"
+  const char *valid = ""
                       "fn Read() -> Optional<Str> { return None; }\n"
                       "fn ReadCanonical() -> std::optional::Optional<Str> { return None; }\n"
                       "fn Save() -> Result<()> { return Ok(()); }\n"
@@ -135,19 +141,19 @@ static void test_standard_generic_types(void)
                       "fn LoadCanonical() -> std::result::Result<Int, Error> { return Ok(1); }\n"
                       "fn Compact() -> Result<Int, Error> { return Ok(1); }\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nfn Missing() -> Optional { return None; }\n"));
-  CHECK(!check_single_source("module App;\nfn Missing() -> Result { return Ok(1); }\n"));
-  CHECK(!check_single_source("module App;\nfn Incomplete() -> Result<Int> { return Ok(1); }\n"));
-  CHECK(!check_single_source("module App;\nfn TooMany() -> Result<Int, Error, Int> { return "
+  CHECK(!check_single_source("fn Missing() -> Optional { return None; }\n"));
+  CHECK(!check_single_source("fn Missing() -> Result { return Ok(1); }\n"));
+  CHECK(!check_single_source("fn Incomplete() -> Result<Int> { return Ok(1); }\n"));
+  CHECK(!check_single_source("fn TooMany() -> Result<Int, Error, Int> { return "
                              "Ok(1); }\n"));
-  CHECK(!check_single_source("module App;\nfn BadError() -> Error<Int> { return Ok(1); }\n"));
+  CHECK(!check_single_source("fn BadError() -> Error<Int> { return Ok(1); }\n"));
 }
 
 static void test_imported_standard_library_types(void)
 {
   const char *valid =
-      "module App;\n"
-      "imports collections, fs, process, http, net, thread, sync;\n"
+      ""
+      "import collections, fs, process, http, net, thread, sync;\n"
       "fn Use(values: std::collections::Vector<Int>, map: std::collections::HashMap<Str, Int>,\n"
       "       file: std::fs::File, options: std::fs::OpenOptions, args: std::process::Args,\n"
       "       client: std::http::Client, request: std::http::Request, response: std::http::Response<Str>,\n"
@@ -157,15 +163,15 @@ static void test_imported_standard_library_types(void)
       "       atomic: std::sync::Atomic<Int>, cancellation: std::sync::CancellationToken,\n"
       "       task: Task<Int>) {}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nfn Bad(value: std::collections::Vector<Int>) {}\n"));
-  CHECK(!check_single_source("module App;\nimports collections;\nfn Bad(value: std::collections::HashMap<Int>) {}\n"));
-  CHECK(!check_single_source("module App;\nimports http;\nfn Bad(value: std::http::Response) {}\n"));
-  CHECK(!check_single_source("module App;\nfn Bad(value: Task) {}\n"));
+  CHECK(!check_single_source("fn Bad(value: std::collections::Vector<Int>) {}\n"));
+  CHECK(!check_single_source("import collections;\nfn Bad(value: std::collections::HashMap<Int>) {}\n"));
+  CHECK(!check_single_source("import http;\nfn Bad(value: std::http::Response) {}\n"));
+  CHECK(!check_single_source("fn Bad(value: Task) {}\n"));
 }
 
 static void test_string_source_sugar(void)
 {
-  const char *valid = "module App;\n"
+  const char *valid = ""
                       "fn Main() {\n"
                       "  borrowed := \"Leitwolf\";\n"
                       "  boxed_literal: String = \"Leitwolf\";\n"
@@ -173,12 +179,12 @@ static void test_string_source_sugar(void)
                       "  boxed_none: String = None;\n"
                       "}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nfn Bad(value: String<Int>) {}\n"));
+  CHECK(!check_single_source("fn Bad(value: String<Int>) {}\n"));
 }
 
 static void test_result_payload_types_and_error_inheritance(void)
 {
-  const char *valid = "module App;\n"
+  const char *valid = ""
                       "class MyError : Error {}\n"
                       "class DetailedError : MyError {}\n"
                       "fn Direct() -> Result<Int, MyError> { return Ok(1); }\n"
@@ -190,17 +196,17 @@ static void test_result_payload_types_and_error_inheritance(void)
 
 static void test_else_type_placeholder(void)
 {
-  const char *valid = "module App;\n"
+  const char *valid = ""
                       "class Box<T> { value: T; }\n"
                       "fn Main(box: Box<else>) {}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nclass Box<T> { value: T; }\nfn Main(box: Box<_>) {}\n"));
+  CHECK(!check_single_source("class Box<T> { value: T; }\nfn Main(box: Box<_>) {}\n"));
 }
 
 static void test_standard_cffi_types(void)
 {
-  const char *valid = "module App;\n"
-                      "imports cffi;\n"
+  const char *valid = ""
+                      "import cffi;\n"
                       "data NativeLibrary { handle: std::cffi::Handle<NativeLibrary>; }\n"
                       "#[repr(C)]\n"
                       "extern \"C\" {\n"
@@ -211,38 +217,38 @@ static void test_standard_cffi_types(void)
                       "}\n"
                       "fn Load(symbol: std::cffi::Symbol<fn() -> Int>, library: std::cffi::DynamicLibrary) {}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std::cffi::RawPtr); }\n"));
-  CHECK(!check_single_source("module App;\nimports cffi;\nextern \"C\" { fn Bad(ptr: std::cffi::CStr<Int>); }\n"));
-  CHECK(!check_single_source("module App;\nfn Bad(ptr: std::cffi::CStr) {}\n"));
+  CHECK(!check_single_source("import cffi;\nextern \"C\" { fn Bad(ptr: std::cffi::RawPtr); }\n"));
+  CHECK(!check_single_source("import cffi;\nextern \"C\" { fn Bad(ptr: std::cffi::CStr<Int>); }\n"));
+  CHECK(!check_single_source("fn Bad(ptr: std::cffi::CStr) {}\n"));
 }
 
 static void test_duplicate_generic_parameter_names(void)
 {
-  CHECK(!check_single_source("module App;\nclass Box<T, T> { value: T; }\n"));
-  CHECK(!check_single_source("module App;\ninterface Reader<T, T> { fn Read(value: T); }\n"));
-  CHECK(!check_single_source("module App;\nfn Keep<T, T>(value: T) -> T { return value; }\n"));
+  CHECK(!check_single_source("class Box<T, T> { value: T; }\n"));
+  CHECK(!check_single_source("interface Reader<T, T> { fn Read(value: T); }\n"));
+  CHECK(!check_single_source("fn Keep<T, T>(value: T) -> T { return value; }\n"));
 }
 
 static void test_imported_user_type(void)
 {
-  const char *library = "module Model;\n"
+  const char *library = ""
                         "public data User { name: Str; }\n";
-  const char *main = "module App;\n"
+  const char *main = ""
                      "using Model::User;\n"
                      "fn Main(value: User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file(library, 81, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_in_module(library, "Model", 81, &library_tree, &symbols, &diagnostics));
   CHECK(add_file(main, 82, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -251,27 +257,27 @@ static void test_imported_user_type(void)
 
 static void test_public_namespace_exports_explicit_public_type(void)
 {
-  const char *library = "module Model;\n"
+  const char *library = ""
                         "public namespace Records;\n"
                         "public data User { name: Str; }\n";
-  const char *main = "module App;\n"
-                     "imports Model::Records;\n"
+  const char *main = ""
+                     "import Model::Records;\n"
                      "fn Main(value: Model::Records::User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file(library, 85, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_in_module(library, "Model", 85, &library_tree, &symbols, &diagnostics));
   const XsHirSymbol *user = xs_hir_symbol_table_find(&symbols, "Model.Records.User");
   CHECK(user != nullptr && user->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
   CHECK(add_file(main, 86, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -280,24 +286,24 @@ static void test_public_namespace_exports_explicit_public_type(void)
 
 static void test_public_qualified_type_requires_import(void)
 {
-  const char *library = "module Model;\n"
+  const char *library = ""
                         "public data User { name: Str; }\n";
-  const char *main = "module App;\n"
+  const char *main = ""
                      "fn Main(value: Model::User) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file(library, 89, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_in_module(library, "Model", 89, &library_tree, &symbols, &diagnostics));
   CHECK(add_file(main, 90, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -306,24 +312,24 @@ static void test_public_qualified_type_requires_import(void)
 
 static void test_private_qualified_type_visibility(void)
 {
-  const char *library = "module Model;\n"
+  const char *library = ""
                         "private data Secret { value: Int; }\n";
-  const char *main = "module App;\n"
-                     "fn Main(value: Model::Secret) {}\n";
+  const char *main = ""
+                     "fn Main(value: App::Secret) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file(library, 83, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_in_module(library, "Model", 83, &library_tree, &symbols, &diagnostics));
   CHECK(add_file(main, 84, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -332,32 +338,32 @@ static void test_private_qualified_type_visibility(void)
 
 static void test_private_same_namespace_type_visibility(void)
 {
-  const char *text = "module Model;\n"
+  const char *text = ""
                      "private data Secret { value: Int; }\n"
-                     "fn Main(value: Model::Secret) {}\n";
+                     "fn Main(value: App::Secret) {}\n";
   CHECK(check_single_source(text));
 }
 
 static void test_private_same_namespace_different_file_type_visibility(void)
 {
-  const char *library = "module Model;\n"
+  const char *library = ""
                         "private data Secret { value: Int; }\n";
-  const char *main = "module Model;\n"
+  const char *main = ""
                      "fn Main(value: Model::Secret) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file(library, 87, &library_tree, &symbols, &diagnostics));
-  CHECK(add_file(main, 88, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_in_module(library, "Model", 87, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file_in_module(main, "Model", 88, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types(&main_tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -366,23 +372,23 @@ static void test_private_same_namespace_different_file_type_visibility(void)
 
 static void test_internal_same_module_different_file_type_visibility(void)
 {
-  const char *library = "module Model;\n"
+  const char *library = ""
                         "internal data Shared { value: Int; }\n";
-  const char *main = "module Model;\n"
+  const char *main = ""
                      "fn Main(value: Model::Shared) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file(library, 89, &library_tree, &symbols, &diagnostics));
-  CHECK(add_file(main, 90, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_in_module(library, "Model", 89, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file_in_module(main, "Model", 90, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -391,24 +397,24 @@ static void test_internal_same_module_different_file_type_visibility(void)
 
 static void test_generic_constraints(void)
 {
-  const char *valid = "module App;\n"
+  const char *valid = ""
                       "interface Printable { fn Print(); }\n"
                       "fn PrintValue<T: Printable>(value: T) {}\n";
   CHECK(check_single_source(valid));
-  const char *multiple = "module App;\n"
+  const char *multiple = ""
                          "interface Runnable { fn Run(); }\n"
                          "interface Printable { fn Print(); }\n"
                          "fn Execute<T: Runnable, Printable, U: Runnable>(value: T, worker: U) {}\n";
   CHECK(check_single_source(multiple));
-  const char *generic = "module App;\n"
+  const char *generic = ""
                         "interface Parser<T> { fn Parse(value: T); }\n"
                         "fn UseParser<T: Parser<Int>>(value: T) {}\n";
   CHECK(check_single_source(generic));
-  const char *invalid = "module App;\n"
+  const char *invalid = ""
                         "data NotInterface { value: Int; }\n"
                         "fn PrintValue<T: NotInterface>(value: T) {}\n";
   CHECK(!check_single_source(invalid));
-  const char *invalid_generic = "module App;\n"
+  const char *invalid_generic = ""
                                 "class Box<T> { value: T; }\n"
                                 "fn UseBox<T: Box<Int>>(value: T) {}\n";
   CHECK(!check_single_source(invalid_generic));
@@ -416,24 +422,24 @@ static void test_generic_constraints(void)
 
 static void test_imported_generic_constraint(void)
 {
-  const char *library = "module Contract;\n"
+  const char *library = ""
                         "public interface Runnable { fn Run(); }\n";
-  const char *main = "module App;\n"
+  const char *main = ""
                      "using Contract::Runnable;\n"
                      "fn Execute<T: Runnable>(value: T) {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file(library, 91, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_in_module(library, "Contract", 91, &library_tree, &symbols, &diagnostics));
   CHECK(add_file(main, 92, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_resolve_types(&main_tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -442,37 +448,37 @@ static void test_imported_generic_constraint(void)
 
 static void test_unknown_type_errors(void)
 {
-  CHECK(!check_single_source("module App;\nfn Main(value: int64) {}\n"));
-  CHECK(!check_single_source("module App;\nfn Main(value: Missing) {}\n"));
+  CHECK(!check_single_source("fn Main(value: int64) {}\n"));
+  CHECK(!check_single_source("fn Main(value: Missing) {}\n"));
 }
 
 static void test_expanded_macro_type_errors(void)
 {
-  const char *main = "module App;\n"
+  const char *main = ""
                      "macro_rules! bad { () -> { value: Missing = None }; }\n"
                      "fn Main() { bad!(); }\n";
-  XsSource source = {.path = "MacroTypes.xs", .text = main, .length = strlen(main)};
+  XsSource source = {.path = "MacroTypes.xs", .module_name = "App", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsMacroExpansionReport report;
   XsMacroStatementExpansionSet statements;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 93, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_resolve_types(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -480,19 +486,19 @@ static void test_expanded_macro_type_errors(void)
 
 static void test_type_fragment_macro_type_errors(void)
 {
-  const char *main = "module App;\n"
+  const char *main = ""
                      "macro_rules! declare { ($kind:ty) -> { value: $kind = None }; }\n"
                      "fn Main() { declare!(Missing); }\n";
-  XsSource source = {.path = "MacroTypeFragmentTypes.xs", .text = main, .length = strlen(main)};
+  XsSource source = {.path = "MacroTypeFragmentTypes.xs", .module_name = "App", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsMacroExpansionReport report;
   XsMacroStatementExpansionSet statements;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 94, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
@@ -500,12 +506,12 @@ static void test_type_fragment_macro_type_errors(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_resolve_types(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_resolve_types(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);

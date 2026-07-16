@@ -29,7 +29,7 @@
 // Mutex
 // ============================================================
 
-imports mutex, result;
+import mutex, result;
 
 
 // mutex creation
@@ -163,7 +163,7 @@ fn recover_poisoned_mutex() {
 
 // mutex movement between threads
 
-imports thread;
+import thread;
 
 fn move_mutex_to_thread() {
     counter: Mutex<Long> = Mutex::new(42);
@@ -181,7 +181,7 @@ fn move_mutex_to_thread() {
 // RwLock
 // ============================================================
 
-imports rw_lock;
+import rw_lock;
 
 
 // rwlock creation
@@ -398,7 +398,7 @@ fn recover_poisoned_rw_lock() {
 // Arc
 // ============================================================
 
-imports arc;
+import arc;
 
 
 // arc creation
@@ -497,7 +497,7 @@ fn shared_rw_lock() {
 // Weak and WeakControl
 // ============================================================
 
-imports WeakControl;
+import WeakControl;
 
 
 // weak creation
@@ -575,7 +575,7 @@ fn weak_upgrade() {
 // Atomic
 // ============================================================
 
-imports atomic;
+import atomic;
 
 
 // atomic creation
@@ -991,7 +991,7 @@ async fn async_result_handling() -> Task<Result<()>> {
 // Thread channels
 // ============================================================
 
-imports thread;
+import thread;
 
 
 // channel creation and communication

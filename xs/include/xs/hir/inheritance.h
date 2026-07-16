@@ -9,6 +9,6 @@
 #include "xs/hir/symbol_table.h"
 
 bool xs_hir_validate_inheritance(const XsSyntaxTree *tree, const XsHirSymbolTable *symbols,
-                                 const XsHirImportScope *imports, XsDiagnostics *diagnostics);
+                                 const XsHirImportScope *import, XsDiagnostics *diagnostics);
 
 #endif

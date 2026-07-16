@@ -83,6 +83,11 @@ data class CompilerSettings(
   var verbose: Boolean = true,
 ) : Serializable
 
+data class ModuleSource(
+  val moduleName: String,
+  val path: String,
+) : Serializable
+
 data class ProjectState(
   val identity: ProjectIdentity?,
   val variables: Map<String, List<String>>,
@@ -90,7 +95,10 @@ data class ProjectState(
   val modules: List<String>,
   val sourceIncludes: List<String>,
   val sourceExcludes: List<String>,
+  val moduleIncludes: List<String>,
+  val moduleSources: List<ModuleSource>,
   val testIncludes: List<String>,
+  val testExcludes: List<String>,
   val testFramework: String?,
   val compiler: CompilerSettings,
 ) : Serializable
@@ -102,7 +110,10 @@ data class ProjectPlan(
   val modules: List<String>,
   val sourceIncludes: List<String>,
   val sourceExcludes: List<String>,
+  val moduleIncludes: List<String>,
+  val moduleSources: List<ModuleSource>,
   val testIncludes: List<String>,
+  val testExcludes: List<String>,
   val testFramework: String?,
   val compiler: CompilerSettings,
 )

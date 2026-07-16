@@ -16,11 +16,72 @@ class SourcesScope internal constructor() {
   internal val excludes = mutableListOf<String>()
 
   fun include(pattern: String) {
-    includes += requireText(pattern, "source include")
+    val root = requireText(pattern, "source include")
+    if (root.any { character -> character in "*?" }) {
+      throw ProjectConfigurationException("source include must name a directory, not a glob: $root")
+    }
+    includes += root
   }
 
   fun exclude(pattern: String) {
     excludes += requireText(pattern, "source exclude")
+  }
+}
+
+@XsProjectDsl
+class ModuleMembersScope internal constructor() {
+  internal val paths = mutableListOf<String>()
+
+  fun add(path: String) {
+    paths += requireText(path, "module member path")
+  }
+}
+
+@XsProjectDsl
+class SubmoduleScope internal constructor() {
+  internal var moduleName: String? = null
+  internal val paths = mutableListOf<String>()
+
+  fun name(value: String) {
+    if (moduleName != null) throw ProjectConfigurationException("submodule name(...) may be called only once")
+    moduleName = requireModuleSegment(value, "submodule name")
+  }
+
+  fun add(path: String) {
+    paths += requireText(path, "module member path")
+  }
+}
+
+@XsProjectDsl
+class ModuleScope internal constructor() {
+  internal val includes = mutableListOf<String>()
+  internal var moduleName: String? = null
+  internal val paths = mutableListOf<String>()
+  internal val submodules = mutableListOf<SubmoduleScope>()
+
+  fun include(pattern: String) {
+    val root = requireText(pattern, "module include")
+    if (root.any { character -> character in "*?" }) {
+      throw ProjectConfigurationException("module include must name a directory, not a glob: $root")
+    }
+    includes += root
+  }
+
+  fun name(value: String) {
+    if (moduleName != null) throw ProjectConfigurationException("module name(...) may be called only once")
+    moduleName = requireModuleSegment(value, "module name")
+  }
+
+  fun add(path: String) {
+    paths += requireText(path, "module member path")
+  }
+
+  fun members(block: ModuleMembersScope.() -> Unit) {
+    paths += ModuleMembersScope().apply(block).paths
+  }
+
+  fun submodule(block: SubmoduleScope.() -> Unit) {
+    submodules += SubmoduleScope().apply(block)
   }
 }
 
@@ -36,10 +97,19 @@ class DependenciesScope internal constructor() {
 @XsProjectDsl
 class TestScope internal constructor() {
   internal val includes = mutableListOf<String>()
+  internal val excludes = mutableListOf<String>()
   internal var framework: String? = null
 
-  fun include(pattern: String) {
-    includes += requireText(pattern, "test include")
+  fun include(path: String) {
+    val root = requireText(path, "test include")
+    if (root.any { character -> character in "*?" }) {
+      throw ProjectConfigurationException("test include must name a directory, not a glob: $root")
+    }
+    includes += root
+  }
+
+  fun exclude(pattern: String) {
+    excludes += requireText(pattern, "test exclude")
   }
 
   fun framework(name: String) {
@@ -74,12 +144,16 @@ class ProjectContext internal constructor(
   state: ProjectState? = null,
 ) {
   private var identity: ProjectIdentity? = state?.identity
-  private val variables = (state?.variables ?: mapOf("XS_BACKEND" to listOf("LLVM"))).toMutableMap()
+  private val variables =
+    (state?.variables ?: mapOf("XS_BACKEND" to listOf("LLVM"), "XS_EXTENSION" to listOf("xs"))).toMutableMap()
   private val authors = state?.authors?.toMutableList() ?: mutableListOf()
   private val modules = state?.modules?.toMutableList() ?: mutableListOf()
   private val sourceIncludes = state?.sourceIncludes?.toMutableList() ?: mutableListOf()
   private val sourceExcludes = state?.sourceExcludes?.toMutableList() ?: mutableListOf()
+  private val moduleIncludes = state?.moduleIncludes?.toMutableList() ?: mutableListOf()
+  private val moduleSources = state?.moduleSources?.toMutableList() ?: mutableListOf()
   private val testIncludes = state?.testIncludes?.toMutableList() ?: mutableListOf()
+  private val testExcludes = state?.testExcludes?.toMutableList() ?: mutableListOf()
   private var testFramework: String? = state?.testFramework
   private val compilerSettings = state?.compiler ?: CompilerSettings()
 
@@ -136,9 +210,29 @@ class ProjectContext internal constructor(
     sourceExcludes += scope.excludes
   }
 
+  fun source(block: SourcesScope.() -> Unit) = sources(block)
+
+  fun module(block: ModuleScope.() -> Unit) {
+    val scope = ModuleScope().apply(block)
+    if (scope.includes.isNotEmpty()) {
+      if (scope.moduleName != null || scope.paths.isNotEmpty() || scope.submodules.isNotEmpty()) {
+        throw ProjectConfigurationException("module include and module definition cannot share one module block")
+      }
+      moduleIncludes += scope.includes
+      return
+    }
+    val name = scope.moduleName ?: throw ProjectConfigurationException("module definition requires name(...)")
+    scope.paths.forEach { path -> moduleSources += ModuleSource(name, path) }
+    scope.submodules.forEach { submodule ->
+      val child = submodule.moduleName ?: throw ProjectConfigurationException("submodule requires name(...)")
+      submodule.paths.forEach { path -> moduleSources += ModuleSource("$name::$child", path) }
+    }
+  }
+
   fun test(block: TestScope.() -> Unit) {
     val scope = TestScope().apply(block)
     testIncludes += scope.includes
+    testExcludes += scope.excludes
     testFramework = scope.framework
   }
 
@@ -154,30 +248,17 @@ class ProjectContext internal constructor(
       modules.toList(),
       sourceIncludes.toList(),
       sourceExcludes.toList(),
+      moduleIncludes.toList(),
+      moduleSources.toList(),
       testIncludes.toList(),
+      testExcludes.toList(),
       testFramework,
       compilerSettings.copy(),
     )
 
   fun build(): ProjectPlan {
     val project = identity ?: throw ProjectConfigurationException("project(...) is required")
-    if (sourceIncludes.isEmpty()) throw ProjectConfigurationException("sources.include(...) is required")
-    sourceIncludes.forEach { path ->
-      if (!path.endsWith(".xs")) throw ProjectConfigurationException("source include must end in .xs: $path")
-    }
-    val mainCount =
-      sourceIncludes.count { path ->
-        !path.any { character -> character in "*?" } &&
-          java.nio.file.Path
-            .of(path)
-            .fileName
-            .toString() == "main.xs"
-      }
-    if (mainCount > 1) throw ProjectConfigurationException("at most one explicit include may be named main.xs")
-    val hasPattern = sourceIncludes.any { path -> path.any { character -> character in "*?" } }
-    if (!hasPattern && mainCount != 1) {
-      throw ProjectConfigurationException("exactly one included file must be named main.xs")
-    }
+    if (sourceIncludes.isEmpty()) throw ProjectConfigurationException("source.include(...) is required")
     return ProjectPlan(
       project,
       variables.toSortedMap(),
@@ -185,7 +266,10 @@ class ProjectContext internal constructor(
       modules.distinct(),
       sourceIncludes.distinct(),
       sourceExcludes.distinct(),
+      moduleIncludes.distinct(),
+      moduleSources.distinct(),
       testIncludes.distinct(),
+      testExcludes.distinct(),
       testFramework,
       compilerSettings,
     )
@@ -198,6 +282,17 @@ internal fun requireText(
 ): String {
   if (value.isBlank()) throw ProjectConfigurationException("$field cannot be empty")
   return value
+}
+
+internal fun requireModuleSegment(
+  value: String,
+  field: String,
+): String {
+  val name = requireText(value, field)
+  if (!name.matches(Regex("[A-Za-z_][A-Za-z0-9_]*"))) {
+    throw ProjectConfigurationException("$field must be one case-sensitive X# identifier: $name")
+  }
+  return name
 }
 
 object ProjectRuntime {
@@ -227,6 +322,10 @@ object ProjectRuntime {
   fun dependencies(block: DependenciesScope.() -> Unit) = context.dependencies(block)
 
   fun sources(block: SourcesScope.() -> Unit) = context.sources(block)
+
+  fun source(block: SourcesScope.() -> Unit) = context.source(block)
+
+  fun module(block: ModuleScope.() -> Unit) = context.module(block)
 
   fun test(block: TestScope.() -> Unit) = context.test(block)
 
@@ -279,6 +378,10 @@ fun authors(vararg entries: Array<String>) = ProjectRuntime.authors(*entries)
 fun dependencies(block: DependenciesScope.() -> Unit) = ProjectRuntime.dependencies(block)
 
 fun sources(block: SourcesScope.() -> Unit) = ProjectRuntime.sources(block)
+
+fun source(block: SourcesScope.() -> Unit) = ProjectRuntime.source(block)
+
+fun module(block: ModuleScope.() -> Unit) = ProjectRuntime.module(block)
 
 fun test(block: TestScope.() -> Unit) = ProjectRuntime.test(block)
 

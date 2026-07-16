@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Recursively copies changed files from one directory into a backup directory.
 
-module programs::file_backup;
 
-imports collections, stdio, fs, process;
+
+import collections, stdio, fs, process;
 
 data FileEntry {
     path: Str;

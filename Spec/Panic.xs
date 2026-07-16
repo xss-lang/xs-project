@@ -6,9 +6,9 @@
 //
 // Panic exports assertion and panic macros.
 //
-// The compiler behaves as if `imports panic;` existed. The following macros
-// are available without an explicit import, through explicit `imports panic`,
-// or through imports panic or using namespace panic. They are not compiler built-ins:
+// The compiler behaves as if `import panic;` existed. The following macros
+// are available without an explicit import or through explicit `import panic`.
+// They are not compiler built-ins:
 //
 // - assert!
 // - assert_eq!
@@ -68,7 +68,7 @@
 // import; format_args! in their expansions is a built-in macro. The built-in
 // writer macros are separate and are not used by panic expansion directly.
 
-// imports panic; is optional.
+// import panic; is optional.
 
 
 fn validate_positive(value: Long) {
@@ -98,11 +98,6 @@ fn stop_with_message(name: Str) {
 }
 
 
-// Selected imports are valid:
-
-using namespace panic;
-
-fn selected_panic_macros(value: Long) {
-    assert!(value != 0);
-    panic!("namespace using example");
-}
+// `using namespace panic;` is invalid because Panic is macro-only. Macro names
+// enter macro scope through the compiler-provided import and are never opened
+// as ordinary namespace symbols.

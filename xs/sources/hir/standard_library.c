@@ -146,6 +146,7 @@ static const StandardCallInfo standard_calls[] = {
     {.name = "std.thread.spawn", .required_import = "thread"},
     {.name = "std.thread.sleep", .required_import = "thread"},
     {.name = "std.thread.yield", .required_import = "thread"},
+    {.name = "hardware.read_float", .required_import = "hardware"},
     {.name = "std.net.listen", .required_import = "net"},
     {.name = "std.collections.Vector.new", .required_import = "collections"},
     {.name = "std.collections.HashMap.new", .required_import = "collections"},
@@ -168,10 +169,10 @@ static const StandardCallInfo standard_calls[] = {
     {.name = "Atomic.new", .required_import = "atomic", .alternate_import = "sync"},
 };
 
-static bool import_available(const XsHirImportScope *imports, const char *required, const char *alternate)
+static bool import_available(const XsHirImportScope *import, const char *required, const char *alternate)
 {
-  return required == nullptr || xs_hir_import_scope_has_module(imports, required) ||
-         (alternate != nullptr && xs_hir_import_scope_has_module(imports, alternate));
+  return required == nullptr || xs_hir_import_scope_has_module(import, required) ||
+         (alternate != nullptr && xs_hir_import_scope_has_module(import, alternate));
 }
 
 const XsHirStandardTypeInfo *xs_hir_standard_type_find(const char *name)
@@ -187,15 +188,15 @@ const XsHirStandardTypeInfo *xs_hir_standard_type_find(const char *name)
   return nullptr;
 }
 
-XsHirStandardLookup xs_hir_standard_type_lookup(const XsHirStandardTypeInfo *type, const XsHirImportScope *imports)
+XsHirStandardLookup xs_hir_standard_type_lookup(const XsHirStandardTypeInfo *type, const XsHirImportScope *import)
 {
   if(type == nullptr)
     return XS_HIR_STANDARD_UNKNOWN;
-  return import_available(imports, type->required_import, type->alternate_import) ? XS_HIR_STANDARD_AVAILABLE
+  return import_available(import, type->required_import, type->alternate_import) ? XS_HIR_STANDARD_AVAILABLE
                                                                                   : XS_HIR_STANDARD_MISSING_IMPORT;
 }
 
-XsHirStandardLookup xs_hir_standard_call_lookup(const char *name, const XsHirImportScope *imports)
+XsHirStandardLookup xs_hir_standard_call_lookup(const char *name, const XsHirImportScope *import)
 {
   if(name == nullptr)
     return XS_HIR_STANDARD_UNKNOWN;
@@ -203,9 +204,24 @@ XsHirStandardLookup xs_hir_standard_call_lookup(const char *name, const XsHirImp
   {
     if(strcmp(standard_calls[i].name, name) != 0)
       continue;
-    return import_available(imports, standard_calls[i].required_import, standard_calls[i].alternate_import)
+    return import_available(import, standard_calls[i].required_import, standard_calls[i].alternate_import)
                ? XS_HIR_STANDARD_AVAILABLE
                : XS_HIR_STANDARD_MISSING_IMPORT;
   }
   return XS_HIR_STANDARD_UNKNOWN;
+}
+
+bool xs_hir_standard_module_name(const char *name)
+{
+  static const char *const modules[] = {
+      "arc",      "atomic",   "attrs",   "cffi",     "collections", "fs",     "hardware",
+      "http",     "mutex",    "net",     "optional", "panic",       "process", "result",
+      "rw_lock",  "stdio",    "sync",    "thread",   "std.optional", "std.result",
+  };
+  for(size_t i = 0; i < sizeof(modules) / sizeof(modules[0]); ++i)
+  {
+    if(strcmp(name, modules[i]) == 0)
+      return true;
+  }
+  return false;
 }

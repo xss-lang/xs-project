@@ -380,6 +380,52 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
                                                              session: *mut *mut CompilerCoreSession)
                                                              -> FfiStatus
 {
+  // SAFETY: This forwards the exact caller-owned packet and output pointer with
+  // an absent external module name.
+  unsafe { create_session(packet, None, session) }
+}
+
+/// Creates a compiler-core session and assigns its source tree to a project
+/// module supplied by the Kotlin project registry.
+///
+/// # Safety
+///
+/// The packet and session requirements match
+/// [`xslang_compiler_core_session_create`]. `module_name` must reference
+/// `module_name_length` bytes of valid UTF-8.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_create_in_module(packet: *const RawSyntaxPacket,
+                                                                       module_name: *const u8,
+                                                                       module_name_length: u64,
+                                                                       session: *mut *mut CompilerCoreSession)
+                                                                       -> FfiStatus
+{
+  let Ok(length) = table_length(module_name_length)
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  if length == 0 || module_name.is_null()
+  {
+    return FfiStatus::NullArgument;
+  }
+  // SAFETY: The caller contract requires this byte range to be live.
+  let bytes = unsafe { slice::from_raw_parts(module_name, length) };
+  let Ok(name) = str::from_utf8(bytes)
+  else
+  {
+    return FfiStatus::InvalidPacket;
+  };
+  // SAFETY: This function has the same packet and output contract as the
+  // shared implementation.
+  unsafe { create_session(packet, Some(name), session) }
+}
+
+unsafe fn create_session(packet: *const RawSyntaxPacket,
+                         module_name: Option<&str>,
+                         session: *mut *mut CompilerCoreSession)
+                         -> FfiStatus
+{
   let Some(session) = (unsafe { session.as_mut() })
   else
   {
@@ -397,11 +443,16 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
   {
     return FfiStatus::InvalidPacket;
   };
-  let Ok(syntax) = view.to_owned_tree()
+  let Ok(mut syntax) = view.to_owned_tree()
   else
   {
     return FfiStatus::InvalidPacket;
   };
+  if let Some(name) = module_name &&
+     attach_project_module(&mut syntax, name).is_err()
+  {
+    return FfiStatus::InvalidPacket;
+  }
   let Ok(built) = build_session(vec![syntax])
   else
   {
@@ -409,6 +460,57 @@ pub unsafe extern "C" fn xslang_compiler_core_session_create(packet: *const RawS
   };
   *session = Box::into_raw(Box::new(built));
   FfiStatus::Ok
+}
+
+fn attach_project_module(tree: &mut SyntaxTree, name: &str) -> Result<(), ()>
+{
+  const FILE: u32 = 0;
+  const DECL_MODULE: u32 = 1;
+  const IDENTIFIER: u32 = 24;
+  const PATH: u32 = 25;
+  if name.is_empty() || tree.nodes.get(tree.root).is_none_or(|root| root.kind != FILE)
+  {
+    return Err(());
+  }
+  let segments = name.split("::").collect::<Vec<_>>();
+  if segments.iter().any(|segment| segment.is_empty())
+  {
+    return Err(());
+  }
+  let span = tree.nodes[tree.root].span.clone();
+  let module_index = tree.nodes.len();
+  let path_index = module_index + 1;
+  let identifiers = (0..segments.len()).map(|offset| path_index + 1 + offset)
+                                       .collect::<Vec<_>>();
+  tree.nodes.push(SyntaxNode { kind: DECL_MODULE,
+                               token_kind: 0,
+                               visibility: 0,
+                               flags: 0,
+                               parent: Some(tree.root),
+                               children: vec![path_index],
+                               text: String::new(),
+                               span: span.clone() });
+  tree.nodes.push(SyntaxNode { kind: PATH,
+                               token_kind: 0,
+                               visibility: 0,
+                               flags: 0,
+                               parent: Some(module_index),
+                               children: identifiers,
+                               text: String::new(),
+                               span: span.clone() });
+  for segment in segments
+  {
+    tree.nodes.push(SyntaxNode { kind: IDENTIFIER,
+                                 token_kind: 0,
+                                 visibility: 0,
+                                 flags: 0,
+                                 parent: Some(path_index),
+                                 children: vec![],
+                                 text: segment.to_string(),
+                                 span: span.clone() });
+  }
+  tree.nodes[tree.root].children.insert(0, module_index);
+  Ok(())
 }
 
 /// Merges existing per-file sessions into one program-wide compiler-core session.

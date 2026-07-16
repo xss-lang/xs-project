@@ -80,7 +80,7 @@ impl Parser<'_>
     {
       match line.as_str()
       {
-        "imports" => self.imports(&mut module),
+        "import" => self.import(&mut module),
         "declarations" => self.declarations(&mut module),
         ".program end" => break,
         other =>
@@ -780,7 +780,7 @@ impl Parser<'_>
     Literal::None
   }
 
-  fn imports(&mut self, module: &mut Module)
+  fn import(&mut self, module: &mut Module)
   {
     self.index += 1;
     while let Some(line) = self.current()

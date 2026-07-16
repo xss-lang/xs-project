@@ -7,8 +7,9 @@
 // Stdio provides formatted text output macros, the std::fmt formatting API,
 // and standard stream functions.
 // print!, println!, eprint!, eprintln!, and format! are exported Stdio macros.
-// They and std::fmt::* are made available through `imports stdio`; they are
-// not prelude or compiler built-ins.
+// Their declarations carry #[MacroExport]. They and std::fmt::* are made
+// available through `import stdio`; they are not prelude or compiler built-ins.
+// Exported macros are invoked without qualification, for example println!.
 // format_args! and format_args_nl! are compiler-special built-in macros. They
 // do not participate in macro_rules! matching and cannot be redefined or
 // shadowed. write! and writeln! are built-in writer macros. None of these
@@ -21,7 +22,7 @@
 // Formatted output uses placeholder-based formatting.
 //
 
-imports stdio, fs, collections;
+import stdio, fs, collections;
 
 
 // standard output macros

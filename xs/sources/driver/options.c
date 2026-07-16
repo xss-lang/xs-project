@@ -144,6 +144,12 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
         return false;
       options->file_path = argv[i];
     }
+    else if(strcmp(argv[i], "--module") == 0)
+    {
+      if(++i >= argc || options->module_path != nullptr)
+        return false;
+      options->module_path = argv[i];
+    }
     else if(strcmp(argv[i], "--output") == 0)
     {
       if(++i >= argc || options->output != XS_BUILD_OUTPUT_NONE)
@@ -178,6 +184,8 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
     return options->output == XS_BUILD_OUTPUT_NONE;
   if(options->file_path != nullptr)
   {
+    if(options->module_path != nullptr)
+      return false;
     if(strcmp(options->command, "check") == 0)
       return options->output == XS_BUILD_OUTPUT_NONE;
     return strcmp(options->command, "build") == 0;
@@ -188,9 +196,9 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
 void xs_cli_print_usage(FILE *stream)
 {
   fprintf(stream, "usage: xs --version\n");
-  fprintf(stream, "usage: xs <check|build|run>\n");
+  fprintf(stream, "usage: xs <check|build|run> [--module <directory>]\n");
   fprintf(stream, "       [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]\n");
-  fprintf(stream, "usage: xs <check|run> -proj <project.xsproj>\n");
+  fprintf(stream, "usage: xs <check|run> -proj <project.xsproj> [--module <directory>]\n");
   fprintf(stream, "usage: xs build -file <Main.xs>\n");
   fprintf(stream, "usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>\n");
   fprintf(stream, "usage: xs build [--output hir|mir|xlil] -file <input>\n");

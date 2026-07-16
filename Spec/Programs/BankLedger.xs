@@ -4,9 +4,9 @@
 // Complete-language example program:
 // A small two-sided ledger with nominal money and audit records.
 
-module programs::bank_ledger;
 
-imports collections, stdio, process;
+
+import collections, stdio, process;
 
 data Money {
     cents: Int;

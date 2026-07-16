@@ -22,7 +22,7 @@ xs_add_c_test(lexer tests/lexer_tests.c xs_compiler)
 xs_add_c_test(parser tests/parser_tests.c xs_compiler)
 xs_add_c_test(diagnostic tests/diagnostic_tests.c xs_compiler)
 
-find_program(XS_GRADLE_EXECUTABLE NAMES gradle REQUIRED)
+set(XS_GRADLE_EXECUTABLE "${CMAKE_SOURCE_DIR}/xs_kts/gradlew")
 set(XS_PROJECT_TEST_DRIVER
     "${CMAKE_SOURCE_DIR}/xs_kts/build/install/xs-project/bin/xs-project")
 add_test(NAME kotlin_project_resolver_build COMMAND "${XS_GRADLE_EXECUTABLE}" --daemon --build-cache

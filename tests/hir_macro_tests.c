@@ -26,10 +26,10 @@ static int failures;
 
 static void test_declaration_macro_symbols(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "make!();\n";
-  XsSource source = {.path = "MacroSymbols.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroSymbols.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroExpansionReport report;
@@ -57,11 +57,11 @@ static void test_declaration_macro_symbols(void)
 
 static void test_declaration_macro_duplicate_symbols(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "fn Generated() {}\n"
                      "macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "make!();\n";
-  XsSource source = {.path = "MacroDuplicateSymbols.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroDuplicateSymbols.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroDeclarationExpansionSet declarations;
@@ -81,28 +81,28 @@ static void test_declaration_macro_duplicate_symbols(void)
 
 static void test_generated_function_name_use(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "fn Main() { Generated(); }\n"
                      "macro_rules! make { () -> { incomplete fn Generated(); }; }\n"
                      "make!();\n";
-  XsSource source = {.path = "MacroGeneratedNameUse.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroGeneratedNameUse.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroStatementExpansionSet statements;
   XsMacroDeclarationExpansionSet declarations;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 83, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
   CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_macro_declaration_expansion_set_free(&declarations);
   xs_macro_statement_expansion_set_free(&statements);
@@ -112,28 +112,28 @@ static void test_generated_function_name_use(void)
 
 static void test_generated_declaration_type_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! make { () -> { incomplete fn Broken(value: Missing); }; }\n"
                      "make!();\n";
-  XsSource source = {.path = "MacroGeneratedTypeError.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroGeneratedTypeError.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroStatementExpansionSet statements;
   XsMacroDeclarationExpansionSet declarations;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 84, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
   CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types_expanded(&tree, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_macro_declaration_expansion_set_free(&declarations);
   xs_macro_statement_expansion_set_free(&statements);
@@ -143,10 +143,10 @@ static void test_generated_declaration_type_errors(void)
 
 static void test_item_fragment_declaration_symbol(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! forward { ($item:item) -> { $item }; }\n"
                      "forward!(incomplete fn Generated(););\n";
-  XsSource source = {.path = "MacroItemFragment.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroItemFragment.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroExpansionReport report;
@@ -175,10 +175,10 @@ static void test_item_fragment_declaration_symbol(void)
 
 static void test_item_fragment_empty_call_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! forward { ($item:item) -> { $item }; }\n"
                      "forward!();\n";
-  XsSource source = {.path = "MacroItemFragmentEmpty.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroItemFragmentEmpty.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
@@ -191,13 +191,13 @@ static void test_item_fragment_empty_call_errors(void)
 
 static void test_multiple_matching_declaration_rules(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! make {\n"
                      "  () -> { incomplete fn First(); };\n"
                      "  () -> { incomplete fn Second(); };\n"
                      "}\n"
                      "make!();\n";
-  XsSource source = {.path = "MacroMultipleRules.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroMultipleRules.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
@@ -210,14 +210,14 @@ static void test_multiple_matching_declaration_rules(void)
 
 static void test_multiple_matching_statement_rules_name_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "incomplete fn Known();\n"
                      "macro_rules! both {\n"
                      "  () -> { Known(); };\n"
                      "  () -> { Missing(); };\n"
                      "}\n"
                      "fn Main() { both!(); }\n";
-  XsSource source = {.path = "MacroMultipleStatementNames.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroMultipleStatementNames.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
@@ -230,13 +230,13 @@ static void test_multiple_matching_statement_rules_name_errors(void)
 
 static void test_multiple_matching_statement_rules_type_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "macro_rules! both {\n"
                      "  () -> { value: Int = None; };\n"
                      "  () -> { broken: Missing = None; };\n"
                      "}\n"
                      "fn Main() { both!(); }\n";
-  XsSource source = {.path = "MacroMultipleStatementTypes.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroMultipleStatementTypes.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
@@ -249,31 +249,31 @@ static void test_multiple_matching_statement_rules_type_errors(void)
 
 static void test_generated_class_member_type_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  macro_rules! make { () -> { incomplete fn Broken(value: Missing); }; }\n"
                      "  make!();\n"
                      "}\n";
-  XsSource source = {.path = "MacroGeneratedMemberTypeError.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroGeneratedMemberTypeError.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroStatementExpansionSet statements;
   XsMacroDeclarationExpansionSet declarations;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 90, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
   CHECK(declarations.count == 1);
   CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types_with_macros(&tree, &declarations, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types_with_macros(&tree, &declarations, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_macro_declaration_expansion_set_free(&declarations);
   xs_macro_statement_expansion_set_free(&statements);
@@ -283,31 +283,31 @@ static void test_generated_class_member_type_errors(void)
 
 static void test_generated_class_field_like_type_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "class User {\n"
                      "  macro_rules! make { () -> { value: Missing; }; }\n"
                      "  make!();\n"
                      "}\n";
-  XsSource source = {.path = "MacroGeneratedFieldLikeTypeError.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "MacroGeneratedFieldLikeTypeError.xs", .module_name = "App", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   XsMacroStatementExpansionSet statements;
   XsMacroDeclarationExpansionSet declarations;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 91, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
   CHECK(declarations.count == 1);
   CHECK(xs_hir_collect_symbols_expanded(&tree, &declarations, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_resolve_types_with_macros(&tree, &declarations, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_resolve_types_with_macros(&tree, &declarations, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_macro_declaration_expansion_set_free(&declarations);
   xs_macro_statement_expansion_set_free(&statements);

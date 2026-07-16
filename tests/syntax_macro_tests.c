@@ -75,6 +75,32 @@ static void test_macro_semantic_validation(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_macro_export_attribute_structure(void)
+{
+  const char *text = "#[MacroExport]\nmacro_rules! exported { () -> {}; }\n";
+  XsSource source = {.path = "ExportedMacro.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 61, &diagnostics, &tree));
+  const XsSyntaxNode *macro = xs_syntax_find_first(tree.root, XS_SYNTAX_DECL_MACRO);
+  CHECK(macro != nullptr);
+  CHECK(macro == nullptr || xs_syntax_find_first(macro, XS_SYNTAX_ATTRIBUTE_LIST) != nullptr);
+  CHECK(macro == nullptr || xs_syntax_find_first(macro, XS_SYNTAX_ATTRIBUTE) != nullptr);
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *local = "class Box { #[MacroExport] macro_rules! local { () -> {}; } }\n";
+  source = (XsSource){.path = "LocalExportedMacro.xs", .text = local, .length = strlen(local)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 62, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 static void test_macro_scope_resolution(void)
 {
   const char *call_before_definition = "fn Main() { later!(); macro_rules! later { () -> {}; } }";
@@ -473,7 +499,7 @@ static void test_declaration_macro_expansion(void)
 
 static void test_imported_panic_macros_resolve_without_expansion(void)
 {
-  const char *text = "imports panic;\nfn Main() { assert!(true); assert_eq!(1, 1); assert_ne!(1, 2); panic!(); }\n";
+  const char *text = "import panic;\nfn Main() { assert!(true); assert_eq!(1, 1); assert_ne!(1, 2); panic!(); }\n";
   XsSource source = {.path = "PanicMacros.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
@@ -497,15 +523,6 @@ static void test_imported_panic_macros_resolve_without_expansion(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *selected = "using namespace panic;\n"
-                         "fn Main() { debug_assert!(true); debug_assert_eq!(1, 1); }\n";
-  source = (XsSource){.path = "SelectedPanicMacros.xs", .text = selected, .length = strlen(selected)};
-  xs_diagnostics_init(&diagnostics);
-  CHECK(xs_syntax_parse(&source, 35, &diagnostics, &tree));
-  CHECK(xs_macro_validate(&tree, &diagnostics));
-  xs_syntax_tree_free(&tree);
-  xs_diagnostics_free(&diagnostics);
-
   const char *implicit_import = "fn Main() { panic!(); assert!(true); }\n";
   source = (XsSource){.path = "ImplicitPanicImport.xs", .text = implicit_import, .length = strlen(implicit_import)};
   xs_diagnostics_init(&diagnostics);
@@ -517,7 +534,7 @@ static void test_imported_panic_macros_resolve_without_expansion(void)
 
 static void test_formatting_macros_accept_output_forms(void)
 {
-  const char *valid = "imports stdio;\n"
+  const char *valid = "import stdio;\n"
                       "fn Main(value: Long) {\n"
                       "  print!(\"{}\", value);\n"
                       "  println!();\n"
@@ -550,7 +567,7 @@ static void test_formatting_macros_accept_output_forms(void)
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 
-  const char *selected = "using namespace stdio;\n"
+  const char *selected = "import stdio;\nusing namespace stdio;\n"
                          "fn Main(value: Long) { println!(); format_args!(\"{}\", value); "
                          "write!(std::stdout(), \"{}\", value); writeln!(std::stdout()); }\n";
   source = (XsSource){.path = "SelectedStdioMacros.xs", .text = selected, .length = strlen(selected)};
@@ -564,6 +581,16 @@ static void test_formatting_macros_accept_output_forms(void)
   source = (XsSource){.path = "MissingStdioImport.xs", .text = missing, .length = strlen(missing)};
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 39, &diagnostics, &tree));
+  CHECK(!xs_macro_validate(&tree, &diagnostics));
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+
+  const char *using_without_import = "using namespace stdio;\nfn Main() { println!(); }\n";
+  source = (XsSource){.path = "UsingWithoutStdioImport.xs",
+                      .text = using_without_import,
+                      .length = strlen(using_without_import)};
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 63, &diagnostics, &tree));
   CHECK(!xs_macro_validate(&tree, &diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -582,17 +609,17 @@ static void test_formatting_macros_accept_output_forms(void)
 static void test_formatting_macros_reject_invalid_forms(void)
 {
   const char *invalid_cases[] = {
-      "imports stdio;\nfn Main() { print!(); }\n",
-      "imports stdio;\nfn Main() { eprint!(); }\n",
-      "imports stdio;\nfn Main() { println!(10); }\n",
-      "imports stdio;\nfn Main() { println!(\"value\", 10); }\n",
-      "imports stdio;\nfn Main() { println!(\"{}\",); }\n",
+      "import stdio;\nfn Main() { print!(); }\n",
+      "import stdio;\nfn Main() { eprint!(); }\n",
+      "import stdio;\nfn Main() { println!(10); }\n",
+      "import stdio;\nfn Main() { println!(\"value\", 10); }\n",
+      "import stdio;\nfn Main() { println!(\"{}\",); }\n",
       "fn Main() { format_args!(); }\n",
       "fn Main() { format_args_nl!(); }\n",
       "macro_rules! format_args { ($value:expr) -> { $value }; }\nfn Main() { format_args!(\"{}\", 1); }\n",
       "macro_rules! format_args_nl { ($value:expr) -> { $value }; }\nfn Main() { format_args_nl!(\"{}\", 1); }\n",
-      "imports stdio;\nfn Main() { println!(\"{\"); }\n",
-      "imports stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
+      "import stdio;\nfn Main() { println!(\"{\"); }\n",
+      "import stdio;\nfn Main() { println!(\"{:!}\", 1); }\n",
       "fn Main() { write!(); }\n",
       "fn Main() { write!(std::stdout()); }\n",
       "fn Main() { write!(std::stdout(), 10); }\n",
@@ -617,6 +644,7 @@ int main(void)
 {
   test_macro_repetition_and_unique_variables();
   test_macro_semantic_validation();
+  test_macro_export_attribute_structure();
   test_macro_scope_resolution();
   test_single_token_fragment_matching();
   test_macro_expansion_preparation_report();

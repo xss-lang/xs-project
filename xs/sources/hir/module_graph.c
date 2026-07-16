@@ -9,30 +9,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-static bool append_import(ImportList *imports, char *name, size_t start, size_t end)
+static bool append_import(ImportList *import, char *name, size_t start, size_t end)
 {
-  if(imports->count == imports->capacity)
+  if(import->count == import->capacity)
   {
-    size_t capacity = imports->capacity == 0 ? 4 : imports->capacity * 2;
-    ImportView *items = realloc(imports->items, capacity * sizeof(*items));
+    size_t capacity = import->capacity == 0 ? 4 : import->capacity * 2;
+    ImportView *items = realloc(import->items, capacity * sizeof(*items));
     if(items == nullptr)
     {
       free(name);
       return false;
     }
-    imports->items = items;
-    imports->capacity = capacity;
+    import->items = items;
+    import->capacity = capacity;
   }
-  imports->items[imports->count++] = (ImportView){.name = name, .start = start, .end = end};
+  import->items[import->count++] = (ImportView){.name = name, .start = start, .end = end};
   return true;
 }
 
-static void free_imports(ImportList *imports)
+static void free_imports(ImportList *import)
 {
-  for(size_t i = 0; i < imports->count; ++i)
-    free(imports->items[i].name);
-  free(imports->items);
-  *imports = (ImportList){0};
+  for(size_t i = 0; i < import->count; ++i)
+    free(import->items[i].name);
+  free(import->items);
+  *import = (ImportList){0};
 }
 
 static void trim_last_path_segment(char *path)
@@ -42,7 +42,7 @@ static void trim_last_path_segment(char *path)
     *dot = '\0';
 }
 
-static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *issues)
+static bool scan_imports(const char *path, ImportList *import, XsModuleIssues *issues)
 {
   size_t length = 0;
   char *text = read_file(path, &length);
@@ -74,7 +74,7 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
       scanner_advance(&scanner);
       continue;
     }
-    if(brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_IMPORTS)
+    if(brace_depth == 0 && scanner.current.kind == XS_TOKEN_KW_IMPORT)
     {
       scanner_advance(&scanner);
       do
@@ -82,7 +82,7 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
         size_t start = 0;
         size_t end = 0;
         char *name = scan_path(&scanner, &start, &end);
-        if(name == nullptr || !append_import(imports, name, start, end))
+        if(name == nullptr || !append_import(import, name, start, end))
         {
           success = false;
           break;
@@ -119,7 +119,7 @@ static bool scan_imports(const char *path, ImportList *imports, XsModuleIssues *
       }
       if(name != nullptr && !namespace_using)
         trim_last_path_segment(name);
-      if(name == nullptr || !append_import(imports, name, start, end))
+      if(name == nullptr || !append_import(import, name, start, end))
         success = false;
       continue;
     }
@@ -219,21 +219,21 @@ bool xs_module_graph_resolve(const char *project_root, const char *const *direct
       success = false;
       break;
     }
-    ImportList imports = {0};
-    if(!scan_imports(path, &imports, issues))
+    ImportList import = {0};
+    if(!scan_imports(path, &import, issues))
       success = false;
-    for(size_t i = 0; i < imports.count; ++i)
+    for(size_t i = 0; i < import.count; ++i)
     {
-      const XsDiscoveredModule *module = xs_module_registry_find(registry, imports.items[i].name);
+      const XsDiscoveredModule *module = xs_module_registry_find(registry, import.items[i].name);
       if(module == nullptr)
       {
         char message[512];
-        snprintf(message, sizeof(message), "imported module '%s' was not found", imports.items[i].name);
-        append_issue(issues, path, imports.items[i].start, imports.items[i].end, message);
+        snprintf(message, sizeof(message), "imported module '%s' was not found", import.items[i].name);
+        append_issue(issues, path, import.items[i].start, import.items[i].end, message);
         success = false;
         continue;
       }
-      if(!append_dependency(graph, path, &imports.items[i], module->source_path))
+      if(!append_dependency(graph, path, &import.items[i], module->source_path))
       {
         issues->allocation_failed = true;
         success = false;
@@ -250,7 +250,7 @@ bool xs_module_graph_resolve(const char *project_root, const char *const *direct
         }
       }
     }
-    free_imports(&imports);
+    free_imports(&import);
   }
   for(size_t i = 0; i < queue.count; ++i)
     free(queue.items[i]);

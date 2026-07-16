@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Aggregates asynchronous sensor readings with Optional values and cancellation.
 
-module programs::sensor_stream;
 
-imports collections, hardware, thread, sync, stdio;
+
+import collections, hardware, thread, sync, stdio;
 
 data Reading {
     sensor_id: Str;

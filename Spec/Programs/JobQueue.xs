@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Demonstrates a small async job queue with Result and Optional values.
 
-module programs::job_queue;
 
-imports collections, optional, process, sync, stdio;
+
+import collections, optional, process, sync, stdio;
 
 data Job {
     id: Int;

@@ -27,7 +27,7 @@ static int failures;
 static bool parse_and_collect(const char *text, XsSyntaxTree *tree, XsHirSymbolTable *symbols,
                               XsDiagnostics *diagnostics)
 {
-  XsSource source = {.path = "Symbols.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "Symbols.xs", .module_name = "App", .text = text, .length = strlen(text)};
   xs_diagnostics_init(diagnostics);
   xs_hir_symbol_table_init(symbols);
   if(!xs_syntax_parse(&source, 21, diagnostics, tree))
@@ -44,12 +44,14 @@ static void free_all(XsSyntaxTree *tree, XsHirSymbolTable *symbols, XsDiagnostic
 
 static void test_module_namespace_symbols(void)
 {
-  const char *text = "module App;\n"
-                     "namespace Core;\n"
-                     "public fn Main() {}\n"
-                     "internal class Service {}\n"
-                     "namespace Util;\n"
-                     "data Result { value: Int; }\n";
+  const char *text = ""
+                     "namespace Core {\n"
+                     "  public fn Main() {}\n"
+                     "  internal class Service {}\n"
+                     "}\n"
+                     "namespace Util {\n"
+                     "  data Result { value: Int; }\n"
+                     "}\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsDiagnostics diagnostics;
@@ -68,7 +70,7 @@ static void test_module_namespace_symbols(void)
 
 static void test_duplicate_names_in_namespace(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "namespace Core;\n"
                      "fn Twice() {}\n"
                      "class Twice {}\n";
@@ -82,7 +84,7 @@ static void test_duplicate_names_in_namespace(void)
 
 static void test_extern_block_symbols(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[repr(C)]\n"
                      "extern \"C\" {\n"
                      "  fn puts(text: std::cffi::CStr) -> Int;\n"
@@ -103,7 +105,7 @@ static void test_extern_block_symbols(void)
 
 static void test_extern_block_duplicate_symbol_errors(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "fn puts() {}\n"
                      "extern \"C\" { fn puts() -> Int; }\n";
   XsSyntaxTree tree;
@@ -116,7 +118,7 @@ static void test_extern_block_duplicate_symbol_errors(void)
 
 static bool parse_and_validate_cffi(const char *text, XsSyntaxTree *tree, XsDiagnostics *diagnostics)
 {
-  XsSource source = {.path = "std.cffi.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "std.cffi.xs", .module_name = "App", .text = text, .length = strlen(text)};
   xs_diagnostics_init(diagnostics);
   if(!xs_syntax_parse(&source, 27, diagnostics, tree))
     return false;
@@ -132,7 +134,7 @@ static bool node_text_is(XsText text, const char *expected)
 
 static void test_cffi_validation_accepts_repr_c_extern_block(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[LinkLibrary(\"c\")]\n"
                      "#[Header(\"stdio.h\")]\n"
                      "#[repr(C)]\n"
@@ -169,7 +171,7 @@ static void test_cffi_validation_accepts_repr_c_extern_block(void)
 
 static void test_cffi_validation_rejects_missing_repr_c(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "extern \"C\" { fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
   XsDiagnostics diagnostics;
@@ -181,7 +183,7 @@ static void test_cffi_validation_rejects_missing_repr_c(void)
 
 static void test_cffi_validation_rejects_unsupported_abi(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[repr(C)]\n"
                      "extern \"stdcall\" { fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
@@ -194,7 +196,7 @@ static void test_cffi_validation_rejects_unsupported_abi(void)
 
 static void test_cffi_validation_rejects_non_c_repr(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[repr(Rust)]\n"
                      "extern \"C\" { fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
@@ -207,7 +209,7 @@ static void test_cffi_validation_rejects_non_c_repr(void)
 
 static void test_cffi_validation_rejects_invalid_link_name(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[repr(C)]\n"
                      "extern \"C\" { #[LinkName(puts)] fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
@@ -220,7 +222,7 @@ static void test_cffi_validation_rejects_invalid_link_name(void)
 
 static void test_cffi_validation_rejects_thread_local_function(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[repr(C)]\n"
                      "extern \"C\" { #[ThreadLocal] fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
@@ -233,7 +235,7 @@ static void test_cffi_validation_rejects_thread_local_function(void)
 
 static void test_cffi_validation_rejects_function_attribute_on_static(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[repr(C)]\n"
                      "extern \"C\" { #[NoUnwind] static errno: Int; }\n";
   XsSyntaxTree tree;
@@ -246,7 +248,7 @@ static void test_cffi_validation_rejects_function_attribute_on_static(void)
 
 static void test_cffi_validation_rejects_block_attribute_on_function(void)
 {
-  const char *text = "module App;\n"
+  const char *text = ""
                      "#[repr(C)]\n"
                      "extern \"C\" { #[LinkLibrary(\"c\")] fn puts(text: std::cffi::CStr) -> Int; }\n";
   XsSyntaxTree tree;
@@ -259,11 +261,9 @@ static void test_cffi_validation_rejects_block_attribute_on_function(void)
 
 static void test_same_name_in_different_namespace(void)
 {
-  const char *text = "module App;\n"
-                     "namespace First;\n"
-                     "fn Value() {}\n"
-                     "namespace Second;\n"
-                     "fn Value() {}\n";
+  const char *text = ""
+                     "namespace First { fn Value() {} }\n"
+                     "namespace Second { fn Value() {} }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
   XsDiagnostics diagnostics;
@@ -274,30 +274,36 @@ static void test_same_name_in_different_namespace(void)
   free_all(&tree, &symbols, &diagnostics);
 }
 
-static bool add_file_symbols(const char *text, uint64_t file_id, XsSyntaxTree *tree, XsHirSymbolTable *symbols,
-                             XsDiagnostics *diagnostics)
+static bool add_file_symbols_in_module(const char *text, const char *module_name, uint64_t file_id,
+                                       XsSyntaxTree *tree, XsHirSymbolTable *symbols, XsDiagnostics *diagnostics)
 {
-  XsSource source = {.path = "File.xs", .text = text, .length = strlen(text)};
+  XsSource source = {.path = "File.xs", .module_name = module_name, .text = text, .length = strlen(text)};
   if(!xs_syntax_parse(&source, file_id, diagnostics, tree))
     return false;
   return xs_hir_collect_symbols(tree, symbols, diagnostics);
+}
+
+static bool add_file_symbols(const char *text, uint64_t file_id, XsSyntaxTree *tree, XsHirSymbolTable *symbols,
+                             XsDiagnostics *diagnostics)
+{
+  return add_file_symbols_in_module(text, "App", file_id, tree, symbols, diagnostics);
 }
 
 static bool check_single_source_names(const char *text)
 {
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   bool success = add_file_symbols(text, 30, &tree, &symbols, &diagnostics);
   if(success)
-    success = xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics);
+    success = xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics);
   if(success)
-    success = xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics);
-  xs_hir_import_scope_free(&imports);
+    success = xs_hir_validate_name_uses(&tree, &symbols, &import, &diagnostics);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -306,44 +312,44 @@ static bool check_single_source_names(const char *text)
 
 static void test_import_resolution(void)
 {
-  const char *library = "module Math;\n"
+  const char *library = ""
                         "public fn Add() {}\n"
                         "public extern \"C\" { public static errno: Int; }\n"
                         "private fn Hidden() {}\n";
-  const char *main = "module App;\n"
-                     "imports Math;\n"
+  const char *main = ""
+                     "import Math;\n"
                      "using Sum = Math::Add;\n"
                      "using Math::errno;\n"
                      "fn Main() {}\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 31, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math", 31, &library_tree, &symbols, &diagnostics));
   CHECK(add_file_symbols(main, 32, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_import_scope_has_module(&imports, "panic"));
-  CHECK(xs_hir_import_scope_has_module(&imports, "optional"));
-  CHECK(xs_hir_import_scope_has_module(&imports, "std.optional"));
-  CHECK(xs_hir_import_scope_has_module(&imports, "std.optional.Optional"));
-  CHECK(xs_hir_import_scope_has_module(&imports, "result"));
-  CHECK(xs_hir_import_scope_has_module(&imports, "std.result"));
-  CHECK(xs_hir_import_scope_has_module(&imports, "std.result.Result"));
-  CHECK(xs_hir_import_scope_has_module(&imports, "Math"));
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Add") == nullptr);
-  CHECK(xs_hir_import_scope_find(&imports, "Math.errno") == nullptr);
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Hidden") == nullptr);
-  const XsHirImportBinding *sum = xs_hir_import_scope_find(&imports, "Sum");
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_import_scope_has_module(&import, "panic"));
+  CHECK(xs_hir_import_scope_has_module(&import, "optional"));
+  CHECK(xs_hir_import_scope_has_module(&import, "std.optional"));
+  CHECK(xs_hir_import_scope_has_module(&import, "std.optional.Optional"));
+  CHECK(xs_hir_import_scope_has_module(&import, "result"));
+  CHECK(xs_hir_import_scope_has_module(&import, "std.result"));
+  CHECK(xs_hir_import_scope_has_module(&import, "std.result.Result"));
+  CHECK(xs_hir_import_scope_has_module(&import, "Math"));
+  CHECK(xs_hir_import_scope_find(&import, "Math.Add") == nullptr);
+  CHECK(xs_hir_import_scope_find(&import, "Math.errno") == nullptr);
+  CHECK(xs_hir_import_scope_find(&import, "Math.Hidden") == nullptr);
+  const XsHirImportBinding *sum = xs_hir_import_scope_find(&import, "Sum");
   CHECK(sum != nullptr);
   CHECK(sum != nullptr && strcmp(sum->symbol->qualified_name, "Math.Add") == 0);
-  const XsHirImportBinding *errno_import = xs_hir_import_scope_find(&imports, "errno");
+  const XsHirImportBinding *errno_import = xs_hir_import_scope_find(&import, "errno");
   CHECK(errno_import != nullptr);
   CHECK(errno_import != nullptr && errno_import->symbol->kind == XS_HIR_SYMBOL_EXTERN_GLOBAL);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -352,34 +358,34 @@ static void test_import_resolution(void)
 
 static void test_public_namespace_exports_explicit_public_symbols(void)
 {
-  const char *library = "module Math;\n"
+  const char *library = ""
                         "public namespace Advanced;\n"
                         "public fn Add() {}\n"
                         "private fn Hidden() {}\n";
-  const char *main = "module App;\n"
-                     "imports Math::Advanced;\n"
+  const char *main = ""
+                     "import Math::Advanced;\n"
                      "using Math::Advanced::Add;\n"
                      "fn Main() { Math::Advanced::Add(); Add(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 35, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math", 35, &library_tree, &symbols, &diagnostics));
   const XsHirSymbol *add = xs_hir_symbol_table_find(&symbols, "Math.Advanced.Add");
   const XsHirSymbol *hidden = xs_hir_symbol_table_find(&symbols, "Math.Advanced.Hidden");
   CHECK(add != nullptr && add->visibility == XS_SYNTAX_VISIBILITY_PUBLIC);
   CHECK(hidden != nullptr && hidden->visibility == XS_SYNTAX_VISIBILITY_PRIVATE);
   CHECK(add_file_symbols(main, 36, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_import_scope_has_module(&imports, "Math.Advanced"));
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Add") == nullptr);
-  CHECK(xs_hir_import_scope_find(&imports, "Math.Advanced.Hidden") == nullptr);
-  CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_import_scope_has_module(&import, "Math.Advanced"));
+  CHECK(xs_hir_import_scope_find(&import, "Math.Advanced.Add") == nullptr);
+  CHECK(xs_hir_import_scope_find(&import, "Math.Advanced.Hidden") == nullptr);
+  CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -388,23 +394,23 @@ static void test_public_namespace_exports_explicit_public_symbols(void)
 
 static void test_import_errors(void)
 {
-  const char *library = "module Math;\n"
+  const char *library = ""
                         "private fn Hidden() {}\n";
-  const char *main = "module App;\n"
+  const char *main = ""
                      "using Math::Hidden;\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 41, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math", 41, &library_tree, &symbols, &diagnostics));
   CHECK(add_file_symbols(main, 42, &main_tree, &symbols, &diagnostics));
-  CHECK(!xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(!xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -413,10 +419,10 @@ static void test_import_errors(void)
 
 static void test_name_use_resolution(void)
 {
-  const char *library = "module Math::Advanced;\n"
+  const char *library = ""
                         "public fn Add(a: Int, b: Int) -> Int { return a + b; }\n";
-  const char *main = "module App;\n"
-                     "imports Math::Advanced;\n"
+  const char *main = ""
+                     "import Math::Advanced;\n"
                      "using Sum = Math::Advanced::Add;\n"
                      "fn Main() {\n"
                      "  first: Int = Math::Advanced::Add(1, 2);\n"
@@ -425,16 +431,16 @@ static void test_name_use_resolution(void)
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 51, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math::Advanced", 51, &library_tree, &symbols, &diagnostics));
   CHECK(add_file_symbols(main, 52, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -443,8 +449,8 @@ static void test_name_use_resolution(void)
 
 static void test_standard_library_name_resolution(void)
 {
-  const char *valid = "module App;\n"
-                      "imports fs, process, thread, net, stdio;\n"
+  const char *valid = ""
+                      "import fs, process, thread, net, stdio;\n"
                       "fn Main() -> Result<()> {\n"
                       "  content: Optional<Str> = Some(std::fs::read_to_str(\"input.txt\"));\n"
                       "  std::fs::create_dir(\"out\");\n"
@@ -455,13 +461,13 @@ static void test_standard_library_name_resolution(void)
                       "  return Ok();\n"
                       "}\n";
   CHECK(check_single_source_names(valid));
-  CHECK(!check_single_source_names("module App;\nfn Main() { std::fs::read_to_str(\"input.txt\"); }\n"));
-  CHECK(!check_single_source_names("module App;\nimports fs;\nfn Main() { std::fs::invented(); }\n"));
+  CHECK(!check_single_source_names("fn Main() { std::fs::read_to_str(\"input.txt\"); }\n"));
+  CHECK(!check_single_source_names("import fs;\nfn Main() { std::fs::invented(); }\n"));
 }
 
 static void test_associated_items_and_pattern_bindings(void)
 {
-  const char *valid = "module App;\n"
+  const char *valid = ""
                       "class Parser { static fn parse(value: Str) -> Int { return 1; } }\n"
                       "enum data Command { Add: Str, Done: Int, }\n"
                       "fn Main() {\n"
@@ -473,27 +479,27 @@ static void test_associated_items_and_pattern_bindings(void)
                       "  receiver.consume();\n"
                       "}\n";
   CHECK(check_single_source_names(valid));
-  CHECK(!check_single_source_names("module App;\nclass Parser { fn parse() {} }\nfn Main() { Parser::parse(); }\n"));
+  CHECK(!check_single_source_names("class Parser { fn parse() {} }\nfn Main() { Parser::parse(); }\n"));
   CHECK(
-      !check_single_source_names("module App;\nenum data Command { Add: Str, }\nfn Main() { Command::Missing(); }\n"));
+      !check_single_source_names("enum data Command { Add: Str, }\nfn Main() { Command::Missing(); }\n"));
 }
 
 static void test_name_use_errors(void)
 {
-  const char *main = "module App;\n"
+  const char *main = ""
                      "fn Main() { Missing.Call(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(add_file_symbols(main, 61, &tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses(&tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -501,24 +507,24 @@ static void test_name_use_errors(void)
 
 static void test_qualified_external_name_requires_import(void)
 {
-  const char *library = "module Math;\n"
+  const char *library = ""
                         "public fn Add() {}\n";
-  const char *main = "module App;\n"
+  const char *main = ""
                      "fn Main() { Math::Add(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 41, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math", 41, &library_tree, &symbols, &diagnostics));
   CHECK(add_file_symbols(main, 42, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -527,31 +533,31 @@ static void test_qualified_external_name_requires_import(void)
 
 static void test_expanded_macro_name_use_errors(void)
 {
-  const char *main = "module App;\n"
+  const char *main = ""
                      "macro_rules! bad { () -> { Missing.Call() }; }\n"
                      "fn Main() { bad!(); }\n";
-  XsSource source = {.path = "MacroNameUse.xs", .text = main, .length = strlen(main)};
+  XsSource source = {.path = "MacroNameUse.xs", .module_name = "App", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsMacroExpansionReport report;
   XsMacroStatementExpansionSet statements;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 62, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -559,19 +565,19 @@ static void test_expanded_macro_name_use_errors(void)
 
 static void test_statement_fragment_macro_name_use_errors(void)
 {
-  const char *main = "module App;\n"
+  const char *main = ""
                      "macro_rules! pass { ($body:stmt) -> { $body }; }\n"
                      "fn Main() { pass!(Missing.Call();); }\n";
-  XsSource source = {.path = "MacroStatementNameUse.xs", .text = main, .length = strlen(main)};
+  XsSource source = {.path = "MacroStatementNameUse.xs", .module_name = "App", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsMacroExpansionReport report;
   XsMacroStatementExpansionSet statements;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 63, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
@@ -579,12 +585,12 @@ static void test_statement_fragment_macro_name_use_errors(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -592,19 +598,19 @@ static void test_statement_fragment_macro_name_use_errors(void)
 
 static void test_block_fragment_macro_name_use_errors(void)
 {
-  const char *main = "module App;\n"
+  const char *main = ""
                      "macro_rules! pass { ($body:block) -> { $body }; }\n"
                      "fn Main() { pass!({ Missing.Call(); }); }\n";
-  XsSource source = {.path = "MacroBlockNameUse.xs", .text = main, .length = strlen(main)};
+  XsSource source = {.path = "MacroBlockNameUse.xs", .module_name = "App", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsMacroExpansionReport report;
   XsMacroStatementExpansionSet statements;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 64, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
@@ -612,12 +618,12 @@ static void test_block_fragment_macro_name_use_errors(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -625,19 +631,19 @@ static void test_block_fragment_macro_name_use_errors(void)
 
 static void test_path_fragment_macro_name_use_errors(void)
 {
-  const char *main = "module App;\n"
+  const char *main = ""
                      "macro_rules! call { ($target:path) -> { $target(); }; }\n"
                      "fn Main() { call!(Missing.Call); }\n";
-  XsSource source = {.path = "MacroPathNameUse.xs", .text = main, .length = strlen(main)};
+  XsSource source = {.path = "MacroPathNameUse.xs", .module_name = "App", .text = main, .length = strlen(main)};
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsMacroExpansionReport report;
   XsMacroStatementExpansionSet statements;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
+  xs_hir_import_scope_init(&import);
   CHECK(xs_syntax_parse(&source, 65, &diagnostics, &tree));
   CHECK(xs_macro_validate(&tree, &diagnostics));
   CHECK(xs_macro_prepare_expansion(&tree, &diagnostics, &report));
@@ -645,12 +651,12 @@ static void test_path_fragment_macro_name_use_errors(void)
   CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
   CHECK(statements.count == 1);
   CHECK(xs_hir_collect_symbols(&tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses_expanded(&tree, &statements, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_macro_statement_expansion_set_free(&statements);
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -658,24 +664,24 @@ static void test_path_fragment_macro_name_use_errors(void)
 
 static void test_private_qualified_name_visibility(void)
 {
-  const char *library = "module Math;\n"
+  const char *library = ""
                         "private fn Hidden() {}\n";
-  const char *main = "module App;\n"
+  const char *main = ""
                      "fn Main() { Math::Hidden(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 71, &library_tree, &symbols, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math", 71, &library_tree, &symbols, &diagnostics));
   CHECK(add_file_symbols(main, 72, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -684,20 +690,20 @@ static void test_private_qualified_name_visibility(void)
 
 static void test_private_same_namespace_name_visibility(void)
 {
-  const char *text = "module Math;\n"
+  const char *text = ""
                      "private fn Hidden() {}\n"
                      "fn Main() { Math::Hidden(); }\n";
   XsSyntaxTree tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(text, 73, &tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(text, "Math", 73, &tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
@@ -705,24 +711,24 @@ static void test_private_same_namespace_name_visibility(void)
 
 static void test_private_same_namespace_different_file_name_visibility(void)
 {
-  const char *library = "module Math;\n"
+  const char *library = ""
                         "private fn Hidden() {}\n";
-  const char *main = "module Math;\n"
+  const char *main = ""
                      "fn Main() { Math::Hidden(); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 74, &library_tree, &symbols, &diagnostics));
-  CHECK(add_file_symbols(main, 75, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math", 74, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file_symbols_in_module(main, "Math", 75, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(!xs_hir_validate_name_uses(&main_tree, &symbols, &import, &diagnostics));
   CHECK(xs_diagnostics_has_error(&diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);
@@ -731,23 +737,23 @@ static void test_private_same_namespace_different_file_name_visibility(void)
 
 static void test_internal_same_module_different_file_visibility(void)
 {
-  const char *library = "module Math;\n"
+  const char *library = ""
                         "internal fn Add(left: Long, right: Long) -> Long { return left + right; }\n";
-  const char *main = "module Math;\n"
+  const char *main = ""
                      "fn Main() -> Long { return Add(3, 4); }\n";
   XsSyntaxTree library_tree;
   XsSyntaxTree main_tree;
   XsHirSymbolTable symbols;
-  XsHirImportScope imports;
+  XsHirImportScope import;
   XsDiagnostics diagnostics;
   xs_diagnostics_init(&diagnostics);
   xs_hir_symbol_table_init(&symbols);
-  xs_hir_import_scope_init(&imports);
-  CHECK(add_file_symbols(library, 76, &library_tree, &symbols, &diagnostics));
-  CHECK(add_file_symbols(main, 77, &main_tree, &symbols, &diagnostics));
-  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &imports, &diagnostics));
-  CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &imports, &diagnostics));
-  xs_hir_import_scope_free(&imports);
+  xs_hir_import_scope_init(&import);
+  CHECK(add_file_symbols_in_module(library, "Math", 76, &library_tree, &symbols, &diagnostics));
+  CHECK(add_file_symbols_in_module(main, "Math", 77, &main_tree, &symbols, &diagnostics));
+  CHECK(xs_hir_resolve_imports(&main_tree, &symbols, &import, &diagnostics));
+  CHECK(xs_hir_validate_name_uses(&main_tree, &symbols, &import, &diagnostics));
+  xs_hir_import_scope_free(&import);
   xs_hir_symbol_table_free(&symbols);
   xs_syntax_tree_free(&main_tree);
   xs_syntax_tree_free(&library_tree);

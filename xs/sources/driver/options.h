@@ -30,6 +30,7 @@ typedef struct
   const char *command;
   const char *manifest_path;
   const char *file_path;
+  const char *module_path;
   XsBuildOutput output;
   XsCompilerSettings compiler;
   bool warning_override;

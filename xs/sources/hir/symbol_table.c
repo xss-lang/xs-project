@@ -151,7 +151,8 @@ static XsSyntaxVisibility member_visibility(const XsSyntaxNode *node)
   return node->visibility == XS_SYNTAX_VISIBILITY_DEFAULT ? XS_SYNTAX_VISIBILITY_INTERNAL : node->visibility;
 }
 
-static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const char *namespace_name,
+static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const char *module_name,
+                                                const char *namespace_name,
                                                 XsSyntaxVisibility visibility, XsHirSymbolTable *table,
                                                 XsDiagnostics *diagnostics)
 {
@@ -162,10 +163,12 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
   if(name_node == nullptr)
     return true;
   char *name = xs_hir_copy_text(name_node->text);
+  char *module_copy = xs_hir_copy_cstr(module_name);
   char *namespace_copy = xs_hir_copy_cstr(namespace_name);
-  if(name == nullptr || namespace_copy == nullptr)
+  if(name == nullptr || module_copy == nullptr || namespace_copy == nullptr)
   {
     free(name);
+    free(module_copy);
     free(namespace_copy);
     table->allocation_failed = true;
     return false;
@@ -175,6 +178,7 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
   {
     report_duplicate(diagnostics, name_node, previous);
     free(name);
+    free(module_copy);
     free(namespace_copy);
     return true;
   }
@@ -182,6 +186,7 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
   if(qualified == nullptr)
   {
     free(name);
+    free(module_copy);
     free(namespace_copy);
     table->allocation_failed = true;
     return false;
@@ -189,6 +194,7 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
   XsHirSymbol symbol = {
       .kind = kind,
       .name = name,
+      .module_name = module_copy,
       .namespace_name = namespace_copy,
       .qualified_name = qualified,
       .visibility = visibility,
@@ -198,6 +204,7 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
   if(!append_symbol(table, symbol))
   {
     free(name);
+    free(module_copy);
     free(namespace_copy);
     free(qualified);
     return false;
@@ -205,14 +212,16 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
   return true;
 }
 
-static bool collect_declaration(const XsSyntaxNode *node, const char *namespace_name, bool public_namespace,
+static bool collect_declaration(const XsSyntaxNode *node, const char *module_name, const char *namespace_name,
+                                bool public_namespace,
                                 XsHirSymbolTable *table, XsDiagnostics *diagnostics)
 {
-  return collect_declaration_with_visibility(node, namespace_name, declaration_visibility(node, public_namespace),
-                                             table, diagnostics);
+  return collect_declaration_with_visibility(node, module_name, namespace_name,
+                                             declaration_visibility(node, public_namespace), table, diagnostics);
 }
 
-static bool collect_extern_block(const XsSyntaxNode *node, const char *namespace_name, bool public_namespace,
+static bool collect_extern_block(const XsSyntaxNode *node, const char *module_name, const char *namespace_name,
+                                 bool public_namespace,
                                  XsHirSymbolTable *table, XsDiagnostics *diagnostics)
 {
   XsSyntaxVisibility block_visibility = declaration_visibility(node, public_namespace);
@@ -224,7 +233,7 @@ static bool collect_extern_block(const XsSyntaxNode *node, const char *namespace
     XsSyntaxVisibility child_visibility = child->visibility == XS_SYNTAX_VISIBILITY_DEFAULT
                                               ? block_visibility
                                               : declaration_visibility(child, public_namespace);
-    if(!collect_declaration_with_visibility(child, namespace_name, child_visibility, table, diagnostics))
+    if(!collect_declaration_with_visibility(child, module_name, namespace_name, child_visibility, table, diagnostics))
       return false;
   }
   return true;
@@ -343,6 +352,7 @@ void xs_hir_symbol_table_free(XsHirSymbolTable *table)
   for(size_t i = 0; i < table->count; ++i)
   {
     free(table->symbols[i].name);
+    free(table->symbols[i].module_name);
     free(table->symbols[i].namespace_name);
     free(table->symbols[i].qualified_name);
   }
@@ -398,13 +408,77 @@ bool xs_hir_collect_symbols(const XsSyntaxTree *tree, XsHirSymbolTable *table, X
   return xs_hir_collect_symbols_expanded(tree, nullptr, table, diagnostics);
 }
 
+static char *copy_assigned_module(const char *assigned_module)
+{
+  if(assigned_module == nullptr)
+    return xs_hir_copy_cstr("");
+  size_t length = strlen(assigned_module);
+  char *result = malloc(length + 1U);
+  if(result == nullptr)
+    return nullptr;
+  size_t write = 0;
+  for(size_t read = 0; read < length; ++read)
+  {
+    if(assigned_module[read] == ':' && read + 1U < length && assigned_module[read + 1U] == ':')
+    {
+      result[write++] = '.';
+      ++read;
+    }
+    else
+      result[write++] = assigned_module[read];
+  }
+  result[write] = '\0';
+  return result;
+}
+
 bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree, const XsMacroDeclarationExpansionSet *macro_declarations,
                                      XsHirSymbolTable *table, XsDiagnostics *diagnostics)
 {
+  const char *module_name = tree == nullptr || tree->source == nullptr ? nullptr : tree->source->module_name;
+  return xs_hir_collect_symbols_in_module_expanded(tree, macro_declarations, module_name, table, diagnostics);
+}
+
+static bool collect_namespace_block(const XsSyntaxNode *declaration, const char *module_name, const char *parent_namespace,
+                                    bool public_namespace, XsHirSymbolTable *table, XsDiagnostics *diagnostics)
+{
+  char *path = xs_hir_path_to_string(xs_hir_first_child_kind(declaration, XS_SYNTAX_PATH));
+  char *namespace_name = path == nullptr ? nullptr : xs_hir_join_qualified(parent_namespace, path);
+  free(path);
+  if(namespace_name == nullptr)
+  {
+    table->allocation_failed = true;
+    return false;
+  }
+  bool success = true;
+  for(size_t i = 0; i < declaration->child_count; ++i)
+  {
+    const XsSyntaxNode *child = declaration->children[i];
+    if(child->kind == XS_SYNTAX_PATH || child->kind == XS_SYNTAX_VISIBILITY || child->kind == XS_SYNTAX_ATTRIBUTE_LIST)
+      continue;
+    if(child->kind == XS_SYNTAX_DECL_NAMESPACE)
+    {
+      success = (child->flags & XS_SYNTAX_FLAG_BLOCK_NAMESPACE) != 0 &&
+                collect_namespace_block(child, module_name, namespace_name, public_namespace, table, diagnostics) &&
+                success;
+    }
+    else if(child->kind == XS_SYNTAX_DECL_EXTERN_BLOCK)
+      success = collect_extern_block(child, module_name, namespace_name, public_namespace, table, diagnostics) && success;
+    else
+      success = collect_declaration(child, module_name, namespace_name, public_namespace, table, diagnostics) && success;
+  }
+  free(namespace_name);
+  return success;
+}
+
+bool xs_hir_collect_symbols_in_module_expanded(const XsSyntaxTree *tree,
+                                               const XsMacroDeclarationExpansionSet *macro_declarations,
+                                               const char *assigned_module, XsHirSymbolTable *table,
+                                               XsDiagnostics *diagnostics)
+{
   if(tree == nullptr || tree->root == nullptr || table == nullptr || diagnostics == nullptr)
     return false;
-  char *module_name = xs_hir_copy_cstr("");
-  char *current_namespace = xs_hir_copy_cstr("");
+  char *module_name = copy_assigned_module(assigned_module);
+  char *current_namespace = copy_assigned_module(assigned_module);
   if(module_name == nullptr || current_namespace == nullptr)
   {
     free(module_name);
@@ -444,6 +518,12 @@ bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree, const XsMacroDecl
     }
     if(child->kind == XS_SYNTAX_DECL_NAMESPACE)
     {
+      if((child->flags & XS_SYNTAX_FLAG_BLOCK_NAMESPACE) != 0)
+      {
+        if(!collect_namespace_block(child, module_name, current_namespace, public_namespace, table, diagnostics))
+          break;
+        continue;
+      }
       char *path = xs_hir_path_to_string(xs_hir_first_child_kind(child, XS_SYNTAX_PATH));
       if(path == nullptr)
       {
@@ -462,11 +542,11 @@ bool xs_hir_collect_symbols_expanded(const XsSyntaxTree *tree, const XsMacroDecl
     }
     if(child->kind == XS_SYNTAX_DECL_EXTERN_BLOCK)
     {
-      if(!collect_extern_block(child, current_namespace, public_namespace, table, diagnostics))
+      if(!collect_extern_block(child, module_name, current_namespace, public_namespace, table, diagnostics))
         break;
       continue;
     }
-    if(!collect_declaration(child, current_namespace, public_namespace, table, diagnostics))
+    if(!collect_declaration(child, module_name, current_namespace, public_namespace, table, diagnostics))
       break;
   }
   xs_macro_expanded_declaration_set_free(&expanded);

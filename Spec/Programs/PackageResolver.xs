@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Resolves package dependencies with a topological order and cycle diagnostics.
 
-module programs::package_resolver;
 
-imports collections, stdio, process;
+
+import collections, stdio, process;
 
 enum VisitState {
     White,

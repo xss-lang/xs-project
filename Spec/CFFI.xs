@@ -4,10 +4,10 @@
 // C foreign-function interface:
 //
 // CFFI is opt-in. There is no automatic import and no automatic scope
-// injection. The official module is the standard CFFI module. User code imports
+// injection. The official module is the standard CFFI module. User code import
 // it explicitly:
 
-imports cffi;
+import cffi;
 
 
 // extern function declarations

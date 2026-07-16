@@ -4,9 +4,9 @@
 // Complete-language example program:
 // Scans a content directory and emits a small static-site health report.
 
-module programs::static_site_report;
 
-imports collections, fs, optional, stdio, process;
+
+import collections, fs, optional, stdio, process;
 
 data PageInfo {
     path: Str;

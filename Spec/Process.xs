@@ -12,7 +12,7 @@
 // explicitly enabled with .shell(true).
 //
 
-imports process, result;
+import process, result;
 
 
 // process execution

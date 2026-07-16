@@ -6,6 +6,7 @@
 #include "xs/hir/symbol_table.h"
 
 #include "syntax_helpers.h"
+#include "standard_library.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,14 +106,25 @@ static bool import_module_namespace(const XsSyntaxNode *import_node, const XsSyn
                                     const XsHirSymbolTable *project_symbols, XsHirImportScope *scope,
                                     XsDiagnostics *diagnostics)
 {
-  (void)project_symbols;
-  (void)diagnostics;
-  (void)import_node;
   char *module_name = xs_hir_path_to_string(path);
   if(module_name == nullptr)
   {
     scope->allocation_failed = true;
     return false;
+  }
+  bool exists = xs_hir_standard_module_name(module_name);
+  for(size_t i = 0; !exists && i < project_symbols->count; ++i)
+  {
+    const XsHirSymbol *symbol = &project_symbols->symbols[i];
+    exists = strcmp(symbol->module_name, module_name) == 0 || strcmp(symbol->namespace_name, module_name) == 0;
+  }
+  if(!exists)
+  {
+    char message[512];
+    snprintf(message, sizeof(message), "module '%s' does not exist with this exact case", module_name);
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(import_node), message);
+    free(module_name);
+    return true;
   }
   if(xs_hir_import_scope_has_module(scope, module_name))
   {
@@ -186,6 +198,13 @@ static bool import_selected(const XsSyntaxNode *import_node, const XsHirSymbolTa
   {
     scope->allocation_failed = true;
     return false;
+  }
+  if((import_node->flags & XS_SYNTAX_FLAG_USING) != 0 && strcmp(module_name, "panic") == 0)
+  {
+    xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, xs_hir_node_span(import_node),
+                       "using namespace panic is invalid because panic exports only macros");
+    free(module_name);
+    return true;
   }
   bool ok = true;
   if((import_node->flags & XS_SYNTAX_FLAG_WILDCARD) != 0)
@@ -330,6 +349,6 @@ bool xs_hir_resolve_imports(const XsSyntaxTree *tree, const XsHirSymbolTable *pr
   }
   if(scope->allocation_failed)
     xs_diagnostics_add(diagnostics, XS_DIAGNOSTIC_ERROR, (XsSpan){0, 0},
-                       "compiler ran out of memory while resolving HIR imports");
+                       "compiler ran out of memory while resolving HIR import");
   return success && !xs_diagnostics_has_error(diagnostics);
 }
