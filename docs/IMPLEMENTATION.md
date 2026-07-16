@@ -148,8 +148,10 @@ The documented compilation order is preserved:
   bodies. Classic `for` loops with a variable initializer, supported Bool condition, and supported assignment or postfix
   `++`/`--` update lower through distinct header/body/update/exit blocks; `continue` targets update and `break` targets exit.
   Statement-level `match` lowers supported `Long`/`Bool` selectors and literal arms into ordered MIR comparisons and
-  branches with a required final `else` arm. `for each`, arbitrary statement blocks, and general CFG lowering remain
-  deferred.
+  branches with a required final `else` arm. Fixed-size built-in arrays support `for (value in values)` with inferred or
+  explicit element bindings. The iterable is evaluated once and lowers to an index/length MIR CFG with checked array
+  indexing; `continue` targets the generated update block and `break` targets the exit. General iterator-protocol
+  for-each, tuple-pattern iteration, arbitrary statement blocks, and complete CFG lowering remain deferred.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 

@@ -19,6 +19,7 @@ use super::{SyntaxNode, SyntaxTree};
 
 mod collection;
 mod expression_type;
+mod for_each;
 mod match_expression;
 mod nominal;
 mod program;
@@ -49,6 +50,7 @@ const STMT_RETURN: u32 = 41;
 const STMT_IF: u32 = 42;
 const STMT_ELSE_IF: u32 = 43;
 const STMT_FOR: u32 = 44;
+const STMT_FOR_EACH: u32 = 45;
 const STMT_WHILE: u32 = 46;
 const STMT_MATCH: u32 = 47;
 const MATCH_ARM: u32 = 48;
@@ -67,6 +69,8 @@ const EXPR_IF: u32 = 81;
 const EXPR_MATCH: u32 = 82;
 const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ELSE: u32 = 88;
+const PATTERN_IDENTIFIER: u32 = 84;
+const PATTERN_TYPED: u32 = 103;
 const STMT_LOOP: u32 = 105;
 const EXPR_TYPED_OBJECT_LITERAL: u32 = 102;
 const TYPE_MAP: u32 = 106;
@@ -613,6 +617,7 @@ fn lower_statement_node(tree: &SyntaxTree,
     STMT_VARIABLE => lower_local(tree, statement, context, locals),
     STMT_IF => lower_if_statement(tree, statement, context, locals, return_type),
     STMT_FOR => lower_for_statement(tree, statement, context, locals, return_type),
+    STMT_FOR_EACH => for_each::lower_for_each_statement(tree, statement, context, locals, return_type),
     STMT_WHILE => lower_while_statement(tree, statement, context, locals, return_type),
     STMT_LOOP => lower_loop_statement(tree, statement, context, locals, return_type),
     STMT_MATCH => lower_match_statement(tree, statement, context, locals, return_type),

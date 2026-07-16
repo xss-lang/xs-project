@@ -97,3 +97,37 @@ fn roundtrips_classic_for_records_with_optional_header_fields()
     initializer: Some(_), condition: Some(_), update: Some(_), body, ..
   } if matches!(body.statements.as_slice(), [Statement::Break { .. }])));
 }
+
+#[test]
+fn roundtrips_fixed_array_for_each_records()
+{
+  let array_type = Type::Array { element: Box::new(Type::Primitive(PrimitiveType::Long)),
+                                 length: Some(3) };
+  let function =
+    Function { name: "visit".to_string(),
+               return_type: None,
+               locals: Vec::new(),
+               body: vec![Statement::ForEach { binding: Local { name: "value".to_string(),
+                                                                ty: Type::Primitive(PrimitiveType::Long),
+                                                                mutable: false,
+                                                                span: span() },
+                                               iterable: Expression::Local { name: "values".to_string(),
+                                                                             span: span() },
+                                               iterable_type: array_type.clone(),
+                                               body: Block { statements:
+                                                               vec![Statement::Continue { span: span() }],
+                                                             tail: None,
+                                                             span: span() },
+                                               span: span() }] };
+
+  let text = function_to_xhir(&function);
+  let parsed = parse_xhir_function(&text).expect("for-each XHIR should parse");
+
+  assert!(text.contains("for_each value"));
+  assert!(text.contains("iterable_type [Long; 3]"));
+  assert!(
+          matches!(&parsed.body[0], Statement::ForEach { binding, iterable_type, body, .. }
+    if binding.name == "value" && iterable_type == &array_type &&
+       matches!(body.statements.as_slice(), [Statement::Continue { .. }]))
+  );
+}

@@ -286,6 +286,14 @@ pub enum Statement
     body: Block,
     span: Span,
   },
+  ForEach
+  {
+    binding: Local,
+    iterable: Expression,
+    iterable_type: Type,
+    body: Block,
+    span: Span,
+  },
   Match
   {
     selector: Expression,
@@ -336,6 +344,7 @@ pub enum DiagnosticCode
   ResultPropagationRequiresResult,
   ResultPropagationReturnMismatch,
   ConditionTypeMismatch,
+  ForEachTypeMismatch,
   MissingBlockValue,
   BreakOutsideLoop,
   ContinueOutsideLoop,
@@ -472,6 +481,11 @@ impl TypeChecker
                                                            body,
                                                            *span,
                                                            return_type),
+      Statement::ForEach { binding,
+                           iterable,
+                           iterable_type,
+                           body,
+                           span, } => self.check_for_each_statement(binding, iterable, iterable_type, body, *span),
       Statement::Match { selector,
                          selector_type,
                          arms,
@@ -889,41 +903,6 @@ impl TypeChecker
     }
   }
 
-  fn check_condition(&mut self, condition: &Expression, span: Span)
-  {
-    self.check_expression(condition);
-    if self.expression_type(condition) != Some(Type::Primitive(PrimitiveType::Bool))
-    {
-      self.diagnostics
-          .push(Diagnostic { code: DiagnosticCode::ConditionTypeMismatch,
-                             message: "if condition must have type Bool".to_string(),
-                             span });
-    }
-  }
-
-  fn check_block(&mut self, block: &Block, expected_tail: Option<&Type>)
-  {
-    let local_count = self.locals.len();
-    self.scope_starts.push(local_count);
-    for statement in &block.statements
-    {
-      self.check_statement(statement, self.return_type.clone().as_ref());
-    }
-    match (block.tail.as_deref(), expected_tail)
-    {
-      (Some(tail), Some(expected)) => self.check_expression_against_type(tail, expected),
-      (None, Some(_)) => self.diagnostics
-                             .push(Diagnostic { code: DiagnosticCode::MissingBlockValue,
-                                                message: "if expression branch must produce a value".to_string(),
-                                                span: block.span }),
-      (Some(tail), None) => self.check_expression(tail),
-      (None, None) =>
-      {}
-    }
-    self.locals.truncate(local_count);
-    self.scope_starts.pop();
-  }
-
   fn check_result_propagation(&mut self, value: &Expression, span: Span)
   {
     let Some((_, error_type)) = self.result_parts_of_expression(value)
@@ -980,9 +959,12 @@ impl TypeChecker
 }
 
 mod binary_type;
+mod block_check;
 mod collection_check;
 mod expression_type;
 mod for_check;
+#[cfg(test)]
+mod for_each_tests;
 mod match_check;
 mod nominal_check;
 #[cfg(test)]

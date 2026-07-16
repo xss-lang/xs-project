@@ -96,6 +96,20 @@ pub(super) fn write_statement(output: &mut String, statement: &Statement, indent
       let _ = writeln!(output, "{pad}  body");
       write_block(output, body, indent + 2);
     }
+    Statement::ForEach { binding,
+                         iterable,
+                         iterable_type,
+                         body,
+                         .. } =>
+    {
+      let _ = writeln!(output, "{pad}for_each {}", binding.name);
+      let _ = writeln!(output, "{pad}  type {}", type_name(&binding.ty));
+      let _ = writeln!(output, "{pad}  iterable_type {}", type_name(iterable_type));
+      let _ = writeln!(output, "{pad}  iterable");
+      write_expression(output, iterable, indent + 2);
+      let _ = writeln!(output, "{pad}  body");
+      write_block(output, body, indent + 2);
+    }
     Statement::Match { selector,
                        selector_type,
                        arms,
@@ -248,6 +262,20 @@ pub(super) fn write_desugared_statement(output: &mut String, statement: &Desugar
         let _ = writeln!(output, "{pad}  update");
         write_desugared_expression(output, update, indent + 2);
       }
+      let _ = writeln!(output, "{pad}  body");
+      write_desugared_block(output, body, indent + 2);
+    }
+    DesugaredStatement::ForEach { binding,
+                                  iterable,
+                                  iterable_type,
+                                  body,
+                                  .. } =>
+    {
+      let _ = writeln!(output, "{pad}for_each {}", binding.name);
+      let _ = writeln!(output, "{pad}  type {}", type_name(&binding.ty));
+      let _ = writeln!(output, "{pad}  iterable_type {}", type_name(iterable_type));
+      let _ = writeln!(output, "{pad}  iterable");
+      write_desugared_expression(output, iterable, indent + 2);
       let _ = writeln!(output, "{pad}  body");
       write_desugared_block(output, body, indent + 2);
     }

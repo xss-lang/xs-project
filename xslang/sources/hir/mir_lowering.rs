@@ -196,6 +196,7 @@ impl HirToMirLowerer
       Statement::If { .. } => self.lower_if_statement(statement, lowered),
       Statement::While { .. } => self.lower_while_statement(statement, lowered),
       Statement::For { .. } => self.lower_for_statement(statement, lowered),
+      Statement::ForEach { .. } => self.lower_for_each_statement(statement, lowered),
       Statement::Match { .. } => self.lower_match_statement(statement, lowered),
       Statement::Break { span } => self.lower_loop_jump(false, *span, lowered),
       Statement::Continue { span } => self.lower_loop_jump(true, *span, lowered),

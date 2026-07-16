@@ -14,6 +14,7 @@ use crate::hir::{MatchArm, MatchPattern};
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 
 mod collection;
+mod for_each;
 mod match_expression;
 mod nominal;
 mod type_parser;
@@ -239,6 +240,7 @@ impl Parser<'_>
       "if" => Some(self.if_statement()),
       "while" => Some(self.while_statement()),
       "for" => Some(self.for_statement()),
+      line if line.starts_with("for_each ") => Some(self.for_each_statement()),
       line if line.starts_with("match ") => Some(self.match_statement()),
       "break" => Some(self.break_statement()),
       "continue" => Some(self.continue_statement()),

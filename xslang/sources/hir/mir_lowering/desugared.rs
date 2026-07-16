@@ -83,6 +83,18 @@ impl HirToMirLowerer
                               body: self.surface_block_from_desugared(body)?,
                               span: *span })
       }
+      DesugaredStatement::ForEach { binding,
+                                    iterable,
+                                    iterable_type,
+                                    body,
+                                    span, } =>
+      {
+        Some(Statement::ForEach { binding: binding.clone(),
+                                  iterable: self.surface_expression_from_desugared(iterable)?,
+                                  iterable_type: iterable_type.clone(),
+                                  body: self.surface_block_from_desugared(body)?,
+                                  span: *span })
+      }
       DesugaredStatement::Match { selector,
                                   selector_type,
                                   arms,

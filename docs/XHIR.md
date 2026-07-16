@@ -70,7 +70,8 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - `function <name>` with `signature`, `locals`, and `body`
 - explicit `.end` section markers and `.program end` document marker
 - primitive and named type records
-- literal, local, assignment, prefix/postfix update, typed direct-call, conditional block, loop, classic-for,
+- literal, local, assignment, prefix/postfix update, typed direct-call, conditional block, loop, classic-for, fixed-array
+  for-each,
   statement-match, short-circuit logical binary, `propagate`, let, expression, and return records
 - `analysis typecheck` records for type-check diagnostics, spans, and messages
 
@@ -175,6 +176,25 @@ for
 ```
 
 Any omitted initializer, condition, or update section is absent from the record. The body and final `.end` remain required.
+
+Fixed-array for-each preserves its checked collection and element types before MIR expands it into index-based control
+flow:
+
+```text
+for_each value
+  type Long
+  iterable_type [Long; 3]
+  iterable
+    local values
+  body
+    expression
+      call consume : (Long) -> ()
+        argument
+          local value
+  .end
+```
+
+The element binding is immutable and scoped to the body. This record is semantic XHIR; it is not an iterator instruction.
 
 ## Non-goals
 

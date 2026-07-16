@@ -14,6 +14,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainBlockLocals MainFixedArray MainArrayMissingDefaults
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
                        MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
+                       MainForEach
                        CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
@@ -22,7 +23,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        ParameterizedMain WrongReturnMain UnknownCallMain
                        WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain
                        BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands MatchMissingElse
-                       MatchPatternTypeMismatch RecursiveDataParameter)
+                       MatchPatternTypeMismatch RecursiveDataParameter
+                       ForEachNonArray ForEachBindingMismatch)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -54,6 +56,7 @@ xs_add_source_native_array_test(MainDefaultFixedArray 0 3)
 xs_add_source_native_array_test(MainDynamicArrayIndex 7 3 "getelementptr")
 xs_add_source_native_array_test(MainDynamicArrayMutation 7 3 "llvm.trap")
 xs_add_source_native_array_test(MainArrayProperties 11 3 "extractvalue")
+xs_add_source_native_array_test(MainForEach 8 5 "getelementptr")
 
 add_test(NAME compiler_check_builtin_set COMMAND xs check -file
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/CollectionSetCheck.xs)

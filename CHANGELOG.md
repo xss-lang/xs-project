@@ -12,6 +12,12 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- Fixed-size built-in arrays now support source-level `for (value in values)` iteration through typed XHIR, MIR control
+  flow, checked array indexing, LLVM IR, and native `.xse` execution. The iterable is evaluated once, the element
+  binding is lexical and immutable, and `break`/`continue` target the generated loop exit/update blocks.
+
 ## 0.1.8 - 2026-07-16
 
 ### Added

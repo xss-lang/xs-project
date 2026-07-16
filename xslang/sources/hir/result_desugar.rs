@@ -195,6 +195,14 @@ pub enum DesugaredStatement
     body: DesugaredBlock,
     span: Span,
   },
+  ForEach
+  {
+    binding: Local,
+    iterable: DesugaredExpression,
+    iterable_type: Type,
+    body: DesugaredBlock,
+    span: Span,
+  },
   Match
   {
     selector: DesugaredExpression,
@@ -341,6 +349,23 @@ impl ResultDesugar
                                   update,
                                   body,
                                   span: *span }
+      }
+      Statement::ForEach { binding,
+                           iterable,
+                           iterable_type,
+                           body,
+                           span, } =>
+      {
+        let iterable = self.desugar_expression(iterable);
+        let local_count = self.locals.len();
+        self.locals.push(binding.clone());
+        let body = self.desugar_block(body);
+        self.locals.truncate(local_count);
+        DesugaredStatement::ForEach { binding: binding.clone(),
+                                      iterable,
+                                      iterable_type: iterable_type.clone(),
+                                      body,
+                                      span: *span }
       }
       Statement::Match { selector,
                          selector_type,

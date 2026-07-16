@@ -435,6 +435,196 @@ impl HirToMirLowerer
     self.switch_to(exit);
   }
 
+  pub(super) fn lower_for_each_statement(&mut self, statement: &Statement, lowered: &mut mir::Function)
+  {
+    let Statement::ForEach { binding,
+                             iterable,
+                             iterable_type,
+                             body,
+                             span, } = statement
+    else
+    {
+      return;
+    };
+    if self.current_is_terminated(lowered)
+    {
+      return;
+    }
+    let Type::Array { length: Some(length), .. } = iterable_type
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "native for-each requires a fixed array length",
+                  *span);
+      return;
+    };
+    if i64::try_from(*length).is_err()
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "for-each array length exceeds the MIR index range",
+                  *span);
+      return;
+    }
+    let Some(array_type) = self.lower_value_type(iterable_type, *span)
+    else
+    {
+      return;
+    };
+    let Some((_, element_type, registered_length)) = self.array_layouts
+                                                         .iter()
+                                                         .find(|(value_type, _, _)| *value_type == array_type)
+                                                         .copied()
+    else
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "for-each iterable has no fixed-array MIR layout",
+                  *span);
+      return;
+    };
+    if registered_length != *length || self.lower_value_type(&binding.ty, binding.span) != Some(element_type)
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "for-each binding does not match its fixed-array layout",
+                  binding.span);
+      return;
+    }
+    let Some(array) = self.lower_expression_to_local(iterable, array_type, lowered)
+    else
+    {
+      return;
+    };
+    let Some(index_storage) = self.declare_storage_temp(XlilType::I64, *span, lowered)
+    else
+    {
+      return;
+    };
+    let Some(zero) = self.declare_temp(XlilType::I64, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.lower_literal_into(zero, &Literal::Integer("0".to_string()), *span, lowered);
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::StoreLocal { local: index_storage,
+                                           value: zero,
+                                           span: *span });
+
+    let preheader = self.current_block;
+    let header = self.append_block(*span, lowered);
+    let body_id = self.append_block(body.span, lowered);
+    let update_id = self.append_block(*span, lowered);
+    let exit = self.append_block(*span, lowered);
+    self.switch_to(preheader);
+    self.set_terminator(mir::Terminator::Goto(header), *span, lowered);
+
+    self.switch_to(header);
+    let Some(index) = self.declare_temp(XlilType::I64, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::LoadLocal { result: index,
+                                          local: index_storage,
+                                          span: *span });
+    let Some(limit) = self.declare_temp(XlilType::I64, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.lower_literal_into(limit, &Literal::Integer(length.to_string()), *span, lowered);
+    let Some(condition) = self.declare_temp(XlilType::BOOL, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::BinaryInteger { operation: crate::xlil::IntegerBinaryOperation::Less,
+                                              value_type: XlilType::I64,
+                                              result: condition,
+                                              left: index,
+                                              right: limit,
+                                              span: *span });
+    self.set_terminator(mir::Terminator::BranchIf { condition,
+                                                    then_block: body_id,
+                                                    else_block: exit },
+                        *span,
+                        lowered);
+
+    let outer_locals = self.locals.clone();
+    self.locals.remove(&binding.name);
+    self.switch_to(body_id);
+    let binding_local = self.declare_local(binding.name.clone(), &binding.ty, false, binding.span, lowered);
+    let Some(element) = self.declare_temp(element_type, binding.span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::ArrayGet { result: element,
+                                         array,
+                                         index,
+                                         array_type,
+                                         element_type,
+                                         span: binding.span });
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::StoreLocal { local: binding_local,
+                                           value: element,
+                                           span: binding.span });
+    self.loop_targets.push((update_id, exit));
+    self.lower_block_statements(body, lowered);
+    if !self.current_is_terminated(lowered)
+    {
+      self.set_terminator(mir::Terminator::Goto(update_id), body.span, lowered);
+    }
+    self.loop_targets.pop();
+
+    self.switch_to(update_id);
+    let Some(current) = self.declare_temp(XlilType::I64, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::LoadLocal { result: current,
+                                          local: index_storage,
+                                          span: *span });
+    let Some(one) = self.declare_temp(XlilType::I64, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.lower_literal_into(one, &Literal::Integer("1".to_string()), *span, lowered);
+    let Some(next) = self.declare_temp(XlilType::I64, *span, lowered)
+    else
+    {
+      return;
+    };
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::BinaryInteger { operation: crate::xlil::IntegerBinaryOperation::Add,
+                                              value_type: XlilType::I64,
+                                              result: next,
+                                              left: current,
+                                              right: one,
+                                              span: *span });
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::StoreLocal { local: index_storage,
+                                           value: next,
+                                           span: *span });
+    self.set_terminator(mir::Terminator::Goto(header), *span, lowered);
+
+    self.locals = outer_locals;
+    self.switch_to(exit);
+  }
+
   pub(super) fn lower_loop_jump(&mut self, is_continue: bool, span: Span, lowered: &mut mir::Function)
   {
     let Some((header, exit)) = self.loop_targets.last().copied()

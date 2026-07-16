@@ -122,6 +122,15 @@ fn visit_statements(registry: &mut CollectionRegistry, statements: &[Statement],
         }
         visit_block(registry, body, aggregates);
       }
+      Statement::ForEach { binding,
+                           iterable_type,
+                           body,
+                           .. } =>
+      {
+        let _ = registry.visit_type(&binding.ty, aggregates);
+        let _ = registry.visit_type(iterable_type, aggregates);
+        visit_block(registry, body, aggregates);
+      }
       Statement::Match { arms, .. } =>
       {
         for arm in arms
