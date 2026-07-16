@@ -34,6 +34,24 @@ impl DirectIrSession
                                          .collect() };
       }
     };
+    let Some(aggregate_registry) = hir::aggregate_registry::build_functions(&program.functions)
+    else
+    {
+      return Self::failed("XHIR composite type registry could not be constructed".to_string());
+    };
+    let collection_registry = hir::collection_registry::build_functions(&program.functions, &aggregate_registry);
+    let aggregate_types = aggregate_registry.layouts
+                                            .iter()
+                                            .map(|layout| xlil::AggregateType { id: layout.value_type.registry_id,
+                                                                                name: layout.name.clone(),
+                                                                                fields: layout.fields.clone() })
+                                            .collect();
+    let array_types = collection_registry.arrays
+                                         .iter()
+                                         .map(|layout| xlil::ArrayType { id: layout.value_type.registry_id,
+                                                                         element_type: layout.element_type,
+                                                                         length: layout.length })
+                                         .collect();
     let mut diagnostics = Vec::new();
     let mut functions = Vec::with_capacity(program.functions.len());
     for (function, parameter_count) in program.functions.into_iter().zip(program.parameter_counts)
@@ -45,7 +63,9 @@ impl DirectIrSession
                                                               format!("XHIR function '{name}' type check: {}",
                                                                       error.message)
                                                             }));
-      match hir::mir_lowering::HirToMirLowerer::new().lower_function_with_parameters(&function, parameter_count)
+      match hir::mir_lowering::HirToMirLowerer::new().with_aggregate_types(&aggregate_registry)
+                                                     .with_collection_types(&collection_registry)
+                                                     .lower_function_with_parameters(&function, parameter_count)
       {
         Ok(function) => functions.push(function),
         Err(errors) =>
@@ -59,7 +79,7 @@ impl DirectIrSession
     }
     if diagnostics.is_empty()
     {
-      Self::from_mir_program(program.name, functions)
+      Self::from_mir_program(program.name, aggregate_types, array_types, functions)
     }
     else
     {
@@ -86,10 +106,17 @@ impl DirectIrSession
                                          .collect() };
       }
     };
-    Self::from_mir_program(program.name, program.functions)
+    Self::from_mir_program(program.name,
+                           program.aggregate_types,
+                           program.array_types,
+                           program.functions)
   }
 
-  fn from_mir_program(name: String, input_functions: Vec<mir::Function>) -> Self
+  fn from_mir_program(name: String,
+                      aggregate_types: Vec<xlil::AggregateType>,
+                      array_types: Vec<xlil::ArrayType>,
+                      input_functions: Vec<mir::Function>)
+                      -> Self
   {
     let mut diagnostics = Vec::new();
     let mut functions = Vec::with_capacity(input_functions.len());
@@ -112,7 +139,10 @@ impl DirectIrSession
       return Self { xlil_text: None,
                     diagnostics };
     }
-    let mut module = xlil::Module::new(name);
+    let mut module = xlil::Module { name,
+                                    aggregate_types,
+                                    array_types,
+                                    functions: Vec::new() };
     for function in functions
     {
       let name = function.name.clone();

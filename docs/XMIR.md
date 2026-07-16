@@ -72,6 +72,8 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `.xmir version 0`
 - `program <name>` multi-function documents with repeated `function` records, explicit `.function end` boundaries, and one
   final `.program end`
+- a structured program-level `types` section containing `aggregate <id> <name>` records with `field <type>` entries and
+  `array <id>` records with explicit `element <type>` and `length <count>` entries
 - `function <name>`
 - `returns <xlil-type>`
 - `parameters` with `parameter <name>`, `local <id>`, and `type <xlil-type>` records. A parameter local is immutable and
@@ -100,6 +102,21 @@ The verified optimizer API uses the same structural verifier before and after MI
 round-trips every function while the existing single-function reader remains available for focused tools and fixtures.
 `xs build --mir -file <program.xmir>` runs the program through MIR verification, borrow checking, optimization, XLIL
 lowering/verification, and the existing LLVM native backend. Invalid local/block references fail before backend entry.
+
+For example, a tuple stored in a three-element fixed array carries the registry without using XLIL directives:
+
+```text
+types
+  aggregate 0 tuple.0
+    field i32
+    field i32
+  .end
+  array 0
+    element %t0
+    length 3
+  .end
+.end
+```
 
 Place projections, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
 

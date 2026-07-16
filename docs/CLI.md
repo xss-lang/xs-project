@@ -191,7 +191,8 @@ The direct file paths skip project manifests. Their final semantics depend on th
 For `.xs` input, all three output forms use the same checked compiler-core session as native compilation. They write beside
 the source file, replacing `.xs` with `.xhir`, `.xmir`, or `.xlil`. A Kotlin project merges every selected source session
 and writes the program output beside its selected entry source. XHIR and XMIR use one version header and explicit function
-and program end records; XLIL remains the module registry consumed by the backend.
+and program end records. XMIR additionally carries structured aggregate/fixed-array registry records needed to preserve
+composite MIR types; XLIL remains the module registry consumed by the backend.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the CLI validates the complete supported program grammar and rejects
 unsupported versions. XHIR and XMIR are lowered to an in-memory XLIL registry before entering the same backend boundary.
 A supported XLIL module is parsed through the public XLIL C23 parser API, verified, lowered through the LLVM backend,

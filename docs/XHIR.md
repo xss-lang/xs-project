@@ -90,6 +90,8 @@ will be added as the checked HIR model stabilizes.
 does not participate in parsing. A single-function XHIR document remains supported by the function reader.
 `xs build --hir -file <program.xhir>` reads the program form, type-checks it, lowers it through MIR and verified XLIL, and
 uses the native backend when every represented operation is supported.
+Tuple and fixed-array registry ids are not serialized as low-level XHIR directives. The direct compiler reconstructs their
+deterministic layouts from the higher-level tuple/array types carried by function signatures, locals, and statements.
 
 A typed direct call is represented as a semantic record rather than an instruction:
 

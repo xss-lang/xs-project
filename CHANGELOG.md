@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- XMIR v0 program documents now preserve aggregate and fixed-array registry entries in a structured `types` section.
+  Direct XHIR rebuilds the same deterministic registry from its higher-level tuple/array types. Tuple-valued calls and
+  fixed-array operations now survive both source → XHIR → native and source → XMIR → native `.xse` round-trips.
 - Direct `xs build --hir -file <program.xhir>` and `xs build --mir -file <program.xmir>` now parse complete version-0
   program documents in the Rust compiler core, validate their typed/control-flow models, lower through verified XLIL, and
   reuse the LLVM object/link path to produce `.ll`, `.o`, and native `.xse` artifacts. Canonical XHIR program output now

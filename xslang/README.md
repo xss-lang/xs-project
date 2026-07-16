@@ -16,6 +16,8 @@ Rust compiler-core session; the session can emit versioned XHIR, XMIR, and XLIL 
 backend when every required lowering stage succeeds.
 Direct-IR sessions also accept complete XHIR or XMIR v0 program text, validate the appropriate typed/MIR invariants, and
 produce verified XLIL text for the C23 LLVM backend without introducing an LLVM dependency into HIR or MIR.
+XHIR reconstructs deterministic tuple/fixed-array layouts from higher-level types, while XMIR persists the corresponding
+registry ids and layouts in its structured program-level `types` section.
 
 Current core slices include:
 

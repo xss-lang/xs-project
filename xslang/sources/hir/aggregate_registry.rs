@@ -48,6 +48,25 @@ pub(crate) fn build_module(module: &declarations::Module) -> Option<AggregateReg
   Some(registry)
 }
 
+pub(crate) fn build_functions(functions: &[super::type_check::Function]) -> Option<AggregateRegistry>
+{
+  let definitions = HashMap::new();
+  let mut registry = AggregateRegistry::default();
+  for function in functions
+  {
+    if let Some(return_type) = &function.return_type
+    {
+      let _ = visit_checked_type(return_type, &definitions, &mut HashSet::new(), &mut registry);
+    }
+    for local in &function.locals
+    {
+      let _ = visit_checked_type(&local.ty, &definitions, &mut HashSet::new(), &mut registry);
+    }
+    visit_statements(&function.body, &definitions, &mut registry)?;
+  }
+  Some(registry)
+}
+
 fn visit_statements(statements: &[Statement],
                     definitions: &HashMap<&str, &NominalType>,
                     registry: &mut AggregateRegistry)

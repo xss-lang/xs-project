@@ -17,7 +17,7 @@ mod storage_tests;
 mod writer;
 
 pub use parser::{XmirParseDiagnostic, parse_xmir_function};
-pub use program::{XmirProgram, parse_xmir_program, program_to_xmir};
+pub use program::{XmirProgram, parse_xmir_program, program_to_xmir, program_to_xmir_with_types};
 pub use writer::function_to_xmir;
 
 pub const SUPPORTED_XMIR_VERSION: u32 = 0;

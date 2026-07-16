@@ -191,10 +191,33 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
                                                                                            &hir_parameter_counts)
                                          .into_bytes()
                                                      });
-  let xmir_text =
-    (mir_functions.len() == body_count).then(|| {
-                                         crate::mir::text::program_to_xmir(program_name, &mir_functions).into_bytes()
-                                       });
+  let xmir_text = (mir_functions.len() == body_count).then(|| {
+                                                       let aggregates = aggregate_registry.layouts
+                                                                                          .iter()
+                                                                                          .map(|layout| {
+                                                                                            crate::xlil::AggregateType {
+                                                                              id: layout.value_type.registry_id,
+                                                                              name: layout.name.clone(),
+                                                                              fields: layout.fields.clone(),
+                                                                            }
+                                                                                          })
+                                                                                          .collect::<Vec<_>>();
+                                                       let arrays = collection_registry.arrays
+                                                                                       .iter()
+                                                                                       .map(|layout| {
+                                                                                         crate::xlil::ArrayType {
+                                                                           id: layout.value_type.registry_id,
+                                                                           element_type: layout.element_type,
+                                                                           length: layout.length,
+                                                                         }
+                                                                                       })
+                                                                                       .collect::<Vec<_>>();
+                                                       crate::mir::text::program_to_xmir_with_types(program_name,
+                                                                                      &aggregates,
+                                                                                      &arrays,
+                                                                                      &mir_functions)
+                                         .into_bytes()
+                                                     });
   let xlil_text = if diagnostics.is_empty()
   {
     match xlil_lowering::lower_module(&declarations, &mir_functions)

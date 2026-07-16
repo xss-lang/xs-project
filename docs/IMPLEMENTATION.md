@@ -106,6 +106,9 @@ The documented compilation order is preserved:
   optimization, and MIR → XLIL lowering before entering the existing C23 XLIL/LLVM native backend.
 - Direct `.xmir` inputs begin at the Rust XMIR program reader and run structural verification, borrow checking,
   optimization, MIR → XLIL lowering, XLIL verification, and the same native backend.
+- XHIR direct compilation deterministically rebuilds tuple and fixed-array layouts from higher-level function types. XMIR
+  persists those layouts in its structured program-level `types` section because MIR values retain registry ids rather than
+  source tuple field syntax. Both paths round-trip tuple calls and fixed-array operations into native `.xse` artifacts.
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.
