@@ -95,9 +95,10 @@ pub(crate) fn build(module: &declarations::Module, aggregates: &AggregateRegistr
   registry
 }
 
-pub(crate) fn build_functions(functions: &[super::type_check::Function],
-                              aggregates: &AggregateRegistry)
-                              -> CollectionRegistry
+pub(crate) fn build_functions_with_nominals(nominal_types: &[super::declarations::NominalType],
+                                            functions: &[super::type_check::Function],
+                                            aggregates: &AggregateRegistry)
+                                            -> CollectionRegistry
 {
   let mut registry = CollectionRegistry::default();
   for function in functions
@@ -111,6 +112,16 @@ pub(crate) fn build_functions(functions: &[super::type_check::Function],
       let _ = registry.visit_type(&local.ty, aggregates);
     }
     visit_statements(&mut registry, &function.body, aggregates);
+  }
+  for nominal in nominal_types
+  {
+    for field in &nominal.fields
+    {
+      if let Some(field_type) = declarations::type_ref_to_checked(&field.ty)
+      {
+        let _ = registry.visit_type(&field_type, aggregates);
+      }
+    }
   }
   registry
 }

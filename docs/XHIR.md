@@ -68,6 +68,9 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - `.xhir version 0`
 - `program <name>` multi-function documents with repeated `function` records, explicit `.function end` boundaries, and one
   final `.program end`
+- an optional leading `declarations` section with `data` records, ordered typed fields, explicit field mutability, and
+  `.end` delimiters; direct native lowering currently accepts `data` declarations while retaining other nominal kinds
+  for later semantic support
 - `module <name>` with `import`, `declarations`, and `symbol` records
 - `function <name>` with `signature`, `locals`, and `body`
 - `parameters` records before `locals`; each `parameter <name>: <type> <mutability>` preserves a leading function ABI
@@ -92,6 +95,19 @@ does not participate in parsing. A single-function XHIR document remains support
 uses the native backend when every represented operation is supported.
 Tuple and fixed-array registry ids are not serialized as low-level XHIR directives. The direct compiler reconstructs their
 deterministic layouts from the higher-level tuple/array types carried by function signatures, locals, and statements.
+Nominal data layouts are similarly kept source-oriented and explicit:
+
+```text
+declarations
+  data Point
+    field x: Long mutable
+    field y: Long immutable
+  .end
+.end
+```
+
+The declaration field order deterministically reconstructs the target-independent aggregate registry used by MIR and
+XLIL. Duplicate nominal names and duplicate fields are rejected before lowering.
 
 A typed direct call is represented as a semantic record rather than an instruction:
 

@@ -597,16 +597,11 @@ static XsLilStatus parse_instruction(Parser *parser, XsLilBlock *block, const ch
     return XS_LIL_OK;
   }
   const char *operation = skip_space(colon + 6, line + length);
-  const char *const_prefix = "const ";
   const char *const_i64_prefix = "const.i64 ";
   int64_t value = 0;
-  bool parsed = false;
-  if((size_t)(line + length - operation) >= strlen(const_prefix) &&
-     strncmp(operation, const_prefix, strlen(const_prefix)) == 0)
-    parsed = parse_i64_tail(operation + strlen(const_prefix), line + length, &value);
-  else if((size_t)(line + length - operation) >= strlen(const_i64_prefix) &&
-          strncmp(operation, const_i64_prefix, strlen(const_i64_prefix)) == 0)
-    parsed = parse_i64_tail(operation + strlen(const_i64_prefix), line + length, &value);
+  bool parsed = (size_t)(line + length - operation) >= strlen(const_i64_prefix) &&
+                strncmp(operation, const_i64_prefix, strlen(const_i64_prefix)) == 0 &&
+                parse_i64_tail(operation + strlen(const_i64_prefix), line + length, &value);
   if(!parsed)
     return parse_error(parser, error, "unsupported XLIL instruction");
   XsLilValueId actual = 0;

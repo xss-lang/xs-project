@@ -549,7 +549,7 @@ impl Parser<'_>
     {
       return self.const_float(function, result, rest, Type::F64, line);
     }
-    let Some((result, rest)) = text.split_once(" = const ")
+    let Some((result, rest)) = text.split_once(" = const.i64 ")
     else
     {
       self.report(DiagnosticCode::InvalidInstruction, line, "XLIL instruction is invalid");
@@ -560,7 +560,7 @@ impl Parser<'_>
     {
       self.report(DiagnosticCode::InvalidInstruction,
                   line,
-                  "XLIL const result type is invalid");
+                  "XLIL const.i64 result type is invalid");
       return None;
     };
     let result = self.value_id(result, line)?;
@@ -568,7 +568,9 @@ impl Parser<'_>
     let Some(value) = value
     else
     {
-      self.report(DiagnosticCode::InvalidInteger, line, "XLIL const immediate is invalid");
+      self.report(DiagnosticCode::InvalidInteger,
+                  line,
+                  "XLIL const.i64 immediate is invalid");
       return None;
     };
     function.values.push(Value { id: result,

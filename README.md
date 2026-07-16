@@ -180,7 +180,7 @@ Intermediate output extensions:
 must remain human-readable even when their official record grammar becomes stricter. They are not assembly-like: XHIR is a
 structured semantic tree/record dump, and XMIR is a structured control-flow/analysis dump. `.xlil` will never be a binary
 format. Current XLIL text is assembly-like and starts with `.xlil version 0`, then uses directive/label/value records such
-as `.xlil module`, `.extern`, `.func`, `bb0.entry:`, `%r0:i64 = const 42`, `br bb1`, `ret %r0`, and `.end`.
+as `.xlil module`, `.extern`, `.func`, `bb0.entry:`, `%r0:i64 = const.i64 42`, `br bb1`, `ret %r0`, and `.end`.
 
 ## Development rules
 

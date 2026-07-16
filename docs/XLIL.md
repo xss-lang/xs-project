@@ -49,7 +49,7 @@ Current text records intentionally look closer to assembly than to C-like declar
 .extern Next : (i64) -> i64
 .func Answer : () -> i64
 bb0.entry:
-  %r0:i64 = const 42
+  %r0:i64 = const.i64 42
   %r1:i64 = call Next(%r0)
   ret %r1
 .end
@@ -82,6 +82,8 @@ Format notes:
 - `%rN:bool = eq.str %rA, %rB` and `ne.str` compare two `str` views by UTF-16 code-unit length and content. Pointer
   identity is not observable through these instructions.
 - `%rN:i32 = const.i32 N` creates a signed 32-bit integer constant.
+- `%rN:i64 = const.i64 N` creates a signed 64-bit integer constant. The explicit width is part of the opcode; the
+  untyped `const N` spelling is not accepted.
 - `%rN:f32 = const.f32 0xXXXXXXXX` and `%rN:f64 = const.f64 0xXXXXXXXXXXXXXXXX` create IEEE-754 constants from exact
   bit patterns. Fixed-width hexadecimal spelling preserves negative zero, infinities, and NaN payloads across text
   round trips.

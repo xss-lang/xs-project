@@ -193,7 +193,7 @@ static void test_function_body_text_writer(void)
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, ".func Answer : () -> i64\n") != nullptr);
-  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const 42\n  ret %r0\n.end\n") != nullptr);
+  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const.i64 42\n  ret %r0\n.end\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -357,7 +357,7 @@ static void test_text_parser_reads_function_definition(void)
 
 static void test_text_parser_round_trips_supported_body_subset(void)
 {
-  const char text[] = ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %r0:i64 = const 42\n "
+  const char text[] = ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 42\n "
                       " ret %r0\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
@@ -375,7 +375,7 @@ static void test_text_parser_round_trips_supported_body_subset(void)
   size_t read = fread(buffer, 1, sizeof(buffer) - 1, stream);
   buffer[read] = '\0';
   CHECK(strstr(buffer, ".func Answer : () -> i64\n") != nullptr);
-  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const 42\n  ret %r0\n.end\n") != nullptr);
+  CHECK(strstr(buffer, "bb0.entry:\n  %r0:i64 = const.i64 42\n  ret %r0\n.end\n") != nullptr);
   fclose(stream);
   xs_lil_module_destroy(module);
 }
@@ -561,7 +561,7 @@ static void test_text_parser_round_trips_stack_slots(void)
 static void test_text_parser_round_trips_binary_i64_instructions(void)
 {
   const char text[] = ".xlil version 0\n.xlil module App\n.func Arithmetic : () -> i64\nbb0.entry:\n"
-                      "  %r0:i64 = const 9\n  %r1:i64 = const 3\n  %r2:i64 = add.i64 %r0, %r1\n"
+                      "  %r0:i64 = const.i64 9\n  %r1:i64 = const.i64 3\n  %r2:i64 = add.i64 %r0, %r1\n"
                       "  %r3:i64 = sub.i64 %r2, %r1\n  %r4:i64 = mul.i64 %r3, %r1\n"
                       "  %r5:i64 = div.i64 %r4, %r1\n  %r6:i64 = rem.i64 %r5, %r1\n"
                       "  %r7:i64 = and.i64 %r0, %r1\n  %r8:i64 = or.i64 %r0, %r1\n"
@@ -682,11 +682,12 @@ static void test_text_parser_rejects_invalid_inputs(void)
   static const char *const invalid_inputs[] = {
       ".xlil version 1\n.xlil module App\n",
       ".xlil version 0\n.extern Import : () -> void\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %r0:i64 = const 1\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.extern Import : (bad) -> void\n",
       ".xlil version 0\n.xlil module App\n.extern Import (i64) -> i64\n",
-      ".xlil version 0\n.xlil module App\n.func Bad : () -> void\nbb0.entry:\n  ret\n  %r0:i64 = const 1\n.end\n",
-      ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %0:i64 = const 1\n  ret %r0\n.end\n",
-      ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %r0:i64 = const 1\n  ret %0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> void\nbb0.entry:\n  ret\n  %r0:i64 = const.i64 1\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %0:i64 = const.i64 1\n  ret %r0\n.end\n",
+      ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 1\n  ret %0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : (i64) -> i64\nbb0.entry:\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : (i64) -> i64\n.param %r1:i64\nbb0.entry:\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\nbb0.entry:\n  %r0:i64 = call Missing()\n  ret "
@@ -698,7 +699,7 @@ static void test_text_parser_rejects_invalid_inputs(void)
       ".xlil version 0\n.xlil module App\n.extern Import : () -> i64\n.func Bad : () -> void\nbb0.entry:\n"
       "  call Import()\n  ret\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> bool\nbb0.entry:\n"
-      "  %r0:i64 = const 1\n  %r1:bool = not.bool %r0\n  ret %r1\n.end\n",
+      "  %r0:i64 = const.i64 1\n  %r1:bool = not.bool %r0\n  ret %r1\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> f32\nbb0.entry:\n"
       "  %r0:f32 = const.f32 0x1234\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> f32\nbb0.entry:\n"
@@ -708,7 +709,7 @@ static void test_text_parser_rejects_invalid_inputs(void)
       ".xlil version 0\n.xlil module App\n.func Bad : () -> i64\n.slot %s0:i32\nbb0.entry:\n"
       "  %r0:i64 = load %s0\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> void\n.slot %s0:i32\nbb0.entry:\n"
-      "  %r0:i64 = const 1\n  store %r0, %s0\n  ret\n.end\n",
+      "  %r0:i64 = const.i64 1\n  store %r0, %s0\n  ret\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> str\nbb0.entry:\n"
       "  %r0:str = const.str utf16 [0x0041]\n  ret %r0\n.end\n",
       ".xlil version 0\n.xlil module App\n.func Bad : () -> str\nbb0.entry:\n"

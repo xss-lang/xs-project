@@ -48,10 +48,15 @@ pub(crate) fn build_module(module: &declarations::Module) -> Option<AggregateReg
   Some(registry)
 }
 
-pub(crate) fn build_functions(functions: &[super::type_check::Function]) -> Option<AggregateRegistry>
+pub(crate) fn build_functions_with_nominals(nominal_types: &[NominalType],
+                                            functions: &[super::type_check::Function])
+                                            -> Option<AggregateRegistry>
 {
-  let definitions = HashMap::new();
-  let mut registry = AggregateRegistry::default();
+  let definitions = nominal_types.iter()
+                                 .filter(|declaration| declaration.kind == NominalKind::Data)
+                                 .map(|declaration| (declaration.name.as_str(), declaration))
+                                 .collect::<HashMap<_, _>>();
+  let mut registry = build(nominal_types)?;
   for function in functions
   {
     if let Some(return_type) = &function.return_type

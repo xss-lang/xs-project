@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use std::{slice, str};
+use std::{collections::HashSet, slice, str};
 
 use super::FfiStatus;
 use crate::{hir, mir, xlil};
@@ -34,12 +34,21 @@ impl DirectIrSession
                                          .collect() };
       }
     };
-    let Some(aggregate_registry) = hir::aggregate_registry::build_functions(&program.functions)
+    let declaration_diagnostics = validate_xhir_declarations(&program.nominal_types);
+    if !declaration_diagnostics.is_empty()
+    {
+      return Self { xlil_text: None,
+                    diagnostics: declaration_diagnostics };
+    }
+    let Some(aggregate_registry) =
+      hir::aggregate_registry::build_functions_with_nominals(&program.nominal_types, &program.functions)
     else
     {
       return Self::failed("XHIR composite type registry could not be constructed".to_string());
     };
-    let collection_registry = hir::collection_registry::build_functions(&program.functions, &aggregate_registry);
+    let collection_registry = hir::collection_registry::build_functions_with_nominals(&program.nominal_types,
+                                                                                      &program.functions,
+                                                                                      &aggregate_registry);
     let aggregate_types = aggregate_registry.layouts
                                             .iter()
                                             .map(|layout| xlil::AggregateType { id: layout.value_type.registry_id,
@@ -57,13 +66,15 @@ impl DirectIrSession
     for (function, parameter_count) in program.functions.into_iter().zip(program.parameter_counts)
     {
       let name = function.name.clone();
-      diagnostics.extend(hir::type_check::TypeChecker::new().check_function(&function)
+      diagnostics.extend(hir::type_check::TypeChecker::new().with_nominal_types(&program.nominal_types)
+                                                            .check_function(&function)
                                                             .into_iter()
                                                             .map(|error| {
                                                               format!("XHIR function '{name}' type check: {}",
                                                                       error.message)
                                                             }));
-      match hir::mir_lowering::HirToMirLowerer::new().with_aggregate_types(&aggregate_registry)
+      match hir::mir_lowering::HirToMirLowerer::new().with_nominal_types(&program.nominal_types)
+                                                     .with_aggregate_types(&aggregate_registry)
                                                      .with_collection_types(&collection_registry)
                                                      .lower_function_with_parameters(&function, parameter_count)
       {
@@ -186,6 +197,34 @@ impl DirectIrSession
     Self { xlil_text: None,
            diagnostics: vec![message] }
   }
+}
+
+fn validate_xhir_declarations(declarations: &[hir::declarations::NominalType]) -> Vec<String>
+{
+  let mut diagnostics = Vec::new();
+  let mut names = HashSet::new();
+  for declaration in declarations
+  {
+    if !names.insert(declaration.name.as_str())
+    {
+      diagnostics.push(format!("XHIR nominal type '{}' is declared more than once", declaration.name));
+    }
+    if declaration.kind != hir::declarations::NominalKind::Data
+    {
+      diagnostics.push(format!("XHIR direct native lowering does not yet support class '{}'",
+                               declaration.name));
+    }
+    let mut fields = HashSet::new();
+    for field in &declaration.fields
+    {
+      if !fields.insert(field.name.as_str())
+      {
+        diagnostics.push(format!("XHIR nominal type '{}' declares field '{}' more than once",
+                                 declaration.name, field.name));
+      }
+    }
+  }
+  diagnostics
 }
 
 /// Parses, type-checks, and lowers an XHIR v0 program through MIR and XLIL.
@@ -361,5 +400,18 @@ mod tests
                    .any(|message| message.contains("local id 9 is not declared")),
             "{:?}",
             session.diagnostics);
+  }
+
+  #[test]
+  fn rejects_duplicate_xhir_nominal_declarations()
+  {
+    let declarations = "declarations\n  data Point\n    field x: Long mutable\n  .end\n  data Point\n    field x: \
+                        Long mutable\n  .end\n.end\n\n";
+    let input = VALID_XHIR.replace("\nfunction main", &format!("\n{declarations}function main"));
+    let session = DirectIrSession::from_xhir(input.as_bytes());
+    assert!(session.xlil_text.is_none());
+    assert!(session.diagnostics
+                   .iter()
+                   .any(|message| message.contains("declared more than once")));
   }
 }

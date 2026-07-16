@@ -2,6 +2,6 @@
 .xlil module Invalid
 .func Answer : () -> i64
 bb0.entry:
-  %r0:i64 = const 42
+  %r0:i64 = const.i64 42
   ret %r0
 .end

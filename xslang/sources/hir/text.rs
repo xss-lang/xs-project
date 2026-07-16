@@ -25,6 +25,7 @@ mod call_tests;
 mod collection_tests;
 #[cfg(test)]
 mod conditional_tests;
+mod declaration;
 #[cfg(test)]
 mod for_tests;
 #[cfg(test)]
@@ -38,7 +39,9 @@ mod statement_writer;
 mod tuple_tests;
 
 pub use parameter_writer::function_to_xhir_with_parameters;
-pub use program::{XhirProgram, parse_xhir_program, program_to_xhir, program_to_xhir_with_parameters};
+pub use program::{
+  XhirProgram, parse_xhir_program, program_to_xhir, program_to_xhir_with_declarations, program_to_xhir_with_parameters,
+};
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
 use names::type_name;

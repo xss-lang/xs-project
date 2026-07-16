@@ -186,9 +186,12 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
   }
   let program_name = declarations.name.as_deref().unwrap_or("root");
   let xhir_text = (hir_functions.len() == body_count).then(|| {
-                                                       crate::hir::text::program_to_xhir_with_parameters(program_name,
-                                                                                           &hir_functions,
-                                                                                           &hir_parameter_counts)
+                                                       crate::hir::text::program_to_xhir_with_declarations(
+                                           program_name,
+                                           &declarations.nominal_types,
+                                           &hir_functions,
+                                           &hir_parameter_counts,
+                                         )
                                          .into_bytes()
                                                      });
   let xmir_text = (mir_functions.len() == body_count).then(|| {

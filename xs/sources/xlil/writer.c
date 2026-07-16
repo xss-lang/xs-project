@@ -161,7 +161,8 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
   {
     const XsLilInstruction *instruction = &block->instructions[i];
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_I64 &&
-       fprintf(stream, "  %%r%u:i64 = const %lld\n", instruction->result, (long long)instruction->immediate_i64) < 0)
+       fprintf(stream, "  %%r%u:i64 = const.i64 %lld\n", instruction->result,
+               (long long)instruction->immediate_i64) < 0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.i64 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_I32 &&
        fprintf(stream, "  %%r%u:i32 = const.i32 %d\n", instruction->result, (int)instruction->immediate_i64) < 0)

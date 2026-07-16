@@ -18,7 +18,7 @@ mod for_each;
 mod match_expression;
 mod nominal;
 mod tuple;
-mod type_parser;
+pub(super) mod type_parser;
 mod unary;
 
 use type_parser::{parse_local_record, parse_type_text, split_type_list};

@@ -10,6 +10,9 @@ endforeach()
 configure_file(tests/fixtures/source/MainCall.xs "${XS_DIRECT_XMIR_FIXTURE_DIR}/MainCall.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainTupleCalls.xs "${XS_DIRECT_XMIR_FIXTURE_DIR}/MainTupleCalls.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainFixedArray.xs "${XS_DIRECT_XMIR_FIXTURE_DIR}/MainFixedArray.xs" COPYONLY)
+configure_file(tests/fixtures/source/MainDataFields.xs "${XS_DIRECT_XMIR_FIXTURE_DIR}/MainDataFields.xs" COPYONLY)
+configure_file(tests/fixtures/source/MainNestedDataFields.xs
+               "${XS_DIRECT_XMIR_FIXTURE_DIR}/MainNestedDataFields.xs" COPYONLY)
 
 add_test(NAME direct_xmir_native_build COMMAND xs build --mir -file
   ${XS_DIRECT_XMIR_FIXTURE_DIR}/Supported.xmir)
@@ -50,5 +53,25 @@ foreach(fixture MainTupleCalls MainFixedArray)
     ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.ll
     ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.o
     ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xse 7)
+  set_tests_properties(direct_xmir_${fixture}_artifacts PROPERTIES TIMEOUT 5 DEPENDS direct_xmir_${fixture}_roundtrip)
+endforeach()
+
+foreach(fixture MainDataFields MainNestedDataFields)
+  if(fixture STREQUAL "MainDataFields")
+    set(expected_exit 9)
+  else()
+    set(expected_exit 22)
+  endif()
+  add_test(NAME direct_xmir_${fixture}_output COMMAND xs build --mir -file
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xs)
+  set_tests_properties(direct_xmir_${fixture}_output PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "wrote XMIR")
+  add_test(NAME direct_xmir_${fixture}_roundtrip COMMAND xs build --mir -file
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xmir)
+  set_tests_properties(direct_xmir_${fixture}_roundtrip PROPERTIES TIMEOUT 5 DEPENDS direct_xmir_${fixture}_output
+    PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+  add_test(NAME direct_xmir_${fixture}_artifacts COMMAND xs_xse_artifact_tests
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.ll
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.o
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xse ${expected_exit})
   set_tests_properties(direct_xmir_${fixture}_artifacts PROPERTIES TIMEOUT 5 DEPENDS direct_xmir_${fixture}_roundtrip)
 endforeach()

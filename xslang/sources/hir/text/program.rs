@@ -5,8 +5,10 @@
 
 use std::fmt::Write;
 
+use crate::hir::declarations::NominalType;
 use crate::hir::type_check::Function;
 
+use super::declaration::{parse_declarations, write_declarations};
 use super::parser::{XhirParseDiagnostic, parse_xhir_function};
 use super::{SUPPORTED_XHIR_VERSION, function_to_xhir_with_parameters};
 
@@ -14,6 +16,7 @@ use super::{SUPPORTED_XHIR_VERSION, function_to_xhir_with_parameters};
 pub struct XhirProgram
 {
   pub name: String,
+  pub nominal_types: Vec<NominalType>,
   pub functions: Vec<Function>,
   pub parameter_counts: Vec<usize>,
 }
@@ -27,10 +30,21 @@ pub fn program_to_xhir(name: &str, functions: &[Function]) -> String
 #[must_use]
 pub fn program_to_xhir_with_parameters(name: &str, functions: &[Function], parameter_counts: &[usize]) -> String
 {
+  program_to_xhir_with_declarations(name, &[], functions, parameter_counts)
+}
+
+#[must_use]
+pub fn program_to_xhir_with_declarations(name: &str,
+                                         nominal_types: &[NominalType],
+                                         functions: &[Function],
+                                         parameter_counts: &[usize])
+                                         -> String
+{
   assert_eq!(functions.len(),
              parameter_counts.len(),
              "every XHIR function needs a parameter count");
   let mut output = format!(".xhir version {SUPPORTED_XHIR_VERSION}\nprogram {name}\n");
+  write_declarations(&mut output, nominal_types);
   for (function, parameter_count) in functions.iter().zip(parameter_counts)
   {
     let document = function_to_xhir_with_parameters(function, *parameter_count);
@@ -51,6 +65,7 @@ pub fn parse_xhir_program(text: &str) -> Result<XhirProgram, Vec<XhirParseDiagno
   let mut diagnostics = Vec::new();
   validate_header(&lines, &mut diagnostics);
   let name = program_name(&lines, &mut diagnostics);
+  let mut nominal_types = Vec::new();
   let mut functions = Vec::new();
   let mut parameter_counts = Vec::new();
   let mut index = 2;
@@ -68,6 +83,11 @@ pub fn parse_xhir_program(text: &str) -> Result<XhirProgram, Vec<XhirParseDiagno
       ended = true;
       index += 1;
       break;
+    }
+    if line == "declarations"
+    {
+      nominal_types.extend(parse_declarations(&lines, &mut index, &mut diagnostics));
+      continue;
     }
     if !line.starts_with("function ")
     {
@@ -111,6 +131,7 @@ pub fn parse_xhir_program(text: &str) -> Result<XhirProgram, Vec<XhirParseDiagno
   if diagnostics.is_empty()
   {
     Ok(XhirProgram { name,
+                     nominal_types,
                      functions,
                      parameter_counts })
   }
@@ -191,6 +212,8 @@ fn diagnostic(line: usize, message: String) -> XhirParseDiagnostic
 mod tests
 {
   use super::*;
+  use crate::compiler_core::SourceSpan;
+  use crate::hir::declarations::{Field, NominalKind, TypeRef};
   use crate::hir::{Function, Local, PrimitiveType, Span, Statement, Type};
 
   #[test]
@@ -208,11 +231,40 @@ mod tests
                                                      mutable: false,
                                                      span: Span::new(0, 0, 1) }],
                                 body: Vec::new() }];
-    let text = program_to_xhir_with_parameters("root", &functions, &[0, 1]);
+    let nominal_types = [NominalType { name: "Point".to_string(),
+                                       kind: NominalKind::Data,
+                                       fields: vec![Field { name: "x".to_string(),
+                                                            ty: TypeRef::Primitive(PrimitiveType::Long),
+                                                            mutable: true,
+                                                            span: SourceSpan { file_id: 0,
+                                                                               start_offset: 0,
+                                                                               end_offset: 0,
+                                                                               start_line: 1,
+                                                                               start_column: 0,
+                                                                               end_line: 1,
+                                                                               end_column: 0 } }],
+                                       span: SourceSpan { file_id: 0,
+                                                          start_offset: 0,
+                                                          end_offset: 0,
+                                                          start_line: 1,
+                                                          start_column: 0,
+                                                          end_line: 1,
+                                                          end_column: 0 } }];
+    let text = program_to_xhir_with_declarations("root", &nominal_types, &functions, &[0, 1]);
     let parsed = parse_xhir_program(&text).expect("program should parse");
     assert_eq!(parsed.name, "root");
+    assert_eq!(parsed.nominal_types.len(), 1);
+    assert_eq!(parsed.nominal_types[0].name, "Point");
+    assert_eq!(parsed.nominal_types[0].kind, NominalKind::Data);
+    assert_eq!(parsed.nominal_types[0].fields[0].name, "x");
+    assert_eq!(parsed.nominal_types[0].fields[0].ty,
+               TypeRef::Primitive(PrimitiveType::Long));
+    assert!(parsed.nominal_types[0].fields[0].mutable);
     assert_eq!(parsed.parameter_counts, vec![0, 1]);
-    assert_eq!(program_to_xhir_with_parameters(&parsed.name, &parsed.functions, &parsed.parameter_counts),
+    assert_eq!(program_to_xhir_with_declarations(&parsed.name,
+                                                 &parsed.nominal_types,
+                                                 &parsed.functions,
+                                                 &parsed.parameter_counts),
                text);
     assert!(parse_xhir_program(text.trim_end_matches(".program end\n")).is_err());
   }

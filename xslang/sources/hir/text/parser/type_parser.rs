@@ -80,7 +80,7 @@ pub(super) fn split_type_list(text: &str) -> Vec<&str>
   result
 }
 
-pub(super) fn parse_type_text(name: &str) -> Option<Type>
+pub(crate) fn parse_type_text(name: &str) -> Option<Type>
 {
   if name == "()"
   {

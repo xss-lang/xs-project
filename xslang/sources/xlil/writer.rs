@@ -119,7 +119,7 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
   match *instruction
   {
     Instruction::ConstI64 { result,
-                            value, } => writeln!(output, "  %r{}:i64 = const {}", result.0, value),
+                            value, } => writeln!(output, "  %r{}:i64 = const.i64 {}", result.0, value),
     Instruction::ConstI32 { result,
                             value, } => writeln!(output, "  %r{}:i32 = const.i32 {}", result.0, value),
     Instruction::ConstU16 { result,
@@ -404,7 +404,7 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %r0:i64 = const \
+               ".xlil version 0\n.xlil module App\n.func xs$App$Value : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 \
                 42\n  ret %r0\n.end\n");
   }
 
@@ -485,8 +485,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %r0:i64 = const 7\n  \
-                %r1:i64 = call xs$App$Callee(%r0)\n  ret %r1\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Call : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 \
+                7\n  %r1:i64 = call xs$App$Callee(%r0)\n  ret %r1\n.end\n");
   }
 
   #[test]
@@ -516,8 +516,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %r0:i64 = const 2\n  \
-                %r1:i64 = const 3\n  %r2:i64 = add.i64 %r0, %r1\n  ret %r2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Add : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 \
+                2\n  %r1:i64 = const.i64 3\n  %r2:i64 = add.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
@@ -533,8 +533,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %r0:i64 = const 8\n  \
-                %r1:i64 = const 3\n  %r2:i64 = sub.i64 %r0, %r1\n  ret %r2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Sub : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 \
+                8\n  %r1:i64 = const.i64 3\n  %r2:i64 = sub.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
@@ -550,8 +550,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %r0:i64 = const 6\n  \
-                %r1:i64 = const 7\n  %r2:i64 = mul.i64 %r0, %r1\n  ret %r2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Mul : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 \
+                6\n  %r1:i64 = const.i64 7\n  %r2:i64 = mul.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
@@ -567,8 +567,8 @@ mod tests
     module.add_function(function);
 
     assert_eq!(module_to_string(&module),
-               ".xlil version 0\n.xlil module App\n.func xs$App$Eq : () -> bool\nbb0.entry:\n  %r0:i64 = const 7\n  \
-                %r1:i64 = const 7\n  %r2:bool = eq.i64 %r0, %r1\n  ret %r2\n.end\n");
+               ".xlil version 0\n.xlil module App\n.func xs$App$Eq : () -> bool\nbb0.entry:\n  %r0:i64 = const.i64 \
+                7\n  %r1:i64 = const.i64 7\n  %r2:bool = eq.i64 %r0, %r1\n  ret %r2\n.end\n");
   }
 
   #[test]
