@@ -98,6 +98,8 @@ The verified optimizer API uses the same structural verifier before and after MI
 
 `xs build --output mir` emits the program form from borrow-checked, verified, optimized MIR. The Rust program reader
 round-trips every function while the existing single-function reader remains available for focused tools and fixtures.
+`xs build --mir -file <program.xmir>` runs the program through MIR verification, borrow checking, optimization, XLIL
+lowering/verification, and the existing LLVM native backend. Invalid local/block references fail before backend entry.
 
 Place projections, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
 

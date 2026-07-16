@@ -63,6 +63,7 @@ typedef enum
 
 typedef struct XsCompilerCoreSyntaxStorage XsCompilerCoreSyntaxStorage;
 typedef struct XsCompilerCoreSession XsCompilerCoreSession;
+typedef struct XsCompilerCoreDirectIrSession XsCompilerCoreDirectIrSession;
 
 XsCompilerCoreStatus xs_compiler_core_syntax_packet_create(const XsSyntaxTree *tree,
                                                            XsCompilerCoreSyntaxStorage **storage);
@@ -87,5 +88,15 @@ const uint8_t *xslang_compiler_core_session_xhir_text(const XsCompilerCoreSessio
 const uint8_t *xslang_compiler_core_session_xmir_text(const XsCompilerCoreSession *session, uint64_t *length);
 const uint8_t *xslang_compiler_core_session_xlil_text(const XsCompilerCoreSession *session, uint64_t *length);
 void xslang_compiler_core_session_free(XsCompilerCoreSession *session);
+
+XsCompilerCoreFfiStatus xslang_compiler_core_direct_xmir_create(const uint8_t *text, uint64_t length,
+                                                                XsCompilerCoreDirectIrSession **session);
+XsCompilerCoreFfiStatus xslang_compiler_core_direct_xhir_create(const uint8_t *text, uint64_t length,
+                                                                XsCompilerCoreDirectIrSession **session);
+uint64_t xslang_compiler_core_direct_ir_diagnostic_count(const XsCompilerCoreDirectIrSession *session);
+const uint8_t *xslang_compiler_core_direct_ir_diagnostic_text(const XsCompilerCoreDirectIrSession *session,
+                                                              uint64_t index, uint64_t *length);
+const uint8_t *xslang_compiler_core_direct_ir_xlil_text(const XsCompilerCoreDirectIrSession *session, uint64_t *length);
+void xslang_compiler_core_direct_ir_free(XsCompilerCoreDirectIrSession *session);
 
 #endif

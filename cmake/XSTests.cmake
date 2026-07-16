@@ -97,6 +97,8 @@ foreach(format xhir xmir xlil)
 endforeach()
 
 include(XSTestsDirectXlil)
+include(XSTestsDirectXhir)
+include(XSTestsDirectXmir)
 include(XSTestsSourceValues)
 include(XSTestsSourceControl)
 include(XSTestsSourceCalls)

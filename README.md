@@ -164,7 +164,8 @@ The argument-free `xs` project forms use `xs-project` to discover and evaluate `
 `xs.settings.kts` + `xs.build.kts` pair, then compile the returned `.xs` source registry inside `xs` itself. The
 `xs -proj` forms compile a legacy manifest. `xs-proj MyApp.xsproj` only parses and validates that manifest. The `xs -file`
 forms are direct single-file/intermediate input flows. Checked `.xs` input can emit real `.xhir`, `.xmir`, or `.xlil`
-program text; supported source programs can continue through LLVM to native `.xse` output.
+program text. Supported `.xhir`, `.xmir`, `.xlil`, and source programs can continue through verified XLIL and LLVM to
+native `.xse` output.
 The public C23 `.xsproj` parser and existing compiler path remain buildable, but the format is feature-frozen and excluded
 from the active compiler/project test suites. It is permanent legacy compatibility and will never be removed.
 Programmable project features belong to the Kotlin project system. `.xsproj` dependencies have been removed; existing

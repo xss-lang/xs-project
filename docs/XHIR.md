@@ -70,6 +70,8 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
   final `.program end`
 - `module <name>` with `import`, `declarations`, and `symbol` records
 - `function <name>` with `signature`, `locals`, and `body`
+- `parameters` records before `locals`; each `parameter <name>: <type> <mutability>` preserves a leading function ABI
+  entry separately from ordinary storage locals
 - explicit `.end` section markers and `.program end` document marker
 - primitive and named type records
 - literal, local, assignment, prefix/postfix update, typed direct-call, conditional block, loop, classic-for, fixed-array
@@ -86,6 +88,8 @@ will be added as the checked HIR model stabilizes.
 
 `xs build --output hir` emits the program form. The Rust program reader splits functions only at `.function end`; indentation
 does not participate in parsing. A single-function XHIR document remains supported by the function reader.
+`xs build --hir -file <program.xhir>` reads the program form, type-checks it, lowers it through MIR and verified XLIL, and
+uses the native backend when every represented operation is supported.
 
 A typed direct call is represented as a semantic record rather than an instruction:
 

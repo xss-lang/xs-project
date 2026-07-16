@@ -135,6 +135,7 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
                                .filter(|function| function.body_present)
                                .count();
   let mut hir_functions = Vec::new();
+  let mut hir_parameter_counts = Vec::new();
   let mut mir_functions = Vec::new();
   let mut diagnostics = Vec::new();
   for declaration in declarations.functions.iter().filter(|function| function.body_present)
@@ -154,6 +155,7 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
       continue;
     }
     hir_functions.push(function.clone());
+    hir_parameter_counts.push(declaration.parameters.len());
     let mir =
       match crate::hir::mir_lowering::HirToMirLowerer::new().with_nominal_types(&declarations.nominal_types)
                                                             .with_aggregate_types(&aggregate_registry)
@@ -183,10 +185,12 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
     }
   }
   let program_name = declarations.name.as_deref().unwrap_or("root");
-  let xhir_text =
-    (hir_functions.len() == body_count).then(|| {
-                                         crate::hir::text::program_to_xhir(program_name, &hir_functions).into_bytes()
-                                       });
+  let xhir_text = (hir_functions.len() == body_count).then(|| {
+                                                       crate::hir::text::program_to_xhir_with_parameters(program_name,
+                                                                                           &hir_functions,
+                                                                                           &hir_parameter_counts)
+                                         .into_bytes()
+                                                     });
   let xmir_text =
     (mir_functions.len() == body_count).then(|| {
                                          crate::mir::text::program_to_xmir(program_name, &mir_functions).into_bytes()

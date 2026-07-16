@@ -14,6 +14,11 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Direct `xs build --hir -file <program.xhir>` and `xs build --mir -file <program.xmir>` now parse complete version-0
+  program documents in the Rust compiler core, validate their typed/control-flow models, lower through verified XLIL, and
+  reuse the LLVM object/link path to produce `.ll`, `.o`, and native `.xse` artifacts. Canonical XHIR program output now
+  records leading function parameters separately from ordinary locals, preserving call ABI across source → XHIR → native
+  round-trips.
 - `xs build --output hir|mir|xlil -file <source.xs>` and the `--hir`/`--mir`/`--xlil` short forms now write real
   compiler-core output beside the source as `.xhir`, `.xmir`, or `.xlil`. Kotlin project builds use the merged program
   session and write beside the selected entry source. Multi-function XHIR/XMIR files have one versioned `program` record,

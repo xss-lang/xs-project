@@ -187,6 +187,15 @@ static void test_invalid_packet_inputs(void)
   CHECK(xslang_compiler_core_session_diagnostic_count(nullptr) == 0);
   CHECK(xslang_compiler_core_session_diagnostic_text(nullptr, 0, &xlil_length) == nullptr);
   CHECK(xlil_length == 0);
+  XsCompilerCoreDirectIrSession *direct = (XsCompilerCoreDirectIrSession *)(uintptr_t)1;
+  CHECK(xslang_compiler_core_direct_xmir_create(nullptr, 1, &direct) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
+  CHECK(direct == nullptr);
+  CHECK(xslang_compiler_core_direct_xhir_create(nullptr, 0, &direct) == XS_COMPILER_CORE_FFI_OK);
+  CHECK(direct != nullptr);
+  CHECK(xslang_compiler_core_direct_ir_diagnostic_count(direct) != 0);
+  CHECK(xslang_compiler_core_direct_ir_xlil_text(direct, &xlil_length) == nullptr);
+  CHECK(xlil_length == 0);
+  xslang_compiler_core_direct_ir_free(direct);
   XsCompilerCoreSyntaxPacket invalid = {.abi_version = XS_COMPILER_CORE_SYNTAX_ABI_VERSION + 1U};
   CHECK(xslang_compiler_core_session_create(&invalid, &session) == XS_COMPILER_CORE_FFI_INVALID_PACKET);
   xs_compiler_core_syntax_packet_free(nullptr);

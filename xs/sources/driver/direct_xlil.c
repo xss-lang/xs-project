@@ -22,6 +22,10 @@ static char *direct_artifact_path(const char *input_path, const char *extension)
   size_t base_length = strlen(base);
   if(base_length >= 5 && strcmp(base + base_length - 5, ".xlil") == 0)
     base_length -= 5;
+  else if(base_length >= 5 && strcmp(base + base_length - 5, ".xmir") == 0)
+    base_length -= 5;
+  else if(base_length >= 5 && strcmp(base + base_length - 5, ".xhir") == 0)
+    base_length -= 5;
   else if(base_length >= 3 && strcmp(base + base_length - 3, ".xs") == 0)
     base_length -= 3;
   size_t extension_length = strlen(extension);

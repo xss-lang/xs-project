@@ -14,6 +14,8 @@ work belongs here.
 The crate is connected to the C23 compiler driver through a narrow C ABI. The C23 frontend supplies structural syntax to a
 Rust compiler-core session; the session can emit versioned XHIR, XMIR, and XLIL program text and can feed the existing native
 backend when every required lowering stage succeeds.
+Direct-IR sessions also accept complete XHIR or XMIR v0 program text, validate the appropriate typed/MIR invariants, and
+produce verified XLIL text for the C23 LLVM backend without introducing an LLVM dependency into HIR or MIR.
 
 Current core slices include:
 

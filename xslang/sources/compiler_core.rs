@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+mod direct_ir;
 mod model;
 mod xlil_lowering;
 
 pub mod hir_lowering;
 
+pub use direct_ir::*;
 pub use model::*;

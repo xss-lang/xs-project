@@ -32,11 +32,13 @@ mod match_tests;
 mod names;
 #[cfg(test)]
 mod nominal_tests;
+mod parameter_writer;
 mod statement_writer;
 #[cfg(test)]
 mod tuple_tests;
 
-pub use program::{XhirProgram, parse_xhir_program, program_to_xhir};
+pub use parameter_writer::function_to_xhir_with_parameters;
+pub use program::{XhirProgram, parse_xhir_program, program_to_xhir, program_to_xhir_with_parameters};
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
 use names::type_name;

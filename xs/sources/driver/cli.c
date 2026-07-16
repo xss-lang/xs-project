@@ -6,6 +6,8 @@
 #include "xs/driver.h"
 
 #include "compiler_core_native.h"
+#include "direct_xhir.h"
+#include "direct_xmir.h"
 #include "direct_xlil.h"
 #include "options.h"
 #include "project_driver.h"
@@ -769,9 +771,20 @@ static int run_file_command(const XsCliOptions *options)
       free(text);
       return success ? 0 : 1;
     }
+    if(options->output == XS_BUILD_OUTPUT_MIR)
+    {
+      bool success = xs_driver_build_direct_xmir(options->file_path, text, length);
+      free(text);
+      return success ? 0 : 1;
+    }
+    if(options->output == XS_BUILD_OUTPUT_HIR)
+    {
+      bool success = xs_driver_build_direct_xhir(options->file_path, text, length);
+      free(text);
+      return success ? 0 : 1;
+    }
     free(text);
-    fprintf(stderr, "xs: %s direct compilation for '%s' is not wired yet\n", ir_kind_name(options->output),
-            options->file_path);
+    fprintf(stderr, "xs: unsupported direct intermediate input '%s'\n", options->file_path);
     return 1;
   }
   return check_single_source_file(options->file_path,

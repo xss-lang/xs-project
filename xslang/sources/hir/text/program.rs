@@ -8,22 +8,32 @@ use std::fmt::Write;
 use crate::hir::type_check::Function;
 
 use super::parser::{XhirParseDiagnostic, parse_xhir_function};
-use super::{SUPPORTED_XHIR_VERSION, function_to_xhir};
+use super::{SUPPORTED_XHIR_VERSION, function_to_xhir_with_parameters};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XhirProgram
 {
   pub name: String,
   pub functions: Vec<Function>,
+  pub parameter_counts: Vec<usize>,
 }
 
 #[must_use]
 pub fn program_to_xhir(name: &str, functions: &[Function]) -> String
 {
+  program_to_xhir_with_parameters(name, functions, &vec![0; functions.len()])
+}
+
+#[must_use]
+pub fn program_to_xhir_with_parameters(name: &str, functions: &[Function], parameter_counts: &[usize]) -> String
+{
+  assert_eq!(functions.len(),
+             parameter_counts.len(),
+             "every XHIR function needs a parameter count");
   let mut output = format!(".xhir version {SUPPORTED_XHIR_VERSION}\nprogram {name}\n");
-  for function in functions
+  for (function, parameter_count) in functions.iter().zip(parameter_counts)
   {
-    let document = function_to_xhir(function);
+    let document = function_to_xhir_with_parameters(function, *parameter_count);
     let body = document.strip_prefix(&format!(".xhir version {SUPPORTED_XHIR_VERSION}\n"))
                        .and_then(|text| text.strip_suffix(".program end\n"))
                        .expect("canonical XHIR function markers");
@@ -42,6 +52,7 @@ pub fn parse_xhir_program(text: &str) -> Result<XhirProgram, Vec<XhirParseDiagno
   validate_header(&lines, &mut diagnostics);
   let name = program_name(&lines, &mut diagnostics);
   let mut functions = Vec::new();
+  let mut parameter_counts = Vec::new();
   let mut index = 2;
   let mut ended = false;
   while index < lines.len()
@@ -74,10 +85,16 @@ pub fn parse_xhir_program(text: &str) -> Result<XhirProgram, Vec<XhirParseDiagno
       diagnostics.push(diagnostic(start + 1, "unterminated XHIR function record".to_string()));
       break;
     }
-    let document = function_document(&lines[start..index]);
+    let function_lines = &lines[start..index];
+    let parameter_count = parameter_count(function_lines);
+    let document = function_document(function_lines);
     match parse_xhir_function(&document)
     {
-      Ok(function) => functions.push(function),
+      Ok(function) =>
+      {
+        functions.push(function);
+        parameter_counts.push(parameter_count);
+      }
       Err(errors) => diagnostics.extend(errors.into_iter()
                                               .map(|error| diagnostic(start + error.line, error.message))),
     }
@@ -94,7 +111,8 @@ pub fn parse_xhir_program(text: &str) -> Result<XhirProgram, Vec<XhirParseDiagno
   if diagnostics.is_empty()
   {
     Ok(XhirProgram { name,
-                     functions })
+                     functions,
+                     parameter_counts })
   }
   else
   {
@@ -105,12 +123,41 @@ pub fn parse_xhir_program(text: &str) -> Result<XhirProgram, Vec<XhirParseDiagno
 fn function_document(lines: &[&str]) -> String
 {
   let mut document = format!(".xhir version {SUPPORTED_XHIR_VERSION}\n");
+  let mut parameters = false;
   for line in lines
   {
-    let _ = writeln!(document, "{line}");
+    let trimmed = line.trim();
+    if trimmed == "parameters"
+    {
+      parameters = true;
+      let _ = writeln!(document, "  locals");
+    }
+    else if parameters && trimmed == ".end"
+    {
+      parameters = false;
+      let _ = writeln!(document, "  .end");
+    }
+    else if parameters && trimmed.starts_with("parameter ")
+    {
+      let _ = writeln!(document, "    {}", trimmed.replacen("parameter ", "local ", 1));
+    }
+    else
+    {
+      let _ = writeln!(document, "{line}");
+    }
   }
   document.push_str(".program end\n");
   document
+}
+
+fn parameter_count(lines: &[&str]) -> usize
+{
+  lines.iter()
+       .skip_while(|line| line.trim() != "parameters")
+       .skip(1)
+       .take_while(|line| line.trim() != ".end")
+       .filter(|line| line.trim().starts_with("parameter "))
+       .count()
 }
 
 fn validate_header(lines: &[&str], diagnostics: &mut Vec<XhirParseDiagnostic>)
@@ -144,7 +191,7 @@ fn diagnostic(line: usize, message: String) -> XhirParseDiagnostic
 mod tests
 {
   use super::*;
-  use crate::hir::{Function, PrimitiveType, Span, Statement, Type};
+  use crate::hir::{Function, Local, PrimitiveType, Span, Statement, Type};
 
   #[test]
   fn roundtrips_multiple_xhir_functions_in_one_program()
@@ -156,12 +203,17 @@ mod tests
                                                                span: Span::new(0, 0, 1) }] },
                      Function { name: "second".to_string(),
                                 return_type: Some(Type::Primitive(PrimitiveType::Long)),
-                                locals: Vec::new(),
+                                locals: vec![Local { name: "value".to_string(),
+                                                     ty: Type::Primitive(PrimitiveType::Long),
+                                                     mutable: false,
+                                                     span: Span::new(0, 0, 1) }],
                                 body: Vec::new() }];
-    let text = program_to_xhir("root", &functions);
+    let text = program_to_xhir_with_parameters("root", &functions, &[0, 1]);
     let parsed = parse_xhir_program(&text).expect("program should parse");
     assert_eq!(parsed.name, "root");
-    assert_eq!(program_to_xhir(&parsed.name, &parsed.functions), text);
+    assert_eq!(parsed.parameter_counts, vec![0, 1]);
+    assert_eq!(program_to_xhir_with_parameters(&parsed.name, &parsed.functions, &parsed.parameter_counts),
+               text);
     assert!(parse_xhir_program(text.trim_end_matches(".program end\n")).is_err());
   }
 }

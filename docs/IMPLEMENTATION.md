@@ -102,7 +102,10 @@ The documented compilation order is preserved:
 - `xs build --output hir|mir|xlil -file <source.xs>` and `--hir`/`--mir`/`--xlil` write real compiler-core program output
   beside the source. Kotlin project output uses the merged source session and the selected entry source as its artifact base.
 - Legacy `-proj <project.xsproj>` follows the same merged-session output path but remains feature-frozen.
-- Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
+- Direct `.xhir` inputs use the Rust program reader, type checker, HIR → MIR lowering, MIR verification/borrow checking,
+  optimization, and MIR → XLIL lowering before entering the existing C23 XLIL/LLVM native backend.
+- Direct `.xmir` inputs begin at the Rust XMIR program reader and run structural verification, borrow checking,
+  optimization, MIR → XLIL lowering, XLIL verification, and the same native backend.
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
   Clang/LLD `.xse` executable path.

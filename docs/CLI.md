@@ -176,9 +176,11 @@ xs build --xlil -file foo.xlil
 The direct file paths skip project manifests. Their final semantics depend on the selected intermediate kind:
 
 - `hir` with `.xs`: parse/check a single `.xs` input and emit `.xhir`.
-- `hir` with `.xhir`: parse the `.xhir version N` header and accept only supported XHIR grammar versions.
+- `hir` with `.xhir`: parse the versioned XHIR program, type-check it, lower it through MIR/XLIL, and produce native
+  artifacts for the supported model subset.
 - `mir` with `.xs`: parse/check/lower a single `.xs` input and emit `.xmir`.
-- `mir` with `.xmir`: parse the `.xmir version N` header and accept only supported XMIR grammar versions.
+- `mir` with `.xmir`: parse the versioned XMIR program, structurally verify and borrow-check it, optimize it, lower it to
+  verified XLIL, and produce native artifacts for the supported model subset.
 - `xlil` with `.xs`: lower a single X# source file to `.xlil`.
 - `xlil` with `.xlil`: parse and verify the `.xlil version N` registry, lower the supported subset to LLVM IR, run the
   configured LLVM verification/optimization pipeline, emit an object file, and link a native executable when the target is
@@ -190,9 +192,10 @@ For `.xs` input, all three output forms use the same checked compiler-core sessi
 the source file, replacing `.xs` with `.xhir`, `.xmir`, or `.xlil`. A Kotlin project merges every selected source session
 and writes the program output beside its selected entry source. XHIR and XMIR use one version header and explicit function
 and program end records; XLIL remains the module registry consumed by the backend.
-For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
-unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API, verified,
-lowered through the LLVM backend, verified by LLVM, and passed through the configured optimization pipeline. It writes
+For direct `.xhir`, `.xmir`, and `.xlil` inputs, the CLI validates the complete supported program grammar and rejects
+unsupported versions. XHIR and XMIR are lowered to an in-memory XLIL registry before entering the same backend boundary.
+A supported XLIL module is parsed through the public XLIL C23 parser API, verified, lowered through the LLVM backend,
+verified by LLVM, and passed through the configured optimization pipeline. It writes
 `<input-stem>.ll`, `<input-stem>.o`, and a native executable named `<input-stem>.xse` alongside the input file. The direct
 XLIL path currently uses the backend default `O0` pipeline; no CLI optimization flag is exposed yet.
 

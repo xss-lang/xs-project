@@ -53,6 +53,8 @@ add_library(xs_compiler
   xs/sources/compiler_core/syntax_packet.c
   xs/sources/driver/cli.c
   xs/sources/driver/compiler_core_native.c
+  xs/sources/driver/direct_xhir.c
+  xs/sources/driver/direct_xmir.c
   xs/sources/driver/direct_xlil.c
   xs/sources/driver/options.c
   xs/sources/driver/project_driver.c
