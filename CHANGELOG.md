@@ -14,6 +14,8 @@ source-to-native executable pipeline.
 
 ### Added
 
+- The first XGC model slice in the `xslang` compiler core defines the disabled-by-default configuration boundary, fixed 2 MiB
+  region size, humongous-object threshold, and region-state vocabulary. Allocation and collection remain unimplemented.
 - Canonical `[T; N]` fixed arrays and `[T]` declarations initialized by square-bracket literals now preserve their element
   count through typed HIR, MIR, XLIL, LLVM, and native `.xse` emission.
 - Fixed-array literals now fill omitted numeric elements with zero and discard elements beyond the declared layout, as

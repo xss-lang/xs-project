@@ -1,0 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+mod model;
+
+pub use model::{HUMONGOUS_OBJECT_THRESHOLD_BYTES, REGION_SIZE_BYTES, RegionState, XgcConfiguration};
