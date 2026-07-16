@@ -12,7 +12,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 
 ## Current status
 
-- Current project version: `0.1.7`.
+- Current project version: `0.1.8`.
 - `xs --version` reports the configured compiler version.
 - The root [../CHANGELOG.md](../CHANGELOG.md) file keeps `Unreleased` for work after the current numbered line.
 - Numbered `0.0.x` entries are development snapshots, not stable language releases.
@@ -22,7 +22,7 @@ APIs, and backend checkpoints before the full native executable pipeline is comp
 The root `release.java` source-file tool checks release metadata without using shell scripts:
 
 ```text
-java --source=21 release.java check 0.1.7
+java --source=21 release.java check 0.1.8
 ```
 
 It validates the CMake project version, changelog heading, release documentation, CLI version documentation, and the built
@@ -30,6 +30,9 @@ It validates the CMake project version, changelog heading, release documentation
 
 ## Version line
 
+- `0.1.8` establishes the target-independent XGC region/mark/card/SATB/root metadata core and transfers the optional
+  whole-program mode through Kotlin project resolution and CLI policy. Native `.xse` compilation remains the primary
+  compiler direction; XGC allocation and collection are not active yet.
 - `0.1.7` preserves built-in fixed arrays as first-class typed HIR/MIR/XLIL values, exposes their registry through the
   public C23 XLIL API, and lowers fixed-array construction and constant indexing through LLVM to native `.xse` output.
 - `0.1.6` carries every fixed-width integer operation through typed HIR, verified and optimized MIR, XLIL, signed or

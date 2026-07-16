@@ -12,12 +12,14 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.8 - 2026-07-16
+
 ### Added
 
-- The first XGC slice in `xslang` defines the disabled-by-default configuration boundary, fixed 2 MiB region size,
-  humongous-object threshold, region metadata accounting, and validated lifecycle transitions. Kotlin
-  `set("XGC_ENABLED", true)` and the `--xgc-enabled` override now reach JVM-free compiler policy; allocation and
-  collection remain unimplemented.
+- The first XGC foundation in `xslang` defines logical heap addresses, fixed 2 MiB regions, mark bitmaps, card tables,
+  adaptive remembered sets, thread-local SATB buffers, precise roots and stack maps, collection-set scoring, and
+  saturating telemetry. Kotlin `set("XGC_ENABLED", true)` and the `--xgc-enabled` override reach JVM-free compiler
+  policy. Allocation, collector threads, barriers, and runtime integration remain deliberately inactive.
 - Canonical `[T; N]` fixed arrays and `[T]` declarations initialized by square-bracket literals now preserve their element
   count through typed HIR, MIR, XLIL, LLVM, and native `.xse` emission.
 - Fixed-array literals now fill omitted numeric elements with zero and discard elements beyond the declared layout, as
@@ -29,7 +31,7 @@ source-to-native executable pipeline.
   members. Compiler-core resolves them before nominal field lookup and lowers them through the existing typed HIR and
   native array path.
 - Kotlin projects may define importable source membership in `xs.module.kts`. Direct members and optional `submodule`
-  blocks accept concrete paths or globs and cross the xs-project/xs-compiler boundary in a module-aware v2 registry.
+  blocks accept concrete paths or globs and cross the xs-project/xs-compiler boundary in a module-aware v3 registry.
 - Project source, test, and module includes are recursive directory roots rather than globs. Exclude patterns retain glob
   support, `--module` supplies an omitted module root, and `XS_EXTENSION` replaces the default `.xs` discovery suffix.
 - Positional and named tuple types/literals now have explicit structural-AST tuple field records, including positional

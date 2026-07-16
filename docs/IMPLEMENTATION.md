@@ -631,6 +631,19 @@ semantics.
 This stage does not yet produce complete statement/expression lowering, the full instruction set, async
 state machine generation, region/loan/move analysis, drop-point validation, or a comprehensive MIR optimization pass set.
 
+### XGC foundation
+
+- XGC is an optional, disabled-by-default whole-program policy represented inside the existing `xslang` crate.
+- Its target-independent model uses logical heap offsets and fixed 2 MiB regions, including contiguous humongous-region
+  claims for objects at or above half a region.
+- Region metadata includes an object-start mark bitmap, a 512-byte-granularity card table, adaptive remembered sets,
+  live/garbage/allocation accounting, age, and validated lifecycle transitions.
+- Precise stack-map roots, thread-local SATB publication buffers, collection-set scoring, and saturating telemetry have
+  independent models and tests.
+- These structures do not yet allocate managed objects or run a collector. Compiler barriers, safepoint insertion,
+  collector threads, root scanning, evacuation, and runtime/LLVM integration are later steps. Native `.xse` compilation
+  continues to use the existing ownership-oriented pipeline unless XGC is eventually connected end to end.
+
 ### LLVM backend infrastructure
 
 - A separate `xs_backend_llvm` library exists outside the frontend.

@@ -19,7 +19,7 @@ if(NOT XS_BUILD_PROJECT_XS AND NOT XS_BUILD_PROJECT_XSPROJ)
   message(FATAL_ERROR "This checkout currently has buildable monorepo projects: 'xs' and 'xsproj'.")
 endif()
 
-project(xs_project VERSION 0.1.7 LANGUAGES C)
+project(xs_project VERSION 0.1.8 LANGUAGES C)
 xs_validate_llvm_toolchain()
 
 file(RELATIVE_PATH XS_SOURCE_FROM_BINARY "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")

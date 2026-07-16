@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
 // SPDX-License-Identifier: Apache-2.0
 
-project("Modules", "BETA", "0.1.7")
+project("Modules", "BETA", "0.1.8")
 
 source {
   include("Sources")
