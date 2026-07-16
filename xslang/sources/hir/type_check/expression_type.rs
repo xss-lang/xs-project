@@ -46,6 +46,8 @@ impl TypeChecker
                .then(|| Type::Map { key: Box::new(key),
                                     value: Box::new(value) })
       }
+      Expression::Tuple { tuple_type, .. } => Some(tuple_type.as_ref().clone()),
+      Expression::TupleElement { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),

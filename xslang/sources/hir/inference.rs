@@ -118,6 +118,8 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
       Some(Type::Map { key: Box::new(homogeneous_expression_refs_type(&keys, locals)?),
                        value: Box::new(homogeneous_expression_refs_type(&values, locals)?) })
     }
+    Expression::Tuple { tuple_type, .. } => Some(tuple_type.as_ref().clone()),
+    Expression::TupleElement { element_type, .. } => Some(element_type.as_ref().clone()),
     Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
     Expression::Assign { value, .. } => infer_expression_type(value, locals),
     Expression::AssignField { value, .. } => infer_expression_type(value, locals),

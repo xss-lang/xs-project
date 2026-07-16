@@ -212,6 +212,16 @@ impl HirToMirLowerer
                                               span);
                                   None
                                 }),
+      Type::Tuple { .. } => self.tuple_types
+                                .iter()
+                                .find(|(source_type, _)| source_type == ty)
+                                .map(|(_, value_type)| *value_type)
+                                .or_else(|| {
+                                  self.report(DiagnosticCode::UnsupportedType,
+                                              "tuple HIR type has no MIR aggregate registry entry",
+                                              span);
+                                  None
+                                }),
       _ =>
       {
         self.report(DiagnosticCode::UnsupportedType,

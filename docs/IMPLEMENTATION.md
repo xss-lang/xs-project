@@ -151,7 +151,7 @@ The documented compilation order is preserved:
   branches with a required final `else` arm. Fixed-size built-in arrays support `for (value in values)` with inferred or
   explicit element bindings. The iterable is evaluated once and lowers to an index/length MIR CFG with checked array
   indexing; `continue` targets the generated update block and `break` targets the exit. General iterator-protocol
-  for-each, tuple-pattern iteration, arbitrary statement blocks, and complete CFG lowering remain deferred.
+  iterator-protocol for-each, tuple-pattern iteration, arbitrary statement blocks, and complete CFG lowering remain deferred.
 - Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
   formats are documented.
 
@@ -186,6 +186,10 @@ The documented compilation order is preserved:
   `is_empty`, `start_index`, `end_index`, `first`, and `last` members are resolved in compiler-core and desugared to typed
   constants or existing checked index expressions. Set runtime layout and operations, runtime-sized collection storage,
   and map value/layout lowering remain deferred.
+- Positional and named tuple types, literals, and projections now remain structural through typed HIR and XHIR v0. Tuple
+  layouts share the target-independent aggregate registry with nominal `data` values, then reuse MIR/XLIL `aggregate` and
+  `extract` operations through LLVM structure lowering and native `.xse` emission. Tuple-pattern destructuring remains a
+  separate deferred lowering step.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,

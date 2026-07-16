@@ -24,6 +24,7 @@ mod match_expression;
 mod nominal;
 mod program;
 mod syntax_helpers;
+mod tuple;
 mod unary;
 use expression_type::expression_type;
 use syntax_helpers::{first_child_kind, path_text};
@@ -42,6 +43,7 @@ const PATH: u32 = 25;
 const TYPE_NAMED: u32 = 27;
 const TYPE_ARRAY: u32 = 29;
 const TYPE_FIXED_ARRAY: u32 = 30;
+const TYPE_TUPLE: u32 = 34;
 const TYPE_UNIT: u32 = 36;
 const STMT_BLOCK: u32 = 38;
 const STMT_EXPRESSION: u32 = 39;
@@ -73,6 +75,8 @@ const PATTERN_IDENTIFIER: u32 = 84;
 const PATTERN_TYPED: u32 = 103;
 const STMT_LOOP: u32 = 105;
 const EXPR_TYPED_OBJECT_LITERAL: u32 = 102;
+const EXPR_TUPLE: u32 = 80;
+const TUPLE_FIELD: u32 = 110;
 const TYPE_MAP: u32 = 106;
 const TOKEN_INTEGER: u32 = 3;
 const TOKEN_FLOAT: u32 = 4;
@@ -212,25 +216,16 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
     return declarations::TypeRef::Map { key: Box::new(key),
                                         value: Box::new(mapped) };
   }
+  if value.kind == TYPE_TUPLE
+  {
+    return tuple::lower_tuple_type(tree, value);
+  }
   declarations::TypeRef::Named(value.text.clone())
 }
 
 fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check::Type>
 {
-  Some(match value
-  {
-    declarations::TypeRef::Unit => crate::hir::type_check::Type::Unit,
-    declarations::TypeRef::Primitive(value) => crate::hir::type_check::Type::Primitive(*value),
-    declarations::TypeRef::Named(value) => crate::hir::type_check::Type::Named(value.clone()),
-    declarations::TypeRef::Array { element,
-                                   length, } => crate::hir::type_check::Type::Array { element:
-                                                                                        Box::new(checked_type(element)?),
-                                                                                      length: *length },
-    declarations::TypeRef::Map { key,
-                                 value, } => crate::hir::type_check::Type::Map { key: Box::new(checked_type(key)?),
-                                                                                 value:
-                                                                                   Box::new(checked_type(value)?) },
-  })
+  declarations::type_ref_to_checked(value)
 }
 
 fn lower_parameter(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Parameter, LoweringError>
@@ -319,8 +314,23 @@ fn lower_expression(tree: &SyntaxTree,
     }
     EXPR_IDENTIFIER => Some(Expression::Local { name: path_text(tree, value),
                                                 span: source_span }),
-    EXPR_MEMBER_ACCESS => collection::lower_array_member(tree, value, context, locals, source_span)
-                                    .or_else(|| nominal::lower_field_expression(tree, value, context, locals)),
+    EXPR_MEMBER_ACCESS =>
+    {
+      tuple::lower_tuple_element(tree, value, context, locals, source_span).or_else(|| {
+                                                                             collection::lower_array_member(tree,
+                                                                                                            value,
+                                                                                                            context,
+                                                                                                            locals,
+                                                                                                            source_span)
+                                                                           })
+                                                                           .or_else(|| {
+                                                                             nominal::lower_field_expression(tree,
+                                                                                                             value,
+                                                                                                             context,
+                                                                                                             locals)
+                                                                           })
+    }
+    EXPR_TUPLE => tuple::lower_tuple_expression(tree, value, context, locals, expected_type, source_span),
     EXPR_OBJECT_LITERAL | EXPR_TYPED_OBJECT_LITERAL =>
     {
       nominal::lower_object_expression(tree, value, context, locals, expected_type, source_span)

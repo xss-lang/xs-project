@@ -3,7 +3,63 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use super::{PrimitiveType, Type};
+use super::*;
+
+impl TypeChecker
+{
+  pub(super) fn check_result_propagation(&mut self, value: &Expression, span: Span)
+  {
+    let Some((_, error_type)) = self.result_parts_of_expression(value)
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::ResultPropagationRequiresResult,
+                             message: "Result propagation with '@' requires a Result<T, E> value".to_string(),
+                             span });
+      return;
+    };
+    let Some(return_type) = &self.return_type
+    else
+    {
+      self.report_result_return_mismatch(span);
+      return;
+    };
+    let Some((_, return_error_type)) = result_type_parts(return_type)
+    else
+    {
+      self.report_result_return_mismatch(span);
+      return;
+    };
+    if error_type != return_error_type
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
+                             message: "Result propagation error type is not compatible with the function return \
+                                       type"
+                                            .to_string(),
+                             span });
+    }
+  }
+
+  pub(super) fn result_success_type(&self, value: &Expression) -> Option<Type>
+  {
+    self.result_parts_of_expression(value).map(|(success, _)| success)
+  }
+
+  pub(super) fn result_parts_of_expression(&self, value: &Expression) -> Option<(Type, Type)>
+  {
+    result_type_parts(&self.expression_type(value)?)
+  }
+
+  fn report_result_return_mismatch(&mut self, span: Span)
+  {
+    self.diagnostics
+        .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
+                           message:
+                             "Result propagation requires the enclosing function to return Result<_, E>".to_string(),
+                           span });
+  }
+}
 
 pub(crate) fn result_type_parts(ty: &Type) -> Option<(Type, Type)>
 {

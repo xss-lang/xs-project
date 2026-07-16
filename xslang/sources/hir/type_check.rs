@@ -48,6 +48,17 @@ pub enum Type
     key: Box<Type>,
     value: Box<Type>,
   },
+  Tuple
+  {
+    fields: Vec<TupleFieldType>,
+  },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TupleFieldType
+{
+  pub name: Option<String>,
+  pub ty: Type,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -81,6 +92,14 @@ pub struct ObjectField
 pub struct MapEntry
 {
   pub key: Expression,
+  pub value: Expression,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TupleFieldValue
+{
+  pub name: Option<String>,
   pub value: Expression,
   pub span: Span,
 }
@@ -173,6 +192,19 @@ pub enum Expression
   Map
   {
     entries: Vec<MapEntry>, span: Span
+  },
+  Tuple
+  {
+    fields: Vec<TupleFieldValue>,
+    tuple_type: Box<Type>,
+    span: Span,
+  },
+  TupleElement
+  {
+    tuple: Box<Expression>,
+    index: u32,
+    element_type: Box<Type>,
+    span: Span,
   },
   Index
   {
@@ -676,6 +708,13 @@ impl TypeChecker
           self.check_expression(&entry.value);
         }
       }
+      Expression::Tuple { fields,
+                          tuple_type,
+                          span, } => self.check_tuple(fields, tuple_type, *span),
+      Expression::TupleElement { tuple,
+                                 index,
+                                 element_type,
+                                 span, } => self.check_tuple_element(tuple, *index, element_type, *span),
       Expression::Index { collection,
                           index,
                           element_type,
@@ -890,6 +929,10 @@ impl TypeChecker
           self.check_expression_against_type(&entry.value, value);
         }
       }
+      Expression::Tuple { fields,
+                          tuple_type,
+                          span, } => self.check_tuple_against_type(fields, tuple_type, *span, ty),
+      Expression::TupleElement { span, .. } => self.check_tuple_element_against_type(expression, *span, ty),
       Expression::Index { span, .. } =>
       {
         self.check_expression(expression);
@@ -901,60 +944,6 @@ impl TypeChecker
       Expression::Literal { .. } =>
       {}
     }
-  }
-
-  fn check_result_propagation(&mut self, value: &Expression, span: Span)
-  {
-    let Some((_, error_type)) = self.result_parts_of_expression(value)
-    else
-    {
-      self.diagnostics
-          .push(Diagnostic { code: DiagnosticCode::ResultPropagationRequiresResult,
-                             message: "Result propagation with '@' requires a Result<T, E> value".to_string(),
-                             span });
-      return;
-    };
-    let Some(return_type) = &self.return_type
-    else
-    {
-      self.diagnostics
-          .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
-                             message:
-                               "Result propagation requires the enclosing function to return Result<_, E>".to_string(),
-                             span });
-      return;
-    };
-    let Some((_, return_error_type)) = result_type_parts(return_type)
-    else
-    {
-      self.diagnostics
-          .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
-                             message:
-                               "Result propagation requires the enclosing function to return Result<_, E>".to_string(),
-                             span });
-      return;
-    };
-    if error_type != return_error_type
-    {
-      self.diagnostics
-          .push(Diagnostic { code: DiagnosticCode::ResultPropagationReturnMismatch,
-                             message: "Result propagation error type is not compatible with the function return \
-                                       type"
-                                            .to_string(),
-                             span });
-    }
-  }
-
-  fn result_success_type(&self, value: &Expression) -> Option<Type>
-  {
-    self.result_parts_of_expression(value)
-        .map(|(success_type, _)| success_type)
-  }
-
-  fn result_parts_of_expression(&self, value: &Expression) -> Option<(Type, Type)>
-  {
-    let value_type = self.expression_type(value)?;
-    result_type_parts(&value_type)
   }
 }
 
@@ -970,6 +959,7 @@ mod nominal_check;
 #[cfg(test)]
 mod nominal_tests;
 mod result_type;
+mod tuple;
 mod type_semantics;
 mod unary_type;
 

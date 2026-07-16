@@ -62,6 +62,19 @@ pub enum DesugaredExpression
     entries: Vec<DesugaredMapEntry>,
     span: Span,
   },
+  Tuple
+  {
+    fields: Vec<DesugaredTupleField>,
+    tuple_type: Box<Type>,
+    span: Span,
+  },
+  TupleElement
+  {
+    tuple: Box<DesugaredExpression>,
+    index: u32,
+    element_type: Box<Type>,
+    span: Span,
+  },
   Index
   {
     collection: Box<DesugaredExpression>,
@@ -140,6 +153,14 @@ pub enum DesugaredExpression
 pub struct DesugaredMapEntry
 {
   pub key: DesugaredExpression,
+  pub value: DesugaredExpression,
+  pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DesugaredTupleField
+{
+  pub name: Option<String>,
   pub value: DesugaredExpression,
   pub span: Span,
 }
@@ -437,6 +458,31 @@ impl ResultDesugar
                                                    .collect(),
                                    span: *span }
       }
+      Expression::Tuple { fields,
+                          tuple_type,
+                          span, } =>
+      {
+        DesugaredExpression::Tuple { fields: fields.iter()
+                                                   .map(|field| {
+                                                     DesugaredTupleField { name: field.name.clone(),
+                                                                           value:
+                                                                             self.desugar_expression(&field.value),
+                                                                           span: field.span }
+                                                   })
+                                                   .collect(),
+                                     tuple_type: tuple_type.clone(),
+                                     span: *span }
+      }
+      Expression::TupleElement { tuple,
+                                 index,
+                                 element_type,
+                                 span, } =>
+      {
+        DesugaredExpression::TupleElement { tuple: Box::new(self.desugar_expression(tuple)),
+                                            index: *index,
+                                            element_type: element_type.clone(),
+                                            span: *span }
+      }
       Expression::Index { collection,
                           index,
                           element_type,
@@ -642,6 +688,8 @@ impl ResultDesugar
                .then(|| Type::Map { key: Box::new(key),
                                     value: Box::new(value) })
       }
+      Expression::Tuple { tuple_type, .. } => Some(tuple_type.as_ref().clone()),
+      Expression::TupleElement { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),

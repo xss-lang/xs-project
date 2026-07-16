@@ -20,7 +20,14 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     EXPR_LITERAL if value.token_kind == TOKEN_CHARACTER => Some(Type::Primitive(PrimitiveType::Char)),
     EXPR_LITERAL if value.token_kind == TOKEN_STRING => Some(Type::Primitive(PrimitiveType::Str)),
     EXPR_IDENTIFIER => locals.get(&path_text(tree, value)).cloned(),
-    EXPR_MEMBER_ACCESS => collection::array_member_type(tree, value, context, locals),
+    EXPR_MEMBER_ACCESS =>
+    {
+      tuple::tuple_element_type(tree, value, context, locals).or_else(|| {
+                                                               collection::array_member_type(tree, value, context,
+                                                                                             locals)
+                                                             })
+    }
+    EXPR_TUPLE => tuple::tuple_expression_type(tree, value, context, locals),
     EXPR_CALL =>
     {
       let callee = tree.nodes.get(*value.children.first()?)?;

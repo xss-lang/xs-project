@@ -65,8 +65,8 @@ pub(super) fn split_type_list(text: &str) -> Vec<&str>
   {
     match character
     {
-      '<' => depth += 1,
-      '>' => depth = depth.saturating_sub(1),
+      '<' | '(' | '[' => depth += 1,
+      '>' | ')' | ']' => depth = depth.saturating_sub(1),
       ',' if depth == 0 =>
       {
         result.push(&text[start..index]);
@@ -90,6 +90,27 @@ pub(super) fn parse_type_text(name: &str) -> Option<Type>
   {
     return Some(Type::Primitive(primitive));
   }
+  if let Some(body) = name.strip_prefix('(').and_then(|value| value.strip_suffix(')'))
+  {
+    let fields = if body.trim().is_empty()
+    {
+      Vec::new()
+    }
+    else
+    {
+      split_type_list(body).into_iter()
+                           .map(|field| {
+                             let field = field.trim();
+                             let (name, ty) = split_tuple_field(field).map_or((None, field), |(name, ty)| {
+                                                                        (Some(name.trim().to_string()), ty.trim())
+                                                                      });
+                             Some(crate::hir::type_check::TupleFieldType { name,
+                                                                           ty: parse_type_text(ty)? })
+                           })
+                           .collect::<Option<Vec<_>>>()?
+    };
+    return Some(Type::Tuple { fields });
+  }
   if let Some(body) = name.strip_prefix("set [").and_then(|value| value.strip_suffix(']'))
   {
     return Some(Type::Set { element: Box::new(parse_type_text(body.trim())?) });
@@ -110,6 +131,23 @@ pub(super) fn parse_type_text(name: &str) -> Option<Type>
                               length: None });
   }
   is_named_type(name).then(|| Type::Named(name.to_string()))
+}
+
+fn split_tuple_field(value: &str) -> Option<(&str, &str)>
+{
+  let mut depth = 0_u32;
+  for (index, character) in value.char_indices()
+  {
+    match character
+    {
+      '<' | '(' | '[' => depth += 1,
+      '>' | ')' | ']' => depth = depth.saturating_sub(1),
+      ':' if depth == 0 => return Some((&value[..index], &value[index + 1..])),
+      _ =>
+      {}
+    }
+  }
+  None
 }
 
 pub(super) fn parse_local_record(text: &str) -> Option<Local>

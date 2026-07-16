@@ -23,6 +23,17 @@ pub enum TypeRef
     key: Box<TypeRef>,
     value: Box<TypeRef>,
   },
+  Tuple
+  {
+    fields: Vec<TupleFieldRef>,
+  },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TupleFieldRef
+{
+  pub name: Option<String>,
+  pub ty: TypeRef,
 }
 
 #[must_use]
@@ -39,6 +50,16 @@ pub fn type_ref_to_checked(value: &TypeRef) -> Option<type_check::Type>
     TypeRef::Map { key,
                    value, } => type_check::Type::Map { key: Box::new(type_ref_to_checked(key)?),
                                                        value: Box::new(type_ref_to_checked(value)?) },
+    TypeRef::Tuple { fields } =>
+    {
+      type_check::Type::Tuple { fields: fields.iter()
+                                              .map(|field| {
+                                                Some(type_check::TupleFieldType { name: field.name.clone(),
+                                                                                  ty:
+                                                                                    type_ref_to_checked(&field.ty)? })
+                                              })
+                                              .collect::<Option<Vec<_>>>()? }
+    }
   })
 }
 

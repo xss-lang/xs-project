@@ -40,6 +40,10 @@ impl CollectionRegistry
     {
       Type::Primitive(primitive) => super::mir_lowering::primitive_to_xlil(*primitive),
       Type::Named(name) => aggregates.types.get(name).copied(),
+      Type::Tuple { .. } => aggregates.tuples
+                                      .iter()
+                                      .find(|(source, _)| source == source_type)
+                                      .map(|(_, value_type)| *value_type),
       Type::Array { length: Some(length),
                     element, } =>
       {

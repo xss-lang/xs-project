@@ -49,6 +49,7 @@ pub struct HirToMirLowerer
   storage_locals: HashSet<mir::LocalId>,
   nominal_types: HashMap<String, crate::hir::declarations::NominalType>,
   aggregate_types: HashMap<String, XlilType>,
+  tuple_types: Vec<(Type, XlilType)>,
   array_types: Vec<(Type, XlilType)>,
   array_layouts: Vec<(XlilType, XlilType, u64)>,
   nominal_locals: HashMap<String, String>,
@@ -102,6 +103,14 @@ impl HirToMirLowerer
                                  .iter()
                                  .map(|layout| (layout.value_type, layout.element_type, layout.length))
                                  .collect();
+    self
+  }
+
+  #[must_use]
+  pub(crate) fn with_aggregate_types(mut self, registry: &crate::hir::aggregate_registry::AggregateRegistry) -> Self
+  {
+    self.aggregate_types.clone_from(&registry.types);
+    self.tuple_types.clone_from(&registry.tuples);
     self
   }
 
@@ -312,6 +321,8 @@ impl HirToMirLowerer
                            fields,
                            span, } => self.lower_object_value(nominal_type, fields, *span, lowered),
       Expression::Array { .. } => self.lower_array_expression(expression, expected_type, lowered),
+      Expression::Tuple { .. } => self.lower_tuple_expression(expression, expected_type, lowered),
+      Expression::TupleElement { .. } => self.lower_tuple_element(expression, expected_type, lowered),
       Expression::Set { .. } | Expression::Map { .. } =>
       {
         self.unsupported_expression(expression);
@@ -685,6 +696,8 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Array { span, .. } |
     Expression::Set { span, .. } |
     Expression::Map { span, .. } |
+    Expression::Tuple { span, .. } |
+    Expression::TupleElement { span, .. } |
     Expression::Index { span, .. } |
     Expression::Assign { span, .. } |
     Expression::AssignField { span, .. } |
@@ -696,7 +709,6 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Call { span, .. } | Expression::If { span, .. } | Expression::Match { span, .. } => *span,
   }
 }
-
 mod binary_operations;
 mod binary_types;
 mod call_lowering;
@@ -716,6 +728,9 @@ mod match_tests;
 mod short_circuit;
 #[cfg(test)]
 mod short_circuit_tests;
+mod tuple;
+#[cfg(test)]
+mod tuple_tests;
 mod update;
 mod value_lowering;
 #[cfg(test)]

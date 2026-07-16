@@ -14,7 +14,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainBlockLocals MainFixedArray MainArrayMissingDefaults
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
                        MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
-                       MainForEach
+                       MainForEach MainTuple MainNamedTuple
                        CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
@@ -57,6 +57,24 @@ xs_add_source_native_array_test(MainDynamicArrayIndex 7 3 "getelementptr")
 xs_add_source_native_array_test(MainDynamicArrayMutation 7 3 "llvm.trap")
 xs_add_source_native_array_test(MainArrayProperties 11 3 "extractvalue")
 xs_add_source_native_array_test(MainForEach 8 5 "getelementptr")
+
+function(xs_add_source_native_tuple_test fixture expected_exit)
+  string(TOLOWER "${fixture}" test_suffix)
+  add_test(NAME source_native_${test_suffix}_build COMMAND xs build -file
+                                                        ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xs)
+  set_tests_properties(source_native_${test_suffix}_build PROPERTIES TIMEOUT 5
+                       PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+  add_test(NAME source_native_${test_suffix}_artifacts COMMAND xs_xse_artifact_tests
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.ll
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.o
+                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xse
+                                                            ${expected_exit} "%tuple.0 = type { i32, i32 }" "extractvalue")
+  set_tests_properties(source_native_${test_suffix}_artifacts PROPERTIES
+                       DEPENDS source_native_${test_suffix}_build TIMEOUT 5)
+endfunction()
+
+xs_add_source_native_tuple_test(MainTuple 7)
+xs_add_source_native_tuple_test(MainNamedTuple 7)
 
 add_test(NAME compiler_check_builtin_set COMMAND xs check -file
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/CollectionSetCheck.xs)

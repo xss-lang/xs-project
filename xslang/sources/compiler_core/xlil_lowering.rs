@@ -14,12 +14,21 @@ fn lower_type(value: &TypeRef, aggregates: &crate::hir::aggregate_registry::Aggr
     TypeRef::Unit => Some(Type::VOID),
     TypeRef::Primitive(value) => crate::hir::mir_lowering::primitive_to_xlil(*value),
     TypeRef::Named(name) => aggregates.types.get(name).copied(),
+    TypeRef::Tuple { .. } =>
+    {
+      let checked = crate::hir::declarations::type_ref_to_checked(value)?;
+      aggregates.tuples
+                .iter()
+                .find(|(source, _)| source == &checked)
+                .map(|(_, ty)| *ty)
+    }
     TypeRef::Array { .. } | TypeRef::Map { .. } => None,
   }
 }
 
 fn flatten_parameter(module: &HirModule,
                      value: &TypeRef,
+                     aggregates: &crate::hir::aggregate_registry::AggregateRegistry,
                      visiting: &mut Vec<String>,
                      parameters: &mut Vec<Type>)
                      -> Option<()>
@@ -39,10 +48,11 @@ fn flatten_parameter(module: &HirModule,
       visiting.push(name.clone());
       for field in &definition.fields
       {
-        flatten_parameter(module, &field.ty, visiting, parameters)?;
+        flatten_parameter(module, &field.ty, aggregates, visiting, parameters)?;
       }
       visiting.pop();
     }
+    TypeRef::Tuple { .. } => parameters.push(lower_type(value, aggregates)?),
     TypeRef::Unit => return None,
     TypeRef::Array { .. } | TypeRef::Map { .. } => return None,
   }
@@ -58,7 +68,7 @@ fn signature(module: &HirModule,
   let mut parameters = Vec::new();
   for parameter in &function.parameters
   {
-    flatten_parameter(module, &parameter.ty, &mut Vec::new(), &mut parameters)?;
+    flatten_parameter(module, &parameter.ty, aggregates, &mut Vec::new(), &mut parameters)?;
   }
   Some((return_type, parameters))
 }
@@ -84,7 +94,7 @@ fn supports_source_native_subset(module: &HirModule,
 
 pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Function]) -> Option<Module>
 {
-  let aggregates = crate::hir::aggregate_registry::build(&declarations.nominal_types)?;
+  let aggregates = crate::hir::aggregate_registry::build_module(declarations)?;
   let collections = crate::hir::collection_registry::build(declarations, &aggregates);
   if !supports_source_native_subset(declarations, &aggregates)
   {

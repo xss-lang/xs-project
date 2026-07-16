@@ -17,6 +17,7 @@ mod collection;
 mod for_each;
 mod match_expression;
 mod nominal;
+mod tuple;
 mod type_parser;
 mod unary;
 
@@ -498,6 +499,14 @@ impl Parser<'_>
     if rest == "map"
     {
       return self.map_expression();
+    }
+    if let Some(tuple_type) = rest.strip_prefix("tuple ")
+    {
+      return self.tuple_expression(tuple_type);
+    }
+    if let Some(element) = rest.strip_prefix("tuple_element ")
+    {
+      return self.tuple_element_expression(element);
     }
     if let Some(element_type) = rest.strip_prefix("index ")
     {

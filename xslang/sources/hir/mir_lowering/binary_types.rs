@@ -54,6 +54,11 @@ impl HirToMirLowerer
       Expression::Field { path } => type_to_xlil(&path.ty),
       Expression::Object { .. } => None,
       Expression::Array { .. } | Expression::Set { .. } | Expression::Map { .. } => None,
+      Expression::Tuple { tuple_type, .. } => self.tuple_types
+                                                  .iter()
+                                                  .find(|(source, _)| source == tuple_type.as_ref())
+                                                  .map(|(_, value_type)| *value_type),
+      Expression::TupleElement { element_type, .. } => self.known_value_type(element_type),
       Expression::Index { element_type, .. } => type_to_xlil(element_type),
       Expression::Update { target, .. } => self.local_value_type(*self.locals.get(target)?, lowered),
       Expression::Binary { operator,
@@ -98,6 +103,24 @@ impl HirToMirLowerer
       Expression::Assign { .. } | Expression::AssignField { .. } | Expression::ResultPropagation { .. } => None,
     }
   }
+
+  fn known_value_type(&self, value: &Type) -> Option<XlilType>
+  {
+    match value
+    {
+      Type::Primitive(primitive) => primitive_to_xlil(*primitive),
+      Type::Named(name) => self.aggregate_types.get(name).copied(),
+      Type::Tuple { .. } => self.tuple_types
+                                .iter()
+                                .find(|(source, _)| source == value)
+                                .map(|(_, ty)| *ty),
+      Type::Array { .. } => self.array_types
+                                .iter()
+                                .find(|(source, _)| source == value)
+                                .map(|(_, ty)| *ty),
+      Type::Unit | Type::Set { .. } | Type::Map { .. } => None,
+    }
+  }
 }
 
 fn type_to_xlil(value: &Type) -> Option<XlilType>
@@ -105,6 +128,6 @@ fn type_to_xlil(value: &Type) -> Option<XlilType>
   match value
   {
     Type::Primitive(value) => primitive_to_xlil(*value),
-    Type::Unit | Type::Named(_) | Type::Array { .. } | Type::Set { .. } | Type::Map { .. } => None,
+    Type::Unit | Type::Named(_) | Type::Array { .. } | Type::Set { .. } | Type::Map { .. } | Type::Tuple { .. } => None,
   }
 }

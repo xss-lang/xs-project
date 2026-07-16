@@ -98,9 +98,10 @@ Integer operations retain their declared width. Signed types select LLVM signed 
 shift, and signed predicates; unsigned types select their unsigned/logical counterparts. No LLVM `nsw` or `nuw` flag is
 attached to modular add, subtract, or multiply.
 
-The source-native bridge lowers supported `if`, `while`, classic `for`, and statement-level `match` control flow into MIR
+The source-native bridge lowers supported `if`, `while`, classic `for`, fixed-array for-each, and statement-level `match`
+control flow into MIR
 branches before XLIL and LLVM lowering. A supported `match` over `Long` or `Bool` becomes ordered literal tests and branch
-blocks with a required final `else` arm. This remains a narrow source slice; `for each`, general expressions, and arbitrary
+blocks with a required final `else` arm. This remains a narrow source slice; general iterator protocols, general expressions, and arbitrary
 runtime-backed statements are not implemented yet.
 Parameter values are read from the declared
 LLVM function; calls use declarations emitted for the same XLIL registry module. The backend emits declarations from the
@@ -114,5 +115,6 @@ runtime or external library resolution is not configured yet.
 XLIL aggregate registry entries lower to named LLVM structure types. The backend creates all opaque named types before
 setting their field bodies, then lowers `aggregate` and `extract` records with LLVM `insertvalue` and `extractvalue`.
 This supports aggregate signatures, direct XLIL native builds, and non-recursive source `data` returns without coupling HIR
-or MIR models to LLVM APIs. Aggregate-returning source calls may initialize local `data` places; nested layouts retain their
+or MIR models to LLVM APIs. Structural tuple values use the same registry and instructions while retaining their tuple field
+identity in typed HIR and XHIR. Aggregate-returning source calls may initialize local `data` places; nested layouts retain their
 named structure identity through the generated LLVM function signature.

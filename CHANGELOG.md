@@ -17,6 +17,9 @@ source-to-native executable pipeline.
 - Fixed-size built-in arrays now support source-level `for (value in values)` iteration through typed XHIR, MIR control
   flow, checked array indexing, LLVM IR, and native `.xse` execution. The iterable is evaluated once, the element
   binding is lexical and immutable, and `break`/`continue` target the generated loop exit/update blocks.
+- Positional and named tuple values now cross the Rust compiler core as structural typed-HIR tuples, use target-independent
+  MIR/XLIL aggregate construction and extraction, lower to LLVM structure values, and execute in native `.xse` fixtures.
+  XHIR v0 preserves tuple types, field names, literals, and element projections in its human-readable text form.
 
 ## 0.1.8 - 2026-07-16
 
@@ -50,7 +53,7 @@ source-to-native executable pipeline.
 
 - `[T] = [...]` denotes an array and `[T] = {...}` denotes a built-in set. A `[T]` declaration without an initializer is
   an array. The literal delimiter supplies the distinction when an initializer is present.
-- Fixed arrays now support calculated `Int` indices for reads and writes through MIR `array.get`/`array.set`, XLIL v0 text,
+- Fixed arrays now support calculated `Int` indices for reads and writes through checked MIR/XLIL array access records,
   the public C23 XLIL model, and bounds-checked LLVM lowering. Native `.xse` fixtures cover both operations.
 - Prefix operators now consume a postfix-complete operand, so `!value.member` is parsed as `!(value.member)`.
 - The source keyword is now singular `import`; legacy `imports` is no longer tokenized as a keyword. Source-level

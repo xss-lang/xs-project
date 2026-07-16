@@ -173,6 +173,32 @@ impl HirToMirLowerer
                                                                             })
                                                                             .collect::<Option<Vec<_>>>()?,
                                                                    span: *span }),
+      DesugaredExpression::Tuple { fields,
+                                   tuple_type,
+                                   span, } =>
+      {
+        Some(Expression::Tuple { fields: fields.iter()
+                                               .map(|field| {
+                                                 Some(crate::hir::type_check::TupleFieldValue {
+                          name: field.name.clone(),
+                          value: self.surface_expression_from_desugared(&field.value)?,
+                          span: field.span,
+                        })
+                                               })
+                                               .collect::<Option<Vec<_>>>()?,
+                                 tuple_type: tuple_type.clone(),
+                                 span: *span })
+      }
+      DesugaredExpression::TupleElement { tuple,
+                                          index,
+                                          element_type,
+                                          span, } =>
+      {
+        Some(Expression::TupleElement { tuple: Box::new(self.surface_expression_from_desugared(tuple)?),
+                                        index: *index,
+                                        element_type: element_type.clone(),
+                                        span: *span })
+      }
       DesugaredExpression::Index { collection,
                                    index,
                                    element_type,

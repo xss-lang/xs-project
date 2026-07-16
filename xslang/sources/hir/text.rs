@@ -8,9 +8,10 @@ use std::fmt::Write;
 use super::match_model::MatchPattern;
 use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
 use super::symbols::{Import, Module, SymbolKind, Visibility};
+#[cfg(test)]
+use super::type_check::PrimitiveType;
 use super::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, PrimitiveType, Statement, Type, UnaryOperator, UpdateOperator,
-  UpdatePosition,
+  BinaryOperator, Block, Expression, Function, Literal, Statement, Type, UnaryOperator, UpdateOperator, UpdatePosition,
 };
 use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
 
@@ -27,11 +28,15 @@ mod conditional_tests;
 mod for_tests;
 #[cfg(test)]
 mod match_tests;
+mod names;
 #[cfg(test)]
 mod nominal_tests;
 mod statement_writer;
+#[cfg(test)]
+mod tuple_tests;
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
+use names::type_name;
 pub use parser::{XhirParseDiagnostic, parse_xhir_function, parse_xhir_module_symbols};
 use statement_writer::{write_desugared_statement, write_statement};
 
@@ -460,6 +465,28 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       }
       let _ = writeln!(output, "{pad}.end");
     }
+    Expression::Tuple { fields,
+                        tuple_type,
+                        .. } =>
+    {
+      let _ = writeln!(output, "{pad}tuple {}", type_name(tuple_type));
+      for field in fields
+      {
+        let name = field.name.as_deref().unwrap_or("positional");
+        let _ = writeln!(output, "{pad}  field {name}");
+        write_expression(output, &field.value, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    Expression::TupleElement { tuple,
+                               index,
+                               element_type,
+                               .. } =>
+    {
+      let _ = writeln!(output, "{pad}tuple_element {index} {}", type_name(element_type));
+      write_expression(output, tuple, indent + 1);
+      let _ = writeln!(output, "{pad}.end");
+    }
     Expression::Index { collection,
                         index,
                         element_type,
@@ -665,6 +692,28 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
         let _ = writeln!(output, "{pad}    value");
         write_desugared_expression(output, &entry.value, indent + 3);
       }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    DesugaredExpression::Tuple { fields,
+                                 tuple_type,
+                                 .. } =>
+    {
+      let _ = writeln!(output, "{pad}tuple {}", type_name(tuple_type));
+      for field in fields
+      {
+        let name = field.name.as_deref().unwrap_or("positional");
+        let _ = writeln!(output, "{pad}  field {name}");
+        write_desugared_expression(output, &field.value, indent + 2);
+      }
+      let _ = writeln!(output, "{pad}.end");
+    }
+    DesugaredExpression::TupleElement { tuple,
+                                        index,
+                                        element_type,
+                                        .. } =>
+    {
+      let _ = writeln!(output, "{pad}tuple_element {index} {}", type_name(element_type));
+      write_desugared_expression(output, tuple, indent + 1);
       let _ = writeln!(output, "{pad}.end");
     }
     DesugaredExpression::Index { collection,
@@ -908,50 +957,11 @@ fn literal_name(literal: &Literal) -> String
   }
 }
 
-fn type_name(ty: &Type) -> String
-{
-  match ty
-  {
-    Type::Unit => "()".to_string(),
-    Type::Primitive(primitive) => primitive_type_name(*primitive).to_string(),
-    Type::Named(name) => name.clone(),
-    Type::Array { element,
-                  length: None, } => format!("[{}]", type_name(element)),
-    Type::Array { element,
-                  length: Some(length), } => format!("[{}; {length}]", type_name(element)),
-    Type::Set { element } => format!("set [{}]", type_name(element)),
-    Type::Map { key,
-                value, } => format!("[{}: {}]", type_name(key), type_name(value)),
-  }
-}
-
 fn field_path_name(path: &crate::hir::type_check::FieldPath) -> String
 {
   std::iter::once(path.root.as_str()).chain(path.fields.iter().map(String::as_str))
                                      .collect::<Vec<_>>()
                                      .join(".")
-}
-
-const fn primitive_type_name(primitive: PrimitiveType) -> &'static str
-{
-  match primitive
-  {
-    PrimitiveType::Bool => "Bool",
-    PrimitiveType::Byte => "Byte",
-    PrimitiveType::SByte => "SByte",
-    PrimitiveType::Char => "Char",
-    PrimitiveType::Short => "Short",
-    PrimitiveType::Long => "Long",
-    PrimitiveType::Int => "Int",
-    PrimitiveType::Integer => "Integer",
-    PrimitiveType::UShort => "UShort",
-    PrimitiveType::ULong => "ULong",
-    PrimitiveType::UInt => "UInt",
-    PrimitiveType::UInteger => "UInteger",
-    PrimitiveType::SFloat => "SFloat",
-    PrimitiveType::Float => "Float",
-    PrimitiveType::Str => "Str",
-  }
 }
 
 const fn symbol_kind_name(kind: SymbolKind) -> &'static str
