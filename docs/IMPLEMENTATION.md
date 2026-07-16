@@ -190,8 +190,9 @@ The documented compilation order is preserved:
   layouts share the target-independent aggregate registry with nominal `data` values, then reuse MIR/XLIL `aggregate` and
   `extract` operations through LLVM structure lowering and native `.xse` emission. The same registry discovers nested tuple
   layouts in tuple and fixed-array element types. Tuple-valued parameters, returns, calls, direct element assignment, and
-  chained positional projection use the same typed path. Tuple-pattern destructuring remains a separate deferred lowering
-  step.
+  chained positional projection use the same typed path. Fixed-array for-each supports recursively nested tuple binding
+  patterns, typed tuple annotations, and `else` discard elements by desugaring them to explicit typed projections before
+  MIR construction. General tuple destructuring declarations and tuple match patterns remain separate lowering steps.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
 - Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,

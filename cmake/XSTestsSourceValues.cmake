@@ -15,7 +15,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
                        MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
                        MainForEach MainTuple MainNamedTuple MainTupleCalls MainNestedTuple MainTupleArray MainTupleMutation
-                       TupleUnknownMember TupleAssignmentMismatch
+                       MainTupleForEach TupleUnknownMember TupleAssignmentMismatch TuplePatternArityMismatch
+                       TuplePatternTypeMismatch TuplePatternDuplicateBinding
                        CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainFor
                        MainPostfixDecrement MainUpdateValues
@@ -80,6 +81,7 @@ xs_add_source_native_tuple_test(MainTupleCalls 7 "call %tuple.0 @make_pair" "cal
 xs_add_source_native_tuple_test(MainNestedTuple 7 "%tuple.1 = type { %tuple.0, i32 }" "extractvalue")
 xs_add_source_native_tuple_test(MainTupleArray 7 "[2 x %tuple.0]" "extractvalue")
 xs_add_source_native_tuple_test(MainTupleMutation 7 "store %tuple.0" "insertvalue")
+xs_add_source_native_tuple_test(MainTupleForEach 10 "[2 x %tuple.1]" "extractvalue")
 
 add_test(NAME compiler_check_builtin_set COMMAND xs check -file
                                                  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/CollectionSetCheck.xs)

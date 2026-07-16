@@ -70,6 +70,7 @@ const OBJECT_FIELD: u32 = 78;
 const EXPR_IF: u32 = 81;
 const EXPR_MATCH: u32 = 82;
 const PATTERN_LITERAL: u32 = 85;
+const PATTERN_TUPLE: u32 = 87;
 const PATTERN_ELSE: u32 = 88;
 const PATTERN_IDENTIFIER: u32 = 84;
 const PATTERN_TYPED: u32 = 103;

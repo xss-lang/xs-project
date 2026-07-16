@@ -22,6 +22,9 @@ source-to-native executable pipeline.
   XHIR v0 preserves tuple types, field names, literals, element projections, and element assignments in its human-readable
   text form. Tuple values can cross same-module function signatures, nest inside other tuples, and appear as fixed-array
   elements. Chained positional projection such as `value.0.1` remains source syntax; arrays continue to use `value[index]`.
+- Fixed-array `for` iteration accepts recursively nested tuple patterns, optional tuple type annotations, and `else` discard
+  elements. Compiler-core desugars each pattern to one hidden typed element binding plus explicit tuple projections before
+  MIR CFG construction, so the target-independent aggregate and checked iteration paths remain shared.
 
 ## 0.1.8 - 2026-07-16
 
