@@ -118,7 +118,9 @@ pub struct CompilerCoreSession
 {
   syntax: Vec<SyntaxTree>,
   declarations: crate::hir::declarations::Module,
+  xhir_text: Option<Vec<u8>>,
   mir_functions: Vec<crate::mir::Function>,
+  xmir_text: Option<Vec<u8>>,
   xlil_text: Option<Vec<u8>>,
   diagnostics: Vec<String>,
 }
@@ -128,6 +130,11 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
   let declarations = hir_lowering::lower_program(&syntax)?;
   let aggregate_registry = crate::hir::aggregate_registry::build_module(&declarations).unwrap_or_default();
   let collection_registry = crate::hir::collection_registry::build(&declarations, &aggregate_registry);
+  let body_count = declarations.functions
+                               .iter()
+                               .filter(|function| function.body_present)
+                               .count();
+  let mut hir_functions = Vec::new();
   let mut mir_functions = Vec::new();
   let mut diagnostics = Vec::new();
   for declaration in declarations.functions.iter().filter(|function| function.body_present)
@@ -146,6 +153,7 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
                                declaration.name));
       continue;
     }
+    hir_functions.push(function.clone());
     let mir =
       match crate::hir::mir_lowering::HirToMirLowerer::new().with_nominal_types(&declarations.nominal_types)
                                                             .with_aggregate_types(&aggregate_registry)
@@ -174,6 +182,15 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
       Err(errors) => diagnostics.push(format!("function '{}' failed MIR optimization: {errors:?}", declaration.name)),
     }
   }
+  let program_name = declarations.name.as_deref().unwrap_or("root");
+  let xhir_text =
+    (hir_functions.len() == body_count).then(|| {
+                                         crate::hir::text::program_to_xhir(program_name, &hir_functions).into_bytes()
+                                       });
+  let xmir_text =
+    (mir_functions.len() == body_count).then(|| {
+                                         crate::mir::text::program_to_xmir(program_name, &mir_functions).into_bytes()
+                                       });
   let xlil_text = if diagnostics.is_empty()
   {
     match xlil_lowering::lower_module(&declarations, &mir_functions)
@@ -192,7 +209,9 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
   };
   Ok(CompilerCoreSession { syntax,
                            declarations,
+                           xhir_text,
                            mir_functions,
+                           xmir_text,
                            xlil_text,
                            diagnostics })
 }
@@ -648,6 +667,44 @@ pub unsafe extern "C" fn xslang_compiler_core_session_diagnostic_text(session: *
     unsafe { *length = text.len() as u64 };
   }
   text.as_ptr()
+}
+
+unsafe fn session_text(text: Option<&[u8]>, length: *mut u64) -> *const u8
+{
+  if !length.is_null()
+  {
+    // SAFETY: The caller provides the writable length pointer.
+    unsafe { *length = text.map_or(0, |value| value.len() as u64) };
+  }
+  text.map_or(std::ptr::null(), <[u8]>::as_ptr)
+}
+
+/// Returns borrowed XHIR v0 program text when every source body reached typed HIR.
+///
+/// # Safety
+///
+/// `session` must be null or live; `length` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_xhir_text(session: *const CompilerCoreSession,
+                                                                length: *mut u64)
+                                                                -> *const u8
+{
+  let text = unsafe { session.as_ref() }.and_then(|value| value.xhir_text.as_deref());
+  unsafe { session_text(text, length) }
+}
+
+/// Returns borrowed XMIR v0 program text when every source body reached verified MIR.
+///
+/// # Safety
+///
+/// `session` must be null or live; `length` must be null or writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn xslang_compiler_core_session_xmir_text(session: *const CompilerCoreSession,
+                                                                length: *mut u64)
+                                                                -> *const u8
+{
+  let text = unsafe { session.as_ref() }.and_then(|value| value.xmir_text.as_deref());
+  unsafe { session_text(text, length) }
 }
 
 /// Returns borrowed XLIL v0 text when every source body reached verified XLIL.

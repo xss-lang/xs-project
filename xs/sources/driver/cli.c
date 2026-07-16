@@ -230,20 +230,19 @@ static char *project_root(const char *manifest_path)
   return root;
 }
 
-static char *build_output_path(const char *manifest_path, XsBuildOutput output)
+static char *build_output_path(const char *input_path, XsBuildOutput output)
 {
   const char *extension = xs_cli_output_extension(output);
-  const char *slash = strrchr(manifest_path, '/');
-  const char *base = slash == nullptr ? manifest_path : slash + 1;
-  size_t base_length = strlen(base);
-  if(base_length >= 7 && strcmp(base + base_length - 7, ".xsproj") == 0)
+  size_t base_length = strlen(input_path);
+  if(base_length >= 7 && strcmp(input_path + base_length - 7, ".xsproj") == 0)
     base_length -= 7;
+  else if(base_length >= 3 && strcmp(input_path + base_length - 3, ".xs") == 0)
+    base_length -= 3;
   size_t extension_length = strlen(extension);
   char *path = malloc(base_length + extension_length + 1);
   if(path == nullptr)
     return nullptr;
-  for(size_t i = 0; i < base_length; ++i)
-    path[i] = base[i];
+  memcpy(path, input_path, base_length);
   memcpy(path + base_length, extension, extension_length + 1);
   return path;
 }
@@ -417,21 +416,20 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   return success;
 }
 
-static bool emit_requested_output(XsBuildOutput output, const XsHirSymbolTable *symbols, const char *manifest_path)
+static bool emit_requested_output(XsBuildOutput output, const XsCompilerCoreSession *session, const char *input_path,
+                                  XsDiagnostics *diagnostics, XsSpan span)
 {
   if(output == XS_BUILD_OUTPUT_NONE)
     return true;
-  (void)symbols;
-  char *path = build_output_path(manifest_path, output);
+  char *path = build_output_path(input_path, output);
   if(path == nullptr)
   {
     fprintf(stderr, "xs: out of memory while preparing the output file\n");
     return false;
   }
-  fprintf(stderr, "xs: '%s' was not produced; official %s code emission waits for structural AST completion\n", path,
-          xs_cli_output_extension(output));
+  bool success = xs_driver_emit_compiler_core_output(path, session, output, diagnostics, span);
   free(path);
-  return false;
+  return success;
 }
 
 static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolTable *symbols)
@@ -452,7 +450,8 @@ static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolT
          success;
 }
 
-static bool check_single_source_file(const char *path, bool build_native, const XsCompilerSettings *settings)
+static bool check_single_source_file(const char *path, XsBuildOutput output, bool build_native,
+                                     const XsCompilerSettings *settings)
 {
   CompilationUnit unit = {.path = copy_text(path)};
   if(unit.path == nullptr)
@@ -465,7 +464,11 @@ static bool check_single_source_file(const char *path, bool build_native, const 
   bool success = parse_compilation_unit(&unit, 1, &symbols, settings);
   if(success)
     success = check_compilation_unit_semantics(&unit, &symbols);
-  xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
+  if(success && output != XS_BUILD_OUTPUT_NONE)
+  {
+    XsSpan span = {.start = unit.tree.root->span.start_offset, .end = unit.tree.root->span.end_offset};
+    success = emit_requested_output(output, unit.compiler_core, path, &unit.diagnostics, span);
+  }
   if(success && build_native)
   {
     if(xs_driver_compiler_core_native_available(unit.compiler_core))
@@ -482,8 +485,7 @@ static bool check_single_source_file(const char *path, bool build_native, const 
       success = false;
     }
   }
-  if(!success && build_native)
-    xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
+  xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
   xs_hir_symbol_table_free(&symbols);
   compilation_unit_free(&unit);
   return success;
@@ -582,16 +584,13 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
       }
     }
   }
-  for(size_t i = 0; i < unit_count; ++i)
-    xs_diagnostics_print(&units[i].diagnostics, &units[i].source, stderr);
-  if(success)
-    success = emit_requested_output(output, &symbols, manifest_path);
-  if(success && build_native)
+  XsCompilerCoreSession *merged = nullptr;
+  const XsCompilerCoreSession *program_session = nullptr;
+  if(success && (output != XS_BUILD_OUTPUT_NONE || build_native))
   {
     success = unit_count != 0;
-    XsCompilerCoreSession *merged =
-        success && unit_count > 1 ? merge_compiler_core_sessions(units, unit_count) : nullptr;
-    const XsCompilerCoreSession *native_session = unit_count == 1 ? units[0].compiler_core : merged;
+    merged = success && unit_count > 1 ? merge_compiler_core_sessions(units, unit_count) : nullptr;
+    program_session = unit_count == 1 ? units[0].compiler_core : merged;
     if(success && unit_count > 1 && merged == nullptr)
     {
       XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
@@ -599,23 +598,31 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
                                    "Rust compiler core could not merge the project source sessions") &&
                 false;
     }
-    else if(success && xs_driver_compiler_core_native_available(native_session))
+  }
+  if(success && output != XS_BUILD_OUTPUT_NONE)
+  {
+    XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
+    success = emit_requested_output(output, program_session, units[0].path, &units[0].diagnostics, span);
+  }
+  if(success && build_native)
+  {
+    if(xs_driver_compiler_core_native_available(program_session))
     {
       XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
-      success = xs_driver_build_compiler_core_native(units[0].path, native_session, &units[0].diagnostics, span);
+      success = xs_driver_build_compiler_core_native(units[0].path, program_session, &units[0].diagnostics, span);
     }
-    else if(success)
+    else
     {
       XsSpan span = {.start = units[0].tree.root->span.start_offset, .end = units[0].tree.root->span.end_offset};
-      if(!xs_driver_append_compiler_core_diagnostics(native_session, &units[0].diagnostics, span))
+      if(!xs_driver_append_compiler_core_diagnostics(program_session, &units[0].diagnostics, span))
         (void)xs_diagnostics_add(&units[0].diagnostics, XS_DIAGNOSTIC_ERROR, span,
                                  "Rust compiler core does not yet support this project body for native emission");
       success = false;
     }
-    xslang_compiler_core_session_free(merged);
   }
-  if(!success && build_native && unit_count != 0)
-    xs_diagnostics_print(&units[0].diagnostics, &units[0].source, stderr);
+  xslang_compiler_core_session_free(merged);
+  for(size_t i = 0; i < unit_count; ++i)
+    xs_diagnostics_print(&units[i].diagnostics, &units[i].source, stderr);
 
   xs_hir_symbol_table_free(&symbols);
   for(size_t i = 0; i < unit_count; ++i)
@@ -767,11 +774,12 @@ static int run_file_command(const XsCliOptions *options)
             options->file_path);
     return 1;
   }
-  if(options->output == XS_BUILD_OUTPUT_NONE)
-    return check_single_source_file(options->file_path, strcmp(options->command, "build") == 0, &settings) ? 0 : 1;
-  fprintf(stderr, "xs: %s emission for -file '%s' is not wired yet\n", xs_cli_output_extension(options->output),
-          options->file_path);
-  return 1;
+  return check_single_source_file(options->file_path,
+                                  options->output,
+                                  strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE,
+                                  &settings)
+           ? 0
+           : 1;
 }
 
 int xs_driver_main(int argc, char **argv)

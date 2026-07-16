@@ -16,6 +16,7 @@ use super::type_check::{
 use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
 
 pub mod parser;
+mod program;
 
 mod block_writer;
 #[cfg(test)]
@@ -34,6 +35,8 @@ mod nominal_tests;
 mod statement_writer;
 #[cfg(test)]
 mod tuple_tests;
+
+pub use program::{XhirProgram, parse_xhir_program, program_to_xhir};
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
 use names::type_name;

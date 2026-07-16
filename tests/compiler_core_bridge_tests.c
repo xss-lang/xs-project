@@ -94,6 +94,16 @@ static void test_materialized_syntax_packet(void)
   CHECK(packet == nullptr || xslang_compiler_core_session_syntax_node_count(session) == packet->node_count);
   CHECK(packet == nullptr || xslang_compiler_core_session_function_count(session) == 18);
   CHECK(packet == nullptr || xslang_compiler_core_session_mir_function_count(session) == 17);
+  uint64_t xhir_length = 0;
+  const uint8_t *xhir_text = xslang_compiler_core_session_xhir_text(session, &xhir_length);
+  CHECK(packet == nullptr || xhir_text != nullptr);
+  CHECK(packet == nullptr || text_contains(xhir_text, xhir_length, ".xhir version 0"));
+  CHECK(packet == nullptr || text_contains(xhir_text, xhir_length, "function update_values"));
+  uint64_t xmir_length = 0;
+  const uint8_t *xmir_text = xslang_compiler_core_session_xmir_text(session, &xmir_length);
+  CHECK(packet == nullptr || xmir_text != nullptr);
+  CHECK(packet == nullptr || text_contains(xmir_text, xmir_length, ".xmir version 0"));
+  CHECK(packet == nullptr || text_contains(xmir_text, xmir_length, "function update_values"));
   uint64_t xlil_length = 0;
   const uint8_t *xlil_text = xslang_compiler_core_session_xlil_text(session, &xlil_length);
   CHECK(packet == nullptr || xlil_text != nullptr);
@@ -168,6 +178,10 @@ static void test_invalid_packet_inputs(void)
   CHECK(xslang_compiler_core_session_merge(nullptr, 0, &session) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
   CHECK(xslang_compiler_core_session_merge(nullptr, 1, &session) == XS_COMPILER_CORE_FFI_NULL_ARGUMENT);
   uint64_t xlil_length = 7;
+  CHECK(xslang_compiler_core_session_xhir_text(nullptr, &xlil_length) == nullptr);
+  CHECK(xlil_length == 0);
+  CHECK(xslang_compiler_core_session_xmir_text(nullptr, &xlil_length) == nullptr);
+  CHECK(xlil_length == 0);
   CHECK(xslang_compiler_core_session_xlil_text(nullptr, &xlil_length) == nullptr);
   CHECK(xlil_length == 0);
   CHECK(xslang_compiler_core_session_diagnostic_count(nullptr) == 0);

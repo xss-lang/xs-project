@@ -11,8 +11,9 @@ It is intentionally separate from the current C23 lexer, parser, structural AST,
 New semantic-analysis, HIR (coordinated THIR and XHIR sides), MIR, borrow-checker, optimizer, monomorphization, and lowering
 work belongs here.
 
-The crate is not wired into the C23 compiler driver yet. The initial modules are small, deterministic, and unit-tested so the
-Rust core can grow without splitting one compiler layer across C and Rust.
+The crate is connected to the C23 compiler driver through a narrow C ABI. The C23 frontend supplies structural syntax to a
+Rust compiler-core session; the session can emit versioned XHIR, XMIR, and XLIL program text and can feed the existing native
+backend when every required lowering stage succeeds.
 
 Current core slices include:
 

@@ -14,6 +14,10 @@ source-to-native executable pipeline.
 
 ### Added
 
+- `xs build --output hir|mir|xlil -file <source.xs>` and the `--hir`/`--mir`/`--xlil` short forms now write real
+  compiler-core output beside the source as `.xhir`, `.xmir`, or `.xlil`. Kotlin project builds use the merged program
+  session and write beside the selected entry source. Multi-function XHIR/XMIR files have one versioned `program` record,
+  explicit `.function end` boundaries, and a final `.program end`; their Rust readers round-trip the complete document.
 - Fixed-size built-in arrays now support source-level `for (value in values)` iteration through typed XHIR, MIR control
   flow, checked array indexing, LLVM IR, and native `.xse` execution. The iterable is evaluated once, the element
   binding is lexical and immutable, and `break`/`continue` target the generated loop exit/update blocks.

@@ -54,12 +54,42 @@ add_test(NAME compiler_rejects_misspelled_werror COMMAND xs check -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs --werrror true)
 set_tests_properties(compiler_rejects_misspelled_werror PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
 
+set(XS_INTERMEDIATE_OUTPUT_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/intermediate_output")
+file(MAKE_DIRECTORY "${XS_INTERMEDIATE_OUTPUT_FIXTURE_DIR}")
+configure_file(tests/fixtures/source/MainTupleCalls.xs
+               "${XS_INTERMEDIATE_OUTPUT_FIXTURE_DIR}/MainTupleCalls.xs" COPYONLY)
+add_executable(xs_text_artifact_tests tests/text_artifact_tests.c)
 foreach(output hir mir xlil)
-  add_test(NAME build_file_output_${output} COMMAND xs build --output ${output} -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
-  set_tests_properties(build_file_output_${output} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
-  add_test(NAME build_file_short_${output} COMMAND xs build --${output} -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs)
-  set_tests_properties(build_file_short_${output} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)
+  string(TOUPPER "${output}" output_upper)
+  if(NOT output STREQUAL "xlil")
+    set(output_upper "X${output_upper}")
+  endif()
+  set(output_extension ".x${output}")
+  set(function_record "function")
+  if(output STREQUAL "xlil")
+    set(output_extension ".xlil")
+    set(function_record ".func")
+  endif()
+  add_test(NAME build_file_output_${output} COMMAND xs build --output ${output} -file
+    ${XS_INTERMEDIATE_OUTPUT_FIXTURE_DIR}/MainTupleCalls.xs)
+  set_tests_properties(build_file_output_${output} PROPERTIES TIMEOUT 5
+    PASS_REGULAR_EXPRESSION "wrote ${output_upper}")
+  add_test(NAME build_file_short_${output} COMMAND xs build --${output} -file
+    ${XS_INTERMEDIATE_OUTPUT_FIXTURE_DIR}/MainTupleCalls.xs)
+  set_tests_properties(build_file_short_${output} PROPERTIES TIMEOUT 5
+    PASS_REGULAR_EXPRESSION "wrote ${output_upper}")
+  add_test(NAME build_file_output_${output}_artifact COMMAND xs_text_artifact_tests
+    ${XS_INTERMEDIATE_OUTPUT_FIXTURE_DIR}/MainTupleCalls${output_extension}
+    "${output_extension} version 0" "${function_record} make_pair" "${function_record} main")
+  set_tests_properties(build_file_output_${output}_artifact PROPERTIES TIMEOUT 5
+    DEPENDS build_file_output_${output})
 endforeach()
+
+add_test(NAME build_file_output_xlil_native_roundtrip COMMAND xs build --xlil -file
+  ${XS_INTERMEDIATE_OUTPUT_FIXTURE_DIR}/MainTupleCalls.xlil)
+set_tests_properties(build_file_output_xlil_native_roundtrip PROPERTIES TIMEOUT 5
+  DEPENDS build_file_output_xlil_artifact
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
 
 foreach(format xhir xmir xlil)
   add_test(NAME direct_${format}_unsupported_version COMMAND xs build --${format} -file ${XS_SOURCE_FROM_BINARY}/tests/fixtures/intermediate/Unsupported.${format})

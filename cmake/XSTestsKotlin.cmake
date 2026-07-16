@@ -39,6 +39,28 @@ add_test(NAME kotlin_project_multi_file_native_artifacts COMMAND xs_xse_artifact
   "call i32 @add")
 set_tests_properties(kotlin_project_multi_file_native_artifacts PROPERTIES
   TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_multi_file_native)
+foreach(output hir mir xlil)
+  string(TOUPPER "${output}" output_upper)
+  set(output_extension ".x${output}")
+  set(function_record "function")
+  if(output STREQUAL "xlil")
+    set(output_extension ".xlil")
+    set(function_record ".func")
+  else()
+    set(output_upper "X${output_upper}")
+  endif()
+  add_test(NAME kotlin_project_output_${output} COMMAND xs build --output ${output})
+  set_tests_properties(kotlin_project_output_${output} PROPERTIES TIMEOUT 60
+    WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file"
+    ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+    FIXTURES_REQUIRED kotlin_project_resolver
+    PASS_REGULAR_EXPRESSION "wrote ${output_upper}")
+  add_test(NAME kotlin_project_output_${output}_artifact COMMAND xs_text_artifact_tests
+    ${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file/sources/main${output_extension}
+    "${output_extension} version 0" "${function_record} add" "${function_record} main")
+  set_tests_properties(kotlin_project_output_${output}_artifact PROPERTIES TIMEOUT 5
+    DEPENDS kotlin_project_output_${output})
+endforeach()
 add_test(NAME kotlin_project_integer_widths_build COMMAND xs build)
 set_tests_properties(kotlin_project_integer_widths_build PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_widths"
@@ -81,6 +103,9 @@ set_tests_properties(
   kotlin_project_call_build kotlin_project_call_artifacts
   kotlin_project_recursive_build kotlin_project_recursive_artifacts
   kotlin_project_multi_file_native_build kotlin_project_multi_file_native_artifacts
+  kotlin_project_output_hir kotlin_project_output_hir_artifact
+  kotlin_project_output_mir kotlin_project_output_mir_artifact
+  kotlin_project_output_xlil kotlin_project_output_xlil_artifact
   kotlin_project_integer_widths_build kotlin_project_integer_widths_artifacts
   kotlin_project_integer_operators_build kotlin_project_integer_operators_artifacts
   kotlin_project_module_check

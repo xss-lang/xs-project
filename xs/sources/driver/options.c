@@ -189,7 +189,7 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
     }
   }
   if(options->manifest_path == nullptr && options->file_path == nullptr)
-    return options->output == XS_BUILD_OUTPUT_NONE;
+    return options->output == XS_BUILD_OUTPUT_NONE || strcmp(options->command, "build") == 0;
   if(options->file_path != nullptr)
   {
     if(options->module_path != nullptr)
@@ -204,7 +204,7 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
 void xs_cli_print_usage(FILE *stream)
 {
   fprintf(stream, "usage: xs --version\n");
-  fprintf(stream, "usage: xs <check|build|run> [--module <directory>]\n");
+  fprintf(stream, "usage: xs <check|build|run> [--output hir|mir|xlil] [--module <directory>]\n");
   fprintf(stream, "       [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]\n");
   fprintf(stream, "       [--xgc-enabled true|false]\n");
   fprintf(stream, "usage: xs <check|run> -proj <project.xsproj> [--module <directory>]\n");

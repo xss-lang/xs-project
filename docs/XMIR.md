@@ -70,6 +70,8 @@ the later assembly-like backend input; XMIR is the compiler's readable mid-level
 Rust `xslang` currently parses the function/control-flow subset emitted by the first XMIR writer:
 
 - `.xmir version 0`
+- `program <name>` multi-function documents with repeated `function` records, explicit `.function end` boundaries, and one
+  final `.program end`
 - `function <name>`
 - `returns <xlil-type>`
 - `parameters` with `parameter <name>`, `local <id>`, and `type <xlil-type>` records. A parameter local is immutable and
@@ -93,6 +95,9 @@ Parsed XMIR can be passed to the Rust MIR structural verifier. The current verif
 missing terminators, unknown local references, and unknown block targets before borrow checking.
 Typed `store.local`/`load.local` records preserve source-local storage across CFG edges and lower to XLIL stack slots.
 The verified optimizer API uses the same structural verifier before and after MIR optimization.
+
+`xs build --output mir` emits the program form from borrow-checked, verified, optimized MIR. The Rust program reader
+round-trips every function while the existing single-function reader remains available for focused tools and fixtures.
 
 Place projections, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
 

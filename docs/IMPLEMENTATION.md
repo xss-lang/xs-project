@@ -99,8 +99,9 @@ The documented compilation order is preserved:
   extension while excludes retain glob support. `XS_EXTENSION` defaults to `xs` and may select another extension.
 - `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
   reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macro_rules!` declaration.
-- `xs build --output hir|mir|xlil -proj <project.xsproj>` options are recognized.
-- `xs build --output hir|mir|xlil -file <input>` and `xs build --hir|--mir|--xlil -file <input>` are recognized.
+- `xs build --output hir|mir|xlil -file <source.xs>` and `--hir`/`--mir`/`--xlil` write real compiler-core program output
+  beside the source. Kotlin project output uses the merged source session and the selected entry source as its artifact base.
+- Legacy `-proj <project.xsproj>` follows the same merged-session output path but remains feature-frozen.
 - Direct `.xhir` and `.xmir` inputs currently validate only their version headers.
 - Direct `.xlil` inputs are parsed and verified through the public XLIL C23 parser API. A supported local-target native
   input runs through LLVM lowering, module verification, the configured optimization pipeline, object emission, and the
@@ -150,10 +151,10 @@ The documented compilation order is preserved:
   Statement-level `match` lowers supported `Long`/`Bool` selectors and literal arms into ordered MIR comparisons and
   branches with a required final `else` arm. Fixed-size built-in arrays support `for (value in values)` with inferred or
   explicit element bindings. The iterable is evaluated once and lowers to an index/length MIR CFG with checked array
-  indexing; `continue` targets the generated update block and `break` targets the exit. General iterator-protocol
-  iterator-protocol for-each, tuple-pattern iteration, arbitrary statement blocks, and complete CFG lowering remain deferred.
-- Official `.xhir`, `.xmir`, and `.xlil` intermediate outputs are not emitted until structural AST is complete and the
-  formats are documented.
+  indexing; `continue` targets the generated update block and `break` targets the exit. For-each protocols beyond the
+  built-in fixed-array path, arbitrary statement blocks, and complete CFG lowering remain deferred.
+- Checked source builds emit official version-0 `.xhir`, `.xmir`, and `.xlil` program text through the Rust compiler-core
+  session. Each output remains available only when its corresponding lowering stage succeeds.
 
 ### Lexer and structural AST
 

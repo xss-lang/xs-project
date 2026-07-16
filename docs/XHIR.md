@@ -66,6 +66,8 @@ reviewer should be able to understand which declaration or expression changed wi
 Rust `xslang` currently parses the module-symbol and checked-function subsets emitted by the first XHIR writer:
 
 - `.xhir version 0`
+- `program <name>` multi-function documents with repeated `function` records, explicit `.function end` boundaries, and one
+  final `.program end`
 - `module <name>` with `import`, `declarations`, and `symbol` records
 - `function <name>` with `signature`, `locals`, and `body`
 - explicit `.end` section markers and `.program end` document marker
@@ -81,6 +83,9 @@ without changing the human-readable text requirement.
 
 Additional declaration kinds, generic constraints, interface relations, macro-expansion records, and richer expression forms
 will be added as the checked HIR model stabilizes.
+
+`xs build --output hir` emits the program form. The Rust program reader splits functions only at `.function end`; indentation
+does not participate in parsing. A single-function XHIR document remains supported by the function reader.
 
 A typed direct call is represented as a semantic record rather than an instruction:
 

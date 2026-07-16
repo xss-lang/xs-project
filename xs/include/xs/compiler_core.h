@@ -83,6 +83,8 @@ uint64_t xslang_compiler_core_session_mir_function_count(const XsCompilerCoreSes
 uint64_t xslang_compiler_core_session_diagnostic_count(const XsCompilerCoreSession *session);
 const uint8_t *xslang_compiler_core_session_diagnostic_text(const XsCompilerCoreSession *session, uint64_t index,
                                                             uint64_t *length);
+const uint8_t *xslang_compiler_core_session_xhir_text(const XsCompilerCoreSession *session, uint64_t *length);
+const uint8_t *xslang_compiler_core_session_xmir_text(const XsCompilerCoreSession *session, uint64_t *length);
 const uint8_t *xslang_compiler_core_session_xlil_text(const XsCompilerCoreSession *session, uint64_t *length);
 void xslang_compiler_core_session_free(XsCompilerCoreSession *session);
 

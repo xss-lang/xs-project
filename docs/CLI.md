@@ -186,7 +186,10 @@ The direct file paths skip project manifests. Their final semantics depend on th
 - no output flag with `.xs`: check the source file and, for the first supported `main` slice, emit `.ll`, `.o`, and
   `.xse` beside the input.
 
-The CLI recognizes the forms now; full production semantics are still being connected.
+For `.xs` input, all three output forms use the same checked compiler-core session as native compilation. They write beside
+the source file, replacing `.xs` with `.xhir`, `.xmir`, or `.xlil`. A Kotlin project merges every selected source session
+and writes the program output beside its selected entry source. XHIR and XMIR use one version header and explicit function
+and program end records; XLIL remains the module registry consumed by the backend.
 For direct `.xhir`, `.xmir`, and `.xlil` inputs, the current CLI already validates the leading version header and rejects
 unsupported grammar versions. A supported direct `.xlil` input is parsed through the public XLIL C23 parser API, verified,
 lowered through the LLVM backend, verified by LLVM, and passed through the configured optimization pipeline. It writes
