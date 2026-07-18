@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use std::{collections::HashSet, slice, str};
+use std::{
+  collections::{HashMap, HashSet},
+  slice, str,
+};
 
 use super::FfiStatus;
 use crate::{hir, mir, xlil};
@@ -224,6 +227,26 @@ fn validate_xhir_declarations(declarations: &[hir::declarations::NominalType]) -
       }
     }
   }
+  let definitions = declarations.iter()
+                                .cloned()
+                                .map(|declaration| (declaration.name.clone(), declaration))
+                                .collect::<HashMap<_, _>>();
+  for declaration in declarations.iter()
+                                 .filter(|declaration| declaration.kind == hir::declarations::NominalKind::Data)
+  {
+    for base in &declaration.bases
+    {
+      if base.is_virtual
+      {
+        diagnostics.push(format!("XHIR data type '{}' uses virtual inheritance, which has no value layout",
+                                 declaration.name));
+      }
+    }
+    if let Err(error) = hir::declarations::resolved_fields(declaration, &definitions)
+    {
+      diagnostics.push(format!("XHIR nominal type '{}' {error}", declaration.name));
+    }
+  }
   diagnostics
 }
 
@@ -413,5 +436,18 @@ mod tests
     assert!(session.diagnostics
                    .iter()
                    .any(|message| message.contains("declared more than once")));
+  }
+
+  #[test]
+  fn rejects_invalid_xhir_data_inheritance_layout()
+  {
+    let declarations =
+      "declarations\n  data Point\n    base Missing visibility internal\n    field x: Long mutable\n  .end\n.end\n\n";
+    let input = VALID_XHIR.replace("\nfunction main", &format!("\n{declarations}function main"));
+    let session = DirectIrSession::from_xhir(input.as_bytes());
+    assert!(session.xlil_text.is_none());
+    assert!(session.diagnostics
+                   .iter()
+                   .any(|message| message.contains("unknown base 'Missing'")));
   }
 }

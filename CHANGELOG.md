@@ -14,6 +14,10 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Ordered, transitive, and multiple `data` base lists now cross the C23 structural AST into Rust HIR and canonical XHIR.
+  Inherited fields are laid out base-first in source base-list order, participate in object initialization, member access,
+  mutation, scalar call ABI lowering, XMIR aggregate registries, LLVM IR, and native `.xse` execution. Unknown/cyclic/
+  cross-category bases and ambiguous inherited field names are rejected before backend lowering.
 - XHIR v0 now preserves nominal `data` declarations, field order, field types, and field mutability before function
   records. Direct XHIR rebuilds the same aggregate registry used by source and XMIR, allowing nested nominal data values
   to survive source → XHIR → native `.xse` round-trips.

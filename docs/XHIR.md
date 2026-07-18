@@ -68,9 +68,9 @@ Rust `xslang` currently parses the module-symbol and checked-function subsets em
 - `.xhir version 0`
 - `program <name>` multi-function documents with repeated `function` records, explicit `.function end` boundaries, and one
   final `.program end`
-- an optional leading `declarations` section with `data` records, ordered typed fields, explicit field mutability, and
-  `.end` delimiters; direct native lowering currently accepts `data` declarations while retaining other nominal kinds
-  for later semantic support
+- an optional leading `declarations` section with `data` records, ordered base records, typed fields, explicit field
+  mutability, and `.end` delimiters; direct native lowering currently accepts `data` declarations while retaining other
+  nominal kinds for later semantic support
 - `module <name>` with `import`, `declarations`, and `symbol` records
 - `function <name>` with `signature`, `locals`, and `body`
 - `parameters` records before `locals`; each `parameter <name>: <type> <mutability>` preserves a leading function ABI
@@ -99,15 +99,21 @@ Nominal data layouts are similarly kept source-oriented and explicit:
 
 ```text
 declarations
+  data Named
+    field label: Str immutable
+  .end
   data Point
+    base Named visibility internal
     field x: Long mutable
     field y: Long immutable
   .end
 .end
 ```
 
-The declaration field order deterministically reconstructs the target-independent aggregate registry used by MIR and
-XLIL. Duplicate nominal names and duplicate fields are rejected before lowering.
+Each base record preserves source order, access, and the optional trailing `virtual` marker. Native `data` layout is
+base-first and recursively expands bases in base-list order before the declaration's own fields. Duplicate nominal names,
+unknown or cyclic bases, cross-category bases, and ambiguous inherited field names are rejected before lowering. Virtual
+inheritance is retained by XHIR but does not yet have a value layout and is rejected by direct native lowering.
 
 A typed direct call is represented as a semantic record rather than an instruction:
 

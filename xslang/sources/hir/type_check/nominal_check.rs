@@ -18,6 +18,15 @@ impl TypeChecker
                              span });
       return;
     };
+    let Ok(definition_fields) = super::super::declarations::resolved_fields(&definition, &self.nominal_types)
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::UnknownNominalType,
+                             message: format!("type '{nominal_type}' has an invalid base layout"),
+                             span });
+      return;
+    };
     let mut seen = std::collections::HashSet::new();
     for field in fields
     {
@@ -28,7 +37,7 @@ impl TypeChecker
                                            span: field.span });
         continue;
       }
-      let Some(expected) = definition.fields.iter().find(|candidate| candidate.name == field.name)
+      let Some(expected) = definition_fields.iter().find(|candidate| candidate.name == field.name)
       else
       {
         self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
@@ -41,7 +50,7 @@ impl TypeChecker
         self.check_expression_against_type(&field.value, &expected);
       }
     }
-    for field in &definition.fields
+    for field in &definition_fields
     {
       if !seen.contains(field.name.as_str())
       {
@@ -72,10 +81,20 @@ impl TypeChecker
                                            span: path.span });
         return;
       };
-      let Some(field) =
-        self.nominal_types
-            .get(&type_name)
-            .and_then(|definition| definition.fields.iter().find(|field| field.name == *field_name))
+      let Some(definition) = self.nominal_types.get(&type_name)
+      else
+      {
+        self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
+                                           message: format!("type '{type_name}' has no field '{field_name}'"),
+                                           span: path.span });
+        return;
+      };
+      let Ok(fields) = super::super::declarations::resolved_fields(definition, &self.nominal_types)
+      else
+      {
+        return;
+      };
+      let Some(field) = fields.into_iter().find(|field| field.name == *field_name)
       else
       {
         self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,

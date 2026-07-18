@@ -128,6 +128,7 @@ pub struct CompilerCoreSession
 fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_lowering::LoweringError>
 {
   let declarations = hir_lowering::lower_program(&syntax)?;
+  let layout_diagnostics = crate::hir::declarations::validate_layouts(&declarations.nominal_types);
   let aggregate_registry = crate::hir::aggregate_registry::build_module(&declarations).unwrap_or_default();
   let collection_registry = crate::hir::collection_registry::build(&declarations, &aggregate_registry);
   let body_count = declarations.functions
@@ -137,7 +138,9 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
   let mut hir_functions = Vec::new();
   let mut hir_parameter_counts = Vec::new();
   let mut mir_functions = Vec::new();
-  let mut diagnostics = Vec::new();
+  let mut diagnostics = layout_diagnostics.into_iter()
+                                          .map(|(name, error)| format!("nominal type '{name}' {error}"))
+                                          .collect::<Vec<_>>();
   for declaration in declarations.functions.iter().filter(|function| function.body_present)
   {
     let Some(function) = declaration.as_type_checked_input()

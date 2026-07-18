@@ -10,6 +10,29 @@ pub(super) fn lower_nominal_type(tree: &SyntaxTree,
                                  -> Result<declarations::NominalType, LoweringError>
 {
   let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
+  let bases = value.children
+                   .iter()
+                   .filter_map(|index| tree.nodes.get(*index))
+                   .filter(|child| child.kind == BASE_SPECIFIER)
+                   .map(|base| {
+                     let ty = base.children
+                                  .iter()
+                                  .filter_map(|index| tree.nodes.get(*index))
+                                  .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))
+                                  .ok_or(LoweringError::MissingParameterType)?;
+                     let visibility = match base.visibility
+                     {
+                       1 => declarations::Visibility::Public,
+                       2 => declarations::Visibility::Private,
+                       3 => declarations::Visibility::Protected,
+                       _ => declarations::Visibility::Internal,
+                     };
+                     Ok(declarations::Base { ty: lower_type(tree, ty),
+                                             visibility,
+                                             is_virtual: base.flags & VIRTUAL != 0,
+                                             span: base.span.clone() })
+                   })
+                   .collect::<Result<Vec<_>, _>>()?;
   let fields = value.children
                     .iter()
                     .filter_map(|index| tree.nodes.get(*index))
@@ -36,6 +59,7 @@ pub(super) fn lower_nominal_type(tree: &SyntaxTree,
                                  {
                                    declarations::NominalKind::Data
                                  },
+                                 bases,
                                  fields,
                                  span: value.span.clone() })
 }
@@ -72,7 +96,8 @@ fn field_path(tree: &SyntaxTree,
       return None;
     };
     let definition = context.nominal_types.get(&type_name)?;
-    let field = definition.fields.iter().find(|field| field.name == *field_name)?;
+    let fields = declarations::resolved_fields(definition, &context.nominal_types).ok()?;
+    let field = fields.into_iter().find(|field| field.name == *field_name)?;
     current_type = declarations::type_ref_to_checked(&field.ty)?;
     mutable = field.mutable;
   }
@@ -155,20 +180,21 @@ pub(super) fn lower_object_expression(tree: &SyntaxTree,
     (name.clone(), 0)
   };
   let definition = context.nominal_types.get(&nominal_type)?;
-  let fields =
-    value.children[first_field..].iter()
-                                 .map(|index| {
-                                   let field = tree.nodes.get(*index)?;
-                                   if field.kind != OBJECT_FIELD
-                                   {
-                                     return None;
-                                   }
-                                   let name = tree.nodes.get(*field.children.first()?)?;
-                                   let definition =
-                                     definition.fields.iter().find(|candidate| candidate.name == name.text)?;
-                                   let expected = declarations::type_ref_to_checked(&definition.ty)?;
-                                   let expression = tree.nodes.get(*field.children.get(1)?)?;
-                                   Some(crate::hir::type_check::ObjectField { name: name.text.clone(),
+  let definition_fields = declarations::resolved_fields(definition, &context.nominal_types).ok()?;
+  let fields = value.children[first_field..].iter()
+                                            .map(|index| {
+                                              let field = tree.nodes.get(*index)?;
+                                              if field.kind != OBJECT_FIELD
+                                              {
+                                                return None;
+                                              }
+                                              let name = tree.nodes.get(*field.children.first()?)?;
+                                              let definition =
+                                                definition_fields.iter()
+                                                                 .find(|candidate| candidate.name == name.text)?;
+                                              let expected = declarations::type_ref_to_checked(&definition.ty)?;
+                                              let expression = tree.nodes.get(*field.children.get(1)?)?;
+                                              Some(crate::hir::type_check::ObjectField { name: name.text.clone(),
                                                                               value:
                                                                                 lower_expression(tree,
                                                                                                  expression,
@@ -176,8 +202,8 @@ pub(super) fn lower_object_expression(tree: &SyntaxTree,
                                                                                                  locals,
                                                                                                  Some(&expected))?,
                                                                               span: span(field)? })
-                                 })
-                                 .collect::<Option<Vec<_>>>()?;
+                                            })
+                                            .collect::<Option<Vec<_>>>()?;
   Some(Expression::Object { nominal_type,
                             fields,
                             span: source_span })

@@ -454,6 +454,10 @@ XLIL call models. Unit-returning calls carry an explicit HIR unit result and bec
 call used as a semicolon-terminated expression is still evaluated, but its typed result is discarded. Overload selection,
 generic calls, methods, imported targets, and function values remain later compiler-core work.
 Top-level `data` and `class` declarations now enter the Rust declaration registry with nominal identity and typed fields.
+Ordered `data` base lists retain their access and virtual-inheritance metadata in HIR/XHIR. Non-virtual `data` layouts
+recursively place inherited fields before own fields in source base-list order; the same resolved field sequence drives
+object checking, member paths, MIR places, scalar function parameters, aggregate registries, and native lowering. Multiple
+and transitive data inheritance is executable; ambiguous inherited field names and invalid base graphs are rejected.
 For the first executable aggregate slice, locally initialized `data` objects are recursively scalarized into
 target-independent MIR storage places. Field reads, leaf assignments, nested aggregate replacement, and whole local copies
 then lower through XLIL stack slots to LLVM. Non-recursive `data` parameters are flattened in declaration order to their

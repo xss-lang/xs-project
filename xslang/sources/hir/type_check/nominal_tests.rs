@@ -27,6 +27,7 @@ fn point_type() -> NominalType
 {
   NominalType { name: "Point".to_string(),
                 kind: NominalKind::Data,
+                bases: Vec::new(),
                 fields: vec![Field { name: "x".to_string(),
                                      ty: TypeRef::Primitive(PrimitiveType::Long),
                                      mutable: true,

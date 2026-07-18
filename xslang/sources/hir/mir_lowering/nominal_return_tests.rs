@@ -29,6 +29,7 @@ fn lowers_nominal_object_return_to_first_class_mir_aggregate()
 {
   let point = NominalType { name: "Point".to_string(),
                             kind: NominalKind::Data,
+                            bases: Vec::new(),
                             fields: vec![Field { name: "x".to_string(),
                                                  ty: TypeRef::Primitive(PrimitiveType::Long),
                                                  mutable: false,

@@ -3,7 +3,7 @@
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataReturn MainNestedDataReturn MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataInheritance MainDataReturn MainNestedDataReturn MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -26,7 +26,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain
                        BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands MatchMissingElse
                        MatchPatternTypeMismatch RecursiveDataParameter
-                       ForEachNonArray ForEachBindingMismatch)
+                       AmbiguousInheritedDataField ForEachNonArray ForEachBindingMismatch)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -271,6 +271,19 @@ add_test(NAME source_native_nested_data_fields_artifacts COMMAND xs_xse_artifact
                                                               "store i32 7" "call i32 @total")
 set_tests_properties(source_native_nested_data_fields_artifacts PROPERTIES
                      DEPENDS source_native_nested_data_fields_build TIMEOUT 5)
+
+add_test(NAME source_native_data_inheritance_build COMMAND xs build -file
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataInheritance.xs)
+set_tests_properties(source_native_data_inheritance_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_data_inheritance_artifacts COMMAND xs_xse_artifact_tests
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataInheritance.ll
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataInheritance.o
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataInheritance.xse 25
+                                                         "define i32 @total(i32 %0, i32 %1, i32 %2, i32 %3, i32 %4)"
+                                                         "store i32 1" "store i32 2" "call i32 @total")
+set_tests_properties(source_native_data_inheritance_artifacts PROPERTIES
+                     DEPENDS source_native_data_inheritance_build TIMEOUT 5)
 
 add_test(NAME source_native_data_return_build COMMAND xs build -file
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataReturn.xs)

@@ -1,0 +1,35 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
+data Named {
+    label: Long;
+}
+
+data Tagged {
+    tag: Long;
+}
+
+data Point : Named, Tagged {
+    x: Long;
+    y: Long;
+}
+
+data ColoredPoint : Point {
+    color: Long;
+}
+
+fn total(point: ColoredPoint) -> Long {
+    return point.label + point.tag + point.x + point.y + point.color;
+}
+
+fn main() -> Long {
+    point: ColoredPoint = ColoredPoint {
+        label: 1,
+        tag: 2,
+        x: 3,
+        y: 4,
+        color: 5,
+    };
+    point.label += 10;
+    return total(point);
+}

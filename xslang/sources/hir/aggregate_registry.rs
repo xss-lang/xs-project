@@ -180,6 +180,15 @@ fn visit_checked_type(value: &HirType,
 
 pub(crate) fn build(declarations: &[NominalType]) -> Option<AggregateRegistry>
 {
+  let owned_definitions = declarations.iter()
+                                      .cloned()
+                                      .map(|value| (value.name.clone(), value))
+                                      .collect::<HashMap<_, _>>();
+  for declaration in declarations.iter()
+                                 .filter(|declaration| declaration.kind == NominalKind::Data)
+  {
+    super::declarations::resolved_fields(declaration, &owned_definitions).ok()?;
+  }
   let definitions = declarations.iter()
                                 .filter(|declaration| declaration.kind == NominalKind::Data)
                                 .map(|declaration| (declaration.name.as_str(), declaration))
@@ -208,7 +217,26 @@ fn visit(declaration: &NominalType,
   {
     return None;
   }
-  let mut fields = Vec::with_capacity(declaration.fields.len());
+  let mut fields = Vec::new();
+  for base in &declaration.bases
+  {
+    let TypeRef::Named(name) = &base.ty
+    else
+    {
+      return None;
+    };
+    let base = *definitions.get(name.as_str())?;
+    if base.kind != declaration.kind
+    {
+      return None;
+    }
+    let base_type = visit(base, definitions, visiting, registry)?;
+    fields.extend(registry.layouts
+                          .get(base_type.registry_id as usize)?
+                          .fields
+                          .iter()
+                          .copied());
+  }
   for field in &declaration.fields
   {
     fields.push(match &field.ty

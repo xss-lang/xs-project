@@ -6,7 +6,7 @@
 use std::fmt::Write;
 
 use crate::compiler_core::SourceSpan;
-use crate::hir::declarations::{Field, NominalKind, NominalType, TupleFieldRef, TypeRef};
+use crate::hir::declarations::{Base, Field, NominalKind, NominalType, TupleFieldRef, TypeRef, Visibility};
 use crate::hir::type_check::Type;
 
 use super::names::type_name;
@@ -27,10 +27,23 @@ pub(super) fn write_declarations(output: &mut String, declarations: &[NominalTyp
       NominalKind::Data => "data",
     };
     let _ = writeln!(output, "  {kind} {}", declaration.name);
+    for base in &declaration.bases
+    {
+      let ty = type_ref_text(&base.ty);
+      let visibility = visibility_text(base.visibility);
+      let virtual_suffix = if base.is_virtual
+      {
+        " virtual"
+      }
+      else
+      {
+        ""
+      };
+      let _ = writeln!(output, "    base {ty} visibility {visibility}{virtual_suffix}");
+    }
     for field in &declaration.fields
     {
-      let ty = crate::hir::declarations::type_ref_to_checked(&field.ty).map(|ty| type_name(&ty))
-                                                                       .unwrap_or_else(|| "<unsupported>".to_string());
+      let ty = type_ref_text(&field.ty);
       let mutability = if field.mutable
       {
         "mutable"
@@ -82,9 +95,10 @@ pub(super) fn parse_declarations(lines: &[&str],
     };
     let start_line = *index + 1;
     *index += 1;
-    let fields = parse_fields(lines, index, diagnostics);
+    let (bases, fields) = parse_members(lines, index, diagnostics);
     declarations.push(NominalType { name: name.to_string(),
                                     kind,
+                                    bases,
                                     fields,
                                     span: source_span(start_line) });
   }
@@ -92,8 +106,12 @@ pub(super) fn parse_declarations(lines: &[&str],
   declarations
 }
 
-fn parse_fields(lines: &[&str], index: &mut usize, diagnostics: &mut Vec<XhirParseDiagnostic>) -> Vec<Field>
+fn parse_members(lines: &[&str],
+                 index: &mut usize,
+                 diagnostics: &mut Vec<XhirParseDiagnostic>)
+                 -> (Vec<Base>, Vec<Field>)
 {
+  let mut bases = Vec::new();
   let mut fields = Vec::new();
   while *index < lines.len()
   {
@@ -102,9 +120,18 @@ fn parse_fields(lines: &[&str], index: &mut usize, diagnostics: &mut Vec<XhirPar
     if line == ".end"
     {
       *index += 1;
-      return fields;
+      return (bases, fields);
     }
     *index += 1;
+    if let Some(base) = line.strip_prefix("base ")
+    {
+      match parse_base(base, line_number)
+      {
+        Some(base) => bases.push(base),
+        None => diagnostics.push(error(line_number, "invalid nominal base record".to_string())),
+      }
+      continue;
+    }
     let (record, mutable) = if let Some(record) = line.strip_suffix(" mutable")
     {
       (record, true)
@@ -136,7 +163,43 @@ fn parse_fields(lines: &[&str], index: &mut usize, diagnostics: &mut Vec<XhirPar
                         span: source_span(line_number) });
   }
   diagnostics.push(error(lines.len().max(1), "unterminated nominal declaration".to_string()));
-  fields
+  (bases, fields)
+}
+
+fn parse_base(text: &str, line: usize) -> Option<Base>
+{
+  let (text, is_virtual) = text.strip_suffix(" virtual").map_or((text, false), |text| (text, true));
+  let (ty, visibility) = text.rsplit_once(" visibility ")?;
+  let ty = parse_type_text(ty).and_then(checked_to_ref)?;
+  let visibility = match visibility
+  {
+    "public" => Visibility::Public,
+    "private" => Visibility::Private,
+    "protected" => Visibility::Protected,
+    "internal" => Visibility::Internal,
+    _ => return None,
+  };
+  Some(Base { ty,
+              visibility,
+              is_virtual,
+              span: source_span(line) })
+}
+
+fn visibility_text(visibility: Visibility) -> &'static str
+{
+  match visibility
+  {
+    Visibility::Public => "public",
+    Visibility::Private => "private",
+    Visibility::Protected => "protected",
+    Visibility::Internal => "internal",
+  }
+}
+
+fn type_ref_text(ty: &TypeRef) -> String
+{
+  crate::hir::declarations::type_ref_to_checked(ty).map(|ty| type_name(&ty))
+                                                   .unwrap_or_else(|| "<unsupported>".to_string())
 }
 
 fn checked_to_ref(ty: Type) -> Option<TypeRef>

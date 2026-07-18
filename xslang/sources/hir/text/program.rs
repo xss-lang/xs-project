@@ -213,7 +213,7 @@ mod tests
 {
   use super::*;
   use crate::compiler_core::SourceSpan;
-  use crate::hir::declarations::{Field, NominalKind, TypeRef};
+  use crate::hir::declarations::{Base, Field, NominalKind, TypeRef, Visibility};
   use crate::hir::{Function, Local, PrimitiveType, Span, Statement, Type};
 
   #[test]
@@ -231,35 +231,45 @@ mod tests
                                                      mutable: false,
                                                      span: Span::new(0, 0, 1) }],
                                 body: Vec::new() }];
-    let nominal_types = [NominalType { name: "Point".to_string(),
+    let source_span = SourceSpan { file_id: 0,
+                                   start_offset: 0,
+                                   end_offset: 0,
+                                   start_line: 1,
+                                   start_column: 0,
+                                   end_line: 1,
+                                   end_column: 0 };
+    let nominal_types = [NominalType { name: "Named".to_string(),
                                        kind: NominalKind::Data,
+                                       bases: Vec::new(),
+                                       fields: vec![Field { name: "label".to_string(),
+                                                            ty: TypeRef::Primitive(PrimitiveType::Long),
+                                                            mutable: true,
+                                                            span: source_span.clone() }],
+                                       span: source_span.clone() },
+                         NominalType { name: "Point".to_string(),
+                                       kind: NominalKind::Data,
+                                       bases: vec![Base { ty: TypeRef::Named("Named".to_string()),
+                                                          visibility: Visibility::Internal,
+                                                          is_virtual: false,
+                                                          span: source_span.clone() }],
                                        fields: vec![Field { name: "x".to_string(),
                                                             ty: TypeRef::Primitive(PrimitiveType::Long),
                                                             mutable: true,
-                                                            span: SourceSpan { file_id: 0,
-                                                                               start_offset: 0,
-                                                                               end_offset: 0,
-                                                                               start_line: 1,
-                                                                               start_column: 0,
-                                                                               end_line: 1,
-                                                                               end_column: 0 } }],
-                                       span: SourceSpan { file_id: 0,
-                                                          start_offset: 0,
-                                                          end_offset: 0,
-                                                          start_line: 1,
-                                                          start_column: 0,
-                                                          end_line: 1,
-                                                          end_column: 0 } }];
+                                                            span: source_span.clone() }],
+                                       span: source_span }];
     let text = program_to_xhir_with_declarations("root", &nominal_types, &functions, &[0, 1]);
     let parsed = parse_xhir_program(&text).expect("program should parse");
     assert_eq!(parsed.name, "root");
-    assert_eq!(parsed.nominal_types.len(), 1);
-    assert_eq!(parsed.nominal_types[0].name, "Point");
-    assert_eq!(parsed.nominal_types[0].kind, NominalKind::Data);
-    assert_eq!(parsed.nominal_types[0].fields[0].name, "x");
-    assert_eq!(parsed.nominal_types[0].fields[0].ty,
+    assert_eq!(parsed.nominal_types.len(), 2);
+    assert_eq!(parsed.nominal_types[1].name, "Point");
+    assert_eq!(parsed.nominal_types[1].kind, NominalKind::Data);
+    assert_eq!(parsed.nominal_types[1].bases[0].ty, TypeRef::Named("Named".to_string()));
+    assert_eq!(parsed.nominal_types[1].bases[0].visibility, Visibility::Internal);
+    assert!(!parsed.nominal_types[1].bases[0].is_virtual);
+    assert_eq!(parsed.nominal_types[1].fields[0].name, "x");
+    assert_eq!(parsed.nominal_types[1].fields[0].ty,
                TypeRef::Primitive(PrimitiveType::Long));
-    assert!(parsed.nominal_types[0].fields[0].mutable);
+    assert!(parsed.nominal_types[1].fields[0].mutable);
     assert_eq!(parsed.parameter_counts, vec![0, 1]);
     assert_eq!(program_to_xhir_with_declarations(&parsed.name,
                                                  &parsed.nominal_types,

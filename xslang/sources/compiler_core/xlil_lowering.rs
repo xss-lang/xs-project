@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use crate::hir::declarations::{Module as HirModule, NominalKind, TypeRef};
+use std::collections::HashMap;
+
+use crate::hir::declarations::{Module as HirModule, NominalKind, NominalType, TypeRef};
 use crate::mir;
 use crate::xlil::{self, Function, Module, Type};
 
@@ -27,6 +29,7 @@ fn lower_type(value: &TypeRef, aggregates: &crate::hir::aggregate_registry::Aggr
 }
 
 fn flatten_parameter(module: &HirModule,
+                     definitions: &HashMap<String, NominalType>,
                      value: &TypeRef,
                      aggregates: &crate::hir::aggregate_registry::AggregateRegistry,
                      visiting: &mut Vec<String>,
@@ -46,9 +49,9 @@ fn flatten_parameter(module: &HirModule,
                              .iter()
                              .find(|definition| definition.name == *name && definition.kind == NominalKind::Data)?;
       visiting.push(name.clone());
-      for field in &definition.fields
+      for field in &crate::hir::declarations::resolved_fields(definition, definitions).ok()?
       {
-        flatten_parameter(module, &field.ty, aggregates, visiting, parameters)?;
+        flatten_parameter(module, definitions, &field.ty, aggregates, visiting, parameters)?;
       }
       visiting.pop();
     }
@@ -65,10 +68,20 @@ fn signature(module: &HirModule,
              -> Option<(Type, Vec<Type>)>
 {
   let return_type = lower_type(&function.return_type, aggregates)?;
+  let definitions = module.nominal_types
+                          .iter()
+                          .cloned()
+                          .map(|definition| (definition.name.clone(), definition))
+                          .collect::<HashMap<_, _>>();
   let mut parameters = Vec::new();
   for parameter in &function.parameters
   {
-    flatten_parameter(module, &parameter.ty, aggregates, &mut Vec::new(), &mut parameters)?;
+    flatten_parameter(module,
+                      &definitions,
+                      &parameter.ty,
+                      aggregates,
+                      &mut Vec::new(),
+                      &mut parameters)?;
   }
   Some((return_type, parameters))
 }

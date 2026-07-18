@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+use std::collections::{HashMap, HashSet};
+use std::fmt;
+
 use crate::compiler_core::SourceSpan;
 
 use super::type_check::{self, PrimitiveType};
@@ -78,6 +81,24 @@ pub enum NominalKind
   Data,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Visibility
+{
+  Public,
+  Private,
+  Protected,
+  Internal,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Base
+{
+  pub ty: TypeRef,
+  pub visibility: Visibility,
+  pub is_virtual: bool,
+  pub span: SourceSpan,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Field
 {
@@ -92,8 +113,98 @@ pub struct NominalType
 {
   pub name: String,
   pub kind: NominalKind,
+  pub bases: Vec<Base>,
   pub fields: Vec<Field>,
   pub span: SourceSpan,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum LayoutError
+{
+  UnknownBase(String),
+  InvalidBaseType,
+  CategoryMismatch(String),
+  Cycle(String),
+  DuplicateField(String),
+}
+
+impl fmt::Display for LayoutError
+{
+  fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result
+  {
+    match self
+    {
+      Self::UnknownBase(name) => write!(formatter, "references unknown base '{name}'"),
+      Self::InvalidBaseType => formatter.write_str("has a non-nominal base"),
+      Self::CategoryMismatch(name) => write!(formatter, "has base '{name}' from a different nominal category"),
+      Self::Cycle(name) => write!(formatter, "contains an inheritance cycle through '{name}'"),
+      Self::DuplicateField(name) => write!(formatter, "has ambiguous inherited field '{name}'"),
+    }
+  }
+}
+
+pub(crate) fn validate_layouts(declarations: &[NominalType]) -> Vec<(String, LayoutError)>
+{
+  let definitions = declarations.iter()
+                                .cloned()
+                                .map(|declaration| (declaration.name.clone(), declaration))
+                                .collect::<HashMap<_, _>>();
+  declarations.iter()
+              .filter(|declaration| declaration.kind == NominalKind::Data)
+              .filter_map(|declaration| {
+                resolved_fields(declaration, &definitions).err()
+                                                          .map(|error| (declaration.name.clone(), error))
+              })
+              .collect()
+}
+
+pub(crate) fn resolved_fields(definition: &NominalType,
+                              definitions: &HashMap<String, NominalType>)
+                              -> Result<Vec<Field>, LayoutError>
+{
+  let mut visiting = HashSet::new();
+  let mut names = HashSet::new();
+  let mut fields = Vec::new();
+  collect_fields(definition, definitions, &mut visiting, &mut names, &mut fields)?;
+  Ok(fields)
+}
+
+fn collect_fields(definition: &NominalType,
+                  definitions: &HashMap<String, NominalType>,
+                  visiting: &mut HashSet<String>,
+                  names: &mut HashSet<String>,
+                  fields: &mut Vec<Field>)
+                  -> Result<(), LayoutError>
+{
+  if !visiting.insert(definition.name.clone())
+  {
+    return Err(LayoutError::Cycle(definition.name.clone()));
+  }
+  for base in &definition.bases
+  {
+    let TypeRef::Named(name) = &base.ty
+    else
+    {
+      return Err(LayoutError::InvalidBaseType);
+    };
+    let base = definitions.get(name)
+                          .ok_or_else(|| LayoutError::UnknownBase(name.clone()))?;
+    if base.kind != definition.kind
+    {
+      return Err(LayoutError::CategoryMismatch(name.clone()));
+    }
+    collect_fields(base, definitions, visiting, names, fields)?;
+  }
+  for field in &definition.fields
+  {
+    if !names.insert(field.name.clone())
+    {
+      return Err(LayoutError::DuplicateField(field.name.clone()));
+    }
+    fields.push(field.clone());
+  }
+  visiting.remove(&definition.name);
+  Ok(())
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -147,4 +258,70 @@ pub struct Module
   pub name: Option<String>,
   pub nominal_types: Vec<NominalType>,
   pub functions: Vec<Function>,
+}
+
+#[cfg(test)]
+mod tests
+{
+  use super::*;
+
+  fn span() -> SourceSpan
+  {
+    SourceSpan { file_id: 0,
+                 start_offset: 0,
+                 end_offset: 1,
+                 start_line: 1,
+                 start_column: 0,
+                 end_line: 1,
+                 end_column: 1 }
+  }
+
+  fn field(name: &str) -> Field
+  {
+    Field { name: name.to_string(),
+            ty: TypeRef::Primitive(PrimitiveType::Long),
+            mutable: true,
+            span: span() }
+  }
+
+  fn data(name: &str, bases: &[&str], fields: &[&str]) -> NominalType
+  {
+    NominalType { name: name.to_string(),
+                  kind: NominalKind::Data,
+                  bases: bases.iter()
+                              .map(|base| Base { ty: TypeRef::Named((*base).to_string()),
+                                                 visibility: Visibility::Internal,
+                                                 is_virtual: false,
+                                                 span: span() })
+                              .collect(),
+                  fields: fields.iter().map(|name| field(name)).collect(),
+                  span: span() }
+  }
+
+  #[test]
+  fn resolves_transitive_multiple_data_bases_before_derived_fields()
+  {
+    let declarations = [data("Named", &[], &["label"]),
+                        data("Tagged", &[], &["tag"]),
+                        data("Point", &["Named", "Tagged"], &["x", "y"]),
+                        data("ColoredPoint", &["Point"], &["color"])];
+    let definitions = declarations.iter()
+                                  .cloned()
+                                  .map(|value| (value.name.clone(), value))
+                                  .collect();
+    let fields = resolved_fields(&declarations[3], &definitions).expect("valid data layout");
+    assert_eq!(fields.iter().map(|field| field.name.as_str()).collect::<Vec<_>>(),
+               ["label", "tag", "x", "y", "color"]);
+  }
+
+  #[test]
+  fn rejects_ambiguous_inherited_data_field()
+  {
+    let declarations = [data("Left", &[], &["value"]),
+                        data("Right", &[], &["value"]),
+                        data("Combined", &["Left", "Right"], &[])];
+    let diagnostics = validate_layouts(&declarations);
+    assert_eq!(diagnostics, vec![("Combined".to_string(),
+                                  LayoutError::DuplicateField("value".to_string()))]);
+  }
 }

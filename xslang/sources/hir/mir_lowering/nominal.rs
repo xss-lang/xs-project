@@ -23,9 +23,10 @@ impl HirToMirLowerer
   {
     let definition = self.nominal_types.get(type_name)?.clone();
     let value_type = self.aggregate_types.get(type_name).copied()?;
-    let mut fields = Vec::with_capacity(definition.fields.len());
-    let mut field_types = Vec::with_capacity(definition.fields.len());
-    for field in &definition.fields
+    let definition_fields = self.resolved_nominal_fields(&definition)?;
+    let mut fields = Vec::with_capacity(definition_fields.len());
+    let mut field_types = Vec::with_capacity(definition_fields.len());
+    for field in &definition_fields
     {
       let initializer = initializers.iter().find(|candidate| candidate.name == field.name)?;
       let checked_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
@@ -164,7 +165,12 @@ impl HirToMirLowerer
                                   span: Span,
                                   lowered: &mut mir::Function)
   {
-    for field in &definition.fields
+    let Some(definition_fields) = self.resolved_nominal_fields(definition)
+    else
+    {
+      return;
+    };
+    for field in &definition_fields
     {
       let Some(field_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
       else
@@ -202,7 +208,12 @@ impl HirToMirLowerer
                                 span: Span,
                                 lowered: &mut mir::Function)
   {
-    for (index, field) in definition.fields.iter().enumerate()
+    let Some(definition_fields) = self.resolved_nominal_fields(definition)
+    else
+    {
+      return;
+    };
+    for (index, field) in definition_fields.iter().enumerate()
     {
       let Some(field_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
       else
@@ -433,7 +444,12 @@ impl HirToMirLowerer
                                lowered: &mut mir::Function,
                                visiting: &mut Vec<String>)
   {
-    for field in &definition.fields
+    let Some(definition_fields) = self.resolved_nominal_fields(definition)
+    else
+    {
+      return;
+    };
+    for field in &definition_fields
     {
       let Some(field_type) = crate::hir::declarations::type_ref_to_checked(&field.ty)
       else
@@ -499,7 +515,7 @@ impl HirToMirLowerer
                                     arguments: &mut NominalArguments<'_>)
                                     -> Option<()>
   {
-    for field in &definition.fields
+    for field in &self.resolved_nominal_fields(definition)?
     {
       let field_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
       let mut path = prefix.to_vec();
@@ -548,7 +564,7 @@ impl HirToMirLowerer
                                      visiting: &mut Vec<String>)
                                      -> Option<()>
   {
-    for field in &definition.fields
+    for field in &self.resolved_nominal_fields(definition)?
     {
       let initializer = initializers.iter().find(|candidate| candidate.name == field.name)?;
       let field_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
@@ -613,7 +629,7 @@ impl HirToMirLowerer
                                  locals: &mut Vec<mir::LocalId>)
                                  -> Option<()>
   {
-    for field in &definition.fields
+    for field in &self.resolved_nominal_fields(definition)?
     {
       let field_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
       let mut path = prefix.to_vec();
@@ -646,7 +662,12 @@ impl HirToMirLowerer
                          fallback_span: Span,
                          lowered: &mut mir::Function)
   {
-    for field in &definition.fields
+    let Some(definition_fields) = self.resolved_nominal_fields(definition)
+    else
+    {
+      return;
+    };
+    for field in &definition_fields
     {
       let Some(initializer) = initializers.iter().find(|candidate| candidate.name == field.name)
       else
@@ -706,6 +727,13 @@ impl HirToMirLowerer
                          fallback_span),
       }
     }
+  }
+
+  fn resolved_nominal_fields(&self,
+                             definition: &crate::hir::declarations::NominalType)
+                             -> Option<Vec<crate::hir::declarations::Field>>
+  {
+    crate::hir::declarations::resolved_fields(definition, &self.nominal_types).ok()
   }
 }
 
