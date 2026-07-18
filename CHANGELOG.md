@@ -12,6 +12,22 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.10 - 2026-07-18
+
+### Added
+
+- XLIL v0 now has runtime-sized `.array %aN : T` registry entries and `%rN:i64 = len.array %rA`. Rust and public C23
+  model/parser/writer/verifier APIs preserve the same readable registry contract.
+- Runtime-sized `[T]` values now cross function signatures, checked indexing and mutation, `count`, `for` iteration,
+  LLVM lowering, object emission, and native `.xse` execution.
+- The `xslang` Rust compiler-core crate is now packaged as a documented public crate.
+
+### Changed
+
+- An unconstrained square-bracket array literal remains runtime-sized `[T]`; only an explicit `[T; N]` context selects a
+  fixed layout. Runtime-sized arrays retain a fixed element count after construction and remain distinct from
+  count-changing `ArrayList<T>` values.
+
 ## 0.1.9 - 2026-07-18
 
 ### Added

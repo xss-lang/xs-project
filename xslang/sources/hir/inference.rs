@@ -106,7 +106,7 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
     {
       let element = homogeneous_expression_type(elements, locals)?;
       Some(Type::Array { element: Box::new(element),
-                         length: Some(elements.len().try_into().ok()?) })
+                         length: None })
     }
     Expression::Set { elements, .. } =>
     {
@@ -122,6 +122,7 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
     Expression::Tuple { tuple_type, .. } => Some(tuple_type.as_ref().clone()),
     Expression::TupleElement { element_type, .. } => Some(element_type.as_ref().clone()),
     Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
+    Expression::ArrayLength { .. } => Some(Type::Primitive(PrimitiveType::Int)),
     Expression::Assign { value, .. } => infer_expression_type(value, locals),
     Expression::AssignField { value, .. } => infer_expression_type(value, locals),
     Expression::Update { target, .. } => locals.iter()
@@ -315,7 +316,7 @@ mod tests
                                          span: span() };
     assert_eq!(infer_expression_type(&expression, &[]),
                Some(Type::Array { element: Box::new(Type::Primitive(PrimitiveType::Int)),
-                                  length: Some(2) }));
+                                  length: None }));
   }
 
   #[test]

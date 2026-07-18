@@ -28,11 +28,15 @@ pub fn write_module(module: &Module, output: &mut impl Write) -> fmt::Result
   }
   for array in &module.array_types
   {
-    writeln!(output,
-             ".array %a{} : {} x {}",
-             array.id,
-             type_text(array.element_type),
-             array.length)?;
+    match array.length
+    {
+      Some(length) => writeln!(output,
+                               ".array %a{} : {} x {}",
+                               array.id,
+                               type_text(array.element_type),
+                               length)?,
+      None => writeln!(output, ".array %a{} : {}", array.id, type_text(array.element_type))?,
+    }
   }
   for function in &module.functions
   {
@@ -344,6 +348,8 @@ fn write_instruction(function: &Function, instruction: &Instruction, output: &mu
                                                  array.0,
                                                  index.0,
                                                  value.0),
+    Instruction::ArrayLength { result,
+                               array, } => writeln!(output, "  %r{}:i64 = len.array %r{}", result.0, array.0),
     Instruction::Load { result,
                         slot, } => writeln!(output,
                                             "  %r{}:{} = load %s{}",

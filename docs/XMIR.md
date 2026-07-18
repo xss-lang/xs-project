@@ -73,7 +73,7 @@ Rust `xslang` currently parses the function/control-flow subset emitted by the f
 - `program <name>` multi-function documents with repeated `function` records, explicit `.function end` boundaries, and one
   final `.program end`
 - a structured program-level `types` section containing `aggregate <id> <name>` records with `field <type>` entries and
-  `array <id>` records with explicit `element <type>` and `length <count>` entries
+  `array <id>` records with explicit `element <type>` and either `length <count>` or `length dynamic` entries
 - `function <name>`
 - `returns <xlil-type>`
 - `parameters` with `parameter <name>`, `local <id>`, and `type <xlil-type>` records. A parameter local is immutable and
@@ -119,6 +119,9 @@ types
 ```
 
 Place projections, drop trees, borrow regions, and optimizer annotations will be added as MIR grows.
+
+Runtime-sized arrays use `length dynamic` in the registry. MIR reads their current count with `statement array.length`;
+the statement names its result local, array local, and registry type before XLIL converts it to `len.array`.
 
 ## Non-goals
 

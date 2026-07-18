@@ -25,7 +25,7 @@ fn lowers_fixed_array_literal_and_index_through_xlil()
   let registry = CollectionRegistry { arrays: vec![ArrayLayout { source_type: source_type.clone(),
                                                                  value_type: XlilType::array(0),
                                                                  element_type: XlilType::I32,
-                                                                 length: 3 }] };
+                                                                 length: Some(3) }] };
   let function = Function { name: "main".to_string(),
                             return_type: Some(Type::Primitive(PrimitiveType::Long)),
                             locals: vec![],
@@ -74,7 +74,7 @@ fn lowers_dynamic_array_get_and_set_through_xlil()
   let registry = CollectionRegistry { arrays: vec![ArrayLayout { source_type: source_type.clone(),
                                                                  value_type: XlilType::array(0),
                                                                  element_type: XlilType::I32,
-                                                                 length: 3 }] };
+                                                                 length: Some(3) }] };
   let values = crate::hir::type_check::Local { name: "values".to_string(),
                                                ty: source_type.clone(),
                                                mutable: true,

@@ -207,6 +207,10 @@ pub enum Instruction
     index: ValueId,
     value: ValueId,
   },
+  ArrayLength
+  {
+    result: ValueId, array: ValueId
+  },
   Load
   {
     result: ValueId, slot: SlotId

@@ -62,7 +62,20 @@ fn roundtrips_fixed_array_registry_and_registers()
 
   assert_eq!(module.array_types.len(), 1);
   assert_eq!(module.array_types[0].element_type, Type::I32);
-  assert_eq!(module.array_types[0].length, 3);
+  assert_eq!(module.array_types[0].length, Some(3));
+  assert!(crate::xlil::verify::verify_module(&module).is_empty());
+  assert_eq!(crate::xlil::writer::module_to_string(&module), text);
+}
+
+#[test]
+fn roundtrips_runtime_array_registry_length_and_access()
+{
+  let text = ".xlil version 0\n.xlil module Arrays\n.array %a0 : i32\n.func inspect : (%a0, i64) -> i64\n.param \
+              %r0:%a0\n.param %r1:i64\nbb0.entry:\n  %r2:i32 = array.get %r0, %r1\n  %r3:%a0 = array.set %r0, %r1, \
+              %r2\n  %r4:i64 = len.array %r3\n  ret %r4\n.end\n";
+  let module = parse_module(text).expect("runtime array XLIL should parse");
+
+  assert_eq!(module.array_types[0].length, None);
   assert!(crate::xlil::verify::verify_module(&module).is_empty());
   assert_eq!(crate::xlil::writer::module_to_string(&module), text);
 }

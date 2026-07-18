@@ -26,6 +26,8 @@ struct XsLlvmCodegenUnit
   LLVMTypeRef *lil_types;
   size_t lil_type_count;
   LLVMTypeRef *lil_array_types;
+  LLVMTypeRef *lil_array_elements;
+  bool *lil_array_dynamic;
   size_t lil_array_type_count;
 };
 

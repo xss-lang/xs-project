@@ -5,26 +5,14 @@ SPDX-License-Identifier: Apache-2.0
 
 # xslang
 
-`xslang` is the future Rust compiler-core crate for X#.
+`xslang` is the target-independent Rust compiler core for the X# programming language. It provides typed HIR, MIR,
+monomorphization and codegen-unit models, the human-readable XLIL v0 registry, and the early XGC model.
 
-It is intentionally separate from the current C23 lexer, parser, structural AST, `.xsproj` parser, and LLVM infrastructure.
-New semantic-analysis, HIR (coordinated THIR and XHIR sides), MIR, borrow-checker, optimizer, monomorphization, and lowering
-work belongs here.
+The public `xslang::xlil` API lets Rust tools and third-party language implementations construct, parse, verify, optimize,
+and write XLIL without depending on LLVM. The corresponding C23 API is maintained in the xs-project repository under
+`<xs/lil.h>` and `<xs/lil-c/*.h>`.
 
-The crate is connected to the C23 compiler driver through a narrow C ABI. The C23 frontend supplies structural syntax to a
-Rust compiler-core session; the session can emit versioned XHIR, XMIR, and XLIL program text and can feed the existing native
-backend when every required lowering stage succeeds.
-Direct-IR sessions also accept complete XHIR or XMIR v0 program text, validate the appropriate typed/MIR invariants, and
-produce verified XLIL text for the C23 LLVM backend without introducing an LLVM dependency into HIR or MIR.
-XHIR reconstructs deterministic tuple/fixed-array layouts from higher-level types, while XMIR persists the corresponding
-registry ids and layouts in its structured program-level `types` section.
+This crate is pre-1.0 compiler infrastructure. Its APIs and version-0 intermediate formats may evolve together with the X#
+compiler. The repository pins a Rust nightly toolchain for reproducible development and validation.
 
-Current core slices include:
-
-- HIR type-checking helpers for the THIR side and structured XHIR model/text support for the operational side.
-- A first HIR to MIR lowering bridge for void functions, `Int` locals, `Int` literals, and local returns.
-- MIR structural verification, borrow-checking, optimizer scaffolding, and structured XMIR parser/writer modules.
-- MIR and XLIL `add.i64`/`sub.i64`/`mul.i64` plus `const.bool`/`eq.i64` support, including XMIR/XLIL round-tripping and MIR constant folding for constant operands.
-- MIR and XLIL conditional terminator infrastructure: MIR `branch_if`, XLIL `br_if`, verifier checks, and MIR-to-XLIL lowering for already-lowered `bool` conditions.
-- MIR to XLIL lowering for typed `const.i64`, `const.bool`, `add.i64`, `sub.i64`, `mul.i64`, `eq.i64`, call, unconditional/conditional branch, and return records.
-- Monomorphization and codegen-unit planning models that do not depend on LLVM.
+Documentation and source are available in the [xs-project repository](https://github.com/xss-lang/xs-project).

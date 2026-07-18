@@ -109,8 +109,10 @@ XsLilStatus xs_lil_block_add_extract(XsLilBlock *block, XsLilValueId aggregate, 
                                      XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_array_get(XsLilBlock *block, XsLilValueId array, XsLilValueId index,
                                        XsLilType element_type, XsLilValueId *result, XsLilError *error);
-XsLilStatus xs_lil_block_add_array_set(XsLilBlock *block, XsLilValueId array, XsLilValueId index,
-                                       XsLilValueId value, XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_array_set(XsLilBlock *block, XsLilValueId array, XsLilValueId index, XsLilValueId value,
+                                       XsLilValueId *result, XsLilError *error);
+XsLilStatus xs_lil_block_add_array_length(XsLilBlock *block, XsLilValueId array, XsLilValueId *result,
+                                          XsLilError *error);
 XsLilStatus xs_lil_block_add_load(XsLilBlock *block, XsLilSlotId slot, XsLilValueId *result, XsLilError *error);
 XsLilStatus xs_lil_block_add_store(XsLilBlock *block, XsLilSlotId slot, XsLilValueId value, XsLilError *error);
 XsLilStatus xs_lil_block_set_return(XsLilBlock *block, XsLilError *error);

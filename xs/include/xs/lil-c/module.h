@@ -23,10 +23,13 @@ size_t xs_lil_module_aggregate_type_count(const XsLilModule *module);
 const char *xs_lil_module_aggregate_type_name(const XsLilModule *module, uint32_t registry_id);
 size_t xs_lil_module_aggregate_field_count(const XsLilModule *module, uint32_t registry_id);
 XsLilType xs_lil_module_aggregate_field_type(const XsLilModule *module, uint32_t registry_id, size_t field);
-XsLilStatus xs_lil_module_add_array_type(XsLilModule *module, XsLilType element_type, uint64_t length,
-                                         XsLilType *type, XsLilError *error);
+XsLilStatus xs_lil_module_add_array_type(XsLilModule *module, XsLilType element_type, uint64_t length, XsLilType *type,
+                                         XsLilError *error);
+XsLilStatus xs_lil_module_add_dynamic_array_type(XsLilModule *module, XsLilType element_type, XsLilType *type,
+                                                 XsLilError *error);
 size_t xs_lil_module_array_type_count(const XsLilModule *module);
 XsLilType xs_lil_module_array_element_type(const XsLilModule *module, uint32_t registry_id);
+bool xs_lil_module_array_is_dynamic(const XsLilModule *module, uint32_t registry_id);
 uint64_t xs_lil_module_array_length(const XsLilModule *module, uint32_t registry_id);
 
 #endif

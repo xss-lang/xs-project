@@ -93,12 +93,12 @@ impl Verifier
     for (index, array) in module.array_types.iter().enumerate()
     {
       if array.id as usize != index ||
-         array.length == 0 ||
+         array.length == Some(0) ||
          array.element_type == Type::VOID ||
          !Self::valid_type(module, array.element_type)
       {
         self.report(DiagnosticCode::InvalidArrayType,
-                    "XLIL array registry requires sequential ids, a non-void element type, and nonzero length");
+                    "XLIL array registry requires sequential ids, a non-void element type, and nonzero fixed length");
       }
     }
     for function in &module.functions
@@ -454,6 +454,17 @@ impl Verifier
                               array,
                               index,
                               value, } => self.array_access(function, module, result, array, index, Some(value)),
+      Instruction::ArrayLength { result,
+                                 array, } =>
+      {
+        self.typed_value(function, result, Type::I64, "XLIL len.array result");
+        if value_type(function, array).and_then(|ty| module.array_type(ty))
+                                      .is_none()
+        {
+          self.report(DiagnosticCode::InvalidArrayType,
+                      "XLIL len.array source must use a known array registry type");
+        }
+      }
       Instruction::Load { result,
                           slot, } => self.memory(function, slot, result, "XLIL load"),
       Instruction::Store { slot,

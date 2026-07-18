@@ -27,7 +27,8 @@ XsBackendStatus xs_llvm_codegen_lil_type(XsLlvmCodegenUnit *unit, XsLilType type
   LLVMTypeRef *registry = type.kind == XS_LIL_TYPE_ARRAY ? unit->lil_array_types : unit->lil_types;
   size_t count = type.kind == XS_LIL_TYPE_ARRAY ? unit->lil_array_type_count : unit->lil_type_count;
   if(type.registry_id >= count || registry[type.registry_id] == nullptr)
-    return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL composite type is not registered in the codegen unit");
+    return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT,
+                           "XLIL composite type is not registered in the codegen unit");
   *llvm_type = registry[type.registry_id];
   return XS_BACKEND_OK;
 }
@@ -69,8 +70,13 @@ XsBackendStatus xs_llvm_register_lil_types(XsLlvmCodegenUnit *unit, const XsLilM
   }
   size_t array_count = xs_lil_module_array_type_count(module);
   if(array_count != 0)
+  {
     unit->lil_array_types = calloc(array_count, sizeof(*unit->lil_array_types));
-  if(array_count != 0 && unit->lil_array_types == nullptr)
+    unit->lil_array_elements = calloc(array_count, sizeof(*unit->lil_array_elements));
+    unit->lil_array_dynamic = calloc(array_count, sizeof(*unit->lil_array_dynamic));
+  }
+  if(array_count != 0 &&
+     (unit->lil_array_types == nullptr || unit->lil_array_elements == nullptr || unit->lil_array_dynamic == nullptr))
     return aggregate_error(error, XS_BACKEND_SYSTEM_ERROR, "out of memory while registering XLIL array types");
   unit->lil_array_type_count = array_count;
   for(size_t index = 0; index < array_count; ++index)
@@ -80,7 +86,16 @@ XsBackendStatus xs_llvm_register_lil_types(XsLlvmCodegenUnit *unit, const XsLilM
         xs_llvm_codegen_lil_type(unit, xs_lil_module_array_element_type(module, (uint32_t)index), &element, error);
     if(status != XS_BACKEND_OK)
       return status;
-    unit->lil_array_types[index] = LLVMArrayType2(element, xs_lil_module_array_length(module, (uint32_t)index));
+    unit->lil_array_elements[index] = element;
+    unit->lil_array_dynamic[index] = xs_lil_module_array_is_dynamic(module, (uint32_t)index);
+    if(unit->lil_array_dynamic[index])
+    {
+      LLVMTypeRef fields[] = {LLVMPointerTypeInContext(unit->backend->context, 0),
+                              LLVMInt64TypeInContext(unit->backend->context)};
+      unit->lil_array_types[index] = LLVMStructTypeInContext(unit->backend->context, fields, 2, false);
+    }
+    else
+      unit->lil_array_types[index] = LLVMArrayType2(element, xs_lil_module_array_length(module, (uint32_t)index));
     if(unit->lil_array_types[index] == nullptr)
       return aggregate_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not create an XLIL array type");
   }
@@ -94,6 +109,24 @@ XsBackendStatus xs_llvm_lower_aggregate_instruction(XsLlvmCodegenUnit *unit, LLV
 {
   XsLilInstructionKind kind = xs_lil_block_instruction_kind(block, index);
   XsLilValueId result = xs_lil_block_instruction_result(block, index);
+  if(kind == XS_LIL_INSTRUCTION_ARRAY_LENGTH)
+  {
+    XsLilValueId array = xs_lil_block_instruction_left(block, index);
+    if(result >= value_count || array >= value_count || values[array] == nullptr)
+      return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL array length operand is unavailable");
+    XsLilType source_type = xs_lil_function_value_type(function, array);
+    LLVMTypeRef array_type = nullptr;
+    XsBackendStatus status = xs_llvm_codegen_lil_type(unit, source_type, &array_type, error);
+    if(status != XS_BACKEND_OK)
+      return status;
+    values[result] =
+        unit->lil_array_dynamic[source_type.registry_id]
+            ? LLVMBuildExtractValue(builder, values[array], 1, "array.length")
+            : LLVMConstInt(LLVMInt64TypeInContext(unit->backend->context), LLVMGetArrayLength2(array_type), false);
+    return values[result] == nullptr
+               ? aggregate_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower XLIL array length")
+               : XS_BACKEND_OK;
+  }
   if(kind == XS_LIL_INSTRUCTION_ARRAY_GET || kind == XS_LIL_INSTRUCTION_ARRAY_SET)
   {
     XsLilValueId array = xs_lil_block_instruction_left(block, index);
@@ -102,20 +135,21 @@ XsBackendStatus xs_llvm_lower_aggregate_instruction(XsLlvmCodegenUnit *unit, LLV
        values[dynamic_index] == nullptr)
       return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL dynamic array operand is unavailable");
     LLVMTypeRef array_type = nullptr;
-    XsBackendStatus status =
-        xs_llvm_codegen_lil_type(unit, xs_lil_function_value_type(function, array), &array_type, error);
+    XsLilType source_type = xs_lil_function_value_type(function, array);
+    XsBackendStatus status = xs_llvm_codegen_lil_type(unit, source_type, &array_type, error);
     if(status != XS_BACKEND_OK)
       return status;
-    LLVMValueRef storage = LLVMBuildAlloca(builder, array_type, "array.dynamic.storage");
-    LLVMBuildStore(builder, values[array], storage);
     LLVMTypeRef i64 = LLVMInt64TypeInContext(unit->backend->context);
     LLVMValueRef zero = LLVMConstInt(i64, 0, false);
-    LLVMValueRef length = LLVMConstInt(i64, LLVMGetArrayLength2(array_type), false);
+    bool dynamic = unit->lil_array_dynamic[source_type.registry_id];
+    LLVMValueRef length = dynamic ? LLVMBuildExtractValue(builder, values[array], 1, "array.length")
+                                  : LLVMConstInt(i64, LLVMGetArrayLength2(array_type), false);
     LLVMValueRef nonnegative = LLVMBuildICmp(builder, LLVMIntSGE, values[dynamic_index], zero, "index.nonnegative");
     LLVMValueRef in_range = LLVMBuildICmp(builder, LLVMIntULT, values[dynamic_index], length, "index.in.range");
     LLVMValueRef valid = LLVMBuildAnd(builder, nonnegative, in_range, "index.valid");
     LLVMValueRef llvm_function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(builder));
-    LLVMBasicBlockRef access_block = LLVMAppendBasicBlockInContext(unit->backend->context, llvm_function, "array.access");
+    LLVMBasicBlockRef access_block =
+        LLVMAppendBasicBlockInContext(unit->backend->context, llvm_function, "array.access");
     LLVMBasicBlockRef trap_block = LLVMAppendBasicBlockInContext(unit->backend->context, llvm_function, "array.bounds");
     LLVMBuildCondBr(builder, valid, access_block, trap_block);
     LLVMPositionBuilderAtEnd(builder, trap_block);
@@ -126,8 +160,21 @@ XsBackendStatus xs_llvm_lower_aggregate_instruction(XsLlvmCodegenUnit *unit, LLV
     LLVMBuildCall2(builder, trap_type, trap, nullptr, 0, "");
     LLVMBuildUnreachable(builder);
     LLVMPositionBuilderAtEnd(builder, access_block);
-    LLVMValueRef indices[] = {zero, values[dynamic_index]};
-    LLVMValueRef element = LLVMBuildGEP2(builder, array_type, storage, indices, 2, "array.element");
+    LLVMValueRef element = nullptr;
+    LLVMValueRef fixed_storage = nullptr;
+    if(dynamic)
+    {
+      LLVMValueRef pointer = LLVMBuildExtractValue(builder, values[array], 0, "array.data");
+      element = LLVMBuildGEP2(builder, unit->lil_array_elements[source_type.registry_id], pointer,
+                              &values[dynamic_index], 1, "array.element");
+    }
+    else
+    {
+      fixed_storage = LLVMBuildAlloca(builder, array_type, "array.fixed.storage");
+      LLVMBuildStore(builder, values[array], fixed_storage);
+      LLVMValueRef indices[] = {zero, values[dynamic_index]};
+      element = LLVMBuildGEP2(builder, array_type, fixed_storage, indices, 2, "array.element");
+    }
     if(kind == XS_LIL_INSTRUCTION_ARRAY_GET)
     {
       LLVMTypeRef element_type = nullptr;
@@ -142,7 +189,7 @@ XsBackendStatus xs_llvm_lower_aggregate_instruction(XsLlvmCodegenUnit *unit, LLV
       if(replacement >= value_count || values[replacement] == nullptr)
         return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL array.set value is unavailable");
       LLVMBuildStore(builder, values[replacement], element);
-      values[result] = LLVMBuildLoad2(builder, array_type, storage, "array.set");
+      values[result] = dynamic ? values[array] : LLVMBuildLoad2(builder, array_type, fixed_storage, "array.set");
     }
     return values[result] == nullptr
                ? aggregate_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not lower dynamic XLIL array access")
@@ -160,11 +207,42 @@ XsBackendStatus xs_llvm_lower_aggregate_instruction(XsLlvmCodegenUnit *unit, LLV
                : XS_BACKEND_OK;
   }
   LLVMTypeRef type = nullptr;
-  XsBackendStatus status = xs_llvm_codegen_lil_type(unit, xs_lil_function_value_type(function, result), &type, error);
+  XsLilType result_type = xs_lil_function_value_type(function, result);
+  XsBackendStatus status = xs_llvm_codegen_lil_type(unit, result_type, &type, error);
   if(status != XS_BACKEND_OK)
     return status;
-  LLVMValueRef aggregate = LLVMGetUndef(type);
   size_t field_count = xs_lil_block_instruction_argument_count(block, index);
+  if(result_type.kind == XS_LIL_TYPE_ARRAY && unit->lil_array_dynamic[result_type.registry_id])
+  {
+    LLVMTypeRef i64 = LLVMInt64TypeInContext(unit->backend->context);
+    uint64_t element_size =
+        LLVMABISizeOfType(unit->backend->target_data, unit->lil_array_elements[result_type.registry_id]);
+    LLVMValueRef byte_count = LLVMConstInt(i64, element_size * field_count, false);
+    LLVMTypeRef malloc_type = LLVMFunctionType(LLVMPointerTypeInContext(unit->backend->context, 0), &i64, 1, false);
+    LLVMValueRef malloc_function = LLVMGetNamedFunction(unit->module, "malloc");
+    if(malloc_function == nullptr)
+      malloc_function = LLVMAddFunction(unit->module, "malloc", malloc_type);
+    LLVMValueRef pointer = LLVMBuildCall2(builder, malloc_type, malloc_function, &byte_count, 1, "array.data");
+    if(pointer == nullptr)
+      return aggregate_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not allocate runtime-sized XLIL array storage");
+    for(size_t field = 0; field < field_count; ++field)
+    {
+      XsLilValueId value = xs_lil_block_instruction_argument(block, index, field);
+      if(value >= value_count || values[value] == nullptr)
+        return aggregate_error(error, XS_BACKEND_INVALID_ARGUMENT, "XLIL array references an unavailable element");
+      LLVMValueRef offset = LLVMConstInt(i64, field, false);
+      LLVMValueRef element = LLVMBuildGEP2(builder, unit->lil_array_elements[result_type.registry_id], pointer, &offset,
+                                           1, "array.element");
+      LLVMBuildStore(builder, values[value], element);
+    }
+    LLVMValueRef view = LLVMGetUndef(type);
+    view = LLVMBuildInsertValue(builder, view, pointer, 0, "array.with.data");
+    values[result] = LLVMBuildInsertValue(builder, view, LLVMConstInt(i64, field_count, false), 1, "array.with.length");
+    return values[result] == nullptr
+               ? aggregate_error(error, XS_BACKEND_LLVM_ERROR, "LLVM could not construct runtime-sized XLIL array")
+               : XS_BACKEND_OK;
+  }
+  LLVMValueRef aggregate = LLVMGetUndef(type);
   for(size_t field = 0; field < field_count; ++field)
   {
     XsLilValueId value = xs_lil_block_instruction_argument(block, index, field);

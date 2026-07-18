@@ -149,7 +149,14 @@ fn write_types(output: &mut String, aggregates: &[AggregateType], arrays: &[Arra
   {
     let _ = writeln!(output, "  array {}", array.id);
     let _ = writeln!(output, "    element {}", type_text(array.element_type));
-    let _ = writeln!(output, "    length {}", array.length);
+    match array.length
+    {
+      Some(length) =>
+      {
+        let _ = writeln!(output, "    length {length}");
+      }
+      None => output.push_str("    length dynamic\n"),
+    }
     output.push_str("  .end\n");
   }
   output.push_str(".end\n");
@@ -255,6 +262,7 @@ fn parse_array(lines: &[&str],
   *index += 1;
   let mut element_type = None;
   let mut length = None;
+  let mut length_seen = false;
   while *index < lines.len() && lines[*index].trim() != ".end"
   {
     let line = lines[*index].trim();
@@ -268,8 +276,16 @@ fn parse_array(lines: &[&str],
     }
     else if let Some(value) = line.strip_prefix("length ")
     {
-      length = value.parse().ok();
-      if length.is_none()
+      length_seen = true;
+      if value == "dynamic"
+      {
+        length = None;
+      }
+      else if let Ok(value) = value.parse()
+      {
+        length = Some(value);
+      }
+      else
       {
         diagnostics.push(diagnostic(*index + 1, format!("invalid array length '{value}'")));
       }
@@ -288,11 +304,11 @@ fn parse_array(lines: &[&str],
   {
     *index += 1;
   }
-  match (id, element_type, length)
+  match (id, element_type, length_seen)
   {
-    (Some(id), Some(element_type), Some(length)) => arrays.push(ArrayType { id,
-                                                                            element_type,
-                                                                            length }),
+    (Some(id), Some(element_type), true) => arrays.push(ArrayType { id,
+                                                                    element_type,
+                                                                    length }),
     _ => diagnostics.push(diagnostic(line_number, "incomplete array type record".to_string())),
   }
 }
@@ -381,7 +397,7 @@ mod tests
                                       fields: vec![Type::I32, Type::I32] }];
     let arrays = [ArrayType { id: 0,
                               element_type: Type::aggregate(0),
-                              length: 2 }];
+                              length: Some(2) }];
     let text = program_to_xmir_with_types("root", &aggregates, &arrays, &functions);
     let parsed = parse_xmir_program(&text).expect("program should parse");
     assert_eq!(parsed.name, "root");

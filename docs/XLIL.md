@@ -46,6 +46,7 @@ Current text records intentionally look closer to assembly than to C-like declar
 .xlil module App
 .type %t0 Pair : (i32, i32)
 .array %a0 : i32 x 3
+.array %a1 : i32
 .extern Next : (i64) -> i64
 .func Answer : () -> i64
 bb0.entry:
@@ -63,6 +64,8 @@ Format notes:
   fields may reference primitive types or previously declared `%tN` types.
 - `.array %aN : <element> x <length>` adds a sequential fixed-array layout. The positive element count is part of the type;
   fixed arrays remain compiler-known structural types and are not aliases for nominal collection types.
+- `.array %aN : <element>` adds a runtime-sized array layout. Its value carries a data reference and an `i64` element
+  count; it is still distinct from the count-changing `ArrayList<T>` collection.
 - `.extern <symbol> : (<params>) -> <return>` declares an external function.
 - `.func <symbol> : (<params>) -> <return>` starts a function body.
 - `.param %rN:type` maps a signature parameter to a body register. Records occur before the first basic block, in
@@ -112,13 +115,14 @@ Format notes:
   the `%tA` layout exactly.
 - `%rN:type = extract %rA, F` extracts zero-based field `F` from an aggregate register. Its result type must match the
   registered field type.
-- `%rN:%aA = array %rB, %rC` constructs a fixed array. The register count must equal the `%aA` length and every register
-  must have the registered element type.
+- `%rN:%aA = array %rB, %rC` constructs an array. For a fixed layout, the register count must equal the `%aA` length.
+  A runtime-sized layout accepts the encoded number of initial elements. Every register must have the element type.
 - `%rN:type = extract.array %rA, I` reads the zero-based constant index `I` from a fixed-array register. The index must
   be in bounds and the result type must equal the array element type.
 - `%rN:type = array.get %rA, %rI` reads an element with an `i64` runtime index. `%rA` must use a registered array layout.
 - `%rN:%aA = array.set %rA, %rI, %rV` creates an updated array value with one element replaced. The runtime index is `i64`,
   `%rV` must match the registered element type, and `%rN` preserves the source array type.
+- `%rN:i64 = len.array %rA` reads the element count from either a fixed or runtime-sized registered array.
 - `call <symbol>(%rA, %rB)` calls a void function and discards the result.
 - `store %rN, %sA` writes a typed register value to a matching stack slot.
 - `%rN:type = load %sA` reads a matching stack slot into a new typed register value.

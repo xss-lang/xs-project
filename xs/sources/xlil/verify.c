@@ -238,8 +238,9 @@ static XsLilStatus verify_aggregate(const XsLilModule *module, const XsLilFuncti
      !valid_type(module, instruction->integer_type) ||
      !xs_lil_type_equal(function->values[instruction->result].type, instruction->integer_type))
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL composite result type is invalid");
-  size_t field_count = type.kind == XS_LIL_TYPE_ARRAY ? (size_t)module->array_types[type.registry_id].length
-                                                      : module->aggregate_types[type.registry_id].field_count;
+  const XsLilArrayType *array = type.kind == XS_LIL_TYPE_ARRAY ? &module->array_types[type.registry_id] : nullptr;
+  size_t field_count = array == nullptr ? module->aggregate_types[type.registry_id].field_count
+                                        : (array->dynamic ? instruction->argument_count : (size_t)array->length);
   if(instruction->argument_count != field_count)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL composite field count does not match its layout");
   for(size_t field = 0; field < field_count; ++field)
@@ -260,16 +261,18 @@ static XsLilStatus verify_extract(const XsLilModule *module, const XsLilFunction
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract references an unknown value");
   XsLilType aggregate = function->values[instruction->left].type;
   if(!valid_type(module, aggregate) ||
-     (aggregate.kind != XS_LIL_TYPE_AGGREGATE && aggregate.kind != XS_LIL_TYPE_ARRAY) ||
-     instruction->immediate_i64 < 0)
+     (aggregate.kind != XS_LIL_TYPE_AGGREGATE && aggregate.kind != XS_LIL_TYPE_ARRAY) || instruction->immediate_i64 < 0)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract source type or field is invalid");
+  if(aggregate.kind == XS_LIL_TYPE_ARRAY && module->array_types[aggregate.registry_id].dynamic)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
+                            "XLIL runtime-sized arrays require array.get instead of extract.array");
   size_t field = (size_t)instruction->immediate_i64;
   size_t field_count = aggregate.kind == XS_LIL_TYPE_ARRAY ? (size_t)module->array_types[aggregate.registry_id].length
                                                            : module->aggregate_types[aggregate.registry_id].field_count;
   XsLilType expected = aggregate.kind == XS_LIL_TYPE_ARRAY
-                         ? module->array_types[aggregate.registry_id].element_type
-                         : (field < field_count ? module->aggregate_types[aggregate.registry_id].fields[field]
-                                                : (XsLilType){.kind = XS_LIL_TYPE_VOID});
+                           ? module->array_types[aggregate.registry_id].element_type
+                           : (field < field_count ? module->aggregate_types[aggregate.registry_id].fields[field]
+                                                  : (XsLilType){.kind = XS_LIL_TYPE_VOID});
   if(field >= field_count || !xs_lil_type_equal(function->values[instruction->result].type, expected))
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract result type does not match its field");
   return XS_LIL_OK;
@@ -280,7 +283,8 @@ static XsLilStatus verify_array_access(const XsLilModule *module, const XsLilFun
 {
   if(instruction->left >= function->value_count || instruction->right >= function->value_count ||
      instruction->result >= function->value_count)
-    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL dynamic array instruction references an unknown value");
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT,
+                            "XLIL dynamic array instruction references an unknown value");
   XsLilType array = function->values[instruction->left].type;
   if(array.kind != XS_LIL_TYPE_ARRAY || !valid_type(module, array) ||
      function->values[instruction->right].type.kind != XS_LIL_TYPE_I64)
@@ -298,13 +302,26 @@ static XsLilStatus verify_array_access(const XsLilModule *module, const XsLilFun
   return XS_LIL_OK;
 }
 
+static XsLilStatus verify_array_length(const XsLilModule *module, const XsLilFunction *function,
+                                       const XsLilInstruction *instruction, XsLilError *error)
+{
+  if(instruction->left >= function->value_count || instruction->result >= function->value_count)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array length references an unknown value");
+  XsLilType array = function->values[instruction->left].type;
+  if(array.kind != XS_LIL_TYPE_ARRAY || !valid_type(module, array) ||
+     function->values[instruction->result].type.kind != XS_LIL_TYPE_I64)
+    return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array length types are invalid");
+  return XS_LIL_OK;
+}
+
 XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
 {
   xs_lil_clear_error(error);
   if(module == nullptr)
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL module is required");
   for(size_t index = 0; index < module->array_type_count; ++index)
-    if(module->array_types[index].length == 0 || !valid_type(module, module->array_types[index].element_type) ||
+    if((!module->array_types[index].dynamic && module->array_types[index].length == 0) ||
+       !valid_type(module, module->array_types[index].element_type) ||
        module->array_types[index].element_type.kind == XS_LIL_TYPE_VOID)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array registry entry is invalid");
   for(size_t index = 0; index < module->function_count; ++index)
@@ -354,6 +371,12 @@ XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error)
         if(current->kind == XS_LIL_INSTRUCTION_ARRAY_GET || current->kind == XS_LIL_INSTRUCTION_ARRAY_SET)
         {
           status = verify_array_access(module, function, current, error);
+          if(status != XS_LIL_OK)
+            return status;
+        }
+        if(current->kind == XS_LIL_INSTRUCTION_ARRAY_LENGTH)
+        {
+          status = verify_array_length(module, function, current, error);
           if(status != XS_LIL_OK)
             return status;
         }

@@ -23,7 +23,7 @@ impl TypeChecker
                 .skip(1)
                 .all(|element| self.expression_type(element).as_ref() == Some(&first))
                 .then(|| Type::Array { element: Box::new(first),
-                                       length: u64::try_from(elements.len()).ok() })
+                                       length: None })
       }
       Expression::Set { elements, .. } =>
       {
@@ -50,6 +50,7 @@ impl TypeChecker
       Expression::Tuple { tuple_type, .. } => Some(tuple_type.as_ref().clone()),
       Expression::TupleElement { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
+      Expression::ArrayLength { .. } => Some(Type::Primitive(PrimitiveType::Int)),
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target, .. } => self.find_local(target).map(|local| local.ty.clone()),

@@ -7,6 +7,41 @@ use super::*;
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_array_length(&mut self,
+                                   collection: &Expression,
+                                   expected_type: XlilType,
+                                   span: Span,
+                                   lowered: &mut mir::Function)
+                                   -> Option<mir::LocalId>
+  {
+    if expected_type != XlilType::I64
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "array length result must have type Int",
+                  span);
+      return None;
+    }
+    let array_type = self.expression_value_type(collection, lowered)?;
+    if !self.array_layouts
+            .iter()
+            .any(|(value_type, _, _)| *value_type == array_type)
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "array length source has no MIR layout",
+                  span);
+      return None;
+    }
+    let array = self.lower_expression_to_local(collection, array_type, lowered)?;
+    let result = self.declare_temp(XlilType::I64, span, lowered)?;
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::ArrayLength { result,
+                                            array,
+                                            array_type,
+                                            span });
+    Some(result)
+  }
+
   pub(super) fn lower_index_assignment(&mut self,
                                        target: &str,
                                        index: &Expression,
@@ -59,7 +94,8 @@ impl HirToMirLowerer
         .push(mir::Statement::LoadLocal { result: loaded,
                                           local,
                                           span });
-    if !matches!(index, Expression::Literal { literal: Literal::Integer(_),
+    if length.is_none() ||
+       !matches!(index, Expression::Literal { literal: Literal::Integer(_),
                                               .. })
     {
       let Some(index) = self.lower_expression_to_local(index, XlilType::I64, lowered)
@@ -93,6 +129,11 @@ impl HirToMirLowerer
                                              span });
       return;
     }
+    let Some(length) = length
+    else
+    {
+      return;
+    };
     let Some(index) = literal_index(index, length, span, self)
     else
     {
@@ -167,7 +208,7 @@ impl HirToMirLowerer
                   *span);
       return None;
     };
-    if u64::try_from(elements.len()).ok() != Some(length)
+    if length.is_some_and(|length| u64::try_from(elements.len()).ok() != Some(length))
     {
       self.report(DiagnosticCode::UnsupportedExpression,
                   "array literal length does not match its fixed-array type",
@@ -223,7 +264,8 @@ impl HirToMirLowerer
     }
     let array = self.lower_expression_to_local(collection, collection_type, lowered)?;
     let result = self.declare_temp(element_type, *span, lowered)?;
-    if matches!(index.as_ref(), Expression::Literal { literal: Literal::Integer(_),
+    if let Some(length) = length &&
+       matches!(index.as_ref(), Expression::Literal { literal: Literal::Integer(_),
                                                       .. })
     {
       let index = literal_index(index, length, *span, self)?;

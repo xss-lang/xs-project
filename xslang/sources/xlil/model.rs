@@ -676,7 +676,7 @@ pub struct ArrayType
 {
   pub id: u32,
   pub element_type: Type,
-  pub length: u64,
+  pub length: Option<u64>,
 }
 
 impl Module
@@ -713,8 +713,18 @@ impl Module
 
   pub fn add_array_type(&mut self, element_type: Type, length: u64) -> Option<Type>
   {
+    self.add_array_layout(element_type, Some(length))
+  }
+
+  pub fn add_dynamic_array_type(&mut self, element_type: Type) -> Option<Type>
+  {
+    self.add_array_layout(element_type, None)
+  }
+
+  fn add_array_layout(&mut self, element_type: Type, length: Option<u64>) -> Option<Type>
+  {
     if element_type == Type::VOID ||
-       length == 0 ||
+       length == Some(0) ||
        self.array_types
            .iter()
            .any(|entry| entry.element_type == element_type && entry.length == length)

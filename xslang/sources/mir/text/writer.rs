@@ -288,6 +288,16 @@ fn write_statement(output: &mut String, statement: &Statement)
       write_array_access(output, *result, *array, *index, *array_type, *element_type);
       let _ = writeln!(output, "        value local {}", value.0);
     }
+    Statement::ArrayLength { result,
+                             array,
+                             array_type,
+                             .. } =>
+    {
+      let _ = writeln!(output, "      statement array.length");
+      let _ = writeln!(output, "        result local {}", result.0);
+      let _ = writeln!(output, "        array local {}", array.0);
+      let _ = writeln!(output, "        array_type {}", type_text(*array_type));
+    }
     Statement::AddI64 { result,
                         left,
                         right,

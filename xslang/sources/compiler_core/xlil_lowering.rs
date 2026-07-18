@@ -9,7 +9,10 @@ use crate::hir::declarations::{Module as HirModule, NominalKind, NominalType, Ty
 use crate::mir;
 use crate::xlil::{self, Function, Module, Type};
 
-fn lower_type(value: &TypeRef, aggregates: &crate::hir::aggregate_registry::AggregateRegistry) -> Option<Type>
+fn lower_type(value: &TypeRef,
+              aggregates: &crate::hir::aggregate_registry::AggregateRegistry,
+              collections: &crate::hir::collection_registry::CollectionRegistry)
+              -> Option<Type>
 {
   match value
   {
@@ -24,7 +27,8 @@ fn lower_type(value: &TypeRef, aggregates: &crate::hir::aggregate_registry::Aggr
                 .find(|(source, _)| source == &checked)
                 .map(|(_, ty)| *ty)
     }
-    TypeRef::Array { .. } | TypeRef::Map { .. } => None,
+    TypeRef::Array { .. } => collections.value_type(&crate::hir::declarations::type_ref_to_checked(value)?),
+    TypeRef::Map { .. } => None,
   }
 }
 
@@ -32,6 +36,7 @@ fn flatten_parameter(module: &HirModule,
                      definitions: &HashMap<String, NominalType>,
                      value: &TypeRef,
                      aggregates: &crate::hir::aggregate_registry::AggregateRegistry,
+                     collections: &crate::hir::collection_registry::CollectionRegistry,
                      visiting: &mut Vec<String>,
                      parameters: &mut Vec<Type>)
                      -> Option<()>
@@ -51,23 +56,30 @@ fn flatten_parameter(module: &HirModule,
       visiting.push(name.clone());
       for field in &crate::hir::declarations::resolved_fields(definition, definitions).ok()?
       {
-        flatten_parameter(module, definitions, &field.ty, aggregates, visiting, parameters)?;
+        flatten_parameter(module,
+                          definitions,
+                          &field.ty,
+                          aggregates,
+                          collections,
+                          visiting,
+                          parameters)?;
       }
       visiting.pop();
     }
-    TypeRef::Tuple { .. } => parameters.push(lower_type(value, aggregates)?),
+    TypeRef::Tuple { .. } | TypeRef::Array { .. } => parameters.push(lower_type(value, aggregates, collections)?),
     TypeRef::Unit => return None,
-    TypeRef::Array { .. } | TypeRef::Map { .. } => return None,
+    TypeRef::Map { .. } => return None,
   }
   Some(())
 }
 
 fn signature(module: &HirModule,
              aggregates: &crate::hir::aggregate_registry::AggregateRegistry,
+             collections: &crate::hir::collection_registry::CollectionRegistry,
              function: &crate::hir::declarations::Function)
              -> Option<(Type, Vec<Type>)>
 {
-  let return_type = lower_type(&function.return_type, aggregates)?;
+  let return_type = lower_type(&function.return_type, aggregates, collections)?;
   let definitions = module.nominal_types
                           .iter()
                           .cloned()
@@ -80,6 +92,7 @@ fn signature(module: &HirModule,
                       &definitions,
                       &parameter.ty,
                       aggregates,
+                      collections,
                       &mut Vec::new(),
                       &mut parameters)?;
   }
@@ -97,19 +110,20 @@ fn matches_signature(function: &mir::Function, name: &str, return_type: Type, pa
 }
 
 fn supports_source_native_subset(module: &HirModule,
-                                 aggregates: &crate::hir::aggregate_registry::AggregateRegistry)
+                                 aggregates: &crate::hir::aggregate_registry::AggregateRegistry,
+                                 collections: &crate::hir::collection_registry::CollectionRegistry)
                                  -> bool
 {
   module.functions
         .iter()
-        .all(|function| signature(module, aggregates, function).is_some())
+        .all(|function| signature(module, aggregates, collections, function).is_some())
 }
 
 pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Function]) -> Option<Module>
 {
   let aggregates = crate::hir::aggregate_registry::build_module(declarations)?;
   let collections = crate::hir::collection_registry::build(declarations, &aggregates);
-  if !supports_source_native_subset(declarations, &aggregates)
+  if !supports_source_native_subset(declarations, &aggregates, &collections)
   {
     return None;
   }
@@ -123,7 +137,12 @@ pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Funct
   }
   for layout in &collections.arrays
   {
-    if module.add_array_type(layout.element_type, layout.length) != Some(layout.value_type)
+    let registered = match layout.length
+    {
+      Some(length) => module.add_array_type(layout.element_type, length),
+      None => module.add_dynamic_array_type(layout.element_type),
+    };
+    if registered != Some(layout.value_type)
     {
       return None;
     }
@@ -131,7 +150,7 @@ pub(super) fn lower_module(declarations: &HirModule, mir_functions: &[mir::Funct
   let mut used_mir = vec![false; mir_functions.len()];
   for declaration in &declarations.functions
   {
-    let (return_type, parameters) = signature(declarations, &aggregates, declaration)?;
+    let (return_type, parameters) = signature(declarations, &aggregates, &collections, declaration)?;
     if declaration.body_present
     {
       let index =

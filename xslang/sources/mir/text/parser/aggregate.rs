@@ -72,6 +72,14 @@ pub(super) fn array_set_statement(parser: &mut Parser<'_>) -> Statement
                         span: span() }
 }
 
+pub(super) fn array_length_statement(parser: &mut Parser<'_>) -> Statement
+{
+  Statement::ArrayLength { result: required_local(parser, "result local ", "array.length result"),
+                           array: required_local(parser, "array local ", "array.length source"),
+                           array_type: required_type(parser, "array_type ", "array.length array type"),
+                           span: span() }
+}
+
 fn array_access(parser: &mut Parser<'_>) -> (LocalId, LocalId, LocalId, Type, Type)
 {
   (required_local(parser, "result local ", "array access result"),

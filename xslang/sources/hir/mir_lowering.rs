@@ -51,7 +51,7 @@ pub struct HirToMirLowerer
   aggregate_types: HashMap<String, XlilType>,
   tuple_types: Vec<(Type, XlilType)>,
   array_types: Vec<(Type, XlilType)>,
-  array_layouts: Vec<(XlilType, XlilType, u64)>,
+  array_layouts: Vec<(XlilType, XlilType, Option<u64>)>,
   nominal_locals: HashMap<String, String>,
   field_locals: HashMap<String, mir::LocalId>,
 }
@@ -325,6 +325,8 @@ impl HirToMirLowerer
         None
       }
       Expression::Index { .. } => self.lower_index_expression(expression, expected_type, lowered),
+      Expression::ArrayLength { collection,
+                                span, } => self.lower_array_length(collection, expected_type, *span, lowered),
       Expression::Literal { literal,
                             span, } =>
       {
@@ -695,6 +697,7 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Tuple { span, .. } |
     Expression::TupleElement { span, .. } |
     Expression::Index { span, .. } |
+    Expression::ArrayLength { span, .. } |
     Expression::Assign { span, .. } |
     Expression::AssignField { span, .. } |
     Expression::Update { span, .. } |

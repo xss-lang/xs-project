@@ -17,11 +17,6 @@ pub(super) const fn is_expression(kind: u32) -> bool
            EXPR_INDEX | EXPR_ARRAY_LITERAL | EXPR_MAP_LITERAL | EXPR_SET_LITERAL)
 }
 
-pub(super) const fn is_array_literal(kind: u32) -> bool
-{
-  kind == EXPR_ARRAY_LITERAL
-}
-
 pub(super) const fn is_set_literal(kind: u32) -> bool
 {
   kind == EXPR_SET_LITERAL
@@ -44,17 +39,15 @@ pub(super) fn default_array_initializer(value_type: &Type, span: Span) -> Option
 
 pub(super) fn refine_local_type(value_type: &Type, initializer: Option<&SyntaxNode>) -> Type
 {
-  let Type::Array { element,
-                    length: None, } = value_type
-  else
+  match (value_type, initializer)
   {
-    return value_type.clone();
-  };
-  match initializer
-  {
-    Some(value) if is_array_literal(value.kind) => Type::Array { element: element.clone(),
-                                                                 length: u64::try_from(value.children.len()).ok() },
-    Some(value) if is_set_literal(value.kind) => Type::Set { element: element.clone() },
+    (Type::Array { element,
+                   length: None, },
+     Some(value))
+      if is_set_literal(value.kind) =>
+    {
+      Type::Set { element: element.clone() }
+    }
     _ => value_type.clone(),
   }
 }
@@ -119,7 +112,7 @@ pub(super) fn array_member_type(tree: &SyntaxTree,
   }
   let receiver = tree.nodes.get(member.children[0])?;
   let Type::Array { element,
-                    length: Some(length), } = super::expression_type(tree, receiver, context, locals)?
+                    length, } = super::expression_type(tree, receiver, context, locals)?
   else
   {
     return None;
@@ -128,7 +121,7 @@ pub(super) fn array_member_type(tree: &SyntaxTree,
   {
     "count" | "capacity" | "start_index" | "end_index" => Some(Type::Primitive(PrimitiveType::Int)),
     "is_empty" => Some(Type::Primitive(PrimitiveType::Bool)),
-    "first" | "last" if length != 0 => Some(*element),
+    "first" | "last" if length != Some(0) => Some(*element),
     _ => None,
   }
 }
@@ -143,7 +136,7 @@ pub(super) fn lower_array_member(tree: &SyntaxTree,
   let receiver_node = tree.nodes.get(*member.children.first()?)?;
   let array_type = super::expression_type(tree, receiver_node, context, locals)?;
   let Type::Array { element,
-                    length: Some(length), } = &array_type
+                    length, } = &array_type
   else
   {
     return None;
@@ -151,24 +144,51 @@ pub(super) fn lower_array_member(tree: &SyntaxTree,
   let name = path_text(tree, tree.nodes.get(*member.children.get(1)?)?);
   match name.as_str()
   {
-    "count" | "capacity" | "end_index" => integer_literal(*length, span),
+    "count" | "capacity" | "end_index" => match length
+    {
+      Some(length) => integer_literal(*length, span),
+      None => Some(Expression::ArrayLength { collection: Box::new(super::lower_expression(tree,
+                                                                                           receiver_node,
+                                                                                           context,
+                                                                                           locals,
+                                                                                           Some(&array_type))?),
+                                              span }),
+    },
     "start_index" => integer_literal(0, span),
-    "is_empty" => Some(Expression::Literal { literal: Literal::Bool(*length == 0),
-                                             span }),
+    "is_empty" => match length
+    {
+      Some(length) => Some(Expression::Literal { literal: Literal::Bool(*length == 0),
+                                                 span }),
+      None => Some(Expression::Binary { operator: BinaryOperator::Equal,
+                                        left: Box::new(Expression::ArrayLength {
+                                          collection: Box::new(super::lower_expression(tree,
+                                                                                       receiver_node,
+                                                                                       context,
+                                                                                       locals,
+                                                                                       Some(&array_type))?),
+                                          span,
+                                        }),
+                                        right: Box::new(integer_literal(0, span)?),
+                                        span }),
+    },
     "first" | "last" =>
     {
-      let last = length.checked_sub(1)?;
-      let index = if name == "first"
-      {
-        0
-      }
-      else
-      {
-        last
-      };
       let receiver = super::lower_expression(tree, receiver_node, context, locals, Some(&array_type))?;
+      let index = match (name.as_str(), length)
+      {
+        ("first", _) => integer_literal(0, span)?,
+        ("last", Some(length)) => integer_literal(length.checked_sub(1)?, span)?,
+        ("last", None) => Expression::Binary {
+          operator: BinaryOperator::Sub,
+          left: Box::new(Expression::ArrayLength { collection: Box::new(receiver.clone()),
+                                                   span }),
+          right: Box::new(integer_literal(1, span)?),
+          span,
+        },
+        _ => return None,
+      };
       Some(Expression::Index { collection: Box::new(receiver),
-                               index: Box::new(integer_literal(index, span)?),
+                               index: Box::new(index),
                                element_type: element.clone(),
                                span })
     }
@@ -206,7 +226,7 @@ pub(super) fn expression_type(tree: &SyntaxTree,
              Some(&element)
            })
            .then(|| Type::Array { element: Box::new(element),
-                                  length: u64::try_from(value.children.len()).ok() })
+                                  length: None })
     }
     EXPR_SET_LITERAL =>
     {

@@ -7,13 +7,15 @@ use std::fmt::Write;
 
 use super::match_model::MatchPattern;
 use super::result_desugar::{DesugaredBlock, DesugaredExpression, DesugaredFunction, DesugaredStatement};
-use super::symbols::{Import, Module, SymbolKind, Visibility};
 #[cfg(test)]
-use super::type_check::PrimitiveType;
+use super::symbols::Visibility;
+use super::symbols::{Import, Module};
 use super::type_check::{
-  BinaryOperator, Block, Expression, Function, Literal, Statement, Type, UnaryOperator, UpdateOperator, UpdatePosition,
+  BinaryOperator, Block, Expression, Function, Statement, Type, UnaryOperator, UpdateOperator, UpdatePosition,
 };
 use super::type_check::{Diagnostic as TypeDiagnostic, DiagnosticCode as TypeDiagnosticCode};
+#[cfg(test)]
+use super::type_check::{Literal, PrimitiveType};
 
 pub mod parser;
 mod program;
@@ -45,7 +47,7 @@ pub use program::{
 };
 
 use block_writer::{mutability_name, write_block, write_desugared_block};
-use names::type_name;
+use names::{field_path_name, literal_name, symbol_kind_name, type_name, visibility_name};
 pub use parser::{XhirParseDiagnostic, parse_xhir_function, parse_xhir_module_symbols};
 use statement_writer::{write_desugared_statement, write_statement};
 
@@ -505,6 +507,12 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
       write_expression(output, index, indent + 2);
       let _ = writeln!(output, "{pad}.end");
     }
+    Expression::ArrayLength { collection, .. } =>
+    {
+      let _ = writeln!(output, "{pad}array_length");
+      write_expression(output, collection, indent + 1);
+      let _ = writeln!(output, "{pad}.end");
+    }
     Expression::Assign { target,
                          value,
                          .. } =>
@@ -731,6 +739,12 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
       write_desugared_expression(output, index, indent + 2);
       let _ = writeln!(output, "{pad}.end");
     }
+    DesugaredExpression::ArrayLength { collection, .. } =>
+    {
+      let _ = writeln!(output, "{pad}array_length");
+      write_desugared_expression(output, collection, indent + 1);
+      let _ = writeln!(output, "{pad}.end");
+    }
     DesugaredExpression::Assign { target,
                                   value,
                                   .. } =>
@@ -944,49 +958,6 @@ const fn update_position_name(position: UpdatePosition) -> &'static str
   {
     UpdatePosition::Prefix => "prefix",
     UpdatePosition::Postfix => "postfix",
-  }
-}
-
-fn literal_name(literal: &Literal) -> String
-{
-  match literal
-  {
-    Literal::Bool(value) => format!("bool {value}"),
-    Literal::Integer(value) => format!("integer {value}"),
-    Literal::Float(value) => format!("float {value}"),
-    Literal::Char(value) => format!("char {}", crate::text::format_character(*value)),
-    Literal::String(value) => format!("string {value:?}"),
-    Literal::None => "None".to_string(),
-  }
-}
-
-fn field_path_name(path: &crate::hir::type_check::FieldPath) -> String
-{
-  std::iter::once(path.root.as_str()).chain(path.fields.iter().map(String::as_str))
-                                     .collect::<Vec<_>>()
-                                     .join(".")
-}
-
-const fn symbol_kind_name(kind: SymbolKind) -> &'static str
-{
-  match kind
-  {
-    SymbolKind::Function => "function",
-    SymbolKind::Class => "class",
-    SymbolKind::Interface => "interface",
-    SymbolKind::Enum => "enum",
-    SymbolKind::Data => "data",
-    SymbolKind::Macro => "macro",
-  }
-}
-
-const fn visibility_name(visibility: Visibility) -> &'static str
-{
-  match visibility
-  {
-    Visibility::Public => "public",
-    Visibility::Internal => "internal",
-    Visibility::Private => "private",
   }
 }
 

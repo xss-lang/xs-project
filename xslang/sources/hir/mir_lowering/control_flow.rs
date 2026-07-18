@@ -461,18 +461,18 @@ impl HirToMirLowerer
     {
       return;
     }
-    let Type::Array { length: Some(length), .. } = iterable_type
+    let Type::Array { length, .. } = iterable_type
     else
     {
       self.report(DiagnosticCode::UnsupportedType,
-                  "native for-each requires a fixed array length",
+                  "native for-each requires an array iterable",
                   *span);
       return;
     };
-    if i64::try_from(*length).is_err()
+    if length.is_some_and(|value| i64::try_from(value).is_err())
     {
       self.report(DiagnosticCode::UnsupportedType,
-                  "for-each array length exceeds the MIR index range",
+                  "for-each fixed-array length exceeds the MIR index range",
                   *span);
       return;
     }
@@ -488,14 +488,14 @@ impl HirToMirLowerer
     else
     {
       self.report(DiagnosticCode::UnsupportedType,
-                  "for-each iterable has no fixed-array MIR layout",
+                  "for-each iterable has no array MIR layout",
                   *span);
       return;
     };
     if registered_length != *length || self.lower_value_type(&binding.ty, binding.span) != Some(element_type)
     {
       self.report(DiagnosticCode::UnsupportedType,
-                  "for-each binding does not match its fixed-array layout",
+                  "for-each binding does not match its array layout",
                   binding.span);
       return;
     }
@@ -545,7 +545,19 @@ impl HirToMirLowerer
     {
       return;
     };
-    self.lower_literal_into(limit, &Literal::Integer(length.to_string()), *span, lowered);
+    if let Some(length) = length
+    {
+      self.lower_literal_into(limit, &Literal::Integer(length.to_string()), *span, lowered);
+    }
+    else
+    {
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::ArrayLength { result: limit,
+                                              array,
+                                              array_type,
+                                              span: *span });
+    }
     let Some(condition) = self.declare_temp(XlilType::BOOL, *span, lowered)
     else
     {

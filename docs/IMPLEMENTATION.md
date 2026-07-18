@@ -186,13 +186,17 @@ The documented compilation order is preserved:
 - Built-in array, set, and map types remain first-class compiler types across the structural-AST/compiler-core boundary
   and typed HIR; they are not aliases or desugarings of nominal standard-library collections. `[T] = [...]` creates an
   array, `[T] = {...}` creates a built-in set, and an uninitialized `[T]` defaults to array. There is no public
-  `HashSet<T>` type spelling. Square-bracket array inference, contextual element checks, set XHIR round-tripping, numeric
+  `HashSet<T>` type spelling. A square-bracket literal inferred without a fixed-size context remains runtime-sized `[T]`;
+  only an explicit `[T; N]` annotation selects a fixed layout. Contextual element checks, set XHIR round-tripping, numeric
   default fill, excess-element discard, and element assignment are implemented. Constant indices use composite extraction;
   calculated `Int` indices use checked MIR/XLIL array access records. Fixed arrays continue through XLIL `%aN`, the public
-  C23 XLIL boundary, bounds-checked LLVM array access, and native `.xse` emission. Fixed-array `count`, `capacity`,
+  C23 XLIL boundary, bounds-checked LLVM array access, and native `.xse` emission. Runtime-sized `[T]` construction,
+  same-module parameter/return flow, checked indexing and mutation, `count`, and index-based `for` iteration use the same
+  target-independent registry and now lower through LLVM to native `.xse`. Fixed-array `count`, `capacity`,
   `is_empty`, `start_index`, `end_index`, `first`, and `last` members are resolved in compiler-core and desugared to typed
-  constants or existing checked index expressions. Set runtime layout and operations, runtime-sized collection storage,
-  and map value/layout lowering remain deferred.
+  constants or existing checked index expressions. Runtime-sized storage currently uses hosted allocation and has no
+  reclamation contract yet. Set runtime layout and operations, `ArrayList<T>` count-changing operations, and map
+  value/layout lowering remain deferred.
 - Positional and named tuple types, literals, and projections now remain structural through typed HIR and XHIR v0. Tuple
   layouts share the target-independent aggregate registry with nominal `data` values, then reuse MIR/XLIL `aggregate` and
   `extract` operations through LLVM structure lowering and native `.xse` emission. The same registry discovers nested tuple

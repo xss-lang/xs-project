@@ -221,6 +221,10 @@ pub enum Expression
     element_type: Box<Type>,
     span: Span,
   },
+  ArrayLength
+  {
+    collection: Box<Expression>, span: Span
+  },
   Assign
   {
     target: String,
@@ -763,6 +767,15 @@ impl TypeChecker
           self.report_collection_mismatch(*span, "array index must have an integer type");
         }
       }
+      Expression::ArrayLength { collection,
+                                span, } =>
+      {
+        self.check_expression(collection);
+        if !matches!(self.expression_type(collection), Some(Type::Array { .. }))
+        {
+          self.report_collection_mismatch(*span, "array length source must have an array type");
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
@@ -965,31 +978,21 @@ impl TypeChecker
           self.report_collection_mismatch(*span, "indexed element is not assignable to the target type");
         }
       }
+      Expression::ArrayLength { span, .. } =>
+      {
+        self.check_expression(expression);
+        if *ty != Type::Primitive(PrimitiveType::Int)
+        {
+          self.report_collection_mismatch(*span, "array length has type Int");
+        }
+      }
       Expression::Literal { .. } =>
       {}
     }
   }
 }
 
-mod binary_type;
-mod block_check;
-mod collection_check;
-mod expression_type;
-mod for_check;
-#[cfg(test)]
-mod for_each_tests;
-mod match_check;
-mod nominal_check;
-#[cfg(test)]
-mod nominal_tests;
-mod result_type;
-mod tuple;
-mod type_semantics;
-mod unary_type;
-
-pub(crate) use result_type::result_type_parts;
-use type_semantics::literal_default_type;
-pub use type_semantics::{ValueOwnership, literal_matches_type};
+include!("type_check/modules.rs");
 
 #[cfg(test)]
 mod tests;

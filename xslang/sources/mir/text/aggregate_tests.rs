@@ -78,7 +78,8 @@ fn roundtrips_dynamic_array_access_statements()
                             typed_local(1, Type::I64),
                             typed_local(2, Type::I32),
                             typed_local(3, array_type),
-                            typed_local(4, Type::I32)],
+                            typed_local(4, Type::I32),
+                            typed_local(5, Type::I64)],
                blocks: vec![BasicBlock { id: BlockId(0),
                                          statements: vec![Statement::ArraySet { result: LocalId(3),
                                                                                 array: LocalId(0),
@@ -92,13 +93,18 @@ fn roundtrips_dynamic_array_access_statements()
                                                                                 index: LocalId(1),
                                                                                 array_type,
                                                                                 element_type: Type::I32,
-                                                                                span: span() }],
+                                                                                span: span() },
+                                                          Statement::ArrayLength { result: LocalId(5),
+                                                                                   array: LocalId(3),
+                                                                                   array_type,
+                                                                                   span: span() }],
                                          terminator: Some(Terminator::Return(Some(LocalId(4)))),
                                          span: span() }] };
 
   let text = function_to_xmir(&function);
   assert!(text.contains("statement array.set"));
   assert!(text.contains("statement array.get"));
+  assert!(text.contains("statement array.length"));
   assert_eq!(parse_xmir_function(&text).expect("dynamic array XMIR should parse"),
              function);
 }

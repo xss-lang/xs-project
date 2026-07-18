@@ -8,7 +8,7 @@
 // for nominal standard-library containers.
 //
 // - [T] is an array when it has no initializer.
-// - [T] = [...] is an array whose fixed length is inferred from the initializer.
+// - [T] = [...] is a runtime-sized array initialized with those elements.
 // - [T; N] is an explicitly sized fixed array.
 // - [T] = {...} is a built-in set.
 // - [K: V] is a built-in map.
@@ -21,14 +21,16 @@
 import stdio;
 
 // ============================================================
-// Fixed arrays
+// Arrays
 // ============================================================
 
 fn fixed_array_examples()
 {
 numbers: [Int] = [10, 20, 30];
 
-// The effective type is [Int; 3].
+// The effective type remains [Int]. Its current count is three; it is not
+// silently refined to [Int; 3]. Runtime-sized arrays have fixed element count
+// after construction. ArrayList<T> is used when the count must change.
 
 repeated: [Int; 5];
 
@@ -57,7 +59,7 @@ index: Int = 1;
 selected: Int = numbers[index];
 
 
-// Fixed-array properties
+// Array properties
 
 count: Int = numbers.count;
 capacity: Int = numbers.capacity;
@@ -67,14 +69,14 @@ end: Int = numbers.end_index;
 first: Int = numbers.first;
 last: Int = numbers.last;
 
-// For a fixed array, capacity equals count. start_index is zero and end_index
+// For an array, capacity equals count. start_index is zero and end_index
 // is the position immediately after the last element; end_index is not a valid
 // element index. first and last require a non-empty array.
 
 
-// Fixed-size restrictions
+// Array restrictions
 
-// Operations that change element count are not available on fixed arrays.
+// Operations that change element count are not available on [T] or [T; N].
 // Use ArrayList<T> when insertion or removal is required.
 
 }

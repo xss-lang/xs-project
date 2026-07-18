@@ -61,6 +61,7 @@ impl HirToMirLowerer
                                                   .map(|(_, value_type)| *value_type),
       Expression::TupleElement { element_type, .. } => self.known_value_type(element_type),
       Expression::Index { element_type, .. } => self.known_value_type(element_type),
+      Expression::ArrayLength { .. } => Some(XlilType::I64),
       Expression::Update { target, .. } => self.local_value_type(*self.locals.get(target)?, lowered),
       Expression::Binary { operator,
                            left,

@@ -3,7 +3,51 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use crate::hir::type_check::{PrimitiveType, Type};
+use crate::hir::symbols::{SymbolKind, Visibility};
+use crate::hir::type_check::{FieldPath, Literal, PrimitiveType, Type};
+
+pub(super) fn literal_name(literal: &Literal) -> String
+{
+  match literal
+  {
+    Literal::Bool(value) => format!("bool {value}"),
+    Literal::Integer(value) => format!("integer {value}"),
+    Literal::Float(value) => format!("float {value}"),
+    Literal::Char(value) => format!("char {}", crate::text::format_character(*value)),
+    Literal::String(value) => format!("string {value:?}"),
+    Literal::None => "None".to_string(),
+  }
+}
+
+pub(super) fn field_path_name(path: &FieldPath) -> String
+{
+  std::iter::once(path.root.as_str()).chain(path.fields.iter().map(String::as_str))
+                                     .collect::<Vec<_>>()
+                                     .join(".")
+}
+
+pub(super) const fn symbol_kind_name(kind: SymbolKind) -> &'static str
+{
+  match kind
+  {
+    SymbolKind::Function => "function",
+    SymbolKind::Class => "class",
+    SymbolKind::Interface => "interface",
+    SymbolKind::Enum => "enum",
+    SymbolKind::Data => "data",
+    SymbolKind::Macro => "macro",
+  }
+}
+
+pub(super) const fn visibility_name(visibility: Visibility) -> &'static str
+{
+  match visibility
+  {
+    Visibility::Public => "public",
+    Visibility::Internal => "internal",
+    Visibility::Private => "private",
+  }
+}
 
 pub(super) fn type_name(ty: &Type) -> String
 {

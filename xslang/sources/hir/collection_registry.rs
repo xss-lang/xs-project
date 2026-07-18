@@ -14,7 +14,7 @@ pub(crate) struct ArrayLayout
   pub source_type: Type,
   pub value_type: xlil::Type,
   pub element_type: xlil::Type,
-  pub length: u64,
+  pub length: Option<u64>,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -44,7 +44,7 @@ impl CollectionRegistry
                                       .iter()
                                       .find(|(source, _)| source == source_type)
                                       .map(|(_, value_type)| *value_type),
-      Type::Array { length: Some(length),
+      Type::Array { length,
                     element, } =>
       {
         if let Some(value_type) = self.value_type(source_type)
@@ -59,7 +59,7 @@ impl CollectionRegistry
                                        length: *length });
         Some(value_type)
       }
-      Type::Unit | Type::Array { length: None, .. } | Type::Set { .. } | Type::Map { .. } => None,
+      Type::Unit | Type::Set { .. } | Type::Map { .. } => None,
     }
   }
 }

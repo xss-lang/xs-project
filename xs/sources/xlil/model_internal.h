@@ -39,6 +39,7 @@ typedef struct
 {
   XsLilType element_type;
   uint64_t length;
+  bool dynamic;
 } XsLilArrayType;
 
 typedef struct

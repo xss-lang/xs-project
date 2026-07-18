@@ -37,14 +37,21 @@ impl Verifier
                       "XLIL array instruction references an unknown type");
           return;
         };
-        let Ok(length) = usize::try_from(layout.length)
-        else
+        let expected = match layout.length
         {
-          self.report(DiagnosticCode::InvalidArrayType,
-                      "XLIL array length cannot be represented on this host");
-          return;
+          Some(length) => match usize::try_from(length)
+          {
+            Ok(length) => vec![layout.element_type; length],
+            Err(_) =>
+            {
+              self.report(DiagnosticCode::InvalidArrayType,
+                          "XLIL array length cannot be represented on this host");
+              return;
+            }
+          },
+          None => vec![layout.element_type; fields.len()],
         };
-        (vec![layout.element_type; length], DiagnosticCode::InvalidArrayType, "array")
+        (expected, DiagnosticCode::InvalidArrayType, "array")
       }
       _ =>
       {
@@ -88,7 +95,7 @@ impl Verifier
                                    .and_then(|layout| layout.fields.get(field as usize))
                                    .copied(),
       TypeKind::Array => module.array_type(composite_type)
-                               .filter(|layout| u64::from(field) < layout.length)
+                               .filter(|layout| layout.length.is_some_and(|length| u64::from(field) < length))
                                .map(|layout| layout.element_type),
       _ => None,
     };

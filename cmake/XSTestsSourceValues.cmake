@@ -13,7 +13,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainLoop
                        MainBlockLocals MainFixedArray MainArrayMissingDefaults
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
-                       MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
+                       MainDynamicArray MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
                        MainForEach MainTuple MainNamedTuple MainTupleCalls MainNestedTuple MainTupleArray MainTupleMutation
                        MainTupleForEach TupleUnknownMember TupleAssignmentMismatch TuplePatternArityMismatch
                        TuplePatternTypeMismatch TuplePatternDuplicateBinding
@@ -31,7 +31,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                  COPYONLY)
 endforeach()
 
-function(xs_add_source_native_array_test fixture expected_exit expected_length)
+function(xs_add_source_native_array_test fixture expected_exit expected_layout)
   set(instruction_pattern "extractvalue")
   if(ARGC GREATER 3)
     set(instruction_pattern "${ARGV3}")
@@ -45,20 +45,21 @@ function(xs_add_source_native_array_test fixture expected_exit expected_length)
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.ll
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.o
                                                             ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${fixture}.xse
-                                                            ${expected_exit} "[${expected_length} x i32]" "${instruction_pattern}")
+                                                            ${expected_exit} "${expected_layout}" "${instruction_pattern}")
   set_tests_properties(source_native_${test_suffix}_artifacts PROPERTIES
                        DEPENDS source_native_${test_suffix}_build TIMEOUT 5)
 endfunction()
 
-xs_add_source_native_array_test(MainArrayMissingDefaults 0 4)
-xs_add_source_native_array_test(MainArrayExcessDiscard 7 2)
-xs_add_source_native_array_test(MainInferredSizeArray 7 3)
-xs_add_source_native_array_test(MainArrayMutation 7 3)
-xs_add_source_native_array_test(MainDefaultFixedArray 0 3)
-xs_add_source_native_array_test(MainDynamicArrayIndex 7 3 "getelementptr")
-xs_add_source_native_array_test(MainDynamicArrayMutation 7 3 "llvm.trap")
-xs_add_source_native_array_test(MainArrayProperties 11 3 "extractvalue")
-xs_add_source_native_array_test(MainForEach 8 5 "getelementptr")
+xs_add_source_native_array_test(MainArrayMissingDefaults 0 "[4 x i32]")
+xs_add_source_native_array_test(MainArrayExcessDiscard 7 "[2 x i32]")
+xs_add_source_native_array_test(MainInferredSizeArray 7 "{ ptr, i64 }" "malloc")
+xs_add_source_native_array_test(MainArrayMutation 7 "[3 x i32]")
+xs_add_source_native_array_test(MainDefaultFixedArray 0 "[3 x i32]")
+xs_add_source_native_array_test(MainDynamicArray 11 "{ ptr, i64 }" "array.length")
+xs_add_source_native_array_test(MainDynamicArrayIndex 7 "[3 x i32]" "getelementptr")
+xs_add_source_native_array_test(MainDynamicArrayMutation 7 "[3 x i32]" "llvm.trap")
+xs_add_source_native_array_test(MainArrayProperties 11 "[3 x i32]" "extractvalue")
+xs_add_source_native_array_test(MainForEach 8 "[5 x i32]" "getelementptr")
 
 function(xs_add_source_native_tuple_test fixture expected_exit)
   string(TOLOWER "${fixture}" test_suffix)

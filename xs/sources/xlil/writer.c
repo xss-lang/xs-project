@@ -161,8 +161,8 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
   {
     const XsLilInstruction *instruction = &block->instructions[i];
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_I64 &&
-       fprintf(stream, "  %%r%u:i64 = const.i64 %lld\n", instruction->result,
-               (long long)instruction->immediate_i64) < 0)
+       fprintf(stream, "  %%r%u:i64 = const.i64 %lld\n", instruction->result, (long long)instruction->immediate_i64) <
+           0)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL const.i64 instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_CONST_I32 &&
        fprintf(stream, "  %%r%u:i32 = const.i32 %d\n", instruction->result, (int)instruction->immediate_i64) < 0)
@@ -381,8 +381,8 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
       bool array = block->owner->values[instruction->left].type.kind == XS_LIL_TYPE_ARRAY;
       if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||
          write_type(stream, error, block->owner->values[instruction->result].type) != XS_LIL_OK ||
-         fprintf(stream, array ? " = extract.array %%r%u, %lld\n" : " = extract %%r%u, %lld\n",
-                 instruction->left, (long long)instruction->immediate_i64) < 0)
+         fprintf(stream, array ? " = extract.array %%r%u, %lld\n" : " = extract %%r%u, %lld\n", instruction->left,
+                 (long long)instruction->immediate_i64) < 0)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL extract instruction");
     }
     if(instruction->kind == XS_LIL_INSTRUCTION_ARRAY_GET || instruction->kind == XS_LIL_INSTRUCTION_ARRAY_SET)
@@ -395,6 +395,9 @@ static XsLilStatus write_block(FILE *stream, XsLilError *error, const XsLilBlock
                         instruction->arguments[0])) < 0)
         return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL dynamic array instruction");
     }
+    if(instruction->kind == XS_LIL_INSTRUCTION_ARRAY_LENGTH &&
+       fprintf(stream, "  %%r%u:i64 = len.array %%r%u\n", instruction->result, instruction->left) < 0)
+      return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL array length instruction");
     if(instruction->kind == XS_LIL_INSTRUCTION_LOAD)
     {
       if(fprintf(stream, "  %%r%u:", instruction->result) < 0 ||
@@ -469,7 +472,10 @@ XsLilStatus xs_lil_module_write_text(const XsLilModule *module, FILE *stream, Xs
   {
     const XsLilArrayType *array = &module->array_types[type];
     if(fprintf(stream, ".array %%a%zu : ", type) < 0 || write_type(stream, error, array->element_type) != XS_LIL_OK ||
-       fprintf(stream, " x %llu\n", (unsigned long long)array->length) < 0)
+       (array->dynamic
+            ? xs_lil_write_checked(stream, error, "\n")
+            : (fprintf(stream, " x %llu\n", (unsigned long long)array->length) < 0 ? XS_LIL_IO_ERROR : XS_LIL_OK)) !=
+           XS_LIL_OK)
       return xs_lil_set_error(error, XS_LIL_IO_ERROR, "could not write XLIL array type");
   }
   for(size_t i = 0; i < module->function_count; ++i)

@@ -35,22 +35,23 @@ impl Parser<'_>
     {
       return self.invalid_array(line, "XLIL array type ids must be sequential");
     }
-    let Some((element, length)) = definition.rsplit_once(" x ")
-    else
-    {
-      return self.invalid_array(line, "XLIL array type definition is invalid");
-    };
+    let (element, length) = definition.rsplit_once(" x ")
+                                      .map_or((definition, None), |(element, length)| (element, Some(length)));
     let Some(element) = self.type_name(element, line)
     else
     {
       return false;
     };
-    let Ok(length) = length.parse::<u64>()
-    else
+    let value_type = match length
     {
-      return self.invalid_array(line, "XLIL array length is invalid");
+      Some(length) => match length.parse::<u64>()
+      {
+        Ok(length) => module.add_array_type(element, length),
+        Err(_) => return self.invalid_array(line, "XLIL array length is invalid"),
+      },
+      None => module.add_dynamic_array_type(element),
     };
-    if module.add_array_type(element, length) != Some(Type::array(id))
+    if value_type != Some(Type::array(id))
     {
       return self.invalid_array(line, "XLIL array type is invalid or duplicated");
     }

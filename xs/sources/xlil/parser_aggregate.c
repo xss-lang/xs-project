@@ -115,8 +115,8 @@ static bool append_value(XsLilValueId **values, size_t *count, XsLilValueId valu
   return true;
 }
 
-static XsLilStatus parse_composite_values(XsLilBlock *block, XsLilType result_type, const char *cursor,
-                                          const char *end, XsLilValueId expected, bool array, XsLilError *error)
+static XsLilStatus parse_composite_values(XsLilBlock *block, XsLilType result_type, const char *cursor, const char *end,
+                                          XsLilValueId expected, bool array, XsLilError *error)
 {
   XsLilValueId *fields = nullptr;
   size_t field_count = 0;
@@ -139,7 +139,7 @@ static XsLilStatus parse_composite_values(XsLilBlock *block, XsLilType result_ty
   }
   XsLilValueId result = UINT32_MAX;
   XsLilStatus status = array ? xs_lil_block_add_array(block, result_type, fields, field_count, &result, error)
-                            : xs_lil_block_add_aggregate(block, result_type, fields, field_count, &result, error);
+                             : xs_lil_block_add_aggregate(block, result_type, fields, field_count, &result, error);
   free(fields);
   if(status != XS_LIL_OK)
     return status;
@@ -152,6 +152,21 @@ XsLilStatus xs_lil_parse_aggregate_instruction(XsLilBlock *block, XsLilType resu
                                                XsLilError *error)
 {
   const char *end = operation + operation_length;
+  if(operation_length >= 10 && strncmp(operation, "len.array ", 10) == 0)
+  {
+    *matched = true;
+    const char *cursor = operation + 10;
+    XsLilValueId array = UINT32_MAX;
+    if(result_type.kind != XS_LIL_TYPE_I64 || !parse_value(&cursor, end, &array) || cursor != end)
+      return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL array length instruction is invalid");
+    XsLilValueId result = UINT32_MAX;
+    XsLilStatus status = xs_lil_block_add_array_length(block, array, &result, error);
+    if(status != XS_LIL_OK)
+      return status;
+    return result == expected_result
+               ? XS_LIL_OK
+               : xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL value ids must be sequential");
+  }
   bool array_get = operation_length >= 10 && strncmp(operation, "array.get ", 10) == 0;
   bool array_set = operation_length >= 10 && strncmp(operation, "array.set ", 10) == 0;
   if(array_get || array_set)

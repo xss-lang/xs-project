@@ -267,6 +267,20 @@ impl<'a> Verifier<'a>
       {
         self.verify_array_access(result, array, index, (array_type, element_type), Some(value), span)
       }
+      Statement::ArrayLength { result,
+                               array,
+                               array_type,
+                               span, } =>
+      {
+        self.verify_exact_local(result, crate::xlil::Type::I64, "array.length result", span);
+        self.verify_exact_local(array, array_type, "array.length source", span);
+        if array_type.kind != crate::xlil::TypeKind::Array
+        {
+          self.report(DiagnosticCode::LocalTypeMismatch,
+                      "array.length source type must reference an array registry".to_string(),
+                      span);
+        }
+      }
       Statement::AddI64 { result,
                           left,
                           right,

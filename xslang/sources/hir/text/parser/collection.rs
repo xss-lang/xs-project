@@ -135,4 +135,18 @@ impl Parser<'_>
                              element_type: Box::new(element_type),
                              span: span() })
   }
+
+  pub(super) fn array_length_expression(&mut self) -> Option<Expression>
+  {
+    self.index += 1;
+    let collection = self.expression()?;
+    if self.current().as_deref() != Some(".end")
+    {
+      self.report("unterminated array length expression".to_string());
+      return None;
+    }
+    self.index += 1;
+    Some(Expression::ArrayLength { collection: Box::new(collection),
+                                   span: span() })
+  }
 }

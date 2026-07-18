@@ -3,16 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::hir::async_check::Span;
 use crate::xlil::{
   FloatBinaryOperation, FloatComparisonOperation, I32BinaryOperation, I64BinaryOperation, I64ComparisonOperation, Type,
 };
 
+mod control_flow;
 mod diagnostic;
 mod integer;
 
+pub use control_flow::reachable_blocks;
 pub use diagnostic::{Diagnostic, DiagnosticCode};
 pub use integer::IntegerConstant;
 
@@ -178,6 +180,13 @@ pub enum Statement
     value: LocalId,
     array_type: Type,
     element_type: Type,
+    span: Span,
+  },
+  ArrayLength
+  {
+    result: LocalId,
+    array: LocalId,
+    array_type: Type,
     span: Span,
   },
   AddI64
@@ -607,6 +616,14 @@ impl BorrowChecker
         self.require_live(value, span);
         let _ = self.state(result, span);
       }
+      Statement::ArrayLength { result,
+                               array,
+                               span,
+                               .. } =>
+      {
+        self.require_live(array, span);
+        let _ = self.state(result, span);
+      }
       Statement::Move { local,
                         span, } => self.move_local(local, span),
       Statement::BorrowShared { local,
@@ -752,43 +769,6 @@ impl BorrowChecker
                                        message: message.to_string(),
                                        span });
   }
-}
-
-pub fn reachable_blocks(function: &Function) -> HashSet<BlockId>
-{
-  let mut known = HashMap::new();
-  for block in &function.blocks
-  {
-    known.insert(block.id, block);
-  }
-  let Some(entry) = function.blocks.first()
-  else
-  {
-    return HashSet::new();
-  };
-  let mut reachable = HashSet::new();
-  let mut stack = vec![entry.id];
-  while let Some(block_id) = stack.pop()
-  {
-    if !reachable.insert(block_id)
-    {
-      continue;
-    }
-    match known.get(&block_id).and_then(|block| block.terminator.as_ref())
-    {
-      Some(Terminator::Goto(next)) => stack.push(*next),
-      Some(Terminator::BranchIf { then_block,
-                                  else_block,
-                                  .. }) =>
-      {
-        stack.push(*then_block);
-        stack.push(*else_block);
-      }
-      _ =>
-      {}
-    }
-  }
-  reachable
 }
 
 #[cfg(test)]

@@ -450,6 +450,10 @@ impl Parser<'_>
     {
       return self.array_set_instruction(function, result, operands, line);
     }
+    if let Some((result, array)) = text.split_once(" = len.array ")
+    {
+      return self.array_length_instruction(function, result, array, line);
+    }
     if let Some((result, call)) = text.split_once(" = call ")
     {
       return self.value_call(function, result, call, line);

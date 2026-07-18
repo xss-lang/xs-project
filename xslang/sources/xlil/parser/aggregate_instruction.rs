@@ -121,6 +121,22 @@ impl Parser<'_>
                                  value })
   }
 
+  pub(super) fn array_length_instruction(&mut self,
+                                         function: &mut Function,
+                                         result: &str,
+                                         array: &str,
+                                         line: usize)
+                                         -> Option<Instruction>
+  {
+    let (result, result_type) = self.result_value(function, result, line)?;
+    if result_type != crate::xlil::Type::I64
+    {
+      return None;
+    }
+    Some(Instruction::ArrayLength { result,
+                                    array: self.value_operand(array, line)? })
+  }
+
   fn result_value(&mut self,
                   function: &mut Function,
                   result: &str,

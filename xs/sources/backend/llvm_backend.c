@@ -199,6 +199,8 @@ void xs_llvm_codegen_unit_destroy(XsLlvmCodegenUnit *unit)
     LLVMDisposeModule(unit->module);
   free(unit->lil_types);
   free(unit->lil_array_types);
+  free(unit->lil_array_elements);
+  free(unit->lil_array_dynamic);
   free(unit);
 }
 
@@ -689,7 +691,8 @@ static XsBackendStatus lower_lil_instruction(XsLlvmCodegenUnit *unit, LLVMBuilde
     return status;
   }
   if(kind == XS_LIL_INSTRUCTION_AGGREGATE || kind == XS_LIL_INSTRUCTION_EXTRACT ||
-     kind == XS_LIL_INSTRUCTION_ARRAY_GET || kind == XS_LIL_INSTRUCTION_ARRAY_SET)
+     kind == XS_LIL_INSTRUCTION_ARRAY_GET || kind == XS_LIL_INSTRUCTION_ARRAY_SET ||
+     kind == XS_LIL_INSTRUCTION_ARRAY_LENGTH)
     return xs_llvm_lower_aggregate_instruction(unit, builder, function, block, index, values, value_count, error);
   if(kind == XS_LIL_INSTRUCTION_LOAD)
   {

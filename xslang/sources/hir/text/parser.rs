@@ -12,7 +12,6 @@ use crate::hir::type_check::{
 use crate::hir::{MatchArm, MatchPattern};
 
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
-
 mod collection;
 mod for_each;
 mod match_expression;
@@ -22,7 +21,6 @@ pub(super) mod type_parser;
 mod unary;
 
 use type_parser::{parse_local_record, parse_type_text, split_type_list};
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct XhirParseDiagnostic
 {
@@ -516,6 +514,10 @@ impl Parser<'_>
     if let Some(element_type) = rest.strip_prefix("index ")
     {
       return self.index_expression(element_type);
+    }
+    if rest == "array_length"
+    {
+      return self.array_length_expression();
     }
     if let Some(target) = rest.strip_prefix("assign ")
     {

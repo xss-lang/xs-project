@@ -127,6 +127,29 @@ impl MirToXlilLowerer
         };
         values.insert(*result, value);
       }
+      mir::Statement::ArrayLength { result,
+                                    array,
+                                    span,
+                                    .. } =>
+      {
+        let Some(array) = values.get(array).copied()
+        else
+        {
+          self.report(DiagnosticCode::MissingLocalValue,
+                      "MIR array.length source has not been lowered",
+                      *span);
+          return;
+        };
+        let Some(value) = function.add_array_length(block, array)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedLocalType,
+                      "MIR array.length could not lower to XLIL",
+                      *span);
+          return;
+        };
+        values.insert(*result, value);
+      }
       _ =>
       {}
     }

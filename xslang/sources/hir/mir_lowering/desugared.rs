@@ -235,6 +235,12 @@ impl HirToMirLowerer
                                  element_type: element_type.clone(),
                                  span: *span })
       }
+      DesugaredExpression::ArrayLength { collection,
+                                         span, } =>
+      {
+        Some(Expression::ArrayLength { collection: Box::new(self.surface_expression_from_desugared(collection)?),
+                                       span: *span })
+      }
       DesugaredExpression::Assign { target,
                                     value,
                                     span, } =>

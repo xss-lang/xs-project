@@ -135,20 +135,22 @@ static void test_array_type_registry_round_trip(void)
 
 static void test_dynamic_array_access_round_trip(void)
 {
-  static const char text[] = ".xlil version 0\n.xlil module DynamicArrays\n.array %a0 : i32 x 3\n"
+  static const char text[] = ".xlil version 0\n.xlil module DynamicArrays\n.array %a0 : i32\n"
                              ".func replace : (%a0, i64, i32) -> i32\n.param %r0:%a0\n.param %r1:i64\n"
                              ".param %r2:i32\nbb0.entry:\n  %r3:%a0 = array.set %r0, %r1, %r2\n"
-                             "  %r4:i32 = array.get %r3, %r1\n  ret %r4\n.end\n";
+                             "  %r4:i64 = len.array %r3\n  %r5:i32 = array.get %r3, %r1\n  ret %r5\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("dynamic_arrays.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);
   CHECK(module != nullptr);
   if(module == nullptr)
     return;
+  CHECK(xs_lil_module_array_is_dynamic(module, 0));
   CHECK(xs_lil_module_verify(module, &error) == XS_LIL_OK);
   const XsLilBlock *block = xs_lil_function_block_at(xs_lil_module_function_at(module, 0), 0);
   CHECK(xs_lil_block_instruction_kind(block, 0) == XS_LIL_INSTRUCTION_ARRAY_SET);
-  CHECK(xs_lil_block_instruction_kind(block, 1) == XS_LIL_INSTRUCTION_ARRAY_GET);
+  CHECK(xs_lil_block_instruction_kind(block, 1) == XS_LIL_INSTRUCTION_ARRAY_LENGTH);
+  CHECK(xs_lil_block_instruction_kind(block, 2) == XS_LIL_INSTRUCTION_ARRAY_GET);
   CHECK(xs_lil_block_instruction_argument(block, 0, 0) == 2);
   FILE *stream = tmpfile();
   CHECK(stream != nullptr);
@@ -357,8 +359,9 @@ static void test_text_parser_reads_function_definition(void)
 
 static void test_text_parser_round_trips_supported_body_subset(void)
 {
-  const char text[] = ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 42\n "
-                      " ret %r0\n.end\n";
+  const char text[] =
+      ".xlil version 0\n.xlil module App\n.func Answer : () -> i64\nbb0.entry:\n  %r0:i64 = const.i64 42\n "
+      " ret %r0\n.end\n";
   XsLilError error = {0};
   XsLilModule *module = nullptr;
   CHECK(xs_lil_module_parse_text("body.xlil", text, strlen(text), &module, &error) == XS_LIL_OK);

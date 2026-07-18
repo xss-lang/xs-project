@@ -96,7 +96,7 @@ fn lowers_fixed_array_for_each_to_checked_index_cfg()
   let registry = CollectionRegistry { arrays: vec![ArrayLayout { source_type: array_type.clone(),
                                                                  value_type: XlilType::array(0),
                                                                  element_type: XlilType::I32,
-                                                                 length: 3 }] };
+                                                                 length: Some(3) }] };
   let values = Local { name: "values".to_string(),
                        ty: array_type.clone(),
                        mutable: false,

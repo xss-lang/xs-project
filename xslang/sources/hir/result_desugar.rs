@@ -10,6 +10,10 @@ use super::type_check::{
   UnaryOperator, UpdateOperator, UpdatePosition, literal_matches_type, result_type_parts,
 };
 
+mod expression_type;
+
+use expression_type::{literal_default_type, unary_expression_type};
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DiagnosticCode
 {
@@ -88,6 +92,11 @@ pub enum DesugaredExpression
     collection: Box<DesugaredExpression>,
     index: Box<DesugaredExpression>,
     element_type: Box<Type>,
+    span: Span,
+  },
+  ArrayLength
+  {
+    collection: Box<DesugaredExpression>,
     span: Span,
   },
   Assign
@@ -532,6 +541,12 @@ impl ResultDesugar
                                                                   index: Box::new(self.desugar_expression(index)),
                                                                   element_type: element_type.clone(),
                                                                   span: *span },
+      Expression::ArrayLength { collection,
+                                span, } =>
+      {
+        DesugaredExpression::ArrayLength { collection: Box::new(self.desugar_expression(collection)),
+                                           span: *span }
+      }
       Expression::Assign { target,
                            value,
                            span, } => DesugaredExpression::Assign { target: target.clone(),
@@ -733,6 +748,7 @@ impl ResultDesugar
       Expression::Tuple { tuple_type, .. } => Some(tuple_type.as_ref().clone()),
       Expression::TupleElement { element_type, .. } => Some(element_type.as_ref().clone()),
       Expression::Index { element_type, .. } => Some(element_type.as_ref().clone()),
+      Expression::ArrayLength { .. } => Some(Type::Primitive(PrimitiveType::Int)),
       Expression::Assign { value, .. } => self.expression_type(value),
       Expression::AssignField { value, .. } => self.expression_type(value),
       Expression::Update { target,
@@ -844,39 +860,6 @@ impl ResultDesugar
   {
     self.locals.iter().rev().find(|local| local.name == name)
   }
-}
-
-fn unary_expression_type(operator: UnaryOperator, operand_type: Type) -> Option<Type>
-{
-  let Type::Primitive(primitive) = operand_type
-  else
-  {
-    return None;
-  };
-  match operator
-  {
-    UnaryOperator::Positive | UnaryOperator::Negative
-      if matches!(primitive, PrimitiveType::Long | PrimitiveType::Int) =>
-    {
-      Some(Type::Primitive(primitive))
-    }
-    UnaryOperator::LogicalNot if primitive == PrimitiveType::Bool => Some(Type::Primitive(PrimitiveType::Bool)),
-    _ => None,
-  }
-}
-
-fn literal_default_type(literal: &Literal) -> Option<Type>
-{
-  let primitive = match literal
-  {
-    Literal::Bool(_) => PrimitiveType::Bool,
-    Literal::Integer(_) => PrimitiveType::Int,
-    Literal::Float(_) => PrimitiveType::Float,
-    Literal::Char(_) => PrimitiveType::Char,
-    Literal::String(_) => PrimitiveType::Str,
-    Literal::None => return None,
-  };
-  Some(Type::Primitive(primitive))
 }
 
 #[cfg(test)]
