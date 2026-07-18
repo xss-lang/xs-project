@@ -13,6 +13,7 @@ struct FunctionLocation
   constructor_owner: Option<String>,
   call_name: Option<String>,
   method_owner: Option<String>,
+  type_substitutions: HashMap<String, Type>,
 }
 
 fn module_name(tree: &SyntaxTree, root: &SyntaxNode) -> Option<String>
@@ -31,6 +32,7 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
   let mut functions = Vec::new();
   let mut nominal_types = Vec::new();
   let mut locations = Vec::new();
+  let mut generic_templates = Vec::new();
   for (tree_index, tree) in trees.iter().enumerate()
   {
     let root = node(tree, tree.root)?;
@@ -75,7 +77,8 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
                                               function: functions.len(),
                                               constructor_owner: Some(nominal.name.clone()),
                                               call_name: None,
-                                              method_owner: None });
+                                              method_owner: None,
+                                              type_substitutions: HashMap::new() });
             functions.push(function);
           }
           for (ordinal, (method_index, method_node)) in
@@ -99,7 +102,8 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
                                                               {
                                                                 source_name
                                                               }),
-                                              method_owner: (!is_static).then(|| nominal.name.clone()) });
+                                              method_owner: (!is_static).then(|| nominal.name.clone()),
+                                              type_substitutions: HashMap::new() });
             functions.push(function);
           }
         }
@@ -111,14 +115,60 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
       {
         continue;
       };
-      let function = lower_function_signature(tree, function_node)?;
+      let function = signature::lower_function(tree, function_node)?;
+      if let Some(parameters) = generic::parameters(tree, function_node)
+      {
+        generic_templates.push(generic::Template { tree: tree_index,
+                                                   node: node_index,
+                                                   name: function.name.clone(),
+                                                   parameters,
+                                                   signature: function,
+                                                   ordinal: generic_templates.len() });
+        continue;
+      }
       locations.push(FunctionLocation { tree: tree_index,
                                         node: node_index,
                                         function: functions.len(),
                                         constructor_owner: None,
                                         call_name: Some(function.name.clone()),
-                                        method_owner: None });
+                                        method_owner: None,
+                                        type_substitutions: HashMap::new() });
       functions.push(function);
+    }
+  }
+  let module_for_symbols = program_name.as_ref().and_then(|name| name.as_deref()).unwrap_or("root");
+  let mut generic_instances = Vec::<(String, usize)>::new();
+  for generic_use in generic::collect_uses(trees)
+  {
+    for template in
+      generic_templates.iter()
+                       .filter(|template| {
+                         template.name == generic_use.name && template.parameters.len() == generic_use.arguments.len()
+                       })
+    {
+      let Some((function, substitutions, key)) =
+        generic::specialization(template, &generic_use.arguments, module_for_symbols)
+      else
+      {
+        continue;
+      };
+      if generic_instances.iter().any(|(existing, index)| {
+                                    existing == &key &&
+                                    functions[*index].parameters == function.parameters
+                                  })
+      {
+        continue;
+      }
+      let function_index = functions.len();
+      locations.push(FunctionLocation { tree: template.tree,
+                                        node: template.node,
+                                        function: function_index,
+                                        constructor_owner: None,
+                                        call_name: None,
+                                        method_owner: None,
+                                        type_substitutions: substitutions });
+      functions.push(function);
+      generic_instances.push((key, function_index));
     }
   }
   let mut top_level_overloads = HashMap::<String, Vec<usize>>::new();
@@ -145,6 +195,7 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
     }
   }
   let mut calls = HashMap::<String, Vec<CallSignature>>::new();
+  let mut generic_calls = HashMap::<String, Vec<CallSignature>>::new();
   let mut methods = HashMap::<(String, String), Vec<CallSignature>>::new();
   for location in &locations
   {
@@ -173,8 +224,22 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
   {
     return Err(LoweringError::DuplicateCallable);
   }
+  for (key, function) in generic_instances
+  {
+    let Some(signature) = call::signature(&functions[function])
+    else
+    {
+      continue;
+    };
+    generic_calls.entry(key).or_default().push(signature);
+  }
+  if call::has_duplicate_signatures(&generic_calls)
+  {
+    return Err(LoweringError::DuplicateCallable);
+  }
   let context =
     LoweringContext { calls,
+                      generic_calls,
                       constructors: functions.iter()
                                              .filter(|function| function.name.starts_with("xs$ctor$"))
                                              .filter_map(|function| {
@@ -199,21 +264,24 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
                                                      constructors
                                                    }),
                       methods,
-                      nominal_types: nominal_types.iter().cloned().map(|ty| (ty.name.clone(), ty)).collect() };
+                      nominal_types: nominal_types.iter().cloned().map(|ty| (ty.name.clone(), ty)).collect(),
+                      type_substitutions: HashMap::new() };
   for location in locations
   {
     let tree = &trees[location.tree];
     let syntax = &tree.nodes[location.node];
     let function = &mut functions[location.function];
+    let mut function_context = context.clone();
+    function_context.type_substitutions = location.type_substitutions;
     let parameters = function.parameters.clone();
     let return_type = checked_type(&function.return_type);
     function.body = if let Some(owner) = &location.constructor_owner
     {
-      constructor::lower_body(tree, syntax, &context, &parameters, owner)
+      constructor::lower_body(tree, syntax, &function_context, &parameters, owner)
     }
     else
     {
-      lower_body(tree, syntax, &context, &parameters, return_type.as_ref())
+      lower_body(tree, syntax, &function_context, &parameters, return_type.as_ref())
     };
   }
   Ok(declarations::Module { name: program_name.unwrap_or(None),

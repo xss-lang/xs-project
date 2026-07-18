@@ -491,5 +491,5 @@ fn share_rw_lock_between_threads() {
 // - CPU affinity control
 // - Thread naming
 // - Public thread identifier API
-// - Clonable thread handles
-// - Clonable channel endpoints
+// - Cloneable thread handles
+// - Cloneable channel endpoints

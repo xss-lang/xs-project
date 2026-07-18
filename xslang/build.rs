@@ -1,0 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+fn main()
+{
+  let package_version = std::env::var("CARGO_PKG_VERSION").expect("Cargo provides CARGO_PKG_VERSION");
+  println!("cargo::rerun-if-changed=Cargo.toml");
+  println!("cargo::rustc-env=XSLANG_BUILD_VERSION={package_version}");
+  for format in ["XHIR", "XMIR", "XLIL"]
+  {
+    println!("cargo::rustc-env=XSLANG_{format}_VERSION=0");
+  }
+}

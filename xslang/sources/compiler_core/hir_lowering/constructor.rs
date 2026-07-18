@@ -18,7 +18,7 @@ pub(super) fn lower_signature(tree: &SyntaxTree,
                         .iter()
                         .filter_map(|index| tree.nodes.get(*index))
                         .filter(|child| child.kind == PARAMETER)
-                        .map(|parameter| lower_parameter(tree, parameter))
+                        .map(|parameter| signature::lower_parameter(tree, parameter))
                         .collect::<Result<_, _>>()?;
   Ok(declarations::Function { name: format!("xs$ctor${owner}${ordinal}"),
                               parameters,

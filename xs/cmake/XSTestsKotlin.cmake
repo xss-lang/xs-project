@@ -26,6 +26,19 @@ add_test(NAME kotlin_project_recursive_artifacts COMMAND xs_xse_artifact_tests
   "call i1 @is_even" "call i1 @is_odd")
 set_tests_properties(kotlin_project_recursive_artifacts PROPERTIES
   TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_recursive)
+add_test(NAME kotlin_project_generic_functions_build COMMAND xs build)
+set_tests_properties(kotlin_project_generic_functions_build PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/generic_functions"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver FIXTURES_SETUP kotlin_project_generic_functions
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME kotlin_project_generic_functions_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/generic_functions/sources/main.ll
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/generic_functions/sources/main.o
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/generic_functions/sources/main.xse 7
+  "identity$G0$Long")
+set_tests_properties(kotlin_project_generic_functions_artifacts PROPERTIES
+  TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_generic_functions)
 add_test(NAME kotlin_project_multi_file_native_build COMMAND xs build)
 set_tests_properties(kotlin_project_multi_file_native_build PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/multi_file"
@@ -102,6 +115,7 @@ set_tests_properties(
   kotlin_project_resolver_build
   kotlin_project_call_build kotlin_project_call_artifacts
   kotlin_project_recursive_build kotlin_project_recursive_artifacts
+  kotlin_project_generic_functions_build kotlin_project_generic_functions_artifacts
   kotlin_project_multi_file_native_build kotlin_project_multi_file_native_artifacts
   kotlin_project_output_hir kotlin_project_output_hir_artifact
   kotlin_project_output_mir kotlin_project_output_mir_artifact

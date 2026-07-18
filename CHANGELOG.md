@@ -12,6 +12,17 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+### Added
+
+- Explicit concrete turbofish calls to top-level generic functions now create deterministic Rust compiler-core
+  monomorphizations and continue through typed HIR, MIR, XLIL, LLVM, object emission, and native `.xse` execution.
+- `xslang/build.rs` now exposes crate and supported XHIR/XMIR/XLIL format versions to the Rust compiler core at build time.
+
+### Changed
+
+- CMake ownership now follows monorepo component boundaries: shared policy is in the root `CMakeLists.txt`, compiler modules
+  are under `xs/cmake`, and legacy project-parser target modules are under `xsproj/cmake`.
+
 ## 0.2.0 - 2026-07-18
 
 ### Added
@@ -178,7 +189,7 @@ source-to-native executable pipeline.
 
 ### Changed
 
-- LLVM/Clang/LLD tool selection and validation now lives in `cmake/llvm-toolchain.cmake`. The formerly monolithic CTest
+- LLVM/Clang/LLD tool selection and validation now lives in the root `CMakeLists.txt`. The formerly monolithic CTest
   manifest is split into direct XLIL, source value/control/call, Kotlin, and library test modules.
 - Source-native body compilation now has one authoritative implementation: structural AST enters the Rust compiler core,
   then returns verified XLIL through the public C23 boundary for LLVM emission. The obsolete C source-body fallback was

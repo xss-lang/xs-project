@@ -46,7 +46,7 @@ Preset details:
 
 - generator: Ninja
 - compiler: Clang
-- toolchain policy: `cmake/llvm-toolchain.cmake`
+- shared monorepo and LLVM toolchain policy: the root `CMakeLists.txt`
 - build directory: `build/clang-debug`
 - default project: `xs`
 

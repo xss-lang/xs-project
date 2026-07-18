@@ -11,7 +11,7 @@ pub(super) fn lower_signature(tree: &SyntaxTree,
                               ordinal: usize)
                               -> Result<(declarations::Function, String, bool), LoweringError>
 {
-  let mut function = lower_function_signature(tree, value)?;
+  let mut function = signature::lower_function(tree, value)?;
   let source_name = function.name.clone();
   let is_static = value.flags & STATIC != 0;
   function.name = format!("xs$method${owner}${source_name}${ordinal}");

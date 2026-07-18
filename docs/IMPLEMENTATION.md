@@ -125,6 +125,10 @@ The documented compilation order is preserved:
   initializers. Syntactically constant conditions, such as `false`, `!true`, or i32 literal comparisons like `1 < 2`, lower
   only the selected branch in this slice. This lowers through C MIR, XLIL, LLVM IR, object emission, and native `.xse`
   linking.
+- Top-level generic functions with explicit concrete turbofish arguments are specialized by the Rust compiler core. Type
+  substitutions apply to parameter, result, and local types; each distinct concrete argument list receives a deterministic
+  monomorphized symbol before MIR/XLIL/LLVM lowering. Type inference for omitted generic arguments, generic methods, and
+  generic calls nested inside generic templates remain later semantic-analysis work.
 - The Rust compiler-core route carries `Long` `/`, `%`, `&`, `|`, `^`, `<<`, and `>>` expressions through typed HIR,
   versioned XHIR, verified MIR/XMIR, and XLIL. Integer literals still default to `Int` (i64) without an expected type;
   an explicit `Long` (i32) return, binding, or parameter context is propagated through nested binary expressions.
@@ -771,8 +775,9 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
   emits `llvm.trap` and `unreachable`.
 - C MIR root-local places lower to typed XLIL stack slots. Root-place loads and stores lower through XLIL and LLVM
   `alloca`/`load`/`store`; field, dereference, and index projections remain deferred until their layout rules are available.
-- `xs/mono/plan.h` contains an initial monomorphization plan API. For now it only binds already concrete MIR functions to
-  stable `_XS_FN_..._G0` symbol names; reachable generic instantiation generation is next.
+- The C `xs/mono/plan.h` API still plans already-concrete MIR functions. Rust compiler-core lowering now also creates the
+  first reachable explicit generic-function instances and feeds their stable symbols into the existing native pipeline;
+  full generic call-graph discovery and generic type instantiation remain incomplete.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path
   based codegen units by the default v0 policy. When produced from a mono plan, the unit name comes from the source module
   path and the function name comes from the stable monomorphized symbol.

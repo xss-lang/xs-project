@@ -22,10 +22,12 @@ mod collection;
 mod constructor;
 mod expression_type;
 mod for_each;
+mod generic;
 mod match_expression;
 mod method;
 mod nominal;
 mod program;
+mod signature;
 mod syntax_helpers;
 mod tuple;
 mod unary;
@@ -43,6 +45,7 @@ const CLASS_FIELD: u32 = 15;
 const DATA_FIELD: u32 = 20;
 const BASE_SPECIFIER: u32 = 100;
 const PARAMETER: u32 = 21;
+const GENERIC_PARAMETER: u32 = 22;
 const IDENTIFIER: u32 = 24;
 const PATH: u32 = 25;
 const TYPE_NAMED: u32 = 27;
@@ -82,6 +85,7 @@ const PATTERN_IDENTIFIER: u32 = 84;
 const PATTERN_TYPED: u32 = 103;
 const STMT_LOOP: u32 = 105;
 const EXPR_TYPED_OBJECT_LITERAL: u32 = 102;
+const EXPR_GENERIC_QUALIFIER: u32 = 101;
 const EXPR_TUPLE: u32 = 80;
 const TUPLE_FIELD: u32 = 110;
 const TYPE_MAP: u32 = 106;
@@ -237,19 +241,6 @@ fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
 fn checked_type(value: &declarations::TypeRef) -> Option<crate::hir::type_check::Type>
 {
   declarations::type_ref_to_checked(value)
-}
-
-fn lower_parameter(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Parameter, LoweringError>
-{
-  let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
-  let ty = value.children
-                .iter()
-                .filter_map(|index| tree.nodes.get(*index))
-                .find(|child| child.kind != IDENTIFIER)
-                .ok_or(LoweringError::MissingParameterType)?;
-  Ok(declarations::Parameter { name: name.text.clone(),
-                               ty: lower_type(tree, ty),
-                               span: value.span.clone() })
 }
 
 fn span(value: &SyntaxNode) -> Option<Span>
@@ -454,11 +445,18 @@ fn lower_expression(tree: &SyntaxTree,
     EXPR_CALL if !value.children.is_empty() =>
     {
       let callee = tree.nodes.get(value.children[0])?;
-      if callee.kind != EXPR_IDENTIFIER
+      if !matches!(callee.kind, EXPR_IDENTIFIER | EXPR_GENERIC_QUALIFIER)
       {
         return None;
       }
-      let function = path_text(tree, callee);
+      let function = if callee.kind == EXPR_IDENTIFIER
+      {
+        path_text(tree, callee)
+      }
+      else
+      {
+        generic::call_use(tree, callee)?.name
+      };
       if function == "Some" && expected_type.is_some_and(Type::is_boxed_optional_str) && value.children.len() == 2
       {
         let argument = lower_expression(tree,
@@ -472,8 +470,15 @@ fn lower_expression(tree: &SyntaxTree,
                                        return_type: Box::new(Type::Named("Optional<Str>".to_string())),
                                        span: source_span });
       }
-      let signature = call::resolve_function(tree, value, &function, context, locals, expected_type)
-        .or_else(|| constructor::resolve(tree, value, &function, context, locals, expected_type))?;
+      let signature = if callee.kind == EXPR_GENERIC_QUALIFIER
+      {
+        call::resolve_generic_function(tree, value, callee, context, locals, expected_type)
+      }
+      else
+      {
+        call::resolve_function(tree, value, &function, context, locals, expected_type)
+          .or_else(|| constructor::resolve(tree, value, &function, context, locals, expected_type))
+      }?;
       if value.children.len() - 1 != signature.parameters.len()
       {
         return None;
@@ -571,7 +576,7 @@ fn lower_local(tree: &SyntaxTree,
                         .iter()
                         .filter_map(|index| tree.nodes.get(*index))
                         .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))?;
-    checked_type(&lower_type(tree, ty))?
+    generic::checked_type_in_context(&lower_type(tree, ty), context)?
   };
   let checked_type = collection::refine_local_type(&checked_type, initializer_node);
   let initializer = match initializer_node
@@ -958,29 +963,6 @@ fn lower_body(tree: &SyntaxTree,
                                   span: block.span });
   }
   Some(body)
-}
-
-fn lower_function_signature(tree: &SyntaxTree, value: &SyntaxNode) -> Result<declarations::Function, LoweringError>
-{
-  let name = first_child_kind(tree, value, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
-  let parameters = value.children
-                        .iter()
-                        .filter_map(|index| tree.nodes.get(*index))
-                        .filter(|child| child.kind == PARAMETER)
-                        .map(|parameter| lower_parameter(tree, parameter))
-                        .collect::<Result<_, _>>()?;
-  let return_type = value.children
-                         .iter()
-                         .filter_map(|index| tree.nodes.get(*index))
-                         .find(|child| child.flags & RETURN_TYPE != 0)
-                         .map_or(declarations::TypeRef::Unit, |ty| lower_type(tree, ty));
-  Ok(declarations::Function { name: name.text.clone(),
-                              parameters,
-                              return_type,
-                              flags: value.flags,
-                              span: value.span.clone(),
-                              body_present: first_child_kind(tree, value, STMT_BLOCK).is_some(),
-                              body: None })
 }
 
 pub fn lower_declarations(tree: &SyntaxTree) -> Result<declarations::Module, LoweringError>

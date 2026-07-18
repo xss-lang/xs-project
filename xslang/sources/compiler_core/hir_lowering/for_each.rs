@@ -20,7 +20,7 @@ pub(super) fn lower_for_each_statement(tree: &SyntaxTree,
   {
     return None;
   };
-  let (pattern, declared_type) = typed_pattern(tree, pattern)?;
+  let (pattern, declared_type) = typed_pattern(tree, pattern, context)?;
   if declared_type.as_ref()
                   .is_some_and(|declared| declared != element.as_ref())
   {
@@ -33,6 +33,7 @@ pub(super) fn lower_for_each_statement(tree: &SyntaxTree,
                                                          pattern,
                                                          &binding_type,
                                                          locals,
+                                                         context,
                                                          pattern_span,
                                                          statement.span.start_offset)?;
   let body_node = statement.children.last().and_then(|index| tree.nodes.get(*index))?;
@@ -45,7 +46,10 @@ pub(super) fn lower_for_each_statement(tree: &SyntaxTree,
                             span: span(statement)? })
 }
 
-fn typed_pattern<'a>(tree: &'a SyntaxTree, pattern: &'a SyntaxNode) -> Option<(&'a SyntaxNode, Option<Type>)>
+fn typed_pattern<'a>(tree: &'a SyntaxTree,
+                     pattern: &'a SyntaxNode,
+                     context: &LoweringContext)
+                     -> Option<(&'a SyntaxNode, Option<Type>)>
 {
   if pattern.kind != PATTERN_TYPED
   {
@@ -53,13 +57,14 @@ fn typed_pattern<'a>(tree: &'a SyntaxTree, pattern: &'a SyntaxNode) -> Option<(&
   }
   let inner = pattern.children.first().and_then(|index| tree.nodes.get(*index))?;
   let ty = pattern.children.get(1).and_then(|index| tree.nodes.get(*index))?;
-  Some((inner, Some(checked_type(&lower_type(tree, ty))?)))
+  Some((inner, Some(generic::checked_type_in_context(&lower_type(tree, ty), context)?)))
 }
 
 fn lower_binding(tree: &SyntaxTree,
                  pattern: &SyntaxNode,
                  binding_type: &Type,
                  locals: &HashMap<String, Type>,
+                 context: &LoweringContext,
                  pattern_span: Span,
                  offset: u64)
                  -> Option<(crate::hir::type_check::Local, HashMap<String, Type>, Vec<Statement>)>
@@ -84,23 +89,27 @@ fn lower_binding(tree: &SyntaxTree,
                                  span: pattern_span };
   let mut prefix = Vec::new();
   let mut binding_names = std::collections::HashSet::new();
-  lower_tuple_pattern(tree,
-                      pattern,
-                      binding_type,
-                      root,
-                      &mut body_locals,
-                      &mut binding_names,
-                      &mut prefix)?;
+  let mut state = TuplePatternState { locals: &mut body_locals,
+                                      context,
+                                      binding_names: &mut binding_names,
+                                      prefix: &mut prefix };
+  lower_tuple_pattern(tree, pattern, binding_type, root, &mut state)?;
   Some((binding, body_locals, prefix))
+}
+
+struct TuplePatternState<'a>
+{
+  locals: &'a mut HashMap<String, Type>,
+  context: &'a LoweringContext,
+  binding_names: &'a mut std::collections::HashSet<String>,
+  prefix: &'a mut Vec<Statement>,
 }
 
 fn lower_tuple_pattern(tree: &SyntaxTree,
                        pattern: &SyntaxNode,
                        pattern_type: &Type,
                        source: Expression,
-                       locals: &mut HashMap<String, Type>,
-                       binding_names: &mut std::collections::HashSet<String>,
-                       prefix: &mut Vec<Statement>)
+                       state: &mut TuplePatternState<'_>)
                        -> Option<()>
 {
   let Type::Tuple { fields } = pattern_type
@@ -115,7 +124,7 @@ fn lower_tuple_pattern(tree: &SyntaxTree,
   for (index, (child, field)) in pattern.children.iter().zip(fields).enumerate()
   {
     let child = tree.nodes.get(*child)?;
-    let (child, declared_type) = typed_pattern(tree, child)?;
+    let (child, declared_type) = typed_pattern(tree, child, state.context)?;
     if declared_type.as_ref().is_some_and(|declared| declared != &field.ty)
     {
       return None;
@@ -132,15 +141,16 @@ fn lower_tuple_pattern(tree: &SyntaxTree,
       PATTERN_IDENTIFIER =>
       {
         let name = first_child_kind(tree, child, IDENTIFIER)?.text.clone();
-        if !binding_names.insert(name.clone())
+        if !state.binding_names.insert(name.clone())
         {
           return None;
         }
-        locals.insert(name.clone(), field.ty.clone());
-        prefix.push(Statement::Let { local: local(name, field.ty.clone(), child_span),
-                                     initializer: Some(projection) });
+        state.locals.insert(name.clone(), field.ty.clone());
+        state.prefix
+             .push(Statement::Let { local: local(name, field.ty.clone(), child_span),
+                                    initializer: Some(projection) });
       }
-      PATTERN_TUPLE => lower_tuple_pattern(tree, child, &field.ty, projection, locals, binding_names, prefix)?,
+      PATTERN_TUPLE => lower_tuple_pattern(tree, child, &field.ty, projection, state)?,
       _ => return None,
     }
   }

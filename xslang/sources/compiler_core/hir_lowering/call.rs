@@ -13,12 +13,15 @@ pub(super) struct CallSignature
   pub(super) return_type: Type,
 }
 
+#[derive(Clone)]
 pub(super) struct LoweringContext
 {
   pub(super) calls: HashMap<String, Vec<CallSignature>>,
+  pub(super) generic_calls: HashMap<String, Vec<CallSignature>>,
   pub(super) constructors: HashMap<String, Vec<CallSignature>>,
   pub(super) methods: HashMap<(String, String), Vec<CallSignature>>,
   pub(super) nominal_types: HashMap<String, declarations::NominalType>,
+  pub(super) type_substitutions: HashMap<String, Type>,
 }
 
 pub(super) fn resolve_function<'a>(tree: &SyntaxTree,
@@ -32,6 +35,24 @@ pub(super) fn resolve_function<'a>(tree: &SyntaxTree,
   resolve_candidates(tree,
                      &call.children[1..],
                      context.calls.get(name)?,
+                     context,
+                     locals,
+                     expected_type,
+                     0)
+}
+
+pub(super) fn resolve_generic_function<'a>(tree: &SyntaxTree,
+                                           call: &SyntaxNode,
+                                           callee: &SyntaxNode,
+                                           context: &'a LoweringContext,
+                                           locals: &HashMap<String, Type>,
+                                           expected_type: Option<&Type>)
+                                           -> Option<&'a CallSignature>
+{
+  let key = generic::specialized_call_key(tree, callee, &context.type_substitutions)?;
+  resolve_candidates(tree,
+                     &call.children[1..],
+                     context.generic_calls.get(&key)?,
                      context,
                      locals,
                      expected_type,

@@ -34,5 +34,6 @@
   ],
   "FSharp.suggestGitignore": false,
   "r.lsp.promptToInstall": false,
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "C_Cpp.codeAnalysis.clangTidy.checks.disabled": ["clang-diagnostic-error"]
 }
