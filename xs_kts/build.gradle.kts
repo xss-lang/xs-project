@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "org.xsslang"
-version = "0.1.10"
+version = "0.2.0"
 
 repositories {
   mavenCentral()

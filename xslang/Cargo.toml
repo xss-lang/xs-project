@@ -3,7 +3,7 @@
 
 [package]
 name = "xslang"
-version = "0.1.10"
+version = "0.2.0"
 edition = "2024"
 authors = ["Leitwolf <xs-lang.chess031@slmails.com>"]
 description = "Target-independent semantic analysis and IR core for the X# compiler"
