@@ -343,9 +343,11 @@ This layer lives under the HIR directory.
   through the `xs_macro_expand_child_statements` expanded view. This validates function/method call targets produced after
   macro expansion against the HIR symbol/import scope.
 
-This stage does not yet perform method/operator resolution, overload selection, generic constraint membership resolution, or
-type-based call resolution. The member symbol table is the first HIR data model for those later stages; method existence
-validation does not decide dispatch, override, or overload selection.
+The Rust compiler-core path now performs exact parameter-type overload selection for top-level functions and `data`
+methods. Instance `data` calls pass the receiver as an explicit target-independent HIR parameter; static methods use their
+associated `Type::method` name. Deterministic hidden symbols keep overloads distinct through XHIR, XMIR, XLIL, and LLVM.
+The C23 member table still provides early existence/visibility validation. Operator dispatch, generic constraint
+membership, class/interface virtual dispatch, imported overload sets, and function values remain later stages.
 
 ### HIR type resolution bootstrap
 
@@ -451,8 +453,9 @@ they no longer masquerade as uninitialized MIR locals. Function signatures are c
 to functions in the same module resolve forward references, self recursion, and mutual recursion across selected source
 files. Their argument and result types are recorded in typed HIR and lower through the existing target-independent MIR and
 XLIL call models. Unit-returning calls carry an explicit HIR unit result and become result-free MIR/XLIL calls. A non-unit
-call used as a semicolon-terminated expression is still evaluated, but its typed result is discarded. Overload selection,
-generic calls, methods, imported targets, and function values remain later compiler-core work.
+call used as a semicolon-terminated expression is still evaluated, but its typed result is discarded. Top-level overloads
+and instance/static `data` methods use exact parameter lists and deterministic hidden symbols. Generic calls, imported
+overload sets, class/interface dispatch, operator calls, and function values remain later compiler-core work.
 Top-level `data` and `class` declarations now enter the Rust declaration registry with nominal identity and typed fields.
 Ordered `data` base lists retain their access and virtual-inheritance metadata in HIR/XHIR. Non-virtual `data` layouts
 recursively place inherited fields before own fields in source base-list order; the same resolved field sequence drives
@@ -463,9 +466,11 @@ target-independent MIR storage places. Field reads, leaf assignments, nested agg
 then lower through XLIL stack slots to LLVM. Non-recursive `data` parameters are flattened in declaration order to their
 primitive leaves at the MIR/XLIL function boundary; calls accept either initialized places or object literals. Non-recursive
 `data` return values use deterministic nominal aggregate registry entries and real MIR `aggregate`/`extract` statements.
-Aggregate-returning calls can initialize local places, including nested `data` layouts. Recursive by-value parameters and
-returns require a future indirect ABI and are rejected explicitly. Constructors, escaping objects, class allocation, and a
-stable cross-module layout remain deferred.
+Aggregate-returning calls can initialize local places, including nested `data` layouts. Overloaded constructors enforce
+definite primitive-leaf initialization on every continuing path and return the completed aggregate. Non-mutating instance
+methods receive the scalarized value, while static methods use the ordinary call ABI. Recursive by-value parameters and
+returns require a future indirect ABI and are rejected explicitly. Escaping objects, receiver mutation/reference ABI,
+class allocation, operator dispatch, and a stable cross-module layout remain deferred.
 The imported HIR body model now has explicit lexical blocks and distinguishes statement `if` from value-producing `if`.
 Both forms require a `Bool` condition during Rust type checking. Statement branches lower to MIR basic blocks with an
 explicit merge when control can continue. A directly returned `if` expression may lower each required value branch to its

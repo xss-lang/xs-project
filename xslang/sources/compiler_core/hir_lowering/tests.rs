@@ -268,6 +268,7 @@ fn resolves_fixed_array_members_to_canonical_hir()
                                       syntax(IDENTIFIER, "count", Some(0), vec![])] };
   let context = LoweringContext { calls: HashMap::new(),
                                   constructors: HashMap::new(),
+                                  methods: HashMap::new(),
                                   nominal_types: HashMap::new() };
   let array_type = Type::Array { element: Box::new(Type::Primitive(PrimitiveType::Long)),
                                  length: Some(3) };

@@ -1,0 +1,34 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: Apache-2.0
+
+data Point {
+    x: Long;
+    y: Long;
+
+    Point(x: Long, y: Long) {
+        self.x = x;
+        self.y = y;
+    }
+
+    fn total() -> Long {
+        return self.x + self.y;
+    }
+
+    fn add(value: Long) -> Long {
+        return self.x + value;
+    }
+
+    fn add(value: Int) -> Long {
+        return self.y;
+    }
+
+    static fn identity(value: Long) -> Long {
+        return value;
+    }
+}
+
+fn main() -> Long {
+    point: Point = Point(2, 3);
+    delta: Long = 4;
+    return point.total() + point.add(delta) + point.add(5) + Point::identity(1);
+}

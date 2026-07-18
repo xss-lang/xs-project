@@ -17,16 +17,19 @@ use crate::hir::{
 
 use super::{SyntaxNode, SyntaxTree};
 
+mod call;
 mod collection;
 mod constructor;
 mod expression_type;
 mod for_each;
 mod match_expression;
+mod method;
 mod nominal;
 mod program;
 mod syntax_helpers;
 mod tuple;
 mod unary;
+use call::{CallSignature, LoweringContext};
 use expression_type::expression_type;
 use syntax_helpers::{first_child_kind, path_text};
 
@@ -66,6 +69,7 @@ const EXPR_BINARY: u32 = 58;
 const EXPR_UNARY: u32 = 59;
 const EXPR_ASSIGNMENT: u32 = 60;
 const EXPR_CALL: u32 = 61;
+const EXPR_METHOD_CALL: u32 = 62;
 const EXPR_MEMBER_ACCESS: u32 = 63;
 const EXPR_OBJECT_LITERAL: u32 = 77;
 const OBJECT_FIELD: u32 = 78;
@@ -116,6 +120,8 @@ const TOKEN_SHIFT_RIGHT: u32 = 34;
 const TOKEN_SHIFT_LEFT: u32 = 37;
 const TOKEN_ASSIGN: u32 = 24;
 const IMMUTABLE: u32 = 1 << 4;
+const STATIC: u32 = 1 << 1;
+const OPERATOR: u32 = 1 << 14;
 const CONSTANT: u32 = 1 << 5;
 const STATIC_CONSTANT: u32 = 1 << 6;
 const RETURN_TYPE: u32 = 1 << 11;
@@ -135,6 +141,7 @@ pub enum LoweringError
   MissingIdentifier,
   MissingParameterType,
   ModuleMismatch,
+  DuplicateCallable,
 }
 
 fn node(tree: &SyntaxTree, index: usize) -> Result<&SyntaxNode, LoweringError>
@@ -250,21 +257,6 @@ fn span(value: &SyntaxNode) -> Option<Span>
   Some(Span::new(value.span.file_id,
                  u32::try_from(value.span.start_offset).ok()?,
                  u32::try_from(value.span.end_offset).ok()?))
-}
-
-#[derive(Clone)]
-struct CallSignature
-{
-  symbol: String,
-  parameters: Vec<crate::hir::type_check::Type>,
-  return_type: crate::hir::type_check::Type,
-}
-
-struct LoweringContext
-{
-  calls: HashMap<String, CallSignature>,
-  constructors: HashMap<String, Vec<CallSignature>>,
-  nominal_types: HashMap<String, declarations::NominalType>,
 }
 
 fn lower_expression(tree: &SyntaxTree,
@@ -473,10 +465,8 @@ fn lower_expression(tree: &SyntaxTree,
                                        return_type: Box::new(Type::Named("Optional<Str>".to_string())),
                                        span: source_span });
       }
-      let signature =
-        context.calls
-               .get(&function)
-               .or_else(|| constructor::resolve(tree, value, &function, context, locals, expected_type))?;
+      let signature = call::resolve_function(tree, value, &function, context, locals, expected_type)
+        .or_else(|| constructor::resolve(tree, value, &function, context, locals, expected_type))?;
       if value.children.len() - 1 != signature.parameters.len()
       {
         return None;
@@ -494,6 +484,7 @@ fn lower_expression(tree: &SyntaxTree,
                               return_type: Box::new(signature.return_type.clone()),
                               span: source_span })
     }
+    EXPR_METHOD_CALL => call::lower_method_call(tree, value, context, locals, expected_type, source_span),
     EXPR_IF if value.children.len() == 3 =>
     {
       let result_type = expected_type?.clone();

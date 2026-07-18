@@ -11,6 +11,8 @@ struct FunctionLocation
   node: usize,
   function: usize,
   constructor_owner: Option<String>,
+  call_name: Option<String>,
+  method_owner: Option<String>,
 }
 
 fn module_name(tree: &SyntaxTree, root: &SyntaxNode) -> Option<String>
@@ -71,7 +73,33 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
             locations.push(FunctionLocation { tree: tree_index,
                                               node: constructor_index,
                                               function: functions.len(),
-                                              constructor_owner: Some(nominal.name.clone()) });
+                                              constructor_owner: Some(nominal.name.clone()),
+                                              call_name: None,
+                                              method_owner: None });
+            functions.push(function);
+          }
+          for (ordinal, (method_index, method_node)) in
+            declaration.children
+                       .iter()
+                       .filter_map(|index| tree.nodes.get(*index).map(|node| (*index, node)))
+                       .filter(|(_, child)| child.kind == DECL_FUNCTION && child.flags & OPERATOR == 0)
+                       .enumerate()
+          {
+            let (function, source_name, is_static) =
+              method::lower_signature(tree, method_node, &nominal.name, ordinal)?;
+            locations.push(FunctionLocation { tree: tree_index,
+                                              node: method_index,
+                                              function: functions.len(),
+                                              constructor_owner: None,
+                                              call_name: Some(if is_static
+                                                              {
+                                                                format!("{}::{source_name}", nominal.name)
+                                                              }
+                                                              else
+                                                              {
+                                                                source_name
+                                                              }),
+                                              method_owner: (!is_static).then(|| nominal.name.clone()) });
             functions.push(function);
           }
         }
@@ -87,24 +115,66 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
       locations.push(FunctionLocation { tree: tree_index,
                                         node: node_index,
                                         function: functions.len(),
-                                        constructor_owner: None });
+                                        constructor_owner: None,
+                                        call_name: Some(function.name.clone()),
+                                        method_owner: None });
       functions.push(function);
     }
   }
+  let mut top_level_overloads = HashMap::<String, Vec<usize>>::new();
+  for location in &locations
+  {
+    if location.constructor_owner.is_none() &&
+       location.method_owner.is_none() &&
+       location.call_name.as_deref() == Some(functions[location.function].name.as_str())
+    {
+      top_level_overloads.entry(functions[location.function].name.clone())
+                         .or_default()
+                         .push(location.function);
+    }
+  }
+  for (name, overloads) in top_level_overloads.iter().filter(|(_, overloads)| overloads.len() > 1)
+  {
+    if name == "main"
+    {
+      return Err(LoweringError::DuplicateCallable);
+    }
+    for (ordinal, function) in overloads.iter().enumerate()
+    {
+      functions[*function].name = format!("xs$fn${name}${ordinal}");
+    }
+  }
+  let mut calls = HashMap::<String, Vec<CallSignature>>::new();
+  let mut methods = HashMap::<(String, String), Vec<CallSignature>>::new();
+  for location in &locations
+  {
+    let Some(name) = &location.call_name
+    else
+    {
+      continue;
+    };
+    let Some(signature) = call::signature(&functions[location.function])
+    else
+    {
+      continue;
+    };
+    if let Some(owner) = &location.method_owner
+    {
+      methods.entry((owner.clone(), name.clone()))
+             .or_default()
+             .push(signature);
+    }
+    else
+    {
+      calls.entry(name.clone()).or_default().push(signature);
+    }
+  }
+  if call::has_duplicate_signatures(&calls) || call::has_duplicate_method_signatures(&methods)
+  {
+    return Err(LoweringError::DuplicateCallable);
+  }
   let context =
-    LoweringContext { calls: functions.iter()
-                                      .filter_map(|function| {
-                                        let parameters = function.parameters
-                                                                 .iter()
-                                                                 .map(|parameter| checked_type(&parameter.ty))
-                                                                 .collect::<Option<Vec<_>>>()?;
-                                        let return_type = checked_type(&function.return_type)?;
-                                        Some((function.name.clone(),
-                                              CallSignature { symbol: function.name.clone(),
-                                                              parameters,
-                                                              return_type }))
-                                      })
-                                      .collect(),
+    LoweringContext { calls,
                       constructors: functions.iter()
                                              .filter(|function| function.name.starts_with("xs$ctor$"))
                                              .filter_map(|function| {
@@ -128,6 +198,7 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
                                                      constructors.entry(owner).or_default().push(signature);
                                                      constructors
                                                    }),
+                      methods,
                       nominal_types: nominal_types.iter().cloned().map(|ty| (ty.name.clone(), ty)).collect() };
   for location in locations
   {

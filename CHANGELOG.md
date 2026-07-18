@@ -64,6 +64,9 @@ source-to-native executable pipeline.
 - Data constructor overloads now lower through typed HIR, MIR, XLIL, LLVM IR, and native `.xse` emission. Constructor
   selection uses exact parameter types, hidden constructor symbols preserve overload identity, and definite field
   initialization rejects paths that leave primitive storage uninitialized.
+- Top-level function overloads and instance/static `data` methods now use exact parameter-type selection. Instance
+  receivers desugar to explicit target-independent HIR arguments, and deterministic hidden symbols remain distinct through
+  direct XHIR/XMIR round-trips and native `.xse` emission.
 - `<xs/lil.h>` is now the umbrella for the selective public C23 XLIL producer headers under `<xs/lil-c/*.h>`.
   Rust producers use `xslang::xlil::*`; both surfaces can build and verify human-readable XLIL v0 modules.
 - Canonical `[T; N]` fixed arrays and `[T]` declarations initialized by square-bracket literals now preserve their element

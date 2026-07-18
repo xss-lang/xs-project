@@ -3,7 +3,7 @@
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors MainDataReturn MainNestedDataReturn MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainFunctionOverloads MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors MainDataMethods MainDataReturn MainNestedDataReturn MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -26,7 +26,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain
                        BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands MatchMissingElse
                        MatchPatternTypeMismatch RecursiveDataParameter
-                       AmbiguousInheritedDataField IncompleteDataConstructor ForEachNonArray ForEachBindingMismatch)
+                       AmbiguousInheritedDataField IncompleteDataConstructor DuplicateDataMethod ForEachNonArray ForEachBindingMismatch)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -301,6 +301,31 @@ add_test(NAME source_native_data_constructors_artifacts COMMAND xs_xse_artifact_
                                                          "call %Point @\"xs\$ctor\$Point\$2\"")
 set_tests_properties(source_native_data_constructors_artifacts PROPERTIES
                      DEPENDS source_native_data_constructors_build TIMEOUT 5)
+
+add_test(NAME source_native_data_methods_build COMMAND xs build -file
+                                               ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataMethods.xs)
+set_tests_properties(source_native_data_methods_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_data_methods_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataMethods.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataMethods.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataMethods.xse 15
+  "xs$method$Point$total$0" "xs$method$Point$add$1"
+  "xs$method$Point$add$2" "xs$method$Point$identity$3")
+set_tests_properties(source_native_data_methods_artifacts PROPERTIES
+                     DEPENDS source_native_data_methods_build TIMEOUT 5)
+
+add_test(NAME source_native_function_overloads_build COMMAND xs build -file
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFunctionOverloads.xs)
+set_tests_properties(source_native_function_overloads_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_function_overloads_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFunctionOverloads.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFunctionOverloads.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFunctionOverloads.xse 10
+  "xs$fn$choose$0" "xs$fn$choose$1")
+set_tests_properties(source_native_function_overloads_artifacts PROPERTIES
+                     DEPENDS source_native_function_overloads_build TIMEOUT 5)
 
 add_test(NAME source_native_data_return_build COMMAND xs build -file
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataReturn.xs)

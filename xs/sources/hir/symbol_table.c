@@ -99,6 +99,64 @@ static const XsHirSymbol *find_in_namespace(const XsHirSymbolTable *table, const
   return nullptr;
 }
 
+static bool syntax_text_equal(XsText left, XsText right)
+{
+  return left.length == right.length && (left.length == 0 || memcmp(left.data, right.data, left.length) == 0);
+}
+
+static bool syntax_nodes_equal(const XsSyntaxNode *left, const XsSyntaxNode *right)
+{
+  if(left == nullptr || right == nullptr || left->kind != right->kind || left->token_kind != right->token_kind ||
+     !syntax_text_equal(left->text, right->text) || left->child_count != right->child_count)
+    return false;
+  for(size_t index = 0; index < left->child_count; ++index)
+  {
+    if(!syntax_nodes_equal(left->children[index], right->children[index]))
+      return false;
+  }
+  return true;
+}
+
+static const XsSyntaxNode *parameter_at(const XsSyntaxNode *function, size_t wanted)
+{
+  for(size_t index = 0; index < function->child_count; ++index)
+  {
+    if(function->children[index]->kind != XS_SYNTAX_PARAMETER)
+      continue;
+    if(wanted == 0)
+      return function->children[index];
+    --wanted;
+  }
+  return nullptr;
+}
+
+static bool function_signatures_equal(const XsSyntaxNode *left, const XsSyntaxNode *right)
+{
+  for(size_t index = 0;; ++index)
+  {
+    const XsSyntaxNode *left_parameter = parameter_at(left, index);
+    const XsSyntaxNode *right_parameter = parameter_at(right, index);
+    if(left_parameter == nullptr || right_parameter == nullptr)
+      return left_parameter == right_parameter;
+    if(left_parameter->child_count < 2 || right_parameter->child_count < 2 ||
+       !syntax_nodes_equal(left_parameter->children[1], right_parameter->children[1]))
+      return false;
+  }
+}
+
+static const XsHirSymbol *find_duplicate_function(const XsHirSymbolTable *table, const char *namespace_name,
+                                                  const char *name, const XsSyntaxNode *function)
+{
+  for(size_t index = 0; index < table->count; ++index)
+  {
+    const XsHirSymbol *candidate = &table->symbols[index];
+    if(candidate->kind == XS_HIR_SYMBOL_FUNCTION && strcmp(candidate->namespace_name, namespace_name) == 0 &&
+       strcmp(candidate->name, name) == 0 && function_signatures_equal(candidate->syntax, function))
+      return candidate;
+  }
+  return nullptr;
+}
+
 static const XsHirMemberSymbol *find_member_forward(const XsHirMemberSymbolTable *table, const char *owner,
                                                     const char *name)
 {
@@ -174,9 +232,20 @@ static bool collect_declaration_with_visibility(const XsSyntaxNode *node, const 
     return false;
   }
   const XsHirSymbol *previous = find_in_namespace(table, namespace_name, name);
-  if(previous != nullptr)
+  const XsHirSymbol *duplicate = kind == XS_HIR_SYMBOL_FUNCTION
+                                     ? find_duplicate_function(table, namespace_name, name, node)
+                                     : previous;
+  if(previous != nullptr && (previous->kind != XS_HIR_SYMBOL_FUNCTION || kind != XS_HIR_SYMBOL_FUNCTION))
   {
     report_duplicate(diagnostics, name_node, previous);
+    free(name);
+    free(module_copy);
+    free(namespace_copy);
+    return true;
+  }
+  if(duplicate != nullptr)
+  {
+    report_duplicate(diagnostics, name_node, duplicate);
     free(name);
     free(module_copy);
     free(namespace_copy);

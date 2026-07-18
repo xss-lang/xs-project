@@ -32,10 +32,23 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     {
       let callee = tree.nodes.get(*value.children.first()?)?;
       let name = path_text(tree, callee);
-      context.calls
-             .get(&name)
-             .or_else(|| constructor::resolve(tree, value, &name, context, locals, None))
-             .map(|signature| signature.return_type.clone())
+      call::resolve_function(tree, value, &name, context, locals, None).or_else(|| {
+                                                                         constructor::resolve(tree, value, &name,
+                                                                                              context, locals, None)
+                                                                       })
+                                                                       .map(|signature| signature.return_type.clone())
+    }
+    EXPR_METHOD_CALL =>
+    {
+      call::lower_method_call(tree, value, context, locals, None, span(value)?).and_then(|expression| match expression
+                                                                               {
+                                                                                 Expression::Call { return_type,
+                                                                                                    .. } =>
+                                                                                 {
+                                                                                   Some(*return_type)
+                                                                                 }
+                                                                                 _ => None,
+                                                                               })
     }
     EXPR_BINARY
       if matches!(value.token_kind,

@@ -8,6 +8,8 @@ foreach(fixture Supported InvalidReturn)
                  "${XS_DIRECT_XHIR_FIXTURE_DIR}/${fixture}.xhir" COPYONLY)
 endforeach()
 configure_file(tests/fixtures/source/MainCall.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainCall.xs" COPYONLY)
+configure_file(tests/fixtures/source/MainFunctionOverloads.xs
+               "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFunctionOverloads.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainTupleCalls.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainTupleCalls.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainFixedArray.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFixedArray.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainDataFields.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainDataFields.xs" COPYONLY)
@@ -17,6 +19,8 @@ configure_file(tests/fixtures/source/MainDataInheritance.xs
                "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainDataInheritance.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainDataConstructors.xs
                "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainDataConstructors.xs" COPYONLY)
+configure_file(tests/fixtures/source/MainDataMethods.xs
+               "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainDataMethods.xs" COPYONLY)
 
 add_test(NAME direct_xhir_native_build COMMAND xs build --hir -file
   ${XS_DIRECT_XHIR_FIXTURE_DIR}/Supported.xhir)
@@ -60,13 +64,29 @@ foreach(fixture MainTupleCalls MainFixedArray)
   set_tests_properties(direct_xhir_${fixture}_artifacts PROPERTIES TIMEOUT 5 DEPENDS direct_xhir_${fixture}_roundtrip)
 endforeach()
 
-foreach(fixture MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors)
+add_test(NAME direct_xhir_function_overloads_output COMMAND xs build --hir -file
+  ${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFunctionOverloads.xs)
+set_tests_properties(direct_xhir_function_overloads_output PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "wrote XHIR")
+add_test(NAME direct_xhir_function_overloads_roundtrip COMMAND xs build --hir -file
+  ${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFunctionOverloads.xhir)
+set_tests_properties(direct_xhir_function_overloads_roundtrip PROPERTIES TIMEOUT 5
+  DEPENDS direct_xhir_function_overloads_output PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME direct_xhir_function_overloads_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFunctionOverloads.ll
+  ${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFunctionOverloads.o
+  ${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFunctionOverloads.xse 10 "xs$fn$choose$0" "xs$fn$choose$1")
+set_tests_properties(direct_xhir_function_overloads_artifacts PROPERTIES TIMEOUT 5
+  DEPENDS direct_xhir_function_overloads_roundtrip)
+
+foreach(fixture MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors MainDataMethods)
   if(fixture STREQUAL "MainDataFields")
     set(expected_exit 9)
   elseif(fixture STREQUAL "MainDataInheritance")
     set(expected_exit 25)
   elseif(fixture STREQUAL "MainDataConstructors")
     set(expected_exit 16)
+  elseif(fixture STREQUAL "MainDataMethods")
+    set(expected_exit 15)
   else()
     set(expected_exit 22)
   endif()
