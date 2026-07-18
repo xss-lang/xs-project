@@ -7,6 +7,7 @@
 #include "xs/lil/aot.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static int failures;
@@ -165,6 +166,32 @@ static void test_dynamic_array_access_round_trip(void)
     fclose(stream);
   }
   xs_lil_module_destroy(module);
+}
+
+static void test_parser_accepts_non_null_terminated_registry_text(void)
+{
+  static const char source[] = ".xlil version 0\n.xlil module Bounded\n.type %t0 Pair : (i32, i32)\n"
+                               ".array %a0 : i32\n.array %a1 : i32 x 2\n"
+                               ".extern consume : (%a0, %a1, %t0) -> void\n";
+  const size_t length = sizeof(source) - 1U;
+  char *text = malloc(length);
+  CHECK(text != nullptr);
+  if(text == nullptr)
+    return;
+  memcpy(text, source, length);
+  XsLilError error = {0};
+  XsLilModule *module = nullptr;
+  CHECK(xs_lil_module_parse_text("bounded.xlil", text, length, &module, &error) == XS_LIL_OK);
+  CHECK(module != nullptr);
+  if(module != nullptr)
+  {
+    CHECK(xs_lil_module_aggregate_type_count(module) == 1);
+    CHECK(xs_lil_module_array_type_count(module) == 2);
+    CHECK(xs_lil_module_array_is_dynamic(module, 0));
+    CHECK(!xs_lil_module_array_is_dynamic(module, 1));
+  }
+  xs_lil_module_destroy(module);
+  free(text);
 }
 
 static void test_function_body_text_writer(void)
@@ -896,6 +923,7 @@ int main(void)
   test_aggregate_type_registry_round_trip();
   test_array_type_registry_round_trip();
   test_dynamic_array_access_round_trip();
+  test_parser_accepts_non_null_terminated_registry_text();
   test_function_body_text_writer();
   test_function_body_rejects_missing_return_value();
   test_floating_constant_bits();

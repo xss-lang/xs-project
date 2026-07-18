@@ -8,6 +8,35 @@
 #include <stdlib.h>
 #include <string.h>
 
+static bool parse_u32_prefix(const char *start, const char *end, uint32_t *value, const char **tail)
+{
+  if(start >= end || *start < '0' || *start > '9')
+    return false;
+  uint32_t result = 0;
+  const char *cursor = start;
+  while(cursor < end && *cursor >= '0' && *cursor <= '9')
+  {
+    uint32_t digit = (uint32_t)(*cursor - '0');
+    if(result > (UINT32_MAX - digit) / 10U)
+      return false;
+    result = result * 10U + digit;
+    ++cursor;
+  }
+  *value = result;
+  *tail = cursor;
+  return true;
+}
+
+static const char *find_record_separator(const char *start, const char *end)
+{
+  for(const char *cursor = start; end - cursor >= 4; ++cursor)
+  {
+    if(cursor[0] == ' ' && cursor[1] == ':' && cursor[2] == ' ' && cursor[3] == '(')
+      return cursor;
+  }
+  return nullptr;
+}
+
 bool xs_lil_parse_type_name(const XsLilModule *module, const char *text, size_t length, XsLilType *type)
 {
   for(unsigned kind = XS_LIL_TYPE_VOID; kind < XS_LIL_TYPE_AGGREGATE; ++kind)
@@ -54,13 +83,13 @@ XsLilStatus xs_lil_parse_aggregate_record(XsLilModule *module, const char *text,
 {
   const char *end = text + length;
   const char *cursor = text + strlen(".type %t");
-  char *id_end = nullptr;
-  unsigned long id = strtoul(cursor, &id_end, 10);
-  if(id_end == cursor || id > UINT32_MAX || id != xs_lil_module_aggregate_type_count(module) || id_end >= end ||
+  const char *id_end = nullptr;
+  uint32_t id = 0;
+  if(!parse_u32_prefix(cursor, end, &id, &id_end) || id != xs_lil_module_aggregate_type_count(module) || id_end >= end ||
      *id_end != ' ')
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate type id is invalid or non-sequential");
   cursor = id_end + 1;
-  const char *separator = strstr(cursor, " : (");
+  const char *separator = find_record_separator(cursor, end);
   if(separator == nullptr || separator == cursor || end <= separator + 4 || end[-1] != ')')
     return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL aggregate type record is invalid");
   char *name = xs_lil_copy_span(cursor, (size_t)(separator - cursor));
@@ -96,9 +125,9 @@ static bool parse_value(const char **cursor, const char *end, XsLilValueId *valu
   if(end - *cursor < 3 || (*cursor)[0] != '%' || (*cursor)[1] != 'r')
     return false;
   const char *start = *cursor + 2;
-  char *number_end = nullptr;
-  unsigned long parsed = strtoul(start, &number_end, 10);
-  if(number_end == start || number_end > end || parsed > UINT32_MAX)
+  const char *number_end = nullptr;
+  uint32_t parsed = 0;
+  if(!parse_u32_prefix(start, end, &parsed, &number_end))
     return false;
   *cursor = number_end;
   *value = (XsLilValueId)parsed;
@@ -234,9 +263,9 @@ XsLilStatus xs_lil_parse_aggregate_instruction(XsLilBlock *block, XsLilType resu
     if(!parse_value(&cursor, end, &aggregate) || end - cursor < 3 || cursor[0] != ',' || cursor[1] != ' ')
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract source is invalid");
     cursor += 2;
-    char *field_end = nullptr;
-    unsigned long field = strtoul(cursor, &field_end, 10);
-    if(field_end != end || field > UINT32_MAX)
+    const char *field_end = nullptr;
+    uint32_t field = 0;
+    if(!parse_u32_prefix(cursor, end, &field, &field_end) || field_end != end)
       return xs_lil_set_error(error, XS_LIL_INVALID_ARGUMENT, "XLIL extract field index is invalid");
     XsLilValueId result = UINT32_MAX;
     XsLilStatus status = xs_lil_block_add_extract(block, aggregate, (uint32_t)field, result_type, &result, error);
