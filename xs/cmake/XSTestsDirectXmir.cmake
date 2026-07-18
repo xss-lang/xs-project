@@ -23,6 +23,9 @@ configure_file(tests/fixtures/source/MainDataMethods.xs
                "${XS_DIRECT_XMIR_FIXTURE_DIR}/MainDataMethods.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainDataValueProjection.xs
                "${XS_DIRECT_XMIR_FIXTURE_DIR}/MainDataValueProjection.xs" COPYONLY)
+foreach(fixture MainGenericFunctions MainGenericRecursive)
+  configure_file(tests/fixtures/source/${fixture}.xs "${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xs" COPYONLY)
+endforeach()
 
 add_test(NAME direct_xmir_native_build COMMAND xs build --mir -file
   ${XS_DIRECT_XMIR_FIXTURE_DIR}/Supported.xmir)
@@ -64,6 +67,22 @@ foreach(fixture MainTupleCalls MainFixedArray)
     ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.o
     ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xse 7)
   set_tests_properties(direct_xmir_${fixture}_artifacts PROPERTIES TIMEOUT 5 DEPENDS direct_xmir_${fixture}_roundtrip)
+endforeach()
+
+foreach(fixture MainGenericFunctions MainGenericRecursive)
+  add_test(NAME direct_xmir_${fixture}_output COMMAND xs build --mir -file
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xs)
+  set_tests_properties(direct_xmir_${fixture}_output PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "wrote XMIR")
+  add_test(NAME direct_xmir_${fixture}_roundtrip COMMAND xs build --mir -file
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xmir)
+  set_tests_properties(direct_xmir_${fixture}_roundtrip PROPERTIES TIMEOUT 5
+    DEPENDS direct_xmir_${fixture}_output PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+  add_test(NAME direct_xmir_${fixture}_artifacts COMMAND xs_xse_artifact_tests
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.ll
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.o
+    ${XS_DIRECT_XMIR_FIXTURE_DIR}/${fixture}.xse 7)
+  set_tests_properties(direct_xmir_${fixture}_artifacts PROPERTIES TIMEOUT 5
+    DEPENDS direct_xmir_${fixture}_roundtrip)
 endforeach()
 
 add_test(NAME direct_xmir_function_overloads_output COMMAND xs build --mir -file

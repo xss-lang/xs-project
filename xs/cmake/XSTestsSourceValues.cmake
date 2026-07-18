@@ -8,7 +8,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
                        MainInferredBoolNotLocal MainCall MainNestedCall MainLocalCall MainBoolCall MainBoolCallLocal
-                       MainRecursiveCall MainUnitCalls MainShortCircuit MainGenericFunctions
+                       MainRecursiveCall MainUnitCalls MainShortCircuit MainGenericFunctions MainGenericRecursive
+                       MainGenericConstraint
                        MainMutableLocal MainMutableBoolLocal MainIfAssignment MainCompoundAssignment
                        MainIfMultipleAssignments MainNestedIfAssignment MainWhile MainWhileControl MainDoWhile MainLoop
                        MainBlockLocals MainFixedArray MainArrayMissingDefaults
@@ -27,7 +28,8 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands MatchMissingElse
                        MatchPatternTypeMismatch RecursiveDataParameter
                        AmbiguousInheritedDataField IncompleteDataConstructor DuplicateDataMethod ForEachNonArray ForEachBindingMismatch
-                       UnknownGenericCall WrongGenericArity GenericTypeMismatch)
+                       UnknownGenericCall WrongGenericArity GenericTypeMismatch ExpandingGenericRecursion
+                       UnsatisfiedGenericConstraint NonInterfaceGenericConstraint)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()

@@ -125,9 +125,26 @@ pub struct CompilerCoreSession
   diagnostics: Vec<String>,
 }
 
-fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_lowering::LoweringError>
+fn failed_lowering_session(syntax: Vec<SyntaxTree>, error: hir_lowering::LoweringError) -> CompilerCoreSession
 {
-  let declarations = hir_lowering::lower_program(&syntax)?;
+  CompilerCoreSession { syntax,
+                        declarations: crate::hir::declarations::Module { name: None,
+                                                                         nominal_types: Vec::new(),
+                                                                         functions: Vec::new() },
+                        xhir_text: None,
+                        mir_functions: Vec::new(),
+                        xmir_text: None,
+                        xlil_text: None,
+                        diagnostics: vec![error.to_string()] }
+}
+
+fn build_session(syntax: Vec<SyntaxTree>) -> CompilerCoreSession
+{
+  let declarations = match hir_lowering::lower_program(&syntax)
+  {
+    Ok(declarations) => declarations,
+    Err(error) => return failed_lowering_session(syntax, error),
+  };
   let layout_diagnostics = crate::hir::declarations::validate_layouts(&declarations.nominal_types);
   let aggregate_registry = crate::hir::aggregate_registry::build_module(&declarations).unwrap_or_default();
   let collection_registry = crate::hir::collection_registry::build(&declarations, &aggregate_registry);
@@ -240,13 +257,13 @@ fn build_session(syntax: Vec<SyntaxTree>) -> Result<CompilerCoreSession, hir_low
   {
     None
   };
-  Ok(CompilerCoreSession { syntax,
-                           declarations,
-                           xhir_text,
-                           mir_functions,
-                           xmir_text,
-                           xlil_text,
-                           diagnostics })
+  CompilerCoreSession { syntax,
+                        declarations,
+                        xhir_text,
+                        mir_functions,
+                        xmir_text,
+                        xlil_text,
+                        diagnostics }
 }
 
 fn table_length(value: u64) -> Result<usize, PacketError>
@@ -506,11 +523,7 @@ unsafe fn create_session(packet: *const RawSyntaxPacket,
   {
     return FfiStatus::InvalidPacket;
   }
-  let Ok(built) = build_session(vec![syntax])
-  else
-  {
-    return FfiStatus::InvalidPacket;
-  };
+  let built = build_session(vec![syntax]);
   *session = Box::into_raw(Box::new(built));
   FfiStatus::Ok
 }
@@ -608,11 +621,7 @@ pub unsafe extern "C" fn xslang_compiler_core_session_merge(sessions: *const *co
     };
     syntax.extend(session.syntax.iter().cloned());
   }
-  let Ok(built) = build_session(syntax)
-  else
-  {
-    return FfiStatus::InvalidPacket;
-  };
+  let built = build_session(syntax);
   *merged = Box::into_raw(Box::new(built));
   FfiStatus::Ok
 }

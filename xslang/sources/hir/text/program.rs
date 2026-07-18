@@ -238,7 +238,12 @@ mod tests
                                    start_column: 0,
                                    end_line: 1,
                                    end_column: 0 };
-    let nominal_types = [NominalType { name: "Named".to_string(),
+    let nominal_types = [NominalType { name: "Marker".to_string(),
+                                       kind: NominalKind::Interface,
+                                       bases: Vec::new(),
+                                       fields: Vec::new(),
+                                       span: source_span.clone() },
+                         NominalType { name: "Named".to_string(),
                                        kind: NominalKind::Data,
                                        bases: Vec::new(),
                                        fields: vec![Field { name: "label".to_string(),
@@ -260,16 +265,17 @@ mod tests
     let text = program_to_xhir_with_declarations("root", &nominal_types, &functions, &[0, 1]);
     let parsed = parse_xhir_program(&text).expect("program should parse");
     assert_eq!(parsed.name, "root");
-    assert_eq!(parsed.nominal_types.len(), 2);
-    assert_eq!(parsed.nominal_types[1].name, "Point");
-    assert_eq!(parsed.nominal_types[1].kind, NominalKind::Data);
-    assert_eq!(parsed.nominal_types[1].bases[0].ty, TypeRef::Named("Named".to_string()));
-    assert_eq!(parsed.nominal_types[1].bases[0].visibility, Visibility::Internal);
-    assert!(!parsed.nominal_types[1].bases[0].is_virtual);
-    assert_eq!(parsed.nominal_types[1].fields[0].name, "x");
-    assert_eq!(parsed.nominal_types[1].fields[0].ty,
+    assert_eq!(parsed.nominal_types.len(), 3);
+    assert_eq!(parsed.nominal_types[0].kind, NominalKind::Interface);
+    assert_eq!(parsed.nominal_types[2].name, "Point");
+    assert_eq!(parsed.nominal_types[2].kind, NominalKind::Data);
+    assert_eq!(parsed.nominal_types[2].bases[0].ty, TypeRef::Named("Named".to_string()));
+    assert_eq!(parsed.nominal_types[2].bases[0].visibility, Visibility::Internal);
+    assert!(!parsed.nominal_types[2].bases[0].is_virtual);
+    assert_eq!(parsed.nominal_types[2].fields[0].name, "x");
+    assert_eq!(parsed.nominal_types[2].fields[0].ty,
                TypeRef::Primitive(PrimitiveType::Long));
-    assert!(parsed.nominal_types[1].fields[0].mutable);
+    assert!(parsed.nominal_types[2].fields[0].mutable);
     assert_eq!(parsed.parameter_counts, vec![0, 1]);
     assert_eq!(program_to_xhir_with_declarations(&parsed.name,
                                                  &parsed.nominal_types,

@@ -9,7 +9,8 @@ foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteM
                        AmbiguousInheritedDataField IncompleteDataConstructor DuplicateDataMethod
                        ForEachNonArray ForEachBindingMismatch TupleUnknownMember TupleAssignmentMismatch
                        TuplePatternArityMismatch TuplePatternTypeMismatch TuplePatternDuplicateBinding
-                       UnknownGenericCall WrongGenericArity GenericTypeMismatch)
+                       UnknownGenericCall WrongGenericArity GenericTypeMismatch ExpandingGenericRecursion
+                       UnsatisfiedGenericConstraint NonInterfaceGenericConstraint)
   add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file
                                                            ${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs)
   set_tests_properties(source_native_invalid_${source_fixture} PROPERTIES TIMEOUT 5 WILL_FAIL TRUE)

@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
+
+use indexmap::IndexSet;
 
 use crate::hir::{declarations, type_check::Type};
 use crate::mono::{GenericInstance, TypeArgument, create_mono_plan};
@@ -16,9 +18,16 @@ pub(super) struct Template
   pub(super) tree: usize,
   pub(super) node: usize,
   pub(super) name: String,
-  pub(super) parameters: Vec<String>,
+  pub(super) parameters: Vec<Parameter>,
   pub(super) signature: declarations::Function,
   pub(super) ordinal: usize,
+}
+
+#[derive(Clone)]
+pub(super) struct Parameter
+{
+  name: String,
+  constraints: Vec<declarations::TypeRef>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,13 +37,38 @@ pub(super) struct Use
   pub(super) arguments: Vec<declarations::TypeRef>,
 }
 
-pub(super) fn parameters(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<String>>
+pub(super) struct Instance
+{
+  pub(super) tree: usize,
+  pub(super) node: usize,
+  pub(super) key: String,
+  pub(super) function: declarations::Function,
+  pub(super) substitutions: HashMap<String, Type>,
+}
+
+struct PendingUse
+{
+  generic_use: Use,
+  ancestry: Vec<(usize, Vec<declarations::TypeRef>)>,
+}
+
+pub(super) fn parameters(tree: &SyntaxTree, function: &SyntaxNode) -> Option<Vec<Parameter>>
 {
   let parameters = function.children
                            .iter()
                            .filter_map(|index| tree.nodes.get(*index))
                            .filter(|child| child.kind == GENERIC_PARAMETER)
-                           .map(|parameter| first_child_kind(tree, parameter, IDENTIFIER).map(|name| name.text.clone()))
+                           .map(|parameter| {
+                             let name = first_child_kind(tree, parameter, IDENTIFIER)?;
+                             let constraints = parameter.children
+                                                        .iter()
+                                                        .filter_map(|index| tree.nodes.get(*index))
+                                                        .filter(|child| child.kind != IDENTIFIER)
+                                                        .map(|constraint| lower_type(tree, constraint))
+                                                        .collect();
+                             Some(Parameter { name: name.text.clone(),
+                                              constraints })
+                           })
                            .collect::<Option<Vec<_>>>()?;
   (!parameters.is_empty()).then_some(parameters)
 }
@@ -90,6 +124,180 @@ pub(super) fn collect_uses(trees: &[SyntaxTree]) -> Vec<Use>
   uses
 }
 
+pub(super) fn discover_instances(trees: &[SyntaxTree],
+                                 templates: &[Template],
+                                 nominal_types: &[declarations::NominalType],
+                                 module: &str)
+                                 -> Result<Vec<Instance>, LoweringError>
+{
+  let mut pending = collect_uses(trees).into_iter()
+                                       .map(|generic_use| PendingUse { generic_use,
+                                                                       ancestry: Vec::new() })
+                                       .collect::<VecDeque<_>>();
+  let mut instances = Vec::<Instance>::new();
+  let mut instance_keys = IndexSet::<String>::new();
+  while let Some(request) = pending.pop_front()
+  {
+    for template in templates.iter().filter(|template| {
+                                      template.name == request.generic_use.name &&
+                                      template.parameters.len() == request.generic_use.arguments.len()
+                                    })
+    {
+      if request.ancestry
+                .iter()
+                .any(|(ordinal, arguments)| *ordinal == template.ordinal && arguments != &request.generic_use.arguments)
+      {
+        return Err(LoweringError::ExpandingGenericRecursion);
+      }
+      let Some((function, substitutions, key)) = specialization(template, &request.generic_use.arguments, module)
+      else
+      {
+        continue;
+      };
+      validate_constraints(template, &request.generic_use.arguments, nominal_types)?;
+      let identity = format!("{key}({})",
+                             function.parameters
+                                     .iter()
+                                     .map(|parameter| type_ref_key(&parameter.ty))
+                                     .collect::<Vec<_>>()
+                                     .join(","));
+      if !instance_keys.insert(identity)
+      {
+        continue;
+      }
+      let type_refs = template.parameters
+                              .iter()
+                              .map(|parameter| parameter.name.clone())
+                              .zip(request.generic_use.arguments.iter().cloned())
+                              .collect::<HashMap<_, _>>();
+      let mut ancestry = request.ancestry.clone();
+      ancestry.push((template.ordinal, request.generic_use.arguments.clone()));
+      pending.extend(collect_node_uses(&trees[template.tree], template.node).into_iter()
+                                                                            .map(|nested| {
+                                                                              PendingUse { generic_use:
+                                                                                             specialize_use(nested,
+                                                                                                            &type_refs),
+                                                                                           ancestry: ancestry.clone() }
+                                                                            }));
+      instances.push(Instance { tree: template.tree,
+                                node: template.node,
+                                key,
+                                function,
+                                substitutions });
+    }
+  }
+  Ok(instances)
+}
+
+fn validate_constraints(template: &Template,
+                        arguments: &[declarations::TypeRef],
+                        nominal_types: &[declarations::NominalType])
+                        -> Result<(), LoweringError>
+{
+  let definitions = nominal_types.iter()
+                                 .map(|nominal| (nominal.name.as_str(), nominal))
+                                 .collect::<HashMap<_, _>>();
+  for (parameter, argument) in template.parameters.iter().zip(arguments)
+  {
+    for constraint in &parameter.constraints
+    {
+      let declarations::TypeRef::Named(constraint_name) = constraint
+      else
+      {
+        return Err(LoweringError::ConstraintIsNotInterface(type_ref_key(constraint)));
+      };
+      if definitions.get(constraint_name.as_str())
+                    .is_none_or(|nominal| nominal.kind != declarations::NominalKind::Interface)
+      {
+        return Err(LoweringError::ConstraintIsNotInterface(constraint_name.clone()));
+      }
+      let declarations::TypeRef::Named(argument_name) = argument
+      else
+      {
+        return Err(LoweringError::UnsatisfiedGenericConstraint { argument: type_ref_key(argument),
+                                                                 constraint: constraint_name.clone() });
+      };
+      if !implements_interface(argument_name, constraint_name, &definitions, &mut Vec::new())
+      {
+        return Err(LoweringError::UnsatisfiedGenericConstraint { argument: argument_name.clone(),
+                                                                 constraint: constraint_name.clone() });
+      }
+    }
+  }
+  Ok(())
+}
+
+fn implements_interface(name: &str,
+                        constraint: &str,
+                        definitions: &HashMap<&str, &declarations::NominalType>,
+                        visiting: &mut Vec<String>)
+                        -> bool
+{
+  if name == constraint
+  {
+    return true;
+  }
+  if visiting.iter().any(|current| current == name)
+  {
+    return false;
+  }
+  let Some(nominal) = definitions.get(name)
+  else
+  {
+    return false;
+  };
+  visiting.push(name.to_string());
+  let satisfied = nominal.bases.iter().any(|base| {
+                                        let declarations::TypeRef::Named(base_name) = &base.ty
+                                        else
+                                        {
+                                          return false;
+                                        };
+                                        implements_interface(base_name, constraint, definitions, visiting)
+                                      });
+  visiting.pop();
+  satisfied
+}
+
+fn collect_node_uses(tree: &SyntaxTree, root: usize) -> Vec<Use>
+{
+  let mut uses = Vec::new();
+  let mut pending = vec![root];
+  while let Some(index) = pending.pop()
+  {
+    let Some(node) = tree.nodes.get(index)
+    else
+    {
+      continue;
+    };
+    pending.extend(node.children.iter().rev().copied());
+    if node.kind != EXPR_CALL
+    {
+      continue;
+    }
+    let Some(callee) = node.children.first().and_then(|child| tree.nodes.get(*child))
+    else
+    {
+      continue;
+    };
+    if let Some(generic_use) = call_use(tree, callee) &&
+       !uses.contains(&generic_use)
+    {
+      uses.push(generic_use);
+    }
+  }
+  uses
+}
+
+fn specialize_use(mut generic_use: Use, substitutions: &HashMap<String, declarations::TypeRef>) -> Use
+{
+  generic_use.arguments = generic_use.arguments
+                                     .iter()
+                                     .map(|argument| specialize_ref(argument, substitutions))
+                                     .collect();
+  generic_use
+}
+
 fn is_type_node(kind: u32) -> bool
 {
   (TYPE_NAMED..=TYPE_UNIT).contains(&kind) || kind == TYPE_MAP
@@ -119,7 +327,12 @@ pub(super) fn specialize_ref(value: &declarations::TypeRef,
 {
   match value
   {
-    declarations::TypeRef::Named(name) => substitutions.get(name).cloned().unwrap_or_else(|| value.clone()),
+    declarations::TypeRef::Named(name) =>
+    {
+      substitutions.get(name)
+                   .cloned()
+                   .unwrap_or_else(|| declarations::TypeRef::Named(substitute_named_ref(name, substitutions)))
+    }
     declarations::TypeRef::Array { element,
                                    length, } =>
     {
@@ -146,6 +359,37 @@ pub(super) fn specialize_ref(value: &declarations::TypeRef,
   }
 }
 
+fn substitute_named_ref(name: &str, substitutions: &HashMap<String, declarations::TypeRef>) -> String
+{
+  substitute_identifiers(name, |identifier| substitutions.get(identifier).map(type_ref_key))
+}
+
+fn substitute_identifiers(name: &str, mut replacement: impl FnMut(&str) -> Option<String>) -> String
+{
+  let mut output = String::with_capacity(name.len());
+  let mut start = 0;
+  for (index, character) in name.char_indices()
+  {
+    if character == '_' || character.is_alphanumeric()
+    {
+      continue;
+    }
+    if start < index
+    {
+      let identifier = &name[start..index];
+      output.push_str(&replacement(identifier).unwrap_or_else(|| identifier.to_string()));
+    }
+    output.push(character);
+    start = index + character.len_utf8();
+  }
+  if start < name.len()
+  {
+    let identifier = &name[start..];
+    output.push_str(&replacement(identifier).unwrap_or_else(|| identifier.to_string()));
+  }
+  output
+}
+
 pub(super) fn specialization(template: &Template,
                              arguments: &[declarations::TypeRef],
                              module: &str)
@@ -157,7 +401,7 @@ pub(super) fn specialization(template: &Template,
   }
   let substitutions = template.parameters
                               .iter()
-                              .cloned()
+                              .map(|parameter| parameter.name.clone())
                               .zip(arguments.iter().cloned())
                               .collect::<HashMap<_, _>>();
   let mut function = template.signature.clone();
@@ -207,6 +451,10 @@ pub(super) fn substitute_checked_type(value: &mut Type, substitutions: &HashMap<
       if let Some(replacement) = substitutions.get(name)
       {
         *value = replacement.clone();
+      }
+      else
+      {
+        *name = substitute_identifiers(name, |identifier| substitutions.get(identifier).map(type_key));
       }
     }
     Type::Array { element, .. } | Type::Set { element } => substitute_checked_type(element, substitutions),
@@ -293,5 +541,21 @@ fn type_ref_key(value: &declarations::TypeRef) -> String
                                                              .map(|field| type_ref_key(&field.ty))
                                                              .collect::<Vec<_>>()
                                                              .join(",")),
+  }
+}
+
+#[cfg(test)]
+mod tests
+{
+  use super::*;
+
+  #[test]
+  fn substitutes_generic_parameters_inside_named_generic_types()
+  {
+    let substitutions = HashMap::from([("T".to_string(), declarations::TypeRef::Primitive(PrimitiveType::Long)),
+                                       ("U".to_string(), declarations::TypeRef::Named("Worker".to_string()))]);
+    assert_eq!(substitute_named_ref("std::pair::Pair<T, U>", &substitutions),
+               "std::pair::Pair<Long, Worker>");
+    assert_eq!(substitute_named_ref("Type", &substitutions), "Type");
   }
 }

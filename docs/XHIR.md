@@ -86,8 +86,9 @@ The version header is part of the `xs build` input contract. It tells the compil
 being asked to parse. Version `0` is the only supported XHIR version today; future versions can be accepted explicitly
 without changing the human-readable text requirement.
 
-Additional declaration kinds, generic constraints, interface relations, macro-expansion records, and richer expression forms
-will be added as the checked HIR model stabilizes.
+Class, interface, and data declarations retain their nominal category, base relations, and available field layouts.
+Generic parameter declarations/constraints, macro-expansion records, and richer expression forms will be added as the
+checked HIR model stabilizes.
 
 `xs build --output hir` emits the program form. The Rust program reader splits functions only at `.function end`; indentation
 does not participate in parsing. A single-function XHIR document remains supported by the function reader.

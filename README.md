@@ -128,6 +128,10 @@ HIR (THIR/XHIR), MIR, and XLIL route. Prefix and postfix
 increment/decrement preserve their distinct result values through the current native local-storage slice. It does not imply
 that the complete X# language is executable yet. Earlier releases are compiler infrastructure snapshots.
 
+Explicit top-level generic calls are monomorphized through a transitive specialization worklist. The current slice checks
+interface constraints, supports recursive calls to the same concrete instance, and rejects type-expanding polymorphic
+recursion before native lowering.
+
 The integer widths are fixed from `Byte`/`SByte` through `UInteger`/`Integer`. Context-typed literals for every width,
 including signed minimum values and full u128 values, now use the same Rust compiler-core route through XHIR, XMIR, XLIL,
 and LLVM native emission. The public C23 boundary carries 128-bit values with project-owned two-word types instead of a

@@ -53,13 +53,11 @@ pub(super) fn lower_nominal_type(tree: &SyntaxTree,
                     })
                     .collect::<Result<Vec<_>, _>>()?;
   Ok(declarations::NominalType { name: name.text.clone(),
-                                 kind: if value.kind == DECL_CLASS
+                                 kind: match value.kind
                                  {
-                                   declarations::NominalKind::Class
-                                 }
-                                 else
-                                 {
-                                   declarations::NominalKind::Data
+                                   DECL_CLASS => declarations::NominalKind::Class,
+                                   DECL_INTERFACE => declarations::NominalKind::Interface,
+                                   _ => declarations::NominalKind::Data,
                                  },
                                  bases,
                                  fields,

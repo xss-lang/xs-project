@@ -59,7 +59,7 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
       {
         continue;
       };
-      if matches!(declaration.kind, DECL_CLASS | DECL_DATA)
+      if matches!(declaration.kind, DECL_CLASS | DECL_INTERFACE | DECL_DATA)
       {
         let nominal = nominal::lower_nominal_type(tree, declaration)?;
         if nominal.kind == declarations::NominalKind::Data
@@ -138,38 +138,18 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
   }
   let module_for_symbols = program_name.as_ref().and_then(|name| name.as_deref()).unwrap_or("root");
   let mut generic_instances = Vec::<(String, usize)>::new();
-  for generic_use in generic::collect_uses(trees)
+  for instance in generic::discover_instances(trees, &generic_templates, &nominal_types, module_for_symbols)?
   {
-    for template in
-      generic_templates.iter()
-                       .filter(|template| {
-                         template.name == generic_use.name && template.parameters.len() == generic_use.arguments.len()
-                       })
-    {
-      let Some((function, substitutions, key)) =
-        generic::specialization(template, &generic_use.arguments, module_for_symbols)
-      else
-      {
-        continue;
-      };
-      if generic_instances.iter().any(|(existing, index)| {
-                                    existing == &key &&
-                                    functions[*index].parameters == function.parameters
-                                  })
-      {
-        continue;
-      }
-      let function_index = functions.len();
-      locations.push(FunctionLocation { tree: template.tree,
-                                        node: template.node,
-                                        function: function_index,
-                                        constructor_owner: None,
-                                        call_name: None,
-                                        method_owner: None,
-                                        type_substitutions: substitutions });
-      functions.push(function);
-      generic_instances.push((key, function_index));
-    }
+    let function_index = functions.len();
+    locations.push(FunctionLocation { tree: instance.tree,
+                                      node: instance.node,
+                                      function: function_index,
+                                      constructor_owner: None,
+                                      call_name: None,
+                                      method_owner: None,
+                                      type_substitutions: instance.substitutions });
+    functions.push(instance.function);
+    generic_instances.push((instance.key, function_index));
   }
   let mut top_level_overloads = HashMap::<String, Vec<usize>>::new();
   for location in &locations

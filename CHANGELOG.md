@@ -16,12 +16,18 @@ source-to-native executable pipeline.
 
 - Explicit concrete turbofish calls to top-level generic functions now create deterministic Rust compiler-core
   monomorphizations and continue through typed HIR, MIR, XLIL, LLVM, object emission, and native `.xse` execution.
+- Reachable generic specializations are discovered transitively, including same-instance recursion. Expanding
+  polymorphic recursion is rejected before it can exhaust memory, and interface constraints are checked against direct
+  and inherited implementations.
+- XHIR v0 declaration records now preserve interface declarations in addition to class and data declarations.
 - `xslang/build.rs` now exposes crate and supported XHIR/XMIR/XLIL format versions to the Rust compiler core at build time.
 
 ### Changed
 
 - CMake ownership now follows monorepo component boundaries: shared policy is in the root `CMakeLists.txt`, compiler modules
   are under `xs/cmake`, and legacy project-parser target modules are under `xsproj/cmake`.
+- Semantic compiler-core lowering failures now cross the C23/Rust boundary as session diagnostics; malformed FFI packets
+  remain a distinct ABI error.
 
 ## 0.2.0 - 2026-07-18
 

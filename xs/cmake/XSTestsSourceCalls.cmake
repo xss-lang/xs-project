@@ -98,6 +98,30 @@ add_test(NAME source_native_generic_functions_artifacts COMMAND xs_xse_artifact_
   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericFunctions.ll
   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericFunctions.o
   ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericFunctions.xse 7
-  "identity$G0$Long" "identity$G0$Int" "first$G1$Long")
+  "hidden$G1$Long" "forward$G2$Long" "identity$G0$Int" "first$G3$Long")
 set_tests_properties(source_native_generic_functions_artifacts PROPERTIES
   DEPENDS source_native_generic_functions_build TIMEOUT 5)
+
+add_test(NAME source_native_generic_recursive_build COMMAND xs build -file
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericRecursive.xs)
+set_tests_properties(source_native_generic_recursive_build PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_generic_recursive_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericRecursive.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericRecursive.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericRecursive.xse 7
+  "countdown$G0$Long")
+set_tests_properties(source_native_generic_recursive_artifacts PROPERTIES
+  DEPENDS source_native_generic_recursive_build TIMEOUT 5)
+
+add_test(NAME source_native_generic_constraint_build COMMAND xs build -file
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericConstraint.xs)
+set_tests_properties(source_native_generic_constraint_build PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_generic_constraint_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericConstraint.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericConstraint.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainGenericConstraint.xse 7
+  "constrained$G0$Worker")
+set_tests_properties(source_native_generic_constraint_artifacts PROPERTIES
+  DEPENDS source_native_generic_constraint_build TIMEOUT 5)

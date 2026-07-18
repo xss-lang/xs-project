@@ -78,6 +78,7 @@ pub struct Parameter
 pub enum NominalKind
 {
   Class,
+  Interface,
   Data,
 }
 

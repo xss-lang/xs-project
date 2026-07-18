@@ -24,6 +24,7 @@ pub(super) fn write_declarations(output: &mut String, declarations: &[NominalTyp
     let kind = match declaration.kind
     {
       NominalKind::Class => "class",
+      NominalKind::Interface => "interface",
       NominalKind::Data => "data",
     };
     let _ = writeln!(output, "  {kind} {}", declaration.name);
@@ -86,6 +87,10 @@ pub(super) fn parse_declarations(lines: &[&str],
     else if let Some(name) = line.strip_prefix("class ")
     {
       (NominalKind::Class, name)
+    }
+    else if let Some(name) = line.strip_prefix("interface ")
+    {
+      (NominalKind::Interface, name)
     }
     else
     {

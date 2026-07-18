@@ -5,6 +5,8 @@
 
 use std::collections::HashMap;
 
+use thiserror::Error;
+
 use crate::hir::{
   MatchArm, MatchPattern,
   async_check::Span,
@@ -39,6 +41,7 @@ const FILE: u32 = 0;
 const DECL_MODULE: u32 = 1;
 const DECL_FUNCTION: u32 = 4;
 const DECL_CLASS: u32 = 5;
+const DECL_INTERFACE: u32 = 6;
 const DECL_DATA: u32 = 8;
 const DECL_VARIABLE: u32 = 9;
 const CLASS_FIELD: u32 = 15;
@@ -138,14 +141,28 @@ const FOR_INITIALIZER: u32 = 1 << 27;
 const FOR_CONDITION: u32 = 1 << 28;
 const FOR_UPDATE: u32 = 1 << 29;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum LoweringError
 {
+  #[error("compiler-core syntax tree has an invalid root")]
   InvalidRoot,
+  #[error("declaration is missing a required identifier")]
   MissingIdentifier,
+  #[error("parameter is missing a required type")]
   MissingParameterType,
+  #[error("source files declare incompatible modules")]
   ModuleMismatch,
+  #[error("program contains conflicting callable declarations")]
   DuplicateCallable,
+  #[error("generic specialization recursively expands its type arguments")]
+  ExpandingGenericRecursion,
+  #[error("generic constraint '{0}' does not resolve to an interface")]
+  ConstraintIsNotInterface(String),
+  #[error("type '{argument}' does not satisfy interface constraint '{constraint}'")]
+  UnsatisfiedGenericConstraint
+  {
+    argument: String, constraint: String
+  },
 }
 
 fn node(tree: &SyntaxTree, index: usize) -> Result<&SyntaxNode, LoweringError>

@@ -127,8 +127,10 @@ The documented compilation order is preserved:
   linking.
 - Top-level generic functions with explicit concrete turbofish arguments are specialized by the Rust compiler core. Type
   substitutions apply to parameter, result, and local types; each distinct concrete argument list receives a deterministic
-  monomorphized symbol before MIR/XLIL/LLVM lowering. Type inference for omitted generic arguments, generic methods, and
-  generic calls nested inside generic templates remain later semantic-analysis work.
+  monomorphized symbol before MIR/XLIL/LLVM lowering. The specialization worklist follows explicit generic calls nested in
+  reachable generic templates and permits recursion of the same concrete instance. Polymorphic recursion that keeps
+  changing the concrete type arguments is rejected. Interface constraints are checked against direct and transitive base
+  relations. Type inference for omitted generic arguments and generic methods remain later semantic-analysis work.
 - The Rust compiler-core route carries `Long` `/`, `%`, `&`, `|`, `^`, `<<`, and `>>` expressions through typed HIR,
   versioned XHIR, verified MIR/XMIR, and XLIL. Integer literals still default to `Int` (i64) without an expected type;
   an explicit `Long` (i32) return, binding, or parameter context is propagated through nested binary expressions.
@@ -435,8 +437,10 @@ membership, class/interface virtual dispatch, imported overload sets, and functi
   through the `xs_macro_expand_child_statements` expanded view. This validates type uses produced after macro expansion
   against the HIR symbol/import scope.
 
-This stage does not yet produce general expression type inference, overload selection, constraint membership/compatibility
-checks, trait/interface compatibility, or ABI/layout decisions.
+This C23 pre-check stage does not produce general expression type inference, overload selection, constraint
+membership/compatibility checks, trait/interface compatibility, or ABI/layout decisions. The Rust compiler core later
+checks interface membership for explicitly instantiated top-level generic functions; broader generic method and trait
+compatibility remains incomplete.
 
 The growing semantic-analysis and type-checking implementation now starts in the isolated Rust `xslang` crate instead of
 adding new semantic rules to the old C23 HIR prototypes. The first checked Rust rule validates that `await` expressions occur
@@ -776,8 +780,8 @@ Details: [LLVM_BACKEND.md](LLVM_BACKEND.md)
 - C MIR root-local places lower to typed XLIL stack slots. Root-place loads and stores lower through XLIL and LLVM
   `alloca`/`load`/`store`; field, dereference, and index projections remain deferred until their layout rules are available.
 - The C `xs/mono/plan.h` API still plans already-concrete MIR functions. Rust compiler-core lowering now also creates the
-  first reachable explicit generic-function instances and feeds their stable symbols into the existing native pipeline;
-  full generic call-graph discovery and generic type instantiation remain incomplete.
+  transitively reachable explicit generic-function instances and feeds their stable symbols into the existing native
+  pipeline. Generic type instantiation and inferred generic arguments remain incomplete.
 - `xs/codegen/units.h` contains a target-independent codegen-unit planning API. MIR functions are split into module-path
   based codegen units by the default v0 policy. When produced from a mono plan, the unit name comes from the source module
   path and the function name comes from the stable monomorphized symbol.
@@ -796,7 +800,7 @@ syntax, public APIs, and the current architecture stable.
 - Macro fragment matcher engine and AST macro expansion
 - HIR method and operator resolution
 - Type, function-call, generic, and trait/interface dependency edges beyond module/import
-- Expression type checking and generic constraint validation
+- Complete expression type inference and generic method constraint validation
 - Send, Sync, mutability, and async/await validation
 - Complete MIR statement/expression lowering and async state machine generation
 - Borrow checker and drop-point validation
