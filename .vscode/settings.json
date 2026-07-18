@@ -31,6 +31,12 @@
     "out",
     "dist"
   ],
+  "rust-analyzer.linkedProjects": [
+    "xslang/Cargo.toml",
+    "xsfmt/Cargo.toml",
+    "xstidy/Cargo.toml",
+    "xs-analyzer/Cargo.toml"
+  ],
   "FSharp.suggestGitignore": false,
   "r.lsp.promptToInstall": false
 }

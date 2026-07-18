@@ -6,7 +6,7 @@ foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteM
                        WrongCallArityMain NonLongReturnCallMain
                        BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands ImmutableLocalReassignment
                        MatchMissingElse MatchPatternTypeMismatch RecursiveDataParameter
-                       AmbiguousInheritedDataField
+                       AmbiguousInheritedDataField IncompleteDataConstructor
                        ForEachNonArray ForEachBindingMismatch TupleUnknownMember TupleAssignmentMismatch
                        TuplePatternArityMismatch TuplePatternTypeMismatch TuplePatternDuplicateBinding)
   add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file
@@ -29,6 +29,7 @@ xs_add_c_test(hir_expressions tests/hir_expression_tests.c xs_compiler)
 xs_add_c_test(inheritance tests/inheritance_tests.c xs_compiler)
 xs_add_c_test(int128 tests/int128_tests.c xs_lil)
 xs_add_c_test(xlil tests/xlil_tests.c xs_compiler)
+xs_add_c_test(lil_c_headers tests/lil_c_headers_tests.c xs_lil)
 xs_add_c_test(mir tests/mir_tests.c xs_compiler)
 xs_add_c_test(mir_flow tests/mir_flow_tests.c xs_compiler)
 xs_add_c_test(syntax_ast tests/syntax_ast_tests.c xs_compiler)

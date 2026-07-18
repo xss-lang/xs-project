@@ -180,6 +180,11 @@ function/body inspection, aggregate and fixed-array type registries, composite c
 `xs build --xlil -file <input.xlil>` uses this parser API before emitting verified and
 optimized LLVM IR, an object file, and a native `.xse` executable for the supported local-target subset.
 
+`<xs/lil.h>` is the stable umbrella include for C23 producers. Code that wants a smaller dependency surface may include
+the standalone headers under `<xs/lil-c/>`: `model.h`, `module.h`, `function.h`, `instruction.h`, and `text.h`.
+The Rust producer API is exposed directly under `xslang::xlil::*`; its public model, parser, verifier, and writer can build
+and round-trip the same XLIL v0 registry without going through the C ABI.
+
 The public [integer support header](../include/xs/int128.h) defines `XsUInt128` and `XsInt128` as explicit high/low
 64-bit words. XLIL uses those project-owned C23 types for u128/i128 constants; compiler-specific native 128-bit
 extensions are neither required nor used.

@@ -4,6 +4,7 @@
  */
 
 mod address;
+mod binding;
 mod bitmap;
 mod card_table;
 mod heap;
@@ -15,6 +16,7 @@ mod selection;
 mod telemetry;
 
 pub use address::{GcAddressError, HeapOffset, ObjectReference};
+pub use binding::{BoundXgc, ObjectLayout, ObjectLayoutError, TypeMetadataId, XgcRuntimeBinding};
 pub use bitmap::{MarkBitmap, MarkBitmapError};
 pub use card_table::{CARD_COUNT, CARD_SIZE_BYTES, CardIndex, CardTable, CardTableError};
 pub use heap::{HumongousAllocation, RegionDirectory, RegionDirectoryError, RegionRecord};

@@ -121,9 +121,8 @@ impl HirToMirLowerer
     let Some(initializer) = initializer
     else
     {
-      self.report(DiagnosticCode::UnsupportedExpression,
-                  "nominal local requires an object initializer before aggregate default construction is available",
-                  local.span);
+      self.nominal_locals.insert(local.name.clone(), type_name.clone());
+      self.declare_nominal_place_fields(&local.name, &[], &definition, local.span, lowered);
       return;
     };
     self.nominal_locals.insert(local.name.clone(), type_name.clone());
@@ -156,6 +155,76 @@ impl HirToMirLowerer
     };
     self.declare_nominal_place_fields(&local.name, &[], &definition, local.span, lowered);
     self.extract_into_nominal_place(&local.name, &[], &definition, value, local.span, lowered);
+  }
+
+  pub(super) fn lower_nominal_place_value(&mut self,
+                                          root: &str,
+                                          type_name: &str,
+                                          span: Span,
+                                          lowered: &mut mir::Function)
+                                          -> Option<mir::LocalId>
+  {
+    let definition = self.nominal_types.get(type_name)?.clone();
+    self.build_nominal_place_value(root, &[], &definition, span, lowered, &mut vec![type_name.to_string()])
+  }
+
+  fn build_nominal_place_value(&mut self,
+                               root: &str,
+                               prefix: &[String],
+                               definition: &crate::hir::declarations::NominalType,
+                               span: Span,
+                               lowered: &mut mir::Function,
+                               visiting: &mut Vec<String>)
+                               -> Option<mir::LocalId>
+  {
+    let fields = self.resolved_nominal_fields(definition)?;
+    let value_type = *self.aggregate_types.get(&definition.name)?;
+    let mut values = Vec::with_capacity(fields.len());
+    let mut field_types = Vec::with_capacity(fields.len());
+    for field in fields
+    {
+      let field_type = crate::hir::declarations::type_ref_to_checked(&field.ty)?;
+      let mut path = prefix.to_vec();
+      path.push(field.name.clone());
+      let lowered_type = self.lower_value_type(&field_type, span)?;
+      let value = match field_type
+      {
+        Type::Primitive(_) => self.lower_field_load(&FieldPath { root: root.to_string(),
+                                                                 fields: path,
+                                                                 ty: field_type,
+                                                                 mutable: false,
+                                                                 span },
+                                                    lowered_type,
+                                                    lowered)?,
+        Type::Named(ref nested_name) =>
+        {
+          if visiting.contains(nested_name)
+          {
+            self.report(DiagnosticCode::UnsupportedType,
+                        "recursive data value requires an indirect ABI",
+                        span);
+            return None;
+          }
+          let nested = self.nominal_types.get(nested_name)?.clone();
+          visiting.push(nested_name.clone());
+          let value = self.build_nominal_place_value(root, &path, &nested, span, lowered, visiting)?;
+          visiting.pop();
+          value
+        }
+        _ => return None,
+      };
+      values.push(value);
+      field_types.push(lowered_type);
+    }
+    let result = self.declare_temp(value_type, span, lowered)?;
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::Aggregate { result,
+                                          value_type,
+                                          fields: values,
+                                          field_types,
+                                          span });
+    Some(result)
   }
 
   fn declare_nominal_place_fields(&mut self,

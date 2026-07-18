@@ -73,7 +73,7 @@ impl SatbBuffer
 mod tests
 {
   use super::*;
-  use crate::gc::RegionId;
+  use crate::xgc::RegionId;
 
   #[test]
   fn full_buffer_publishes_old_references()

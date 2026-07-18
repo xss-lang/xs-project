@@ -31,8 +31,10 @@ pub(super) fn expression_type(tree: &SyntaxTree,
     EXPR_CALL =>
     {
       let callee = tree.nodes.get(*value.children.first()?)?;
+      let name = path_text(tree, callee);
       context.calls
-             .get(&path_text(tree, callee))
+             .get(&name)
+             .or_else(|| constructor::resolve(tree, value, &name, context, locals, None))
              .map(|signature| signature.return_type.clone())
     }
     EXPR_BINARY

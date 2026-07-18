@@ -276,6 +276,11 @@ impl HirToMirLowerer
       Expression::Local { name,
                           span, } =>
       {
+        if let Some(type_name) = self.nominal_locals.get(name).cloned() &&
+           self.aggregate_types.get(&type_name).copied() == Some(expected_type)
+        {
+          return self.lower_nominal_place_value(name, &type_name, *span, lowered);
+        }
         let Some(local) = self.locals.get(name).copied()
         else
         {

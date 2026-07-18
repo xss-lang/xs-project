@@ -660,6 +660,9 @@ state machine generation, region/loan/move analysis, drop-point validation, or a
   live/garbage/allocation accounting, age, and validated lifecycle transitions.
 - Precise stack-map roots, thread-local SATB publication buffers, collection-set scoring, and saturating telemetry have
   independent models and tests.
+- The public Rust surface is `xslang::xgc::*`. XGC remains X#-first: an executable collector context requires an explicit
+  `XgcRuntimeBinding` that supplies target object layouts, precise reference tracing, and root rewriting. Third-party
+  runtimes may provide that binding; the model is not exposed as a standalone, metadata-free collector.
 - These structures do not yet allocate managed objects or run a collector. Compiler barriers, safepoint insertion,
   collector threads, root scanning, evacuation, and runtime/LLVM integration are later steps. Native `.xse` compilation
   continues to use the existing ownership-oriented pipeline unless XGC is eventually connected end to end.

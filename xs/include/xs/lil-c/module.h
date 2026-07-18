@@ -1,0 +1,32 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#ifndef XS_LIL_C_MODULE_H
+#define XS_LIL_C_MODULE_H
+
+#include "xs/lil-c/model.h"
+
+XsLilStatus xs_lil_module_create(const char *name, XsLilModule **module, XsLilError *error);
+XsLilStatus xs_lil_module_parse_text(const char *path, const char *text, size_t length, XsLilModule **module,
+                                     XsLilError *error);
+XsLilStatus xs_lil_module_verify(const XsLilModule *module, XsLilError *error);
+void xs_lil_module_destroy(XsLilModule *module);
+const char *xs_lil_module_name(const XsLilModule *module);
+XsLilType xs_lil_aggregate_type(uint32_t registry_id);
+XsLilType xs_lil_array_type(uint32_t registry_id);
+bool xs_lil_type_equal(XsLilType left, XsLilType right);
+XsLilStatus xs_lil_module_add_aggregate_type(XsLilModule *module, const char *name, const XsLilType *fields,
+                                             size_t field_count, XsLilType *type, XsLilError *error);
+size_t xs_lil_module_aggregate_type_count(const XsLilModule *module);
+const char *xs_lil_module_aggregate_type_name(const XsLilModule *module, uint32_t registry_id);
+size_t xs_lil_module_aggregate_field_count(const XsLilModule *module, uint32_t registry_id);
+XsLilType xs_lil_module_aggregate_field_type(const XsLilModule *module, uint32_t registry_id, size_t field);
+XsLilStatus xs_lil_module_add_array_type(XsLilModule *module, XsLilType element_type, uint64_t length,
+                                         XsLilType *type, XsLilError *error);
+size_t xs_lil_module_array_type_count(const XsLilModule *module);
+XsLilType xs_lil_module_array_element_type(const XsLilModule *module, uint32_t registry_id);
+uint64_t xs_lil_module_array_length(const XsLilModule *module, uint32_t registry_id);
+
+#endif

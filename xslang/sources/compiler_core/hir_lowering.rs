@@ -18,6 +18,7 @@ use crate::hir::{
 use super::{SyntaxNode, SyntaxTree};
 
 mod collection;
+mod constructor;
 mod expression_type;
 mod for_each;
 mod match_expression;
@@ -254,6 +255,7 @@ fn span(value: &SyntaxNode) -> Option<Span>
 #[derive(Clone)]
 struct CallSignature
 {
+  symbol: String,
   parameters: Vec<crate::hir::type_check::Type>,
   return_type: crate::hir::type_check::Type,
 }
@@ -261,6 +263,7 @@ struct CallSignature
 struct LoweringContext
 {
   calls: HashMap<String, CallSignature>,
+  constructors: HashMap<String, Vec<CallSignature>>,
   nominal_types: HashMap<String, declarations::NominalType>,
 }
 
@@ -470,7 +473,10 @@ fn lower_expression(tree: &SyntaxTree,
                                        return_type: Box::new(Type::Named("Optional<Str>".to_string())),
                                        span: source_span });
       }
-      let signature = context.calls.get(&function)?;
+      let signature =
+        context.calls
+               .get(&function)
+               .or_else(|| constructor::resolve(tree, value, &function, context, locals, expected_type))?;
       if value.children.len() - 1 != signature.parameters.len()
       {
         return None;
@@ -482,7 +488,7 @@ fn lower_expression(tree: &SyntaxTree,
                              lower_expression(tree, tree.nodes.get(*index)?, context, locals, Some(parameter))
                            })
                            .collect::<Option<Vec<_>>>()?;
-      Some(Expression::Call { function,
+      Some(Expression::Call { function: signature.symbol.clone(),
                               arguments,
                               parameter_types: signature.parameters.clone(),
                               return_type: Box::new(signature.return_type.clone()),

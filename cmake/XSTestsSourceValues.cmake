@@ -3,7 +3,7 @@
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataInheritance MainDataReturn MainNestedDataReturn MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors MainDataReturn MainNestedDataReturn MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -26,7 +26,7 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        WrongCallArityMain BoolParameterCallMain NonLongReturnCallMain
                        BoolCallAsLongMain UnitCallAsLongMain InvalidLogicalOperands MatchMissingElse
                        MatchPatternTypeMismatch RecursiveDataParameter
-                       AmbiguousInheritedDataField ForEachNonArray ForEachBindingMismatch)
+                       AmbiguousInheritedDataField IncompleteDataConstructor ForEachNonArray ForEachBindingMismatch)
   configure_file(tests/fixtures/source/${source_fixture}.xs "${XS_SOURCE_NATIVE_FIXTURE_DIR}/${source_fixture}.xs"
                  COPYONLY)
 endforeach()
@@ -284,6 +284,23 @@ add_test(NAME source_native_data_inheritance_artifacts COMMAND xs_xse_artifact_t
                                                          "store i32 1" "store i32 2" "call i32 @total")
 set_tests_properties(source_native_data_inheritance_artifacts PROPERTIES
                      DEPENDS source_native_data_inheritance_build TIMEOUT 5)
+
+add_test(NAME source_native_data_constructors_build COMMAND xs build -file
+                                                    ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataConstructors.xs)
+set_tests_properties(source_native_data_constructors_build PROPERTIES TIMEOUT 5
+                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_data_constructors_artifacts COMMAND xs_xse_artifact_tests
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataConstructors.ll
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataConstructors.o
+                                                         ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataConstructors.xse 16
+                                                         "define %Point @\"xs\$ctor\$Point\$0\""
+                                                         "define %Point @\"xs\$ctor\$Point\$1\""
+                                                         "define %Point @\"xs\$ctor\$Point\$2\""
+                                                         "call %Point @\"xs\$ctor\$Point\$0\""
+                                                         "call %Point @\"xs\$ctor\$Point\$1\""
+                                                         "call %Point @\"xs\$ctor\$Point\$2\"")
+set_tests_properties(source_native_data_constructors_artifacts PROPERTIES
+                     DEPENDS source_native_data_constructors_build TIMEOUT 5)
 
 add_test(NAME source_native_data_return_build COMMAND xs build -file
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataReturn.xs)

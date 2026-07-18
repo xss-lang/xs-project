@@ -15,6 +15,8 @@ configure_file(tests/fixtures/source/MainNestedDataFields.xs
                "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainNestedDataFields.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainDataInheritance.xs
                "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainDataInheritance.xs" COPYONLY)
+configure_file(tests/fixtures/source/MainDataConstructors.xs
+               "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainDataConstructors.xs" COPYONLY)
 
 add_test(NAME direct_xhir_native_build COMMAND xs build --hir -file
   ${XS_DIRECT_XHIR_FIXTURE_DIR}/Supported.xhir)
@@ -58,11 +60,13 @@ foreach(fixture MainTupleCalls MainFixedArray)
   set_tests_properties(direct_xhir_${fixture}_artifacts PROPERTIES TIMEOUT 5 DEPENDS direct_xhir_${fixture}_roundtrip)
 endforeach()
 
-foreach(fixture MainDataFields MainNestedDataFields MainDataInheritance)
+foreach(fixture MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors)
   if(fixture STREQUAL "MainDataFields")
     set(expected_exit 9)
   elseif(fixture STREQUAL "MainDataInheritance")
     set(expected_exit 25)
+  elseif(fixture STREQUAL "MainDataConstructors")
+    set(expected_exit 16)
   else()
     set(expected_exit 22)
   endif()

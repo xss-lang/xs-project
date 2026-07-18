@@ -16,6 +16,10 @@ pub mod parser;
 pub mod verify;
 pub mod writer;
 
+pub use parser::parse_module;
+pub use verify::verify_module;
+pub use writer::{module_to_string, write_module};
+
 #[cfg(test)]
 mod float_operator_tests;
 #[cfg(test)]

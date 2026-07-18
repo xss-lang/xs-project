@@ -59,6 +59,13 @@ source-to-native executable pipeline.
   adaptive remembered sets, thread-local SATB buffers, precise roots and stack maps, collection-set scoring, and
   saturating telemetry. Kotlin `set("XGC_ENABLED", true)` and the `--xgc-enabled` override reach JVM-free compiler
   policy. Allocation, collector threads, barriers, and runtime integration remain deliberately inactive.
+- The public XGC Rust API is available exclusively through `xslang::xgc::*`. Executable use requires an explicit X#
+  runtime binding for object layout, reference tracing, and root rewriting; no legacy `xslang::gc` alias is provided.
+- Data constructor overloads now lower through typed HIR, MIR, XLIL, LLVM IR, and native `.xse` emission. Constructor
+  selection uses exact parameter types, hidden constructor symbols preserve overload identity, and definite field
+  initialization rejects paths that leave primitive storage uninitialized.
+- `<xs/lil.h>` is now the umbrella for the selective public C23 XLIL producer headers under `<xs/lil-c/*.h>`.
+  Rust producers use `xslang::xlil::*`; both surfaces can build and verify human-readable XLIL v0 modules.
 - Canonical `[T; N]` fixed arrays and `[T]` declarations initialized by square-bracket literals now preserve their element
   count through typed HIR, MIR, XLIL, LLVM, and native `.xse` emission.
 - Fixed-array literals now fill omitted numeric elements with zero and discard elements beyond the declared layout, as

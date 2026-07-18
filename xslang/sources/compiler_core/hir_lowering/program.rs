@@ -10,6 +10,7 @@ struct FunctionLocation
   tree: usize,
   node: usize,
   function: usize,
+  constructor_owner: Option<String>,
 }
 
 fn module_name(tree: &SyntaxTree, root: &SyntaxNode) -> Option<String>
@@ -56,7 +57,25 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
       };
       if matches!(declaration.kind, DECL_CLASS | DECL_DATA)
       {
-        nominal_types.push(nominal::lower_nominal_type(tree, declaration)?);
+        let nominal = nominal::lower_nominal_type(tree, declaration)?;
+        if nominal.kind == declarations::NominalKind::Data
+        {
+          for (ordinal, (constructor_index, constructor)) in
+            declaration.children
+                       .iter()
+                       .filter_map(|index| tree.nodes.get(*index).map(|node| (*index, node)))
+                       .filter(|(_, child)| child.kind == constructor::CLASS_CONSTRUCTOR)
+                       .enumerate()
+          {
+            let function = constructor::lower_signature(tree, constructor, &nominal.name, ordinal)?;
+            locations.push(FunctionLocation { tree: tree_index,
+                                              node: constructor_index,
+                                              function: functions.len(),
+                                              constructor_owner: Some(nominal.name.clone()) });
+            functions.push(function);
+          }
+        }
+        nominal_types.push(nominal);
         continue;
       }
       let Some(function_node) = (declaration.kind == DECL_FUNCTION).then_some(declaration)
@@ -67,7 +86,8 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
       let function = lower_function_signature(tree, function_node)?;
       locations.push(FunctionLocation { tree: tree_index,
                                         node: node_index,
-                                        function: functions.len() });
+                                        function: functions.len(),
+                                        constructor_owner: None });
       functions.push(function);
     }
   }
@@ -80,10 +100,34 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
                                                                  .collect::<Option<Vec<_>>>()?;
                                         let return_type = checked_type(&function.return_type)?;
                                         Some((function.name.clone(),
-                                              CallSignature { parameters,
+                                              CallSignature { symbol: function.name.clone(),
+                                                              parameters,
                                                               return_type }))
                                       })
                                       .collect(),
+                      constructors: functions.iter()
+                                             .filter(|function| function.name.starts_with("xs$ctor$"))
+                                             .filter_map(|function| {
+                                               let declarations::TypeRef::Named(owner) = &function.return_type
+                                               else
+                                               {
+                                                 return None;
+                                               };
+                                               let parameters = function.parameters
+                                                                        .iter()
+                                                                        .map(|parameter| checked_type(&parameter.ty))
+                                                                        .collect::<Option<Vec<_>>>()?;
+                                               Some((owner.clone(),
+                                                     CallSignature { symbol: function.name.clone(),
+                                                                     parameters,
+                                                                     return_type:
+                                                                       checked_type(&function.return_type)? }))
+                                             })
+                                             .fold(HashMap::<String, Vec<CallSignature>>::new(),
+                                                   |mut constructors, (owner, signature)| {
+                                                     constructors.entry(owner).or_default().push(signature);
+                                                     constructors
+                                                   }),
                       nominal_types: nominal_types.iter().cloned().map(|ty| (ty.name.clone(), ty)).collect() };
   for location in locations
   {
@@ -92,7 +136,14 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
     let function = &mut functions[location.function];
     let parameters = function.parameters.clone();
     let return_type = checked_type(&function.return_type);
-    function.body = lower_body(tree, syntax, &context, &parameters, return_type.as_ref());
+    function.body = if let Some(owner) = &location.constructor_owner
+    {
+      constructor::lower_body(tree, syntax, &context, &parameters, owner)
+    }
+    else
+    {
+      lower_body(tree, syntax, &context, &parameters, return_type.as_ref())
+    };
   }
   Ok(declarations::Module { name: program_name.unwrap_or(None),
                             nominal_types,
