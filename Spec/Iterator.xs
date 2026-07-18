@@ -35,27 +35,25 @@
 //
 
 
-import collections;
-
 
 // array iteration
 
 nums: [Int] = [1, 2, 3];
 
-for (num in nums.iter()) {
+for (num in nums) {
 
     println!("{}", num);
 }
 
 
-// vector iteration
+// resizable array iteration
 
-users: std::collections::Vector<Str> = {
-    "Leitewolf",
+users: ArrayList<Str> = [
+    "Leitwolf",
     "Alpha",
-};
+];
 
-for (user in users.iter()) {
+for (user in users) {
 
     println!("{}", user);
 }
@@ -63,10 +61,9 @@ for (user in users.iter()) {
 
 // empty collection iteration
 
-users: std::collections::Vector<Str> =
-    std::collections::Vector::new();
+users: ArrayList<Str> = [];
 
-for (user in users.iter()) {
+for (user in users) {
 
     println!("{}", user);
 }
@@ -76,12 +73,12 @@ for (user in users.iter()) {
 
 // indexed iteration
 
-users: std::collections::Vector<Str> = {
-    "Leitewolf",
+users: ArrayList<Str> = [
+    "Leitwolf",
     "Alpha",
-};
+];
 
-for ((index, user) in users.iter()) {
+for ((index, user) in users.enumerated()) {
 
     println!("{}: {}", index, user);
 }
@@ -89,7 +86,7 @@ for ((index, user) in users.iter()) {
 
 // break
 
-for (user in users.iter()) {
+for (user in users) {
 
     if (user == "Alpha") {
         break;
@@ -99,9 +96,9 @@ for (user in users.iter()) {
 
 // continue
 
-for (user in users.iter()) {
+for (user in users) {
 
-    if (user == "Leitewolf") {
+    if (user == "Leitwolf") {
         continue;
     }
 
@@ -133,31 +130,31 @@ users
 
 // mutable iteration
 
-for (user in &mut users.iter()) {
+for (user in &mut users) {
 
 }
 
 
 // collection remains valid
 
-for (user in users.iter()) {
+for (user in users) {
 
 }
 
 count: Int =
-    std::collections::Vector.length(users);
+    users.count;
 
 
 // VALID
 
-for (item in users.iter()) {
+for (item in users) {
 
 }
 
 
 // VALID
 
-for ((index, item) in users.iter()) {
+for ((index, item) in users.enumerated()) {
 
 }
 
@@ -172,7 +169,7 @@ users
 
 // VALID
 
-for (item in &mut users.iter()) {
+for (item in &mut users) {
 
 }
 

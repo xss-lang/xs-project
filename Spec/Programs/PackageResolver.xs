@@ -6,7 +6,7 @@
 
 
 
-import collections, stdio, process;
+import stdio, process;
 
 enum VisitState {
     White,
@@ -17,18 +17,18 @@ enum VisitState {
 data Package {
     name: Str;
     version: Str;
-    dependencies: std::collections::Vector<Str>;
+    dependencies: ArrayList<Str>;
 }
 
 class PackageGraph {
-    packages: std::collections::HashMap<Str, Package>;
-    states: std::collections::HashMap<Str, VisitState>;
-    ordered: std::collections::Vector<Package>;
+    packages: [Str: Package];
+    states: [Str: VisitState];
+    ordered: ArrayList<Package>;
 
     PackageGraph() {
-        self.packages = std::collections::HashMap<Str, Package>::new();
-        self.states = std::collections::HashMap<Str, VisitState>::new();
-        self.ordered = std::collections::Vector<Package>::new();
+        self.packages = [];
+        self.states = [];
+        self.ordered = [];
     }
 
     fn add(package: Package) {
@@ -36,7 +36,7 @@ class PackageGraph {
         self.states[package.name] = VisitState::White;
     }
 
-    fn resolve(root: Str) -> Result<std::collections::Vector<Package>, Error> {
+    fn resolve(root: Str) -> Result<ArrayList<Package>, Error> {
         self.visit(root)@;
         return Ok(self.ordered);
     }
@@ -66,12 +66,12 @@ class PackageGraph {
         }
 
         self.states[name] = VisitState::Black;
-        self.ordered.push(package);
+        self.ordered.append(package);
         return Ok();
     }
 }
 
-fn package_of(name: Str, version: Str, dependencies: std::collections::Vector<Str>) -> Package {
+fn package_of(name: Str, version: Str, dependencies: ArrayList<Str>) -> Package {
     return Package {
         name: name,
         version: version,
@@ -82,10 +82,10 @@ fn package_of(name: Str, version: Str, dependencies: std::collections::Vector<St
 fn main() -> Result<Int, Error> {
     graph: PackageGraph = new PackageGraph();
 
-    graph.add(package_of("app", "1.0.0", std::collections::Vector<Str>::of("net", "json")));
-    graph.add(package_of("net", "2.1.0", std::collections::Vector<Str>::of("runtime")));
-    graph.add(package_of("json", "3.0.0", std::collections::Vector<Str>::of("runtime")));
-    graph.add(package_of("runtime", "1.4.0", std::collections::Vector<Str>::new()));
+    graph.add(package_of("app", "1.0.0", ["net", "json"]));
+    graph.add(package_of("net", "2.1.0", ["runtime"]));
+    graph.add(package_of("json", "3.0.0", ["runtime"]));
+    graph.add(package_of("runtime", "1.4.0", []));
 
     for (package: Package in graph.resolve("app")@) {
         println!("{}@{}", package.name, package.version);

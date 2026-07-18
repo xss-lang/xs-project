@@ -14,6 +14,7 @@ impl TypeChecker
       Expression::Literal { literal, .. } => literal_default_type(literal),
       Expression::Local { name, .. } => self.find_local(name).map(|local| local.ty.clone()),
       Expression::Field { path } => Some(path.ty.clone()),
+      Expression::Member { field_type, .. } => Some(field_type.as_ref().clone()),
       Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
       Expression::Array { elements, .. } =>
       {

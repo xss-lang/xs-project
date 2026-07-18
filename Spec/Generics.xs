@@ -135,9 +135,9 @@ str_box: Box<Str>;
 
 // generic collections
 
-users: std::collections::Vector<Str>;
+users: ArrayList<Str>;
 
-scores: std::collections::HashMap<Str, Int>;
+scores: [Str: Int];
 
 
 // generic enum data

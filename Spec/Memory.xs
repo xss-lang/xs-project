@@ -279,8 +279,7 @@ iter: Iterator<Int> = numbers.iterator();
 // VALID
 // allocation is explicit
 
-users: std::collections::Vector<User> =
-    std::collections::Vector::new();
+users: ArrayList<User> = [];
 
 
 // INVALID DESIGN

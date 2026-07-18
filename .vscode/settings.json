@@ -25,12 +25,7 @@
     "**/out": true,
     "**/dist": true
   },
-  "rust-analyzer.files.excludeDirs": [
-    "build",
-    "node_modules",
-    "out",
-    "dist"
-  ],
+  "rust-analyzer.files.excludeDirs": ["build", "node_modules", "out", "dist"],
   "rust-analyzer.linkedProjects": [
     "xslang/Cargo.toml",
     "xsfmt/Cargo.toml",
@@ -38,5 +33,6 @@
     "xs-analyzer/Cargo.toml"
   ],
   "FSharp.suggestGitignore": false,
-  "r.lsp.promptToInstall": false
+  "r.lsp.promptToInstall": false,
+  "java.configuration.updateBuildConfiguration": "automatic"
 }

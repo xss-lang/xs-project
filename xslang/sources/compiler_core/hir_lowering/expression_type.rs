@@ -26,6 +26,9 @@ pub(super) fn expression_type(tree: &SyntaxTree,
                                                                collection::array_member_type(tree, value, context,
                                                                                              locals)
                                                              })
+                                                             .or_else(|| {
+                                                               nominal::member_type(tree, value, context, locals)
+                                                             })
     }
     EXPR_TUPLE => tuple::tuple_expression_type(tree, value, context, locals),
     EXPR_CALL =>

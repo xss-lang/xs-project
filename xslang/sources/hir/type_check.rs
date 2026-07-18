@@ -175,6 +175,14 @@ pub enum Expression
   {
     path: FieldPath
   },
+  Member
+  {
+    receiver: Box<Expression>,
+    owner: String,
+    name: String,
+    field_type: Box<Type>,
+    span: Span,
+  },
   Object
   {
     nominal_type: String,
@@ -708,6 +716,11 @@ impl TypeChecker
       {
         self.check_field_path(path);
       }
+      Expression::Member { receiver,
+                           owner,
+                           name,
+                           field_type,
+                           span, } => self.check_member(receiver, owner, name, field_type, *span),
       Expression::Object { nominal_type,
                            fields,
                            span, } => self.check_object(nominal_type, fields, *span),
@@ -814,17 +827,10 @@ impl TypeChecker
                                  span: *span });
         }
       }
-      Expression::Field { path } =>
-      {
-        self.check_expression(expression);
-        if path.ty != *ty
-        {
-          self.diagnostics
-              .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
-                                 message: "field expression is not assignable to the target type".to_string(),
-                                 span: path.span });
-        }
-      }
+      Expression::Field { path } => self.check_field_against_type(expression, path, ty),
+      Expression::Member { field_type,
+                           span,
+                           .. } => self.check_member_against_type(expression, field_type, *span, ty),
       Expression::Assign { span, .. } | Expression::AssignField { span, .. } | Expression::Update { span, .. } =>
       {
         self.check_expression(expression);

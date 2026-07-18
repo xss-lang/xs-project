@@ -6,7 +6,7 @@
 
 
 
-import collections, sync, thread, net;
+import sync, thread, net;
 
 data ClientId {
     value: Int;
@@ -20,11 +20,11 @@ data Message {
 
 class Room {
     name: Str;
-    members: std::collections::HashMap<ClientId, std::thread::Sender<Message>>;
+    members: [ClientId: std::thread::Sender<Message>];
 
     Room(name: Str) {
         self.name = name;
-        self.members = std::collections::HashMap<ClientId, std::thread::Sender<Message>>::new();
+        self.members = [];
     }
 
     fn join(id: ClientId, sender: std::thread::Sender<Message>) {
@@ -44,11 +44,11 @@ class Room {
 
 class ChatHub {
     next_id: std::sync::Atomic<Int>;
-    rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>>;
+    rooms: std::sync::Arc<std::sync::Mutex<[Str: Room]>>;
 
     ChatHub() {
         self.next_id = std::sync::Atomic::new(1);
-        self.rooms = std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap<Str, Room>::new()));
+        self.rooms = std::sync::Arc::new(std::sync::Mutex::new([]));
     }
 
     async fn serve(listener: std::net::TcpListener) -> Task<Result<()>> {
@@ -57,7 +57,7 @@ class ChatHub {
             id: ClientId = ClientId {
                 value: self.next_id.fetch_add(1),
             };
-            rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>> = std::sync::Arc::clone(&self.rooms);
+            rooms: std::sync::Arc<std::sync::Mutex<[Str: Room]>> = std::sync::Arc::clone(&self.rooms);
 
             std::thread::spawn(move async fn() {
                 session: ClientSession = new ClientSession(id, socket, rooms);
@@ -70,9 +70,9 @@ class ChatHub {
 class ClientSession {
     id: ClientId;
     socket: std::net::TcpStream;
-    rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>>;
+    rooms: std::sync::Arc<std::sync::Mutex<[Str: Room]>>;
 
-    ClientSession(id: ClientId, socket: std::net::TcpStream, rooms: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<Str, Room>>>) {
+    ClientSession(id: ClientId, socket: std::net::TcpStream, rooms: std::sync::Arc<std::sync::Mutex<[Str: Room]>>) {
         self.id = id;
         self.socket = socket;
         self.rooms = rooms;
@@ -108,7 +108,7 @@ class ClientSession {
     }
 
     fn join(room_name: Str, sender: std::thread::Sender<Message>) {
-        guard: std::sync::Mutex<std::collections::HashMap<Str, Room>> = self.rooms.lock();
+        guard: std::sync::Mutex<[Str: Room]> = self.rooms.lock();
         if (!(*guard).contains(room_name)) {
             (*guard)[room_name] = new Room(room_name);
         }
@@ -116,12 +116,12 @@ class ClientSession {
     }
 
     fn leave(room_name: Str) {
-        guard: std::sync::Mutex<std::collections::HashMap<Str, Room>> = self.rooms.lock();
+        guard: std::sync::Mutex<[Str: Room]> = self.rooms.lock();
         (*guard)[room_name].leave(self.id);
     }
 
     fn broadcast(message: Message) {
-        guard: std::sync::Mutex<std::collections::HashMap<Str, Room>> = self.rooms.lock();
+        guard: std::sync::Mutex<[Str: Room]> = self.rooms.lock();
         (*guard)[message.room].broadcast(message);
     }
 }

@@ -6,7 +6,7 @@
 
 
 
-import collections, stdio, fs, process;
+import stdio, fs, process;
 
 data FileEntry {
     path: Str;
@@ -18,12 +18,12 @@ data FileEntry {
 class BackupPlan {
     source_root: Str;
     target_root: Str;
-    files: std::collections::Vector<FileEntry>;
+    files: ArrayList<FileEntry>;
 
     BackupPlan(source_root: Str, target_root: Str) {
         self.source_root = source_root;
         self.target_root = target_root;
-        self.files = std::collections::Vector<FileEntry>::new();
+        self.files = [];
     }
 
     fn discover() -> Result<()> {
@@ -37,7 +37,7 @@ class BackupPlan {
             }
 
             relative: Str = std::fs::relative_path(self.source_root, path);
-            self.files.push(FileEntry {
+            self.files.append(FileEntry {
                 path: path,
                 relative: relative,
                 bytes: std::fs::size(path),
@@ -69,8 +69,8 @@ class BackupPlan {
     }
 }
 
-fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
-    if (args.length() != 3) {
+fn main(args: ArrayList<Str>) -> Result<Int, Error> {
+    if (args.count != 3) {
         eprintln!("usage: backup <source> <target>");
         return 2;
     }

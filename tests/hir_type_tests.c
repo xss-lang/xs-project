@@ -153,8 +153,8 @@ static void test_imported_standard_library_types(void)
 {
   const char *valid =
       ""
-      "import collections, fs, process, http, net, thread, sync;\n"
-      "fn Use(values: std::collections::Vector<Int>, map: std::collections::HashMap<Str, Int>,\n"
+      "import fs, process, http, net, thread, sync;\n"
+      "fn Use(values: ArrayList<Int>, map: [Str: Int],\n"
       "       file: std::fs::File, options: std::fs::OpenOptions, args: std::process::Args,\n"
       "       client: std::http::Client, request: std::http::Request, response: std::http::Response<Str>,\n"
       "       listener: std::net::TcpListener, stream: std::net::TcpStream,\n"
@@ -163,8 +163,8 @@ static void test_imported_standard_library_types(void)
       "       atomic: std::sync::Atomic<Int>, cancellation: std::sync::CancellationToken,\n"
       "       task: Task<Int>) {}\n";
   CHECK(check_single_source(valid));
-  CHECK(!check_single_source("fn Bad(value: std::collections::Vector<Int>) {}\n"));
-  CHECK(!check_single_source("import collections;\nfn Bad(value: std::collections::HashMap<Int>) {}\n"));
+  CHECK(!check_single_source("fn Bad(value: ArrayList<Int, Str>) {}\n"));
+  CHECK(!check_single_source("import collections;\nfn Bad() {}\n"));
   CHECK(!check_single_source("import http;\nfn Bad(value: std::http::Response) {}\n"));
   CHECK(!check_single_source("fn Bad(value: Task) {}\n"));
 }

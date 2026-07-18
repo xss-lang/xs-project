@@ -41,6 +41,14 @@ pub enum DesugaredExpression
   {
     path: FieldPath
   },
+  Member
+  {
+    receiver: Box<DesugaredExpression>,
+    owner: String,
+    name: String,
+    field_type: Box<Type>,
+    span: Span,
+  },
   Object
   {
     nominal_type: String,
@@ -442,6 +450,16 @@ impl ResultDesugar
                           span, } => DesugaredExpression::Local { name: name.clone(),
                                                                   span: *span },
       Expression::Field { path } => DesugaredExpression::Field { path: path.clone() },
+      Expression::Member { receiver,
+                           owner,
+                           name,
+                           field_type,
+                           span, } => DesugaredExpression::Member { receiver:
+                                                                      Box::new(self.desugar_expression(receiver)),
+                                                                    owner: owner.clone(),
+                                                                    name: name.clone(),
+                                                                    field_type: field_type.clone(),
+                                                                    span: *span },
       Expression::Object { nominal_type,
                            fields,
                            span, } =>
@@ -679,6 +697,7 @@ impl ResultDesugar
                                                                                           None
                                                                                         }),
       Expression::Field { path } => Some(path.ty.clone()),
+      Expression::Member { field_type, .. } => Some(field_type.as_ref().clone()),
       Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
       Expression::Array { elements, .. } =>
       {

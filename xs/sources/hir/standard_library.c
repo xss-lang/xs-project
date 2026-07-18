@@ -20,16 +20,7 @@ static const XsHirStandardTypeInfo standard_types[] = {
     {.canonical_name = "std.result.Result", .short_name = "Result", .min_arity = 1, .max_arity = 2},
     {.canonical_name = "std.result.Error", .short_name = "Error", .min_arity = 0, .max_arity = 0},
     {.canonical_name = "Task", .min_arity = 1, .max_arity = 1},
-    {.canonical_name = "std.collections.Vector",
-     .short_name = "Vector",
-     .required_import = "collections",
-     .min_arity = 1,
-     .max_arity = 1},
-    {.canonical_name = "std.collections.HashMap",
-     .short_name = "HashMap",
-     .required_import = "collections",
-     .min_arity = 2,
-     .max_arity = 2},
+    {.canonical_name = "ArrayList", .min_arity = 1, .max_arity = 1},
     {.canonical_name = "std.fs.File", .short_name = "File", .required_import = "fs"},
     {.canonical_name = "std.fs.OpenOptions", .short_name = "OpenOptions", .required_import = "fs"},
     {.canonical_name = "std.process.Args", .short_name = "Args", .required_import = "process"},
@@ -148,8 +139,6 @@ static const StandardCallInfo standard_calls[] = {
     {.name = "std.thread.yield", .required_import = "thread"},
     {.name = "hardware.read_float", .required_import = "hardware"},
     {.name = "std.net.listen", .required_import = "net"},
-    {.name = "std.collections.Vector.new", .required_import = "collections"},
-    {.name = "std.collections.HashMap.new", .required_import = "collections"},
     {.name = "std.fs.File.open", .required_import = "fs"},
     {.name = "std.fs.OpenOptions.new", .required_import = "fs"},
     {.name = "std.http.Request.builder", .required_import = "http"},
@@ -193,7 +182,7 @@ XsHirStandardLookup xs_hir_standard_type_lookup(const XsHirStandardTypeInfo *typ
   if(type == nullptr)
     return XS_HIR_STANDARD_UNKNOWN;
   return import_available(import, type->required_import, type->alternate_import) ? XS_HIR_STANDARD_AVAILABLE
-                                                                                  : XS_HIR_STANDARD_MISSING_IMPORT;
+                                                                                 : XS_HIR_STANDARD_MISSING_IMPORT;
 }
 
 XsHirStandardLookup xs_hir_standard_call_lookup(const char *name, const XsHirImportScope *import)
@@ -214,9 +203,8 @@ XsHirStandardLookup xs_hir_standard_call_lookup(const char *name, const XsHirImp
 bool xs_hir_standard_module_name(const char *name)
 {
   static const char *const modules[] = {
-      "arc",      "atomic",   "attrs",   "cffi",     "collections", "fs",     "hardware",
-      "http",     "mutex",    "net",     "optional", "panic",       "process", "result",
-      "rw_lock",  "stdio",    "sync",    "thread",   "std.optional", "std.result",
+      "arc",   "atomic",  "attrs",  "cffi",    "fs",    "hardware", "http",   "mutex",        "net",        "optional",
+      "panic", "process", "result", "rw_lock", "stdio", "sync",     "thread", "std.optional", "std.result",
   };
   for(size_t i = 0; i < sizeof(modules) / sizeof(modules[0]); ++i)
   {

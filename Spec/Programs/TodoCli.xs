@@ -6,7 +6,7 @@
 
 
 
-import stdio, fs, collections, process;
+import stdio, fs, process;
 
 enum data Command {
     Add: Str,
@@ -24,12 +24,12 @@ data TodoItem {
 class TodoStore {
     path: Str;
     next_id: Int;
-    items: std::collections::Vector<TodoItem>;
+    items: ArrayList<TodoItem>;
 
     TodoStore(path: Str) {
         self.path = path;
         self.next_id = 1;
-        self.items = std::collections::Vector<TodoItem>::new();
+        self.items = [];
     }
 
     static fn open(path: Str) -> Result<TodoStore, Error> {
@@ -46,13 +46,13 @@ class TodoStore {
         };
 
         self.next_id += 1;
-        self.items.push(item);
+        self.items.append(item);
         self.save()@;
         return Ok();
     }
 
     fn mark_done(id: Int) -> Result<()> {
-        for (index: Int = 0; index < self.items.length(); index = index + 1) {
+        for (index: Int = 0; index < self.items.count; index = index + 1) {
             if (self.items[index].id == id) {
                 self.items[index].done = true;
                 self.save()@;
@@ -64,7 +64,7 @@ class TodoStore {
     }
 
     fn print() -> Result<()> {
-        if (self.items.length() == 0) {
+        if (self.items.count == 0) {
             println!("No tasks yet.");
             return Ok();
         }
@@ -94,7 +94,7 @@ class TodoStore {
             }
 
             item: TodoItem = TodoCodec::parse(line)@;
-            self.items.push(item);
+            self.items.append(item);
 
             if (item.id >= self.next_id) {
                 self.next_id = item.id + 1;
@@ -121,8 +121,8 @@ class TodoStore {
 
 class TodoCodec {
     static fn parse(line: Str) -> Result<TodoItem, Error> {
-        parts: std::collections::Vector<Str> = line.split("|");
-        if (parts.length() != 3) {
+        parts: ArrayList<Str> = line.split("|");
+        if (parts.count != 3) {
             return Error(new Error("invalid todo record"));
         }
 
@@ -144,20 +144,20 @@ class TodoCodec {
     }
 }
 
-fn parse_command(args: std::collections::Vector<Str>) -> Result<Command, Error> {
-    if (args.length() < 2) {
+fn parse_command(args: ArrayList<Str>) -> Result<Command, Error> {
+    if (args.count < 2) {
         return Ok(Command::Help);
     }
 
     return match (args[1]) {
         "add" -> {
-            if (args.length() < 3) {
+            if (args.count < 3) {
                 return Error(new Error("todo add <title>"));
             }
             Ok(Command::Add(args.slice(2).join(" ")));
         },
         "done" -> {
-            if (args.length() != 3) {
+            if (args.count != 3) {
                 return Error(new Error("todo done <id>"));
             }
             Ok(Command::Done(Int::parse(args[2])));
@@ -181,7 +181,7 @@ fn print_help() -> Result<()> {
     return Ok();
 }
 
-fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
+fn main(args: ArrayList<Str>) -> Result<Int, Error> {
     store: TodoStore = TodoStore::open("todo.db")@;
     command: Command = parse_command(args)@;
 

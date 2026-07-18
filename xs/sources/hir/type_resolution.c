@@ -180,8 +180,8 @@ static const char *module_for_file(const XsHirSymbolTable *symbols, uint64_t fil
   return "";
 }
 
-static bool symbol_visible_from(const XsHirSymbol *symbol, const XsHirSymbolTable *symbols,
-                                const char *namespace_name, uint64_t current_file_id)
+static bool symbol_visible_from(const XsHirSymbol *symbol, const XsHirSymbolTable *symbols, const char *namespace_name,
+                                uint64_t current_file_id)
 {
   if(symbol == nullptr)
     return false;
@@ -410,8 +410,8 @@ static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *name
     return true;
   const XsSyntaxNode *base = type->children[0];
   const XsHirSymbol *symbol = nullptr;
-  bool success = resolve_named_type(base, namespace_name, generics, symbols, import, diagnostics, current_file_id,
-                                    false, &symbol);
+  bool success =
+      resolve_named_type(base, namespace_name, generics, symbols, import, diagnostics, current_file_id, false, &symbol);
   const XsSyntaxNode *base_path = first_child_kind(base, XS_SYNTAX_PATH);
   const XsHirStandardTypeInfo *standard = find_standard_type_from_path(base_path);
   if(standard != nullptr)
@@ -439,9 +439,9 @@ static bool resolve_generic_type_node(const XsSyntaxNode *type, const char *name
     free(name);
   }
   for(size_t i = 1; i < type->child_count; ++i)
-    success = resolve_type_node(type->children[i], namespace_name, current_file_id, generics, symbols, import,
-                                diagnostics) &&
-              success;
+    success =
+        resolve_type_node(type->children[i], namespace_name, current_file_id, generics, symbols, import, diagnostics) &&
+        success;
   return success;
 }
 
@@ -495,9 +495,8 @@ static bool resolve_generic_parameter_constraints(const XsSyntaxNode *parameter,
     const XsSyntaxNode *child = parameter->children[i];
     if(child->kind == XS_SYNTAX_IDENTIFIER)
       continue;
-    success =
-        resolve_constraint_type(child, namespace_name, current_file_id, generics, symbols, import, diagnostics) &&
-        success;
+    success = resolve_constraint_type(child, namespace_name, current_file_id, generics, symbols, import, diagnostics) &&
+              success;
   }
   return success;
 }
@@ -521,9 +520,9 @@ static bool resolve_type_node(const XsSyntaxNode *type, const char *namespace_na
   {
     if(type->children[i]->kind == XS_SYNTAX_EXPR_LITERAL)
       continue;
-    success = resolve_type_node(type->children[i], namespace_name, current_file_id, generics, symbols, import,
-                                diagnostics) &&
-              success;
+    success =
+        resolve_type_node(type->children[i], namespace_name, current_file_id, generics, symbols, import, diagnostics) &&
+        success;
   }
   return success;
 }
@@ -554,9 +553,10 @@ static bool resolve_declaration_types(const XsSyntaxNode *node, const char *name
   if(standard_enum_data_family_base(node))
     return true;
   if(node->kind == XS_SYNTAX_TYPE_NAMED || node->kind == XS_SYNTAX_TYPE_GENERIC || node->kind == XS_SYNTAX_TYPE_ARRAY ||
-     node->kind == XS_SYNTAX_TYPE_FIXED_ARRAY || node->kind == XS_SYNTAX_TYPE_POINTER ||
-     node->kind == XS_SYNTAX_TYPE_REFERENCE || node->kind == XS_SYNTAX_TYPE_MUTABLE_REFERENCE ||
-     node->kind == XS_SYNTAX_TYPE_TUPLE || node->kind == XS_SYNTAX_TYPE_FUNCTION)
+     node->kind == XS_SYNTAX_TYPE_FIXED_ARRAY || node->kind == XS_SYNTAX_TYPE_MAP ||
+     node->kind == XS_SYNTAX_TYPE_POINTER || node->kind == XS_SYNTAX_TYPE_REFERENCE ||
+     node->kind == XS_SYNTAX_TYPE_MUTABLE_REFERENCE || node->kind == XS_SYNTAX_TYPE_TUPLE ||
+     node->kind == XS_SYNTAX_TYPE_FUNCTION)
     return resolve_type_node(node, namespace_name, current_file_id, active, symbols, import, diagnostics);
   if(xs_hir_declaration_uses_expanded_member_view(node, macro_declarations))
   {
@@ -616,8 +616,8 @@ bool xs_hir_resolve_types_with_macros(const XsSyntaxTree *tree,
     const XsHirSymbol *symbol = &symbols->symbols[i];
     if(symbol->span.file_id != tree->file_id)
       continue;
-    success = resolve_declaration_types(symbol->syntax, symbol->namespace_name, tree->file_id, nullptr, symbols,
-                                        import, diagnostics, macro_declarations, macro_statements) &&
+    success = resolve_declaration_types(symbol->syntax, symbol->namespace_name, tree->file_id, nullptr, symbols, import,
+                                        diagnostics, macro_declarations, macro_statements) &&
               success;
   }
   return success && !xs_diagnostics_has_error(diagnostics);

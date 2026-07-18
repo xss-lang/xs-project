@@ -471,6 +471,15 @@ definite primitive-leaf initialization on every continuing path and return the c
 methods receive the scalarized value, while static methods use the ordinary call ABI. Recursive by-value parameters and
 returns require a future indirect ABI and are rejected explicitly. Escaping objects, receiver mutation/reference ABI,
 class allocation, operator dispatch, and a stable cross-module layout remain deferred.
+Nominal member reads are not restricted to named local places. XHIR records an explicit owner, field name, result type,
+and receiver expression for projections such as `make_point().position.x`. MIR resolves the inherited field order from the
+nominal registry and emits target-independent aggregate extraction; XLIL and LLVM preserve the same nested value projection.
+Assignment still requires an addressable local-rooted place.
+
+The shared public C23 include tree now has an initial feature layer under `<xs/c23/*.h>`. `<xs/c23_features.h>` is its
+umbrella header. The current `trait.h` and `impl.h` macros define object-safe vtable contracts, translation-unit-local
+`impl ... for ...` bindings, erased trait objects, and checked C23 call syntax without compiler extensions. This is a small
+foundation rather than a claim that every X# trait rule is already available to C callers.
 The imported HIR body model now has explicit lexical blocks and distinguishes statement `if` from value-producing `if`.
 Both forms require a `Bool` condition during Rust type checking. Statement branches lower to MIR basic blocks with an
 explicit merge when control can continue. A directly returned `if` expression may lower each required value branch to its

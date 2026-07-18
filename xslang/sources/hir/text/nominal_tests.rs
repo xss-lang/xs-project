@@ -54,3 +54,30 @@ fn roundtrips_nominal_object_and_field_records()
   let parsed = parse_xhir_function(&text).expect("nominal XHIR");
   assert_eq!(parsed, function);
 }
+
+#[test]
+fn roundtrips_member_projection_from_a_value()
+{
+  let function = Function { name: "project".to_string(),
+                            return_type: Some(Type::Primitive(PrimitiveType::Long)),
+                            locals: Vec::new(),
+                            body: vec![Statement::Return {
+                              value: Some(Expression::Member {
+                                receiver: Box::new(Expression::Call {
+                                  function: "make_point".to_string(),
+                                  arguments: Vec::new(),
+                                  parameter_types: Vec::new(),
+                                  return_type: Box::new(Type::Named("Point".to_string())),
+                                  span: span(),
+                                }),
+                                owner: "Point".to_string(),
+                                name: "x".to_string(),
+                                field_type: Box::new(Type::Primitive(PrimitiveType::Long)),
+                                span: span(),
+                              }),
+                              span: span(),
+                            }] };
+  let text = function_to_xhir(&function);
+  assert!(text.contains("member Point.x : Long"));
+  assert_eq!(parse_xhir_function(&text).expect("member projection XHIR"), function);
+}

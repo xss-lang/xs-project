@@ -599,7 +599,8 @@ static void test_attribute_structure(void)
 static void test_complete_program_expression_shapes(void)
 {
   const char *text = "fn Build(items: Items, pair: (Int, Int)) {\n"
-                     "  map := std::collections::HashMap<Str, Int>::new();\n"
+                     "  map: [Str: Int] = [];\n"
+                     "  factory := Factory<Str>::new();\n"
                      "  entry := Entry { name: \"Alpha\", value: 7 };\n"
                      "  for (item: Entry in items) { item.run(); }\n"
                      "  (left, right): (Int, Int) = pair;\n"

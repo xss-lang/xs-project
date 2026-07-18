@@ -6,7 +6,7 @@
 
 
 
-import collections, optional, process, sync, stdio;
+import optional, process, sync, stdio;
 
 data Job {
     id: Int;
@@ -15,18 +15,18 @@ data Job {
 }
 
 class Queue {
-    jobs: std::collections::Vector<Job>;
+    jobs: ArrayList<Job>;
 
     Queue() {
-        self.jobs = std::collections::Vector<Job>::new();
+        self.jobs = [];
     }
 
     fn push(job: Job) {
-        self.jobs.push(job);
+        self.jobs.append(job);
     }
 
     fn pop() -> Optional<Job> {
-        if (self.jobs.length() == 0) {
+        if (self.jobs.count == 0) {
             return None;
         }
 

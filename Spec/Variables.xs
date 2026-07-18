@@ -39,7 +39,7 @@ fn main() {
 
     // reassignment
     x = 10;
-    name = "Leitewolf";
+    name = "Leitwolf";
     enabled = false;
 
     // val binding

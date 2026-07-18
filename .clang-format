@@ -214,6 +214,8 @@ IfMacros: []
 StatementAttributeLikeMacros: []
 StatementMacros:
   - CHECK
+  - XS_C23_IMPL_FOR
+  - XS_C23_TRAIT
 WhitespaceSensitiveMacros: []
 
 IntegerLiteralSeparator:

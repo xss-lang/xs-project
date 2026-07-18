@@ -6,7 +6,7 @@
 
 
 
-import http, collections, thread, sync, stdio;
+import http, thread, sync, stdio;
 
 data Endpoint {
     name: Str;
@@ -81,14 +81,14 @@ class HealthClient {
 }
 
 async fn check_all(
-    endpoints: std::collections::Vector<Endpoint>,
+    endpoints: ArrayList<Endpoint>,
     reporter: HealthReporter
 ) -> Task<Result<Int, Error>> {
     client: HealthClient = new HealthClient();
-    tasks: std::collections::Vector<Task<Result<HealthResult, Error>>> = std::collections::Vector<Task<Result<HealthResult, Error>>>::new();
+    tasks: ArrayList<Task<Result<HealthResult, Error>>> = [];
 
     for (endpoint: Endpoint in endpoints) {
-        tasks.push(client.check(endpoint));
+        tasks.append(client.check(endpoint));
     }
 
     failures: Int = 0;
@@ -104,20 +104,20 @@ async fn check_all(
     return Ok(failures);
 }
 
-fn default_endpoints() -> std::collections::Vector<Endpoint> {
-    endpoints: std::collections::Vector<Endpoint> = std::collections::Vector<Endpoint>::new();
+fn default_endpoints() -> ArrayList<Endpoint> {
+    endpoints: ArrayList<Endpoint> = [];
 
-    endpoints.push(Endpoint {
+    endpoints.append(Endpoint {
         name: "example",
         url: "https://example.com",
     });
 
-    endpoints.push(Endpoint {
+    endpoints.append(Endpoint {
         name: "httpbin",
         url: "https://httpbin.org/get",
     });
 
-    endpoints.push(Endpoint {
+    endpoints.append(Endpoint {
         name: "iana",
         url: "https://www.iana.org/domains/reserved",
     });

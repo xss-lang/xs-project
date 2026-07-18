@@ -92,6 +92,8 @@ the backend. HIR and MIR do not depend on the LLVM API; the backend entry langua
 ## Current working features
 
 - C23-based, Clang/LLVM-focused build system
+- Shared public C23 feature headers under `<xs/c23/*.h>`, with `<xs/c23_features.h>` as the umbrella and an initial
+  object-safe trait/implementation binding facility
 - Clang/LLVM-oriented CMake/toolchain checks
 - `.xsproj` manifest parser/lexer/model public C API
 - X# lexer and structural AST parser
@@ -115,7 +117,7 @@ example today.
 
 ## Release policy
 
-The project is now in the `0.1.8` development period. Supported source functions cross the C23 structural-AST boundary into
+The project is now in the `0.1.9` development period. Supported source functions cross the C23 structural-AST boundary into
 Rust HIR (coordinated THIR and XHIR sides), verified and optimized MIR, and XLIL before the public C23 XLIL model drives
 LLVM native `.xse` emission.
 Rust compiler-core control flow now includes conditional loops, post-test `do`/`while` sugar, loop jumps, and statement
@@ -139,6 +141,9 @@ single program-wide signature, HIR, MIR, XLIL, and LLVM module before native `.x
 Direct and mutually recursive same-module calls use that program-wide signature registry. Unit-returning helpers, including
 explicit `-> ()` functions, lower to result-free MIR/XLIL/LLVM calls; a value-returning call followed by `;` is evaluated
 and its typed result is discarded.
+Nominal `data` values can now be projected directly from call results, so chained expressions such as
+`make_point().position.x` remain typed in XHIR and lower through aggregate extraction in MIR, XLIL, and LLVM without a
+source-level temporary.
 
 ## CLI summary
 

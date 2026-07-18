@@ -6,7 +6,7 @@
 
 
 
-import collections, stdio, process;
+import stdio, process;
 
 interface TextPlugin {
     fn name() -> Str;
@@ -55,14 +55,14 @@ class ReplacePlugin : TextPlugin {
 }
 
 class Pipeline {
-    stages: std::collections::Vector<TextPlugin>;
+    stages: ArrayList<TextPlugin>;
 
     Pipeline() {
-        self.stages = std::collections::Vector<TextPlugin>::new();
+        self.stages = [];
     }
 
     fn add(stage: TextPlugin) {
-        self.stages.push(stage);
+        self.stages.append(stage);
     }
 
     fn run(input: Str) -> Result<Str, Error> {
@@ -76,8 +76,8 @@ class Pipeline {
     }
 }
 
-fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
-    input: Str = if (args.length() > 1) {
+fn main(args: ArrayList<Str>) -> Result<Int, Error> {
+    input: Str = if (args.count > 1) {
         args[1]
     }
     else {

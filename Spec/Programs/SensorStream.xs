@@ -6,7 +6,7 @@
 
 
 
-import collections, hardware, thread, sync, stdio;
+import hardware, thread, sync, stdio;
 
 data Reading {
     sensor_id: Str;
@@ -43,28 +43,28 @@ class Sensor {
 }
 
 class Aggregator {
-    totals: std::collections::HashMap<Str, Float>;
-    counts: std::collections::HashMap<Str, Int>;
+    totals: [Str: Optional<Float>];
+    counts: [Str: Optional<Int>];
 
     Aggregator() {
-        self.totals = std::collections::HashMap<Str, Float>::new();
-        self.counts = std::collections::HashMap<Str, Int>::new();
+        self.totals = [];
+        self.counts = [];
     }
 
     fn add(reading: Reading) {
-        self.totals[reading.sensor_id] = (self.totals[reading.sensor_id] ?? 0.0) + reading.value;
-        self.counts[reading.sensor_id] = (self.counts[reading.sensor_id] ?? 0) + 1;
+        self.totals[reading.sensor_id] = Some((self.totals[reading.sensor_id] ?? 0.0) + reading.value);
+        self.counts[reading.sensor_id] = Some((self.counts[reading.sensor_id] ?? 0) + 1);
     }
 
-    fn averages() -> std::collections::Vector<Average> {
-        result: std::collections::Vector<Average> = std::collections::Vector<Average>::new();
+    fn averages() -> ArrayList<Average> {
+        result: ArrayList<Average> = [];
 
-        for ((sensor_id, total): (Str, Float) in self.totals) {
+        for ((sensor_id, total): (Str, Optional<Float>) in self.totals) {
             count: Int = self.counts[sensor_id]!;
-            result.push(Average {
+            result.append(Average {
                 sensor_id: sensor_id,
                 count: count,
-                value: total / Float::from(count),
+                value: total! / Float::from(count),
             });
         }
 
@@ -73,11 +73,11 @@ class Aggregator {
 }
 
 async fn main() -> Task<Result<Int, Error>> {
-    sensors: std::collections::Vector<Sensor> = std::collections::Vector<Sensor>::of(
+    sensors: ArrayList<Sensor> = [
         new Sensor("temperature", "C"),
         new Sensor("humidity", "%"),
         new Sensor("pressure", "Pa")
-    );
+    ];
     aggregator: Aggregator = new Aggregator();
     cancellation: std::sync::CancellationToken = std::sync::CancellationToken::timeout(5.seconds());
 

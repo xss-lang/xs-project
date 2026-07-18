@@ -147,7 +147,10 @@ fruits.insert_contents(["Lemon", "Lime"], 2);
 
 fruits.remove(2);
 fruits.remove_first();
+fruits.remove_first(2);
 fruits.remove_last();
+fruits.remove_last(2);
+fruits.remove_subrange(0, 2);
 fruits.remove_all();
 
 // remove_all(true) preserves allocated capacity.
@@ -168,16 +171,45 @@ values: [Int] = [10, 20, 30, 20, 40];
 has_twenty: Bool = values.contains(20);
 first_twenty: Optional<Int> = values.first_index(20);
 last_twenty: Optional<Int> = values.last_index(20);
+first_large: Optional<Int> = values.first_where(fn(value) { value > 25 });
+first_large_index: Optional<Int> = values.first_index_where(fn(value) { value > 25 });
 
 doubled: [Int] = values.map(fn(value) { value * 2 });
 large: [Int] = values.filter(fn(value) { value > 20 });
 sum: Int = values.reduce(0, fn(total, value) { total + value });
 
+parsed: [Int] = ["10", "invalid", "30"].compact_map(fn(value) {
+    Int::parse(value)
+});
+
 ascending: [Int] = values.sorted();
 descending: [Int] = values.sorted(fn(left, right) { left > right });
 
+val sortable: [Int] = [4, 2, 5, 1, 3];
+sortable.sort();
+sortable.sort(fn(left, right) { left > right });
+
 minimum: Optional<Int> = values.min();
 maximum: Optional<Int> = values.max();
+minimum_by: Optional<Int> = values.min_by(fn(left, right) { left < right });
+maximum_by: Optional<Int> = values.max_by(fn(left, right) { left < right });
+
+first_three: [Int] = values.prefix(3);
+last_two: [Int] = values.suffix(2);
+without_first: [Int] = values.drop_first();
+without_first_two: [Int] = values.drop_first(2);
+without_last: [Int] = values.drop_last();
+without_last_two: [Int] = values.drop_last(2);
+small_prefix: [Int] = values.prefix_while(fn(value) { value < 30 });
+after_small_prefix: [Int] = values.drop_while(fn(value) { value < 30 });
+
+joined: Str = values.reduce_into("", fn(result, value) {
+    result += format!("{}", value);
+});
+
+values.for_each(fn(value) {
+    println!("{}", value);
+});
 
 }
 
@@ -221,4 +253,6 @@ nested: [[Int]] = [
 ];
 
 nested_value: Int = nested[1][0];
+
+flattened: [Int] = nested.flat_map(fn(group) { group });
 }

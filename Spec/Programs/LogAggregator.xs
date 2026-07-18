@@ -6,7 +6,7 @@
 
 
 
-import collections, fs, optional, stdio, process;
+import fs, stdio, process;
 
 data LogEntry {
     level: Str;
@@ -15,8 +15,8 @@ data LogEntry {
 
 class LogParser {
     static fn parse(line: Str) -> Result<LogEntry, Error> {
-        parts: std::collections::Vector<Str> = line.split(" ", 2);
-        if (parts.length() != 2) {
+        parts: ArrayList<Str> = line.split(" ", 2);
+        if (parts.count != 2) {
             return Error(new Error("invalid log line"));
         }
 
@@ -28,17 +28,17 @@ class LogParser {
 }
 
 class Report {
-    counts: std::collections::HashMap<Str, Int>;
+    counts: [Str: Optional<Int>];
     newest_error: Optional<Str>;
 
     Report() {
-        self.counts = std::collections::HashMap<Str, Int>::new();
+        self.counts = [];
         self.newest_error = None;
     }
 
     fn add(entry: LogEntry) {
-        current: Int = self.counts.get(entry.level).unwrap_or(0);
-        self.counts[entry.level] = current + 1;
+        current: Int = self.counts[entry.level] ?? 0;
+        self.counts[entry.level] = Some(current + 1);
 
         if (entry.level == "ERROR") {
             self.newest_error = Some(entry.message);
@@ -46,8 +46,8 @@ class Report {
     }
 
     fn print() -> Result<()> {
-        for ((level, count): (Str, Int) in self.counts) {
-            println!("{:<8} {}", level, count);
+        for ((level, count): (Str, Optional<Int>) in self.counts) {
+            println!("{:<8} {}", level, count!);
         }
 
         if (self.newest_error != None) {

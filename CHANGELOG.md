@@ -12,8 +12,16 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.1.9 - 2026-07-18
+
 ### Added
 
+- Public `<xs/c23_features.h>` and selective `<xs/c23/trait.h>` / `<xs/c23/impl.h>` headers provide the first strict-C23
+  trait-object, implementation binding, and dynamic-call helpers. A standalone public-header test exercises real dispatch.
+- Chained `data` field projection from arbitrary values, including aggregate-returning calls, now has a typed XHIR `member`
+  record and lowers through MIR/XLIL aggregate extraction to LLVM `extractvalue` and native `.xse` execution.
+- Built-in collection spelling is now consistent across the specification: resizable sequences use `ArrayList<T>`, maps
+  use `[K: V]`, sets use `[T] = {...}`, and none of these built-in forms requires `import collections`.
 - Ordered, transitive, and multiple `data` base lists now cross the C23 structural AST into Rust HIR and canonical XHIR.
   Inherited fields are laid out base-first in source base-list order, participate in object initialization, member access,
   mutation, scalar call ABI lowering, XMIR aggregate registries, LLVM IR, and native `.xse` execution. Unknown/cyclic/
@@ -646,7 +654,7 @@ source-to-native executable pipeline.
 
 ### Changed
 
-- Module selected-import syntax uses `from` instead of `froms`.
+- Module selected-import syntax corrected its former plural misspelling to singular `from`.
 - `byte` resolves to `u8` at HIR level, and `sbyte` resolves to `i8`.
 - `char` is documented as a 16-bit UTF-16 code unit.
 - `str` is treated as UTF-16 and unbounded up to runtime allocator and target environment limits.

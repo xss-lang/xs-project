@@ -34,7 +34,7 @@
 //
 // Standard-library examples:
 //
-//     std::collections::HashMap.get(scores, "Alpha")
+//     scores["Alpha"]
 //     std::stdin().read_line(&mut input)
 //
 // Segment roles:

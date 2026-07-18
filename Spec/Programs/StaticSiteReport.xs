@@ -6,7 +6,7 @@
 
 
 
-import collections, fs, optional, stdio, process;
+import fs, stdio, process;
 
 data PageInfo {
     path: Str;
@@ -26,20 +26,20 @@ class Markdown {
     }
 
     static fn count_words(text: Str) -> Int {
-        return text.split_whitespace().length();
+        return text.split_whitespace().count;
     }
 }
 
 class SiteReport {
-    pages: std::collections::Vector<PageInfo>;
+    pages: ArrayList<PageInfo>;
 
     SiteReport() {
-        self.pages = std::collections::Vector<PageInfo>::new();
+        self.pages = [];
     }
 
     fn add_markdown(path: Str) -> Result<()> {
         text: Str = std::fs::read_to_str(path);
-        self.pages.push(PageInfo {
+        self.pages.append(PageInfo {
             path: path,
             title: Markdown::title(path, text)@,
             word_count: Markdown::count_words(text),
@@ -48,7 +48,7 @@ class SiteReport {
     }
 
     fn print() -> Result<()> {
-        println!("pages: {}", self.pages.length());
+        println!("pages: {}", self.pages.count);
 
         for (page: PageInfo in self.pages) {
             println!("{:<32} {:>6} {}", page.title, page.word_count, page.path);

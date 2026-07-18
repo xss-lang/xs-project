@@ -31,6 +31,7 @@ mod for_tests;
 #[cfg(test)]
 mod match_tests;
 mod names;
+mod nominal;
 #[cfg(test)]
 mod nominal_tests;
 mod parameter_writer;
@@ -415,18 +416,15 @@ fn write_expression(output: &mut String, expression: &Expression, indent: usize)
     }
     Expression::Field { path } =>
     {
-      let mutability = if path.mutable
-      {
-        "mutable"
-      }
-      else
-      {
-        "immutable"
-      };
-      let _ = writeln!(output,
-                       "{pad}field {mutability} {} : {}",
-                       field_path_name(path),
-                       type_name(&path.ty));
+      nominal::write_field(output, path, &pad);
+    }
+    Expression::Member { receiver,
+                         owner,
+                         name,
+                         field_type,
+                         .. } =>
+    {
+      nominal::write_member(output, receiver, owner, name, field_type, indent);
     }
     Expression::Object { nominal_type,
                          fields,
@@ -644,18 +642,15 @@ fn write_desugared_expression(output: &mut String, expression: &DesugaredExpress
     }
     DesugaredExpression::Field { path } =>
     {
-      let mutability = if path.mutable
-      {
-        "mutable"
-      }
-      else
-      {
-        "immutable"
-      };
-      let _ = writeln!(output,
-                       "{pad}field {mutability} {} : {}",
-                       field_path_name(path),
-                       type_name(&path.ty));
+      nominal::write_field(output, path, &pad);
+    }
+    DesugaredExpression::Member { receiver,
+                                  owner,
+                                  name,
+                                  field_type,
+                                  .. } =>
+    {
+      nominal::write_desugared_member(output, receiver, owner, name, field_type, indent);
     }
     DesugaredExpression::Object { nominal_type,
                                   fields,

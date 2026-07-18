@@ -6,7 +6,7 @@
 
 
 
-import collections, stdio, process;
+import stdio, process;
 
 data Money {
     cents: Int;
@@ -27,12 +27,12 @@ data Transfer {
 }
 
 class Ledger {
-    accounts: std::collections::HashMap<Str, Account>;
-    audit: std::collections::Vector<Transfer>;
+    accounts: [Str: Account];
+    audit: ArrayList<Transfer>;
 
     Ledger() {
-        self.accounts = std::collections::HashMap<Str, Account>::new();
-        self.audit = std::collections::Vector<Transfer>::new();
+        self.accounts = [];
+        self.audit = [];
     }
 
     fn open(id: Str, owner: Str, balance: Money) {
@@ -57,7 +57,7 @@ class Ledger {
 
         from_account.balance.cents -= transfer.amount.cents;
         to_account.balance.cents += transfer.amount.cents;
-        self.audit.push(transfer);
+        self.audit.append(transfer);
         return Ok();
     }
 

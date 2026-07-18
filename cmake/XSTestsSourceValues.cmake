@@ -3,7 +3,7 @@
 
 set(XS_SOURCE_NATIVE_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/source")
 file(MAKE_DIRECTORY "${XS_SOURCE_NATIVE_FIXTURE_DIR}")
-foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainFunctionOverloads MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors MainDataMethods MainDataReturn MainNestedDataReturn MainNegative MainPositive
+foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainRemainder MainOperatorCall MainFunctionOverloads MainIntOperators MainFloatConstants MainFloatOperators MainStringLiteral MainStringFlow MainStringCompare MainCharFlow MainIntegerWidths MainIntegerOperators MainDataFields MainNestedDataFields MainDataInheritance MainDataConstructors MainDataMethods MainDataValueProjection MainDataReturn MainNestedDataReturn MainNegative MainPositive
                        MainBitwise MainXor MainLocal MainLocalArithmetic MainLocalIf MainInferredLocal MainIf MainIfValue
                        MainIfNot
                        MainIfFalse MainIfNotEqual MainBoolLocal MainBoolNotLocal MainInferredBoolLocal
@@ -314,6 +314,18 @@ add_test(NAME source_native_data_methods_artifacts COMMAND xs_xse_artifact_tests
   "xs$method$Point$add$2" "xs$method$Point$identity$3")
 set_tests_properties(source_native_data_methods_artifacts PROPERTIES
                      DEPENDS source_native_data_methods_build TIMEOUT 5)
+
+add_test(NAME source_native_data_value_projection_build COMMAND xs build -file
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataValueProjection.xs)
+set_tests_properties(source_native_data_value_projection_build PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+add_test(NAME source_native_data_value_projection_artifacts COMMAND xs_xse_artifact_tests
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataValueProjection.ll
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataValueProjection.o
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainDataValueProjection.xse 10
+  "call %Point @make_point" "extractvalue %Point" "extractvalue %Coordinates")
+set_tests_properties(source_native_data_value_projection_artifacts PROPERTIES
+  DEPENDS source_native_data_value_projection_build TIMEOUT 5)
 
 add_test(NAME source_native_function_overloads_build COMMAND xs build -file
                                                     ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainFunctionOverloads.xs)

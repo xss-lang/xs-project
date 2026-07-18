@@ -143,6 +143,18 @@ impl HirToMirLowerer
                                    span, } => Some(Expression::Local { name: name.clone(),
                                                                        span: *span }),
       DesugaredExpression::Field { path } => Some(Expression::Field { path: path.clone() }),
+      DesugaredExpression::Member { receiver,
+                                    owner,
+                                    name,
+                                    field_type,
+                                    span, } =>
+      {
+        Some(Expression::Member { receiver: Box::new(self.surface_expression_from_desugared(receiver)?),
+                                  owner: owner.clone(),
+                                  name: name.clone(),
+                                  field_type: field_type.clone(),
+                                  span: *span })
+      }
       DesugaredExpression::Object { nominal_type,
                                     fields,
                                     span, } =>

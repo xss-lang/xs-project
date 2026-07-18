@@ -10,7 +10,7 @@
 // std::fs::write does not format text and does not add a newline.
 //
 
-import fs, stdio, collections, result;
+import fs, stdio, result;
 
 
 // raw writes
@@ -38,13 +38,13 @@ fn read_text() -> Result<()> {
 }
 
 fn read_bytes() -> Result<()> {
-    bytes: std::collections::Vector<Byte> = std::fs::read("image.png");
-    println!("file size: {}", bytes.length());
+    bytes: ArrayList<Byte> = std::fs::read("image.png");
+    println!("file size: {}", bytes.count);
 }
 
 // std::fs::read_to_str(path-or-stream) reads UTF-16 text into Str. The compiler/runtime selects UTF-16LE or UTF-16BE
 // automatically for the target situation.
-// std::fs::read(path-or-stream) reads raw bytes into std::collections::Vector<Byte>.
+// std::fs::read(path-or-stream) reads raw bytes into ArrayList<Byte>.
 
 
 // create paths
@@ -90,7 +90,7 @@ fn list_directory() -> Result<()> {
     }
 }
 
-// std::fs::list_dir(path) returns std::collections::Vector<Str>.
+// std::fs::list_dir(path) returns ArrayList<Str>.
 // Entries are returned in deterministic lexicographic order.
 
 

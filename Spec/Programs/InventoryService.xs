@@ -6,7 +6,7 @@
 
 
 
-import collections, thread, sync, stdio;
+import thread, sync, stdio;
 
 data Product {
     sku: Str;
@@ -21,7 +21,7 @@ data OrderLine {
 
 data Order {
     id: Int;
-    lines: std::collections::Vector<OrderLine>;
+    lines: ArrayList<OrderLine>;
 }
 
 data Receipt {
@@ -37,10 +37,10 @@ interface Repository<K, V> {
 
 class InventoryRepository : Repository<Str, Product> {
 
-    products: std::collections::HashMap<Str, Product>;
+    products: [Str: Product];
 
     InventoryRepository() {
-        self.products = std::collections::HashMap<Str, Product>::new();
+        self.products = [];
     }
 
     fn get(key: Str) -> Result<&Product, Error> {
@@ -117,8 +117,8 @@ fn seed_inventory() -> Arc<Mutex<InventoryRepository>> {
 }
 
 fn make_order(id: Int, sku: Str, quantity: Int) -> Order {
-    lines: std::collections::Vector<OrderLine> = std::collections::Vector<OrderLine>::new();
-    lines.push(OrderLine {
+    lines: ArrayList<OrderLine> = [];
+    lines.append(OrderLine {
         sku: sku,
         quantity: quantity,
     });

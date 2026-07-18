@@ -15,11 +15,12 @@ pub(super) fn lower_nominal_type(tree: &SyntaxTree,
                    .filter_map(|index| tree.nodes.get(*index))
                    .filter(|child| child.kind == BASE_SPECIFIER)
                    .map(|base| {
-                     let ty = base.children
-                                  .iter()
-                                  .filter_map(|index| tree.nodes.get(*index))
-                                  .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))
-                                  .ok_or(LoweringError::MissingParameterType)?;
+                     let ty =
+                       base.children
+                           .iter()
+                           .filter_map(|index| tree.nodes.get(*index))
+                           .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind) || child.kind == TYPE_MAP)
+                           .ok_or(LoweringError::MissingParameterType)?;
                      let visibility = match base.visibility
                      {
                        1 => declarations::Visibility::Public,
@@ -39,11 +40,12 @@ pub(super) fn lower_nominal_type(tree: &SyntaxTree,
                     .filter(|child| matches!(child.kind, CLASS_FIELD | DATA_FIELD))
                     .map(|field| {
                       let name = first_child_kind(tree, field, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
-                      let ty = field.children
-                                    .iter()
-                                    .filter_map(|index| tree.nodes.get(*index))
-                                    .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))
-                                    .ok_or(LoweringError::MissingParameterType)?;
+                      let ty =
+                        field.children
+                             .iter()
+                             .filter_map(|index| tree.nodes.get(*index))
+                             .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind) || child.kind == TYPE_MAP)
+                             .ok_or(LoweringError::MissingParameterType)?;
                       Ok(declarations::Field { name: name.text.clone(),
                                                ty: lower_type(tree, ty),
                                                mutable: field.flags & (IMMUTABLE | CONSTANT | STATIC_CONSTANT) == 0,
@@ -115,6 +117,59 @@ pub(super) fn lower_field_expression(tree: &SyntaxTree,
                                      -> Option<Expression>
 {
   Some(Expression::Field { path: field_path(tree, value, context, locals)? })
+}
+
+pub(super) fn member_type(tree: &SyntaxTree,
+                          value: &SyntaxNode,
+                          context: &LoweringContext,
+                          locals: &HashMap<String, Type>)
+                          -> Option<Type>
+{
+  if value.kind != EXPR_MEMBER_ACCESS || value.children.len() != 2
+  {
+    return None;
+  }
+  let receiver = tree.nodes.get(value.children[0])?;
+  let Type::Named(owner) = expression_type::expression_type(tree, receiver, context, locals)?
+  else
+  {
+    return None;
+  };
+  let name = path_text(tree, tree.nodes.get(value.children[1])?);
+  let definition = context.nominal_types.get(&owner)?;
+  declarations::resolved_fields(definition, &context.nominal_types).ok()?
+                                                                   .into_iter()
+                                                                   .find(|field| field.name == name)
+                                                                   .and_then(|field| {
+                                                                     declarations::type_ref_to_checked(&field.ty)
+                                                                   })
+}
+
+pub(super) fn lower_member_expression(tree: &SyntaxTree,
+                                      value: &SyntaxNode,
+                                      context: &LoweringContext,
+                                      locals: &HashMap<String, Type>,
+                                      source_span: Span)
+                                      -> Option<Expression>
+{
+  let receiver_node = tree.nodes.get(*value.children.first()?)?;
+  let Type::Named(owner) = expression_type::expression_type(tree, receiver_node, context, locals)?
+  else
+  {
+    return None;
+  };
+  let name = path_text(tree, tree.nodes.get(*value.children.get(1)?)?);
+  let definition = context.nominal_types.get(&owner)?;
+  let field = declarations::resolved_fields(definition, &context.nominal_types).ok()?
+                                                                               .into_iter()
+                                                                               .find(|field| field.name == name)?;
+  let field_type = declarations::type_ref_to_checked(&field.ty)?;
+  let receiver = lower_expression(tree, receiver_node, context, locals, Some(&Type::Named(owner.clone())))?;
+  Some(Expression::Member { receiver: Box::new(receiver),
+                            owner,
+                            name,
+                            field_type: Box::new(field_type),
+                            span: source_span })
 }
 
 pub(super) fn lower_field_assignment(tree: &SyntaxTree,

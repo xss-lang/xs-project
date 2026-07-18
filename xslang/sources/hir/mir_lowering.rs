@@ -312,6 +312,7 @@ impl HirToMirLowerer
         }
       }
       Expression::Field { path } => self.lower_field_load(path, expected_type, lowered),
+      Expression::Member { .. } => self.lower_member_value(expression, expected_type, lowered),
       Expression::Object { nominal_type,
                            fields,
                            span, } => self.lower_object_value(nominal_type, fields, *span, lowered),
@@ -701,6 +702,7 @@ const fn expression_span(expression: &Expression) -> Span
     Expression::Unary { span, .. } |
     Expression::ResultPropagation { span, .. } => *span,
     Expression::Field { path } => path.span,
+    Expression::Member { span, .. } => *span,
     Expression::Call { span, .. } | Expression::If { span, .. } | Expression::Match { span, .. } => *span,
   }
 }

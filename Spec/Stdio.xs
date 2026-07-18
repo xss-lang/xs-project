@@ -22,7 +22,7 @@
 // Formatted output uses placeholder-based formatting.
 //
 
-import stdio, fs, collections;
+import stdio, fs;
 
 
 // standard output macros
@@ -215,7 +215,7 @@ fn read_many_numbers() {
         .read_line(&mut input)
         .unwrap();
 
-    numbers: std::collections::Vector<Int> = input
+    numbers: ArrayList<Int> = input
         .split_whitespace()
         .map(fn(value) {
             return value.parse().expect("invalid number");

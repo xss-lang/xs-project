@@ -14,6 +14,44 @@ struct NominalArguments<'a>
 
 impl HirToMirLowerer
 {
+  pub(super) fn lower_member_value(&mut self,
+                                   expression: &Expression,
+                                   expected_type: XlilType,
+                                   lowered: &mut mir::Function)
+                                   -> Option<mir::LocalId>
+  {
+    let Expression::Member { receiver,
+                             owner,
+                             name,
+                             field_type,
+                             span, } = expression
+    else
+    {
+      return None;
+    };
+    if self.lower_value_type(field_type, *span)? != expected_type
+    {
+      self.report(DiagnosticCode::UnsupportedType,
+                  "member result type does not match its MIR target type",
+                  *span);
+      return None;
+    }
+    let definition = self.nominal_types.get(owner)?.clone();
+    let fields = self.resolved_nominal_fields(&definition)?;
+    let field = fields.iter().position(|field| field.name == *name)?;
+    let aggregate_type = *self.aggregate_types.get(owner)?;
+    let aggregate = self.lower_expression_to_local(receiver, aggregate_type, lowered)?;
+    let result = self.declare_temp(expected_type, *span, lowered)?;
+    self.current_block_mut(lowered)
+        .statements
+        .push(mir::Statement::Extract { result,
+                                        aggregate,
+                                        field: u32::try_from(field).ok()?,
+                                        field_type: expected_type,
+                                        span: *span });
+    Some(result)
+  }
+
   pub(super) fn lower_object_value(&mut self,
                                    type_name: &str,
                                    initializers: &[crate::hir::type_check::ObjectField],

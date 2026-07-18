@@ -485,6 +485,10 @@ impl Parser<'_>
     {
       return self.field_expression(record);
     }
+    if let Some(record) = rest.strip_prefix("member ")
+    {
+      return self.member_expression(record);
+    }
     if let Some(nominal_type) = rest.strip_prefix("object ")
     {
       return self.object_expression(nominal_type);

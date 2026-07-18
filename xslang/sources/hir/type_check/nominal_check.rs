@@ -7,6 +7,69 @@ use super::*;
 
 impl TypeChecker
 {
+  pub(super) fn check_member(&mut self, receiver: &Expression, owner: &str, name: &str, field_type: &Type, span: Span)
+  {
+    self.check_expression(receiver);
+    if self.expression_type(receiver) != Some(Type::Named(owner.to_string()))
+    {
+      self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
+                                         message: format!("member receiver is not a '{owner}' value"),
+                                         span });
+      return;
+    }
+    let Some(definition) = self.nominal_types.get(owner)
+    else
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::UnknownNominalType,
+                             message: format!("unknown nominal type '{owner}'"),
+                             span });
+      return;
+    };
+    let Ok(fields) = super::super::declarations::resolved_fields(definition, &self.nominal_types)
+    else
+    {
+      return;
+    };
+    let declared = fields.into_iter()
+                         .find(|field| field.name == name)
+                         .and_then(|field| super::super::declarations::type_ref_to_checked(&field.ty));
+    if declared.as_ref() != Some(field_type)
+    {
+      self.diagnostics.push(Diagnostic { code: DiagnosticCode::UnknownField,
+                                         message: format!("type '{owner}' has no matching field '{name}'"),
+                                         span });
+    }
+  }
+
+  pub(super) fn check_field_against_type(&mut self, expression: &Expression, path: &FieldPath, expected: &Type)
+  {
+    self.check_expression(expression);
+    if path.ty != *expected
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                             message: "field expression is not assignable to the target type".to_string(),
+                             span: path.span });
+    }
+  }
+
+  pub(super) fn check_member_against_type(&mut self,
+                                          expression: &Expression,
+                                          field_type: &Type,
+                                          span: Span,
+                                          expected: &Type)
+  {
+    self.check_expression(expression);
+    if field_type != expected
+    {
+      self.diagnostics
+          .push(Diagnostic { code: DiagnosticCode::LiteralTypeMismatch,
+                             message: "member expression is not assignable to the target type".to_string(),
+                             span });
+    }
+  }
+
   pub(super) fn check_object(&mut self, nominal_type: &str, fields: &[ObjectField], span: Span)
   {
     let Some(definition) = self.nominal_types.get(nominal_type).cloned()

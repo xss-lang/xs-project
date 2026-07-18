@@ -100,6 +100,7 @@ pub fn infer_expression_type(expression: &Expression, locals: &[Local]) -> Optio
                                             .find(|local| local.name == *name)
                                             .map(|local| local.ty.clone()),
     Expression::Field { path } => Some(path.ty.clone()),
+    Expression::Member { field_type, .. } => Some(field_type.as_ref().clone()),
     Expression::Object { nominal_type, .. } => Some(Type::Named(nominal_type.clone())),
     Expression::Array { elements, .. } =>
     {

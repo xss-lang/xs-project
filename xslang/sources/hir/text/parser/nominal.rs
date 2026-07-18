@@ -14,6 +14,42 @@ impl Parser<'_>
     Some(Expression::Field { path })
   }
 
+  pub(super) fn member_expression(&mut self, record: &str) -> Option<Expression>
+  {
+    let Some((member, field_type)) = record.split_once(" : ")
+    else
+    {
+      self.report(format!("invalid member record '{record}'"));
+      return None;
+    };
+    let Some((owner, name)) = member.rsplit_once('.')
+    else
+    {
+      self.report(format!("member record requires an owner and field name: '{record}'"));
+      return None;
+    };
+    if owner.is_empty() || name.is_empty()
+    {
+      self.report(format!("invalid member name '{member}'"));
+      return None;
+    }
+    let field_type = self.parse_type(field_type)
+                         .unwrap_or(Type::Named(field_type.to_string()));
+    self.index += 1;
+    let receiver = self.expression()?;
+    if self.current().as_deref() != Some(".end")
+    {
+      self.report("member expression requires a closing .end record".to_string());
+      return None;
+    }
+    self.index += 1;
+    Some(Expression::Member { receiver: Box::new(receiver),
+                              owner: owner.to_string(),
+                              name: name.to_string(),
+                              field_type: Box::new(field_type),
+                              span: span() })
+  }
+
   pub(super) fn assign_field_expression(&mut self, record: &str) -> Option<Expression>
   {
     let target = self.field_path(record)?;

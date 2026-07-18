@@ -327,6 +327,13 @@ fn lower_expression(tree: &SyntaxTree,
                                                                                                              context,
                                                                                                              locals)
                                                                            })
+                                                                           .or_else(|| {
+                                                                             nominal::lower_member_expression(tree,
+                                                                                                              value,
+                                                                                                              context,
+                                                                                                              locals,
+                                                                                                              source_span)
+                                                                           })
     }
     EXPR_TUPLE => tuple::lower_tuple_expression(tree, value, context, locals, expected_type, source_span),
     EXPR_OBJECT_LITERAL | EXPR_TYPED_OBJECT_LITERAL =>

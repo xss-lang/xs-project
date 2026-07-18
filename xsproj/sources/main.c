@@ -11,7 +11,7 @@
 #include <string.h>
 
 #ifndef XS_PROJECT_VERSION
-#define XS_PROJECT_VERSION "0.1.8"
+#define XS_PROJECT_VERSION "0.1.9"
 #endif
 
 static char *read_file(const char *path, size_t *length)

@@ -6,7 +6,7 @@
 
 
 
-import collections, stdio, fs, process;
+import stdio, fs, process;
 
 data Sale {
     region: Str;
@@ -23,8 +23,8 @@ data RegionTotal {
 
 class CsvParser {
     static fn parse_line(line: Str) -> Result<Sale, Error> {
-        fields: std::collections::Vector<Str> = line.split(",");
-        if (fields.length() != 4) {
+        fields: ArrayList<Str> = line.split(",");
+        if (fields.count != 4) {
             return Error(new Error("bad CSV row"));
         }
 
@@ -38,10 +38,10 @@ class CsvParser {
 }
 
 class Analytics {
-    totals: std::collections::HashMap<Str, RegionTotal>;
+    totals: [Str: RegionTotal];
 
     Analytics() {
-        self.totals = std::collections::HashMap<Str, RegionTotal>::new();
+        self.totals = [];
     }
 
     fn add(sale: Sale) {
@@ -70,22 +70,22 @@ class Analytics {
     }
 }
 
-fn load_sales(path: Str) -> Result<std::collections::Vector<Sale>, Error> {
-    rows: std::collections::Vector<Sale> = std::collections::Vector<Sale>::new();
+fn load_sales(path: Str) -> Result<ArrayList<Sale>, Error> {
+    rows: ArrayList<Sale> = [];
     content: Str = std::fs::read_to_str(path);
 
     for (line: Str in content.lines().skip(1)) {
         if (line.length() == 0) {
             continue;
         }
-        rows.push(CsvParser::parse_line(line)@);
+        rows.append(CsvParser::parse_line(line)@);
     }
 
     return Ok(rows);
 }
 
-fn main(args: std::collections::Vector<Str>) -> Result<Int, Error> {
-    path: Str = if (args.length() > 1) {
+fn main(args: ArrayList<Str>) -> Result<Int, Error> {
+    path: Str = if (args.count > 1) {
         args[1]
     }
     else {
