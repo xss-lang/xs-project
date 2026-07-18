@@ -213,7 +213,7 @@ mod tests
 {
   use super::*;
   use crate::compiler_core::SourceSpan;
-  use crate::hir::declarations::{Base, Field, NominalKind, TypeRef, Visibility};
+  use crate::hir::declarations::{Base, EnumVariant, Field, NominalKind, TypeRef, Visibility};
   use crate::hir::{Function, Local, PrimitiveType, Span, Statement, Type};
 
   #[test]
@@ -242,6 +242,7 @@ mod tests
                                        kind: NominalKind::Interface,
                                        bases: Vec::new(),
                                        fields: Vec::new(),
+                                       variants: Vec::new(),
                                        span: source_span.clone() },
                          NominalType { name: "Named".to_string(),
                                        kind: NominalKind::Data,
@@ -250,6 +251,7 @@ mod tests
                                                             ty: TypeRef::Primitive(PrimitiveType::Long),
                                                             mutable: true,
                                                             span: source_span.clone() }],
+                                       variants: Vec::new(),
                                        span: source_span.clone() },
                          NominalType { name: "Point".to_string(),
                                        kind: NominalKind::Data,
@@ -261,11 +263,23 @@ mod tests
                                                             ty: TypeRef::Primitive(PrimitiveType::Long),
                                                             mutable: true,
                                                             span: source_span.clone() }],
+                                       variants: Vec::new(),
+                                       span: source_span.clone() },
+                         NominalType { name: "Color".to_string(),
+                                       kind: NominalKind::Enum,
+                                       bases: Vec::new(),
+                                       fields: Vec::new(),
+                                       variants: vec![EnumVariant { name: "Red".to_string(),
+                                                                    tag: 0,
+                                                                    span: source_span.clone() },
+                                                      EnumVariant { name: "Green".to_string(),
+                                                                    tag: 1,
+                                                                    span: source_span.clone() }],
                                        span: source_span }];
     let text = program_to_xhir_with_declarations("root", &nominal_types, &functions, &[0, 1]);
     let parsed = parse_xhir_program(&text).expect("program should parse");
     assert_eq!(parsed.name, "root");
-    assert_eq!(parsed.nominal_types.len(), 3);
+    assert_eq!(parsed.nominal_types.len(), 4);
     assert_eq!(parsed.nominal_types[0].kind, NominalKind::Interface);
     assert_eq!(parsed.nominal_types[2].name, "Point");
     assert_eq!(parsed.nominal_types[2].kind, NominalKind::Data);
@@ -276,6 +290,9 @@ mod tests
     assert_eq!(parsed.nominal_types[2].fields[0].ty,
                TypeRef::Primitive(PrimitiveType::Long));
     assert!(parsed.nominal_types[2].fields[0].mutable);
+    assert_eq!(parsed.nominal_types[3].kind, NominalKind::Enum);
+    assert_eq!(parsed.nominal_types[3].variants[1].name, "Green");
+    assert_eq!(parsed.nominal_types[3].variants[1].tag, 1);
     assert_eq!(parsed.parameter_counts, vec![0, 1]);
     assert_eq!(program_to_xhir_with_declarations(&parsed.name,
                                                  &parsed.nominal_types,

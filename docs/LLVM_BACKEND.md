@@ -122,3 +122,6 @@ identity in typed HIR and XHIR. Aggregate-returning source calls may initialize 
 parameters and returns retain their named structure identity through generated LLVM function signatures. Nested tuple layouts
 and fixed arrays containing tuples are declared before use. Tuple element updates are rebuilt with target-independent
 aggregate operations and lower to LLVM `insertvalue`; source array access remains ordinary indexing syntax.
+Payload-free normal enums reuse this aggregate route as a named single-`i32` tag structure. Their nominal identity stays
+in HIR/XHIR, while MIR/XLIL construction and extraction lower to ordinary LLVM aggregate operations. This representation
+does not define the future payload layout for `enum data`.

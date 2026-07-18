@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Payload-free normal enums now retain nominal declarations and ordered variant tags through XHIR, lower to a
+  target-independent single-tag aggregate in MIR/XMIR/XLIL, and support construction, direct calls, local storage,
+  equality, statement `match`, LLVM lowering, and native `.xse` execution.
 - Explicit concrete turbofish calls to top-level generic functions now create deterministic Rust compiler-core
   monomorphizations and continue through typed HIR, MIR, XLIL, LLVM, object emission, and native `.xse` execution.
 - Reachable generic specializations are discovered transitively, including same-instance recursion. Expanding

@@ -57,6 +57,7 @@ pub struct HirToMirLowerer
 }
 
 mod diagnostic;
+mod enum_value;
 #[cfg(test)]
 mod float_tests;
 #[cfg(test)]
@@ -414,6 +415,10 @@ impl HirToMirLowerer
     {
       return;
     };
+    if self.lower_enum_comparison(target, operator, operand_type, (left, right), span, lowered)
+    {
+      return;
+    }
     match (operator, target_type, operand_type)
     {
       (BinaryOperator::Add, XlilType::I32, XlilType::I32) => self.current_block_mut(lowered)
@@ -652,11 +657,6 @@ impl HirToMirLowerer
       block.terminator = Some(terminator);
       block.span = span;
     }
-  }
-
-  fn current_is_terminated(&self, lowered: &mut mir::Function) -> bool
-  {
-    self.current_block_mut(lowered).terminator.is_some()
   }
 }
 

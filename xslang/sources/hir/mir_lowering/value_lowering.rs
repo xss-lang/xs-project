@@ -93,6 +93,50 @@ impl HirToMirLowerer
                                              value: *value,
                                              span });
       }
+      (Literal::EnumVariant { enum_type,
+                              variant,
+                              tag, },
+       Some(value_type))
+        if self.aggregate_types.get(enum_type).copied() == Some(value_type) =>
+      {
+        let valid = self.nominal_types
+                        .get(enum_type)
+                        .filter(|definition| definition.kind == crate::hir::declarations::NominalKind::Enum)
+                        .and_then(|definition| definition.variants.iter().find(|candidate| candidate.name == *variant))
+                        .is_some_and(|candidate| candidate.tag == *tag);
+        let Ok(tag_value) = i32::try_from(*tag)
+        else
+        {
+          self.report(DiagnosticCode::UnsupportedExpression,
+                      "enum variant tag exceeds the XLIL i32 representation",
+                      span);
+          return;
+        };
+        if !valid
+        {
+          self.report(DiagnosticCode::UnsupportedExpression,
+                      format!("unknown or inconsistent enum variant '{enum_type}::{variant}'"),
+                      span);
+          return;
+        }
+        let Some(tag_local) = self.declare_temp(XlilType::I32, span, lowered)
+        else
+        {
+          return;
+        };
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::ConstI32 { local: tag_local,
+                                             value: tag_value,
+                                             span });
+        self.current_block_mut(lowered)
+            .statements
+            .push(mir::Statement::Aggregate { result: target,
+                                              value_type,
+                                              fields: vec![tag_local],
+                                              field_types: vec![XlilType::I32],
+                                              span });
+      }
       (Literal::None, _) => self.report(DiagnosticCode::UnsupportedExpression,
                                         "Optional None lowering is not implemented in MIR yet",
                                         span),

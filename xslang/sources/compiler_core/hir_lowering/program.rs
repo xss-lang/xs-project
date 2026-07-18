@@ -59,7 +59,8 @@ pub(super) fn lower_program(trees: &[SyntaxTree]) -> Result<declarations::Module
       {
         continue;
       };
-      if matches!(declaration.kind, DECL_CLASS | DECL_INTERFACE | DECL_DATA)
+      if matches!(declaration.kind, DECL_CLASS | DECL_INTERFACE | DECL_DATA) ||
+         declaration.kind == DECL_ENUM && declaration.flags & DATA_ENUM == 0
       {
         let nominal = nominal::lower_nominal_type(tree, declaration)?;
         if nominal.kind == declarations::NominalKind::Data

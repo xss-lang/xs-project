@@ -55,6 +55,16 @@ fn lower_arm(tree: &SyntaxTree,
     };
     MatchPattern::Literal(literal)
   }
+  else if pattern_node.kind == PATTERN_ENUM_VARIANT
+  {
+    let Expression::Literal { literal, .. } =
+      nominal::enum_variant_literal(tree, pattern_node, context, span(pattern_node)?)?
+    else
+    {
+      return None;
+    };
+    MatchPattern::Literal(literal)
+  }
   else
   {
     return None;

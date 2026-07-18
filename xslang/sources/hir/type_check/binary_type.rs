@@ -32,6 +32,14 @@ impl TypeChecker
     {
       return None;
     }
+    if let Type::Named(name) = &left_type &&
+       matches!(operator, BinaryOperator::Equal | BinaryOperator::NotEqual) &&
+       self.nominal_types
+           .get(name)
+           .is_some_and(|definition| definition.kind == crate::hir::declarations::NominalKind::Enum)
+    {
+      return Some(Type::Primitive(PrimitiveType::Bool));
+    }
     let Type::Primitive(primitive) = left_type
     else
     {

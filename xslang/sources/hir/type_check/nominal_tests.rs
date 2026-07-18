@@ -36,6 +36,7 @@ fn point_type() -> NominalType
                                      ty: TypeRef::Primitive(PrimitiveType::Long),
                                      mutable: true,
                                      span: source_span() }],
+                variants: Vec::new(),
                 span: source_span() }
 }
 

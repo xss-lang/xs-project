@@ -124,10 +124,11 @@ impl HirToMirLowerer
     {
       Type::Primitive(PrimitiveType::Bool) => Some(XlilType::BOOL),
       Type::Primitive(PrimitiveType::Long) => Some(XlilType::I32),
+      Type::Named(name) => self.aggregate_types.get(name).copied(),
       _ =>
       {
         self.report(DiagnosticCode::UnsupportedType,
-                    "MIR match lowering currently supports Bool and Long selectors",
+                    format!("MIR match lowering does not support selector type {selector_type:?}"),
                     span);
         None
       }
@@ -146,8 +147,43 @@ impl HirToMirLowerer
     {
       return Some(selector);
     }
+    let selector = if let Literal::EnumVariant { .. } = literal
+    {
+      let extracted = self.declare_temp(XlilType::I32, span, lowered)?;
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::Extract { result: extracted,
+                                          aggregate: selector,
+                                          field: 0,
+                                          field_type: XlilType::I32,
+                                          span });
+      extracted
+    }
+    else
+    {
+      selector
+    };
     let pattern = self.declare_temp(XlilType::I32, span, lowered)?;
-    self.lower_literal_into(pattern, literal, span, lowered);
+    if let Literal::EnumVariant { tag, .. } = literal
+    {
+      let Ok(value) = i32::try_from(*tag)
+      else
+      {
+        self.report(DiagnosticCode::UnsupportedExpression,
+                    "enum variant tag exceeds i32",
+                    span);
+        return None;
+      };
+      self.current_block_mut(lowered)
+          .statements
+          .push(mir::Statement::ConstI32 { local: pattern,
+                                           value,
+                                           span });
+    }
+    else
+    {
+      self.lower_literal_into(pattern, literal, span, lowered);
+    }
     let condition = self.declare_temp(XlilType::BOOL, span, lowered)?;
     self.current_block_mut(lowered)
         .statements
@@ -218,17 +254,10 @@ impl HirToMirLowerer
                   *span);
       return;
     }
-    let selector_type = match selector_type
+    let Some(selector_type) = self.match_selector_value_type(selector_type, *span)
+    else
     {
-      Type::Primitive(PrimitiveType::Bool) => XlilType::BOOL,
-      Type::Primitive(PrimitiveType::Long) => XlilType::I32,
-      _ =>
-      {
-        self.report(DiagnosticCode::UnsupportedType,
-                    "MIR match lowering currently supports Bool and Long selectors",
-                    *span);
-        return;
-      }
+      return;
     };
     let Some(selector) = self.lower_expression_to_local(selector, selector_type, lowered)
     else
@@ -250,30 +279,10 @@ impl HirToMirLowerer
         {
           let body = self.append_block(arm.body.span, lowered);
           let next = self.append_block(arm.span, lowered);
-          let condition = if selector_type == XlilType::BOOL
-          {
-            selector
-          }
+          let Some(condition) = self.lower_match_test(selector, selector_type, literal, arm.span, lowered)
           else
           {
-            let Some(pattern) = self.declare_temp(XlilType::I32, arm.span, lowered)
-            else
-            {
-              return;
-            };
-            self.lower_literal_into(pattern, literal, arm.span, lowered);
-            let Some(condition) = self.declare_temp(XlilType::BOOL, arm.span, lowered)
-            else
-            {
-              return;
-            };
-            self.current_block_mut(lowered)
-                .statements
-                .push(mir::Statement::EqI32 { result: condition,
-                                              left: selector,
-                                              right: pattern,
-                                              span: arm.span });
-            condition
+            return;
           };
           let (then_block, else_block) = if matches!(literal, Literal::Bool(false))
           {

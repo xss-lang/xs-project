@@ -16,6 +16,9 @@ pub(super) fn literal_name(literal: &Literal) -> String
     Literal::Char(value) => format!("char {}", crate::text::format_character(*value)),
     Literal::String(value) => format!("string {value:?}"),
     Literal::None => "None".to_string(),
+    Literal::EnumVariant { enum_type,
+                           variant,
+                           tag, } => format!("enum {enum_type}::{variant} tag {tag}"),
   }
 }
 

@@ -38,6 +38,7 @@ fn lowers_nominal_object_return_to_first_class_mir_aggregate()
                                                  ty: TypeRef::Primitive(PrimitiveType::Long),
                                                  mutable: false,
                                                  span: source_span() }],
+                            variants: Vec::new(),
                             span: source_span() };
   let literal = |name: &str, value: &str| ObjectField { name: name.to_string(),
                                                         value:

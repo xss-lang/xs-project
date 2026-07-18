@@ -268,6 +268,10 @@ The documented compilation order is preserved:
   `Optional<T> { Some: T, None }` and `Result<T, E> { Ok: T, Error: E }`. An `enum data` declaration may inherit an
   unspecialized standard family (`enum data Option : Optional`, `enum data MyResult : Result`); the derived declaration
   remains nominally usable as the base and inherits its variants and operations.
+- The compiler core now preserves payload-free enum declarations and assigns deterministic declaration-order tags.
+  Enum values remain nominal in HIR/XHIR and are not integer-convertible. MIR, XLIL, and LLVM use a target-independent
+  one-field `{ i32 tag }` aggregate for the current native ABI. Variant construction, parameters, returns, direct calls,
+  locals, equality, and statement-level `match` use this route. Payload-carrying `enum data` layout is separate work.
 - Function expressions use inferred signatures: `fn(a, b) { a + b }` and `move fn() { work() }` are represented as
   `XS_SYNTAX_EXPR_FUNCTION` nodes. Parameter and return types are supplied by context rather than written on the lambda;
   `move` capture is a separate AST flag.

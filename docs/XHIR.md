@@ -116,6 +116,18 @@ base-first and recursively expands bases in base-list order before the declarati
 unknown or cyclic bases, cross-category bases, and ambiguous inherited field names are rejected before lowering. Virtual
 inheritance is retained by XHIR but does not yet have a value layout and is rejected by direct native lowering.
 
+Payload-free normal enums use nominal declaration records with ordered variants:
+
+```text
+enum Color
+  variant Red
+  variant Green
+.end
+```
+
+Variant values remain semantic XHIR literals such as `literal enum Color::Green tag 1`. The tag is checked against the
+declaration and carried toward MIR; X# does not expose enum-to-integer conversion.
+
 A typed direct call is represented as a semantic record rather than an instruction:
 
 ```text

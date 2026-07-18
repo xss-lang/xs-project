@@ -113,6 +113,12 @@ pub enum Literal
   Char(u16),
   String(String),
   None,
+  EnumVariant
+  {
+    enum_type: String,
+    variant: String,
+    tag: u32,
+  },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -385,37 +391,8 @@ pub struct Function
   pub body: Vec<Statement>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DiagnosticCode
-{
-  LiteralTypeMismatch,
-  ImmutableAssignment,
-  UnknownLocal,
-  DuplicateLocal,
-  BinaryTypeMismatch,
-  UnaryTypeMismatch,
-  ResultPropagationRequiresResult,
-  ResultPropagationReturnMismatch,
-  ConditionTypeMismatch,
-  ForEachTypeMismatch,
-  MissingBlockValue,
-  BreakOutsideLoop,
-  ContinueOutsideLoop,
-  MatchRequiresFinalElse,
-  DuplicateMatchPattern,
-  UnknownNominalType,
-  UnknownField,
-  MissingField,
-  DuplicateField,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Diagnostic
-{
-  pub code: DiagnosticCode,
-  pub message: String,
-  pub span: Span,
-}
+mod diagnostic;
+pub use diagnostic::{Diagnostic, DiagnosticCode};
 
 #[derive(Default)]
 pub struct TypeChecker
@@ -785,6 +762,27 @@ impl TypeChecker
   {
     match expression
     {
+      Expression::Literal { literal:
+                              Literal::EnumVariant { enum_type,
+                                                     variant,
+                                                     tag, },
+                            span, } =>
+      {
+        let valid = self.nominal_types
+                        .get(enum_type)
+                        .filter(|definition| definition.kind == crate::hir::declarations::NominalKind::Enum)
+                        .and_then(|definition| definition.variants.iter().find(|candidate| candidate.name == *variant))
+                        .is_some_and(|candidate| candidate.tag == *tag) &&
+                    ty == &Type::Named(enum_type.clone());
+        if !valid
+        {
+          self.diagnostics
+              .push(Diagnostic { code: DiagnosticCode::UnknownEnumVariant,
+                                 message: format!("enum variant '{enum_type}::{variant}' is not valid for the \
+                                                   target type"),
+                                 span: *span });
+        }
+      }
       Expression::Literal { literal,
                             span, }
         if !literal_matches_type(literal, ty) =>

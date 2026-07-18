@@ -249,6 +249,7 @@ fn infer_literal_type(literal: &Literal) -> Option<Type>
     Literal::Char(_) => PrimitiveType::Char,
     Literal::String(_) => PrimitiveType::Str,
     Literal::None => return None,
+    Literal::EnumVariant { enum_type, .. } => return Some(Type::Named(enum_type.clone())),
   };
   Some(Type::Primitive(primitive))
 }

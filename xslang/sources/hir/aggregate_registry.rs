@@ -144,7 +144,13 @@ fn visit_checked_type(value: &HirType,
   match value
   {
     HirType::Primitive(primitive) => super::mir_lowering::primitive_to_xlil(*primitive),
-    HirType::Named(name) => visit(definitions.get(name.as_str())?, definitions, visiting, registry),
+    HirType::Named(name) =>
+    {
+      registry.types
+              .get(name)
+              .copied()
+              .or_else(|| visit(definitions.get(name.as_str())?, definitions, visiting, registry))
+    }
     HirType::Tuple { fields } =>
     {
       if let Some((_, value_type)) = registry.tuples.iter().find(|(source, _)| source == value)
@@ -199,6 +205,19 @@ pub(crate) fn build(declarations: &[NominalType]) -> Option<AggregateRegistry>
                                  .filter(|declaration| declaration.kind == NominalKind::Data)
   {
     visit(declaration, &definitions, &mut visiting, &mut registry)?;
+  }
+  for declaration in declarations.iter()
+                                 .filter(|declaration| declaration.kind == NominalKind::Enum)
+  {
+    if !declaration.bases.is_empty() || !declaration.fields.is_empty() || registry.types.contains_key(&declaration.name)
+    {
+      return None;
+    }
+    let value_type = Type::aggregate(registry.layouts.len() as u32);
+    registry.types.insert(declaration.name.clone(), value_type);
+    registry.layouts.push(AggregateLayout { name: declaration.name.clone(),
+                                            value_type,
+                                            fields: vec![Type::I32] });
   }
   Some(registry)
 }

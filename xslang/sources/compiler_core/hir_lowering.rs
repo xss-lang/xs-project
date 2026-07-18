@@ -35,6 +35,7 @@ mod tuple;
 mod unary;
 use call::{CallSignature, LoweringContext};
 use expression_type::expression_type;
+use syntax_helpers::primitive;
 use syntax_helpers::{first_child_kind, path_text};
 
 const FILE: u32 = 0;
@@ -42,10 +43,12 @@ const DECL_MODULE: u32 = 1;
 const DECL_FUNCTION: u32 = 4;
 const DECL_CLASS: u32 = 5;
 const DECL_INTERFACE: u32 = 6;
+const DECL_ENUM: u32 = 7;
 const DECL_DATA: u32 = 8;
 const DECL_VARIABLE: u32 = 9;
 const CLASS_FIELD: u32 = 15;
 const DATA_FIELD: u32 = 20;
+const ENUM_VARIANT: u32 = 19;
 const BASE_SPECIFIER: u32 = 100;
 const PARAMETER: u32 = 21;
 const GENERIC_PARAMETER: u32 = 22;
@@ -82,6 +85,7 @@ const OBJECT_FIELD: u32 = 78;
 const EXPR_IF: u32 = 81;
 const EXPR_MATCH: u32 = 82;
 const PATTERN_LITERAL: u32 = 85;
+const PATTERN_ENUM_VARIANT: u32 = 86;
 const PATTERN_TUPLE: u32 = 87;
 const PATTERN_ELSE: u32 = 88;
 const PATTERN_IDENTIFIER: u32 = 84;
@@ -128,6 +132,7 @@ const TOKEN_SHIFT_LEFT: u32 = 37;
 const TOKEN_ASSIGN: u32 = 24;
 const IMMUTABLE: u32 = 1 << 4;
 const STATIC: u32 = 1 << 1;
+const DATA_ENUM: u32 = 1 << 3;
 const OPERATOR: u32 = 1 << 14;
 const CONSTANT: u32 = 1 << 5;
 const STATIC_CONSTANT: u32 = 1 << 6;
@@ -168,29 +173,6 @@ pub enum LoweringError
 fn node(tree: &SyntaxTree, index: usize) -> Result<&SyntaxNode, LoweringError>
 {
   tree.nodes.get(index).ok_or(LoweringError::InvalidRoot)
-}
-
-fn primitive(name: &str) -> Option<PrimitiveType>
-{
-  Some(match name
-  {
-    "Bool" => PrimitiveType::Bool,
-    "Byte" => PrimitiveType::Byte,
-    "SByte" => PrimitiveType::SByte,
-    "Char" => PrimitiveType::Char,
-    "Short" => PrimitiveType::Short,
-    "Long" => PrimitiveType::Long,
-    "Int" => PrimitiveType::Int,
-    "Integer" => PrimitiveType::Integer,
-    "UShort" => PrimitiveType::UShort,
-    "ULong" => PrimitiveType::ULong,
-    "UInt" => PrimitiveType::UInt,
-    "UInteger" => PrimitiveType::UInteger,
-    "SFloat" => PrimitiveType::SFloat,
-    "Float" => PrimitiveType::Float,
-    "Str" => PrimitiveType::Str,
-    _ => return None,
-  })
 }
 
 fn lower_type(tree: &SyntaxTree, value: &SyntaxNode) -> declarations::TypeRef
@@ -318,8 +300,9 @@ fn lower_expression(tree: &SyntaxTree,
       Some(Expression::Literal { literal: Literal::Bool(value.text == "true"),
                                  span: source_span })
     }
-    EXPR_IDENTIFIER => Some(Expression::Local { name: path_text(tree, value),
-                                                span: source_span }),
+    EXPR_IDENTIFIER => nominal::enum_variant_literal(tree, value, context, source_span)
+      .or_else(|| Some(Expression::Local { name: path_text(tree, value),
+                                           span: source_span })),
     EXPR_MEMBER_ACCESS =>
     {
       tuple::lower_tuple_element(tree, value, context, locals, source_span).or_else(|| {
@@ -916,45 +899,56 @@ fn lower_match_statement(tree: &SyntaxTree,
   let selector_node = tree.nodes.get(*statement.children.first()?)?;
   let selector_type = expression_type(tree, selector_node, context, locals)?;
   let selector = lower_expression(tree, selector_node, context, locals, Some(&selector_type))?;
-  let arms = statement.children[1..].iter()
-                                    .map(|index| {
-                                      let arm = tree.nodes.get(*index)?;
-                                      if arm.kind != MATCH_ARM || arm.children.len() != 2
-                                      {
-                                        return None;
-                                      }
-                                      let pattern_node = tree.nodes.get(arm.children[0])?;
-                                      let pattern = if pattern_node.kind == PATTERN_ELSE
-                                      {
-                                        MatchPattern::Else
-                                      }
-                                      else if pattern_node.kind == PATTERN_LITERAL
-                                      {
-                                        let literal_node = tree.nodes.get(*pattern_node.children.first()?)?;
-                                        let Expression::Literal { literal, .. } =
-                                          lower_expression(tree, literal_node, context, locals, Some(&selector_type))?
-                                        else
-                                        {
-                                          return None;
-                                        };
-                                        MatchPattern::Literal(literal)
-                                      }
-                                      else
-                                      {
-                                        return None;
-                                      };
-                                      let mut arm_locals = locals.clone();
-                                      let body = lower_hir_block(tree,
-                                                                 tree.nodes.get(arm.children[1])?,
-                                                                 context,
-                                                                 &mut arm_locals,
-                                                                 return_type,
-                                                                 None)?;
-                                      Some(MatchArm { pattern,
-                                                      body,
-                                                      span: span(arm)? })
-                                    })
-                                    .collect::<Option<Vec<_>>>()?;
+  let arms =
+    statement.children[1..].iter()
+                           .map(|index| {
+                             let arm = tree.nodes.get(*index)?;
+                             if arm.kind != MATCH_ARM || arm.children.len() != 2
+                             {
+                               return None;
+                             }
+                             let pattern_node = tree.nodes.get(arm.children[0])?;
+                             let pattern = if pattern_node.kind == PATTERN_ELSE
+                             {
+                               MatchPattern::Else
+                             }
+                             else if pattern_node.kind == PATTERN_LITERAL
+                             {
+                               let literal_node = tree.nodes.get(*pattern_node.children.first()?)?;
+                               let Expression::Literal { literal, .. } =
+                                 lower_expression(tree, literal_node, context, locals, Some(&selector_type))?
+                               else
+                               {
+                                 return None;
+                               };
+                               MatchPattern::Literal(literal)
+                             }
+                             else if pattern_node.kind == PATTERN_ENUM_VARIANT
+                             {
+                               let Expression::Literal { literal, .. } =
+                                 nominal::enum_variant_literal(tree, pattern_node, context, span(pattern_node)?)?
+                               else
+                               {
+                                 return None;
+                               };
+                               MatchPattern::Literal(literal)
+                             }
+                             else
+                             {
+                               return None;
+                             };
+                             let mut arm_locals = locals.clone();
+                             let body = lower_hir_block(tree,
+                                                        tree.nodes.get(arm.children[1])?,
+                                                        context,
+                                                        &mut arm_locals,
+                                                        return_type,
+                                                        None)?;
+                             Some(MatchArm { pattern,
+                                             body,
+                                             span: span(arm)? })
+                           })
+                           .collect::<Option<Vec<_>>>()?;
   Some(Statement::Match { selector,
                           selector_type,
                           arms,

@@ -46,6 +46,7 @@ pub(super) fn literal_default_type(literal: &Literal) -> Option<Type>
     Literal::Char(_) => PrimitiveType::Char,
     Literal::String(_) => PrimitiveType::Str,
     Literal::None => return None,
+    Literal::EnumVariant { enum_type, .. } => return Some(Type::Named(enum_type.clone())),
   };
   Some(Type::Primitive(primitive))
 }
@@ -56,6 +57,10 @@ pub fn literal_matches_type(literal: &Literal, ty: &Type) -> bool
   if ty.is_boxed_optional_str()
   {
     return matches!(literal, Literal::None);
+  }
+  if let Literal::EnumVariant { enum_type, .. } = literal
+  {
+    return ty == &Type::Named(enum_type.clone());
   }
   let Type::Primitive(primitive) = ty
   else
@@ -80,6 +85,7 @@ pub fn literal_matches_type(literal: &Literal, ty: &Type) -> bool
     Literal::Float(_) => matches!(primitive, PrimitiveType::SFloat | PrimitiveType::Float),
     Literal::Char(_) => *primitive == PrimitiveType::Char,
     Literal::String(_) => *primitive == PrimitiveType::Str,
+    Literal::EnumVariant { .. } => false,
   }
 }
 

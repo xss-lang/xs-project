@@ -123,6 +123,25 @@ impl HirToMirLowerer
                   local.span);
       return;
     };
+    if definition.kind == crate::hir::declarations::NominalKind::Enum
+    {
+      let Some(value_type) = self.aggregate_types.get(type_name).copied()
+      else
+      {
+        self.report(DiagnosticCode::UnsupportedType,
+                    "enum parameter has no aggregate MIR layout",
+                    local.span);
+        return;
+      };
+      let id = mir::LocalId(self.next_local);
+      self.next_local += 1;
+      self.locals.insert(local.name.clone(), id);
+      lowered.parameters.push(mir::Parameter { local: id,
+                                               name: local.name.clone(),
+                                               value_type,
+                                               span: local.span });
+      return;
+    }
     if definition.kind != crate::hir::declarations::NominalKind::Data
     {
       self.report(DiagnosticCode::UnsupportedType,
@@ -156,6 +175,15 @@ impl HirToMirLowerer
                   local.span);
       return;
     };
+    if definition.kind == crate::hir::declarations::NominalKind::Enum
+    {
+      let id = self.declare_local(local.name.clone(), &local.ty, local.mutable, local.span, lowered);
+      if let Some(initializer) = initializer
+      {
+        self.lower_assignment(id, initializer, lowered);
+      }
+      return;
+    }
     let Some(initializer) = initializer
     else
     {
@@ -486,6 +514,12 @@ impl HirToMirLowerer
                                        -> Option<Vec<mir::LocalId>>
   {
     let definition = self.nominal_types.get(type_name)?.clone();
+    if definition.kind == crate::hir::declarations::NominalKind::Enum
+    {
+      let value_type = self.aggregate_types.get(type_name).copied()?;
+      return self.lower_expression_to_local(expression, value_type, lowered)
+                 .map(|value| vec![value]);
+    }
     if definition.kind != crate::hir::declarations::NominalKind::Data
     {
       self.report(DiagnosticCode::UnsupportedType,

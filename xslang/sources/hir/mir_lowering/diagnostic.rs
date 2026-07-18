@@ -13,4 +13,9 @@ impl HirToMirLowerer
                                        message: message.into(),
                                        span });
   }
+
+  pub(super) fn current_is_terminated(&self, lowered: &mut mir::Function) -> bool
+  {
+    self.current_block_mut(lowered).terminator.is_some()
+  }
 }

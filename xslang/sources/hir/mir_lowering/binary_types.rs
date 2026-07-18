@@ -100,6 +100,7 @@ impl HirToMirLowerer
         Literal::String(_) => Some(XlilType::STR),
         Literal::Bool(_) => Some(XlilType::BOOL),
         Literal::Char(_) => Some(XlilType::U16),
+        Literal::EnumVariant { enum_type, .. } => self.aggregate_types.get(enum_type).copied(),
         Literal::Integer(_) | Literal::Float(_) | Literal::None => None,
       },
       Expression::Assign { .. } | Expression::AssignField { .. } | Expression::ResultPropagation { .. } => None,

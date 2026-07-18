@@ -80,6 +80,7 @@ pub enum NominalKind
   Class,
   Interface,
   Data,
+  Enum,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -110,12 +111,21 @@ pub struct Field
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct EnumVariant
+{
+  pub name: String,
+  pub tag: u32,
+  pub span: SourceSpan,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NominalType
 {
   pub name: String,
   pub kind: NominalKind,
   pub bases: Vec<Base>,
   pub fields: Vec<Field>,
+  pub variants: Vec<EnumVariant>,
   pub span: SourceSpan,
 }
 
@@ -296,6 +306,7 @@ mod tests
                                                  span: span() })
                               .collect(),
                   fields: fields.iter().map(|name| field(name)).collect(),
+                  variants: Vec::new(),
                   span: span() }
   }
 

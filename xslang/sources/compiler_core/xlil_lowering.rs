@@ -52,7 +52,16 @@ fn flatten_parameter(module: &HirModule,
       }
       let definition = module.nominal_types
                              .iter()
-                             .find(|definition| definition.name == *name && definition.kind == NominalKind::Data)?;
+                             .find(|definition| definition.name == *name)?;
+      if definition.kind == NominalKind::Enum
+      {
+        parameters.push(lower_type(value, aggregates, collections)?);
+        return Some(());
+      }
+      if definition.kind != NominalKind::Data
+      {
+        return None;
+      }
       visiting.push(name.clone());
       for field in &crate::hir::declarations::resolved_fields(definition, definitions).ok()?
       {

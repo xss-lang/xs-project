@@ -5,6 +5,40 @@
 
 use super::*;
 
+fn enum_variant<'a>(tree: &SyntaxTree,
+                    value: &SyntaxNode,
+                    context: &'a LoweringContext)
+                    -> Option<(&'a declarations::NominalType, &'a declarations::EnumVariant)>
+{
+  let path = path_text(tree, value);
+  let (enum_name, variant_name) = path.rsplit_once("::")?;
+  let declaration = context.nominal_types.get(enum_name)?;
+  (declaration.kind == declarations::NominalKind::Enum).then_some(())?;
+  let variant = declaration.variants
+                           .iter()
+                           .find(|variant| variant.name == variant_name)?;
+  Some((declaration, variant))
+}
+
+pub(super) fn enum_variant_type(tree: &SyntaxTree, value: &SyntaxNode, context: &LoweringContext) -> Option<Type>
+{
+  let (declaration, _) = enum_variant(tree, value, context)?;
+  Some(Type::Named(declaration.name.clone()))
+}
+
+pub(super) fn enum_variant_literal(tree: &SyntaxTree,
+                                   value: &SyntaxNode,
+                                   context: &LoweringContext,
+                                   span: Span)
+                                   -> Option<Expression>
+{
+  let (declaration, variant) = enum_variant(tree, value, context)?;
+  Some(Expression::Literal { literal: Literal::EnumVariant { enum_type: declaration.name.clone(),
+                                                             variant: variant.name.clone(),
+                                                             tag: variant.tag },
+                             span })
+}
+
 pub(super) fn lower_nominal_type(tree: &SyntaxTree,
                                  value: &SyntaxNode)
                                  -> Result<declarations::NominalType, LoweringError>
@@ -52,15 +86,30 @@ pub(super) fn lower_nominal_type(tree: &SyntaxTree,
                                                span: field.span.clone() })
                     })
                     .collect::<Result<Vec<_>, _>>()?;
+  let variants =
+    value.children
+         .iter()
+         .filter_map(|index| tree.nodes.get(*index))
+         .filter(|child| child.kind == ENUM_VARIANT)
+         .enumerate()
+         .map(|(tag, variant)| {
+           let name = first_child_kind(tree, variant, IDENTIFIER).ok_or(LoweringError::MissingIdentifier)?;
+           Ok(declarations::EnumVariant { name: name.text.clone(),
+                                          tag: u32::try_from(tag).map_err(|_| LoweringError::InvalidRoot)?,
+                                          span: variant.span.clone() })
+         })
+         .collect::<Result<Vec<_>, _>>()?;
   Ok(declarations::NominalType { name: name.text.clone(),
                                  kind: match value.kind
                                  {
                                    DECL_CLASS => declarations::NominalKind::Class,
                                    DECL_INTERFACE => declarations::NominalKind::Interface,
+                                   DECL_ENUM => declarations::NominalKind::Enum,
                                    _ => declarations::NominalKind::Data,
                                  },
                                  bases,
                                  fields,
+                                 variants,
                                  span: value.span.clone() })
 }
 

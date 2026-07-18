@@ -212,10 +212,27 @@ fn validate_xhir_declarations(declarations: &[hir::declarations::NominalType]) -
     {
       diagnostics.push(format!("XHIR nominal type '{}' is declared more than once", declaration.name));
     }
-    if declaration.kind != hir::declarations::NominalKind::Data
+    if !matches!(declaration.kind,
+                 hir::declarations::NominalKind::Data | hir::declarations::NominalKind::Enum)
     {
-      diagnostics.push(format!("XHIR direct native lowering does not yet support class '{}'",
+      diagnostics.push(format!("XHIR direct native lowering does not yet support nominal type '{}'",
                                declaration.name));
+    }
+    if declaration.kind == hir::declarations::NominalKind::Enum
+    {
+      if !declaration.bases.is_empty() || !declaration.fields.is_empty()
+      {
+        diagnostics.push(format!("XHIR enum '{}' cannot contain bases or fields", declaration.name));
+      }
+      let mut variants = HashSet::new();
+      for variant in &declaration.variants
+      {
+        if !variants.insert(variant.name.as_str())
+        {
+          diagnostics.push(format!("XHIR enum '{}' declares variant '{}' more than once",
+                                   declaration.name, variant.name));
+        }
+      }
     }
     let mut fields = HashSet::new();
     for field in &declaration.fields

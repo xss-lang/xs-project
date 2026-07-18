@@ -5,6 +5,29 @@
 
 use super::*;
 
+pub(super) fn primitive(name: &str) -> Option<PrimitiveType>
+{
+  Some(match name
+  {
+    "Bool" => PrimitiveType::Bool,
+    "Byte" => PrimitiveType::Byte,
+    "SByte" => PrimitiveType::SByte,
+    "Char" => PrimitiveType::Char,
+    "Short" => PrimitiveType::Short,
+    "Long" => PrimitiveType::Long,
+    "Int" => PrimitiveType::Int,
+    "Integer" => PrimitiveType::Integer,
+    "UShort" => PrimitiveType::UShort,
+    "ULong" => PrimitiveType::ULong,
+    "UInt" => PrimitiveType::UInt,
+    "UInteger" => PrimitiveType::UInteger,
+    "SFloat" => PrimitiveType::SFloat,
+    "Float" => PrimitiveType::Float,
+    "Str" => PrimitiveType::Str,
+    _ => return None,
+  })
+}
+
 pub(super) fn first_child_kind<'a>(tree: &'a SyntaxTree, parent: &'a SyntaxNode, kind: u32) -> Option<&'a SyntaxNode>
 {
   parent.children

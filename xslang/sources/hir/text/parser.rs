@@ -14,6 +14,7 @@ use crate::hir::{MatchArm, MatchPattern};
 use super::{SUPPORTED_XHIR_VERSION, is_supported_xhir_version};
 mod collection;
 mod for_each;
+mod literal;
 mod match_expression;
 mod nominal;
 mod tuple;
@@ -771,31 +772,6 @@ impl Parser<'_>
                            self.report(format!("unknown type '{name}'"));
                            None
                          })
-  }
-
-  fn literal(&mut self, text: &str) -> Literal
-  {
-    if let Some(value) = text.strip_prefix("bool ")
-    {
-      return Literal::Bool(value == "true");
-    }
-    if let Some(value) = text.strip_prefix("integer ")
-    {
-      return Literal::Integer(value.to_string());
-    }
-    if let Some(value) = text.strip_prefix("float ")
-    {
-      return Literal::Float(value.to_string());
-    }
-    if let Some(value) = text.strip_prefix("char ")
-    {
-      return Literal::Char(crate::text::decode_character(value).unwrap_or(0));
-    }
-    if let Some(value) = text.strip_prefix("string ")
-    {
-      return Literal::String(value.trim_matches('"').to_string());
-    }
-    Literal::None
   }
 
   fn import(&mut self, module: &mut Module)

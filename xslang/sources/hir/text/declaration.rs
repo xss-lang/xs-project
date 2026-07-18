@@ -6,7 +6,9 @@
 use std::fmt::Write;
 
 use crate::compiler_core::SourceSpan;
-use crate::hir::declarations::{Base, Field, NominalKind, NominalType, TupleFieldRef, TypeRef, Visibility};
+use crate::hir::declarations::{
+  Base, EnumVariant, Field, NominalKind, NominalType, TupleFieldRef, TypeRef, Visibility,
+};
 use crate::hir::type_check::Type;
 
 use super::names::type_name;
@@ -26,6 +28,7 @@ pub(super) fn write_declarations(output: &mut String, declarations: &[NominalTyp
       NominalKind::Class => "class",
       NominalKind::Interface => "interface",
       NominalKind::Data => "data",
+      NominalKind::Enum => "enum",
     };
     let _ = writeln!(output, "  {kind} {}", declaration.name);
     for base in &declaration.bases
@@ -54,6 +57,10 @@ pub(super) fn write_declarations(output: &mut String, declarations: &[NominalTyp
         "immutable"
       };
       let _ = writeln!(output, "    field {}: {ty} {mutability}", field.name);
+    }
+    for variant in &declaration.variants
+    {
+      let _ = writeln!(output, "    variant {}", variant.name);
     }
     output.push_str("  .end\n");
   }
@@ -92,6 +99,10 @@ pub(super) fn parse_declarations(lines: &[&str],
     {
       (NominalKind::Interface, name)
     }
+    else if let Some(name) = line.strip_prefix("enum ")
+    {
+      (NominalKind::Enum, name)
+    }
     else
     {
       diagnostics.push(error(*index + 1, format!("unexpected XHIR declaration '{line}'")));
@@ -100,11 +111,12 @@ pub(super) fn parse_declarations(lines: &[&str],
     };
     let start_line = *index + 1;
     *index += 1;
-    let (bases, fields) = parse_members(lines, index, diagnostics);
+    let (bases, fields, variants) = parse_members(lines, index, diagnostics);
     declarations.push(NominalType { name: name.to_string(),
                                     kind,
                                     bases,
                                     fields,
+                                    variants,
                                     span: source_span(start_line) });
   }
   diagnostics.push(error(lines.len().max(1), "unterminated XHIR declarations section".to_string()));
@@ -114,10 +126,11 @@ pub(super) fn parse_declarations(lines: &[&str],
 fn parse_members(lines: &[&str],
                  index: &mut usize,
                  diagnostics: &mut Vec<XhirParseDiagnostic>)
-                 -> (Vec<Base>, Vec<Field>)
+                 -> (Vec<Base>, Vec<Field>, Vec<EnumVariant>)
 {
   let mut bases = Vec::new();
   let mut fields = Vec::new();
+  let mut variants = Vec::new();
   while *index < lines.len()
   {
     let line_number = *index + 1;
@@ -125,7 +138,7 @@ fn parse_members(lines: &[&str],
     if line == ".end"
     {
       *index += 1;
-      return (bases, fields);
+      return (bases, fields, variants);
     }
     *index += 1;
     if let Some(base) = line.strip_prefix("base ")
@@ -134,6 +147,24 @@ fn parse_members(lines: &[&str],
       {
         Some(base) => bases.push(base),
         None => diagnostics.push(error(line_number, "invalid nominal base record".to_string())),
+      }
+      continue;
+    }
+    if let Some(name) = line.strip_prefix("variant ")
+    {
+      if name.is_empty()
+      {
+        diagnostics.push(error(line_number, "enum variant name cannot be empty".to_string()));
+      }
+      else if let Ok(tag) = u32::try_from(variants.len())
+      {
+        variants.push(EnumVariant { name: name.to_string(),
+                                    tag,
+                                    span: source_span(line_number) });
+      }
+      else
+      {
+        diagnostics.push(error(line_number, "enum has too many variants".to_string()));
       }
       continue;
     }
@@ -168,7 +199,7 @@ fn parse_members(lines: &[&str],
                         span: source_span(line_number) });
   }
   diagnostics.push(error(lines.len().max(1), "unterminated nominal declaration".to_string()));
-  (bases, fields)
+  (bases, fields, variants)
 }
 
 fn parse_base(text: &str, line: usize) -> Option<Base>
