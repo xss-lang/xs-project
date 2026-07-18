@@ -12,7 +12,7 @@ repository = "https://github.com/xss-lang/xs-project"
 homepage = "https://github.com/xss-lang/xs-project"
 readme = "README.md"
 documentation = "https://docs.rs/xslang"
-keywords = ["compiler", "xsharp", "intermediate-representation", "xlil"]
+keywords = ["compiler", "xsharp", "compiler-ir", "xlil"]
 categories = ["compilers"]
 exclude = ["target/"]
 
