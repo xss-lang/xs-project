@@ -117,6 +117,7 @@ class DependenciesScope internal constructor() {
 class TestScope internal constructor() {
   internal val includes = mutableListOf<String>()
   internal val excludes = mutableListOf<String>()
+  internal var excludesConfigured = false
   internal var framework: String? = null
 
   fun include(path: String) {
@@ -127,8 +128,9 @@ class TestScope internal constructor() {
     includes += root
   }
 
-  fun exclude(pattern: String) {
-    excludes += requireText(pattern, "test exclude")
+  fun exclude(vararg patterns: String) {
+    excludesConfigured = true
+    patterns.forEach { pattern -> excludes += requireText(pattern, "test exclude") }
   }
 
   fun framework(name: String) {
@@ -184,7 +186,7 @@ class ProjectContext internal constructor(
   private val moduleExcludes = state?.moduleExcludes?.toMutableList() ?: mutableListOf("*/**")
   private val moduleSources = state?.moduleSources?.toMutableList() ?: mutableListOf()
   private val testIncludes = state?.testIncludes?.toMutableList() ?: mutableListOf()
-  private val testExcludes = state?.testExcludes?.toMutableList() ?: mutableListOf()
+  private val testExcludes = state?.testExcludes?.toMutableList() ?: mutableListOf("*/**")
   private var testFramework: String? = state?.testFramework
   private val compilerSettings = state?.compiler ?: CompilerSettings()
 
@@ -302,7 +304,10 @@ class ProjectContext internal constructor(
   fun test(block: TestScope.() -> Unit) {
     val scope = TestScope().apply(block)
     testIncludes += scope.includes
-    testExcludes += scope.excludes
+    if (scope.excludesConfigured) {
+      testExcludes.clear()
+      testExcludes += scope.excludes
+    }
     testFramework = scope.framework
   }
 

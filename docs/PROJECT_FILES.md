@@ -91,8 +91,9 @@ library-only projects do not need one. `set("XS_EXTENSION", "xsharp")` selects `
 entry/library names to `main.xsharp` and `lib.xsharp`.
 
 When `test.include` is omitted, the resolver looks for a `Test` directory directly under each effective source root. Any
-existing directories are selected recursively; if none exist, the test registry remains empty. An explicit test include
-replaces this inference.
+existing directories become test roots; if none exist, the test registry remains empty. An explicit test include replaces
+this inference. Test discovery defaults to include-root-relative `exclude("*/**")`; explicit exclusions replace it and
+empty `exclude()` enables the complete recursive test tree.
 
 The DSL also provides:
 

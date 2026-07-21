@@ -306,15 +306,18 @@ class ProjectDslTest {
     assertEquals(listOf("Sources"), defaults.sourceIncludes)
     assertEquals(listOf("*/**"), defaults.sourceExcludes)
     assertEquals(listOf("*/**"), defaults.moduleExcludes)
+    assertEquals(listOf("*/**"), defaults.testExcludes)
 
     context.source { exclude() }
     context.module {
       include("Modules")
       exclude()
     }
+    context.test { exclude() }
     val recursive = context.build()
     assertEquals(emptyList(), recursive.sourceExcludes)
     assertEquals(emptyList(), recursive.moduleExcludes)
+    assertEquals(emptyList(), recursive.testExcludes)
   }
 
   @Test

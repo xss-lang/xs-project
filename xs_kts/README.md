@@ -36,7 +36,7 @@ registry defaults to empty.
 Without an explicit test include, each effective source root contributes its existing `Test` child directory. Missing
 default test directories are ignored and leave an empty test registry.
 
-Source and module discovery default to `exclude("*/**")`, interpreted relative to each include root so only direct files
+Source, module, and test discovery default to `exclude("*/**")`, interpreted relative to each include root so only direct files
 remain selected. Supplying exclusions replaces the default. Calling `exclude()` with no patterns opts into the complete
 recursive tree.
 

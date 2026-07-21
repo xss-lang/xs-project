@@ -67,11 +67,10 @@ object ProjectOutput {
     }
     validateArtifactTargets(plan, root, sources, extension)
     val modules = resolveModules(root, plan.moduleIncludes, plan.moduleExcludes, plan.moduleSources, extension)
-    val testExcludes = plan.testExcludes.map(::globRegex)
     val tests =
       plan.testIncludes
         .flatMap { include -> expandSourceDirectory(root, include, extension) }
-        .filter { path -> testExcludes.none { matcher -> matcher.matches(relative(root, path)) } }
+        .filterNot { path -> isExcluded(root, path, plan.testIncludes, plan.testExcludes) }
         .distinct()
         .sortedBy(Path::toString)
     val sourceSet = sources.toSet()
