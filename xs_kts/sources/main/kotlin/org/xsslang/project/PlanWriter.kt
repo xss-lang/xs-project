@@ -13,6 +13,8 @@ object PlanWriter {
       field("channel", plan.identity.channel)
       field("projectVersion", plan.identity.version)
       mapField("variables", plan.variables)
+      artifactField("binaries", plan.binaries)
+      artifactField("libraries", plan.libraries)
       append(",\"authors\":[")
       plan.authors.forEachIndexed { index, author ->
         if (index > 0) append(',')
@@ -97,6 +99,22 @@ object PlanWriter {
       }
     }
     append('}')
+  }
+
+  private fun StringBuilder.artifactField(
+    name: String,
+    targets: List<ArtifactTarget>,
+  ) {
+    append(",\"").append(name).append("\":[")
+    targets.forEachIndexed { index, target ->
+      if (index > 0) append(',')
+      append("{\"name\":")
+        .quoted(target.name)
+        .append(",\"path\":")
+        .quoted(target.path)
+        .append('}')
+    }
+    append(']')
   }
 
   private fun StringBuilder.quoted(value: String): StringBuilder {

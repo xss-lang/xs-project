@@ -19,6 +19,7 @@ xs build -proj MyApp.xsproj
 xs run -proj MyApp.xsproj
 xs-proj MyApp.xsproj
 xs build -file Main.xs
+xs run -file Main.xs
 xs build --output hir -file Main.xs
 xs build --output mir -file Main.xs
 xs build --output xlil -file Main.xs
@@ -73,7 +74,7 @@ xs build -proj MyApp.xsproj --warning all --werror true
 The compiler usage is:
 
 ```text
-usage: xs build -file <Main.xs>
+usage: xs <build|run> -file <Main.xs>
 usage: xs <check|build|run>
        [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]
        [--xgc-enabled true|false]
@@ -111,7 +112,8 @@ fn main() -> Long { return add(2, 5); }
 
 Project builds may place supported helper functions in separate selected source files. The compiler merges their expanded
 AST packets, collects all program signatures before lowering bodies, and emits one verified XLIL/LLVM module. Kotlin
-project source globs are resolved before this compiler stage and always put the sole `main.xs` entry first.
+project sources are resolved before this compiler stage and put `main.<XS_EXTENSION>` first when it exists. Library-only
+registries are valid project metadata, although a native `bin` build still requires a supported entry function.
 
 The entry function must be top-level, named `main`, have no parameters, and return `Long`. Same-module helper functions may
 take `Long`, `Int`, or `Bool` parameters and return `Long`, `Int`, or `Bool`. Supported bodies may contain explicit
@@ -128,7 +130,9 @@ after their enclosing block; an inner scope may shadow an enclosing binding, whi
 The same supported
 return-expression subset may be used by an early `return` inside a supported conditional or loop block. The
 native slice also supports `for (name: Long = initializer; bool_condition; update)` with a required variable initializer
-and an assignment, postfix `++`, or postfix `--` update; `for each` remains deferred. The
+and an assignment, postfix `++`, or postfix `--` update. Fixed and runtime-sized arrays support `for (value in values)`,
+including nested tuple binding patterns. Tuple destructuring declarations such as `(left, else, right) := value;` lower
+to checked tuple projections; explicit tuple pattern annotations are also accepted. The
 native slice also lowers statement-level `match (value)` over a supported `Long` or `Bool` selector. Arms use matching
 literal patterns and must end with an `else` arm; each arm accepts the same supported block statements as `if`.
 supported return expression subset is i32-range integer literals, local identifiers, direct same-module `Long` calls, unary
@@ -144,8 +148,10 @@ spelling and the short `--hir`, `--mir`, and
 
 ## `xs run`
 
-`xs run` will eventually run `xs build` first and then execute the generated executable. Full run semantics are not considered
-ready until native executable generation is complete.
+For the supported native source subset, `xs run`, `xs run -file <main.xs>`, and `xs run -proj <App.xsproj>` perform the
+same checked build as `xs build`, write `.ll`, `.o`, and `.xse`, then execute the generated `.xse`. The CLI returns the
+native program's exit code unchanged. A compilation, linking, spawn, or wait failure returns a non-zero compiler error
+instead. Program arguments and direct XHIR/XMIR/XLIL execution are not part of this first run slice.
 
 ## Intermediate outputs
 

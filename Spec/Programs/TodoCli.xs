@@ -108,7 +108,7 @@ class TodoStore {
             std::fs::create_file(self.path);
         }
 
-        opened: std::fs::File = std::fs::OpenOptions::new()
+        opened: std::fs::File = new std::fs::OpenOptions()
             .truncate(true)
             .open(self.path);
 

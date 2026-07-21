@@ -75,6 +75,98 @@ class ProjectDslTest {
   }
 
   @Test
+  fun buildDefaultsAndPackageTypesAreValidated() {
+    val context = ProjectContext()
+    assertEquals("Release", context.get("BUILD_MODE"))
+    assertEquals("build/release", context.get("RELEASE_OUTDIR"))
+    assertEquals("build/debug", context.get("DEBUG_OUTDIR"))
+
+    context.set("BUILD_MODE", "Debug")
+    context.set("RELEASE_OUTDIR", "out/release")
+    context.set("DEBUG_OUTDIR", "out/debug")
+    context.set("XSPKG_TYPE", listOf("xlib", "bin"))
+    assertEquals(listOf("xlib", "bin"), context.getAll("XSPKG_TYPE"))
+
+    context.set(
+      "BINARY",
+      mapOf("name" to "Name", "path" to "Sources/program.xs"),
+      mapOf("name" to "Example", "path" to "Sources/example.xs"),
+    )
+    context.set("LIBRARY", mapOf("name" to "Library", "path" to "Sources/library.xs"))
+    assertEquals(listOf("Name:Sources/program.xs", "Example:Sources/example.xs"), context.getAll("BINARY"))
+    assertEquals(listOf("Library:Sources/library.xs"), context.getAll("LIBRARY"))
+
+    val artifactPlan =
+      ProjectContext().apply {
+        project("Artifacts", "BETA", "0.1.0")
+        source { include("Sources") }
+        set("BINARY", mapOf("name" to "tool", "path" to "Sources/tool.xs"))
+      }.build()
+    assertEquals(listOf(ArtifactTarget("tool", "Sources/tool.xs")), artifactPlan.binaries)
+    assertTrue(PlanWriter.write(artifactPlan).contains("\"binaries\":[{\"name\":\"tool\""))
+
+    assertFailsWith<ProjectConfigurationException> { context.set("BUILD_MODE", "RELEASE") }
+    assertFailsWith<ProjectConfigurationException> { context.set("XSPKG_TYPE", listOf("bin", "bin")) }
+    assertFailsWith<ProjectConfigurationException> { context.set("XSPKG_TYPE", listOf("unknown")) }
+    assertFailsWith<ProjectConfigurationException> {
+      context.set("BINARY", mapOf("name" to "MissingPath"))
+    }
+    assertFailsWith<ProjectConfigurationException> {
+      context.set(
+        "LIBRARY",
+        mapOf("name" to "Duplicate", "path" to "Sources/a.xs"),
+        mapOf("name" to "Duplicate", "path" to "Sources/b.xs"),
+      )
+    }
+  }
+
+  @Test
+  fun infersPackageTypesWithoutRequiringMain() {
+    val root = Files.createTempDirectory("xs-project-package-type-test-")
+    val sources = Files.createDirectories(root.resolve("Sources"))
+    val output = root.resolve("sources.bin")
+    val oldRoot = System.getProperty("xs.project.root")
+    val oldOutput = System.getProperty("xs.project.output")
+    val oldSources = System.getProperty("xs.project.sources")
+    try {
+      val lib = sources.resolve("lib.xs")
+      val main = sources.resolve("main.xs")
+      Files.writeString(lib, "public fn answer() -> Long { 42 }")
+      Files.writeString(main, "fn main() -> Long { 0 }")
+      assertEquals(listOf("xlib"), inferPackageTypes(listOf(lib), "xs"))
+      assertEquals(listOf("bin"), inferPackageTypes(listOf(main), "xs"))
+      assertEquals(listOf("xlib", "bin"), inferPackageTypes(listOf(main, lib), "xs"))
+      assertEquals(
+        listOf("bin"),
+        inferPackageTypes(
+          emptyList(),
+          "xs",
+          binaries = listOf(ArtifactTarget("tool", "Sources/tool.xs")),
+        ),
+      )
+      assertEquals(emptyList(), inferPackageTypes(listOf(root.resolve("helper.xs")), "xs"))
+
+      Files.delete(main)
+      Files.writeString(sources.resolve("tool.xs"), "fn main() -> Long { 0 }")
+      val context =
+        ProjectContext().apply {
+          project("Library", "BETA", "0.1.0")
+          set("BINARY", mapOf("name" to "tool", "path" to "Sources/tool.xs"))
+        }
+      System.setProperty("xs.project.root", root.toString())
+      System.setProperty("xs.project.output", "sources0")
+      System.setProperty("xs.project.sources", output.toString())
+      ProjectOutput.emit(context.build())
+      assertTrue(Files.size(output) > 0)
+    } finally {
+      restoreProperty("xs.project.root", oldRoot)
+      restoreProperty("xs.project.output", oldOutput)
+      restoreProperty("xs.project.sources", oldSources)
+      root.toFile().deleteRecursively()
+    }
+  }
+
+  @Test
   fun splitFilesShareStateWithoutSectionOwnership() {
     val settings =
       ProjectContext().apply {
@@ -158,11 +250,11 @@ class ProjectDslTest {
   }
 
   @Test
-  fun requiresProjectAndSourceInclude() {
+  fun requiresProjectAndDefaultsSourceInclude() {
     val context = ProjectContext()
+    assertFailsWith<ProjectConfigurationException> { context.build() }
     context.project("Demo", "BETA", "0.1.0")
-    val error = assertFailsWith<ProjectConfigurationException> { context.build() }
-    assertTrue(error.message.orEmpty().contains("source.include"))
+    assertEquals(listOf("Sources"), context.build().sourceIncludes)
   }
 
   @Test
@@ -199,7 +291,6 @@ class ProjectDslTest {
         project("Extension", "BETA", "0.1.0")
         set("XS_EXTENSION", "xsharp")
         source { include("Sources") }
-        module { include("Modules") }
         module {
           name("Math")
           add("Modules/*.xsharp")

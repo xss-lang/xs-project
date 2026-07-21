@@ -11,8 +11,7 @@ static XsSyntaxNode *parse_literal(SyntaxParser *parser);
 
 static bool token_can_continue_expression_path(XsTokenKind kind)
 {
-  return kind == XS_TOKEN_IDENTIFIER || kind == XS_TOKEN_KW_ATOMIC || kind == XS_TOKEN_KW_NEW ||
-         kind == XS_TOKEN_KW_NONE;
+  return kind == XS_TOKEN_IDENTIFIER || kind == XS_TOKEN_KW_ATOMIC || kind == XS_TOKEN_KW_NONE;
 }
 
 static XsSyntaxNode *expression_path_segment(SyntaxParser *parser)
@@ -308,7 +307,8 @@ static XsSyntaxNode *parse_square_literal(SyntaxParser *parser)
   if(accept(parser, XS_TOKEN_COLON))
   {
     XsSyntaxNode *map = node(parser, XS_SYNTAX_EXPR_MAP_LITERAL, (XsSpan){start, parser->previous.span.end});
-    XsSyntaxNode *entry = node(parser, XS_SYNTAX_MAP_ENTRY, (XsSpan){first->span.start_offset, parser->previous.span.end});
+    XsSyntaxNode *entry =
+        node(parser, XS_SYNTAX_MAP_ENTRY, (XsSpan){first->span.start_offset, parser->previous.span.end});
     xs_syntax_node_add(parser->tree, entry, first);
     xs_syntax_node_add(parser->tree, entry, parse_expression(parser, 1));
     finish_node(parser, entry, parser->previous.span.end);
@@ -520,9 +520,7 @@ static bool split_positional_member_token(const SyntaxParser *parser, XsSpan *fi
   return true;
 }
 
-static XsSyntaxNode *append_positional_member(SyntaxParser *parser,
-                                              XsSyntaxNode *receiver,
-                                              size_t start,
+static XsSyntaxNode *append_positional_member(SyntaxParser *parser, XsSyntaxNode *receiver, size_t start,
                                               XsSpan selector)
 {
   XsSyntaxNode *member = node(parser, XS_SYNTAX_EXPR_MEMBER_ACCESS, (XsSpan){start, selector.end});

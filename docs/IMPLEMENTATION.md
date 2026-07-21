@@ -209,10 +209,11 @@ The documented compilation order is preserved:
   layouts in tuple and fixed-array element types. Tuple-valued parameters, returns, calls, direct element assignment, and
   chained positional projection use the same typed path. Fixed-array for-each supports recursively nested tuple binding
   patterns, typed tuple annotations, and `else` discard elements by desugaring them to explicit typed projections before
-  MIR construction. General tuple destructuring declarations and tuple match patterns remain separate lowering steps.
+  MIR construction. General tuple destructuring declarations use the same desugaring for inferred or explicitly typed,
+  nested patterns and continue through native code generation. Tuple match patterns remain a separate lowering step.
 - The lexer keeps `>>` as a shift-right operator token; the structural parser may consume that token as two separate `>`
   tokens when closing generic type/generic parameter contexts.
-- Type-qualified associated expressions such as `Vector<Str>::new()`, expression turbofish, typed object literals,
+- Type-qualified associated expressions such as `new Vector<Str>()`, expression turbofish, typed object literals,
   typed for-each patterns, tuple-pattern bindings, asynchronous function expressions, and unconditional `loop` statements
   have dedicated structural nodes. Every complete-language example under `Spec/Programs` is covered by both structural
   parsing and semantic `xs check` tests.

@@ -101,7 +101,7 @@ fn move_value_to_thread() {
 // invalid non-Send capture
 
 fn invalid_non_send_capture() {
-    value: NonSendType = NonSendType::new();
+    value: NonSendType = new NonSendType();
 
     std::thread::spawn(move fn() {
         Use(value);
@@ -418,7 +418,7 @@ import mutex, rw_lock, arc;
 // moving a mutex into a thread
 
 fn move_mutex_into_thread() {
-    mutex: Mutex<Int> = Mutex::new(42);
+    mutex: Mutex<Int> = new Mutex<Int>(42);
 
     thread: Thread::handle<()> =
         std::thread::spawn(move fn() {
@@ -434,7 +434,7 @@ fn move_mutex_into_thread() {
 
 fn share_mutex_between_threads() {
     shared: Arc<Mutex<Int>> =
-        Arc::new(Mutex::new(42));
+        new Arc<Mutex<Int>>(new Mutex<Int>(42));
 
     worker: Arc<Mutex<Int>> =
         Arc::clone(&shared);
@@ -455,7 +455,7 @@ fn share_mutex_between_threads() {
 
 fn share_rw_lock_between_threads() {
     shared: Arc<RwLock<Int>> =
-        Arc::new(RwLock::new(42));
+        new Arc<RwLock<Int>>(new RwLock<Int>(42));
 
     worker: Arc<RwLock<Int>> =
         Arc::clone(&shared);

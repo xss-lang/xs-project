@@ -125,7 +125,7 @@ fn build_path(root: Str, name: Str) -> Str {
 // file handles and open options
 
 fn open_with_options() -> Result<()> {
-    file: std::fs::File = std::fs::OpenOptions::new()
+    file: std::fs::File = new std::fs::OpenOptions()
         .create(true)
         .append(true)
         .open("log.txt");

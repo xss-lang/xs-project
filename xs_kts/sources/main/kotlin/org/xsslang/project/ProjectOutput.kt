@@ -13,26 +13,35 @@ import kotlin.streams.toList
 
 object ProjectOutput {
   fun emit(plan: ProjectPlan) {
-    val resolved = resolveSources(plan)
+    val root = projectRoot()
+    val configuredPlan = plan.withDefaultModuleRoot(root)
+    val resolved = resolveSources(configuredPlan)
+    val effectivePlan = configuredPlan.withInferredPackageTypes(resolved.sources)
+    validatePackageTypeInputs(effectivePlan, resolved.sources)
     writeModuleLock(plan.modules)
     when (System.getProperty("xs.project.output", "plan")) {
-      "plan" -> println(PlanWriter.write(plan))
-      "sources0" -> writeSources(resolved, plan.compiler, plan.variables)
+      "plan" -> println(PlanWriter.write(effectivePlan))
+      "sources0" -> writeSources(resolved, plan.compiler, effectivePlan.variables)
       else -> throw ProjectConfigurationException("unknown project output mode")
     }
   }
 
   fun emitModules(state: ProjectState) {
-    val root = Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
+    val root = projectRoot()
     val extension = sourceExtension(state.variables)
-    val modules = resolveModules(root, state.moduleIncludes, state.moduleSources, extension)
+    val moduleIncludes =
+      if (state.moduleIncludes.isEmpty() && moduleRootOverride() == null) {
+        defaultModuleRoots(root)
+      } else {
+        state.moduleIncludes
+      }
+    val modules = resolveModules(root, moduleIncludes, state.moduleSources, extension)
     if (state.identity != null) ModuleLockFile.write(root, state.modules)
     writeSources(ResolvedProject(emptyList(), modules, emptyList()), state.compiler, state.variables)
   }
 
   private fun writeModuleLock(modules: List<ModuleDependency>) {
-    val root = Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
-    ModuleLockFile.write(root, modules)
+    ModuleLockFile.write(projectRoot(), modules)
   }
 
   private data class ResolvedProject(
@@ -42,7 +51,7 @@ object ProjectOutput {
   )
 
   private fun resolveSources(plan: ProjectPlan): ResolvedProject {
-    val root = Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
+    val root = projectRoot()
     val extension = sourceExtension(plan.variables)
     val excludes = plan.sourceExcludes.map(::globRegex)
     val sources =
@@ -52,11 +61,12 @@ object ProjectOutput {
         .distinct()
         .sortedWith(compareBy<Path> { path -> path.fileName.toString() != "main.$extension" }.thenBy(Path::toString))
     val mainCount = sources.count { path -> path.fileName.toString() == "main.$extension" }
-    if (mainCount != 1) {
+    if (mainCount > 1) {
       throw ProjectConfigurationException(
-        "source roots must resolve exactly one case-sensitive main.$extension; found $mainCount",
+        "source roots may resolve at most one case-sensitive main.$extension; found $mainCount",
       )
     }
+    validateArtifactTargets(plan, root, sources, extension)
     val modules = resolveModules(root, plan.moduleIncludes, plan.moduleSources, extension)
     val testExcludes = plan.testExcludes.map(::globRegex)
     val tests =
@@ -165,6 +175,56 @@ object ProjectOutput {
     return values.single()
   }
 
+  private fun ProjectPlan.withInferredPackageTypes(sources: List<Path>): ProjectPlan {
+    if ("XSPKG_TYPE" in variables) return this
+    val extension = sourceExtension(variables)
+    val inferred = inferPackageTypes(sources, extension, binaries, libraries)
+    if (inferred.isEmpty()) return this
+    return copy(variables = variables + ("XSPKG_TYPE" to inferred))
+  }
+
+  private fun ProjectPlan.withDefaultModuleRoot(root: Path): ProjectPlan {
+    if (moduleIncludes.isNotEmpty() || moduleRootOverride() != null) return this
+    val defaults = defaultModuleRoots(root)
+    return if (defaults.isEmpty()) this else copy(moduleIncludes = defaults)
+  }
+
+  private fun validateArtifactTargets(
+    plan: ProjectPlan,
+    root: Path,
+    sources: List<Path>,
+    extension: String,
+  ) {
+    val selected = sources.toSet()
+    (plan.binaries + plan.libraries).forEach { target ->
+      val path = root.resolve(target.path).normalize()
+      if (!path.startsWith(root) || path !in selected) {
+        throw ProjectConfigurationException("artifact target is not selected by source.include(...): ${target.path}")
+      }
+      if (!path.fileName.toString().endsWith(".$extension")) {
+        throw ProjectConfigurationException("artifact target must use the .$extension source extension: ${target.path}")
+      }
+    }
+  }
+
+  private fun validatePackageTypeInputs(
+    plan: ProjectPlan,
+    sources: List<Path>,
+  ) {
+    val extension = sourceExtension(plan.variables)
+    val types = plan.variables["XSPKG_TYPE"].orEmpty()
+    val hasBinarySource =
+      plan.binaries.isNotEmpty() || sources.any { path -> path.fileName.toString() == "main.$extension" }
+    val hasLibrarySource =
+      plan.libraries.isNotEmpty() || sources.any { path -> path.fileName.toString() == "lib.$extension" }
+    if ("bin" in types && !hasBinarySource) {
+      throw ProjectConfigurationException("bin output requires main.$extension or set(\"BINARY\", ...)")
+    }
+    if (types.any { type -> type in setOf("xlib", "dylib", "staticlib", "cdylib") } && !hasLibrarySource) {
+      throw ProjectConfigurationException("library output requires lib.$extension or set(\"LIBRARY\", ...)")
+    }
+  }
+
   private fun writeSources(
     project: ResolvedProject,
     compiler: CompilerSettings,
@@ -259,3 +319,23 @@ object ProjectOutput {
     if (owned) use(block) else block(this)
   }
 }
+
+private fun projectRoot(): Path =
+  Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
+
+private fun defaultModuleRoots(root: Path): List<String> =
+  if (Files.isDirectory(root.resolve("Modules"))) listOf("Modules") else emptyList()
+
+private fun moduleRootOverride(): String? =
+  System.getProperty("xs.project.moduleRoot")?.takeIf(String::isNotBlank)
+
+internal fun inferPackageTypes(
+  sources: List<Path>,
+  extension: String,
+  binaries: List<ArtifactTarget> = emptyList(),
+  libraries: List<ArtifactTarget> = emptyList(),
+): List<String> =
+  buildList {
+    if (libraries.isNotEmpty() || sources.any { path -> path.fileName.toString() == "lib.$extension" }) add("xlib")
+    if (binaries.isNotEmpty() || sources.any { path -> path.fileName.toString() == "main.$extension" }) add("bin")
+  }

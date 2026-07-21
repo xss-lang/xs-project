@@ -16,8 +16,10 @@ foreach(source_fixture MainReturn0 MainReturn7 MainArithmetic MainDivision MainR
                        MainArrayExcessDiscard MainInferredSizeArray MainArrayMutation MainDefaultFixedArray
                        MainDynamicArray MainDynamicArrayIndex MainDynamicArrayMutation MainArrayProperties
                        MainForEach MainTuple MainNamedTuple MainTupleCalls MainNestedTuple MainTupleArray MainTupleMutation
+                       MainTupleDestructure
                        MainTupleForEach TupleUnknownMember TupleAssignmentMismatch TuplePatternArityMismatch
-                       TuplePatternTypeMismatch TuplePatternDuplicateBinding
+                       TuplePatternTypeMismatch TuplePatternDuplicateBinding TupleDeclarationArityMismatch
+                       TupleDeclarationTypeMismatch TupleDeclarationDuplicateBinding
                        CollectionSetCheck
                        MainEarlyReturn MainElseIf MainMatch MainMatchBool MainMatchExpression MainEnumFlow MainFor
                        MainPostfixDecrement MainUpdateValues
@@ -86,6 +88,7 @@ xs_add_source_native_tuple_test(MainNestedTuple 7 "%tuple.1 = type { %tuple.0, i
 xs_add_source_native_tuple_test(MainTupleArray 7 "[2 x %tuple.0]" "extractvalue")
 xs_add_source_native_tuple_test(MainTupleMutation 7 "store %tuple.0" "insertvalue")
 xs_add_source_native_tuple_test(MainTupleForEach 10 "[2 x %tuple.1]" "extractvalue")
+xs_add_source_native_tuple_test(MainTupleDestructure 7 "%tuple.1 = type { %tuple.0, i32 }" "extractvalue")
 xs_add_source_native_tuple_test(MainEnumFlow 7 "%Color = type { i32 }" "define %Color @next" "extractvalue %Color"
                                 "call %Color @next")
 
@@ -103,6 +106,15 @@ add_test(NAME source_native_return0_artifacts COMMAND xs_xse_artifact_tests ${XS
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.o
                                                 ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.xse 0)
 set_tests_properties(source_native_return0_artifacts PROPERTIES DEPENDS source_native_return0_build TIMEOUT 5)
+
+add_test(NAME source_native_return0_run COMMAND xs run -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn0.xs)
+set_tests_properties(source_native_return0_run PROPERTIES TIMEOUT 5
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
+
+add_executable(xs_cli_run_tests tests/cli_run_tests.c)
+add_test(NAME source_native_return7_run_exit COMMAND xs_cli_run_tests $<TARGET_FILE:xs>
+  ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.xs 7)
+set_tests_properties(source_native_return7_run_exit PROPERTIES TIMEOUT 5)
 add_test(NAME source_native_return7_build COMMAND xs build -file ${XS_SOURCE_NATIVE_FIXTURE_DIR}/MainReturn7.xs)
 set_tests_properties(source_native_return7_build PROPERTIES TIMEOUT 5
                     PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")

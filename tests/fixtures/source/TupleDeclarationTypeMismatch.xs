@@ -1,0 +1,8 @@
+// SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
+// SPDX-License-Identifier: MPL-2.0
+
+fn main() -> Long
+{
+  (left, right): (Long, Bool) = (2, 3);
+  return left;
+}

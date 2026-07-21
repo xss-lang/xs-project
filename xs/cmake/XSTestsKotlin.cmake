@@ -91,6 +91,12 @@ add_test(NAME kotlin_project_integer_widths_artifacts COMMAND xs_xse_artifact_te
   "define i128 @integer_min" "ret i128 -1")
 set_tests_properties(kotlin_project_integer_widths_artifacts PROPERTIES
   TIMEOUT 5 FIXTURES_REQUIRED kotlin_project_integer_widths)
+add_test(NAME kotlin_project_integer_widths_run COMMAND xs run)
+set_tests_properties(kotlin_project_integer_widths_run PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_widths"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver
+  PASS_REGULAR_EXPRESSION "wrote optimized LLVM IR.*executable")
 add_test(NAME kotlin_project_integer_operators_build COMMAND xs build)
 set_tests_properties(kotlin_project_integer_operators_build PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/integer_operators"
@@ -125,6 +131,7 @@ set_tests_properties(
   kotlin_project_output_mir kotlin_project_output_mir_artifact
   kotlin_project_output_xlil kotlin_project_output_xlil_artifact
   kotlin_project_integer_widths_build kotlin_project_integer_widths_artifacts
+  kotlin_project_integer_widths_run
   kotlin_project_integer_operators_build kotlin_project_integer_operators_artifacts
   kotlin_project_module_check
   kotlin_project_module_requires_root

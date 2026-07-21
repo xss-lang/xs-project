@@ -12,6 +12,26 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+- Added KTS build mode, output-directory, and package-artifact settings. `BUILD_MODE` defaults to `Release`, while
+  omitted `XSPKG_TYPE` is inferred from optional `lib.<extension>` and `main.<extension>` source files. Structured
+  `BINARY` and `LIBRARY` records support named artifacts whose entry files use non-canonical names. Projects that omit
+  `source.include` now use the recursive `Sources` root by default, while an existing `Modules` directory supplies the
+  optional default module root.
+
+### Added
+
+- `xs run`, `xs run -file`, and legacy `xs run -proj` now execute the native `.xse` produced by the supported compiler
+  pipeline and propagate the program exit code. Compiler installation now has an explicit component that installs the
+  `xs` command, both public C23 header trees under one `include/xs` hierarchy, and project license notices.
+- Tuple destructuring declarations now cross the structural AST into typed HIR as explicit tuple storage and projection
+  bindings. Inferred and explicitly typed nested patterns, `else` discard fields, MIR/XLIL aggregate extraction, LLVM
+  lowering, and native `.xse` execution share the existing target-independent tuple registry.
+
+### Changed
+
+- Constructor calls use `new Type(...)`; constructor-shaped `Type::new(...)` expressions are rejected while `::` remains
+  available for ordinary associated and static members.
+
 ## 0.2.1 - 2026-07-21
 
 ### Added

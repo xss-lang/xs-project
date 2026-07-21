@@ -113,7 +113,7 @@ fn seed_inventory() -> Arc<Mutex<InventoryRepository>> {
         stock: 5,
     });
 
-    return Arc::new(Mutex::new(repository));
+    return new Arc<Mutex<InventoryRepository>>(new Mutex<InventoryRepository>(repository));
 }
 
 fn make_order(id: Int, sku: Str, quantity: Int) -> Order {

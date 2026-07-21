@@ -4,6 +4,7 @@
  */
 
 #include "direct_xlil.h"
+#include "native_artifact.h"
 
 #include "xs/backend/linker.h"
 #include "xs/backend/llvm_backend.h"
@@ -13,29 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static char *direct_artifact_path(const char *input_path, const char *extension)
-{
-  const char *slash = strrchr(input_path, '/');
-  const char *base = slash == nullptr ? input_path : slash + 1;
-  size_t directory_length = slash == nullptr ? 0 : (size_t)(base - input_path);
-  size_t base_length = strlen(base);
-  if(base_length >= 5 && (strcmp(base + base_length - 5, ".xlil") == 0 ||
-                          strcmp(base + base_length - 5, ".xmir") == 0 || strcmp(base + base_length - 5, ".xhir") == 0))
-    base_length -= 5;
-  else if(base_length >= 3 && strcmp(base + base_length - 3, ".xs") == 0)
-    base_length -= 3;
-  size_t extension_length = strlen(extension);
-  char *path = malloc(directory_length + base_length + extension_length + 1U);
-  if(path == nullptr)
-    return nullptr;
-  if(directory_length != 0)
-    memcpy(path, input_path, directory_length);
-  memcpy(path + directory_length, base, base_length);
-  memcpy(path + directory_length + base_length, extension, extension_length);
-  path[directory_length + base_length + extension_length] = '\0';
-  return path;
-}
 
 static bool validate_native_entry(const XsLilModule *module, XsBackendError *error)
 {
@@ -157,9 +135,9 @@ bool xs_driver_build_lil_module_native(const char *input_path, const XsLilModule
     fprintf(stderr, "xs: XLIL module is required for native build\n");
     return false;
   }
-  char *ir_path = direct_artifact_path(input_path, ".ll");
-  char *object_path = direct_artifact_path(input_path, ".o");
-  char *executable_path = direct_artifact_path(input_path, ".xse");
+  char *ir_path = xs_driver_native_artifact_path(input_path, ".ll");
+  char *object_path = xs_driver_native_artifact_path(input_path, ".o");
+  char *executable_path = xs_driver_native_artifact_path(input_path, ".xse");
   if(ir_path == nullptr || object_path == nullptr || executable_path == nullptr)
   {
     free(ir_path);

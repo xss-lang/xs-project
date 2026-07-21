@@ -17,6 +17,10 @@ project("Example", "BETA", "0.1.0")
 set("XS_VERSION", "0.2.1")
 set("XS_BACKEND", "LLVM")
 set("PUBLISH", false)
+set("BUILD_MODE", "Release")
+set("RELEASE_OUTDIR", "build/release")
+set("DEBUG_OUTDIR", "build/debug")
+set("XSPKG_TYPE", listOf("xlib", "bin"))
 set(
   "TARGET",
   "x86_64-unknown-linux-gnu",
@@ -76,11 +80,13 @@ Alternatively, configuration may be split between `xs.settings.kts` and `xs.buil
 mode, and `xs.project.kts` cannot coexist with them. Each file is evaluated separately by `kotlin`, so normal Kotlin
 import and diagnostics retain their file boundary.
 
-`project(name, channel, version)` and at least one source include are required. `source` is the canonical block name;
+Only `project(name, channel, version)` is required. `source` is the canonical block name;
 `sources` remains a compatibility alias. An include names a project-relative directory and recursively selects files
 with the configured source extension. Include roots do not accept globs. Excludes may use `*`, `**`, and `?`; they are
-applied after discovery. The default extension is `xs`, so the registry must contain exactly one case-sensitive
-`main.xs`. `set("XS_EXTENSION", "xsharp")` instead selects `.xsharp` files and requires `main.xsharp`.
+applied after discovery. Omitting the block uses `source { include("Sources") }`. The default extension is `xs`. A
+case-sensitive `main.xs`, when present, is placed first, but
+library-only projects do not need one. `set("XS_EXTENSION", "xsharp")` selects `.xsharp` files and changes the recognized
+entry/library names to `main.xsharp` and `lib.xsharp`.
 
 The DSL also provides:
 
@@ -115,6 +121,28 @@ they never rewrite the project script. The defaults are `warnings("medium")`, `w
 `PUBLISH` is a reserved single-boolean project variable and defaults to `false`. Use `set("PUBLISH", true)` only to
 express publication intent in the generated project plan. Package upload is not implemented yet, so evaluation never
 publishes a module by itself.
+
+`BUILD_MODE` accepts exactly `Release` or `Debug` and defaults to `Release`. The corresponding output directories default
+to `build/release` and `build/debug` through `RELEASE_OUTDIR` and `DEBUG_OUTDIR`. `XSPKG_TYPE` accepts `xlib`, `dylib`,
+`staticlib`, `cdylib`, and `bin`; a list may request several artifacts. When it is omitted, resolution infers `xlib` from
+`lib.<XS_EXTENSION>`, `bin` from `main.<XS_EXTENSION>`, or both when both files exist. Neither filename is mandatory, and
+an explicit `XSPKG_TYPE` overrides this inference.
+
+Projects that do not use the canonical filenames declare named artifact roots explicitly. `BINARY` and `LIBRARY` are
+the KTS equivalents of repeated `[[bin]]` and `[[lib]]` records:
+
+```kotlin
+set(
+  "BINARY",
+  mapOf("name" to "server", "path" to "Sources/server.xs"),
+  mapOf("name" to "admin", "path" to "Sources/admin.xs"),
+)
+set("LIBRARY", mapOf("name" to "protocol", "path" to "Sources/protocol.xs"))
+```
+
+Every target name must be unique within its category and every path must be a selected project source inside the project
+root. A requested `bin` without `main.<XS_EXTENSION>` requires `BINARY`; a requested library kind without
+`lib.<XS_EXTENSION>` requires `LIBRARY`. Explicit artifact records also participate in default `XSPKG_TYPE` inference.
 
 ## External module lock
 
@@ -188,13 +216,17 @@ The supported pattern operators are:
 
 Include roots are evaluated relative to the project directory, must exist as directories, and must not escape the
 project. They are searched recursively. Excludes are evaluated after includes, duplicate paths are removed, and the
-resulting registry is sorted deterministically. It is an error if exclusion removes the entry file or if the final
-registry does not contain exactly one case-sensitive entry name for `XS_EXTENSION`.
+resulting registry is sorted deterministically. At most one case-sensitive `main.<XS_EXTENSION>` may be selected; when
+present it is ordered first. A registry without that file remains valid for non-`bin` package targets.
 
 ## Module registries
 
 X# source files do not contain a `module` declaration. Projects that need importable modules select a module source pool
 in `xs.project.kts` and assign every selected file in a sibling `xs.module.kts` file:
+
+When `module.include` is omitted, an existing project-root `Modules` directory is selected automatically. If that
+directory does not exist, the default module root is empty. An explicit include or the CLI `--module` override replaces
+the filesystem default.
 
 ```kotlin
 // xs.project.kts

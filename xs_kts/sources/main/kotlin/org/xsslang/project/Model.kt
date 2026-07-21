@@ -94,9 +94,16 @@ data class ModuleDependency(
   val version: String,
 ) : Serializable
 
+data class ArtifactTarget(
+  val name: String,
+  val path: String,
+) : Serializable
+
 data class ProjectState(
   val identity: ProjectIdentity?,
   val variables: Map<String, List<String>>,
+  val binaries: List<ArtifactTarget>,
+  val libraries: List<ArtifactTarget>,
   val authors: List<Author>,
   val modules: List<ModuleDependency>,
   val sourceIncludes: List<String>,
@@ -112,6 +119,8 @@ data class ProjectState(
 data class ProjectPlan(
   val identity: ProjectIdentity,
   val variables: Map<String, List<String>>,
+  val binaries: List<ArtifactTarget>,
+  val libraries: List<ArtifactTarget>,
   val authors: List<Author>,
   val modules: List<ModuleDependency>,
   val sourceIncludes: List<String>,

@@ -11,6 +11,8 @@ configure_file(tests/fixtures/source/MainCall.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/
 configure_file(tests/fixtures/source/MainFunctionOverloads.xs
                "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFunctionOverloads.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainTupleCalls.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainTupleCalls.xs" COPYONLY)
+configure_file(tests/fixtures/source/MainTupleDestructure.xs
+               "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainTupleDestructure.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainFixedArray.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainFixedArray.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainEnumFlow.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainEnumFlow.xs" COPYONLY)
 configure_file(tests/fixtures/source/MainDataFields.xs "${XS_DIRECT_XHIR_FIXTURE_DIR}/MainDataFields.xs" COPYONLY)
@@ -60,7 +62,7 @@ add_test(NAME direct_xhir_source_artifacts COMMAND xs_xse_artifact_tests
   ${XS_DIRECT_XHIR_FIXTURE_DIR}/MainCall.xse 7 "call i32 @Add")
 set_tests_properties(direct_xhir_source_artifacts PROPERTIES TIMEOUT 5 DEPENDS direct_xhir_source_roundtrip)
 
-foreach(fixture MainTupleCalls MainFixedArray MainEnumFlow)
+foreach(fixture MainTupleCalls MainTupleDestructure MainFixedArray MainEnumFlow)
   add_test(NAME direct_xhir_${fixture}_output COMMAND xs build --hir -file
     ${XS_DIRECT_XHIR_FIXTURE_DIR}/${fixture}.xs)
   set_tests_properties(direct_xhir_${fixture}_output PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "wrote XHIR")

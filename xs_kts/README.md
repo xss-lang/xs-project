@@ -11,10 +11,10 @@ driver. It never reads or compiles `.xs` files. The compiler and
 JRE are not embedded: JRE 25 or newer and an executable `kotlin` scripting command are runtime requirements.
 
 Projects use one `xs.project.kts` file or the `xs.settings.kts` + `xs.build.kts` pair. Only
-`project(name, channel, version)` and at least one source include are required. `source.include` names recursive directory
-roots; source/test excludes may use `*`, `**`, and `?` glob patterns. The
-resolved registry must contain exactly one case-sensitive `main.xs`, which is placed first as the entry. Setting
-`XS_EXTENSION` replaces both the selected suffix and entry suffix. Optional sections cover authors, external modules,
+Only `project(name, channel, version)` is required. `source.include` names recursive directory
+roots; source/test excludes may use `*`, `**`, and `?` glob patterns. A case-sensitive `main.xs` is placed first when it
+exists, but it is not required for library-only projects. Setting `XS_EXTENSION` replaces the selected suffix and the
+recognized `main`/`lib` filenames. Optional sections cover authors, external modules,
 multi-value settings such as `TARGET`, tests, compiler diagnostics, variables, and host-dependent `cfg(...)` branches. See `xs.project.kts` for the complete
 working DSL example.
 
@@ -24,6 +24,18 @@ the declared modules yet.
 
 `PUBLISH` is a single boolean project variable with a `false` default; it currently records publication intent without
 performing a registry upload.
+
+`BUILD_MODE` defaults to `Release`; `RELEASE_OUTDIR` and `DEBUG_OUTDIR` default to `build/release` and `build/debug`.
+`XSPKG_TYPE` accepts a list containing `xlib`, `dylib`, `staticlib`, `cdylib`, and `bin`. If omitted, `lib.xs` infers
+`xlib`, `main.xs` infers `bin`, and both files infer both artifacts. These filenames are inference inputs, not mandatory
+project files.
+
+When no source block is present, the resolver behaves as if `source { include("Sources") }` were written.
+An existing project-root `Modules` directory is likewise the default module include; without that directory the module
+registry defaults to empty.
+
+Non-canonical entry files use `set("BINARY", mapOf("name" to "tool", "path" to "Sources/tool.xs"))` or the analogous
+`LIBRARY` setting. Multiple maps define multiple named artifacts, matching repeated `[[bin]]`/`[[lib]]` records.
 
 In split mode, `xs.settings.kts` is evaluated before `xs.build.kts`, but sections are not assigned to either filename.
 Both scripts may use the full DSL; the second script extends the state produced by the first.
@@ -38,8 +50,8 @@ source {
 ```
 
 Include roots do not accept globs. Discovery is recursive relative to the project root, excludes run afterward, and the
-deterministic result must contain exactly one case-sensitive `main.xs` by default. The
-resolver emits that exact registry with `main.xs` first; it does not pass unresolved patterns to the compiler.
+deterministic result places a case-sensitive `main.xs` first when one exists. The resolver emits exact paths and does not
+pass unresolved patterns to the compiler.
 The internal registry also carries the evaluated `compiler {}` warning, warnings-as-errors, and verbose policy. The
 JVM-free compiler may replace those values for one invocation through its corresponding command-line overrides.
 

@@ -35,14 +35,14 @@ import mutex, result;
 // mutex creation
 
 fn mutex_creation() {
-    counter: Mutex<Long> = Mutex::new(0);
+    counter: Mutex<Long> = new Mutex<Long>(0);
 }
 
 
 // locking
 
 fn mutex_lock() {
-    counter: Mutex<Long> = Mutex::new(0);
+    counter: Mutex<Long> = new Mutex<Long>(0);
 
     value: Mutex<Long> = counter.lock();
 
@@ -64,7 +64,7 @@ fn mutex_lock() {
 // automatic unlocking
 
 fn mutex_automatic_unlock() {
-    counter: Mutex<Long> = Mutex::new(0);
+    counter: Mutex<Long> = new Mutex<Long>(0);
 
     {
         value: Mutex<Long> = counter.lock();
@@ -81,7 +81,7 @@ fn mutex_automatic_unlock() {
 // same-thread guard movement
 
 fn move_mutex_guard() {
-    counter: Mutex<Long> = Mutex::new(0);
+    counter: Mutex<Long> = new Mutex<Long>(0);
 
     first_guard: Mutex<Long> = counter.lock();
     second_guard: Mutex<Long> = first_guard;
@@ -98,7 +98,7 @@ fn move_mutex_guard() {
 // non-reentrant mutex
 
 fn invalid_recursive_mutex_lock() {
-    counter: Mutex<Long> = Mutex::new(0);
+    counter: Mutex<Long> = new Mutex<Long>(0);
 
     first_guard: Mutex<Long> = counter.lock();
 
@@ -122,7 +122,7 @@ fn invalid_recursive_mutex_lock() {
 // poisoned mutex recovery
 
 fn recover_poisoned_mutex() {
-    counter: Mutex<Long> = Mutex::new(0);
+    counter: Mutex<Long> = new Mutex<Long>(0);
 
     result: Result<Mutex<Long>, Error> = counter.lock();
     match (result) {
@@ -166,7 +166,7 @@ fn recover_poisoned_mutex() {
 import thread;
 
 fn move_mutex_to_thread() {
-    counter: Mutex<Long> = Mutex::new(42);
+    counter: Mutex<Long> = new Mutex<Long>(42);
 
     std::thread::spawn(move fn() {
         value: Mutex<Long> = counter.lock();
@@ -187,14 +187,14 @@ import rw_lock;
 // rwlock creation
 
 fn rw_lock_creation() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 }
 
 
 // read lock
 
 fn rw_lock_read() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     reader: RwLock<Int> = value.read();
 
@@ -214,7 +214,7 @@ fn rw_lock_read() {
 // invalid reader mutation
 
 fn invalid_reader_mutation() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     reader: RwLock<Int> = value.read();
 
@@ -227,7 +227,7 @@ fn invalid_reader_mutation() {
 // write lock
 
 fn rw_lock_write() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     writer: RwLock<Int> = value.write();
 
@@ -247,7 +247,7 @@ fn rw_lock_write() {
 // multiple readers
 
 fn multiple_readers() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     reader1: RwLock<Int> = value.read();
     reader2: RwLock<Int> = value.read();
@@ -272,7 +272,7 @@ fn multiple_readers() {
 // reader and writer guard movement
 
 fn move_rw_lock_guards() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     reader: RwLock<Int> = value.read();
     other_reader: RwLock<Int> = reader;
@@ -289,7 +289,7 @@ fn move_rw_lock_guards() {
 // non-reentrant rwlock
 
 fn invalid_read_to_write_upgrade() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     reader: RwLock<Int> = value.read();
     writer: RwLock<Int> = value.write();
@@ -302,7 +302,7 @@ fn invalid_read_to_write_upgrade() {
 // invalid writer reentry
 
 fn invalid_writer_reentry() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     writer: RwLock<Int> = value.write();
 
@@ -328,7 +328,7 @@ fn invalid_writer_reentry() {
 // poisoned rwlock recovery
 
 fn recover_poisoned_rw_lock() {
-    value: RwLock<Int> = RwLock::new(42);
+    value: RwLock<Int> = new RwLock<Int>(42);
 
     result: Result<RwLock<Int>, Error> = value.write();
     match (result) {
@@ -404,14 +404,14 @@ import arc;
 // arc creation
 
 fn arc_creation() {
-    value: Arc<Str> = Arc::new("Alpha");
+    value: Arc<Str> = new Arc<Str>("Alpha");
 }
 
 
 // arc cloning
 
 fn arc_cloning() {
-    value: Arc<Str> = Arc::new("Alpha");
+    value: Arc<Str> = new Arc<Str>("Alpha");
 
     second: Arc<Str> = Arc::clone(&value);
     third: Arc<Str> = Arc::clone(&value);
@@ -428,7 +428,7 @@ fn arc_cloning() {
 // arc access
 
 fn arc_read() {
-    strong: Arc<Int> = Arc::new(42);
+    strong: Arc<Int> = new Arc<Int>(42);
 
     value: Int = *strong;
 }
@@ -439,7 +439,7 @@ fn arc_read() {
 // invalid arc mutation
 
 fn invalid_arc_mutation() {
-    strong: Arc<Int> = Arc::new(42);
+    strong: Arc<Int> = new Arc<Int>(42);
 
     *strong = 50;
 }
@@ -469,7 +469,7 @@ fn invalid_arc_mutation() {
 
 fn shared_mutex() {
     shared: Arc<Mutex<Str>> =
-        Arc::new(Mutex::new("Alpha"));
+        new Arc<Mutex<Str>>(new Mutex<Str>("Alpha"));
 
     second: Arc<Mutex<Str>> =
         Arc::clone(&shared);
@@ -484,7 +484,7 @@ fn shared_mutex() {
 
 fn shared_rw_lock() {
     shared: Arc<RwLock<Int>> =
-        Arc::new(RwLock::new(42));
+        new Arc<RwLock<Int>>(new RwLock<Int>(42));
 
     second: Arc<RwLock<Int>> =
         Arc::clone(&shared);
@@ -503,7 +503,7 @@ import WeakControl;
 // weak creation
 
 fn weak_creation() {
-    strong: Arc<Str> = Arc::new("Alpha");
+    strong: Arc<Str> = new Arc<Str>("Alpha");
 
     weak: Weak<Str> = Arc.downgrade(&strong);
 }
@@ -519,7 +519,7 @@ fn weak_creation() {
 // weak cloning
 
 fn weak_cloning() {
-    strong: Arc<Str> = Arc::new("Alpha");
+    strong: Arc<Str> = new Arc<Str>("Alpha");
     weak: Weak<Str> = Arc.downgrade(&strong);
 
     other_weak: Weak<Str> =
@@ -536,7 +536,7 @@ fn weak_cloning() {
 // weak upgrade
 
 fn weak_upgrade() {
-    strong: Arc<Str> = Arc::new("Alpha");
+    strong: Arc<Str> = new Arc<Str>("Alpha");
     weak: Weak<Str> = Arc.downgrade(&strong);
 
     strong_again: Arc<Str> =
@@ -581,11 +581,11 @@ import atomic;
 // atomic creation
 
 fn atomic_creation() {
-    Atomic counter: Int = Atomic::new(42);
-    Atomic flag: Bool = Atomic::new(false);
+    Atomic counter: Int = new Atomic<Int>(42);
+    Atomic flag: Bool = new Atomic<Bool>(false);
 }
 
-// Atomic::new() requires a compile-time constant initial value.
+// new Atomic<T>() requires a compile-time constant initial value.
 
 
 // supported atomic value types
@@ -619,7 +619,7 @@ fn atomic_creation() {
 // atomic load
 
 fn atomic_load() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     value: Int =
         counter.load(Atomic.ordering.SeqCst);
@@ -629,7 +629,7 @@ fn atomic_load() {
 // atomic store
 
 fn atomic_store() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     counter.store(
         43,
@@ -641,7 +641,7 @@ fn atomic_store() {
 // atomic exchange
 
 fn atomic_exchange() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     old_value: Int =
         counter.exchange(
@@ -656,7 +656,7 @@ fn atomic_exchange() {
 // atomic addition
 
 fn atomic_fetch_add() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     old_value: Int =
         counter.fetch_add(
@@ -671,7 +671,7 @@ fn atomic_fetch_add() {
 // atomic subtraction
 
 fn atomic_fetch_sub() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     old_value: Int =
         counter.fetch_sub(
@@ -686,7 +686,7 @@ fn atomic_fetch_sub() {
 // compare and exchange
 
 fn atomic_compare_exchange() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     old_value: Int =
         counter.compare_exchange(
@@ -709,7 +709,7 @@ fn atomic_compare_exchange() {
 // Bool atomic operations
 
 fn atomic_bool() {
-    Atomic flag: Bool = Atomic::new(false);
+    Atomic flag: Bool = new Atomic<Bool>(false);
 
     current: Bool =
         flag.load(Atomic.ordering.SeqCst);
@@ -750,7 +750,7 @@ fn atomic_bool() {
 // invalid direct atomic read
 
 fn invalid_direct_atomic_read() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     value: Int = counter;
 }
@@ -762,7 +762,7 @@ fn invalid_direct_atomic_read() {
 // invalid direct atomic assignment
 
 fn invalid_direct_atomic_assignment() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     counter = 50;
 }
@@ -776,16 +776,16 @@ fn invalid_direct_atomic_assignment() {
 fn invalid_runtime_atomic_initialization() {
     value: Int = GetRuntimeValue();
 
-    Atomic counter: Int = Atomic::new(value);
+    Atomic counter: Int = new Atomic<Int>(value);
 }
 
-// Atomic::new() requires a compile-time constant.
+// new Atomic<T>() requires a compile-time constant.
 
 
 // atomic movement
 
 fn move_atomic() {
-    Atomic first: Int = Atomic::new(42);
+    Atomic first: Int = new Atomic<Int>(42);
 
     Atomic second: Int = first;
 
@@ -801,14 +801,14 @@ fn move_atomic() {
 
 fn shared_atomic() {
     shared: Arc<Atomic<Int>> =
-        Arc::new(Atomic::new(0));
+        new Arc<Atomic<Int>>(new Atomic<Int>(0));
 }
 
 
 // ordering validation
 
 fn invalid_load_ordering() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     value: Int =
         counter.load(Atomic.ordering.Release);
@@ -819,7 +819,7 @@ fn invalid_load_ordering() {
 
 
 fn invalid_store_ordering() {
-    Atomic counter: Int = Atomic::new(42);
+    Atomic counter: Int = new Atomic<Int>(42);
 
     counter.store(
         50,
@@ -1088,7 +1088,7 @@ fn invalid_sender_clone() {
 // ============================================================
 
 fn handle_sync_error() {
-    mutex: Mutex<Int> = Mutex::new(42);
+    mutex: Mutex<Int> = new Mutex<Int>(42);
 
     result: Result<Mutex<Int>, Error> = mutex.lock();
     if (result.is_error()) {

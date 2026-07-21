@@ -9,6 +9,7 @@ foreach(source_fixture MissingMain NonLiteralMain OutOfRangeMain OutOfRangeByteM
                        AmbiguousInheritedDataField IncompleteDataConstructor DuplicateDataMethod
                        ForEachNonArray ForEachBindingMismatch TupleUnknownMember TupleAssignmentMismatch
                        TuplePatternArityMismatch TuplePatternTypeMismatch TuplePatternDuplicateBinding
+                       TupleDeclarationArityMismatch TupleDeclarationTypeMismatch TupleDeclarationDuplicateBinding
                        UnknownGenericCall WrongGenericArity GenericTypeMismatch ExpandingGenericRecursion
                        UnsatisfiedGenericConstraint NonInterfaceGenericConstraint)
   add_test(NAME source_native_invalid_${source_fixture} COMMAND xs build -file

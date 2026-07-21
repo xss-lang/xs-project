@@ -25,6 +25,7 @@ mod constructor;
 mod expression_type;
 mod for_each;
 mod generic;
+mod local_declaration;
 mod match_expression;
 mod method;
 mod nominal;
@@ -90,6 +91,7 @@ const PATTERN_TUPLE: u32 = 87;
 const PATTERN_ELSE: u32 = 88;
 const PATTERN_IDENTIFIER: u32 = 84;
 const PATTERN_TYPED: u32 = 103;
+const DECL_PATTERN_VARIABLE: u32 = 104;
 const STMT_LOOP: u32 = 105;
 const EXPR_TYPED_OBJECT_LITERAL: u32 = 102;
 const EXPR_GENERIC_QUALIFIER: u32 = 101;
@@ -547,63 +549,14 @@ fn lower_discarded_expression(tree: &SyntaxTree,
   lower_expression(tree, value, context, locals, expected_type)
 }
 
-fn lower_local(tree: &SyntaxTree,
-               statement: &SyntaxNode,
-               context: &LoweringContext,
-               locals: &mut HashMap<String, Type>)
-               -> Option<Statement>
-{
-  let declaration = if statement.kind == DECL_VARIABLE
-  {
-    statement
-  }
-  else
-  {
-    first_child_kind(tree, statement, DECL_VARIABLE)?
-  };
-  let name = first_child_kind(tree, declaration, IDENTIFIER)?;
-  let initializer_node = declaration.children
-                                    .iter()
-                                    .filter_map(|index| tree.nodes.get(*index))
-                                    .find(|child| child.kind >= EXPR_IDENTIFIER);
-  let checked_type = if declaration.flags & INFERRED_TYPE != 0
-  {
-    expression_type(tree, initializer_node?, context, locals)?
-  }
-  else
-  {
-    let ty = declaration.children
-                        .iter()
-                        .filter_map(|index| tree.nodes.get(*index))
-                        .find(|child| (TYPE_NAMED..=TYPE_UNIT).contains(&child.kind))?;
-    generic::checked_type_in_context(&lower_type(tree, ty), context)?
-  };
-  let checked_type = collection::refine_local_type(&checked_type, initializer_node);
-  let initializer = match initializer_node
-  {
-    Some(value) => Some(lower_expression(tree, value, context, locals, Some(&checked_type))?),
-    None => collection::default_array_initializer(&checked_type, span(declaration)?),
-  };
-  locals.insert(name.text.clone(), checked_type.clone());
-  Some(Statement::Let { local: crate::hir::type_check::Local { name: name.text.clone(),
-                                                               ty: checked_type,
-                                                               mutable: declaration.flags &
-                                                                        (IMMUTABLE |
-                                                                         CONSTANT |
-                                                                         STATIC_CONSTANT) ==
-                                                                        0,
-                                                               span: span(declaration)? },
-                        initializer })
-}
-
 fn lower_statement_node(tree: &SyntaxTree,
                         statement: &SyntaxNode,
                         context: &LoweringContext,
                         locals: &mut HashMap<String, Type>,
                         return_type: Option<&Type>)
-                        -> Option<Statement>
+                        -> Option<Vec<Statement>>
 {
-  match statement.kind
+  let lowered = match statement.kind
   {
     STMT_RETURN =>
     {
@@ -620,11 +573,11 @@ fn lower_statement_node(tree: &SyntaxTree,
       let expression = tree.nodes.get(statement.children[0])?;
       if tuple::is_tuple_assignment(tree, expression, locals)
       {
-        return tuple::lower_tuple_assignment(tree, expression, context, locals);
+        return tuple::lower_tuple_assignment(tree, expression, context, locals).map(|value| vec![value]);
       }
       if collection::is_index_assignment(tree, expression)
       {
-        return collection::lower_index_assignment(tree, expression, context, locals);
+        return collection::lower_index_assignment(tree, expression, context, locals).map(|value| vec![value]);
       }
       let expected = if expression.kind == EXPR_ASSIGNMENT
       {
@@ -640,7 +593,7 @@ fn lower_statement_node(tree: &SyntaxTree,
       };
       lower_discarded_expression(tree, expression, context, locals, expected).map(Statement::Expr)
     }
-    STMT_VARIABLE => lower_local(tree, statement, context, locals),
+    STMT_VARIABLE => return local_declaration::lower_statements(tree, statement, context, locals),
     STMT_IF => lower_if_statement(tree, statement, context, locals, return_type),
     STMT_FOR => lower_for_statement(tree, statement, context, locals, return_type),
     STMT_FOR_EACH => for_each::lower_for_each_statement(tree, statement, context, locals, return_type),
@@ -650,7 +603,8 @@ fn lower_statement_node(tree: &SyntaxTree,
     STMT_BREAK => Some(Statement::Break { span: span(statement)? }),
     STMT_CONTINUE => Some(Statement::Continue { span: span(statement)? }),
     _ => None,
-  }
+  }?;
+  Some(vec![lowered])
 }
 
 fn lower_hir_block(tree: &SyntaxTree,
@@ -677,7 +631,7 @@ fn lower_hir_block(tree: &SyntaxTree,
     }
     else
     {
-      statements.push(lower_statement_node(tree, statement, context, locals, return_type)?);
+      statements.extend(lower_statement_node(tree, statement, context, locals, return_type)?);
     }
   }
   Some(Block { statements,
@@ -840,7 +794,7 @@ fn lower_for_statement(tree: &SyntaxTree,
     cursor += 1;
     let lowered = if node.kind == DECL_VARIABLE
     {
-      lower_local(tree, node, context, &mut for_locals)?
+      local_declaration::lower_one(tree, node, context, &mut for_locals)?
     }
     else
     {

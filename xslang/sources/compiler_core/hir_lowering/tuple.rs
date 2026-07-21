@@ -32,6 +32,124 @@ pub(super) fn lower_tuple_type(tree: &SyntaxTree, value: &SyntaxNode) -> declara
                                               .collect() }
 }
 
+pub(super) fn lower_pattern_declaration(tree: &SyntaxTree,
+                                        declaration: &SyntaxNode,
+                                        context: &LoweringContext,
+                                        locals: &mut HashMap<String, Type>)
+                                        -> Option<Vec<Statement>>
+{
+  let pattern = declaration.children.first().and_then(|index| tree.nodes.get(*index))?;
+  let initializer_node = declaration.children.last().and_then(|index| tree.nodes.get(*index))?;
+  if declaration.children.len() < 2
+  {
+    return None;
+  }
+  let inferred_type = expression_type(tree, initializer_node, context, locals)?;
+  let (pattern, tuple_type) = typed_pattern(tree, pattern, context, &inferred_type)?;
+  let Type::Tuple { .. } = tuple_type
+  else
+  {
+    return None;
+  };
+  let declaration_span = span(declaration)?;
+  let hidden_name = format!("$tuple_pattern_{}", declaration.span.start_offset);
+  let hidden = crate::hir::type_check::Local { name: hidden_name.clone(),
+                                               ty: tuple_type.clone(),
+                                               mutable: false,
+                                               span: declaration_span };
+  let initializer = lower_expression(tree, initializer_node, context, locals, Some(&tuple_type))?;
+  let mut statements = vec![Statement::Let { local: hidden,
+                                             initializer: Some(initializer) }];
+  let source = Expression::Local { name: hidden_name.clone(),
+                                   span: declaration_span };
+  locals.insert(hidden_name, tuple_type.clone());
+  let mut names = std::collections::HashSet::new();
+  let mut state = PatternBindingState { context,
+                                        locals,
+                                        names: &mut names,
+                                        statements: &mut statements };
+  lower_pattern_bindings(tree, pattern, &tuple_type, source, &mut state)?;
+  Some(statements)
+}
+
+fn typed_pattern<'a>(tree: &'a SyntaxTree,
+                     pattern: &'a SyntaxNode,
+                     context: &LoweringContext,
+                     inferred_type: &Type)
+                     -> Option<(&'a SyntaxNode, Type)>
+{
+  if pattern.kind != PATTERN_TYPED
+  {
+    return Some((pattern, inferred_type.clone()));
+  }
+  let inner = pattern.children.first().and_then(|index| tree.nodes.get(*index))?;
+  let ty = pattern.children.get(1).and_then(|index| tree.nodes.get(*index))?;
+  let declared = generic::checked_type_in_context(&lower_type(tree, ty), context)?;
+  (declared == *inferred_type).then_some((inner, declared))
+}
+
+struct PatternBindingState<'a>
+{
+  context: &'a LoweringContext,
+  locals: &'a mut HashMap<String, Type>,
+  names: &'a mut std::collections::HashSet<String>,
+  statements: &'a mut Vec<Statement>,
+}
+
+fn lower_pattern_bindings(tree: &SyntaxTree,
+                          pattern: &SyntaxNode,
+                          pattern_type: &Type,
+                          source: Expression,
+                          state: &mut PatternBindingState<'_>)
+                          -> Option<()>
+{
+  let Type::Tuple { fields } = pattern_type
+  else
+  {
+    return None;
+  };
+  if pattern.kind != PATTERN_TUPLE || pattern.children.len() != fields.len()
+  {
+    return None;
+  }
+  for (index, (child, field)) in pattern.children.iter().zip(fields).enumerate()
+  {
+    let child = tree.nodes.get(*child)?;
+    let (child, child_type) = typed_pattern(tree, child, state.context, &field.ty)?;
+    let child_span = span(child)?;
+    let projection = Expression::TupleElement { tuple: Box::new(source.clone()),
+                                                index: u32::try_from(index).ok()?,
+                                                element_type: Box::new(child_type.clone()),
+                                                span: child_span };
+    match child.kind
+    {
+      PATTERN_ELSE =>
+      {}
+      PATTERN_IDENTIFIER =>
+      {
+        let name = first_child_kind(tree, child, IDENTIFIER)?.text.clone();
+        if state.locals.contains_key(&name) || !state.names.insert(name.clone())
+        {
+          return None;
+        }
+        state.locals.insert(name.clone(), child_type.clone());
+        state.statements
+             .push(Statement::Let { local: crate::hir::type_check::Local { name,
+                                                                           ty: child_type,
+                                                                           mutable: true,
+                                                                           span: child_span },
+                                    initializer: Some(projection) });
+      }
+      PATTERN_TUPLE =>
+      {
+        lower_pattern_bindings(tree, child, &child_type, projection, state)?;
+      }
+      _ => return None,
+    }
+  }
+  Some(())
+}
+
 pub(super) fn is_tuple_assignment(tree: &SyntaxTree, value: &SyntaxNode, locals: &HashMap<String, Type>) -> bool
 {
   assignment_parts(tree, value, locals).is_some()

@@ -7,8 +7,9 @@
 
 #include "compiler_core_native.h"
 #include "direct_xhir.h"
-#include "direct_xmir.h"
 #include "direct_xlil.h"
+#include "direct_xmir.h"
+#include "native_artifact.h"
 #include "options.h"
 #include "project_driver.h"
 
@@ -349,7 +350,7 @@ static bool import_compiler_core_syntax(CompilationUnit *unit)
       unit->module_name == nullptr
           ? xslang_compiler_core_session_create(packet, &unit->compiler_core)
           : xslang_compiler_core_session_create_in_module(packet, (const uint8_t *)unit->module_name,
-                                                           (uint64_t)strlen(unit->module_name), &unit->compiler_core);
+                                                          (uint64_t)strlen(unit->module_name), &unit->compiler_core);
   xs_compiler_core_syntax_packet_free(storage);
   xs_syntax_tree_free(&expanded);
   if(import_status == XS_COMPILER_CORE_FFI_OK)
@@ -372,8 +373,7 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
   xs_diagnostics_init(&unit->diagnostics);
   xs_diagnostics_set_warning_policy(&unit->diagnostics, settings->warning_level, settings->warnings_as_errors);
   unit->diagnostics_initialized = true;
-  unit->source =
-      (XsSource){.path = unit->path, .module_name = unit->module_name, .text = unit->text, .length = length};
+  unit->source = (XsSource){.path = unit->path, .module_name = unit->module_name, .text = unit->text, .length = length};
   xs_hir_import_scope_init(&unit->import);
   unit->imports_initialized = true;
   bool success = xs_syntax_parse(&unit->source, file_id, &unit->diagnostics, &unit->tree);
@@ -387,10 +387,8 @@ static bool parse_compilation_unit(CompilationUnit *unit, uint64_t file_id, XsHi
     free(unit->text);
     unit->text = included.text;
     included.text = nullptr;
-    unit->source = (XsSource){.path = unit->path,
-                              .module_name = unit->module_name,
-                              .text = unit->text,
-                              .length = included.length};
+    unit->source =
+        (XsSource){.path = unit->path, .module_name = unit->module_name, .text = unit->text, .length = included.length};
     success = xs_syntax_parse(&unit->source, file_id, &unit->diagnostics, &unit->tree);
   }
   xs_included_source_free(&included);
@@ -507,8 +505,7 @@ static XsCompilerCoreSession *merge_compiler_core_sessions(CompilationUnit *unit
 }
 
 static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output,
-                                  bool build_native, const XsCompilerSettings *settings,
-                                  char *const *assigned_modules)
+                                  bool build_native, const XsCompilerSettings *settings, char *const *assigned_modules)
 {
   if(project->xs_version.is_nil || xs_project_selected_entry(project) == nullptr)
   {
@@ -662,6 +659,8 @@ static int run_project_command(const XsCliOptions *options)
   xs_diagnostics_init(&diagnostics);
   xs_diagnostics_set_warning_policy(&diagnostics, settings.warning_level, settings.warnings_as_errors);
   xs_project_init(&project);
+  int native_exit_code = 0;
+  bool ran_native = false;
   bool success = xs_project_parse(&source, &diagnostics, &project);
   xs_diagnostics_print(&diagnostics, &source, stderr);
   if(success)
@@ -697,9 +696,28 @@ static int run_project_command(const XsCliOptions *options)
       }
     }
     if(success)
-      success = check_project_sources(
-          options->manifest_path, &combined, options->output,
-          strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE, &settings, assigned);
+      success = check_project_sources(options->manifest_path, &combined, options->output,
+                                      strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE,
+                                      &settings, assigned);
+    if(success && strcmp(options->command, "run") == 0)
+    {
+      const XsProjectValue *entry = xs_project_selected_entry(&combined);
+      const char *entry_text = entry == nullptr ? nullptr : entry->text;
+      char *entry_path = entry_text == nullptr  ? nullptr
+                         : entry_text[0] == '/' ? copy_text(entry_text)
+                                                : project_path(options->manifest_path, entry_text);
+      if(entry_path == nullptr)
+      {
+        fprintf(stderr, "xs: could not resolve the project entry executable path\n");
+        success = false;
+      }
+      else
+      {
+        native_exit_code = xs_driver_run_native_artifact(entry_path);
+        ran_native = true;
+        free(entry_path);
+      }
+    }
     free(root);
     free(assigned);
     free(additional);
@@ -709,7 +727,9 @@ static int run_project_command(const XsCliOptions *options)
   xs_project_free(&project);
   xs_diagnostics_free(&diagnostics);
   free(text);
-  return success ? 0 : 1;
+  if(!success)
+    return 1;
+  return ran_native ? native_exit_code : 0;
 }
 
 static int run_kotlin_project_command(const XsCliOptions *options)
@@ -740,6 +760,13 @@ static int run_kotlin_project_command(const XsCliOptions *options)
   bool success = check_project_sources(
       ".", &project, options->output, strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE,
       &resolved.settings, resolved.module_names);
+  if(success && strcmp(options->command, "run") == 0)
+  {
+    int exit_code = xs_driver_run_native_artifact(resolved.paths[0]);
+    free(additional);
+    xs_driver_free_kotlin_project(&resolved);
+    return exit_code;
+  }
   free(additional);
   xs_driver_free_kotlin_project(&resolved);
   return success ? 0 : 1;
@@ -787,12 +814,12 @@ static int run_file_command(const XsCliOptions *options)
     fprintf(stderr, "xs: unsupported direct intermediate input '%s'\n", options->file_path);
     return 1;
   }
-  return check_single_source_file(options->file_path,
-                                  options->output,
-                                  strcmp(options->command, "build") == 0 && options->output == XS_BUILD_OUTPUT_NONE,
-                                  &settings)
-           ? 0
-           : 1;
+  bool success = check_single_source_file(
+      options->file_path, options->output,
+      strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE, &settings);
+  if(!success)
+    return 1;
+  return strcmp(options->command, "run") == 0 ? xs_driver_run_native_artifact(options->file_path) : 0;
 }
 
 int xs_driver_main(int argc, char **argv)

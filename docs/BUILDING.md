@@ -59,6 +59,20 @@ The `xs` target builds `/usr/bin/xs` package payload code and the Rust `xslang` 
 session API into the C23 driver. The same CMake configuration builds the `xs-proj` parser/validator executable. Building
 `xsproj` alone remains C23-only and does not require Rust or LLVM.
 
+## Compiler installation layout
+
+Install the compiler component into a staging prefix with:
+
+```text
+cmake --install build/clang-debug --prefix /tmp/xs-root --component compiler
+```
+
+With the normal system prefix `/usr`, this component installs the JVM-free compiler as `/usr/bin/xs`, merges the common
+`include/xs/` and compiler-owned `xs/include/xs/` public C23 headers under `/usr/include/xs/`, and installs
+`LICENSE.txt` plus `NOTICE.txt` under `/usr/share/licenses/xs/`. Source-tree ownership remains separate even though the
+installed include surface is unified. CMake fails rather than silently replacing an identically named header from the two
+source trees.
+
 The modern `xs-project` Kotlin resolver is built separately with Gradle:
 
 ```text

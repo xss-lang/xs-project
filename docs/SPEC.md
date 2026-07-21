@@ -41,6 +41,8 @@ syntax takes priority over ad-hoc implementation shortcuts.
 - Namespace declarations are optional. A file may have one leading source-scoped `namespace path;`, any number of
   brace-scoped `namespace path { ... }` declarations, or both in that order. Brace-scoped namespaces may nest.
 - Instance members use `self` as the receiver name inside constructors, methods, and property accessors.
+- Constructor calls always use `new Type(...)`. `Type::new(...)` is not constructor syntax; `::` remains available for
+  ordinary associated/static members.
 - Property bodies should use explicit backing fields such as `self._age`; referencing the property itself as `self.age`
   inside its own accessor is recursive and rejected.
 - X# evaluation is strict/eager. The language aims for referential transparency where practical, but standard-library APIs

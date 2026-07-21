@@ -222,18 +222,32 @@ static void test_new_expression_structure(void)
   const char *text = "fn main() {\n"
                      "  user: User = new User();\n"
                      "  client: std::http::Client = new std::http::Client();\n"
+                     "  factory: Factory<Str> = new Factory<Str>();\n"
                      "}\n";
   XsSource source = {.path = "NewExpression.xs", .text = text, .length = strlen(text)};
   XsDiagnostics diagnostics;
   XsSyntaxTree tree;
   xs_diagnostics_init(&diagnostics);
   CHECK(xs_syntax_parse(&source, 18, &diagnostics, &tree));
-  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_NEW) == 2);
+  CHECK(count_kind(tree.root, XS_SYNTAX_EXPR_NEW) == 3);
   const XsSyntaxNode *created = xs_syntax_find_first(tree.root, XS_SYNTAX_EXPR_NEW);
   CHECK(created != nullptr);
   CHECK(created == nullptr || created->child_count == 1);
   CHECK(created == nullptr || created->children[0]->kind == XS_SYNTAX_TYPE_NAMED);
   CHECK(xs_syntax_find_first(tree.root, XS_SYNTAX_STMT_VARIABLE) != nullptr);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
+static void test_associated_new_constructor_is_rejected(void)
+{
+  const char *text = "fn main() { value := Type::new(); }\n";
+  XsSource source = {.path = "AssociatedNew.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(!xs_syntax_parse(&source, 19, &diagnostics, &tree));
+  CHECK(xs_diagnostics_has_error(&diagnostics));
   xs_syntax_tree_free(&tree);
   xs_diagnostics_free(&diagnostics);
 }
@@ -600,7 +614,7 @@ static void test_complete_program_expression_shapes(void)
 {
   const char *text = "fn Build(items: Items, pair: (Int, Int)) {\n"
                      "  map: [Str: Int] = [];\n"
-                     "  factory := Factory<Str>::new();\n"
+                     "  factory := Factory::<Str>();\n"
                      "  entry := Entry { name: \"Alpha\", value: 7 };\n"
                      "  for (item: Entry in items) { item.run(); }\n"
                      "  (left, right): (Int, Int) = pair;\n"
@@ -635,6 +649,7 @@ int main(void)
   test_function_expression_structure();
   test_function_expression_rejects_written_types();
   test_new_expression_structure();
+  test_associated_new_constructor_is_rejected();
   test_else_discard_statement_structure();
   test_tail_expression_semicolon_split();
   test_top_level_execution_stays_invalid();

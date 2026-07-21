@@ -34,6 +34,7 @@ add_library(xs_compiler
   sources/driver/direct_xhir.c
   sources/driver/direct_xmir.c
   sources/driver/direct_xlil.c
+  sources/driver/native_artifact.c
   sources/driver/options.c
   sources/driver/project_driver.c
   sources/lexer.c

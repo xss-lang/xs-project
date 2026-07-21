@@ -196,6 +196,8 @@ bool xs_cli_parse(int argc, char **argv, XsCliOptions *options)
       return false;
     if(strcmp(options->command, "check") == 0)
       return options->output == XS_BUILD_OUTPUT_NONE;
+    if(strcmp(options->command, "run") == 0)
+      return options->output == XS_BUILD_OUTPUT_NONE;
     return strcmp(options->command, "build") == 0;
   }
   return strcmp(options->command, "build") == 0 || options->output == XS_BUILD_OUTPUT_NONE;
@@ -208,7 +210,7 @@ void xs_cli_print_usage(FILE *stream)
   fprintf(stream, "       [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]\n");
   fprintf(stream, "       [--xgc-enabled true|false]\n");
   fprintf(stream, "usage: xs <check|run> -proj <project.xsproj> [--module <directory>]\n");
-  fprintf(stream, "usage: xs build -file <Main.xs>\n");
+  fprintf(stream, "usage: xs <build|run> -file <Main.xs>\n");
   fprintf(stream, "usage: xs build [--output hir|mir|xlil] -proj <project.xsproj>\n");
   fprintf(stream, "usage: xs build [--output hir|mir|xlil] -file <input>\n");
   fprintf(stream, "usage: xs build [--hir|--mir|--xlil] -file <input>\n");

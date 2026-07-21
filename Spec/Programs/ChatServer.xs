@@ -47,8 +47,8 @@ class ChatHub {
     rooms: std::sync::Arc<std::sync::Mutex<[Str: Room]>>;
 
     ChatHub() {
-        self.next_id = std::sync::Atomic::new(1);
-        self.rooms = std::sync::Arc::new(std::sync::Mutex::new([]));
+        self.next_id = new std::sync::Atomic<Int>(1);
+        self.rooms = new std::sync::Arc<std::sync::Mutex<[Str: Room]>>(new std::sync::Mutex<[Str: Room]>([]));
     }
 
     async fn serve(listener: std::net::TcpListener) -> Task<Result<()>> {

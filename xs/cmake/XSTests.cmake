@@ -18,6 +18,13 @@ add_test(NAME cli_version COMMAND xs --version)
 string(REPLACE "." "\\." XS_PROJECT_VERSION_REGEX "${PROJECT_VERSION}")
 set_tests_properties(cli_version PROPERTIES TIMEOUT 5 PASS_REGULAR_EXPRESSION "xs ${XS_PROJECT_VERSION_REGEX}")
 
+add_test(NAME compiler_install_layout COMMAND "${CMAKE_COMMAND}"
+  -DXS_BUILD_DIR=${CMAKE_BINARY_DIR}
+  -DXS_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/tests/install-root
+  -DXS_VERSION=${PROJECT_VERSION}
+  -P ${PROJECT_SOURCE_DIR}/tests/cmake/install_layout.cmake)
+set_tests_properties(compiler_install_layout PROPERTIES TIMEOUT 15)
+
 xs_add_c_test(lexer tests/lexer_tests.c xs_compiler)
 xs_add_c_test(parser tests/parser_tests.c xs_compiler)
 xs_add_c_test(diagnostic tests/diagnostic_tests.c xs_compiler)

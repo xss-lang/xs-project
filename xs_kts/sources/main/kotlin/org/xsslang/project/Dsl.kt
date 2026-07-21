@@ -5,6 +5,7 @@
 
 package org.xsslang.project
 
+import java.nio.file.Path
 import java.util.Locale
 
 @DslMarker
@@ -156,12 +157,17 @@ class ProjectContext internal constructor(
   private val variables =
     (state?.variables
       ?: mapOf(
+        "BUILD_MODE" to listOf("Release"),
+        "RELEASE_OUTDIR" to listOf("build/release"),
+        "DEBUG_OUTDIR" to listOf("build/debug"),
         "XS_BACKEND" to listOf("LLVM"),
         "XS_EXTENSION" to listOf("xs"),
         "XGC_ENABLED" to listOf("false"),
         "PUBLISH" to listOf("false"),
       )).toMutableMap()
   private val authors = state?.authors?.toMutableList() ?: mutableListOf()
+  private val binaries = state?.binaries?.toMutableList() ?: mutableListOf()
+  private val libraries = state?.libraries?.toMutableList() ?: mutableListOf()
   private val modules = state?.modules?.toMutableList() ?: mutableListOf()
   private val sourceIncludes = state?.sourceIncludes?.toMutableList() ?: mutableListOf()
   private val sourceExcludes = state?.sourceExcludes?.toMutableList() ?: mutableListOf()
@@ -192,17 +198,34 @@ class ProjectContext internal constructor(
   ) {
     if (values.isEmpty()) throw ProjectConfigurationException("set(...) requires at least one value")
     val key = requireText(name, "variable name")
-    if (key == "PUBLISH" && (values.size != 1 || values.single() !is Boolean)) {
+    val flattened =
+      if (values.size == 1 && values.single() is List<*>) {
+        (values.single() as List<*>).also {
+          if (it.isEmpty()) throw ProjectConfigurationException("set(...) requires at least one value")
+        }
+      } else {
+        values.toList()
+      }
+    if (key == "BINARY" || key == "LIBRARY") {
+      val targets = parseArtifactTargets(key, flattened)
+      val destination = if (key == "BINARY") binaries else libraries
+      destination.clear()
+      destination += targets
+      return
+    }
+    if (key == "PUBLISH" && (flattened.size != 1 || flattened.single() !is Boolean)) {
       throw ProjectConfigurationException("PUBLISH must be exactly one boolean")
     }
-    variables[key] =
-      values.map { value ->
+    val normalized =
+      flattened.map { value ->
         when (value) {
           is String -> requireText(value, "variable value")
           is Boolean -> value.toString()
           else -> throw ProjectConfigurationException("project variable values must be strings or booleans")
         }
       }
+    validateReservedVariable(key, normalized)
+    variables[key] = normalized
   }
 
   fun get(name: String): String {
@@ -216,6 +239,8 @@ class ProjectContext internal constructor(
     val key = requireText(name, "variable name")
     val project = identity
     if (key == "PROJECT" && project != null) return listOf("${project.name}, ${project.channel}, ${project.version}")
+    if (key == "BINARY") return binaries.map { target -> "${target.name}:${target.path}" }
+    if (key == "LIBRARY") return libraries.map { target -> "${target.name}:${target.path}" }
     return variables[key]?.toList() ?: throw ProjectConfigurationException("unknown project variable '$key'")
   }
 
@@ -272,6 +297,8 @@ class ProjectContext internal constructor(
     ProjectState(
       identity,
       variables.toMap(),
+      binaries.toList(),
+      libraries.toList(),
       authors.toList(),
       modules.toList(),
       sourceIncludes.toList(),
@@ -286,14 +313,16 @@ class ProjectContext internal constructor(
 
   fun build(): ProjectPlan {
     val project = identity ?: throw ProjectConfigurationException("project(...) is required")
-    if (sourceIncludes.isEmpty()) throw ProjectConfigurationException("source.include(...) is required")
     val resolvedModules = resolveModuleDependencies(modules)
+    val effectiveSourceIncludes = sourceIncludes.ifEmpty { listOf("Sources") }
     return ProjectPlan(
       project,
       variables.toSortedMap(),
+      binaries.toList(),
+      libraries.toList(),
       authors.toList(),
       resolvedModules,
-      sourceIncludes.distinct(),
+      effectiveSourceIncludes.distinct(),
       sourceExcludes.distinct(),
       moduleIncludes.distinct(),
       moduleSources.distinct(),
@@ -302,6 +331,58 @@ class ProjectContext internal constructor(
       testFramework,
       compilerSettings,
     )
+  }
+}
+
+private fun parseArtifactTargets(
+  key: String,
+  values: List<Any?>,
+): List<ArtifactTarget> {
+  val targets =
+    values.map { value ->
+      val fields = value as? Map<*, *> ?: throw ProjectConfigurationException("$key values must be maps")
+      if (fields.keys != setOf("name", "path")) {
+        throw ProjectConfigurationException("$key maps require exactly name and path")
+      }
+      val name = fields["name"] as? String ?: throw ProjectConfigurationException("$key name must be a string")
+      val path = fields["path"] as? String ?: throw ProjectConfigurationException("$key path must be a string")
+      val normalizedPath = requireText(path, "$key path").replace('\\', '/')
+      val parsedPath = Path.of(normalizedPath)
+      if (parsedPath.isAbsolute || normalizedPath.split('/').any { component -> component == ".." }) {
+        throw ProjectConfigurationException("$key path must stay inside the project: $path")
+      }
+      ArtifactTarget(requireText(name, "$key name"), normalizedPath)
+    }
+  if (targets.map(ArtifactTarget::name).distinct().size != targets.size) {
+    throw ProjectConfigurationException("$key target names must be unique")
+  }
+  return targets
+}
+
+private fun validateReservedVariable(
+  key: String,
+  values: List<String>,
+) {
+  when (key) {
+    "BUILD_MODE" -> {
+      if (values.size != 1 || values.single() !in setOf("Release", "Debug")) {
+        throw ProjectConfigurationException("BUILD_MODE must be exactly Release or Debug")
+      }
+    }
+
+    "RELEASE_OUTDIR", "DEBUG_OUTDIR" -> {
+      if (values.size != 1) throw ProjectConfigurationException("$key must be exactly one path")
+    }
+
+    "XSPKG_TYPE" -> {
+      val supported = setOf("xlib", "dylib", "staticlib", "cdylib", "bin")
+      if (values.any { value -> value !in supported }) {
+        throw ProjectConfigurationException("XSPKG_TYPE values must be xlib, dylib, staticlib, cdylib, or bin")
+      }
+      if (values.distinct().size != values.size) {
+        throw ProjectConfigurationException("XSPKG_TYPE cannot contain duplicate values")
+      }
+    }
   }
 }
 
