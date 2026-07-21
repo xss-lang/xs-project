@@ -87,10 +87,19 @@ class ModuleScope internal constructor() {
 
 @XsProjectDsl
 class DependenciesScope internal constructor() {
-  internal val modules = mutableListOf<String>()
+  internal val modules = mutableListOf<ModuleDependency>()
 
-  fun addModule(reference: String) {
-    modules += requireText(reference, "module reference")
+  fun addModule(
+    name: String,
+    stability: String,
+    version: String,
+  ) {
+    modules +=
+      ModuleDependency(
+        requireText(name, "module name"),
+        requireText(stability, "module stability"),
+        requireText(version, "module version"),
+      )
   }
 }
 
@@ -150,6 +159,7 @@ class ProjectContext internal constructor(
         "XS_BACKEND" to listOf("LLVM"),
         "XS_EXTENSION" to listOf("xs"),
         "XGC_ENABLED" to listOf("false"),
+        "PUBLISH" to listOf("false"),
       )).toMutableMap()
   private val authors = state?.authors?.toMutableList() ?: mutableListOf()
   private val modules = state?.modules?.toMutableList() ?: mutableListOf()
@@ -181,7 +191,11 @@ class ProjectContext internal constructor(
     vararg values: Any,
   ) {
     if (values.isEmpty()) throw ProjectConfigurationException("set(...) requires at least one value")
-    variables[requireText(name, "variable name")] =
+    val key = requireText(name, "variable name")
+    if (key == "PUBLISH" && (values.size != 1 || values.single() !is Boolean)) {
+      throw ProjectConfigurationException("PUBLISH must be exactly one boolean")
+    }
+    variables[key] =
       values.map { value ->
         when (value) {
           is String -> requireText(value, "variable value")
@@ -213,7 +227,9 @@ class ProjectContext internal constructor(
   }
 
   fun dependencies(block: DependenciesScope.() -> Unit) {
-    modules += DependenciesScope().apply(block).modules
+    val resolved = resolveModuleDependencies(modules + DependenciesScope().apply(block).modules)
+    modules.clear()
+    modules += resolved
   }
 
   fun sources(block: SourcesScope.() -> Unit) {
@@ -271,11 +287,12 @@ class ProjectContext internal constructor(
   fun build(): ProjectPlan {
     val project = identity ?: throw ProjectConfigurationException("project(...) is required")
     if (sourceIncludes.isEmpty()) throw ProjectConfigurationException("source.include(...) is required")
+    val resolvedModules = resolveModuleDependencies(modules)
     return ProjectPlan(
       project,
       variables.toSortedMap(),
       authors.toList(),
-      modules.distinct(),
+      resolvedModules,
       sourceIncludes.distinct(),
       sourceExcludes.distinct(),
       moduleIncludes.distinct(),
@@ -286,6 +303,22 @@ class ProjectContext internal constructor(
       compilerSettings,
     )
   }
+}
+
+internal fun resolveModuleDependencies(modules: List<ModuleDependency>): List<ModuleDependency> {
+  val resolved = linkedMapOf<String, ModuleDependency>()
+  modules.forEach { module ->
+    val previous = resolved[module.name]
+    if (previous != null && previous != module) {
+      throw ProjectConfigurationException(
+        "module '${module.name}' has conflicting stability or version coordinates",
+      )
+    }
+    resolved[module.name] = module
+  }
+  return resolved.values.sortedWith(
+    compareBy(ModuleDependency::name, ModuleDependency::stability, ModuleDependency::version),
+  )
 }
 
 internal fun requireText(

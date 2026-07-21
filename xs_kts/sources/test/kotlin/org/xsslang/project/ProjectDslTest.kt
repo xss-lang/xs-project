@@ -14,6 +14,59 @@ import kotlin.test.assertTrue
 
 class ProjectDslTest {
   @Test
+  fun recordsStructuredModuleCoordinates() {
+    val root = Files.createTempDirectory("xs-project-lock-test-")
+    val context =
+      ProjectContext().apply {
+        project("Locked", "BETA", "0.1.0")
+        source { include("Sources") }
+        dependencies {
+          addModule("XML", "stable", "2.0.0")
+          addModule("JSON", "beta", "1.4.0")
+          addModule("JSON", "beta", "1.4.0")
+        }
+      }
+    try {
+      val plan = context.build()
+      val expected =
+        listOf(
+          ModuleDependency("JSON", "beta", "1.4.0"),
+          ModuleDependency("XML", "stable", "2.0.0"),
+        )
+      assertEquals(expected, plan.modules)
+      assertTrue(
+        PlanWriter.write(plan).contains(
+          "\"modules\":[{\"name\":\"JSON\",\"stability\":\"beta\",\"version\":\"1.4.0\"}",
+        ),
+      )
+      ModuleLockFile.write(root, plan.modules)
+      val lock = root.resolve(ModuleLockFile.FILE_NAME)
+      assertTrue(Files.isRegularFile(lock))
+      val header = Files.readAllBytes(lock).copyOfRange(0, 16).toString(StandardCharsets.UTF_8)
+      assertEquals("SQLite format 3\u0000", header)
+      assertEquals(expected, ModuleLockFile.read(lock))
+      val firstWrite = Files.readAllBytes(lock)
+      ModuleLockFile.write(root, plan.modules)
+      assertTrue(firstWrite.contentEquals(Files.readAllBytes(lock)))
+    } finally {
+      root.toFile().deleteRecursively()
+    }
+  }
+
+  @Test
+  fun rejectsConflictingModuleCoordinates() {
+    val context = ProjectContext()
+    val error =
+      assertFailsWith<ProjectConfigurationException> {
+        context.dependencies {
+          addModule("JSON", "stable", "1.0.0")
+          addModule("JSON", "stable", "2.0.0")
+        }
+      }
+    assertTrue(error.message.orEmpty().contains("conflicting"))
+  }
+
+  @Test
   fun compilerPolicyDefaultsAreStable() {
     val settings = CompilerSettings()
     assertEquals(WarningLevel.MEDIUM, settings.warningLevel)
@@ -79,6 +132,11 @@ class ProjectDslTest {
     assertEquals("LLVM", context.get("XS_BACKEND"))
     assertEquals("xs", context.get("XS_EXTENSION"))
     assertEquals("false", context.get("XGC_ENABLED"))
+    assertEquals("false", context.get("PUBLISH"))
+    context.set("PUBLISH", true)
+    assertEquals("true", context.get("PUBLISH"))
+    assertFailsWith<ProjectConfigurationException> { context.set("PUBLISH", "true") }
+    assertFailsWith<ProjectConfigurationException> { context.set("PUBLISH", true, false) }
     context.set("XGC_ENABLED", true)
     assertEquals("true", context.get("XGC_ENABLED"))
     assertFailsWith<ProjectConfigurationException> { context.get("MISSING") }

@@ -4,6 +4,10 @@
 project("NativeCall", "BETA", "0.2.0")
 set("XGC_ENABLED", true)
 
+dependencies {
+  addModule("JSON", "stable", "0.1.0")
+}
+
 source {
   include("sources")
 }

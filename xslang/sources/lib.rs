@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#![warn(missing_docs)]
+
 pub mod codegen;
 pub mod compiler_core;
 pub mod hir;

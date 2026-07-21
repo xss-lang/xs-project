@@ -13,6 +13,10 @@ add_test(NAME kotlin_project_call_artifacts COMMAND xs_xse_artifact_tests
   ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/sources/main.xse 7)
 set_tests_properties(kotlin_project_call_artifacts PROPERTIES TIMEOUT 5
   FIXTURES_REQUIRED kotlin_project_call_native)
+add_test(NAME kotlin_project_lock_artifact COMMAND xs_text_artifact_tests
+  ${XS_PROJECT_NATIVE_FIXTURE_DIR}/native_call/xs.lock.sqlite3 "SQLite format 3")
+set_tests_properties(kotlin_project_lock_artifact PROPERTIES TIMEOUT 5
+  FIXTURES_REQUIRED kotlin_project_call_native)
 add_test(NAME kotlin_project_recursive_build COMMAND xs build)
 set_tests_properties(kotlin_project_recursive_build PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/recursive"
@@ -113,7 +117,7 @@ set_tests_properties(kotlin_project_module_requires_root PROPERTIES TIMEOUT 60 W
   FIXTURES_REQUIRED kotlin_project_resolver)
 set_tests_properties(
   kotlin_project_resolver_build
-  kotlin_project_call_build kotlin_project_call_artifacts
+  kotlin_project_call_build kotlin_project_call_artifacts kotlin_project_lock_artifact
   kotlin_project_recursive_build kotlin_project_recursive_artifacts
   kotlin_project_generic_functions_build kotlin_project_generic_functions_artifacts
   kotlin_project_multi_file_native_build kotlin_project_multi_file_native_artifacts

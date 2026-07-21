@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+  implementation("org.xerial:sqlite-jdbc:3.53.1.0")
   testImplementation(kotlin("test"))
 }
 
@@ -48,4 +49,5 @@ sourceSets {
 tasks.test {
   useJUnitPlatform()
   maxHeapSize = "512m"
+  jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

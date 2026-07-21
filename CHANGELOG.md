@@ -14,6 +14,9 @@ source-to-native executable pipeline.
 
 ### Added
 
+- Kotlin project dependencies now use structured `addModule(name, stability, version)` coordinates and successful KTS
+  evaluation writes them to a deterministic, versioned `xs.lock.sqlite3` SQLite lock file. The reserved boolean
+  `PUBLISH` project setting defaults to `false` and records future publication intent without uploading packages.
 - Payload-free normal enums now retain nominal declarations and ordered variant tags through XHIR, lower to a
   target-independent single-tag aggregate in MIR/XMIR/XLIL, and support construction, direct calls, local storage,
   equality, statement `match`, LLVM lowering, and native `.xse` execution.

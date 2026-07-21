@@ -15,5 +15,5 @@ path = "sources/main.rs"
 path = "sources/lib.rs"
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-toml = "1.1.2"
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.1"

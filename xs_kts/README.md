@@ -18,6 +18,13 @@ resolved registry must contain exactly one case-sensitive `main.xs`, which is pl
 multi-value settings such as `TARGET`, tests, compiler diagnostics, variables, and host-dependent `cfg(...)` branches. See `xs.project.kts` for the complete
 working DSL example.
 
+External coordinates use `addModule(name, stability, version)`. A successful modern project evaluation writes the exact
+selection to the reproducible `xs.lock.sqlite3` SQLite lock file in the project root. The current resolver does not fetch
+the declared modules yet.
+
+`PUBLISH` is a single boolean project variable with a `false` default; it currently records publication intent without
+performing a registry upload.
+
 In split mode, `xs.settings.kts` is evaluated before `xs.build.kts`, but sections are not assigned to either filename.
 Both scripts may use the full DSL; the second script extends the state produced by the first.
 

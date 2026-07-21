@@ -88,11 +88,17 @@ data class ModuleSource(
   val path: String,
 ) : Serializable
 
+data class ModuleDependency(
+  val name: String,
+  val stability: String,
+  val version: String,
+) : Serializable
+
 data class ProjectState(
   val identity: ProjectIdentity?,
   val variables: Map<String, List<String>>,
   val authors: List<Author>,
-  val modules: List<String>,
+  val modules: List<ModuleDependency>,
   val sourceIncludes: List<String>,
   val sourceExcludes: List<String>,
   val moduleIncludes: List<String>,
@@ -107,7 +113,7 @@ data class ProjectPlan(
   val identity: ProjectIdentity,
   val variables: Map<String, List<String>>,
   val authors: List<Author>,
-  val modules: List<String>,
+  val modules: List<ModuleDependency>,
   val sourceIncludes: List<String>,
   val sourceExcludes: List<String>,
   val moduleIncludes: List<String>,

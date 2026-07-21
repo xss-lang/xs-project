@@ -7,6 +7,7 @@ project("Example", "BETA", "0.1.0")
 
 set("XS_VERSION", "0.2.0")
 set("XS_BACKEND", "LLVM")
+set("PUBLISH", false)
 
 set(
   "TARGET",
@@ -34,8 +35,8 @@ authors(
 )
 
 dependencies {
-  addModule("https://github.com/xss-lang/externalModules/::JSON::0.1.0")
-  addModule("https://github.com/xss-lang/externalModules/::XML::0.1.0")
+  addModule("JSON", "stable", "0.1.0")
+  addModule("XML", "stable", "0.1.0")
 }
 
 source {

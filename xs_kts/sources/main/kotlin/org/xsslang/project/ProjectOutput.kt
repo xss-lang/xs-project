@@ -14,6 +14,7 @@ import kotlin.streams.toList
 object ProjectOutput {
   fun emit(plan: ProjectPlan) {
     val resolved = resolveSources(plan)
+    writeModuleLock(plan.modules)
     when (System.getProperty("xs.project.output", "plan")) {
       "plan" -> println(PlanWriter.write(plan))
       "sources0" -> writeSources(resolved, plan.compiler, plan.variables)
@@ -25,7 +26,13 @@ object ProjectOutput {
     val root = Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
     val extension = sourceExtension(state.variables)
     val modules = resolveModules(root, state.moduleIncludes, state.moduleSources, extension)
+    if (state.identity != null) ModuleLockFile.write(root, state.modules)
     writeSources(ResolvedProject(emptyList(), modules, emptyList()), state.compiler, state.variables)
+  }
+
+  private fun writeModuleLock(modules: List<ModuleDependency>) {
+    val root = Path.of(System.getProperty("xs.project.root")).toAbsolutePath().normalize()
+    ModuleLockFile.write(root, modules)
   }
 
   private data class ResolvedProject(

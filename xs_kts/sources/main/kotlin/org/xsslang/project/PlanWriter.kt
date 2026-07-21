@@ -23,7 +23,18 @@ object PlanWriter {
           .append('}')
       }
       append(']')
-      arrayField("modules", plan.modules)
+      append(",\"modules\":[")
+      plan.modules.forEachIndexed { index, module ->
+        if (index > 0) append(',')
+        append("{\"name\":")
+          .quoted(module.name)
+          .append(",\"stability\":")
+          .quoted(module.stability)
+          .append(",\"version\":")
+          .quoted(module.version)
+          .append('}')
+      }
+      append(']')
       arrayField("sourceIncludes", plan.sourceIncludes)
       arrayField("sourceExcludes", plan.sourceExcludes)
       arrayField("moduleIncludes", plan.moduleIncludes)

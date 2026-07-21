@@ -16,6 +16,7 @@ project("Example", "BETA", "0.1.0")
 
 set("XS_VERSION", "0.2.0")
 set("XS_BACKEND", "LLVM")
+set("PUBLISH", false)
 set(
   "TARGET",
   "x86_64-unknown-linux-gnu",
@@ -45,8 +46,8 @@ authors(
 )
 
 dependencies {
-  addModule("https://github.com/xss-lang/externalModules/::JSON::0.1.0")
-  addModule("https://github.com/xss-lang/externalModules/::XML::0.1.0")
+  addModule("JSON", "stable", "0.1.0")
+  addModule("XML", "stable", "0.1.0")
 }
 
 source {
@@ -89,7 +90,7 @@ The DSL also provides:
   script defines them;
 - `getAll(name)` to read every value without joining a multi-value setting;
 - `authors(...)` for project authors;
-- `dependencies { addModule(...) }` for external module coordinates;
+- `dependencies { addModule(name, stability, version) }` for exact external module coordinates;
 - `module { include(...) }` for the pool assigned by `xs.module.kts`;
 - `test { include(...); exclude(...); framework(...) }` for recursive test discovery metadata;
 - `compiler { warnings(...); werror(...); verbose(...) }` for diagnostic policy;
@@ -110,6 +111,22 @@ The compiler policy is transferred with the resolved source registry to the JVM-
 `--warning`, `--werror`, `--verbose`, and `--xgc-enabled` values are one-shot overrides applied after KTS evaluation;
 they never rewrite the project script. The defaults are `warnings("medium")`, `werror(false)`, `verbose(true)`, and
 `set("XGC_ENABLED", false)`. XSPROJ intentionally has no persistent equivalent.
+
+`PUBLISH` is a reserved single-boolean project variable and defaults to `false`. Use `set("PUBLISH", true)` only to
+express publication intent in the generated project plan. Package upload is not implemented yet, so evaluation never
+publishes a module by itself.
+
+## External module lock
+
+Each successful modern KTS project evaluation writes `xs.lock.sqlite3` in the project root. This is a real SQLite lock
+file with format version `0`; its `modules` table stores the exact case-sensitive `name`, `stability`, and `version`
+declared by `addModule`. Records are sorted and the database contains no timestamps, so lock updates are reproducible.
+The file is intended to be committed with the project. Repeating an identical coordinate is harmless, while declaring
+the same module name with different stability or version values is an error.
+
+The current resolver records and validates coordinates but does not download packages. Registry source identity,
+integrity hashes, and dependency graphs will be added with external module resolution rather than being guessed in the
+version-0 schema.
 
 ## Source registries
 
@@ -203,7 +220,7 @@ set("XS_BACKEND", "LLVM")
 authors(arrayOf("Leitwolf", "leitwolf@example.me"))
 
 dependencies {
-  addModule("https://github.com/xss-lang/externalModules/::JSON::0.1.0")
+  addModule("JSON", "stable", "0.1.0")
 }
 ```
 

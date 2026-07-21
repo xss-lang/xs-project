@@ -94,6 +94,7 @@ private fun runKotlin(
     val arguments =
       mutableListOf(
         kotlin,
+        "-J--enable-native-access=ALL-UNNAMED",
         "-Dxs.project.root=${root.absolutePath}",
         "-Dxs.project.output=$output",
       )
