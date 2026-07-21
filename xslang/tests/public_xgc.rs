@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+//! Public XGC runtime-binding API integration test.
+
 use xslang::xgc::*;
 
 #[derive(Default)]

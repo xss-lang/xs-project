@@ -40,6 +40,17 @@ ctest --preset clang-debug --output-on-failure
 
 For docs-only changes, a build is not required, but `git diff --check` should be run.
 
+Run both language-specific static analyzers before submitting compiler changes:
+
+```text
+cargo +nightly-2026-07-10 clippy --manifest-path xslang/Cargo.toml --all-targets -- -D warnings
+run-clang-tidy -j 1 -p build/clang-debug -warnings-as-errors='*'
+```
+
+The Rust crate treats the stable `clippy::all` group as its warning contract. The opt-in `pedantic` and `nursery`
+suggestion collections are disabled globally; suitable checks from those groups should be enabled individually instead
+of imposing conflicting style heuristics on all existing IR code.
+
 ## Documentation
 
 If code behavior changes, the relevant documentation changes too. Every user-visible change is summarized in the root

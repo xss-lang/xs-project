@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+//! Build-time version metadata for the target-independent compiler core.
+
 fn main()
 {
   let package_version = std::env::var("CARGO_PKG_VERSION").expect("Cargo provides CARGO_PKG_VERSION");

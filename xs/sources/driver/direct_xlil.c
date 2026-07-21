@@ -20,11 +20,8 @@ static char *direct_artifact_path(const char *input_path, const char *extension)
   const char *base = slash == nullptr ? input_path : slash + 1;
   size_t directory_length = slash == nullptr ? 0 : (size_t)(base - input_path);
   size_t base_length = strlen(base);
-  if(base_length >= 5 && strcmp(base + base_length - 5, ".xlil") == 0)
-    base_length -= 5;
-  else if(base_length >= 5 && strcmp(base + base_length - 5, ".xmir") == 0)
-    base_length -= 5;
-  else if(base_length >= 5 && strcmp(base + base_length - 5, ".xhir") == 0)
+  if(base_length >= 5 && (strcmp(base + base_length - 5, ".xlil") == 0 ||
+                          strcmp(base + base_length - 5, ".xmir") == 0 || strcmp(base + base_length - 5, ".xhir") == 0))
     base_length -= 5;
   else if(base_length >= 3 && strcmp(base + base_length - 3, ".xs") == 0)
     base_length -= 3;
@@ -35,7 +32,8 @@ static char *direct_artifact_path(const char *input_path, const char *extension)
   if(directory_length != 0)
     memcpy(path, input_path, directory_length);
   memcpy(path + directory_length, base, base_length);
-  memcpy(path + directory_length + base_length, extension, extension_length + 1U);
+  memcpy(path + directory_length + base_length, extension, extension_length);
+  path[directory_length + base_length + extension_length] = '\0';
   return path;
 }
 

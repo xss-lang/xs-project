@@ -57,5 +57,9 @@ missing_docs = "warn"
 
 [lints.clippy]
 all = "warn"
-pedantic = "warn"
-nursery = "warn"
+# `pedantic` and `nursery` are opt-in suggestion collections rather than a
+# stable warning contract. Enable individual checks from them once the IR
+# APIs and the project's 1000-line modularity policy can satisfy the check
+# without obscuring compiler code.
+pedantic = "allow"
+nursery = "allow"

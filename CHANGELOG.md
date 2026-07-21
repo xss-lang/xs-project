@@ -30,6 +30,9 @@ source-to-native executable pipeline.
 
 ### Changed
 
+- Rust static analysis now has a warning-free `clippy::all` baseline with explicit legacy public-module documentation
+  boundaries, and the C artifact-path helper is clean under the configured Clang-Tidy correctness checks.
+- Project-file documentation now includes the concrete version-0 `xs.lock.sqlite3` schema and example query results.
 - CMake ownership now follows monorepo component boundaries: shared policy is in the root `CMakeLists.txt`, compiler modules
   are under `xs/cmake`, and legacy project-parser target modules are under `xsproj/cmake`.
 - Semantic compiler-core lowering failures now cross the C23/Rust boundary as session diagnostics; malformed FFI packets

@@ -128,6 +128,43 @@ The current resolver records and validates coordinates but does not download pac
 integrity hashes, and dependency graphs will be added with external module resolution rather than being guessed in the
 version-0 schema.
 
+For example, this declaration:
+
+```kotlin
+dependencies {
+  addModule("JSON", "stable", "0.1.0")
+  addModule("XML", "beta", "0.2.0")
+}
+```
+
+produces a database equivalent to the following SQLite contents:
+
+```text
+sqlite> SELECT key, value FROM metadata ORDER BY key;
+format_version|0
+
+sqlite> SELECT name, stability, version FROM modules ORDER BY name;
+JSON|stable|0.1.0
+XML|beta|0.2.0
+```
+
+The version-0 schema is intentionally small:
+
+```sql
+CREATE TABLE metadata (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+) WITHOUT ROWID;
+
+CREATE TABLE modules (
+  name TEXT PRIMARY KEY,
+  stability TEXT NOT NULL,
+  version TEXT NOT NULL
+) WITHOUT ROWID;
+```
+
+`xs.lock.sqlite3` is binary SQLite data and should be inspected with SQLite tooling rather than edited as text.
+
 ## Source registries
 
 `source` defines one or more directory roots for the exact source registry passed to the JVM-free compiler:

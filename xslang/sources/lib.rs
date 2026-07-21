@@ -3,15 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+//! Target-independent semantic analysis, HIR, MIR, XLIL, and XGC foundations for X#.
+
 #![warn(missing_docs)]
 
+#[allow(missing_docs,
+        reason = "existing codegen API documentation is being completed incrementally")]
 pub mod codegen;
+#[allow(missing_docs,
+        reason = "existing compiler-core API documentation is being completed incrementally")]
 pub mod compiler_core;
+#[allow(missing_docs,
+        reason = "existing HIR API documentation is being completed incrementally")]
 pub mod hir;
+#[allow(missing_docs,
+        reason = "existing MIR API documentation is being completed incrementally")]
 pub mod mir;
+#[allow(missing_docs,
+        reason = "existing monomorphization API documentation is being completed incrementally")]
 pub mod mono;
 pub(crate) mod text;
+#[allow(missing_docs,
+        reason = "existing XGC API documentation is being completed incrementally")]
 pub mod xgc;
+#[allow(missing_docs,
+        reason = "existing XLIL API documentation is being completed incrementally")]
 pub mod xlil;
 
 /// Version of the `xslang` crate that built this compiler core.
