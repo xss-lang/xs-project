@@ -36,7 +36,7 @@ registry defaults to empty.
 Without an explicit test include, each effective source root contributes its existing `Test` child directory. Missing
 default test directories are ignored and leave an empty test registry.
 
-Source, module, and test exclusion metadata defaults to `*/**`. It is consumed by editor views and `.xspkg` packaging,
+Source, module, and test exclusion metadata defaults to `*/**`. It is consumed by editor views and xspkg packaging,
 not by compiler source discovery. Supplying exclusions replaces the category's default metadata; empty `exclude()` clears
 it. Include roots remain recursive and authoritative for compiler input.
 Resolved compiler registries cannot overlap: test roots win over module assignments, and module assignments win over

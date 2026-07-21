@@ -3,10 +3,67 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-use xsfmt::Config;
+use std::{env, fs, process::ExitCode};
 
-fn main()
+use xsfmt::{Config, format_source};
+
+fn main() -> ExitCode
 {
-  let _config = Config::default();
-  eprintln!("xsfmt is registered in the XS monorepo, but implementation has not started yet.");
+  let mut check = false;
+  let mut paths = Vec::new();
+  for argument in env::args().skip(1)
+  {
+    if argument == "--check"
+    {
+      check = true;
+    }
+    else
+    {
+      paths.push(argument);
+    }
+  }
+  if paths.is_empty()
+  {
+    eprintln!("usage: xsfmt [--check] <file.xs>...");
+    return ExitCode::from(2);
+  }
+
+  let config = Config::default();
+  let mut failed = false;
+  for path in paths
+  {
+    let source = match fs::read_to_string(&path)
+    {
+      Ok(source) => source,
+      Err(error) =>
+      {
+        eprintln!("xsfmt: {path}: {error}");
+        failed = true;
+        continue;
+      }
+    };
+    let result = format_source(&source, &config);
+    if !result.changed
+    {
+      continue;
+    }
+    if check
+    {
+      eprintln!("xsfmt: {path} requires formatting");
+      failed = true;
+    }
+    else if let Err(error) = fs::write(&path, result.text)
+    {
+      eprintln!("xsfmt: {path}: {error}");
+      failed = true;
+    }
+  }
+  if failed
+  {
+    ExitCode::FAILURE
+  }
+  else
+  {
+    ExitCode::SUCCESS
+  }
 }

@@ -219,7 +219,7 @@ The supported pattern operators are:
 | `**` | zero or more complete path segments |
 
 Include roots are evaluated relative to the project directory, must exist as directories, and must not escape the
-project. They are searched recursively. Exclusion patterns are stored for editor views and `.xspkg` packaging and do not
+project. They are searched recursively. Exclusion patterns are stored for editor views and xspkg packaging and do not
 filter the compiler source registry. `source.exclude`, `module.exclude`, and `test.exclude` each default to `*/**`; an
 explicit list replaces that category's default metadata, while empty `exclude()` clears it. Duplicate paths are removed, and the
 resulting registry is sorted deterministically. At most one case-sensitive `main.<XS_EXTENSION>` may be selected; when

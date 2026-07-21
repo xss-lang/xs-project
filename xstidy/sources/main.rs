@@ -3,16 +3,81 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-use serde::{Deserialize, Serialize};
+use std::{path::PathBuf, process::ExitCode};
 
-#[derive(Debug, Deserialize, Serialize)]
-struct XsTidyConfig
+use ariadne::{Label, Report, ReportKind, Source};
+use clap::Parser;
+use tracing::Level;
+use xstidy::{FileDiagnostics, lint_paths};
+
+#[derive(Debug, Parser)]
+#[command(name = "xstidy", about = "Experimental X# source linter")]
+struct Arguments
 {
-  deny_warnings: Option<bool>,
+  /// Emit one JSON diagnostic per line.
+  #[arg(long)]
+  json: bool,
+
+  /// Enable execution tracing.
+  #[arg(long)]
+  verbose: bool,
+
+  /// X# files or directories to inspect recursively.
+  #[arg(required = true)]
+  paths: Vec<PathBuf>,
 }
 
-fn main()
+fn main() -> ExitCode
 {
-  let _config = XsTidyConfig { deny_warnings: None };
-  eprintln!("xstidy is registered in the XS monorepo, but implementation has not started yet.");
+  let arguments = Arguments::parse();
+  if arguments.verbose
+  {
+    tracing_subscriber::fmt().with_max_level(Level::DEBUG)
+                             .with_writer(std::io::stderr)
+                             .init();
+  }
+
+  let mut failed = false;
+  for result in lint_paths(&arguments.paths)
+  {
+    match result
+    {
+      Ok(file) if file.diagnostics.is_empty() =>
+      {}
+      Ok(file) =>
+      {
+        failed = true;
+        print_diagnostics(&file, arguments.json);
+      }
+      Err(error) =>
+      {
+        failed = true;
+        eprintln!("xstidy: {}: {}", error.path.display(), error.error);
+      }
+    }
+  }
+  ExitCode::from(u8::from(failed))
+}
+
+fn print_diagnostics(file: &FileDiagnostics, json: bool)
+{
+  for diagnostic in &file.diagnostics
+  {
+    if json
+    {
+      println!("{}",
+               serde_json::to_string(diagnostic).expect("diagnostic serialization"));
+      continue;
+    }
+    let name = file.path.display().to_string();
+    let span = diagnostic.byte_start..diagnostic.byte_end;
+    Report::build(ReportKind::Warning, (name.as_str(), span.clone()))
+      .with_code(diagnostic.code)
+      .with_message(diagnostic.message)
+      .with_label(Label::new((name.as_str(), span)).with_message("legacy constructor spelling"))
+      .with_help("write constructor calls as `new Type(...)`")
+      .finish()
+      .eprint((name.as_str(), Source::from(file.source.as_str())))
+      .expect("write diagnostic");
+  }
 }

@@ -3,14 +3,11 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Deserialize, Serialize)]
-struct XsAnalyzerConfig {
-    trace: bool,
-}
+mod server;
 
 fn main() {
-    let _config = XsAnalyzerConfig { trace: false };
-    eprintln!("xs-analyzer language server is registered, but implementation has not started yet.");
+    if let Err(error) = server::run() {
+        eprintln!("xs-analyzer: {error}");
+        std::process::exit(1);
+    }
 }

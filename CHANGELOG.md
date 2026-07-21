@@ -12,6 +12,10 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+- Added the first bounded `xsfmt` pass for newline and trailing-whitespace normalization, plus `--check` mode.
+- Added the first `xstidy` diagnostic rule for legacy constructor syntax with human and JSON output.
+- Added the initial `xs-analyzer` LSP lifecycle and full-document UTF-16 synchronization capability.
+
 - Added KTS build mode, output-directory, and package-artifact settings. `BUILD_MODE` defaults to `Release`, while
   omitted `XSPKG_TYPE` is inferred from optional `lib.<extension>` and `main.<extension>` source files. Structured
   `BINARY` and `LIBRARY` records support named artifacts whose entry files use non-canonical names. Projects that omit
