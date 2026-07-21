@@ -12,6 +12,8 @@ source-to-native executable pipeline.
 
 ## Unreleased
 
+## 0.2.1 - 2026-07-21
+
 ### Added
 
 - Kotlin project dependencies now use structured `addModule(name, stability, version)` coordinates and successful KTS
