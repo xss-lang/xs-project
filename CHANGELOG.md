@@ -14,10 +14,6 @@ source-to-native executable pipeline.
 
 ### Added
 
-- The package-registry track now has a reproducible PostgreSQL schema for GitHub identities, hashed registry tokens,
-  module ownership, immutable version metadata, yanking, migration history, least-privilege runtime access, and daily
-  backup deployment units. The future `xs login`, `xs publish`, `xs update`, and `xs yank` contract is documented without
-  exposing an unfinished network service.
 - Kotlin project dependencies now use structured `addModule(name, stability, version)` coordinates and successful KTS
   evaluation writes them to a deterministic, versioned `xs.lock.sqlite3` SQLite lock file. The reserved boolean
   `PUBLISH` project setting defaults to `false` and records future publication intent without uploading packages.

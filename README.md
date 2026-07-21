@@ -58,7 +58,6 @@ Check the example project:
 | `xslang/` | active | Rust semantic compiler core linked into the C23 driver through a versioned bulk AST boundary |
 | `Spec/` | active source documentation | X# syntax and language behavior examples/spec files |
 | `docs/` | active documentation | Architecture, build, CLI, backend, roadmap, and implementation status |
-| `services/registry/` | early infrastructure | PostgreSQL migrations and host deployment templates for package services |
 | `tests/` | active | C-based unit and integration tests |
 | `xsfmt/` | future | Rust nightly + Serde formatter |
 | `xstidy/` | future | Rust nightly + Serde linter |
