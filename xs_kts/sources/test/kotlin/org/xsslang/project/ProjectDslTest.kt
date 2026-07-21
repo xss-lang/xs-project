@@ -180,10 +180,11 @@ class ProjectDslTest {
   }
 
   @Test
-  fun defaultExcludeKeepsDirectSourcesAndEmptyExcludeEnablesRecursion() {
+  fun excludeMetadataDoesNotFilterCompilerSources() {
     val root = Files.createTempDirectory("xs-project-default-exclude-")
     val sources = Files.createDirectories(root.resolve("Sources"))
     val nested = Files.createDirectories(sources.resolve("Nested"))
+    val tests = Files.createDirectories(sources.resolve("Test"))
     val output = root.resolve("sources.bin")
     val oldRoot = System.getProperty("xs.project.root")
     val oldOutput = System.getProperty("xs.project.output")
@@ -191,13 +192,14 @@ class ProjectDslTest {
     try {
       Files.writeString(sources.resolve("main.xs"), "fn main() -> Long { 0 }")
       Files.writeString(nested.resolve("helper.xs"), "fn helper() -> Long { 1 }")
+      Files.writeString(tests.resolve("smoke.xs"), "fn smoke() {}")
       System.setProperty("xs.project.root", root.toString())
       System.setProperty("xs.project.output", "sources0")
       System.setProperty("xs.project.sources", output.toString())
 
       val direct = ProjectContext().apply { project("Direct", "BETA", "0.1.0") }
       ProjectOutput.emit(direct.build())
-      assertEquals("1", readSourceRecords(output)[5])
+      assertEquals("2", readSourceRecords(output)[5])
 
       val recursive =
         ProjectContext().apply {
@@ -430,7 +432,7 @@ class ProjectDslTest {
   }
 
   @Test
-  fun expandsSourceDirectoriesRecursivelyWithMainFirstAndExcludes() {
+  fun expandsSourceDirectoriesRecursivelyWithoutApplyingPackageExcludes() {
     val root = Files.createTempDirectory("xs-project-glob-test-")
     val sources = Files.createDirectories(root.resolve("sources"))
     val tests = Files.createDirectories(sources.resolve("tests"))
@@ -467,10 +469,17 @@ class ProjectDslTest {
           .split('\u0000')
           .filter(String::isNotEmpty)
       assertEquals(
-        listOf("xs-project-sources-v3", "all", "true", "true", "true", "2", "0"),
+        listOf("xs-project-sources-v3", "all", "true", "true", "true", "3", "0"),
         paths.take(7),
       )
-      assertEquals(listOf(sources.resolve("main.xs").toString(), sources.resolve("helper.xs").toString()), paths.drop(7))
+      assertEquals(
+        listOf(
+          sources.resolve("main.xs").toString(),
+          sources.resolve("helper.xs").toString(),
+          tests.resolve("ignored.xs").toString(),
+        ),
+        paths.drop(7),
+      )
     } finally {
       restoreProperty("xs.project.root", oldRoot)
       restoreProperty("xs.project.output", oldOutput)
@@ -494,7 +503,6 @@ class ProjectDslTest {
         source { include("Sources") }
         module { include("Modules") }
         module {
-          exclude()
           name("MyModule")
           add("Modules/Example/Utils/math*.xs")
           submodule {

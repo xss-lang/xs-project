@@ -82,18 +82,16 @@ import and diagnostics retain their file boundary.
 
 Only `project(name, channel, version)` is required. `source` is the canonical block name;
 `sources` remains a compatibility alias. An include names a project-relative directory and recursively selects files
-with the configured source extension. Include roots do not accept globs. Excludes may use `*`, `**`, and `?`; they are
-applied after discovery. Omitting the block uses `source { include("Sources"); exclude("*/**") }`. The default exclusion
-is evaluated relative to each include root and keeps discovery at that root's direct files. Call `exclude()` explicitly
-to select recursively without exclusions. The default extension is `xs`. A
+with the configured source extension. Include roots do not accept globs. Omitting the block uses
+`source { include("Sources") }`. The separate editor/package exclusion metadata defaults to `*/**`; it never removes or
+changes compiler inputs selected by `include`. The default extension is `xs`. A
 case-sensitive `main.xs`, when present, is placed first, but
 library-only projects do not need one. `set("XS_EXTENSION", "xsharp")` selects `.xsharp` files and changes the recognized
 entry/library names to `main.xsharp` and `lib.xsharp`.
 
 When `test.include` is omitted, the resolver looks for a `Test` directory directly under each effective source root. Any
 existing directories become test roots; if none exist, the test registry remains empty. An explicit test include replaces
-this inference. Test discovery defaults to include-root-relative `exclude("*/**")`; explicit exclusions replace it and
-empty `exclude()` enables the complete recursive test tree.
+this inference. Test editor/package exclusion metadata independently defaults to `*/**`.
 
 The DSL also provides:
 
@@ -222,9 +220,9 @@ The supported pattern operators are:
 | `**` | zero or more complete path segments |
 
 Include roots are evaluated relative to the project directory, must exist as directories, and must not escape the
-project. They are searched recursively before exclusions. The default `*/**` exclusion removes descendants below each
-source root while retaining its direct files; an explicit exclusion list replaces that default, and `exclude()` selects
-the complete recursive tree. Other exclusion patterns are project-relative. Duplicate paths are removed, and the
+project. They are searched recursively. Exclusion patterns are stored for editor views and `.xspkg` packaging and do not
+filter the compiler source registry. `source.exclude`, `module.exclude`, and `test.exclude` each default to `*/**`; an
+explicit list replaces that category's default metadata, while empty `exclude()` clears it. Duplicate paths are removed, and the
 resulting registry is sorted deterministically. At most one case-sensitive `main.<XS_EXTENSION>` may be selected; when
 present it is ordered first. A registry without that file remains valid for non-`bin` package targets.
 
@@ -235,8 +233,7 @@ in `xs.project.kts` and assign every selected file in a sibling `xs.module.kts` 
 
 When `module.include` is omitted, an existing project-root `Modules` directory is selected automatically. If that
 directory does not exist, the default module root is empty. An explicit include or the CLI `--module` override replaces
-the filesystem default. Module discovery has the same default `*/**` exclusion and `exclude()` override as source
-discovery.
+the filesystem default. Module exclusions are editor/package metadata and do not alter this compiler module pool.
 
 ```kotlin
 // xs.project.kts
@@ -273,8 +270,9 @@ module {
 
 `add(...)` accepts a concrete source path or a glob. Direct `add` and `members` entries expose declarations as
 `MyModule::<item>`; `submodule` above exposes them as `MyModule::util::<item>`. Every file selected by the project module
-pool must be assigned exactly once. Missing/empty matches, duplicate assignments, unassigned module files, and overlap
-between the ordinary source and module registries are configuration errors.
+pool must be assigned exactly once. Missing/empty matches, duplicate assignments, and unassigned module files are
+configuration errors. Compiler registries are always disjoint: test selection takes precedence over module membership,
+and module membership takes precedence over the general source roots.
 
 The project normally declares the module root with `module { include("Modules") }`. If it does not, the compiler
 invocation must provide it explicitly with `xs build --module ./Modules`. The same explicit option enables a legacy

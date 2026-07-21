@@ -11,7 +11,7 @@ driver. It never reads or compiles `.xs` files. The compiler and
 JRE are not embedded: JRE 25 or newer and an executable `kotlin` scripting command are runtime requirements.
 
 Projects use one `xs.project.kts` file or the `xs.settings.kts` + `xs.build.kts` pair. Only
-Only `project(name, channel, version)` is required. `source.include` names recursive directory
+`project(name, channel, version)` is required. `source.include` names recursive directory
 roots; source/test excludes may use `*`, `**`, and `?` glob patterns. A case-sensitive `main.xs` is placed first when it
 exists, but it is not required for library-only projects. Setting `XS_EXTENSION` replaces the selected suffix and the
 recognized `main`/`lib` filenames. Optional sections cover authors, external modules,
@@ -30,15 +30,17 @@ performing a registry upload.
 `xlib`, `main.xs` infers `bin`, and both files infer both artifacts. These filenames are inference inputs, not mandatory
 project files.
 
-When no source block is present, the resolver behaves as if `source { include("Sources"); exclude("*/**") }` were written.
+When no source block is present, the resolver behaves as if `source { include("Sources") }` were written.
 An existing project-root `Modules` directory is likewise the default module include; without that directory the module
 registry defaults to empty.
 Without an explicit test include, each effective source root contributes its existing `Test` child directory. Missing
 default test directories are ignored and leave an empty test registry.
 
-Source, module, and test discovery default to `exclude("*/**")`, interpreted relative to each include root so only direct files
-remain selected. Supplying exclusions replaces the default. Calling `exclude()` with no patterns opts into the complete
-recursive tree.
+Source, module, and test exclusion metadata defaults to `*/**`. It is consumed by editor views and `.xspkg` packaging,
+not by compiler source discovery. Supplying exclusions replaces the category's default metadata; empty `exclude()` clears
+it. Include roots remain recursive and authoritative for compiler input.
+Resolved compiler registries cannot overlap: test roots win over module assignments, and module assignments win over
+general source roots. The same physical file is emitted in at most one registry.
 
 Non-canonical entry files use `set("BINARY", mapOf("name" to "tool", "path" to "Sources/tool.xs"))` or the analogous
 `LIBRARY` setting. Multiple maps define multiple named artifacts, matching repeated `[[bin]]`/`[[lib]]` records.
@@ -55,8 +57,8 @@ source {
 }
 ```
 
-Include roots do not accept globs. Discovery is recursive relative to the project root, excludes run afterward, and the
-deterministic result places a case-sensitive `main.xs` first when one exists. The resolver emits exact paths and does not
+Include roots do not accept globs. Discovery is recursive relative to the project root; exclude metadata is not applied
+to compiler inputs. The deterministic result places a case-sensitive `main.xs` first when one exists. The resolver emits exact paths and does not
 pass unresolved patterns to the compiler.
 The internal registry also carries the evaluated `compiler {}` warning, warnings-as-errors, and verbose policy. The
 JVM-free compiler may replace those values for one invocation through its corresponding command-line overrides.

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 module {
-  exclude()
   name("Math")
   members {
     add("Modules/Math/*.xs")

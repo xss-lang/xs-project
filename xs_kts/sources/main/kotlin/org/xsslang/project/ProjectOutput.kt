@@ -35,7 +35,7 @@ object ProjectOutput {
       } else {
         state.moduleIncludes
       }
-    val modules = resolveModules(root, moduleIncludes, state.moduleExcludes, state.moduleSources, extension)
+    val modules = resolveModules(root, moduleIncludes, state.moduleSources, extension)
     if (state.identity != null) ModuleLockFile.write(root, state.modules)
     writeSources(ResolvedProject(emptyList(), modules, emptyList()), state.compiler, state.variables)
   }
@@ -53,10 +53,18 @@ object ProjectOutput {
   private fun resolveSources(plan: ProjectPlan): ResolvedProject {
     val root = projectRoot()
     val extension = sourceExtension(plan.variables)
+    val tests =
+      plan.testIncludes
+        .flatMap { include -> expandSourceDirectory(root, include, extension) }
+        .distinct()
+        .sortedBy(Path::toString)
+    val testSet = tests.toSet()
+    val modules = resolveModules(root, plan.moduleIncludes, plan.moduleSources, extension, testSet)
+    val moduleSet = modules.mapTo(mutableSetOf()) { (_, path) -> path }
     val sources =
       plan.sourceIncludes
         .flatMap { include -> expandSourceDirectory(root, include, extension) }
-        .filterNot { path -> isExcluded(root, path, plan.sourceIncludes, plan.sourceExcludes) }
+        .filterNot { path -> path in testSet || path in moduleSet }
         .distinct()
         .sortedWith(compareBy<Path> { path -> path.fileName.toString() != "main.$extension" }.thenBy(Path::toString))
     val mainCount = sources.count { path -> path.fileName.toString() == "main.$extension" }
@@ -66,27 +74,15 @@ object ProjectOutput {
       )
     }
     validateArtifactTargets(plan, root, sources, extension)
-    val modules = resolveModules(root, plan.moduleIncludes, plan.moduleExcludes, plan.moduleSources, extension)
-    val tests =
-      plan.testIncludes
-        .flatMap { include -> expandSourceDirectory(root, include, extension) }
-        .filterNot { path -> isExcluded(root, path, plan.testIncludes, plan.testExcludes) }
-        .distinct()
-        .sortedBy(Path::toString)
-    val sourceSet = sources.toSet()
-    val overlap = modules.firstOrNull { (_, path) -> path in sourceSet }
-    if (overlap != null) {
-      throw ProjectConfigurationException("source and module registries overlap: ${relative(root, overlap.second)}")
-    }
     return ResolvedProject(sources, modules, tests)
   }
 
   private fun resolveModules(
     root: Path,
     configuredRoots: List<String>,
-    excludes: List<String>,
     moduleSources: List<ModuleSource>,
     extension: String,
+    reservedPaths: Set<Path> = emptySet(),
   ): List<Pair<String, Path>> {
     val override = System.getProperty("xs.project.moduleRoot")?.takeIf(String::isNotBlank)
     val roots = if (configuredRoots.isEmpty() && override != null) listOf(override) else configuredRoots
@@ -96,12 +92,13 @@ object ProjectOutput {
     val modulePool =
       roots
         .flatMap { include -> expandSourceDirectory(root, include, extension) }
-        .filterNot { path -> isExcluded(root, path, roots, excludes) }
+        .filterNot(reservedPaths::contains)
         .distinct()
     val assigned = mutableSetOf<Path>()
     val modules =
       moduleSources.flatMap { source ->
-        expandInclude(root, source.path, extension).map { path ->
+        expandInclude(root, source.path, extension).mapNotNull { path ->
+          if (path in reservedPaths) return@mapNotNull null
           if (path !in modulePool) {
             throw ProjectConfigurationException("module member is not selected by module.include(...): ${source.path}")
           }
@@ -167,25 +164,6 @@ object ProjectOutput {
         .filter(Path::isRegularFile)
         .filter { path -> path.fileName.toString().endsWith(".$extension") }
         .toList()
-    }
-  }
-
-  private fun isExcluded(
-    root: Path,
-    path: Path,
-    includeRoots: List<String>,
-    patterns: List<String>,
-  ): Boolean {
-    val projectRelative = relative(root, path)
-    return patterns.any { pattern ->
-      if (pattern == "*/**") {
-        includeRoots.any { include ->
-          val includeRoot = root.resolve(include).normalize()
-          path.startsWith(includeRoot) && includeRoot.relativize(path).nameCount > 1
-        }
-      } else {
-        globRegex(pattern).matches(projectRelative)
-      }
     }
   }
 
