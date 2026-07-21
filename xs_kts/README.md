@@ -33,6 +33,8 @@ project files.
 When no source block is present, the resolver behaves as if `source { include("Sources") }` were written.
 An existing project-root `Modules` directory is likewise the default module include; without that directory the module
 registry defaults to empty.
+Without an explicit test include, each effective source root contributes its existing `Test` child directory. Missing
+default test directories are ignored and leave an empty test registry.
 
 Non-canonical entry files use `set("BINARY", mapOf("name" to "tool", "path" to "Sources/tool.xs"))` or the analogous
 `LIBRARY` setting. Multiple maps define multiple named artifacts, matching repeated `[[bin]]`/`[[lib]]` records.

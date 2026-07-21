@@ -14,7 +14,7 @@ import kotlin.streams.toList
 object ProjectOutput {
   fun emit(plan: ProjectPlan) {
     val root = projectRoot()
-    val configuredPlan = plan.withDefaultModuleRoot(root)
+    val configuredPlan = plan.withFilesystemDefaults(root)
     val resolved = resolveSources(configuredPlan)
     val effectivePlan = configuredPlan.withInferredPackageTypes(resolved.sources)
     validatePackageTypeInputs(effectivePlan, resolved.sources)
@@ -183,10 +183,12 @@ object ProjectOutput {
     return copy(variables = variables + ("XSPKG_TYPE" to inferred))
   }
 
-  private fun ProjectPlan.withDefaultModuleRoot(root: Path): ProjectPlan {
-    if (moduleIncludes.isNotEmpty() || moduleRootOverride() != null) return this
-    val defaults = defaultModuleRoots(root)
-    return if (defaults.isEmpty()) this else copy(moduleIncludes = defaults)
+  private fun ProjectPlan.withFilesystemDefaults(root: Path): ProjectPlan {
+    val effectiveModules =
+      if (moduleIncludes.isEmpty() && moduleRootOverride() == null) defaultModuleRoots(root) else moduleIncludes
+    val effectiveTests = if (testIncludes.isEmpty()) defaultTestRoots(root, sourceIncludes) else testIncludes
+    if (effectiveModules == moduleIncludes && effectiveTests == testIncludes) return this
+    return copy(moduleIncludes = effectiveModules, testIncludes = effectiveTests)
   }
 
   private fun validateArtifactTargets(
@@ -325,6 +327,19 @@ private fun projectRoot(): Path =
 
 private fun defaultModuleRoots(root: Path): List<String> =
   if (Files.isDirectory(root.resolve("Modules"))) listOf("Modules") else emptyList()
+
+internal fun defaultTestRoots(
+  root: Path,
+  sourceRoots: List<String>,
+): List<String> =
+  sourceRoots.mapNotNull { sourceRoot ->
+    val candidate = root.resolve(sourceRoot).resolve("Test").normalize()
+    if (!candidate.startsWith(root) || !Files.isDirectory(candidate)) {
+      null
+    } else {
+      root.relativize(candidate).toString().replace('\\', '/')
+    }
+  }
 
 private fun moduleRootOverride(): String? =
   System.getProperty("xs.project.moduleRoot")?.takeIf(String::isNotBlank)

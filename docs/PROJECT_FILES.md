@@ -88,6 +88,10 @@ case-sensitive `main.xs`, when present, is placed first, but
 library-only projects do not need one. `set("XS_EXTENSION", "xsharp")` selects `.xsharp` files and changes the recognized
 entry/library names to `main.xsharp` and `lib.xsharp`.
 
+When `test.include` is omitted, the resolver looks for a `Test` directory directly under each effective source root. Any
+existing directories are selected recursively; if none exist, the test registry remains empty. An explicit test include
+replaces this inference.
+
 The DSL also provides:
 
 - `set(name, value, ...)` for one or more versioned/compiler and user build values;

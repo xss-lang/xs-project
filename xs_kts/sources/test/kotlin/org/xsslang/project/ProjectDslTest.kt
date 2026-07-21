@@ -167,6 +167,19 @@ class ProjectDslTest {
   }
 
   @Test
+  fun infersExistingTestChildrenFromSourceRoots() {
+    val root = Files.createTempDirectory("xs-project-default-tests-")
+    try {
+      Files.createDirectories(root.resolve("Sources/Test"))
+      Files.createDirectories(root.resolve("Platform"))
+      assertEquals(listOf("Sources/Test"), defaultTestRoots(root, listOf("Sources", "Platform")))
+      assertEquals(emptyList(), defaultTestRoots(root, listOf("Missing")))
+    } finally {
+      root.toFile().deleteRecursively()
+    }
+  }
+
+  @Test
   fun splitFilesShareStateWithoutSectionOwnership() {
     val settings =
       ProjectContext().apply {

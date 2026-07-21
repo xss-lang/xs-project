@@ -16,7 +16,7 @@ source-to-native executable pipeline.
   omitted `XSPKG_TYPE` is inferred from optional `lib.<extension>` and `main.<extension>` source files. Structured
   `BINARY` and `LIBRARY` records support named artifacts whose entry files use non-canonical names. Projects that omit
   `source.include` now use the recursive `Sources` root by default, while an existing `Modules` directory supplies the
-  optional default module root.
+  optional default module root. Existing `<source-root>/Test` directories supply default test roots.
 
 ### Added
 
