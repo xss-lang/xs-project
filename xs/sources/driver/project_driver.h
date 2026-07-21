@@ -15,10 +15,13 @@ typedef struct
   char **paths;
   char **module_names;
   size_t path_count;
+  char **test_paths;
+  size_t test_path_count;
   XsCompilerSettings settings;
 } XsResolvedKotlinProject;
 
 bool xs_driver_resolve_kotlin_project(const char *module_path, XsResolvedKotlinProject *project);
+bool xs_driver_resolve_kotlin_tests(const char *module_path, XsResolvedKotlinProject *project);
 bool xs_driver_resolve_kotlin_modules(const char *project_root, const char *module_path,
                                       XsResolvedKotlinProject *project);
 void xs_driver_free_kotlin_project(XsResolvedKotlinProject *project);

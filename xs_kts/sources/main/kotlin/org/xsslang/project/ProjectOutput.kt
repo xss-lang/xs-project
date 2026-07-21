@@ -243,18 +243,22 @@ object ProjectOutput {
     val configuredOutput = System.getProperty("xs.project.sources")?.takeIf(String::isNotBlank)
     val output = configuredOutput?.let { path -> Files.newOutputStream(Path.of(path)) } ?: System.out
     output.useIfOwned(configuredOutput != null) { stream ->
-      writeRecord(stream, "xs-project-sources-v3")
+      writeRecord(stream, "xs-project-sources-v4")
       writeRecord(stream, compiler.warningLevel.name.lowercase())
       writeRecord(stream, compiler.warningsAsErrors.toString())
       writeRecord(stream, compiler.verbose.toString())
       writeRecord(stream, xgcEnabled(variables).toString())
       writeRecord(stream, project.sources.size.toString())
       writeRecord(stream, project.modules.size.toString())
+      writeRecord(stream, project.tests.size.toString())
       project.sources.forEach { path ->
         writeRecord(stream, path.toString())
       }
       project.modules.forEach { (name, path) ->
         writeRecord(stream, name)
+        writeRecord(stream, path.toString())
+      }
+      project.tests.forEach { path ->
         writeRecord(stream, path.toString())
       }
       stream.flush()

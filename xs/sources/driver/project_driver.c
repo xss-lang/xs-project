@@ -5,8 +5,8 @@
 
 #include "project_driver.h"
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <spawn.h>
@@ -15,15 +15,15 @@
 
 extern char **environ;
 
-static const char *const REGISTRY_VERSION = "xs-project-sources-v3";
+static const char *const REGISTRY_VERSION = "xs-project-sources-v4";
 
 static bool run_resolver(const char *mode, const char *project_root, const char *output_path, const char *module_path)
 {
   const char *program = getenv("XS_PROJECT_DRIVER");
   if(program == nullptr || program[0] == '\0')
     program = "xs-project";
-  char *arguments[] = {(char *)program, (char *)mode, (char *)project_root, (char *)output_path,
-                       (char *)module_path, nullptr};
+  char *arguments[] = {(char *)program,     (char *)mode,        (char *)project_root,
+                       (char *)output_path, (char *)module_path, nullptr};
   pid_t process = 0;
   int status = posix_spawnp(&process, program, nullptr, nullptr, arguments, environ);
   if(status != 0)
@@ -75,6 +75,9 @@ void xs_driver_free_kotlin_project(XsResolvedKotlinProject *project)
   }
   free(project->paths);
   free(project->module_names);
+  for(size_t i = 0; i < project->test_path_count; ++i)
+    free(project->test_paths[i]);
+  free(project->test_paths);
   *project = (XsResolvedKotlinProject){0};
 }
 
@@ -118,10 +121,10 @@ static char *next_record(char *record)
 }
 
 static bool parse_header(char *data, size_t record_count, size_t *source_count, size_t *module_count,
-                         XsCompilerSettings *settings)
+                         size_t *test_count, XsCompilerSettings *settings)
 {
   *settings = xs_cli_default_compiler_settings();
-  if(strcmp(data, REGISTRY_VERSION) != 0 || record_count < 7U)
+  if(strcmp(data, REGISTRY_VERSION) != 0 || record_count < 8U)
     return false;
   char *warning = next_record(data);
   char *werror = next_record(warning);
@@ -129,6 +132,7 @@ static bool parse_header(char *data, size_t record_count, size_t *source_count, 
   char *xgc = next_record(verbose);
   char *sources = next_record(xgc);
   char *modules = next_record(sources);
+  char *tests = next_record(modules);
   bool parsed_warning = false;
   for(XsWarningLevel level = XS_WARNING_NONE; level <= XS_WARNING_ALL; ++level)
   {
@@ -141,12 +145,13 @@ static bool parse_header(char *data, size_t record_count, size_t *source_count, 
   }
   if(!parsed_warning || !parse_bool_record(werror, &settings->warnings_as_errors) ||
      !parse_bool_record(verbose, &settings->verbose) || !parse_bool_record(xgc, &settings->xgc_enabled) ||
-     !parse_size_record(sources, source_count) ||
-     !parse_size_record(modules, module_count))
+     !parse_size_record(sources, source_count) || !parse_size_record(modules, module_count) ||
+     !parse_size_record(tests, test_count))
     return false;
-  if(*module_count > (SIZE_MAX - 7U - *source_count) / 2U)
+  if(*source_count > SIZE_MAX - 8U || *test_count > SIZE_MAX - 8U - *source_count ||
+     *module_count > (SIZE_MAX - 8U - *source_count - *test_count) / 2U)
     return false;
-  return record_count == 7U + *source_count + (*module_count * 2U);
+  return record_count == 8U + *source_count + (*module_count * 2U) + *test_count;
 }
 
 static bool resolve_kotlin_registry(const char *mode, const char *project_root, const char *module_path,
@@ -179,7 +184,8 @@ static bool resolve_kotlin_registry(const char *mode, const char *project_root, 
     count += data[i] == '\0';
   size_t source_count = 0;
   size_t module_count = 0;
-  if(count == 0U || !parse_header(data, count, &source_count, &module_count, &project->settings) ||
+  size_t test_count = 0;
+  if(count == 0U || !parse_header(data, count, &source_count, &module_count, &test_count, &project->settings) ||
      (require_sources && source_count == 0U))
   {
     free(data);
@@ -189,7 +195,10 @@ static bool resolve_kotlin_registry(const char *mode, const char *project_root, 
   size_t path_count = source_count + module_count;
   project->paths = calloc(path_count, sizeof(*project->paths));
   project->module_names = calloc(path_count, sizeof(*project->module_names));
-  if(project->paths == nullptr || project->module_names == nullptr)
+  project->test_paths = test_count == 0U ? nullptr : calloc(test_count, sizeof(*project->test_paths));
+  project->test_path_count = test_count;
+  if((path_count != 0U && (project->paths == nullptr || project->module_names == nullptr)) ||
+     (test_count != 0U && project->test_paths == nullptr))
   {
     free(data);
     xs_driver_free_kotlin_project(project);
@@ -197,7 +206,7 @@ static bool resolve_kotlin_registry(const char *mode, const char *project_root, 
   }
   project->path_count = path_count;
   char *record = data;
-  for(size_t i = 0; i < 7U; ++i)
+  for(size_t i = 0; i < 8U; ++i)
     record = next_record(record);
   for(size_t i = 0; i < source_count; ++i)
   {
@@ -224,6 +233,17 @@ static bool resolve_kotlin_registry(const char *mode, const char *project_root, 
       return false;
     }
   }
+  for(size_t i = 0; i < test_count; ++i)
+  {
+    project->test_paths[i] = copy_record(record);
+    record = next_record(record);
+    if(project->test_paths[i] == nullptr)
+    {
+      free(data);
+      xs_driver_free_kotlin_project(project);
+      return false;
+    }
+  }
   free(data);
   return true;
 }
@@ -231,6 +251,11 @@ static bool resolve_kotlin_registry(const char *mode, const char *project_root, 
 bool xs_driver_resolve_kotlin_project(const char *module_path, XsResolvedKotlinProject *project)
 {
   return resolve_kotlin_registry("sources0", ".", module_path, true, project);
+}
+
+bool xs_driver_resolve_kotlin_tests(const char *module_path, XsResolvedKotlinProject *project)
+{
+  return resolve_kotlin_registry("sources0", ".", module_path, false, project);
 }
 
 bool xs_driver_resolve_kotlin_modules(const char *project_root, const char *module_path,

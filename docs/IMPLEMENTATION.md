@@ -97,6 +97,9 @@ The documented compilation order is preserved:
   retains all `.xs` compilation work itself.
 - Kotlin source, test, and module includes name directory roots; the resolver recursively selects the configured source
   extension while excludes retain glob support. `XS_EXTENSION` defaults to `xs` and may select another extension.
+- The version-4 Kotlin resolver protocol transfers source, module, and test registries separately. `xs test` combines
+  those registries for frontend and semantic validation without emitting native artifacts. Test harness generation and
+  execution are not implemented yet.
 - `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
   reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macro_rules!` declaration.
 - `xs build --output hir|mir|xlil -file <source.xs>` and `--hir`/`--mir`/`--xlil` write real compiler-core program output

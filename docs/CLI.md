@@ -14,6 +14,7 @@ modern Kotlin project files on JRE 25 or newer, and `/usr/bin/xs-proj` parses an
 xs check
 xs build
 xs run
+xs test
 xs check -proj MyApp.xsproj
 xs build -proj MyApp.xsproj
 xs run -proj MyApp.xsproj
@@ -34,7 +35,7 @@ xs --version
 ```
 
 The `-proj` flag is accepted only by `xs` and only for `.xsproj` input. Kotlin projects never use `-proj`; argument-free
-`xs check`, `xs build`, and `xs run` ask `xs-project` to discover and evaluate `xs.project.kts` or the
+`xs check`, `xs build`, `xs run`, and `xs test` ask `xs-project` to discover and evaluate `xs.project.kts` or the
 `xs.settings.kts` + `xs.build.kts` pair. `xs-project` returns source metadata and never parses or compiles `.xs` files.
 `xs-proj` accepts a manifest path directly and performs parser/model validation only.
 
@@ -75,10 +76,11 @@ The compiler usage is:
 
 ```text
 usage: xs <build|run> -file <Main.xs>
-usage: xs <check|build|run>
+usage: xs <check|build|run|test>
        [--warning all|medium|low|none] [--werror true|false] [--verbose true|false]
        [--xgc-enabled true|false]
 usage: xs <check|build|run> -proj <project.xsproj>
+usage: xs test [-file <Test.xs>]
 usage: xs build [--output hir|mir|xlil] -file <input>
 usage: xs build [--hir|--mir|--xlil] -file <input>
 usage: xs --version
@@ -145,6 +147,16 @@ process `i32` entry ABI. General source-level function body lowering is still in
 For legacy manifests, `-proj` selects only `.xsproj`; it is not a Kotlin project flag. The `--output hir|mir|xlil`
 spelling and the short `--hir`, `--mir`, and
 `--xlil` spelling select the same intermediate output kind. The short spelling is currently valid only with `-file`.
+
+## `xs test`
+
+`xs test` evaluates the modern Kotlin project, selects its disjoint test registry, and parses and semantically validates
+the production, module, and test sources as one program. A syntax or semantic error in any selected test source fails the
+command. `xs test -file <Test.xs>` performs the same validation for one source file.
+
+This is the first test-command slice: it reports the number of validated test source files, but does not yet synthesize or
+execute a `#[Test]` harness. Legacy `.xsproj` files have no test registry and are rejected by `xs test`; they remain
+available through their feature-frozen check/build/run paths.
 
 ## `xs run`
 

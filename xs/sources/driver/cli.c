@@ -640,6 +640,11 @@ static int run_project_command(const XsCliOptions *options)
   XsCompilerSettings settings = xs_cli_default_compiler_settings();
   xs_cli_apply_compiler_overrides(options, &settings);
   print_verbose_settings(options, &settings, options->manifest_path);
+  if(strcmp(options->command, "test") == 0)
+  {
+    fprintf(stderr, "xs: legacy .xsproj files do not provide a test registry; use xs.project.kts\n");
+    return 2;
+  }
   if(!has_suffix(options->manifest_path, ".xsproj"))
   {
     fprintf(stderr, "xs: -proj must be used with a .xsproj file path\n");
@@ -735,38 +740,69 @@ static int run_project_command(const XsCliOptions *options)
 static int run_kotlin_project_command(const XsCliOptions *options)
 {
   XsResolvedKotlinProject resolved;
-  if(!xs_driver_resolve_kotlin_project(options->module_path, &resolved))
+  bool testing = strcmp(options->command, "test") == 0;
+  bool resolved_ok = testing ? xs_driver_resolve_kotlin_tests(options->module_path, &resolved)
+                             : xs_driver_resolve_kotlin_project(options->module_path, &resolved);
+  if(!resolved_ok)
     return 1;
   xs_cli_apply_compiler_overrides(options, &resolved.settings);
   print_verbose_settings(options, &resolved.settings, "Kotlin project");
+  size_t selected_count = resolved.path_count + (testing ? resolved.test_path_count : 0U);
   XsProjectValue *additional = nullptr;
-  if(resolved.path_count > 1U)
+  char **assigned = selected_count == 0U ? nullptr : calloc(selected_count, sizeof(*assigned));
+  if(selected_count > 1U)
   {
-    additional = calloc(resolved.path_count - 1U, sizeof(*additional));
+    additional = calloc(selected_count - 1U, sizeof(*additional));
     if(additional == nullptr)
     {
       xs_driver_free_kotlin_project(&resolved);
       return 1;
     }
-    for(size_t i = 1; i < resolved.path_count; ++i)
-      additional[i - 1U] = (XsProjectValue){.text = resolved.paths[i]};
+  }
+  if(selected_count != 0U && assigned == nullptr)
+  {
+    free(additional);
+    xs_driver_free_kotlin_project(&resolved);
+    return 1;
+  }
+  char *entry = selected_count == 0U ? nullptr : resolved.path_count != 0U ? resolved.paths[0] : resolved.test_paths[0];
+  size_t selected = 0;
+  for(size_t i = 0; i < resolved.path_count; ++i)
+  {
+    if(selected != 0U)
+      additional[selected - 1U] = (XsProjectValue){.text = resolved.paths[i]};
+    assigned[selected++] = resolved.module_names[i];
+  }
+  if(testing)
+  {
+    for(size_t i = 0; i < resolved.test_path_count; ++i)
+    {
+      if(selected != 0U)
+        additional[selected - 1U] = (XsProjectValue){.text = resolved.test_paths[i]};
+      ++selected;
+    }
   }
   XsProject project = {
       .xs_version = {.text = "kotlin-project"},
-      .entry = {.text = resolved.paths[0]},
+      .entry = entry == nullptr ? (XsProjectValue){.is_nil = true} : (XsProjectValue){.text = entry},
       .additional_files = additional,
-      .additional_file_count = resolved.path_count - 1U,
+      .additional_file_count = selected_count == 0U ? 0U : selected_count - 1U,
   };
-  bool success = check_project_sources(
-      ".", &project, options->output, strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE,
-      &resolved.settings, resolved.module_names);
+  bool build_native = (strcmp(options->command, "build") == 0 || strcmp(options->command, "run") == 0) &&
+                      options->output == XS_BUILD_OUTPUT_NONE;
+  bool success = selected_count == 0U ||
+                 check_project_sources(".", &project, options->output, build_native, &resolved.settings, assigned);
+  if(success && testing)
+    fprintf(stderr, "xs: test: validated %zu test source(s)\n", resolved.test_path_count);
   if(success && strcmp(options->command, "run") == 0)
   {
     int exit_code = xs_driver_run_native_artifact(resolved.paths[0]);
+    free(assigned);
     free(additional);
     xs_driver_free_kotlin_project(&resolved);
     return exit_code;
   }
+  free(assigned);
   free(additional);
   xs_driver_free_kotlin_project(&resolved);
   return success ? 0 : 1;
@@ -814,11 +850,15 @@ static int run_file_command(const XsCliOptions *options)
     fprintf(stderr, "xs: unsupported direct intermediate input '%s'\n", options->file_path);
     return 1;
   }
-  bool success = check_single_source_file(
-      options->file_path, options->output,
-      strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE, &settings);
+  bool success =
+      check_single_source_file(options->file_path, options->output,
+                               (strcmp(options->command, "build") == 0 || strcmp(options->command, "run") == 0) &&
+                                   options->output == XS_BUILD_OUTPUT_NONE,
+                               &settings);
   if(!success)
     return 1;
+  if(strcmp(options->command, "test") == 0)
+    fprintf(stderr, "xs: test: validated 1 test source(s)\n");
   return strcmp(options->command, "run") == 0 ? xs_driver_run_native_artifact(options->file_path) : 0;
 }
 

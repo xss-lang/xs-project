@@ -17,6 +17,9 @@ source-to-native executable pipeline.
 - Added the initial `xs-analyzer` LSP lifecycle and full-document UTF-16 synchronization capability.
 - MIR optimization now removes terminal boolean negations by reversing branch targets and collapses branches whose
   successors are identical.
+- Added `xs test` for modern Kotlin projects. The resolver now transfers the disjoint test registry to the JVM-free
+  compiler, which parses and semantically validates production, module, and test sources together. Executable test
+  harness generation remains a later compiler step.
 
 - Added KTS build mode, output-directory, and package-artifact settings. `BUILD_MODE` defaults to `Release`, while
   omitted `XSPKG_TYPE` is inferred from optional `lib.<extension>` and `main.<extension>` source files. Structured

@@ -76,3 +76,6 @@ does not maintain or embed a substitute Kotlin interpreter. Kotlin scripting is 
 Users build from the project directory with `xs build`. The JVM-free compiler asks `xs-project` for source metadata and
 then keeps all X# frontend/backend work inside `xs`. The `xs-project sources0` form is an internal compiler/resolver
 protocol, not an alternative X# build command.
+
+`xs test` requests the separately resolved test registry and validates it together with project and module sources. The
+current compiler command validates test sources but does not yet generate an executable `#[Test]` harness.

@@ -386,10 +386,18 @@ class ProjectDslTest {
           .toString(StandardCharsets.UTF_8)
           .split('\u0000')
           .filter(String::isNotEmpty)
-      assertEquals(listOf("xs-project-sources-v3", "medium", "false", "true", "false", "1", "1"), records.take(7))
       assertEquals(
-        listOf(sources.resolve("main.xsharp").toString(), "Math", modules.resolve("math.xsharp").toString()),
-        records.drop(7),
+        listOf("xs-project-sources-v4", "medium", "false", "true", "false", "1", "1", "1"),
+        records.take(8),
+      )
+      assertEquals(
+        listOf(
+          sources.resolve("main.xsharp").toString(),
+          "Math",
+          modules.resolve("math.xsharp").toString(),
+          tests.resolve("smoke.xsharp").toString(),
+        ),
+        records.drop(8),
       )
     } finally {
       restoreProperty("xs.project.root", oldRoot)
@@ -479,8 +487,8 @@ class ProjectDslTest {
           .split('\u0000')
           .filter(String::isNotEmpty)
       assertEquals(
-        listOf("xs-project-sources-v3", "all", "true", "true", "true", "3", "0"),
-        paths.take(7),
+        listOf("xs-project-sources-v4", "all", "true", "true", "true", "3", "0", "0"),
+        paths.take(8),
       )
       assertEquals(
         listOf(
@@ -488,7 +496,7 @@ class ProjectDslTest {
           sources.resolve("helper.xs").toString(),
           tests.resolve("ignored.xs").toString(),
         ),
-        paths.drop(7),
+        paths.drop(8),
       )
     } finally {
       restoreProperty("xs.project.root", oldRoot)
@@ -535,8 +543,11 @@ class ProjectDslTest {
           .toString(StandardCharsets.UTF_8)
           .split('\u0000')
           .filter(String::isNotEmpty)
-      assertEquals(listOf("xs-project-sources-v3", "medium", "false", "true", "false", "1", "2"), records.take(7))
-      assertEquals(sources.resolve("main.xs").toString(), records[7])
+      assertEquals(
+        listOf("xs-project-sources-v4", "medium", "false", "true", "false", "1", "2", "0"),
+        records.take(8),
+      )
+      assertEquals(sources.resolve("main.xs").toString(), records[8])
       assertEquals(
         listOf(
           "MyModule",
@@ -544,7 +555,7 @@ class ProjectDslTest {
           "MyModule::util",
           modules.resolve("topla.xs").toString(),
         ),
-        records.drop(8),
+        records.drop(9),
       )
     } finally {
       restoreProperty("xs.project.root", oldRoot)

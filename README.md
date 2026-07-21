@@ -47,6 +47,15 @@ Check the example project:
 ./build/clang-debug/xs-proj tests/fixtures/example_project/MyApp.xsproj
 ```
 
+Validate the test registry of a modern Kotlin project from its project directory:
+
+```text
+xs test
+```
+
+The current test-command slice performs frontend and semantic validation; executable `#[Test]` harness generation is
+still in progress.
+
 ## Monorepo directories
 
 | Path | Status | Purpose |
