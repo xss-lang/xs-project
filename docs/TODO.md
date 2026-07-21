@@ -14,7 +14,6 @@ implementation notes and internal design logs are not part of the public documen
 - Finish macro expansion from matched token fragments into AST declarations and statements.
 - Complete HIR symbol, type, generic, method, operator, and interface checks.
 - Complete expression type checking, mutability validation, and async/await validation.
-  propagation.
 
 ## Middle end
 
@@ -42,3 +41,9 @@ implementation notes and internal design logs are not part of the public documen
   format features or active compiler/project tests.
 - Grow the XLIL C23 API under `#include <xs/lil.h>` for external frontends and language implementations.
 - Add AOT/JIT-facing APIs only when their behavior is implemented and testable.
+
+## Packages
+
+- Implement the TLS registry service and GitHub identity exchange without retaining GitHub personal access tokens.
+- Connect `xs login`, `xs publish`, `xs update`, and `xs yank` to the versioned registry and SQLite lock contracts.
+- Add content-addressed artifact storage, integrity verification, namespace policy, and independent encrypted backups.

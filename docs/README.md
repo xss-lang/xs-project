@@ -18,15 +18,16 @@ Recommended order for newcomers:
 3. [ARCHITECTURE.md](ARCHITECTURE.md): compiler pipeline and layer boundaries
 4. [CLI.md](CLI.md): user commands and current status
 5. [PROJECT_FILES.md](PROJECT_FILES.md): Kotlin project files, legacy XSPROJ, and package boundaries
-6. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
-7. [SPEC.md](SPEC.md): guide to the `Spec/` language-example tree
-8. [XHIR.md](XHIR.md): human-readable XHIR text format direction
-9. [XMIR.md](XMIR.md): human-readable MIR text format direction
-10. [XLIL.md](XLIL.md): backend input text registry direction
-11. [TODO.md](TODO.md): public roadmap
-12. [RELEASES.md](RELEASES.md): pre-1.0 release policy
-13. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
-14. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
+6. [PACKAGES.md](PACKAGES.md): package registry commands and current availability
+7. [IMPLEMENTATION.md](IMPLEMENTATION.md): stage-by-stage implementation status
+8. [SPEC.md](SPEC.md): guide to the `Spec/` language-example tree
+9. [XHIR.md](XHIR.md): human-readable XHIR text format direction
+10. [XMIR.md](XMIR.md): human-readable MIR text format direction
+11. [XLIL.md](XLIL.md): backend input text registry direction
+12. [TODO.md](TODO.md): public roadmap
+13. [RELEASES.md](RELEASES.md): pre-1.0 release policy
+14. [LLVM_BACKEND.md](LLVM_BACKEND.md): LLVM backend infrastructure
+15. [MONOREPO.md](MONOREPO.md): monorepo project/runtime selection model
 
 ## Documentation authority
 

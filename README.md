@@ -58,6 +58,7 @@ Check the example project:
 | `xslang/` | active | Rust semantic compiler core linked into the C23 driver through a versioned bulk AST boundary |
 | `Spec/` | active source documentation | X# syntax and language behavior examples/spec files |
 | `docs/` | active documentation | Architecture, build, CLI, backend, roadmap, and implementation status |
+| `services/registry/` | early infrastructure | PostgreSQL migrations and host deployment templates for package services |
 | `tests/` | active | C-based unit and integration tests |
 | `xsfmt/` | future | Rust nightly + Serde formatter |
 | `xstidy/` | future | Rust nightly + Serde linter |
@@ -211,6 +212,7 @@ For broader contribution and workflow rules, see [docs/CONTRIBUTING.md](docs/CON
 - [docs/BUILDING.md](docs/BUILDING.md): build, test, toolchain, and OOM notes
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): compiler architecture and stage boundaries
 - [docs/CLI.md](docs/CLI.md): CLI contract and current status
+- [docs/PACKAGES.md](docs/PACKAGES.md): package registry commands and availability
 - [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md): detailed implementation status
 - [docs/SPEC.md](docs/SPEC.md): guide to the `Spec/` language examples
 - [docs/TODO.md](docs/TODO.md): public roadmap
