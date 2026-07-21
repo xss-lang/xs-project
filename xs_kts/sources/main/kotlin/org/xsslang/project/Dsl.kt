@@ -16,6 +16,7 @@ class SourcesScope internal constructor() {
   internal val includes = mutableListOf<String>()
   internal val excludes = mutableListOf<String>()
   internal var excludesConfigured = false
+  internal var filters: List<String>? = null
 
   fun include(pattern: String) {
     val root = requireText(pattern, "source include")
@@ -28,6 +29,10 @@ class SourcesScope internal constructor() {
   fun exclude(vararg patterns: String) {
     excludesConfigured = true
     patterns.forEach { pattern -> excludes += requireText(pattern, "source exclude") }
+  }
+
+  fun filter(paths: List<String>) {
+    filters = paths.map { path -> requireText(path, "source filter") }
   }
 }
 
@@ -60,6 +65,7 @@ class ModuleScope internal constructor() {
   internal val includes = mutableListOf<String>()
   internal val excludes = mutableListOf<String>()
   internal var excludesConfigured = false
+  internal var filters: List<String>? = null
   internal var moduleName: String? = null
   internal val paths = mutableListOf<String>()
   internal val submodules = mutableListOf<SubmoduleScope>()
@@ -75,6 +81,10 @@ class ModuleScope internal constructor() {
   fun exclude(vararg patterns: String) {
     excludesConfigured = true
     patterns.forEach { pattern -> excludes += requireText(pattern, "module exclude") }
+  }
+
+  fun filter(paths: List<String>) {
+    filters = paths.map { path -> requireText(path, "module filter") }
   }
 
   fun name(value: String) {
@@ -118,6 +128,7 @@ class TestScope internal constructor() {
   internal val includes = mutableListOf<String>()
   internal val excludes = mutableListOf<String>()
   internal var excludesConfigured = false
+  internal var filters: List<String>? = null
   internal var framework: String? = null
 
   fun include(path: String) {
@@ -131,6 +142,10 @@ class TestScope internal constructor() {
   fun exclude(vararg patterns: String) {
     excludesConfigured = true
     patterns.forEach { pattern -> excludes += requireText(pattern, "test exclude") }
+  }
+
+  fun filter(paths: List<String>) {
+    filters = paths.map { path -> requireText(path, "test filter") }
   }
 
   fun framework(name: String) {
@@ -182,11 +197,14 @@ class ProjectContext internal constructor(
   private val modules = state?.modules?.toMutableList() ?: mutableListOf()
   private val sourceIncludes = state?.sourceIncludes?.toMutableList() ?: mutableListOf()
   private val sourceExcludes = state?.sourceExcludes?.toMutableList() ?: mutableListOf("*/**")
+  private var sourceFilters = state?.sourceFilters
   private val moduleIncludes = state?.moduleIncludes?.toMutableList() ?: mutableListOf()
   private val moduleExcludes = state?.moduleExcludes?.toMutableList() ?: mutableListOf("*/**")
+  private var moduleFilters = state?.moduleFilters
   private val moduleSources = state?.moduleSources?.toMutableList() ?: mutableListOf()
   private val testIncludes = state?.testIncludes?.toMutableList() ?: mutableListOf()
   private val testExcludes = state?.testExcludes?.toMutableList() ?: mutableListOf("*/**")
+  private var testFilters = state?.testFilters
   private var testFramework: String? = state?.testFramework
   private val compilerSettings = state?.compiler ?: CompilerSettings()
 
@@ -269,16 +287,15 @@ class ProjectContext internal constructor(
     modules += resolved
   }
 
-  fun sources(block: SourcesScope.() -> Unit) {
+  fun source(block: SourcesScope.() -> Unit) {
     val scope = SourcesScope().apply(block)
     sourceIncludes += scope.includes
     if (scope.excludesConfigured) {
       sourceExcludes.clear()
       sourceExcludes += scope.excludes
     }
+    if (scope.filters != null) sourceFilters = scope.filters
   }
-
-  fun source(block: SourcesScope.() -> Unit) = sources(block)
 
   fun module(block: ModuleScope.() -> Unit) {
     val scope = ModuleScope().apply(block)
@@ -286,6 +303,7 @@ class ProjectContext internal constructor(
       moduleExcludes.clear()
       moduleExcludes += scope.excludes
     }
+    if (scope.filters != null) moduleFilters = scope.filters
     if (scope.includes.isNotEmpty()) {
       if (scope.moduleName != null || scope.paths.isNotEmpty() || scope.submodules.isNotEmpty()) {
         throw ProjectConfigurationException("module include and module definition cannot share one module block")
@@ -293,6 +311,7 @@ class ProjectContext internal constructor(
       moduleIncludes += scope.includes
       return
     }
+    if (scope.moduleName == null && scope.paths.isEmpty() && scope.submodules.isEmpty()) return
     val name = scope.moduleName ?: throw ProjectConfigurationException("module definition requires name(...)")
     scope.paths.forEach { path -> moduleSources += ModuleSource(name, path) }
     scope.submodules.forEach { submodule ->
@@ -308,6 +327,7 @@ class ProjectContext internal constructor(
       testExcludes.clear()
       testExcludes += scope.excludes
     }
+    if (scope.filters != null) testFilters = scope.filters
     testFramework = scope.framework
   }
 
@@ -325,11 +345,14 @@ class ProjectContext internal constructor(
       modules.toList(),
       sourceIncludes.toList(),
       sourceExcludes.toList(),
+      sourceFilters,
       moduleIncludes.toList(),
       moduleExcludes.toList(),
+      moduleFilters,
       moduleSources.toList(),
       testIncludes.toList(),
       testExcludes.toList(),
+      testFilters,
       testFramework,
       compilerSettings.copy(),
     )
@@ -347,11 +370,14 @@ class ProjectContext internal constructor(
       resolvedModules,
       effectiveSourceIncludes.distinct(),
       sourceExcludes.distinct(),
+      sourceFilters?.distinct(),
       moduleIncludes.distinct(),
       moduleExcludes.distinct(),
+      moduleFilters?.distinct(),
       moduleSources.distinct(),
       testIncludes.distinct(),
       testExcludes.distinct(),
+      testFilters?.distinct(),
       testFramework,
       compilerSettings,
     )
@@ -471,8 +497,6 @@ object ProjectRuntime {
 
   fun dependencies(block: DependenciesScope.() -> Unit) = context.dependencies(block)
 
-  fun sources(block: SourcesScope.() -> Unit) = context.sources(block)
-
   fun source(block: SourcesScope.() -> Unit) = context.source(block)
 
   fun module(block: ModuleScope.() -> Unit) = context.module(block)
@@ -526,8 +550,6 @@ fun getAll(name: String) = ProjectRuntime.getAll(name)
 fun authors(vararg entries: Array<String>) = ProjectRuntime.authors(*entries)
 
 fun dependencies(block: DependenciesScope.() -> Unit) = ProjectRuntime.dependencies(block)
-
-fun sources(block: SourcesScope.() -> Unit) = ProjectRuntime.sources(block)
 
 fun source(block: SourcesScope.() -> Unit) = ProjectRuntime.source(block)
 

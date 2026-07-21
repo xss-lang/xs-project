@@ -39,8 +39,10 @@ object PlanWriter {
       append(']')
       arrayField("sourceIncludes", plan.sourceIncludes)
       arrayField("sourceExcludes", plan.sourceExcludes)
+      arrayField("sourceFilters", plan.sourceFilters.orEmpty())
       arrayField("moduleIncludes", plan.moduleIncludes)
       arrayField("moduleExcludes", plan.moduleExcludes)
+      arrayField("moduleFilters", plan.moduleFilters.orEmpty())
       append(",\"moduleSources\":[")
       plan.moduleSources.forEachIndexed { index, source ->
         if (index > 0) append(',')
@@ -53,6 +55,7 @@ object PlanWriter {
       append(']')
       arrayField("testIncludes", plan.testIncludes)
       arrayField("testExcludes", plan.testExcludes)
+      arrayField("testFilters", plan.testFilters.orEmpty())
       append(",\"testFramework\":")
       plan.testFramework?.let { quoted(it) } ?: append("null")
       append(",\"compiler\":{\"warnings\":")

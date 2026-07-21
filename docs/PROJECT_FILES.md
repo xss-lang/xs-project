@@ -80,8 +80,7 @@ Alternatively, configuration may be split between `xs.settings.kts` and `xs.buil
 mode, and `xs.project.kts` cannot coexist with them. Each file is evaluated separately by `kotlin`, so normal Kotlin
 import and diagnostics retain their file boundary.
 
-Only `project(name, channel, version)` is required. `source` is the canonical block name;
-`sources` remains a compatibility alias. An include names a project-relative directory and recursively selects files
+Only `project(name, channel, version)` is required. `source` is the source block name. An include names a project-relative directory and recursively selects files
 with the configured source extension. Include roots do not accept globs. Omitting the block uses
 `source { include("Sources") }`. The separate editor/package exclusion metadata defaults to `*/**`; it never removes or
 changes compiler inputs selected by `include`. The default extension is `xs`. A
@@ -102,8 +101,8 @@ The DSL also provides:
 - `getAll(name)` to read every value without joining a multi-value setting;
 - `authors(...)` for project authors;
 - `dependencies { addModule(name, stability, version) }` for exact external module coordinates;
-- `module { include(...); exclude(...) }` for the pool assigned by `xs.module.kts`;
-- `test { include(...); exclude(...); framework(...) }` for recursive test discovery metadata;
+- `module { include(...); exclude(...); filter(...) }` for the pool assigned by `xs.module.kts`;
+- `test { include(...); exclude(...); filter(...); framework(...) }` for recursive test discovery metadata;
 - `compiler { warnings(...); werror(...); verbose(...) }` for diagnostic policy;
 - `cfg(...)`, `OS`, `FAMILY`, and `ARCH` for ordinary Kotlin conditional configuration;
 - `panic(...)` to reject the project configuration.
@@ -273,6 +272,16 @@ module {
 pool must be assigned exactly once. Missing/empty matches, duplicate assignments, and unassigned module files are
 configuration errors. Compiler registries are always disjoint: test selection takes precedence over module membership,
 and module membership takes precedence over the general source roots.
+
+Each registry also accepts `filter(listOf(...))`. When omitted, filters reference the other two effective include
+registries: source filters test and module roots, test filters source and module roots, and module filters source and test
+roots. Filters establish registry ownership; they are distinct from `exclude`, which is editor/package metadata.
+
+```kotlin
+source { filter(listOf("Tests", "Modules")) }
+test { filter(listOf("Sources", "Modules")) }
+module { filter(listOf("Sources", "Tests")) }
+```
 
 The project normally declares the module root with `module { include("Modules") }`. If it does not, the compiler
 invocation must provide it explicitly with `xs build --module ./Modules`. The same explicit option enables a legacy

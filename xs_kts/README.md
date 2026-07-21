@@ -41,6 +41,8 @@ not by compiler source discovery. Supplying exclusions replaces the category's d
 it. Include roots remain recursive and authoritative for compiler input.
 Resolved compiler registries cannot overlap: test roots win over module assignments, and module assignments win over
 general source roots. The same physical file is emitted in at most one registry.
+Each `source`, `test`, and `module` block accepts `filter(listOf(...))`; omitted filters are populated from the other two
+effective include registries after filesystem defaults are known.
 
 Non-canonical entry files use `set("BINARY", mapOf("name" to "tool", "path" to "Sources/tool.xs"))` or the analogous
 `LIBRARY` setting. Multiple maps define multiple named artifacts, matching repeated `[[bin]]`/`[[lib]]` records.

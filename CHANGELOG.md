@@ -21,6 +21,8 @@ source-to-native executable pipeline.
   compiler include registries; explicit lists replace the metadata default and empty `exclude()` clears it.
 - Compiler registries are disjoint by construction: test selections override module membership, and module membership
   overrides broad source roots.
+- Added source, module, and test `filter(listOf(...))` metadata with cross-registry defaults resolved after project
+  include defaults are known.
 
 ### Added
 

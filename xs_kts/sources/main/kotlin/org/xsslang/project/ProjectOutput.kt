@@ -187,8 +187,16 @@ object ProjectOutput {
     val effectiveModules =
       if (moduleIncludes.isEmpty() && moduleRootOverride() == null) defaultModuleRoots(root) else moduleIncludes
     val effectiveTests = if (testIncludes.isEmpty()) defaultTestRoots(root, sourceIncludes) else testIncludes
-    if (effectiveModules == moduleIncludes && effectiveTests == testIncludes) return this
-    return copy(moduleIncludes = effectiveModules, testIncludes = effectiveTests)
+    val effectiveSourceFilters = sourceFilters ?: (effectiveTests + effectiveModules).distinct()
+    val effectiveModuleFilters = moduleFilters ?: (sourceIncludes + effectiveTests).distinct()
+    val effectiveTestFilters = testFilters ?: (sourceIncludes + effectiveModules).distinct()
+    return copy(
+      moduleIncludes = effectiveModules,
+      testIncludes = effectiveTests,
+      sourceFilters = effectiveSourceFilters,
+      moduleFilters = effectiveModuleFilters,
+      testFilters = effectiveTestFilters,
+    )
   }
 
   private fun validateArtifactTargets(
