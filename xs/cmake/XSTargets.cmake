@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MPL-2.0
 
 find_package(LLVM REQUIRED CONFIG)
 find_library(XS_LLVM_LIBRARY NAMES LLVM-${LLVM_VERSION_MAJOR} LLVM HINTS ${LLVM_LIBRARY_DIRS} REQUIRED)

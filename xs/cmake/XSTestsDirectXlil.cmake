@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MPL-2.0
 
 set(XS_DIRECT_XLIL_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests/fixtures/intermediate")
 file(MAKE_DIRECTORY "${XS_DIRECT_XLIL_FIXTURE_DIR}")

@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MPL-2.0
 
 function(xs_add_c_test test_name source_file library_name)
   get_filename_component(target_stem "${source_file}" NAME_WE)

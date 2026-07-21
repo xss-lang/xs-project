@@ -1,13 +1,12 @@
+xs-project
 Copyright 2026 Leitwolf <xs-lang.chess031@slmails.com>
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+The original source code in this repository is licensed under the Mozilla
+Public License, version 2.0. See LICENSE.txt for the complete license text.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+Third-party notices
+-------------------
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+The Gradle wrapper launcher files `xs_kts/gradlew` and
+`xs_kts/gradlew.bat` retain their original copyright notices and remain
+licensed under the Apache License, version 2.0.

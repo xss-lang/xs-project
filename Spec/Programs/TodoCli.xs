@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MPL-2.0
 
 // Complete-language example program:
 // A small command-line todo database that persists tasks to a text file.

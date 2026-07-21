@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: MPL-2.0
 
 // X# supports only line comments.
 // `//` is an ordinary line comment.

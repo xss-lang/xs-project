@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MPL-2.0
 
 add_test(NAME kotlin_project_call_build COMMAND xs build)
 set_tests_properties(kotlin_project_call_build PROPERTIES TIMEOUT 60

@@ -1,6 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2026 Leitwolf <xs-lang.chess031@slmails.com>
-SPDX-License-Identifier: Apache-2.0
+SPDX-License-Identifier: MPL-2.0
 -->
 
 # Changelog
@@ -30,6 +30,8 @@ source-to-native executable pipeline.
 
 ### Changed
 
+- The repository's original source code is now licensed under MPL-2.0. Generated Gradle wrapper launchers retain their
+  upstream Apache-2.0 notices.
 - Rust static analysis now has a warning-free `clippy::all` baseline with explicit legacy public-module documentation
   boundaries, and the C artifact-path helper is clean under the configured Clang-Tidy correctness checks.
 - Project-file documentation now includes the concrete version-0 `xs.lock.sqlite3` schema and example query results.
