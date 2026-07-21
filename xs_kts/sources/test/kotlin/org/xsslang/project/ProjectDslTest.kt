@@ -180,6 +180,41 @@ class ProjectDslTest {
   }
 
   @Test
+  fun defaultExcludeKeepsDirectSourcesAndEmptyExcludeEnablesRecursion() {
+    val root = Files.createTempDirectory("xs-project-default-exclude-")
+    val sources = Files.createDirectories(root.resolve("Sources"))
+    val nested = Files.createDirectories(sources.resolve("Nested"))
+    val output = root.resolve("sources.bin")
+    val oldRoot = System.getProperty("xs.project.root")
+    val oldOutput = System.getProperty("xs.project.output")
+    val oldSources = System.getProperty("xs.project.sources")
+    try {
+      Files.writeString(sources.resolve("main.xs"), "fn main() -> Long { 0 }")
+      Files.writeString(nested.resolve("helper.xs"), "fn helper() -> Long { 1 }")
+      System.setProperty("xs.project.root", root.toString())
+      System.setProperty("xs.project.output", "sources0")
+      System.setProperty("xs.project.sources", output.toString())
+
+      val direct = ProjectContext().apply { project("Direct", "BETA", "0.1.0") }
+      ProjectOutput.emit(direct.build())
+      assertEquals("1", readSourceRecords(output)[5])
+
+      val recursive =
+        ProjectContext().apply {
+          project("Recursive", "BETA", "0.1.0")
+          source { exclude() }
+        }
+      ProjectOutput.emit(recursive.build())
+      assertEquals("2", readSourceRecords(output)[5])
+    } finally {
+      restoreProperty("xs.project.root", oldRoot)
+      restoreProperty("xs.project.output", oldOutput)
+      restoreProperty("xs.project.sources", oldSources)
+      root.toFile().deleteRecursively()
+    }
+  }
+
+  @Test
   fun splitFilesShareStateWithoutSectionOwnership() {
     val settings =
       ProjectContext().apply {
@@ -267,7 +302,19 @@ class ProjectDslTest {
     val context = ProjectContext()
     assertFailsWith<ProjectConfigurationException> { context.build() }
     context.project("Demo", "BETA", "0.1.0")
-    assertEquals(listOf("Sources"), context.build().sourceIncludes)
+    val defaults = context.build()
+    assertEquals(listOf("Sources"), defaults.sourceIncludes)
+    assertEquals(listOf("*/**"), defaults.sourceExcludes)
+    assertEquals(listOf("*/**"), defaults.moduleExcludes)
+
+    context.source { exclude() }
+    context.module {
+      include("Modules")
+      exclude()
+    }
+    val recursive = context.build()
+    assertEquals(emptyList(), recursive.sourceExcludes)
+    assertEquals(emptyList(), recursive.moduleExcludes)
   }
 
   @Test
@@ -444,6 +491,7 @@ class ProjectDslTest {
         source { include("Sources") }
         module { include("Modules") }
         module {
+          exclude()
           name("MyModule")
           add("Modules/Example/Utils/math*.xs")
           submodule {
@@ -491,4 +539,11 @@ class ProjectDslTest {
   ) {
     if (value == null) System.clearProperty(name) else System.setProperty(name, value)
   }
+
+  private fun readSourceRecords(path: java.nio.file.Path): List<String> =
+    Files
+      .readAllBytes(path)
+      .toString(StandardCharsets.UTF_8)
+      .split('\u0000')
+      .filter(String::isNotEmpty)
 }

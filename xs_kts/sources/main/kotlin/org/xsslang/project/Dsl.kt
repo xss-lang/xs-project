@@ -15,6 +15,7 @@ annotation class XsProjectDsl
 class SourcesScope internal constructor() {
   internal val includes = mutableListOf<String>()
   internal val excludes = mutableListOf<String>()
+  internal var excludesConfigured = false
 
   fun include(pattern: String) {
     val root = requireText(pattern, "source include")
@@ -24,8 +25,9 @@ class SourcesScope internal constructor() {
     includes += root
   }
 
-  fun exclude(pattern: String) {
-    excludes += requireText(pattern, "source exclude")
+  fun exclude(vararg patterns: String) {
+    excludesConfigured = true
+    patterns.forEach { pattern -> excludes += requireText(pattern, "source exclude") }
   }
 }
 
@@ -56,6 +58,8 @@ class SubmoduleScope internal constructor() {
 @XsProjectDsl
 class ModuleScope internal constructor() {
   internal val includes = mutableListOf<String>()
+  internal val excludes = mutableListOf<String>()
+  internal var excludesConfigured = false
   internal var moduleName: String? = null
   internal val paths = mutableListOf<String>()
   internal val submodules = mutableListOf<SubmoduleScope>()
@@ -66,6 +70,11 @@ class ModuleScope internal constructor() {
       throw ProjectConfigurationException("module include must name a directory, not a glob: $root")
     }
     includes += root
+  }
+
+  fun exclude(vararg patterns: String) {
+    excludesConfigured = true
+    patterns.forEach { pattern -> excludes += requireText(pattern, "module exclude") }
   }
 
   fun name(value: String) {
@@ -170,8 +179,9 @@ class ProjectContext internal constructor(
   private val libraries = state?.libraries?.toMutableList() ?: mutableListOf()
   private val modules = state?.modules?.toMutableList() ?: mutableListOf()
   private val sourceIncludes = state?.sourceIncludes?.toMutableList() ?: mutableListOf()
-  private val sourceExcludes = state?.sourceExcludes?.toMutableList() ?: mutableListOf()
+  private val sourceExcludes = state?.sourceExcludes?.toMutableList() ?: mutableListOf("*/**")
   private val moduleIncludes = state?.moduleIncludes?.toMutableList() ?: mutableListOf()
+  private val moduleExcludes = state?.moduleExcludes?.toMutableList() ?: mutableListOf("*/**")
   private val moduleSources = state?.moduleSources?.toMutableList() ?: mutableListOf()
   private val testIncludes = state?.testIncludes?.toMutableList() ?: mutableListOf()
   private val testExcludes = state?.testExcludes?.toMutableList() ?: mutableListOf()
@@ -260,13 +270,20 @@ class ProjectContext internal constructor(
   fun sources(block: SourcesScope.() -> Unit) {
     val scope = SourcesScope().apply(block)
     sourceIncludes += scope.includes
-    sourceExcludes += scope.excludes
+    if (scope.excludesConfigured) {
+      sourceExcludes.clear()
+      sourceExcludes += scope.excludes
+    }
   }
 
   fun source(block: SourcesScope.() -> Unit) = sources(block)
 
   fun module(block: ModuleScope.() -> Unit) {
     val scope = ModuleScope().apply(block)
+    if (scope.excludesConfigured) {
+      moduleExcludes.clear()
+      moduleExcludes += scope.excludes
+    }
     if (scope.includes.isNotEmpty()) {
       if (scope.moduleName != null || scope.paths.isNotEmpty() || scope.submodules.isNotEmpty()) {
         throw ProjectConfigurationException("module include and module definition cannot share one module block")
@@ -304,6 +321,7 @@ class ProjectContext internal constructor(
       sourceIncludes.toList(),
       sourceExcludes.toList(),
       moduleIncludes.toList(),
+      moduleExcludes.toList(),
       moduleSources.toList(),
       testIncludes.toList(),
       testExcludes.toList(),
@@ -325,6 +343,7 @@ class ProjectContext internal constructor(
       effectiveSourceIncludes.distinct(),
       sourceExcludes.distinct(),
       moduleIncludes.distinct(),
+      moduleExcludes.distinct(),
       moduleSources.distinct(),
       testIncludes.distinct(),
       testExcludes.distinct(),

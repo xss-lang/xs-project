@@ -17,6 +17,8 @@ source-to-native executable pipeline.
   `BINARY` and `LIBRARY` records support named artifacts whose entry files use non-canonical names. Projects that omit
   `source.include` now use the recursive `Sources` root by default, while an existing `Modules` directory supplies the
   optional default module root. Existing `<source-root>/Test` directories supply default test roots.
+- Source and module registries now default to the include-root-relative `*/**` exclusion. Explicit exclusion lists
+  replace it, and an empty `exclude()` enables unrestricted recursive discovery.
 
 ### Added
 

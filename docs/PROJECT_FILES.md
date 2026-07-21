@@ -83,7 +83,9 @@ import and diagnostics retain their file boundary.
 Only `project(name, channel, version)` is required. `source` is the canonical block name;
 `sources` remains a compatibility alias. An include names a project-relative directory and recursively selects files
 with the configured source extension. Include roots do not accept globs. Excludes may use `*`, `**`, and `?`; they are
-applied after discovery. Omitting the block uses `source { include("Sources") }`. The default extension is `xs`. A
+applied after discovery. Omitting the block uses `source { include("Sources"); exclude("*/**") }`. The default exclusion
+is evaluated relative to each include root and keeps discovery at that root's direct files. Call `exclude()` explicitly
+to select recursively without exclusions. The default extension is `xs`. A
 case-sensitive `main.xs`, when present, is placed first, but
 library-only projects do not need one. `set("XS_EXTENSION", "xsharp")` selects `.xsharp` files and changes the recognized
 entry/library names to `main.xsharp` and `lib.xsharp`.
@@ -101,7 +103,7 @@ The DSL also provides:
 - `getAll(name)` to read every value without joining a multi-value setting;
 - `authors(...)` for project authors;
 - `dependencies { addModule(name, stability, version) }` for exact external module coordinates;
-- `module { include(...) }` for the pool assigned by `xs.module.kts`;
+- `module { include(...); exclude(...) }` for the pool assigned by `xs.module.kts`;
 - `test { include(...); exclude(...); framework(...) }` for recursive test discovery metadata;
 - `compiler { warnings(...); werror(...); verbose(...) }` for diagnostic policy;
 - `cfg(...)`, `OS`, `FAMILY`, and `ARCH` for ordinary Kotlin conditional configuration;
@@ -219,7 +221,9 @@ The supported pattern operators are:
 | `**` | zero or more complete path segments |
 
 Include roots are evaluated relative to the project directory, must exist as directories, and must not escape the
-project. They are searched recursively. Excludes are evaluated after includes, duplicate paths are removed, and the
+project. They are searched recursively before exclusions. The default `*/**` exclusion removes descendants below each
+source root while retaining its direct files; an explicit exclusion list replaces that default, and `exclude()` selects
+the complete recursive tree. Other exclusion patterns are project-relative. Duplicate paths are removed, and the
 resulting registry is sorted deterministically. At most one case-sensitive `main.<XS_EXTENSION>` may be selected; when
 present it is ordered first. A registry without that file remains valid for non-`bin` package targets.
 
@@ -230,7 +234,8 @@ in `xs.project.kts` and assign every selected file in a sibling `xs.module.kts` 
 
 When `module.include` is omitted, an existing project-root `Modules` directory is selected automatically. If that
 directory does not exist, the default module root is empty. An explicit include or the CLI `--module` override replaces
-the filesystem default.
+the filesystem default. Module discovery has the same default `*/**` exclusion and `exclude()` override as source
+discovery.
 
 ```kotlin
 // xs.project.kts

@@ -40,6 +40,7 @@ object PlanWriter {
       arrayField("sourceIncludes", plan.sourceIncludes)
       arrayField("sourceExcludes", plan.sourceExcludes)
       arrayField("moduleIncludes", plan.moduleIncludes)
+      arrayField("moduleExcludes", plan.moduleExcludes)
       append(",\"moduleSources\":[")
       plan.moduleSources.forEachIndexed { index, source ->
         if (index > 0) append(',')

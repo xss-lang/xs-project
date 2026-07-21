@@ -35,7 +35,7 @@ object ProjectOutput {
       } else {
         state.moduleIncludes
       }
-    val modules = resolveModules(root, moduleIncludes, state.moduleSources, extension)
+    val modules = resolveModules(root, moduleIncludes, state.moduleExcludes, state.moduleSources, extension)
     if (state.identity != null) ModuleLockFile.write(root, state.modules)
     writeSources(ResolvedProject(emptyList(), modules, emptyList()), state.compiler, state.variables)
   }
@@ -53,11 +53,10 @@ object ProjectOutput {
   private fun resolveSources(plan: ProjectPlan): ResolvedProject {
     val root = projectRoot()
     val extension = sourceExtension(plan.variables)
-    val excludes = plan.sourceExcludes.map(::globRegex)
     val sources =
       plan.sourceIncludes
         .flatMap { include -> expandSourceDirectory(root, include, extension) }
-        .filter { path -> excludes.none { matcher -> matcher.matches(relative(root, path)) } }
+        .filterNot { path -> isExcluded(root, path, plan.sourceIncludes, plan.sourceExcludes) }
         .distinct()
         .sortedWith(compareBy<Path> { path -> path.fileName.toString() != "main.$extension" }.thenBy(Path::toString))
     val mainCount = sources.count { path -> path.fileName.toString() == "main.$extension" }
@@ -67,7 +66,7 @@ object ProjectOutput {
       )
     }
     validateArtifactTargets(plan, root, sources, extension)
-    val modules = resolveModules(root, plan.moduleIncludes, plan.moduleSources, extension)
+    val modules = resolveModules(root, plan.moduleIncludes, plan.moduleExcludes, plan.moduleSources, extension)
     val testExcludes = plan.testExcludes.map(::globRegex)
     val tests =
       plan.testIncludes
@@ -86,6 +85,7 @@ object ProjectOutput {
   private fun resolveModules(
     root: Path,
     configuredRoots: List<String>,
+    excludes: List<String>,
     moduleSources: List<ModuleSource>,
     extension: String,
   ): List<Pair<String, Path>> {
@@ -94,7 +94,11 @@ object ProjectOutput {
     if (moduleSources.isNotEmpty() && roots.isEmpty()) {
       throw ProjectConfigurationException("module sources require module.include(...) or the --module option")
     }
-    val modulePool = roots.flatMap { include -> expandSourceDirectory(root, include, extension) }.distinct()
+    val modulePool =
+      roots
+        .flatMap { include -> expandSourceDirectory(root, include, extension) }
+        .filterNot { path -> isExcluded(root, path, roots, excludes) }
+        .distinct()
     val assigned = mutableSetOf<Path>()
     val modules =
       moduleSources.flatMap { source ->
@@ -164,6 +168,25 @@ object ProjectOutput {
         .filter(Path::isRegularFile)
         .filter { path -> path.fileName.toString().endsWith(".$extension") }
         .toList()
+    }
+  }
+
+  private fun isExcluded(
+    root: Path,
+    path: Path,
+    includeRoots: List<String>,
+    patterns: List<String>,
+  ): Boolean {
+    val projectRelative = relative(root, path)
+    return patterns.any { pattern ->
+      if (pattern == "*/**") {
+        includeRoots.any { include ->
+          val includeRoot = root.resolve(include).normalize()
+          path.startsWith(includeRoot) && includeRoot.relativize(path).nameCount > 1
+        }
+      } else {
+        globRegex(pattern).matches(projectRelative)
+      }
     }
   }
 

@@ -30,11 +30,15 @@ performing a registry upload.
 `xlib`, `main.xs` infers `bin`, and both files infer both artifacts. These filenames are inference inputs, not mandatory
 project files.
 
-When no source block is present, the resolver behaves as if `source { include("Sources") }` were written.
+When no source block is present, the resolver behaves as if `source { include("Sources"); exclude("*/**") }` were written.
 An existing project-root `Modules` directory is likewise the default module include; without that directory the module
 registry defaults to empty.
 Without an explicit test include, each effective source root contributes its existing `Test` child directory. Missing
 default test directories are ignored and leave an empty test registry.
+
+Source and module discovery default to `exclude("*/**")`, interpreted relative to each include root so only direct files
+remain selected. Supplying exclusions replaces the default. Calling `exclude()` with no patterns opts into the complete
+recursive tree.
 
 Non-canonical entry files use `set("BINARY", mapOf("name" to "tool", "path" to "Sources/tool.xs"))` or the analogous
 `LIBRARY` setting. Multiple maps define multiple named artifacts, matching repeated `[[bin]]`/`[[lib]]` records.
