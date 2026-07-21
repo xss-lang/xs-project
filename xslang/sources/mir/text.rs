@@ -19,7 +19,6 @@ mod writer;
 pub use parser::{XmirParseDiagnostic, parse_xmir_function};
 pub use program::{XmirProgram, parse_xmir_program, program_to_xmir, program_to_xmir_with_types};
 pub use writer::function_to_xmir;
-
 pub const SUPPORTED_XMIR_VERSION: u32 = 0;
 
 #[must_use]
@@ -187,6 +186,7 @@ const fn optimization_pass_name(pass: OptimizationPass) -> &'static str
     OptimizationPass::FoldConstIntegerBinary => "fold_const_integer_binary",
     OptimizationPass::FoldConstBoolNot => "fold_const_bool_not",
     OptimizationPass::FoldConstBoolBranch => "fold_const_bool_branch",
+    OptimizationPass::SimplifyBoolBranch => "simplify_bool_branch",
     OptimizationPass::CollapseSinglePredecessorGoto => "collapse_single_predecessor_goto",
   }
 }
@@ -319,6 +319,7 @@ fn parse_optimization_pass(name: &str,
     "fold_const_integer_binary" => Some(OptimizationPass::FoldConstIntegerBinary),
     "fold_const_bool_not" => Some(OptimizationPass::FoldConstBoolNot),
     "fold_const_bool_branch" => Some(OptimizationPass::FoldConstBoolBranch),
+    "simplify_bool_branch" => Some(OptimizationPass::SimplifyBoolBranch),
     "collapse_single_predecessor_goto" => Some(OptimizationPass::CollapseSinglePredecessorGoto),
     _ =>
     {

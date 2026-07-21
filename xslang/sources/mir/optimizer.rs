@@ -13,7 +13,7 @@ mod i32_operations;
 mod i64_operations;
 mod integer_operations;
 
-use control_flow::collapse_single_predecessor_gotos;
+use control_flow::{collapse_single_predecessor_gotos, simplify_bool_branches};
 use i32_operations::fold_const_i32_binary;
 use i64_operations::fold_const_i64_operations;
 use integer_operations::fold_const_integer_operations;
@@ -33,6 +33,7 @@ pub enum OptimizationPass
   FoldConstIntegerBinary,
   FoldConstBoolNot,
   FoldConstBoolBranch,
+  SimplifyBoolBranch,
   CollapseSinglePredecessorGoto,
 }
 
@@ -131,6 +132,12 @@ pub fn optimize_function(mut function: Function) -> OptimizedFunction
   {
     reports.push(OptimizationReport { pass: OptimizationPass::FoldConstBoolBranch,
                                       removed_items: folded_branches });
+  }
+  let simplified_branches = simplify_bool_branches(&mut function);
+  if simplified_branches != 0
+  {
+    reports.push(OptimizationReport { pass: OptimizationPass::SimplifyBoolBranch,
+                                      removed_items: simplified_branches });
   }
   let collapsed_gotos = collapse_single_predecessor_gotos(&mut function);
   if collapsed_gotos != 0

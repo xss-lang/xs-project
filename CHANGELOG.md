@@ -15,6 +15,8 @@ source-to-native executable pipeline.
 - Added the first bounded `xsfmt` pass for newline and trailing-whitespace normalization, plus `--check` mode.
 - Added the first `xstidy` diagnostic rule for legacy constructor syntax with human and JSON output.
 - Added the initial `xs-analyzer` LSP lifecycle and full-document UTF-16 synchronization capability.
+- MIR optimization now removes terminal boolean negations by reversing branch targets and collapses branches whose
+  successors are identical.
 
 - Added KTS build mode, output-directory, and package-artifact settings. `BUILD_MODE` defaults to `Release`, while
   omitted `XSPKG_TYPE` is inferred from optional `lib.<extension>` and `main.<extension>` source files. Structured
