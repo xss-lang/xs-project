@@ -228,10 +228,54 @@ static void test_nominal_data_packet(void)
   xs_diagnostics_free(&diagnostics);
 }
 
+static void test_native_test_harness_packet(void)
+{
+  const char *text = "#[Test] #[ShouldPanic] fn expected_failure() { panic!(\"expected\"); }\n";
+  XsSource source = {.path = "Harness.xs", .text = text, .length = strlen(text)};
+  XsDiagnostics diagnostics;
+  XsSyntaxTree tree;
+  XsSyntaxTree expanded;
+  XsMacroDeclarationExpansionSet declarations;
+  XsMacroStatementExpansionSet statements;
+  XsCompilerCoreSyntaxStorage *storage = nullptr;
+  xs_diagnostics_init(&diagnostics);
+  CHECK(xs_syntax_parse(&source, 92, &diagnostics, &tree));
+  CHECK(xs_macro_validate(&tree, &diagnostics));
+  CHECK(xs_macro_expand_declarations(&tree, &diagnostics, &declarations));
+  CHECK(xs_macro_expand_statements(&tree, &diagnostics, &statements));
+  CHECK(xs_macro_materialize_expanded_tree(&tree, &declarations, &statements, &diagnostics, &expanded));
+  CHECK(xs_syntax_find_first(expanded.root, XS_SYNTAX_STMT_MACRO_CALL) != nullptr);
+  CHECK(xs_compiler_core_syntax_packet_create(&expanded, &storage) == XS_COMPILER_CORE_OK);
+  XsCompilerCoreSession *session = nullptr;
+  CHECK(xslang_compiler_core_session_create(xs_compiler_core_syntax_packet(storage), &session) ==
+        XS_COMPILER_CORE_FFI_OK);
+  CHECK(xslang_compiler_core_session_test_count(session) == 1);
+  uint64_t name_length = 0;
+  const uint8_t *name = xslang_compiler_core_session_test_name(session, 0, &name_length);
+  CHECK(name != nullptr && name_length == strlen("expected_failure"));
+  CHECK(name == nullptr || memcmp(name, "expected_failure", (size_t)name_length) == 0);
+  CHECK(xslang_compiler_core_session_test_flags(session, 0) == XS_COMPILER_CORE_TEST_SHOULD_PANIC);
+  XsCompilerCoreSession *harness = nullptr;
+  CHECK(xslang_compiler_core_test_harness_create(session, 0, &harness) == XS_COMPILER_CORE_FFI_OK);
+  uint64_t xlil_length = 0;
+  const uint8_t *xlil = xslang_compiler_core_session_xlil_text(harness, &xlil_length);
+  CHECK(xlil != nullptr && text_contains(xlil, xlil_length, ".func main"));
+  CHECK(xlil != nullptr && text_contains(xlil, xlil_length, "panic"));
+  xslang_compiler_core_session_free(harness);
+  xslang_compiler_core_session_free(session);
+  xs_compiler_core_syntax_packet_free(storage);
+  xs_syntax_tree_free(&expanded);
+  xs_macro_statement_expansion_set_free(&statements);
+  xs_macro_declaration_expansion_set_free(&declarations);
+  xs_syntax_tree_free(&tree);
+  xs_diagnostics_free(&diagnostics);
+}
+
 int main(void)
 {
   test_materialized_syntax_packet();
   test_nominal_data_packet();
+  test_native_test_harness_packet();
   test_invalid_packet_inputs();
   return failures == 0 ? 0 : 1;
 }

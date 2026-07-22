@@ -49,6 +49,21 @@ fn fast_add(left: Long, right: Long) -> Long {
 fn skipped_test() {
 }
 
+// `xs test` discovers top-level test functions after macro expansion. A test
+// has a body, takes no parameters, and returns unit (the default return type).
+// Each non-ignored test receives an isolated native harness. `ShouldPanic`
+// passes only when that harness terminates unsuccessfully.
+
+#[Test]
+fn native_test() {
+}
+
+#[Test]
+#[ShouldPanic]
+fn expected_panic() {
+    panic!("expected test panic");
+}
+
 #[ThreadSafe]
 #[Send]
 #[Sync]

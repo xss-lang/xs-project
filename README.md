@@ -53,8 +53,8 @@ Validate the test registry of a modern Kotlin project from its project directory
 xs test
 ```
 
-The current test-command slice performs frontend and semantic validation; executable `#[Test]` harness generation is
-still in progress.
+Supported top-level `#[Test] fn name()` cases are compiled through the normal native pipeline and executed in isolated
+temporary `.xse` harnesses. `#[Ignore]` and `#[ShouldPanic]` are honored.
 
 ## Monorepo directories
 

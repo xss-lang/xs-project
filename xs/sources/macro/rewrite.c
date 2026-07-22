@@ -44,14 +44,16 @@ static bool add_declaration_replacements(XsSyntaxTree *target, XsSyntaxNode *par
 }
 
 static bool add_statement_replacements(XsSyntaxTree *target, XsSyntaxNode *parent, const XsSyntaxNode *macro_call,
-                                       const XsMacroStatementExpansionSet *statements)
+                                       const XsMacroStatementExpansionSet *statements, bool *replaced)
 {
+  *replaced = false;
   const XsSyntaxNode *call = macro_call_expr(macro_call);
   for(size_t i = 0; statements != nullptr && i < statements->count; ++i)
   {
     const XsMacroStatementExpansion *expansion = &statements->items[i];
     if(!spans_equal(expansion->call_span, call) || expansion->statement == nullptr)
       continue;
+    *replaced = true;
     if(!add_cloned_subtree(target, parent, expansion->statement))
       return false;
   }
@@ -73,7 +75,9 @@ static bool clone_expanded_children(XsSyntaxTree *target, XsSyntaxNode *parent, 
     }
     if(child->kind == XS_SYNTAX_STMT_MACRO_CALL)
     {
-      if(!add_statement_replacements(target, parent, child, statements))
+      bool replaced = false;
+      if(!add_statement_replacements(target, parent, child, statements, &replaced) ||
+         (!replaced && !add_cloned_subtree(target, parent, child)))
         return false;
       continue;
     }

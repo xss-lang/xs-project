@@ -49,7 +49,7 @@ set_tests_properties(compiler_check_file PROPERTIES TIMEOUT 5)
 add_test(NAME compiler_test_file COMMAND xs test -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/projects/test_command/Sources/Test/arithmetic.xs)
 set_tests_properties(compiler_test_file PROPERTIES TIMEOUT 5
-  PASS_REGULAR_EXPRESSION "test: validated 1 test source")
+  PASS_REGULAR_EXPRESSION "test result: ok. 1 passed; 0 failed; 1 ignored")
 add_test(NAME compiler_check_file_verbose COMMAND xs check -file
   ${XS_SOURCE_FROM_BINARY}/tests/fixtures/example_project/source/Main.xs
   --warning all --werror true --verbose true --xgc-enabled true)

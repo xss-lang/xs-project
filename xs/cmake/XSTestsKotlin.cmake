@@ -126,7 +126,7 @@ set_tests_properties(kotlin_project_test_validate PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/test_command"
   ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
   FIXTURES_REQUIRED kotlin_project_resolver
-  PASS_REGULAR_EXPRESSION "test: validated 1 test source")
+  PASS_REGULAR_EXPRESSION "test result: ok. 1 passed; 0 failed; 1 ignored")
 add_test(NAME kotlin_project_check_excludes_test_registry COMMAND xs check)
 set_tests_properties(kotlin_project_check_excludes_test_registry PROPERTIES TIMEOUT 60
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/test_command_invalid"
@@ -135,6 +135,17 @@ set_tests_properties(kotlin_project_check_excludes_test_registry PROPERTIES TIME
 add_test(NAME kotlin_project_test_rejects_invalid_source COMMAND xs test)
 set_tests_properties(kotlin_project_test_rejects_invalid_source PROPERTIES TIMEOUT 60 WILL_FAIL TRUE
   WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/test_command_invalid"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver)
+add_test(NAME kotlin_project_test_honors_should_panic COMMAND xs test)
+set_tests_properties(kotlin_project_test_honors_should_panic PROPERTIES TIMEOUT 60
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/test_command_should_panic"
+  ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
+  FIXTURES_REQUIRED kotlin_project_resolver
+  PASS_REGULAR_EXPRESSION "test result: ok. 1 passed; 0 failed; 0 ignored")
+add_test(NAME kotlin_project_test_reports_runtime_failure COMMAND xs test)
+set_tests_properties(kotlin_project_test_reports_runtime_failure PROPERTIES TIMEOUT 60 WILL_FAIL TRUE
+  WORKING_DIRECTORY "${XS_PROJECT_NATIVE_FIXTURE_DIR}/test_command_fail"
   ENVIRONMENT "XS_PROJECT_DRIVER=${XS_PROJECT_TEST_DRIVER}"
   FIXTURES_REQUIRED kotlin_project_resolver)
 set_tests_properties(
@@ -154,4 +165,6 @@ set_tests_properties(
   kotlin_project_test_validate
   kotlin_project_check_excludes_test_registry
   kotlin_project_test_rejects_invalid_source
+  kotlin_project_test_honors_should_panic
+  kotlin_project_test_reports_runtime_failure
   PROPERTIES LABELS jvm)

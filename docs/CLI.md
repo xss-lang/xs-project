@@ -151,12 +151,15 @@ spelling and the short `--hir`, `--mir`, and
 ## `xs test`
 
 `xs test` evaluates the modern Kotlin project, selects its disjoint test registry, and parses and semantically validates
-the production, module, and test sources as one program. A syntax or semantic error in any selected test source fails the
-command. `xs test -file <Test.xs>` performs the same validation for one source file.
+the production, module, and test sources as one program. Each top-level `#[Test] fn name()` is then compiled through the
+normal HIR → MIR → XLIL → LLVM → object → link path into an isolated temporary `.xse` harness and executed. A test passes
+when it exits successfully; `#[ShouldPanic]` reverses that expectation, and `#[Ignore]` skips execution. Temporary test
+artifacts are removed after each case. A syntax, semantic, harness-compilation, or unexpected runtime failure makes the
+command fail. `xs test -file <Test.xs>` uses the same path for one source file.
 
-This is the first test-command slice: it reports the number of validated test source files, but does not yet synthesize or
-execute a `#[Test]` harness. Legacy `.xsproj` files have no test registry and are rejected by `xs test`; they remain
-available through their feature-frozen check/build/run paths.
+Test functions currently must be top-level, have a body, take no parameters, and use the default unit return type. Legacy
+`.xsproj` files have no test registry and are rejected by `xs test`; they remain available through their feature-frozen
+check/build/run paths.
 
 ## `xs run`
 

@@ -65,13 +65,19 @@ typedef struct XsCompilerCoreSyntaxStorage XsCompilerCoreSyntaxStorage;
 typedef struct XsCompilerCoreSession XsCompilerCoreSession;
 typedef struct XsCompilerCoreDirectIrSession XsCompilerCoreDirectIrSession;
 
+typedef enum
+{
+  XS_COMPILER_CORE_TEST_IGNORED = 1U << 0,
+  XS_COMPILER_CORE_TEST_SHOULD_PANIC = 1U << 1,
+} XsCompilerCoreTestFlags;
+
 XsCompilerCoreStatus xs_compiler_core_syntax_packet_create(const XsSyntaxTree *tree,
                                                            XsCompilerCoreSyntaxStorage **storage);
 const XsCompilerCoreSyntaxPacket *xs_compiler_core_syntax_packet(const XsCompilerCoreSyntaxStorage *storage);
 void xs_compiler_core_syntax_packet_free(XsCompilerCoreSyntaxStorage *storage);
 
 XsCompilerCoreFfiStatus xslang_compiler_core_session_create(const XsCompilerCoreSyntaxPacket *packet,
-                                                             XsCompilerCoreSession **session);
+                                                            XsCompilerCoreSession **session);
 XsCompilerCoreFfiStatus xslang_compiler_core_session_create_in_module(const XsCompilerCoreSyntaxPacket *packet,
                                                                       const uint8_t *module_name,
                                                                       uint64_t module_name_length,
@@ -81,6 +87,12 @@ XsCompilerCoreFfiStatus xslang_compiler_core_session_merge(const XsCompilerCoreS
 uint64_t xslang_compiler_core_session_syntax_node_count(const XsCompilerCoreSession *session);
 uint64_t xslang_compiler_core_session_function_count(const XsCompilerCoreSession *session);
 uint64_t xslang_compiler_core_session_mir_function_count(const XsCompilerCoreSession *session);
+uint64_t xslang_compiler_core_session_test_count(const XsCompilerCoreSession *session);
+const uint8_t *xslang_compiler_core_session_test_name(const XsCompilerCoreSession *session, uint64_t index,
+                                                      uint64_t *length);
+uint32_t xslang_compiler_core_session_test_flags(const XsCompilerCoreSession *session, uint64_t index);
+XsCompilerCoreFfiStatus xslang_compiler_core_test_harness_create(const XsCompilerCoreSession *session, uint64_t index,
+                                                                 XsCompilerCoreSession **harness);
 uint64_t xslang_compiler_core_session_diagnostic_count(const XsCompilerCoreSession *session);
 const uint8_t *xslang_compiler_core_session_diagnostic_text(const XsCompilerCoreSession *session, uint64_t index,
                                                             uint64_t *length);

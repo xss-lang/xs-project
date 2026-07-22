@@ -98,8 +98,12 @@ The documented compilation order is preserved:
 - Kotlin source, test, and module includes name directory roots; the resolver recursively selects the configured source
   extension while excludes retain glob support. `XS_EXTENSION` defaults to `xs` and may select another extension.
 - The version-4 Kotlin resolver protocol transfers source, module, and test registries separately. `xs test` combines
-  those registries for frontend and semantic validation without emitting native artifacts. Test harness generation and
-  execution are not implemented yet.
+  those registries for frontend and semantic validation, discovers top-level unit-returning `#[Test]` functions from the
+  expanded structural AST, and creates one synthetic `main` per test in the Rust compiler core. Every non-ignored harness
+  follows MIR/XLIL/LLVM/object/link and isolated native `.xse` execution; `ShouldPanic` reverses the exit expectation.
+- Standard `panic!` statement calls remain compiler-recognized nodes when no user `macro_rules!` replacement exists.
+  They lower to HIR panic, the MIR/XLIL panic terminator, and the LLVM trap path. Formatted panic payload transport is not
+  implemented yet.
 - `include!` is the built-in source-inclusion macro. It runs after the enclosing source first has a structural AST, then
   reparses the included local source at the call site; it is not a lexer/preprocessor step or a `macro_rules!` declaration.
 - `xs build --output hir|mir|xlil -file <source.xs>` and `--hir`/`--mir`/`--xlil` write real compiler-core program output

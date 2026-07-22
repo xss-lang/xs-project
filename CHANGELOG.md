@@ -17,9 +17,12 @@ source-to-native executable pipeline.
 - Added the initial `xs-analyzer` LSP lifecycle and full-document UTF-16 synchronization capability.
 - MIR optimization now removes terminal boolean negations by reversing branch targets and collapses branches whose
   successors are identical.
-- Added `xs test` for modern Kotlin projects. The resolver now transfers the disjoint test registry to the JVM-free
-  compiler, which parses and semantically validates production, module, and test sources together. Executable test
-  harness generation remains a later compiler step.
+- Added `xs test` for modern Kotlin projects and `xs test -file` for one source. The resolver transfers its disjoint test
+  registry to the JVM-free compiler; each valid top-level `#[Test] fn name()` receives an isolated native harness and is
+  compiled through HIR, MIR, XLIL, LLVM, object emission, linking, and `.xse` execution. `Ignore` and `ShouldPanic` are
+  honored, and unexpected native failure makes the command fail.
+- `panic!` statement calls now survive expanded-AST materialization and lower to the existing MIR/XLIL panic terminator
+  and LLVM trap path.
 
 - Added KTS build mode, output-directory, and package-artifact settings. `BUILD_MODE` defaults to `Release`, while
   omitted `XSPKG_TYPE` is inferred from optional `lib.<extension>` and `main.<extension>` source files. Structured

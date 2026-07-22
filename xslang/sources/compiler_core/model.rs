@@ -116,8 +116,9 @@ pub struct SyntaxTree
 
 pub struct CompilerCoreSession
 {
-  syntax: Vec<SyntaxTree>,
-  declarations: crate::hir::declarations::Module,
+  pub(super) syntax: Vec<SyntaxTree>,
+  pub(super) declarations: crate::hir::declarations::Module,
+  pub(super) tests: Vec<super::test_harness::TestCase>,
   xhir_text: Option<Vec<u8>>,
   mir_functions: Vec<crate::mir::Function>,
   xmir_text: Option<Vec<u8>>,
@@ -131,6 +132,7 @@ fn failed_lowering_session(syntax: Vec<SyntaxTree>, error: hir_lowering::Lowerin
                         declarations: crate::hir::declarations::Module { name: None,
                                                                          nominal_types: Vec::new(),
                                                                          functions: Vec::new() },
+                        tests: Vec::new(),
                         xhir_text: None,
                         mir_functions: Vec::new(),
                         xmir_text: None,
@@ -145,6 +147,16 @@ fn build_session(syntax: Vec<SyntaxTree>) -> CompilerCoreSession
     Ok(declarations) => declarations,
     Err(error) => return failed_lowering_session(syntax, error),
   };
+  let (tests, test_diagnostics) = super::test_harness::discover(&syntax, &declarations);
+  build_session_from_declarations(syntax, declarations, tests, test_diagnostics)
+}
+
+pub(super) fn build_session_from_declarations(syntax: Vec<SyntaxTree>,
+                                              declarations: crate::hir::declarations::Module,
+                                              tests: Vec<super::test_harness::TestCase>,
+                                              mut diagnostics: Vec<String>)
+                                              -> CompilerCoreSession
+{
   let layout_diagnostics = crate::hir::declarations::validate_layouts(&declarations.nominal_types);
   let aggregate_registry = crate::hir::aggregate_registry::build_module(&declarations).unwrap_or_default();
   let collection_registry = crate::hir::collection_registry::build(&declarations, &aggregate_registry);
@@ -155,9 +167,8 @@ fn build_session(syntax: Vec<SyntaxTree>) -> CompilerCoreSession
   let mut hir_functions = Vec::new();
   let mut hir_parameter_counts = Vec::new();
   let mut mir_functions = Vec::new();
-  let mut diagnostics = layout_diagnostics.into_iter()
-                                          .map(|(name, error)| format!("nominal type '{name}' {error}"))
-                                          .collect::<Vec<_>>();
+  diagnostics.extend(layout_diagnostics.into_iter()
+                                       .map(|(name, error)| format!("nominal type '{name}' {error}")));
   for declaration in declarations.functions.iter().filter(|function| function.body_present)
   {
     let Some(function) = declaration.as_type_checked_input()
@@ -259,6 +270,7 @@ fn build_session(syntax: Vec<SyntaxTree>) -> CompilerCoreSession
   };
   CompilerCoreSession { syntax,
                         declarations,
+                        tests,
                         xhir_text,
                         mir_functions,
                         xmir_text,

@@ -37,6 +37,7 @@ add_library(xs_compiler
   sources/driver/native_artifact.c
   sources/driver/options.c
   sources/driver/project_driver.c
+  sources/driver/test_runner.c
   sources/lexer.c
   sources/macro/expanded_view.c
   sources/macro/expansion.c

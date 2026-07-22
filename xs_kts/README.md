@@ -78,4 +78,5 @@ then keeps all X# frontend/backend work inside `xs`. The `xs-project sources0` f
 protocol, not an alternative X# build command.
 
 `xs test` requests the separately resolved test registry and validates it together with project and module sources. The
-current compiler command validates test sources but does not yet generate an executable `#[Test]` harness.
+compiler generates an isolated native `.xse` harness for each supported top-level `#[Test]` function; `Ignore` and
+`ShouldPanic` control execution expectations.

@@ -47,13 +47,16 @@ char *xs_driver_native_artifact_path(const char *input_path, const char *extensi
   return path;
 }
 
-int xs_driver_run_native_artifact(const char *input_path)
+bool xs_driver_execute_native_artifact(const char *input_path, int *exit_code)
 {
+  if(exit_code == nullptr)
+    return false;
+  *exit_code = 1;
   char *path = xs_driver_native_artifact_path(input_path, ".xse");
   if(path == nullptr)
   {
     fprintf(stderr, "xs: out of memory while preparing the native executable path\n");
-    return 1;
+    return false;
   }
   char *const arguments[] = {path, nullptr};
   pid_t process = 0;
@@ -62,24 +65,34 @@ int xs_driver_run_native_artifact(const char *input_path)
   {
     fprintf(stderr, "xs: could not execute '%s': %s\n", path, strerror(spawn_status));
     free(path);
-    return 1;
+    return false;
   }
   int status = 0;
   if(waitpid(process, &status, 0) < 0)
   {
     fprintf(stderr, "xs: could not wait for '%s': %s\n", path, strerror(errno));
     free(path);
-    return 1;
+    return false;
   }
   free(path);
   if(WIFEXITED(status))
-    return WEXITSTATUS(status);
+  {
+    *exit_code = WEXITSTATUS(status);
+    return true;
+  }
   if(WIFSIGNALED(status))
   {
     int signal_number = WTERMSIG(status);
     fprintf(stderr, "xs: native executable terminated by signal %d\n", signal_number);
-    return 128 + signal_number;
+    *exit_code = 128 + signal_number;
+    return true;
   }
   fprintf(stderr, "xs: native executable ended without an exit status\n");
-  return 1;
+  return false;
+}
+
+int xs_driver_run_native_artifact(const char *input_path)
+{
+  int exit_code = 1;
+  return xs_driver_execute_native_artifact(input_path, &exit_code) ? exit_code : 1;
 }

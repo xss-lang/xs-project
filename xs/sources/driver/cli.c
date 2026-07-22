@@ -12,6 +12,7 @@
 #include "native_artifact.h"
 #include "options.h"
 #include "project_driver.h"
+#include "test_runner.h"
 
 #include "xs/compiler_core.h"
 #include "xs/diagnostic.h"
@@ -450,7 +451,7 @@ static bool check_compilation_unit_semantics(CompilationUnit *unit, XsHirSymbolT
          success;
 }
 
-static bool check_single_source_file(const char *path, XsBuildOutput output, bool build_native,
+static bool check_single_source_file(const char *path, XsBuildOutput output, bool build_native, bool run_tests,
                                      const XsCompilerSettings *settings)
 {
   CompilationUnit unit = {.path = copy_text(path)};
@@ -485,6 +486,8 @@ static bool check_single_source_file(const char *path, XsBuildOutput output, boo
       success = false;
     }
   }
+  if(success && run_tests)
+    success = xs_driver_run_compiler_core_tests(unit.compiler_core) == 0;
   xs_diagnostics_print(&unit.diagnostics, &unit.source, stderr);
   xs_hir_symbol_table_free(&symbols);
   compilation_unit_free(&unit);
@@ -505,7 +508,8 @@ static XsCompilerCoreSession *merge_compiler_core_sessions(CompilationUnit *unit
 }
 
 static bool check_project_sources(const char *manifest_path, const XsProject *project, XsBuildOutput output,
-                                  bool build_native, const XsCompilerSettings *settings, char *const *assigned_modules)
+                                  bool build_native, bool run_tests, const XsCompilerSettings *settings,
+                                  char *const *assigned_modules)
 {
   if(project->xs_version.is_nil || xs_project_selected_entry(project) == nullptr)
   {
@@ -585,7 +589,7 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
   }
   XsCompilerCoreSession *merged = nullptr;
   const XsCompilerCoreSession *program_session = nullptr;
-  if(success && (output != XS_BUILD_OUTPUT_NONE || build_native))
+  if(success && (output != XS_BUILD_OUTPUT_NONE || build_native || run_tests))
   {
     success = unit_count != 0;
     merged = success && unit_count > 1 ? merge_compiler_core_sessions(units, unit_count) : nullptr;
@@ -619,6 +623,8 @@ static bool check_project_sources(const char *manifest_path, const XsProject *pr
       success = false;
     }
   }
+  if(success && run_tests)
+    success = xs_driver_run_compiler_core_tests(program_session) == 0;
   xslang_compiler_core_session_free(merged);
   for(size_t i = 0; i < unit_count; ++i)
     xs_diagnostics_print(&units[i].diagnostics, &units[i].source, stderr);
@@ -703,7 +709,7 @@ static int run_project_command(const XsCliOptions *options)
     if(success)
       success = check_project_sources(options->manifest_path, &combined, options->output,
                                       strcmp(options->command, "check") != 0 && options->output == XS_BUILD_OUTPUT_NONE,
-                                      &settings, assigned);
+                                      false, &settings, assigned);
     if(success && strcmp(options->command, "run") == 0)
     {
       const XsProjectValue *entry = xs_project_selected_entry(&combined);
@@ -790,10 +796,10 @@ static int run_kotlin_project_command(const XsCliOptions *options)
   };
   bool build_native = (strcmp(options->command, "build") == 0 || strcmp(options->command, "run") == 0) &&
                       options->output == XS_BUILD_OUTPUT_NONE;
-  bool success = selected_count == 0U ||
-                 check_project_sources(".", &project, options->output, build_native, &resolved.settings, assigned);
-  if(success && testing)
-    fprintf(stderr, "xs: test: validated %zu test source(s)\n", resolved.test_path_count);
+  bool success = selected_count == 0U || check_project_sources(".", &project, options->output, build_native, testing,
+                                                               &resolved.settings, assigned);
+  if(success && testing && selected_count == 0U)
+    fprintf(stderr, "xs: test result: ok. 0 passed; 0 failed; 0 ignored\n");
   if(success && strcmp(options->command, "run") == 0)
   {
     int exit_code = xs_driver_run_native_artifact(resolved.paths[0]);
@@ -854,11 +860,9 @@ static int run_file_command(const XsCliOptions *options)
       check_single_source_file(options->file_path, options->output,
                                (strcmp(options->command, "build") == 0 || strcmp(options->command, "run") == 0) &&
                                    options->output == XS_BUILD_OUTPUT_NONE,
-                               &settings);
+                               strcmp(options->command, "test") == 0, &settings);
   if(!success)
     return 1;
-  if(strcmp(options->command, "test") == 0)
-    fprintf(stderr, "xs: test: validated 1 test source(s)\n");
   return strcmp(options->command, "run") == 0 ? xs_driver_run_native_artifact(options->file_path) : 0;
 }
 

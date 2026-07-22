@@ -5,6 +5,7 @@
 
 mod direct_ir;
 mod model;
+mod test_harness;
 mod xlil_lowering;
 
 pub mod hir_lowering;

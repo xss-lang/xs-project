@@ -73,6 +73,7 @@ const STMT_MATCH: u32 = 47;
 const MATCH_ARM: u32 = 48;
 const STMT_BREAK: u32 = 49;
 const STMT_CONTINUE: u32 = 50;
+const STMT_MACRO_CALL: u32 = 54;
 const EXPR_IDENTIFIER: u32 = 56;
 const EXPR_LITERAL: u32 = 57;
 const EXPR_BINARY: u32 = 58;
@@ -85,6 +86,7 @@ const EXPR_OBJECT_LITERAL: u32 = 77;
 const OBJECT_FIELD: u32 = 78;
 const EXPR_IF: u32 = 81;
 const EXPR_MATCH: u32 = 82;
+const EXPR_MACRO_CALL: u32 = 83;
 const PATTERN_LITERAL: u32 = 85;
 const PATTERN_ENUM_VARIANT: u32 = 86;
 const PATTERN_TUPLE: u32 = 87;
@@ -549,6 +551,17 @@ fn lower_discarded_expression(tree: &SyntaxTree,
   lower_expression(tree, value, context, locals, expected_type)
 }
 
+fn lower_builtin_macro_statement(tree: &SyntaxTree, statement: &SyntaxNode) -> Option<Statement>
+{
+  let call = statement.children
+                      .iter()
+                      .filter_map(|index| tree.nodes.get(*index))
+                      .find(|node| node.kind == EXPR_MACRO_CALL)?;
+  let name = first_child_kind(tree, call, IDENTIFIER)?;
+  let source_span = span(statement)?;
+  (name.text == "panic").then_some(Statement::Panic { span: source_span })
+}
+
 fn lower_statement_node(tree: &SyntaxTree,
                         statement: &SyntaxNode,
                         context: &LoweringContext,
@@ -602,6 +615,7 @@ fn lower_statement_node(tree: &SyntaxTree,
     STMT_MATCH => lower_match_statement(tree, statement, context, locals, return_type),
     STMT_BREAK => Some(Statement::Break { span: span(statement)? }),
     STMT_CONTINUE => Some(Statement::Continue { span: span(statement)? }),
+    STMT_MACRO_CALL => lower_builtin_macro_statement(tree, statement),
     _ => None,
   }?;
   Some(vec![lowered])
